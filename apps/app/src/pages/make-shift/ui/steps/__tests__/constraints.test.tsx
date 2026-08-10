@@ -99,6 +99,25 @@ const recommendedServerRules = recommendedTemplateCodes.map((templateCode, index
     selected: true,
     isImportant: true,
 }));
+const threeShiftWardShiftTypes = [
+    {wardShiftTypeId: 1, shortName: 'D', classification: 'DAY', rotationSystem: 'THREE', isActive: true},
+    {wardShiftTypeId: 2, shortName: 'E', classification: 'EVENING', rotationSystem: 'THREE', isActive: true},
+    {wardShiftTypeId: 3, shortName: 'N', classification: 'NIGHT', rotationSystem: 'THREE', isActive: true},
+];
+const twoShiftWardShiftTypes = [
+    {wardShiftTypeId: 4, shortName: 'ⓓ', classification: 'DAY', rotationSystem: 'TWO', isActive: true},
+    {wardShiftTypeId: 5, shortName: 'ⓝ', classification: 'NIGHT', rotationSystem: 'TWO', isActive: true},
+];
+const twoShiftConstraintTemplates = ['TWO_SHIFT_MAX_LINES', 'CORE_MIN_REST_HOURS', 'MAX_MONTHLY_WORK_HOURS'].map((templateCode) => ({
+    templateCode,
+    category: templateCode === 'TWO_SHIFT_MAX_LINES' ? 'TWO_SHIFT' : 'CORE',
+    displayTemplate: `${templateCode}_SENTINEL`,
+    severity: 'HARD' as const,
+    allowedSeverities: ['HARD' as const],
+    supportedInGenerator: true,
+    supportedInValidator: true,
+    slots: [],
+}));
 
 describe('Constraints', () => {
     beforeEach(() => {
@@ -155,7 +174,7 @@ describe('Constraints', () => {
             {nurseId: 1, name: 'Nurse A', isPreceptor: false},
             {nurseId: 2, name: 'Nurse B', isPreceptor: false},
         ] as never);
-        wardApiMocks.getShiftTypes.mockResolvedValue([]);
+        wardApiMocks.getShiftTypes.mockResolvedValue(threeShiftWardShiftTypes as never);
     });
 
     afterEach(async () => {
@@ -181,6 +200,100 @@ describe('Constraints', () => {
 
         expect(screen.queryByText((content) => content.includes('연속 근무는'))).not.toBeInTheDocument();
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+    });
+
+    it('enables and configures two-shift automation for the selected team only', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce(twoShiftWardShiftTypes as never);
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const twoShiftSwitch = await screen.findByRole('switch', {name: '2교대 자동 배치 사용'});
+
+        await userEvent.click(twoShiftSwitch);
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({templateCode: 'TWO_SHIFT_MAX_LINES', params: {count: 2, unpaired: 1}}),
+                    ]),
+                }),
+            );
+        });
+        expect(screen.getByText('하루 최대 2교대 세트 수')).toBeInTheDocument();
+
+        const minRestInput = screen.getByRole('spinbutton', {name: '근무 사이 최소 휴식시간'});
+        const monthlyCapInput = screen.getByRole('spinbutton', {name: '월 근로시간 상한'});
+
+        expect(minRestInput).toHaveValue(null);
+        expect(monthlyCapInput).toHaveValue(null);
+
+        await userEvent.type(minRestInput, '12');
+        await userEvent.type(monthlyCapInput, '220');
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenLastCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({templateCode: 'CORE_MIN_REST_HOURS', params: {target: {type: 'ALL'}, count: 12}}),
+                        expect.objectContaining({templateCode: 'MAX_MONTHLY_WORK_HOURS', params: {target: {type: 'ALL'}, count: 220}}),
+                    ]),
+                }),
+            );
+        });
+        expect(screen.getByText('이 설정은 현재 선택한 근무팀에만 적용되며 다른 팀에는 영향을 주지 않아요.')).toBeInTheDocument();
+    });
+
+    it('hides two-shift automation and its modal category for a three-shift-only ward', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce(threeShiftWardShiftTypes as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 91,
+            shiftTeamId: 910,
+            options: {targets: [{type: 'ALL', label: '전체'}]},
+            templates: twoShiftConstraintTemplates,
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 91,
+            shiftTeamId: 910,
+            rules: [
+                {
+                    shiftConstraintRuleId: 1,
+                    templateCode: 'TWO_SHIFT_MAX_LINES',
+                    category: 'TWO_SHIFT',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {count: 2, unpaired: 1},
+                    selected: true,
+                    isImportant: true,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={91} shiftTeamId={910} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        expect(screen.queryByRole('switch', {name: '2교대 자동 배치 사용'})).not.toBeInTheDocument();
+        expect(screen.queryByText('하루 최대 2교대 세트 수')).not.toBeInTheDocument();
+
+        await userEvent.click(addButton);
+
+        expect(screen.queryByRole('button', {name: '2교대'})).not.toBeInTheDocument();
+        expect(screen.queryByText('TWO_SHIFT_MAX_LINES_SENTINEL')).not.toBeInTheDocument();
+        expect(screen.queryByText('CORE_MIN_REST_HOURS_SENTINEL')).not.toBeInTheDocument();
+        expect(screen.queryByText('MAX_MONTHLY_WORK_HOURS_SENTINEL')).not.toBeInTheDocument();
     });
 
     it('hides legacy bundled and fully duplicated templates from the add modal', async () => {
@@ -274,6 +387,34 @@ describe('Constraints', () => {
         expect(screen.queryByText('DUPLICATE_OFF_AFTER_NIGHT_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('DUPLICATE_WEEKEND_STAFFING_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('CORE')).not.toBeInTheDocument();
+    });
+
+    it('groups all two-shift settings in the dedicated add-modal category', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce(twoShiftWardShiftTypes as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {targets: [{type: 'ALL', label: '전체'}]},
+            templates: twoShiftConstraintTemplates,
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(screen.getByRole('button', {name: '2교대'}));
+
+        expect(screen.getByText('TWO_SHIFT_MAX_LINES_SENTINEL')).toBeInTheDocument();
+        expect(screen.getByText('CORE_MIN_REST_HOURS_SENTINEL')).toBeInTheDocument();
+        expect(screen.getByText('MAX_MONTHLY_WORK_HOURS_SENTINEL')).toBeInTheDocument();
     });
 
     it('shows a toast instead of silently removing a duplicate added constraint', async () => {

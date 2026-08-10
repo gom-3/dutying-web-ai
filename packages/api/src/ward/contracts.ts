@@ -11,6 +11,7 @@ import type {
     TWardConstraint,
     TWardShiftClassification,
     TWardShiftType,
+    TShiftRotationSystem,
 } from '@dutying/domain';
 import type {TNurseResponse, TUpdateNurseDTO} from '../nurse';
 
@@ -697,6 +698,8 @@ export type TCreateWardShiftTypeDTO = {
     isDefault: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    rotationSystem?: TShiftRotationSystem;
+    paidMinutes?: number | null;
     isActive?: boolean;
     displayOrder?: number;
 };
@@ -830,5 +833,8 @@ export type TCreateShiftTypeDTO = {
     isDefault: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    rotationSystem?: TShiftRotationSystem;
+    paidMinutes?: number | null;
+    isActive?: boolean;
     displayOrder?: number;
 };

@@ -1,6 +1,7 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse, type TOnboardingWardParseOptions} from '@/shared/api/file/type';
+import {getDefaultTimeRangeForRotation} from '@/shared/lib/shift-rotation-selection';
 import {
     createEmptyShiftType,
     DEFAULT_OFF_SHIFT_TYPE_COLOR,
@@ -10,18 +11,35 @@ import {
     isOnboardingShiftTypeActive,
     normalizeOnboardingShiftCode,
     normalizeNurseNameForRequest,
+    orderOnboardingShiftTypes,
+    resolveOnboardingRotationSystem,
     type TOnboardingConstraintDraft,
     type TOnboardingNurseDraft,
+    type TOnboardingRotationMode,
     type TOnboardingTeamDraft,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
 } from './draft';
+import {
+    getAutomaticPreviousScheduleShiftMapping,
+    getPreviousScheduleShiftMappingRecommendation,
+    getPreviousScheduleRotationModeCorrection,
+    isAmbiguousPreviousScheduleTwoShiftCode,
+    isUniqueAutomaticPreviousScheduleShiftMapping,
+    isOnboardingShiftMappingResolved,
+    type TOnboardingShiftMappingRecommendation,
+    type TOnboardingShiftMappingStatus,
+} from './shift-type-mapping';
 
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
     name?: string;
     shortName?: string;
     source?: TOnboardingWardShiftType['source'];
     protectedByPreviousSchedule?: boolean;
+    autoSeeded?: boolean;
+    mappingStatus?: TOnboardingShiftMappingStatus;
+    mappingRecommendation?: TOnboardingShiftMappingRecommendation;
+    shortNameAliases?: string[];
 };
 
 export type TOnboardingParsedTeam = {
@@ -66,17 +84,6 @@ export type TOnboardingUploadFailureCopy = {
     networkMessage: string;
 };
 
-const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = {
-    D: {startTime: '07:00', endTime: '15:00'},
-    E: {startTime: '15:00', endTime: '23:00'},
-    N: {startTime: '23:00', endTime: '07:00'},
-};
-const SHIFT_CLASSIFICATION_TIME_RANGES: Partial<Record<TOnboardingWardShiftType['classification'], {startTime: string; endTime: string}>> =
-    {
-        DAY: SHIFT_TIME_RANGES.D,
-        EVENING: SHIFT_TIME_RANGES.E,
-        NIGHT: SHIFT_TIME_RANGES.N,
-    };
 const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls'] as const;
 const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'MIN_STAFF_BY_SHIFT',
@@ -111,7 +118,6 @@ const OFF_SHIFT_SHORT_NAME_ALIASES = new Set([
     '\u4F11\u65E5',
     '\u516C\u4F11',
 ]);
-const PRIMARY_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classification']>(['DAY', 'EVENING', 'NIGHT', 'OFF']);
 const PLACEHOLDER_CUSTOM_SHIFT_COLORS = new Set(['#94A3B8', '#BFC7D4']);
 const DEFAULT_WARD_FALLBACK_NAME = '\uB4C0\uD305 \uBCD1\uB3D9';
 const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
@@ -314,11 +320,11 @@ const collectObservedWorkShiftCodes = (
     return Array.from(shiftCodes);
 };
 const normalizeUploadedShiftTypes = (shiftTypes: TOnboardingWardShiftType[]): TOnboardingWardShiftType[] =>
-    shiftTypes.map((shiftType) => {
-        const timeRange = SHIFT_TIME_RANGES[shiftType.shortName] ?? SHIFT_CLASSIFICATION_TIME_RANGES[shiftType.classification];
-
-        return timeRange ? {...shiftType, ...timeRange} : shiftType;
-    });
+    shiftTypes.map((shiftType) =>
+        isOnboardingShiftMappingResolved(shiftType.mappingStatus)
+            ? {...shiftType, rotationSystem: resolveOnboardingRotationSystem(shiftType)}
+            : shiftType,
+    );
 const getShiftTypeNameFromShortName = (shortName: string) => SHIFT_CODE_LABELS[shortName.toUpperCase()] ?? shortName;
 const createCoreParsedShiftType = (shortName: (typeof CORE_SHIFT_SHORT_NAMES)[number]): TOnboardingParsedShiftType => ({
     name: getShiftTypeNameFromShortName(shortName),
@@ -326,13 +332,77 @@ const createCoreParsedShiftType = (shortName: (typeof CORE_SHIFT_SHORT_NAMES)[nu
     isDefault: true,
     isOff: shortName === 'O',
     classification: inferClassificationFromShortName(shortName, shortName === 'O'),
+    source: 'schedule-input',
 });
-const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): TOnboardingWardShiftType => {
+const toDraftShiftType = (
+    parsed: TOnboardingParsedShiftType,
+    colorIndex = 0,
+    rotationMode: TOnboardingRotationMode = 'THREE',
+): TOnboardingWardShiftType => {
     const base = createEmptyShiftType(colorIndex);
     const shortName = parsed.shortName ?? base.shortName;
-    const isOff = parsed.isOff ?? false;
-    const classification = parsed.classification ?? inferClassificationFromShortName(shortName, isOff);
-    const timeRange = !isOff ? SHIFT_CLASSIFICATION_TIME_RANGES[classification] : undefined;
+    const automaticMapping = parsed.source === 'schedule-input' ? getAutomaticPreviousScheduleShiftMapping(shortName, rotationMode) : null;
+    const hasExplicitUserMapping = parsed.autoSeeded === false && parsed.mappingStatus === 'CONFIRMED';
+    const shouldTreatAsPreviousScheduleOtherWork =
+        parsed.source === 'schedule-input' && isAmbiguousPreviousScheduleTwoShiftCode(shortName) && !hasExplicitUserMapping;
+    const rotationModeCorrection = shouldTreatAsPreviousScheduleOtherWork
+        ? ({classification: 'OTHER_WORK', rotationSystem: 'NONE'} as const)
+        : parsed.source === 'schedule-input' || parsed.protectedByPreviousSchedule === true || parsed.autoSeeded === true
+          ? getPreviousScheduleRotationModeCorrection({
+                shortName,
+                classification: parsed.classification,
+                rotationSystem: parsed.rotationSystem,
+                rotationMode,
+            })
+          : null;
+    const requestedMappingStatus =
+        rotationModeCorrection != null
+            ? rotationModeCorrection.rotationSystem === 'NONE'
+                ? 'CONFIRMED'
+                : 'AUTO_MATCHED'
+            : (parsed.mappingStatus ??
+              (parsed.source === 'schedule-input' ? (automaticMapping ? 'AUTO_MATCHED' : 'UNASSIGNED') : 'CONFIRMED'));
+    const resolvedAutomaticMapping =
+        rotationModeCorrection && rotationModeCorrection.rotationSystem !== 'NONE' ? rotationModeCorrection : automaticMapping;
+    const mappingStatus = requestedMappingStatus === 'AUTO_MATCHED' && !resolvedAutomaticMapping ? 'UNASSIGNED' : requestedMappingStatus;
+    const isResolved = isOnboardingShiftMappingResolved(mappingStatus);
+    const classification =
+        rotationModeCorrection != null
+            ? rotationModeCorrection.classification
+            : mappingStatus === 'AUTO_MATCHED'
+              ? (automaticMapping?.classification ?? 'OTHER_WORK')
+              : mappingStatus === 'UNASSIGNED'
+                ? 'OTHER_WORK'
+                : (parsed.classification ?? inferClassificationFromShortName(shortName, parsed.isOff ?? false));
+    const isOff = isResolved && classification === 'OFF';
+    const rotationSystem =
+        rotationModeCorrection != null
+            ? rotationModeCorrection.rotationSystem
+            : mappingStatus === 'AUTO_MATCHED'
+              ? (automaticMapping?.rotationSystem ?? 'NONE')
+              : mappingStatus === 'UNASSIGNED'
+                ? 'NONE'
+                : resolveOnboardingRotationSystem({
+                      classification,
+                      isDefault: parsed.isDefault ?? false,
+                      isOff,
+                      rotationSystem: parsed.rotationSystem,
+                  });
+    const automaticTimeRange = mappingStatus === 'AUTO_MATCHED' ? getDefaultTimeRangeForRotation(rotationSystem, classification) : null;
+    const mappingRecommendation =
+        mappingStatus === 'UNASSIGNED'
+            ? (parsed.mappingRecommendation ??
+              getPreviousScheduleShiftMappingRecommendation({
+                  shortName,
+                  name: parsed.name,
+                  startTime: parsed.startTime,
+                  endTime: parsed.endTime,
+                  classification: parsed.classification,
+                  rotationSystem: parsed.rotationSystem,
+                  rotationMode,
+              }) ??
+              undefined)
+            : undefined;
     const parsedColor = parsed.color?.trim() ?? '';
     const isAutomaticOffColor = !parsedColor || PLACEHOLDER_CUSTOM_SHIFT_COLORS.has(parsedColor.toUpperCase());
     const defaultColor =
@@ -341,66 +411,141 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): T
     return {
         ...base,
         id: createLocalId('shift'),
-        name: trimToUndefined(parsed.name) ?? getShiftTypeNameFromShortName(shortName),
+        name: shouldTreatAsPreviousScheduleOtherWork
+            ? shortName
+            : (trimToUndefined(parsed.name) ?? getShiftTypeNameFromShortName(shortName)),
         shortName,
-        startTime: parsed.startTime ?? timeRange?.startTime ?? base.startTime,
-        endTime: parsed.endTime ?? timeRange?.endTime ?? base.endTime,
+        startTime: shouldTreatAsPreviousScheduleOtherWork
+            ? ''
+            : (automaticTimeRange?.startTime ?? parsed.startTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.startTime)),
+        endTime: shouldTreatAsPreviousScheduleOtherWork
+            ? ''
+            : (automaticTimeRange?.endTime ?? parsed.endTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.endTime)),
         color: defaultColor,
-        isDefault: parsed.isDefault ?? false,
+        isDefault: shouldTreatAsPreviousScheduleOtherWork ? false : isOff ? true : (parsed.isDefault ?? false),
         isOff,
         isCounted: isOff ? false : base.isCounted,
         classification,
+        rotationSystem,
+        paidMinutes: shouldTreatAsPreviousScheduleOtherWork
+            ? null
+            : isOff
+              ? null
+              : (parsed.paidMinutes ?? (rotationSystem === 'TWO' ? 630 : null)),
         source: parsed.source,
+        protectedByPreviousSchedule: parsed.protectedByPreviousSchedule,
+        autoSeeded: shouldTreatAsPreviousScheduleOtherWork ? false : parsed.autoSeeded,
+        mappingStatus,
+        mappingRecommendation,
+        shortNameAliases: parsed.shortNameAliases,
     };
 };
 const ensureCoreShiftTypes = (
     draftShiftTypes: TOnboardingWardShiftType[],
     parsedShiftTypes: TOnboardingParsedShiftType[],
+    rotationMode: TOnboardingRotationMode,
 ): TOnboardingWardShiftType[] => {
     if (parsedShiftTypes.length === 0) {
         return normalizeUploadedShiftTypes(draftShiftTypes);
     }
 
-    const draftByShortName = new Map(draftShiftTypes.map((shiftType) => [shiftType.shortName.toUpperCase(), shiftType]));
+    const parsedByShortName = new Map(
+        parsedShiftTypes
+            .map((shiftType) => [normalizeShiftShortName(shiftType.shortName), shiftType] as const)
+            .filter((entry): entry is [string, TOnboardingParsedShiftType] => Boolean(entry[0])),
+    );
+    const draftShortNames = new Set(draftShiftTypes.map((shiftType) => normalizeShiftShortName(shiftType.shortName)).filter(Boolean));
+    const combinedShiftTypes: TOnboardingParsedShiftType[] = [
+        ...draftShiftTypes.map((draftShiftType) => {
+            const parsedShiftType = parsedByShortName.get(normalizeShiftShortName(draftShiftType.shortName) ?? '');
+
+            return {
+                ...parsedShiftType,
+                ...draftShiftType,
+                protectedByPreviousSchedule:
+                    draftShiftType.protectedByPreviousSchedule === true || parsedShiftType?.source === 'schedule-input' ? true : undefined,
+            };
+        }),
+        ...parsedShiftTypes
+            .filter((shiftType) => !draftShortNames.has(normalizeShiftShortName(shiftType.shortName)))
+            .map((shiftType) => ({...shiftType, source: shiftType.source ?? ('schedule-input' as const)})),
+    ];
     const usedShortNames = new Set<string>();
     const nextShiftTypes: TOnboardingWardShiftType[] = [];
 
-    parsedShiftTypes.forEach((shiftType) => {
+    combinedShiftTypes.forEach((shiftType) => {
         const shortName = normalizeShiftShortName(shiftType.shortName);
 
         if (!shortName || usedShortNames.has(shortName)) {
             return;
         }
 
+        const staleAutoSeedCorrection =
+            shiftType.autoSeeded === true && shiftType.source !== 'schedule-input' && shiftType.protectedByPreviousSchedule !== true
+                ? getPreviousScheduleRotationModeCorrection({
+                      shortName,
+                      classification: shiftType.classification,
+                      rotationSystem: shiftType.rotationSystem,
+                      rotationMode,
+                  })
+                : null;
+
+        // 선택한 교대제와 무관하고 이전 근무표에서도 쓰이지 않은 옛 기본
+        // 시드는 가져오기 병합 대상이 아니다. 실제 표에서 관찰된 행만 기타
+        // 근무로 보존한다.
+        if (staleAutoSeedCorrection?.classification === 'OTHER_WORK') {
+            return;
+        }
+
         usedShortNames.add(shortName);
 
-        const draftShiftType = draftByShortName.get(shortName);
         const nextShiftType = toDraftShiftType(
             {
                 ...shiftType,
-                name: shiftType.name ?? draftShiftType?.name ?? getShiftTypeNameFromShortName(shortName),
+                name: shiftType.name ?? getShiftTypeNameFromShortName(shortName),
                 shortName,
-                startTime: shiftType.startTime ?? draftShiftType?.startTime,
-                endTime: shiftType.endTime ?? draftShiftType?.endTime,
-                color: shiftType.color ?? draftShiftType?.color,
-                isDefault: shiftType.isDefault ?? draftShiftType?.isDefault ?? false,
-                isOff: shiftType.isOff ?? draftShiftType?.isOff,
-                classification: shiftType.classification ?? draftShiftType?.classification,
-                source: shiftType.source ?? draftShiftType?.source,
+                isDefault: shiftType.isDefault ?? false,
             },
             nextShiftTypes.length,
+            rotationMode,
         );
 
-        nextShiftTypes.push(
-            draftShiftType?.protectedByPreviousSchedule ? {...nextShiftType, protectedByPreviousSchedule: true} : nextShiftType,
-        );
+        nextShiftTypes.push(nextShiftType);
     });
 
+    const shiftTypesWithUniqueAutomaticMappings = nextShiftTypes.map((shiftType) => {
+        if (shiftType.mappingStatus !== 'AUTO_MATCHED' || isUniqueAutomaticPreviousScheduleShiftMapping(shiftType, nextShiftTypes)) {
+            return shiftType;
+        }
+
+        return {
+            ...shiftType,
+            startTime: '',
+            endTime: '',
+            isDefault: false,
+            isOff: false,
+            isCounted: true,
+            classification: 'OTHER_WORK' as const,
+            rotationSystem: 'NONE' as const,
+            paidMinutes: null,
+            mappingStatus: 'UNASSIGNED' as const,
+        };
+    });
+    const importedMappedSlots = new Set(
+        shiftTypesWithUniqueAutomaticMappings
+            .filter((shiftType) => shiftType.source === 'schedule-input' && isOnboardingShiftMappingResolved(shiftType.mappingStatus))
+            .map((shiftType) => `${resolveOnboardingRotationSystem(shiftType)}:${shiftType.classification}`),
+    );
+    const withoutReplacedAutoSeeds = shiftTypesWithUniqueAutomaticMappings.filter((shiftType) => {
+        if (!shiftType.autoSeeded || shiftType.protectedByPreviousSchedule || shiftType.source === 'schedule-input') return true;
+
+        return !importedMappedSlots.has(`${resolveOnboardingRotationSystem(shiftType)}:${shiftType.classification}`);
+    });
     const usedColors = new Set<string>();
 
     let customColorIndex = 0;
 
-    const distinctShiftTypes = nextShiftTypes.map((shiftType) => {
+    const distinctShiftTypes = withoutReplacedAutoSeeds.map((shiftType) => {
         const shortName = normalizeShiftShortName(shiftType.shortName);
         const color = normalizeColorKey(shiftType.color);
 
@@ -437,7 +582,7 @@ const ensureCoreShiftTypes = (
         return shiftType;
     });
 
-    return normalizeUploadedShiftTypes(distinctShiftTypes);
+    return orderOnboardingShiftTypes(normalizeUploadedShiftTypes(distinctShiftTypes));
 };
 const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
     names.map((name, index) => ({
@@ -619,6 +764,7 @@ const appendObservedShiftTypes = (shiftTypes: TOnboardingParsedShiftType[], obse
                       isDefault: false,
                       isOff: classification === 'OFF' || classification === 'OTHER_LEAVE',
                       classification,
+                      source: 'schedule-input',
                   },
         );
     });
@@ -631,22 +777,8 @@ type TNormalizedParsedShiftTypes = {
     shortNameAliases: Map<string, string>;
 };
 
-const getParsedShiftClassification = (shiftType: TOnboardingParsedShiftType): TOnboardingWardShiftType['classification'] => {
-    const shortName = normalizeShiftShortName(shiftType.shortName) ?? '';
-
-    return shiftType.classification ?? normalizeShiftClassification(undefined, shortName);
-};
-const getPrimaryShiftClassification = (shiftType: TOnboardingParsedShiftType): TOnboardingWardShiftType['classification'] | undefined => {
-    const shortName = normalizeShiftShortName(shiftType.shortName) ?? '';
-    const classification = getParsedShiftClassification(shiftType);
-
-    if (classification === 'OFF' || isOffShiftShortName(shortName)) {
-        return 'OFF';
-    }
-
-    return PRIMARY_SHIFT_CLASSIFICATIONS.has(classification) ? classification : undefined;
-};
-const isPrimaryOffShiftType = (shiftType: TOnboardingParsedShiftType) => getPrimaryShiftClassification(shiftType) === 'OFF';
+const isPrimaryOffShiftType = (shiftType: TOnboardingParsedShiftType) =>
+    isOffShiftShortName(normalizeShiftShortName(shiftType.shortName) ?? '');
 const getObservedShiftStat = (shiftType: TOnboardingParsedShiftType, observedStats: Map<string, TObservedShiftCodeStat>) => {
     const shortName = normalizeShiftShortName(shiftType.shortName);
 
@@ -658,8 +790,9 @@ const isDefaultCoreFallbackShiftType = (shiftType: TOnboardingParsedShiftType) =
     const shortName = normalizeShiftShortName(shiftType.shortName);
 
     return (
-        shiftType.isDefault === true ||
-        (shortName !== '' && CORE_SHIFT_SHORT_NAMES.includes(shortName as (typeof CORE_SHIFT_SHORT_NAMES)[number]))
+        shiftType.isDefault === true &&
+        shortName !== '' &&
+        CORE_SHIFT_SHORT_NAMES.includes(shortName as (typeof CORE_SHIFT_SHORT_NAMES)[number])
     );
 };
 const pickPrimaryOffShiftType = (
@@ -702,22 +835,9 @@ const normalizeParsedShiftTypeList = (
         uniqueShiftTypes.push({...shiftType, shortName});
     });
 
-    const observedClassifications = new Set(
-        uniqueShiftTypes
-            .filter((shiftType) => isObservedShiftType(shiftType, observedStats))
-            .map(getPrimaryShiftClassification)
-            .filter((classification): classification is TOnboardingWardShiftType['classification'] => Boolean(classification)),
+    const withoutUnobservedDefaults = uniqueShiftTypes.filter(
+        (shiftType) => !isDefaultCoreFallbackShiftType(shiftType) || isObservedShiftType(shiftType, observedStats),
     );
-    const withoutUnobservedDefaults = uniqueShiftTypes.filter((shiftType) => {
-        const classification = getPrimaryShiftClassification(shiftType);
-
-        return !(
-            isDefaultCoreFallbackShiftType(shiftType) &&
-            !isObservedShiftType(shiftType, observedStats) &&
-            classification &&
-            observedClassifications.has(classification)
-        );
-    });
     const primaryOffShiftTypes = withoutUnobservedDefaults.filter(isPrimaryOffShiftType);
     const primaryOffShiftType =
         primaryOffShiftTypes.length > 1 ? pickPrimaryOffShiftType(primaryOffShiftTypes, observedStats) : primaryOffShiftTypes[0];
@@ -730,9 +850,9 @@ const normalizeParsedShiftTypeList = (
     const normalizedShiftTypes = withoutUnobservedDefaults
         .filter((shiftType) => {
             const shortName = normalizeShiftShortName(shiftType.shortName);
-            const classification = getPrimaryShiftClassification(shiftType);
+            const isOff = isPrimaryOffShiftType(shiftType);
 
-            if (!shortName || classification !== 'OFF' || !primaryOffShortName || shortName === primaryOffShortName) return true;
+            if (!shortName || !isOff || !primaryOffShortName || shortName === primaryOffShortName) return true;
 
             shortNameAliases.set(shortName, primaryOffShortName);
 
@@ -784,6 +904,9 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                             isDefault: shiftType.isDefault ?? undefined,
                             isOff,
                             classification,
+                            rotationSystem: shiftType.rotationSystem ?? undefined,
+                            paidMinutes: shiftType.paidMinutes ?? undefined,
+                            source: 'schedule-input' as const,
                         };
                     })
                     .filter((shiftType) => Boolean(shiftType.shortName)),
@@ -812,6 +935,7 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                         isDefault: false,
                         isOff: classification === 'OFF' || classification === 'OTHER_LEAVE',
                         classification,
+                        source: 'schedule-input' as const,
                     };
                 })
                 .filter((shiftType) => Boolean(shiftType.shortName)),
@@ -922,8 +1046,8 @@ const toDraftConstraintCandidate = (candidate: TOnboardingParsedConstraintCandid
     ...candidate,
     id: createLocalId(`constraint-${index + 1}`),
 });
-const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) =>
-    draft.constraintCandidates
+const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
+    const selectedRules = draft.constraintCandidates
         .filter((constraint) => constraint.selected && constraint.templateCode)
         .map((constraint) => ({
             templateCode: constraint.templateCode,
@@ -931,6 +1055,23 @@ const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) =>
             selected: constraint.selected,
             params: constraint.params,
         }));
+    const twoShiftActivationRule = {
+        templateCode: 'TWO_SHIFT_MAX_LINES',
+        severity: 'HARD' as const,
+        selected: true,
+        params: {count: 2, unpaired: 1},
+    };
+
+    if (draft.rotationMode === 'THREE') return selectedRules;
+
+    const selectedByCode = new Map(selectedRules.map((rule) => [rule.templateCode, rule] as const));
+
+    if (!selectedByCode.has(twoShiftActivationRule.templateCode)) {
+        selectedByCode.set(twoShiftActivationRule.templateCode, twoShiftActivationRule);
+    }
+
+    return Array.from(selectedByCode.values());
+};
 
 export const getOnboardingUploadExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() ?? '';
 
@@ -977,7 +1118,7 @@ export const buildOnboardingParseDraftInjection = (
 
 export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboardingParsedWardData): TOnboardingWardDraft => {
     const nextShiftTypes = parsed.shiftTypes
-        ? ensureCoreShiftTypes(draft.shiftTypes, parsed.shiftTypes)
+        ? ensureCoreShiftTypes(draft.shiftTypes, parsed.shiftTypes, draft.rotationMode)
         : normalizeUploadedShiftTypes(draft.shiftTypes);
     const nextTeams = buildParsedTeams(parsed) ?? draft.teams;
     const nextNurses = parsed.nurses
@@ -1002,27 +1143,53 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
     const normalizedWardName = draft.wardName.trim();
     const normalizedHospitalName = draft.hospitalName.trim();
     const fallbackName = normalizedWardName || normalizedHospitalName || DEFAULT_WARD_FALLBACK_NAME;
-    const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
+    const mappedShiftTypes = draft.shiftTypes.filter((shiftType) => isOnboardingShiftMappingResolved(shiftType.mappingStatus));
+    const uniqueMappedShiftTypeByShortName = new Map<string, TOnboardingWardShiftType>();
+
+    mappedShiftTypes.forEach((shiftType) => {
+        const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
+        const existing = uniqueMappedShiftTypeByShortName.get(shortName);
+
+        if (!existing || (!isOnboardingShiftTypeActive(existing) && isOnboardingShiftTypeActive(shiftType))) {
+            uniqueMappedShiftTypeByShortName.set(shortName, shiftType);
+        }
+    });
+
+    const uniqueMappedShiftTypes = Array.from(uniqueMappedShiftTypeByShortName.values());
+    const shiftTypeById = new Map(
+        mappedShiftTypes.map((shiftType) => [
+            shiftType.id,
+            uniqueMappedShiftTypeByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName)) ?? shiftType,
+        ]),
+    );
+    const mappedShiftShortNames = new Set(uniqueMappedShiftTypeByShortName.keys());
     const constraintRules = buildConstraintRulePayloads(draft);
 
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
         hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
-        wardShiftTypes: draft.shiftTypes.map(
+        wardShiftTypes: uniqueMappedShiftTypes.map(
             ({
                 id: _id,
                 source: _source,
                 shortNameAliases: _shortNameAliases,
                 protectedByPreviousSchedule: _protectedByPreviousSchedule,
+                autoSeeded: _autoSeeded,
+                mappingStatus: _mappingStatus,
+                mappingRecommendation: _mappingRecommendation,
                 ...shiftType
             }) => {
                 const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
+                const classification = getPayloadShiftClassification({...shiftType, shortName});
+                const rotationSystem = resolveOnboardingRotationSystem({...shiftType, classification});
 
                 return {
                     ...shiftType,
                     name: shiftType.name.trim() || shortName,
                     shortName,
-                    classification: getPayloadShiftClassification({...shiftType, shortName}),
+                    classification,
+                    rotationSystem,
+                    paidMinutes: rotationSystem === 'NONE' ? null : shiftType.paidMinutes,
                 };
             },
         ),
@@ -1062,7 +1229,14 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                         )
                         .map((shiftType) => shiftType.shortName)
                         .filter((shortName): shortName is string => Boolean(shortName)),
-                    initialShifts: (nurse.initialShifts ?? []).length > 0 ? nurse.initialShifts : undefined,
+                    initialShifts:
+                        (nurse.initialShifts ?? []).filter((shift) =>
+                            mappedShiftShortNames.has(normalizeOnboardingShiftCode(shift.shiftShortName)),
+                        ).length > 0
+                            ? (nurse.initialShifts ?? []).filter((shift) =>
+                                  mappedShiftShortNames.has(normalizeOnboardingShiftCode(shift.shiftShortName)),
+                              )
+                            : undefined,
                 })),
             };
         }),

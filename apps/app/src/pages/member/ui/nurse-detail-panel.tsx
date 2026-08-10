@@ -9,6 +9,7 @@ import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -36,28 +37,6 @@ interface INurseDetailPanelProps {
 
 const MIN_SHIFT_RATIO_WEIGHT = 1;
 const MAX_SHIFT_RATIO_WEIGHT = 99;
-const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const BIRTH_DATE_MIN = '1900-01-01';
-const pad2 = (value: number) => value.toString().padStart(2, '0');
-const getDateKeyFromDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-const getTodayDateKey = () => getDateKeyFromDate(new Date());
-const normalizeBirthDateForStorage = (value: string | null | undefined) => {
-    const trimmed = value?.trim() ?? '';
-
-    return trimmed.length > 0 ? trimmed : null;
-};
-const isValidBirthDate = (value: string | null | undefined, maxDate: string) => {
-    const birthDate = normalizeBirthDateForStorage(value);
-
-    if (!birthDate) return true;
-    if (!LOCAL_DATE_KEY_PATTERN.test(birthDate)) return false;
-    if (birthDate < BIRTH_DATE_MIN || birthDate > maxDate) return false;
-
-    const parsedDate = new Date(`${birthDate}T00:00:00`);
-
-    return !Number.isNaN(parsedDate.getTime()) && birthDate === getDateKeyFromDate(parsedDate);
-};
-
 const toShiftRatioWeight = (value: number | null | undefined) =>
     typeof value === 'number' && Number.isFinite(value)
         ? Math.min(MAX_SHIFT_RATIO_WEIGHT, Math.max(MIN_SHIFT_RATIO_WEIGHT, Math.round(value)))
@@ -69,16 +48,83 @@ const toShiftTypeColor = (value: string | null | undefined) => {
 };
 const getShiftRatioOptionKey = ({apiShiftTypeId, wardShiftTypeId}: Pick<TNurseShiftTypeOption, 'apiShiftTypeId' | 'wardShiftTypeId'>) =>
     typeof wardShiftTypeId === 'number' ? `ward:${wardShiftTypeId}` : `nurse:${apiShiftTypeId}`;
+
+function ShiftRatioWeightField({
+    value,
+    resetKey,
+    disabled,
+    ariaLabel,
+    onValueChange,
+}: {
+    value: number;
+    resetKey: string;
+    disabled: boolean;
+    ariaLabel: string;
+    onValueChange: (value: number) => void;
+}) {
+    const [draftValue, setDraftValue] = useState<string | null>(null);
+
+    useEffect(() => {
+        setDraftValue(null);
+    }, [resetKey]);
+
+    return (
+        <input
+            type="number"
+            min={MIN_SHIFT_RATIO_WEIGHT}
+            max={MAX_SHIFT_RATIO_WEIGHT}
+            step={1}
+            inputMode="numeric"
+            disabled={disabled}
+            className="h-full min-w-0 bg-transparent px-1 text-center font-poppins text-[12px] font-semibold text-sub-1 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            value={draftValue ?? value}
+            aria-label={ariaLabel}
+            onFocus={(event) => event.currentTarget.select()}
+            onChange={(event) => {
+                const nextDraftValue = event.currentTarget.value;
+                const nextValue = Number(nextDraftValue);
+
+                setDraftValue(nextDraftValue);
+
+                if (
+                    nextDraftValue !== '' &&
+                    Number.isInteger(nextValue) &&
+                    nextValue >= MIN_SHIFT_RATIO_WEIGHT &&
+                    nextValue <= MAX_SHIFT_RATIO_WEIGHT
+                ) {
+                    onValueChange(nextValue);
+                }
+            }}
+            onBlur={(event) => {
+                const completedDraftValue = event.currentTarget.value;
+
+                if (completedDraftValue !== '') {
+                    const nextValue = Number(completedDraftValue);
+
+                    if (Number.isFinite(nextValue)) {
+                        onValueChange(toShiftRatioWeight(nextValue));
+                    }
+                }
+
+                setDraftValue(null);
+            }}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                    event.currentTarget.blur();
+                }
+            }}
+        />
+    );
+}
+
 function BirthDateField({
     value,
     disabled,
-    maxDate,
     isInvalid,
     onChange,
 }: {
     value: string | null | undefined;
     disabled: boolean;
-    maxDate: string;
     isInvalid: boolean;
     onChange: (value: string) => void;
 }) {
@@ -100,9 +146,11 @@ function BirthDateField({
             <div className="mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-gray-7 px-2.5 min-[1600px]:text-[14px]">
                 <input
                     id="nurseBirthDate"
-                    type="date"
-                    min={BIRTH_DATE_MIN}
-                    max={maxDate}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="bday"
+                    placeholder="YYYY-MM-DD"
+                    maxLength={10}
                     disabled={disabled}
                     name="nurseBirthDate"
                     aria-label={label}
@@ -113,7 +161,7 @@ function BirthDateField({
                         isInvalid && 'text-red',
                     )}
                     value={value ?? ''}
-                    onChange={(event) => onChange(event.target.value)}
+                    onChange={(event) => onChange(formatBirthDateInput(event.target.value))}
                 />
             </div>
             {isInvalid ? (
@@ -161,6 +209,7 @@ function NurseDetailPanel({
     const canEditBirthDate = Boolean(writeNurse?.accountId);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
+
     useEffect(() => {
         setWriteNurse(selectedNurse ? normalizeNurseRoleFields(selectedNurse) : null);
         setShowNameRequiredError(false);
@@ -226,6 +275,7 @@ function NurseDetailPanel({
     useEffect(() => {
         setNurseDraftDirty(isDirty);
     }, [isDirty, setNurseDraftDirty]);
+
     const getTargetShiftRatioDefaultWeight = useCallback(
         (targetShiftType: TNurseShiftTypeOption, nextIsPossible: boolean) => {
             const targetClassification =
@@ -708,9 +758,13 @@ function NurseDetailPanel({
                                                                       : draftShiftType.isPossible;
 
                                                                   if (!isPossibleAfterToggle) return;
-                                                                  if (manualShiftRatioWeightKeys.has(getNurseShiftTypeKey(draftShiftType))) {
+
+                                                                  if (
+                                                                      manualShiftRatioWeightKeys.has(getNurseShiftTypeKey(draftShiftType))
+                                                                  ) {
                                                                       return;
                                                                   }
+
                                                                   if (
                                                                       !isDefaultMonthlyNurseShiftRatioWeight(
                                                                           classification,
@@ -846,19 +900,14 @@ function NurseDetailPanel({
                                                     key={`ratio-input-${shiftType.apiShiftTypeId}`}
                                                     className="grid h-7 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1"
                                                 >
-                                                    <input
-                                                        type="number"
-                                                        min={MIN_SHIFT_RATIO_WEIGHT}
-                                                        max={MAX_SHIFT_RATIO_WEIGHT}
-                                                        step={1}
-                                                        inputMode="numeric"
-                                                        disabled={isBusy}
-                                                        className="h-full min-w-0 bg-transparent px-1 text-center font-poppins text-[12px] font-semibold text-sub-1 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                                    <ShiftRatioWeightField
                                                         value={weight}
-                                                        aria-label={t('page.member.detail.shiftRatioInputAria', {
+                                                        resetKey={`${writeNurse.nurseId}:${getShiftRatioOptionKey(shiftType)}`}
+                                                        disabled={isBusy}
+                                                        ariaLabel={t('page.member.detail.shiftRatioInputAria', {
                                                             shiftName: shiftType.name,
                                                         })}
-                                                        onChange={(event) =>
+                                                        onValueChange={(targetRatioWeight) =>
                                                             updateShiftRatioWeight({
                                                                 apiShiftTypeId: shiftType.apiShiftTypeId,
                                                                 wardShiftTypeId: shiftType.wardShiftTypeId,
@@ -866,7 +915,7 @@ function NurseDetailPanel({
                                                                 shortName: shiftType.shortName,
                                                                 isPossible: shiftType.isPossible,
                                                                 isPreferred: shiftType.isPreferred,
-                                                                targetRatioWeight: event.currentTarget.valueAsNumber,
+                                                                targetRatioWeight,
                                                                 currentTargetRatioWeight: weight,
                                                             })
                                                         }
@@ -975,7 +1024,6 @@ function NurseDetailPanel({
                         <BirthDateField
                             value={writeNurse.birthDate}
                             disabled={isBusy || !canEditBirthDate}
-                            maxDate={birthDateMax}
                             isInvalid={!isBirthDateValid}
                             onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
                         />

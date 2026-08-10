@@ -179,6 +179,10 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
         const teamId = result.current.activeTeamId;
 
         act(() => {
@@ -221,8 +225,8 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(previewRequest.dutyBlock.split('\t').slice(0, 5)).toEqual(['R', 'Z', 'A', 'Y', '/']);
         expect(mockSaveOnboardingWardDraft).toHaveBeenCalled();
         expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(1);
-        expect(savedDraft.currentStep).toBe(3);
-        expect(result.current.draft.currentStep).toBe(3);
+        expect(savedDraft.currentStep).toBe(4);
+        expect(result.current.draft.currentStep).toBe(4);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '/', 'A', 'R', 'Y', 'Z']);
         expect(result.current.draft.shiftTypes.slice(3).every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
 
@@ -290,6 +294,10 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
         const teamId = result.current.activeTeamId;
 
         act(() => {
@@ -320,7 +328,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         const previewRequest = mockPreviewOnboardingScheduleInput.mock.calls[0]?.[0];
 
         expect(previewRequest.dutyBlock.split('\t')[0]).toBe('Y');
-        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.currentStep).toBe(4);
         expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'X')).toBe(false);
         expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'Y')).toBe(true);
         expect(result.current.draft.nurses.find((nurse) => nurse.name === '김하늘')?.initialShifts).toEqual([
@@ -370,6 +378,10 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
         const teamId = result.current.activeTeamId;
 
         act(() => {
@@ -405,13 +417,13 @@ describe('useOnboardingWardWizard upload flow', () => {
             result.current.goPreviousStep();
         });
 
-        expect(result.current.draft.currentStep).toBe(2);
+        expect(result.current.draft.currentStep).toBe(3);
 
         await act(async () => {
             await result.current.goNextStep();
         });
 
-        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.currentStep).toBe(4);
         expect(result.current.draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType)).toEqual(
             initialShiftTypes.map(({id: _id, ...shiftType}) => shiftType),
         );
@@ -424,6 +436,10 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         act(() => {
             result.current.updateWardIdentity({hospitalName: '테스트 병원', wardName: '테스트 병동'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
         });
 
         await act(async () => {
@@ -450,9 +466,9 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         expect(result.current.canGoNext).toBe(false);
         expect(result.current.currentStepValidation.issues).toEqual([
-            {code: 'schedule-row-missing-nurse-name', step: 2, targetId: 'row-1'},
+            {code: 'schedule-row-missing-nurse-name', step: 3, targetId: 'row-1'},
         ]);
-        expect(result.current.draft.currentStep).toBe(2);
+        expect(result.current.draft.currentStep).toBe(3);
         expect(mockPreviewOnboardingScheduleInput).not.toHaveBeenCalled();
         expect(mockSaveOnboardingWardDraft).not.toHaveBeenCalled();
         expect(mockGetOnboardingWardDraft).not.toHaveBeenCalled();
@@ -500,6 +516,10 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         act(() => {
             result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
         });
 
         await act(async () => {
@@ -555,7 +575,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         const {result} = renderHook(() => useOnboardingWardWizard());
 
-        await waitFor(() => expect(result.current.draft.currentStep).toBe(2));
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(3));
 
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
         expect(result.current.draft.wardName).toBe('중환자실');
@@ -674,10 +694,12 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '이브닝', '나이트', '오프']);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual([
             DEFAULT_SHIFT_TYPE_COLORS[0],
+            DEFAULT_SHIFT_TYPE_COLORS[1],
+            DEFAULT_SHIFT_TYPE_COLORS[2],
             DEFAULT_SHIFT_TYPE_COLORS[3],
         ]);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
@@ -817,6 +839,10 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
         const file = await createScheduleTemplateFile([
             ['Nurse A', 'A Team', 'D', 'E', 'N'],
             ['Nurse B', 'A Team', 'E', 'N', 'O'],
@@ -844,7 +870,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         expect(mockPreviewOnboardingScheduleInput).toHaveBeenCalledTimes(1);
         expect(mockPreviewOnboardingScheduleInput.mock.calls[0]?.[0].nurseNameBlock).toBe('Nurse B');
-        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.currentStep).toBe(4);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
     });
 
@@ -970,11 +996,15 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
         act(() => {
             result.current.skipOrComplete();
         });
 
-        await waitFor(() => expect(result.current.draft.currentStep).toBe(3));
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(4));
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['간호사 1팀']);
         expect(result.current.draft.nurses).toEqual([]);
 
@@ -982,7 +1012,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
-        expect(result.current.draft.currentStep).toBe(4);
+        expect(result.current.draft.currentStep).toBe(5);
         expect(result.current.canComplete).toBe(false);
     });
 

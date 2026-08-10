@@ -47,6 +47,7 @@ import {
     normalizeOnboardingShiftCode,
     prepareManualEntryDraft,
     reorderShiftTypes,
+    resolveOnboardingRotationSystem,
     type TOnboardingDraftLabels,
     type TOnboardingNurseDraft,
     type TOnboardingConstraintDraft,
@@ -54,6 +55,7 @@ import {
     type TOnboardingWardDraft,
     updateConstraintCandidateDraft,
     updateNurseDraft,
+    updateRotationModeDraft,
     updateShiftTypeDraft,
     updateTeamDivisionNameDraft,
     updateTeamNameDraft,
@@ -63,7 +65,8 @@ import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
 import type {TSortMode} from './types';
 
-const MAX_STEP = 4;
+const MAX_STEP = 5;
+const ONBOARDING_DRAFT_FLOW_VERSION = 2;
 const ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS = 600;
 const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
 const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
@@ -118,7 +121,7 @@ const shouldResetStepFromHistoryState = () => {
     return isRecord(routerState) && routerState.resetOnboardingWardCreateStep === true;
 };
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
-    value === 1 || value === 2 || value === 3 || value === 4;
+    value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name';
 const normalizeRestoredDivisionNum = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1);
 const getRestoredDivisionFallbackName = (divisionNum: number) => `그룹${divisionNum}`;
@@ -253,12 +256,21 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDr
     uploadedFileName: draft.uploadedFileName,
     wardName: draft.wardName,
     hospitalName: draft.hospitalName,
-    shiftTypes: draft.shiftTypes,
+    rotationMode: draft.rotationMode ?? 'THREE',
+    shiftTypes: draft.shiftTypes.map((shiftType) => ({
+        ...shiftType,
+        rotationSystem: resolveOnboardingRotationSystem(shiftType),
+        paidMinutes: resolveOnboardingRotationSystem(shiftType) === 'NONE' ? null : (shiftType.paidMinutes ?? null),
+    })),
     teams: normalizeRestoredTeams(draft.teams, normalizeRestoredNurses(draft.nurses)),
     nurses: normalizeRestoredNurses(draft.nurses),
     scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
     constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
 });
+const migrateLegacyDraftStep = (step: TOnboardingWardDraft['currentStep'], flowVersion: unknown) =>
+    flowVersion === ONBOARDING_DRAFT_FLOW_VERSION || step === 1
+        ? step
+        : (Math.min(MAX_STEP, step + 1) as TOnboardingWardDraft['currentStep']);
 const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
@@ -279,7 +291,10 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     }
 
     const draftWardId = typeof payload.draftWardId === 'number' ? payload.draftWardId : null;
-    const restoredDraft = draft as TOnboardingWardDraft;
+    const restoredDraft = {
+        ...(draft as TOnboardingWardDraft),
+        currentStep: migrateLegacyDraftStep(draft.currentStep, payload.flowVersion),
+    };
 
     return {
         draft: normalizePersistedDraft(restoredDraft),
@@ -294,6 +309,7 @@ const buildServerOnboardingWardDraftPayload = (
     selectedTeamId: string,
     sortMode: TSortMode,
 ): Record<string, unknown> => ({
+    flowVersion: ONBOARDING_DRAFT_FLOW_VERSION,
     draft: normalizePersistedDraft(draft),
     draftWardId,
     selectedTeamId,
@@ -343,7 +359,14 @@ const toParsedShiftType = (shiftType: TOnboardingWardDraft['shiftTypes'][number]
     isDefault: shiftType.isDefault,
     isOff: shiftType.isOff,
     classification: shiftType.classification,
+    rotationSystem: shiftType.rotationSystem,
+    paidMinutes: shiftType.paidMinutes,
     source: shiftType.source,
+    protectedByPreviousSchedule: shiftType.protectedByPreviousSchedule,
+    autoSeeded: shiftType.autoSeeded,
+    mappingStatus: shiftType.mappingStatus,
+    mappingRecommendation: shiftType.mappingRecommendation,
+    shortNameAliases: shiftType.shortNameAliases,
 });
 const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewResponse): TOnboardingParsedShiftType[] =>
     response.wardShiftTypes.map((shiftType) => {
@@ -358,6 +381,9 @@ const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewRe
             isDefault: shiftType.isDefault,
             isOff: shiftType.isOff,
             classification: shiftType.classification ?? undefined,
+            rotationSystem: shiftType.rotationSystem,
+            paidMinutes: shiftType.paidMinutes,
+            source: 'schedule-input',
         };
     });
 const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
@@ -446,7 +472,7 @@ const mergeSchedulePreviewShiftTypes = (
         .map((shortName) => {
             const draftShiftType = draftByShortName.get(shortName);
             const previewShiftType = previewByShortName.get(shortName);
-            const shouldProtect = currentObservedShortNames.has(shortName);
+            const shouldProtect = currentObservedShortNames.has(shortName) || observedPreviewShortNames.has(shortName);
 
             if (!previewShiftType) {
                 if (draftShiftType?.source === 'schedule-input' && !shouldProtect) {
@@ -460,7 +486,10 @@ const mergeSchedulePreviewShiftTypes = (
                 return draftShiftType;
             }
 
-            return setParsedPreviousScheduleProtection({...previewShiftType, source: draftShiftType?.source}, shouldProtect);
+            return setParsedPreviousScheduleProtection(
+                {...previewShiftType, source: draftShiftType?.source ?? previewShiftType.source},
+                shouldProtect,
+            );
         })
         .filter((shiftType): shiftType is TOnboardingParsedShiftType => Boolean(shiftType));
 };
@@ -726,6 +755,8 @@ function useOnboardingWardWizard() {
                 evening: t('feature.registerWard.defaultShiftType.evening'),
                 night: t('feature.registerWard.defaultShiftType.night'),
                 off: t('feature.registerWard.defaultShiftType.off'),
+                twoDay: t('page.onboardingWardCreate.shiftType.twoDayLabel'),
+                twoNight: t('page.onboardingWardCreate.shiftType.twoNightLabel'),
             },
         }),
         [t],
@@ -1091,6 +1122,23 @@ function useOnboardingWardWizard() {
 
             if (draft.currentStep === 2) {
                 markDraftTouched();
+
+                const nextDraft = goNextStepDraft(draft);
+                const saveResult = await saveDraftSnapshot({
+                    showErrorToast: true,
+                    draftOverride: nextDraft,
+                    suppressNextAutosave: true,
+                });
+
+                if (saveResult.success) {
+                    setDraft(nextDraft);
+                }
+
+                return;
+            }
+
+            if (draft.currentStep === 3) {
+                markDraftTouched();
                 await saveScheduleInputAndGoNext();
 
                 return;
@@ -1098,7 +1146,7 @@ function useOnboardingWardWizard() {
 
             markDraftTouched();
 
-            if (draft.currentStep === 3) {
+            if (draft.currentStep === 4) {
                 const nextDraft = goNextStepDraft(draft);
                 const saveResult = await saveDraftSnapshot({
                     showErrorToast: true,
@@ -1121,16 +1169,16 @@ function useOnboardingWardWizard() {
     const goPreviousStep = () => {
         markDraftTouched();
 
-        const shiftTypeStepEntryDraft = draft.currentStep === 3 ? shiftTypeStepEntryDraftRef.current : null;
+        const shiftTypeStepEntryDraft = draft.currentStep === 4 ? shiftTypeStepEntryDraftRef.current : null;
 
-        if (draft.currentStep === 3 || draft.currentStep === 2) {
+        if (draft.currentStep === 4 || draft.currentStep === 3) {
             shiftTypeStepEntryDraftRef.current = null;
         }
 
         setDraft((prev) => {
             const previousDraft = goPreviousStepDraft(prev);
 
-            if (prev.currentStep === 3 && shiftTypeStepEntryDraft) {
+            if (prev.currentStep === 4 && shiftTypeStepEntryDraft) {
                 return {
                     ...shiftTypeStepEntryDraft,
                     currentStep: previousDraft.currentStep,
@@ -1143,6 +1191,10 @@ function useOnboardingWardWizard() {
     const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName'>>) => {
         markDraftTouched();
         setDraft((prev) => ({...prev, ...updater}));
+    };
+    const updateRotationMode = (rotationMode: TOnboardingWardDraft['rotationMode']) => {
+        markDraftTouched();
+        setDraft((prev) => updateRotationModeDraft(prev, rotationMode, onboardingDraftLabels));
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
         markDraftTouched();
@@ -1582,7 +1634,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        if (draft.currentStep === 2 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
+        if (draft.currentStep === 3 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
             if (!beginStepTransition()) {
                 return;
             }
@@ -1613,6 +1665,7 @@ function useOnboardingWardWizard() {
         goNextStep,
         goPreviousStep,
         updateWardIdentity,
+        updateRotationMode,
         skipOrComplete,
         addShiftType,
         updateShiftType,

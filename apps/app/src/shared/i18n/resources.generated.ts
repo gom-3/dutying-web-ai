@@ -1152,7 +1152,8 @@ export const ko = {
                     "personal": "사람별 제한",
                     "recommended": "권장",
                     "staffing": "인원수",
-                    "workRest": "연속 근무/휴식"
+                    "workRest": "연속 근무/휴식",
+                    "twoShift": "2교대"
                 },
                 "count": "{{count}}개",
                 "dragHandleAria": "드래그하여 위치를 변경",
@@ -1346,6 +1347,17 @@ export const ko = {
                     "unmarkConfirm": "중요 표시 빼기",
                     "unmarkDescription": "그래도 중요 표시를 해제할까요?",
                     "unmarkTitle": "중요 표시를 뺄까요?"
+                },
+                "twoShift": {
+                    "title": "2교대 자동 배치 사용",
+                    "description": "이 근무팀에서만 2교대 주간·야간을 한 세트로 자동 배치해요.",
+                    "switchAria": "2교대 자동 배치 사용",
+                    "maxLines": "하루 최대 2교대 세트 수",
+                    "minRestHours": "근무 사이 최소 휴식시간",
+                    "monthlyWorkHours": "월 근로시간 상한",
+                    "lineUnit": "세트",
+                    "hourUnit": "시간",
+                    "teamOnlyHint": "이 설정은 현재 선택한 근무팀에만 적용되며 다른 팀에는 영향을 주지 않아요."
                 }
             },
             "fixedShifts": {
@@ -1732,15 +1744,15 @@ export const ko = {
             "shiftTeamList": {
                 "addTeam": "팀 추가하기",
                 "card": {
-                    "addDividerAria": "{{nurseName}} 아래에 그룹 추가",
+                    "addDividerAria": "{{nurseName}} 아래에 구분선 추가",
                     "addNurse": "간호사 만들기",
                     "addNurseTooltip": "초대하지 않아도 가상의 간호사를 만들어 관리할 수 있어요. 언제든 초대해서 연동할 수 있어요.",
                     "deleteTeam": "팀 삭제하기",
-                    "divider": "그룹",
+                    "divider": "구분선",
                     "editTeamNameAria": "{{teamName}} 팀 이름 수정",
                     "empty": "간호사를 추가하면 여기에 보여요.",
                     "openMenuAria": "{{teamName}} 팀 메뉴 열기",
-                    "removeDividerAria": "{{nurseName}} 아래 그룹 제거",
+                    "removeDividerAria": "{{nurseName}} 아래 구분선 제거",
                     "selectNurseAria": "{{nurseName}} 간호사 선택",
                     "viewShift": "근무표 보러가기",
                     "virtualNurseTooltip": "아직 앱과 연동하지 않은 가상의 간호사예요."
@@ -1892,11 +1904,13 @@ export const ko = {
             "blocked": {
                 "default": "입력 정보를 확인해 주세요.",
                 "duplicateShiftType": "약자의 첫 글자가 중복돼요.",
+                "duplicateRequiredShiftTypes": "중복된 필수 근무유형은 하나만 남겨 주세요: {{shiftTypes}}",
                 "emptyTeam": "팀을 추가하면 병동을 만들 수 있어요.",
                 "emptyTeamNurses": "간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.",
                 "invalidNurseName": "간호사 이름을 확인해 주세요.",
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
+                "unmappedShiftType": "근무표 코드 ‘{{shiftCode}}’의 근무 의미를 선택해 주세요.",
                 "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
                 "missingHospitalName": "병원명을 입력해 주세요.",
                 "missingRequiredShiftTypes": "다음 유형을 추가해 주세요: {{shiftTypes}}",
@@ -2016,6 +2030,10 @@ export const ko = {
                     "description": "나중에도 수정할 수 있어요",
                     "highlight": "근무 유형",
                     "title": "병동의 근무 유형을 설정해 주세요"
+                },
+                "rotation": {
+                    "title": "어떤 교대제를 운영하나요?",
+                    "description": "선택한 교대제에 맞는 근무유형과 자동 배치 제약조건을 준비해요."
                 }
             },
             "shiftType": {
@@ -2026,16 +2044,32 @@ export const ko = {
                 "colorSelectAria": "{{shiftName}} 색상 선택",
                 "classification": {
                     "day": "주간 근무 (Day)",
+                    "unassigned": "선택 전",
                     "evening": "저녁 근무 (Evening)",
                     "night": "야간 근무 (Night)",
                     "off": "휴무 (Off)",
                     "otherLeave": "기타 휴무",
                     "otherWork": "기타 근무"
                 },
+                "mappingRequired": "근무 유형을 선택해 주세요.",
+                "mappingRecommendation": "추천: {{shiftType}}",
                 "classificationAria": "{{shiftName}} 근무 의미 선택",
                 "deleteAria": "{{shiftName}} 삭제",
                 "leave": "휴무",
                 "name": "근무명",
+                "requirements": {
+                    "description": "선택한 교대제에 꼭 필요한 근무유형이에요.",
+                    "duplicate": "{{scope}}에 {{shiftType}}가 {{count}}개예요. 하나만 남겨 주세요.",
+                    "missing": "{{scope}}에 {{shiftType}}가 필요해요.",
+                    "scopeDefault": "근무유형",
+                    "scopeThree": "3교대 근무유형",
+                    "scopeTwo": "2교대 근무유형",
+                    "satisfied": "{{scope}}에 {{shiftType}}가 있어요.",
+                    "title": "필수 근무유형",
+                    "titleMixed": "2·3교대 필수 근무유형",
+                    "titleThree": "3교대 필수 근무유형",
+                    "titleTwo": "2교대 필수 근무유형"
+                },
                 "shortName": "약자",
                 "type": "유형",
                 "validation": {
@@ -2050,7 +2084,14 @@ export const ko = {
                     "timeRequired": "시간을 입력해 주세요."
                 },
                 "work": "근무",
-                "workTime": "근무 시간"
+                "workTime": "근무 시간",
+                "rotation": "교대제",
+                "rotationAria": "{{shiftName}} 교대제 선택",
+                "rotationThree": "3교대",
+                "rotationTwo": "2교대",
+                "rotationNone": "해당 없음",
+                "twoDayLabel": "2교대 주간",
+                "twoNightLabel": "2교대 야간"
             },
             "teamTabs": {
                 "addTeam": "팀 추가하기"
@@ -2083,6 +2124,14 @@ export const ko = {
                 "targetMonth": "근무표 기준 월",
                 "unsupportedFile": "엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.",
                 "uploadFile": "파일 업로드"
+            },
+            "rotation": {
+                "threeTitle": "3교대만 운영해요",
+                "threeDescription": "D · E · N 근무를 사용해요.",
+                "twoTitle": "2교대만 운영해요",
+                "twoDescription": "주간 · 야간 근무를 사용해요.",
+                "mixedTitle": "3교대와 2교대를 함께 운영해요",
+                "mixedDescription": "D · E · N을 기본으로 두고 2교대 주간 · 야간도 함께 사용해요."
             }
         },
         "profile": {
@@ -2510,7 +2559,8 @@ export const ko = {
                     "name": "근무명",
                     "shortName": "약자",
                     "type": "유형",
-                    "workTime": "근무 시간"
+                    "workTime": "근무 시간",
+                    "rotation": "교대제"
                 },
                 "deleteAria": "{{name}} 삭제",
                 "editAria": "{{name}} 근무 유형 수정",
@@ -2525,7 +2575,7 @@ export const ko = {
                     "notFound": "이미 삭제했거나 최신 목록에서 찾을 수 없는 근무 유형이에요.",
                     "saveSuccess": "근무 설정을 저장했어요.",
                     "updateFailed": "근무 유형을 수정하지 못했어요.",
-                    "usedTypeLocked": "근무표에 사용된 근무유형은 약자·유형을 변경할 수 없어요. 이름·시간·색상은 변경할 수 있어요.",
+                    "usedTypeLocked": "근무표에 사용된 근무유형은 유형을 변경할 수 없으며 기타근무는 약자도 변경할 수 없어요.",
                     "usedTypeDeleteLocked": "근무표에 사용된 근무유형은 삭제하거나 비활성화할 수 없어요."
                 },
                 "validation": {
@@ -2537,7 +2587,27 @@ export const ko = {
                     "shortNameRequired": "약자를 입력해 주세요.",
                     "timeFormat": "시간은 00:00 형식으로 입력해 주세요.",
                     "timeRequired": "시간을 입력해 주세요.",
-                    "timeSame": "시작/종료 시간을 다르게 입력해 주세요."
+                    "timeSame": "시작/종료 시간을 다르게 입력해 주세요.",
+                    "rotationRequired": "2교대와 3교대 중 하나 이상 활성화해 주세요."
+                },
+                "rotation": {
+                    "modeTitle": "우리 병동의 교대제",
+                    "modeDescription": "운영 방식을 선택한 뒤 필요한 근무유형을 직접 구성해 주세요. 필수 근무는 저장할 때 확인해요.",
+                    "threeTitle": "3교대만 운영해요",
+                    "threeDescription": "데이 · 이브닝 · 나이트 근무를 사용해요.",
+                    "twoTitle": "2교대만 운영해요",
+                    "twoDescription": "2교대 주간(07~19) · 야간(19~07)을 사용해요.",
+                    "mixedTitle": "3교대이지만 필요시 2교대도 해요",
+                    "mixedDescription": "데이 · 이브닝 · 나이트를 기본으로 두고 2교대 주간 · 야간도 함께 사용해요.",
+                    "threeBadge": "3교대",
+                    "twoBadge": "2교대",
+                    "noneBadge": "해당 없음",
+                    "threeDay": "데이",
+                    "threeEvening": "이브닝",
+                    "threeNight": "나이트",
+                    "twoDay": "2교대 주간",
+                    "twoNight": "2교대 야간",
+                    "twoItem": "2교대 {{classification}}"
                 }
             },
             "tabs": {
@@ -3861,7 +3931,8 @@ export const en: TLocale = {
                     "personal": "Person limits",
                     "recommended": "Recommended",
                     "staffing": "Staffing",
-                    "workRest": "Work/rest"
+                    "workRest": "Work/rest",
+                    "twoShift": "Two-shift"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Drag to reorder",
@@ -4055,6 +4126,17 @@ export const en: TLocale = {
                     "unmarkConfirm": "Remove mark",
                     "unmarkDescription": "Do you still want to remove the Important mark?",
                     "unmarkTitle": "Remove the Important mark?"
+                },
+                "twoShift": {
+                    "title": "Use automatic two-shift assignment",
+                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
+                    "switchAria": "Use automatic two-shift assignment",
+                    "maxLines": "Maximum two-shift sets per day",
+                    "minRestHours": "Minimum rest between shifts",
+                    "monthlyWorkHours": "Monthly work-hour cap",
+                    "lineUnit": "sets",
+                    "hourUnit": "hours",
+                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
                 }
             },
             "fixedShifts": {
@@ -4601,11 +4683,13 @@ export const en: TLocale = {
             "blocked": {
                 "default": "Check the entered information.",
                 "duplicateShiftType": "Abbreviation first letters must be unique.",
+                "duplicateRequiredShiftTypes": "Keep only one of each duplicated required shift type: {{shiftTypes}}",
                 "emptyTeam": "Add a team before creating the ward.",
                 "emptyTeamNurses": "Some teams have no nurses. Add a nurse or delete the team.",
                 "invalidNurseName": "Check the nurse names.",
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
+                "unmappedShiftType": "Select a shift meaning for schedule code ‘{{shiftCode}}’.",
                 "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
                 "missingHospitalName": "Enter a hospital name.",
                 "missingRequiredShiftTypes": "Please add the following shift types: {{shiftTypes}}",
@@ -4725,6 +4809,10 @@ export const en: TLocale = {
                     "description": "You can edit these later",
                     "highlight": "shift types",
                     "title": "Set ward shift types"
+                },
+                "rotation": {
+                    "title": "Which rotation systems do you use?",
+                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
                 }
             },
             "shiftType": {
@@ -4735,16 +4823,32 @@ export const en: TLocale = {
                 "colorSelectAria": "Select color for {{shiftName}}",
                 "classification": {
                     "day": "Day shift",
+                    "unassigned": "Not selected",
                     "evening": "Evening shift",
                     "night": "Night shift",
                     "off": "Day off",
                     "otherLeave": "Other leave",
                     "otherWork": "Other work"
                 },
+                "mappingRequired": "Select a shift type.",
+                "mappingRecommendation": "Suggested: {{shiftType}}",
                 "classificationAria": "Select the meaning of {{shiftName}}",
                 "deleteAria": "Delete {{shiftName}}",
                 "leave": "Leave",
                 "name": "Shift name",
+                "requirements": {
+                    "description": "These shift types are required for the selected rotation.",
+                    "duplicate": "{{scope}} contain {{count}} {{shiftType}} entries. Keep one.",
+                    "missing": "{{scope}} need {{shiftType}}.",
+                    "scopeDefault": "Shift types",
+                    "scopeThree": "Three-shift types",
+                    "scopeTwo": "Two-shift types",
+                    "satisfied": "{{scope}} include {{shiftType}}.",
+                    "title": "Required shift types",
+                    "titleMixed": "Required two- and three-shift types",
+                    "titleThree": "Required three-shift types",
+                    "titleTwo": "Required two-shift types"
+                },
                 "shortName": "Abbr.",
                 "type": "Type",
                 "validation": {
@@ -4759,7 +4863,14 @@ export const en: TLocale = {
                     "timeRequired": "Enter the time."
                 },
                 "work": "Work",
-                "workTime": "Shift time"
+                "workTime": "Shift time",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
             },
             "teamTabs": {
                 "addTeam": "Add team"
@@ -4792,6 +4903,14 @@ export const en: TLocale = {
                 "targetMonth": "Schedule month",
                 "unsupportedFile": "Only Excel files (.xlsx, .xls) can be uploaded.",
                 "uploadFile": "Upload file"
+            },
+            "rotation": {
+                "threeTitle": "Three-shift only",
+                "threeDescription": "Use D · E · N shifts.",
+                "twoTitle": "Two-shift only",
+                "twoDescription": "Use day · night shifts.",
+                "mixedTitle": "Both three- and two-shift",
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
             }
         },
         "profile": {
@@ -5219,7 +5338,8 @@ export const en: TLocale = {
                     "name": "Name",
                     "shortName": "Abbr.",
                     "type": "Type",
-                    "workTime": "Work time"
+                    "workTime": "Work time",
+                    "rotation": "Rotation"
                 },
                 "deleteAria": "Delete {{name}}",
                 "editAria": "Edit shift type {{name}}",
@@ -5234,7 +5354,7 @@ export const en: TLocale = {
                     "notFound": "This shift type was already deleted or cannot be found in the latest list.",
                     "saveSuccess": "Saved duty settings.",
                     "updateFailed": "Could not update the shift type.",
-                    "usedTypeLocked": "A shift type used in a schedule cannot change its abbreviation or type. Its name and time and color can be changed.",
+                    "usedTypeLocked": "A shift type used in a schedule cannot change its classification, and an Other Work type cannot change its abbreviation.",
                     "usedTypeDeleteLocked": "A shift type used in a schedule cannot be deleted or deactivated."
                 },
                 "validation": {
@@ -5246,7 +5366,27 @@ export const en: TLocale = {
                     "shortNameRequired": "Enter an abbreviation.",
                     "timeFormat": "Use the 00:00 time format.",
                     "timeRequired": "Enter the time.",
-                    "timeSame": "Use different start and end times."
+                    "timeSame": "Use different start and end times.",
+                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                },
+                "rotation": {
+                    "modeTitle": "Ward rotation system",
+                    "modeDescription": "Choose an operation mode and configure its shift types. Required shifts are checked when you save.",
+                    "threeTitle": "Three-shift only",
+                    "threeDescription": "Use day · evening · night shifts.",
+                    "twoTitle": "Two-shift only",
+                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
+                    "mixedTitle": "Mostly three-shift with two-shift when needed",
+                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
+                    "threeBadge": "Three-shift",
+                    "twoBadge": "Two-shift",
+                    "noneBadge": "N/A",
+                    "threeDay": "Day",
+                    "threeEvening": "Evening",
+                    "threeNight": "Night",
+                    "twoDay": "Two-shift day",
+                    "twoNight": "Two-shift night",
+                    "twoItem": "Two-shift {{classification}}"
                 }
             },
             "tabs": {
@@ -6568,7 +6708,8 @@ export const ja: TLocale = {
                     "personal": "看護師別制限",
                     "recommended": "推奨",
                     "staffing": "人数",
-                    "workRest": "連続勤務/休息"
+                    "workRest": "連続勤務/休息",
+                    "twoShift": "Two-shift"
                 },
                 "count": "{{count}}件",
                 "dragHandleAria": "ドラッグして順序を変更",
@@ -6762,6 +6903,17 @@ export const ja: TLocale = {
                     "unmarkConfirm": "重要マークを外す",
                     "unmarkDescription": "それでも重要マークを外しますか？",
                     "unmarkTitle": "重要マークを外しますか？"
+                },
+                "twoShift": {
+                    "title": "Use automatic two-shift assignment",
+                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
+                    "switchAria": "Use automatic two-shift assignment",
+                    "maxLines": "Maximum two-shift sets per day",
+                    "minRestHours": "Minimum rest between shifts",
+                    "monthlyWorkHours": "Monthly work-hour cap",
+                    "lineUnit": "sets",
+                    "hourUnit": "hours",
+                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
                 }
             },
             "fixedShifts": {
@@ -7308,11 +7460,13 @@ export const ja: TLocale = {
             "blocked": {
                 "default": "入力情報を確認してください。",
                 "duplicateShiftType": "略称の最初の文字が重複しています。",
+                "duplicateRequiredShiftTypes": "重複している必須勤務区分は1つだけ残してください：{{shiftTypes}}",
                 "emptyTeam": "チームを追加すると病棟を作成できます。",
                 "emptyTeamNurses": "看護師がいないチームがあります。看護師を追加するかチームを削除してください。",
                 "invalidNurseName": "看護師名を確認してください。",
                 "invalidShiftTime": "勤務時間を確認してください。",
                 "invalidShiftType": "勤務区分情報を確認してください。",
+                "unmappedShiftType": "勤務表コード「{{shiftCode}}」の勤務区分を選択してください。",
                 "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
                 "missingHospitalName": "病院名を入力してください。",
                 "missingRequiredShiftTypes": "次の勤務区分を追加してください：{{shiftTypes}}",
@@ -7432,6 +7586,10 @@ export const ja: TLocale = {
                     "description": "後からでも編集できます",
                     "highlight": "勤務区分",
                     "title": "病棟の勤務区分を設定してください"
+                },
+                "rotation": {
+                    "title": "Which rotation systems do you use?",
+                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
                 }
             },
             "shiftType": {
@@ -7442,16 +7600,32 @@ export const ja: TLocale = {
                 "colorSelectAria": "{{shiftName}}の色を選択",
                 "classification": {
                     "day": "日勤",
+                    "unassigned": "未選択",
                     "evening": "準夜勤",
                     "night": "夜勤",
                     "off": "休み",
                     "otherLeave": "その他の休暇",
                     "otherWork": "その他の勤務"
                 },
+                "mappingRequired": "勤務タイプを選択してください。",
+                "mappingRecommendation": "候補: {{shiftType}}",
                 "classificationAria": "{{shiftName}}の勤務の意味を選択",
                 "deleteAria": "{{shiftName}}の削除",
                 "leave": "休み",
                 "name": "勤務名",
+                "requirements": {
+                    "description": "選んだ交代制に必要な勤務区分です。",
+                    "duplicate": "{{scope}}には{{shiftType}}が{{count}}件あります。1件だけ残してください。",
+                    "missing": "{{scope}}には{{shiftType}}が必要です。",
+                    "scopeDefault": "勤務区分",
+                    "scopeThree": "3交代の勤務区分",
+                    "scopeTwo": "2交代の勤務区分",
+                    "satisfied": "{{scope}}には{{shiftType}}があります。",
+                    "title": "必須勤務区分",
+                    "titleMixed": "2・3交代の必須勤務区分",
+                    "titleThree": "3交代の必須勤務区分",
+                    "titleTwo": "2交代の必須勤務区分"
+                },
                 "shortName": "略称",
                 "type": "区分",
                 "validation": {
@@ -7466,7 +7640,14 @@ export const ja: TLocale = {
                     "timeRequired": "時間を入力してください。"
                 },
                 "work": "勤務",
-                "workTime": "勤務時間"
+                "workTime": "勤務時間",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
             },
             "teamTabs": {
                 "addTeam": "チームを追加"
@@ -7499,6 +7680,14 @@ export const ja: TLocale = {
                 "targetMonth": "勤務表の基準月",
                 "unsupportedFile": "Excelファイル（.xlsx, .xls）のみアップロードできます。",
                 "uploadFile": "ファイルをアップロード"
+            },
+            "rotation": {
+                "threeTitle": "Three-shift only",
+                "threeDescription": "Use D · E · N shifts.",
+                "twoTitle": "Two-shift only",
+                "twoDescription": "Use day · night shifts.",
+                "mixedTitle": "Both three- and two-shift",
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
             }
         },
         "profile": {
@@ -7926,7 +8115,8 @@ export const ja: TLocale = {
                     "name": "勤務名",
                     "shortName": "略称",
                     "type": "区分",
-                    "workTime": "勤務時間"
+                    "workTime": "勤務時間",
+                    "rotation": "Rotation"
                 },
                 "deleteAria": "{{name}}を削除",
                 "editAria": "{{name}}の勤務区分を編集",
@@ -7941,7 +8131,7 @@ export const ja: TLocale = {
                     "notFound": "すでに削除されたか、最新リストで見つからない勤務区分です。",
                     "saveSuccess": "勤務設定を保存しました。",
                     "updateFailed": "勤務区分を更新できませんでした。",
-                    "usedTypeLocked": "勤務表で使用された勤務区分は略称・タイプを変更できません。名前・時間・色のみ変更できます。",
+                    "usedTypeLocked": "勤務表で使用された勤務区分はタイプを変更できず、「その他の勤務」は略称も変更できません。",
                     "usedTypeDeleteLocked": "勤務表で使用された勤務区分は削除または無効化できません。"
                 },
                 "validation": {
@@ -7953,7 +8143,27 @@ export const ja: TLocale = {
                     "shortNameRequired": "略称を入力してください。",
                     "timeFormat": "時間は00:00形式で入力してください。",
                     "timeRequired": "時間を入力してください。",
-                    "timeSame": "開始時間と終了時間は別にしてください。"
+                    "timeSame": "開始時間と終了時間は別にしてください。",
+                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                },
+                "rotation": {
+                    "modeTitle": "Ward rotation system",
+                    "modeDescription": "運用方式を選び必要な勤務区分を設定してください。必須勤務は保存時に確認します。",
+                    "threeTitle": "Three-shift only",
+                    "threeDescription": "Use day · evening · night shifts.",
+                    "twoTitle": "Two-shift only",
+                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
+                    "mixedTitle": "Mostly three-shift with two-shift when needed",
+                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
+                    "threeBadge": "Three-shift",
+                    "twoBadge": "Two-shift",
+                    "noneBadge": "N/A",
+                    "threeDay": "Day",
+                    "threeEvening": "Evening",
+                    "threeNight": "Night",
+                    "twoDay": "Two-shift day",
+                    "twoNight": "Two-shift night",
+                    "twoItem": "Two-shift {{classification}}"
                 }
             },
             "tabs": {
@@ -9275,7 +9485,8 @@ export const zh: TLocale = {
                     "personal": "每人限制",
                     "recommended": "受到推崇的",
                     "staffing": "人数",
-                    "workRest": "连续工作/休息"
+                    "workRest": "连续工作/休息",
+                    "twoShift": "Two-shift"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "拖动以改变位置",
@@ -9469,6 +9680,17 @@ export const zh: TLocale = {
                     "unmarkConfirm": "取出要点",
                     "unmarkDescription": "也要取消重要标记吗?",
                     "unmarkTitle": "要重要的标记去掉吗？"
+                },
+                "twoShift": {
+                    "title": "Use automatic two-shift assignment",
+                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
+                    "switchAria": "Use automatic two-shift assignment",
+                    "maxLines": "Maximum two-shift sets per day",
+                    "minRestHours": "Minimum rest between shifts",
+                    "monthlyWorkHours": "Monthly work-hour cap",
+                    "lineUnit": "sets",
+                    "hourUnit": "hours",
+                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
                 }
             },
             "fixedShifts": {
@@ -10015,11 +10237,13 @@ export const zh: TLocale = {
             "blocked": {
                 "default": "请检查您输入的信息。",
                 "duplicateShiftType": "缩写的第一个字母是重复的。",
+                "duplicateRequiredShiftTypes": "重复的必需班次类型请只保留一个：{{shiftTypes}}",
                 "emptyTeam": "您可以通过添加团队来创建守卫。",
                 "emptyTeamNurses": "有些团队没有护士。请添加护士或删除团队。",
                 "invalidNurseName": "请检查护士的姓名。",
                 "invalidShiftTime": "请检查班次时间。",
                 "invalidShiftType": "请检查您的班次类型信息。",
+                "unmappedShiftType": "请选择排班代码“{{shiftCode}}”的班次含义。",
                 "invalidWardIdentity": "请输入仅包含韩语、英语、数字和空格的 1 至 20 个字符。",
                 "missingHospitalName": "请输入医院名称。",
                 "missingRequiredShiftTypes": "请添加以下班次类型：{{shiftTypes}}",
@@ -10139,6 +10363,10 @@ export const zh: TLocale = {
                     "description": "您也可以稍后编辑",
                     "highlight": "班次类型",
                     "title": "请设置病区的班次类型"
+                },
+                "rotation": {
+                    "title": "Which rotation systems do you use?",
+                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
                 }
             },
             "shiftType": {
@@ -10149,16 +10377,32 @@ export const zh: TLocale = {
                 "colorSelectAria": "{{shiftName}} 颜色选择",
                 "classification": {
                     "day": "白班",
+                    "unassigned": "未选择",
                     "evening": "小夜班",
                     "night": "夜班",
                     "off": "休息",
                     "otherLeave": "其他假期",
                     "otherWork": "其他工作"
                 },
+                "mappingRequired": "请选择班次类型。",
+                "mappingRecommendation": "建议：{{shiftType}}",
                 "classificationAria": "选择{{shiftName}}的班次含义",
                 "deleteAria": "删除{{shiftName}}",
                 "leave": "关闭",
                 "name": "作品名称",
+                "requirements": {
+                    "description": "这些是所选轮班制度必需的班次类型。",
+                    "duplicate": "{{scope}}中有{{count}}个{{shiftType}}。请只保留一个。",
+                    "missing": "{{scope}}中需要{{shiftType}}。",
+                    "scopeDefault": "班次类型",
+                    "scopeThree": "三班制班次类型",
+                    "scopeTwo": "两班制班次类型",
+                    "satisfied": "{{scope}}中已有{{shiftType}}。",
+                    "title": "必需班次类型",
+                    "titleMixed": "两班制与三班制必需班次类型",
+                    "titleThree": "三班制必需班次类型",
+                    "titleTwo": "两班制必需班次类型"
+                },
                 "shortName": "缩写",
                 "type": "类别",
                 "validation": {
@@ -10173,7 +10417,14 @@ export const zh: TLocale = {
                     "timeRequired": "请输入时间。"
                 },
                 "work": "在职的",
-                "workTime": "时间"
+                "workTime": "时间",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
             },
             "teamTabs": {
                 "addTeam": "添加团队"
@@ -10206,6 +10457,14 @@ export const zh: TLocale = {
                 "targetMonth": "月份根据排班表",
                 "unsupportedFile": "您只能上传 Excel 文件（.xlsx、.xls）。",
                 "uploadFile": "文件上传"
+            },
+            "rotation": {
+                "threeTitle": "Three-shift only",
+                "threeDescription": "Use D · E · N shifts.",
+                "twoTitle": "Two-shift only",
+                "twoDescription": "Use day · night shifts.",
+                "mixedTitle": "Both three- and two-shift",
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
             }
         },
         "profile": {
@@ -10633,7 +10892,8 @@ export const zh: TLocale = {
                     "name": "作品名称",
                     "shortName": "缩写",
                     "type": "类别",
-                    "workTime": "时间"
+                    "workTime": "时间",
+                    "rotation": "Rotation"
                 },
                 "deleteAria": "删除{{name}}",
                 "editAria": "{{name}} 编辑班次类型",
@@ -10648,7 +10908,7 @@ export const zh: TLocale = {
                     "notFound": "这是已删除或在最新列表中找不到的班次类型。",
                     "saveSuccess": "您的工作设置已保存。",
                     "updateFailed": "无法编辑班次类型。",
-                    "usedTypeLocked": "在班次表中使用过的班次类型无法更改缩写或类型。只能更改名称、时间和颜色。",
+                    "usedTypeLocked": "在班次表中使用过的班次类型无法更改分类“其他工作”也无法更改缩写。",
                     "usedTypeDeleteLocked": "在班次表中使用过的班次类型无法删除或停用。"
                 },
                 "validation": {
@@ -10660,7 +10920,27 @@ export const zh: TLocale = {
                     "shortNameRequired": "请输入缩写。",
                     "timeFormat": "请以 00:00 格式输入时间。",
                     "timeRequired": "请输入时间。",
-                    "timeSame": "请输入不同的开始/结束时间。"
+                    "timeSame": "请输入不同的开始/结束时间。",
+                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                },
+                "rotation": {
+                    "modeTitle": "Ward rotation system",
+                    "modeDescription": "请选择运行模式并配置所需班次类型。保存时会检查必需班次。",
+                    "threeTitle": "Three-shift only",
+                    "threeDescription": "Use day · evening · night shifts.",
+                    "twoTitle": "Two-shift only",
+                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
+                    "mixedTitle": "Mostly three-shift with two-shift when needed",
+                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
+                    "threeBadge": "Three-shift",
+                    "twoBadge": "Two-shift",
+                    "noneBadge": "N/A",
+                    "threeDay": "Day",
+                    "threeEvening": "Evening",
+                    "threeNight": "Night",
+                    "twoDay": "Two-shift day",
+                    "twoNight": "Two-shift night",
+                    "twoItem": "Two-shift {{classification}}"
                 }
             },
             "tabs": {
@@ -11982,7 +12262,8 @@ export const th: TLocale = {
                     "personal": "ข้อจำกัดของบุคคล",
                     "recommended": "ที่แนะนำ",
                     "staffing": "การจัดหาพนักงาน",
-                    "workRest": "ทำงาน/พักผ่อน"
+                    "workRest": "ทำงาน/พักผ่อน",
+                    "twoShift": "Two-shift"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
@@ -12176,6 +12457,17 @@ export const th: TLocale = {
                     "unmarkConfirm": "ลบเครื่องหมาย",
                     "unmarkDescription": "คุณยังต้องการลบเครื่องหมายสำคัญออกหรือไม่",
                     "unmarkTitle": "ลบเครื่องหมายสำคัญออกใช่ไหม"
+                },
+                "twoShift": {
+                    "title": "Use automatic two-shift assignment",
+                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
+                    "switchAria": "Use automatic two-shift assignment",
+                    "maxLines": "Maximum two-shift sets per day",
+                    "minRestHours": "Minimum rest between shifts",
+                    "monthlyWorkHours": "Monthly work-hour cap",
+                    "lineUnit": "sets",
+                    "hourUnit": "hours",
+                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
                 }
             },
             "fixedShifts": {
@@ -12722,11 +13014,13 @@ export const th: TLocale = {
             "blocked": {
                 "default": "ตรวจสอบข้อมูลที่ป้อน",
                 "duplicateShiftType": "ตัวอักษรย่อตัวแรกจะต้องไม่ซ้ำกัน",
+                "duplicateRequiredShiftTypes": "โปรดเก็บประเภทกะที่จำเป็นซึ่งซ้ำกันไว้เพียงหนึ่งรายการ: {{shiftTypes}}",
                 "emptyTeam": "เพิ่มทีมก่อนสร้างวอร์ด",
                 "emptyTeamNurses": "บางทีมไม่มีพยาบาล เพิ่มพยาบาลหรือลบทีม",
                 "invalidNurseName": "ตรวจสอบชื่อพยาบาล",
                 "invalidShiftTime": "ตรวจสอบเวลากะ",
                 "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
+                "unmappedShiftType": "เลือกความหมายของกะสำหรับรหัสตาราง ‘{{shiftCode}}’",
                 "invalidWardIdentity": "ใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น ตัวเลข และช่องว่างเท่านั้น โดยมีความยาวไม่เกิน 1-20 อักขระ",
                 "missingHospitalName": "ป้อนชื่อโรงพยาบาล",
                 "missingRequiredShiftTypes": "โปรดเพิ่มประเภทกะต่อไปนี้: {{shiftTypes}}",
@@ -12846,6 +13140,10 @@ export const th: TLocale = {
                     "description": "คุณสามารถแก้ไขได้ในภายหลัง",
                     "highlight": "ประเภทกะ",
                     "title": "ตั้งค่าประเภทกะวอร์ด"
+                },
+                "rotation": {
+                    "title": "Which rotation systems do you use?",
+                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
                 }
             },
             "shiftType": {
@@ -12856,16 +13154,32 @@ export const th: TLocale = {
                 "colorSelectAria": "เลือกสีสำหรับ {{shiftName}}",
                 "classification": {
                     "day": "กะกลางวัน",
+                    "unassigned": "ยังไม่ได้เลือก",
                     "evening": "กะเย็น",
                     "night": "กะกลางคืน",
                     "off": "วันหยุด",
                     "otherLeave": "การลาอื่น ๆ",
                     "otherWork": "งานอื่น ๆ"
                 },
+                "mappingRequired": "เลือกประเภทกะ",
+                "mappingRecommendation": "แนะนำ: {{shiftType}}",
                 "classificationAria": "เลือกความหมายของ {{shiftName}}",
                 "deleteAria": "ลบ {{shiftName}}",
                 "leave": "ออกจาก",
                 "name": "เปลี่ยนชื่อ",
+                "requirements": {
+                    "description": "ประเภทกะเหล่านี้จำเป็นสำหรับระบบเวรที่เลือก",
+                    "duplicate": "{{scope}}มี {{shiftType}} อยู่ {{count}} รายการ โปรดเหลือไว้เพียงรายการเดียว",
+                    "missing": "{{scope}}ต้องมี {{shiftType}}",
+                    "scopeDefault": "ประเภทกะ",
+                    "scopeThree": "ประเภทกะ 3 ผลัด",
+                    "scopeTwo": "ประเภทกะ 2 ผลัด",
+                    "satisfied": "{{scope}}มี {{shiftType}} แล้ว",
+                    "title": "ประเภทกะที่จำเป็น",
+                    "titleMixed": "ประเภทกะที่จำเป็นสำหรับ 2 และ 3 ผลัด",
+                    "titleThree": "ประเภทกะที่จำเป็นสำหรับ 3 ผลัด",
+                    "titleTwo": "ประเภทกะที่จำเป็นสำหรับ 2 ผลัด"
+                },
                 "shortName": "คำย่อ",
                 "type": "พิมพ์",
                 "validation": {
@@ -12880,7 +13194,14 @@ export const th: TLocale = {
                     "timeRequired": "ป้อนเวลา"
                 },
                 "work": "งาน",
-                "workTime": "เวลากะ"
+                "workTime": "เวลากะ",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
             },
             "teamTabs": {
                 "addTeam": "เพิ่มทีม"
@@ -12913,6 +13234,14 @@ export const th: TLocale = {
                 "targetMonth": "กำหนดการเดือน",
                 "unsupportedFile": "สามารถอัปโหลดได้เฉพาะไฟล์ Excel (.xlsx, .xls) เท่านั้น",
                 "uploadFile": "อัพโหลดไฟล์"
+            },
+            "rotation": {
+                "threeTitle": "Three-shift only",
+                "threeDescription": "Use D · E · N shifts.",
+                "twoTitle": "Two-shift only",
+                "twoDescription": "Use day · night shifts.",
+                "mixedTitle": "Both three- and two-shift",
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
             }
         },
         "profile": {
@@ -13340,7 +13669,8 @@ export const th: TLocale = {
                     "name": "ชื่อ",
                     "shortName": "คำย่อ",
                     "type": "พิมพ์",
-                    "workTime": "เวลาทำงาน"
+                    "workTime": "เวลาทำงาน",
+                    "rotation": "Rotation"
                 },
                 "deleteAria": "ลบ {{name}}",
                 "editAria": "แก้ไขประเภทกะ {{name}}",
@@ -13355,7 +13685,7 @@ export const th: TLocale = {
                     "notFound": "ประเภทกะนี้ถูกลบไปแล้วหรือไม่พบในรายการล่าสุด",
                     "saveSuccess": "การตั้งค่าหน้าที่ที่บันทึกไว้",
                     "updateFailed": "ไม่สามารถอัปเดตประเภทกะได้",
-                    "usedTypeLocked": "ประเภทกะที่ใช้ในตารางเวรแล้วจะเปลี่ยนคำย่อหรือประเภทไม่ได้ เปลี่ยนได้เฉพาะชื่อ เวลา และสีเท่านั้น",
+                    "usedTypeLocked": "ประเภทกะที่ใช้ในตารางเวรแล้วจะเปลี่ยนประเภทไม่ได้ และกะประเภทงานอื่นจะเปลี่ยนคำย่อไม่ได้ด้วย",
                     "usedTypeDeleteLocked": "ไม่สามารถลบหรือปิดใช้งานประเภทกะที่ใช้ในตารางเวรแล้วได้"
                 },
                 "validation": {
@@ -13367,7 +13697,27 @@ export const th: TLocale = {
                     "shortNameRequired": "ป้อนคำย่อ",
                     "timeFormat": "ใช้รูปแบบเวลา 00:00",
                     "timeRequired": "ป้อนเวลา",
-                    "timeSame": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน"
+                    "timeSame": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน",
+                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                },
+                "rotation": {
+                    "modeTitle": "Ward rotation system",
+                    "modeDescription": "เลือกโหมดการทำงานและกำหนดประเภทกะ ระบบจะตรวจสอบกะที่จำเป็นเมื่อบันทึก",
+                    "threeTitle": "Three-shift only",
+                    "threeDescription": "Use day · evening · night shifts.",
+                    "twoTitle": "Two-shift only",
+                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
+                    "mixedTitle": "Mostly three-shift with two-shift when needed",
+                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
+                    "threeBadge": "Three-shift",
+                    "twoBadge": "Two-shift",
+                    "noneBadge": "N/A",
+                    "threeDay": "Day",
+                    "threeEvening": "Evening",
+                    "threeNight": "Night",
+                    "twoDay": "Two-shift day",
+                    "twoNight": "Two-shift night",
+                    "twoItem": "Two-shift {{classification}}"
                 }
             },
             "tabs": {
@@ -14689,7 +15039,8 @@ export const vi: TLocale = {
                     "personal": "Giới hạn người",
                     "recommended": "Được đề xuất",
                     "staffing": "nhân sự",
-                    "workRest": "Làm việc/nghỉ ngơi"
+                    "workRest": "Làm việc/nghỉ ngơi",
+                    "twoShift": "Two-shift"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Kéo để sắp xếp lại",
@@ -14883,6 +15234,17 @@ export const vi: TLocale = {
                     "unmarkConfirm": "Xóa dấu",
                     "unmarkDescription": "Bạn vẫn muốn xóa dấu Quan trọng?",
                     "unmarkTitle": "Xóa dấu quan trọng?"
+                },
+                "twoShift": {
+                    "title": "Use automatic two-shift assignment",
+                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
+                    "switchAria": "Use automatic two-shift assignment",
+                    "maxLines": "Maximum two-shift sets per day",
+                    "minRestHours": "Minimum rest between shifts",
+                    "monthlyWorkHours": "Monthly work-hour cap",
+                    "lineUnit": "sets",
+                    "hourUnit": "hours",
+                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
                 }
             },
             "fixedShifts": {
@@ -15429,11 +15791,13 @@ export const vi: TLocale = {
             "blocked": {
                 "default": "Kiểm tra thông tin đã nhập.",
                 "duplicateShiftType": "Chữ viết nghỉ đầu tiên phải là duy nhất.",
+                "duplicateRequiredShiftTypes": "Chỉ giữ lại một loại cho mỗi ca bắt buộc bị trùng: {{shiftTypes}}",
                 "emptyTeam": "Thêm đội trước khi tạo khoa.",
                 "emptyTeamNurses": "Một số đội không có điều dưỡng. Thêm điều dưỡng hoặc xóa nhóm.",
                 "invalidNurseName": "Kiểm tra tên điều dưỡng.",
                 "invalidShiftTime": "Kiểm tra thời gian thay đổi.",
                 "invalidShiftType": "Kiểm tra thông tin loại ca.",
+                "unmappedShiftType": "Chọn ý nghĩa ca cho mã lịch ‘{{shiftCode}}’.",
                 "invalidWardIdentity": "Chỉ sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật, số và dấu cách, trong vòng 1-20 ký tự.",
                 "missingHospitalName": "Nhập tên bệnh viện.",
                 "missingRequiredShiftTypes": "Vui lòng thêm các loại ca sau: {{shiftTypes}}",
@@ -15553,6 +15917,10 @@ export const vi: TLocale = {
                     "description": "Bạn có thể chỉnh sửa những điều này sau",
                     "highlight": "các loại ca",
                     "title": "Đặt loại ca khoa"
+                },
+                "rotation": {
+                    "title": "Which rotation systems do you use?",
+                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
                 }
             },
             "shiftType": {
@@ -15563,16 +15931,32 @@ export const vi: TLocale = {
                 "colorSelectAria": "Chọn màu cho {{shiftName}}",
                 "classification": {
                     "day": "Ca ngày",
+                    "unassigned": "Chưa chọn",
                     "evening": "Ca chiều",
                     "night": "Ca đêm",
                     "off": "Ngày nghỉ",
                     "otherLeave": "Nghỉ phép khác",
                     "otherWork": "Công việc khác"
                 },
+                "mappingRequired": "Chọn loại ca.",
+                "mappingRecommendation": "Gợi ý: {{shiftType}}",
                 "classificationAria": "Chọn ý nghĩa của {{shiftName}}",
                 "deleteAria": "Xóa {{shiftName}}",
                 "leave": "Rời khỏi",
                 "name": "Tên ca",
+                "requirements": {
+                    "description": "Các loại ca này là bắt buộc cho chế độ xoay ca đã chọn.",
+                    "duplicate": "{{scope}} có {{count}} mục {{shiftType}}. Chỉ giữ lại một mục.",
+                    "missing": "{{scope}} cần có {{shiftType}}.",
+                    "scopeDefault": "Loại ca",
+                    "scopeThree": "Loại ca 3 kíp",
+                    "scopeTwo": "Loại ca 2 kíp",
+                    "satisfied": "{{scope}} đã có {{shiftType}}.",
+                    "title": "Loại ca bắt buộc",
+                    "titleMixed": "Loại ca bắt buộc cho 2 và 3 kíp",
+                    "titleThree": "Loại ca bắt buộc cho 3 kíp",
+                    "titleTwo": "Loại ca bắt buộc cho 2 kíp"
+                },
                 "shortName": "Viết nghỉ",
                 "type": "loại",
                 "validation": {
@@ -15587,7 +15971,14 @@ export const vi: TLocale = {
                     "timeRequired": "Nhập thời gian."
                 },
                 "work": "công việc",
-                "workTime": "thời gian thay đổi"
+                "workTime": "thời gian thay đổi",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
             },
             "teamTabs": {
                 "addTeam": "Thêm đội"
@@ -15620,6 +16011,14 @@ export const vi: TLocale = {
                 "targetMonth": "Lên lịch tháng",
                 "unsupportedFile": "Chỉ có thể tải lên các tệp Excel (.xlsx,.xls).",
                 "uploadFile": "Tải tập tin lên"
+            },
+            "rotation": {
+                "threeTitle": "Three-shift only",
+                "threeDescription": "Use D · E · N shifts.",
+                "twoTitle": "Two-shift only",
+                "twoDescription": "Use day · night shifts.",
+                "mixedTitle": "Both three- and two-shift",
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
             }
         },
         "profile": {
@@ -16047,7 +16446,8 @@ export const vi: TLocale = {
                     "name": "Tên",
                     "shortName": "Viết nghỉ",
                     "type": "loại",
-                    "workTime": "thời gian làm việc"
+                    "workTime": "thời gian làm việc",
+                    "rotation": "Rotation"
                 },
                 "deleteAria": "Xóa {{name}}",
                 "editAria": "Chỉnh sửa loại ca {{name}}",
@@ -16062,7 +16462,7 @@ export const vi: TLocale = {
                     "notFound": "Loại ca này đã bị xóa hoặc không thể tìm thấy trong danh sách mới nhất.",
                     "saveSuccess": "Cài đặt nhiệm vụ đã lưu.",
                     "updateFailed": "Không thể cập nhật loại ca làm việc.",
-                    "usedTypeLocked": "Không thể thay đổi viết tắt hoặc loại của ca đã dùng trong lịch. Chỉ có thể đổi tên thời gian và màu.",
+                    "usedTypeLocked": "Ca đã dùng trong lịch không thể đổi phân loại và ca Công việc khác cũng không thể đổi viết tắt.",
                     "usedTypeDeleteLocked": "Không thể xóa hoặc vô hiệu hóa ca đã dùng trong lịch."
                 },
                 "validation": {
@@ -16074,7 +16474,27 @@ export const vi: TLocale = {
                     "shortNameRequired": "Nhập một từ viết nghỉ.",
                     "timeFormat": "Sử dụng định dạng thời gian 00:00.",
                     "timeRequired": "Nhập thời gian.",
-                    "timeSame": "Sử dụng thời gian bắt đầu và kết thúc khác nhau."
+                    "timeSame": "Sử dụng thời gian bắt đầu và kết thúc khác nhau.",
+                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                },
+                "rotation": {
+                    "modeTitle": "Ward rotation system",
+                    "modeDescription": "Chọn chế độ vận hành và cấu hình loại ca. Ca bắt buộc sẽ được kiểm tra khi lưu.",
+                    "threeTitle": "Three-shift only",
+                    "threeDescription": "Use day · evening · night shifts.",
+                    "twoTitle": "Two-shift only",
+                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
+                    "mixedTitle": "Mostly three-shift with two-shift when needed",
+                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
+                    "threeBadge": "Three-shift",
+                    "twoBadge": "Two-shift",
+                    "noneBadge": "N/A",
+                    "threeDay": "Day",
+                    "threeEvening": "Evening",
+                    "threeNight": "Night",
+                    "twoDay": "Two-shift day",
+                    "twoNight": "Two-shift night",
+                    "twoItem": "Two-shift {{classification}}"
                 }
             },
             "tabs": {

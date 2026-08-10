@@ -56,7 +56,8 @@ function OnboardingStepLayout({
                             nextDisabled && 'border-0 bg-[#EFEAFF] text-[#A69BCF] hover:bg-[#EFEAFF] hover:text-[#A69BCF] active:scale-100',
                         )}
                     >
-                        {nextLabel ?? (step < 4 ? t('page.onboardingWardCreate.action.next') : t('page.onboardingWardCreate.action.complete'))}
+                        {nextLabel ??
+                            (step < 5 ? t('page.onboardingWardCreate.action.next') : t('page.onboardingWardCreate.action.complete'))}
                     </WizardButton>
                 </div>
             </div>

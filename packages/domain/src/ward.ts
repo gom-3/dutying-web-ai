@@ -1,6 +1,7 @@
 import type {TNurse} from './nurse';
 
 export type TWardShiftClassification = 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+export type TShiftRotationSystem = 'THREE' | 'TWO' | 'NONE';
 
 export type TWard = {
     wardId: number;
@@ -41,6 +42,8 @@ export type TWardShiftType = {
     isOff: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    rotationSystem?: TShiftRotationSystem;
+    paidMinutes?: number | null;
     isActive?: boolean;
     isUsed?: boolean;
 };

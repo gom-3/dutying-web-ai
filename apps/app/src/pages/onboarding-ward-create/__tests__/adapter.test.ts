@@ -8,6 +8,7 @@ import {
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
     type TOnboardingNurseDraft,
+    updateRotationModeDraft,
 } from '../model';
 
 const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDraft> = {}): TOnboardingNurseDraft => ({
@@ -58,6 +59,329 @@ describe('OnboardingWardCreatePage adapter', () => {
                         possibleShiftShortNames: expect.arrayContaining(['D', 'O']),
                     }),
                 ]),
+            }),
+        );
+    });
+
+    it('includes two-shift rotation metadata and per-team automation defaults in the create payload', () => {
+        const draft = updateRotationModeDraft(createInitialDraft(), 'TWO');
+        const payload = buildCreateWardPayload(draft);
+
+        expect(payload.wardShiftTypes).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({classification: 'DAY', rotationSystem: 'TWO', paidMinutes: 630}),
+                expect.objectContaining({classification: 'NIGHT', rotationSystem: 'TWO', paidMinutes: 630}),
+                expect.objectContaining({classification: 'OFF', rotationSystem: 'NONE', paidMinutes: null}),
+            ]),
+        );
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.rotationSystem === 'THREE')).toBe(false);
+        expect(payload.shiftTeams[0]?.constraintRules).toEqual([
+            expect.objectContaining({templateCode: 'TWO_SHIFT_MAX_LINES', params: {count: 2, unpaired: 1}}),
+        ]);
+    });
+
+    it('deduplicates legacy uppercase circled two-shift aliases in the create payload', () => {
+        const draft = updateRotationModeDraft(createInitialDraft(), 'TWO');
+        const twoShiftDay = draft.shiftTypes.find((shiftType) => shiftType.shortName === 'ⓓ')!;
+        const legacyDuplicate = {
+            ...twoShiftDay,
+            id: 'legacy-two-shift-day',
+            shortName: 'Ⓓ',
+        };
+        const payload = buildCreateWardPayload({...draft, shiftTypes: [...draft.shiftTypes, legacyDuplicate]});
+
+        expect(payload.wardShiftTypes.filter((shiftType) => shiftType.shortName === 'ⓓ')).toHaveLength(1);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'Ⓓ')).toBe(false);
+    });
+
+    it('normalizes non-standard work types to no rotation system in the create payload', () => {
+        const draft = createInitialDraft();
+        const customShiftType = {
+            ...draft.shiftTypes[0]!,
+            id: 'shift-custom',
+            name: '교육',
+            shortName: '교육',
+            isDefault: false,
+            classification: 'OTHER_WORK' as const,
+            rotationSystem: 'THREE' as const,
+            paidMinutes: 480,
+        };
+        const payload = buildCreateWardPayload({...draft, shiftTypes: [...draft.shiftTypes, customShiftType]});
+
+        expect(payload.wardShiftTypes).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({shortName: '교육', classification: 'OTHER_WORK', rotationSystem: 'NONE', paidMinutes: null}),
+            ]),
+        );
+    });
+
+    it('interprets uploaded D and N shifts using the previously selected two-shift mode', () => {
+        const twoShiftDraft = updateRotationModeDraft(createInitialDraft(), 'TWO');
+        const parsedDraft = applyParsedWardData(twoShiftDraft, {
+            shiftTypes: [
+                {name: '주간', shortName: 'D', classification: 'DAY', isOff: false},
+                {name: '야간', shortName: 'N', classification: 'NIGHT', isOff: false},
+                {name: '오프', shortName: 'O', classification: 'OFF', isOff: true},
+            ],
+        });
+
+        expect(parsedDraft.shiftTypes).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({shortName: 'D', rotationSystem: 'TWO', startTime: '07:00', endTime: '19:00'}),
+                expect.objectContaining({shortName: 'N', rotationSystem: 'TWO', startTime: '19:00', endTime: '07:00'}),
+                expect.objectContaining({shortName: 'O', rotationSystem: 'NONE'}),
+            ]),
+        );
+    });
+
+    it('keeps a parsed circled code as other work instead of inferring a two-shift type', () => {
+        const twoShiftDraft = updateRotationModeDraft(createInitialDraft(), 'TWO');
+        const parsedDraft = applyParsedWardData(twoShiftDraft, {
+            shiftTypes: [
+                {name: '주간 D', shortName: 'D', source: 'schedule-input'},
+                {name: '주간 ⓓ', shortName: 'ⓓ', source: 'schedule-input'},
+                {name: '야간', shortName: 'N', source: 'schedule-input'},
+            ],
+        });
+        const inferredDay = parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'D');
+        const exactDay = parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'ⓓ');
+        const payload = buildCreateWardPayload(parsedDraft);
+
+        expect(inferredDay).toEqual(
+            expect.objectContaining({
+                mappingStatus: 'AUTO_MATCHED',
+                classification: 'DAY',
+                rotationSystem: 'TWO',
+            }),
+        );
+        expect(exactDay).toEqual(
+            expect.objectContaining({
+                mappingStatus: 'CONFIRMED',
+                classification: 'OTHER_WORK',
+                rotationSystem: 'NONE',
+                startTime: '',
+                endTime: '',
+            }),
+        );
+        expect(payload.wardShiftTypes).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({shortName: 'D', classification: 'DAY', rotationSystem: 'TWO'}),
+                expect.objectContaining({shortName: 'ⓓ', classification: 'OTHER_WORK', rotationSystem: 'NONE'}),
+            ]),
+        );
+    });
+
+    it('does not reintroduce three-shift types when imported data is applied to a two-shift-only ward', () => {
+        const twoShiftDraft = updateRotationModeDraft(createInitialDraft(), 'TWO');
+        const parsedDraft = applyParsedWardData(twoShiftDraft, {
+            shiftTypes: [
+                {
+                    name: '데이',
+                    shortName: 'D',
+                    startTime: '07:00',
+                    endTime: '15:00',
+                    classification: 'DAY',
+                    rotationSystem: 'THREE',
+                    isDefault: true,
+                    isOff: false,
+                },
+                {
+                    name: '이브닝',
+                    shortName: 'E',
+                    startTime: '15:00',
+                    endTime: '22:00',
+                    classification: 'EVENING',
+                    rotationSystem: 'THREE',
+                    isDefault: true,
+                    isOff: false,
+                },
+                {
+                    name: '나이트',
+                    shortName: 'N',
+                    startTime: '22:00',
+                    endTime: '07:00',
+                    classification: 'NIGHT',
+                    rotationSystem: 'THREE',
+                    isDefault: true,
+                    isOff: false,
+                },
+                {name: '오프', shortName: 'O', classification: 'OFF', rotationSystem: 'NONE', isDefault: true, isOff: true},
+            ],
+        });
+        const payload = buildCreateWardPayload(parsedDraft);
+
+        expect(parsedDraft.rotationMode).toBe('TWO');
+        expect(payload.wardShiftTypes).toEqual([
+            expect.objectContaining({
+                shortName: 'D',
+                classification: 'DAY',
+                rotationSystem: 'TWO',
+                startTime: '07:00',
+                endTime: '19:00',
+            }),
+            expect.objectContaining({
+                shortName: 'N',
+                classification: 'NIGHT',
+                rotationSystem: 'TWO',
+                startTime: '19:00',
+                endTime: '07:00',
+            }),
+            expect.objectContaining({shortName: 'O', classification: 'OFF', rotationSystem: 'NONE'}),
+            expect.objectContaining({shortName: 'E', classification: 'OTHER_WORK', rotationSystem: 'NONE'}),
+        ]);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.rotationSystem === 'THREE')).toBe(false);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.classification === 'EVENING')).toBe(false);
+    });
+
+    it('moves imported two-shift-only rows to other work in a three-shift-only ward', () => {
+        const parsedDraft = applyParsedWardData(createInitialDraft(), {
+            shiftTypes: [
+                {
+                    name: '2교대 주간',
+                    shortName: '1',
+                    startTime: '07:00',
+                    endTime: '19:00',
+                    classification: 'DAY',
+                    rotationSystem: 'TWO',
+                    isDefault: false,
+                    isOff: false,
+                },
+                {
+                    name: '2교대 야간',
+                    shortName: '2',
+                    startTime: '19:00',
+                    endTime: '07:00',
+                    classification: 'NIGHT',
+                    rotationSystem: 'TWO',
+                    isDefault: false,
+                    isOff: false,
+                },
+            ],
+        });
+        const payload = buildCreateWardPayload(parsedDraft);
+
+        expect(parsedDraft.rotationMode).toBe('THREE');
+        expect(parsedDraft.shiftTypes.filter((shiftType) => shiftType.shortName === '1' || shiftType.shortName === '2')).toEqual([
+            expect.objectContaining({shortName: '1', classification: 'OTHER_WORK', rotationSystem: 'NONE', mappingStatus: 'CONFIRMED'}),
+            expect.objectContaining({shortName: '2', classification: 'OTHER_WORK', rotationSystem: 'NONE', mappingStatus: 'CONFIRMED'}),
+        ]);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO')).toBe(false);
+    });
+
+    it('drops stale opposite-rotation seeds unless the previous schedule actually uses them', () => {
+        const mixedDraft = updateRotationModeDraft(createInitialDraft(), 'MIXED');
+        const staleThreeShiftDraft = {...mixedDraft, rotationMode: 'THREE' as const};
+        const parsedDraft = applyParsedWardData(staleThreeShiftDraft, {
+            shiftTypes: [{name: '교육', shortName: '교육', classification: 'OTHER_WORK', rotationSystem: 'NONE', isOff: false}],
+        });
+
+        expect(parsedDraft.shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO')).toBe(false);
+        expect(parsedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'ⓓ' || shiftType.shortName === 'ⓝ')).toBe(false);
+        expect(parsedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
+    });
+
+    it('keeps ward-specific 2-shift-looking codes unassigned until the user confirms them', () => {
+        const mixedDraft = updateRotationModeDraft(createInitialDraft(), 'MIXED');
+        const parsedDraft = applyParsedWardData(mixedDraft, {
+            shiftTypes: [
+                ...mixedDraft.shiftTypes.map((shiftType) => ({...shiftType})),
+                {
+                    name: '2교대 데이',
+                    shortName: '1',
+                    startTime: '07:00',
+                    endTime: '19:00',
+                    isDefault: false,
+                    isOff: false,
+                    classification: 'OTHER_WORK',
+                    rotationSystem: 'NONE',
+                },
+                {
+                    name: '2교대 나이트',
+                    shortName: '2',
+                    startTime: '19:00',
+                    endTime: '07:00',
+                    isDefault: false,
+                    isOff: false,
+                    classification: 'OTHER_WORK',
+                    rotationSystem: 'NONE',
+                },
+            ],
+        });
+        const payload = buildCreateWardPayload(parsedDraft);
+        const twoShiftTypes = payload.wardShiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO');
+        const importedDay = parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === '1');
+        const importedNight = parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === '2');
+
+        expect(payload.wardShiftTypes).toHaveLength(6);
+        expect(importedDay).toEqual(
+            expect.objectContaining({
+                mappingStatus: 'UNASSIGNED',
+                mappingRecommendation: {classification: 'DAY', rotationSystem: 'TWO', reason: 'TIME'},
+            }),
+        );
+        expect(importedNight).toEqual(
+            expect.objectContaining({
+                mappingStatus: 'UNASSIGNED',
+                mappingRecommendation: {classification: 'NIGHT', rotationSystem: 'TWO', reason: 'TIME'},
+            }),
+        );
+        expect(twoShiftTypes).toEqual([
+            expect.objectContaining({shortName: 'ⓓ', classification: 'DAY', startTime: '07:00', endTime: '19:00'}),
+            expect.objectContaining({shortName: 'ⓝ', classification: 'NIGHT', startTime: '19:00', endTime: '07:00'}),
+        ]);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === '1' || shiftType.shortName === '2')).toBe(false);
+    });
+
+    it('uses rotation metadata returned by the parse API only as a recommendation', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            wardShiftTypes: [
+                {
+                    name: '2교대 데이',
+                    shortName: '1',
+                    startTime: '07:00',
+                    endTime: '19:00',
+                    isOff: false,
+                    classification: 'DAY',
+                    rotationSystem: 'TWO',
+                    paidMinutes: 630,
+                },
+            ],
+        };
+        const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+        const parsedDraft = applyParsedWardData(updateRotationModeDraft(createInitialDraft(), 'MIXED'), parsedWardData);
+
+        expect(parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === '1')).toEqual(
+            expect.objectContaining({
+                classification: 'OTHER_WORK',
+                rotationSystem: 'NONE',
+                mappingStatus: 'UNASSIGNED',
+                mappingRecommendation: {classification: 'DAY', rotationSystem: 'TWO', reason: 'TIME'},
+            }),
+        );
+    });
+
+    it('does not infer two-shift semantics from time when the user selected three-shift only', () => {
+        const parsedDraft = applyParsedWardData(createInitialDraft(), {
+            shiftTypes: [
+                {
+                    name: '12시간 교육',
+                    shortName: 'W',
+                    startTime: '07:00',
+                    endTime: '19:00',
+                    isDefault: false,
+                    isOff: false,
+                    classification: 'OTHER_WORK',
+                    rotationSystem: 'NONE',
+                },
+            ],
+        });
+
+        expect(parsedDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'W')).toEqual(
+            expect.objectContaining({
+                shortName: 'W',
+                classification: 'OTHER_WORK',
+                rotationSystem: 'NONE',
+                mappingStatus: 'UNASSIGNED',
             }),
         );
     });
@@ -190,7 +514,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(nextDraft.uploadedFileName).toBe('ward.xlsx');
         expect(nextDraft.wardName).toBe('중환자실');
         expect(nextDraft.hospitalName).toBe('듀팅병원');
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
         expect(nextDraft.teams).toHaveLength(1);
         expect(nextDraft.teams[0]?.name).toBe('A팀');
         expect(nextDraft.nurses[0]?.teamId).toBe(nextDraft.teams[0]?.id);
@@ -283,7 +607,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const remappedNurse = nextDraft.nurses.find((nurse) => nurse.id === nurseId);
         const defaultShiftTypeIds = nextDraft.shiftTypes.map((shiftType) => shiftType.id);
 
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'M', 'O']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'M']);
         expect(remappedNurse?.possibleShiftTypeIds).toEqual(defaultShiftTypeIds);
     });
 
@@ -383,11 +707,11 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
-        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).toMatch(/^#[0-9A-F]{6}$/);
-        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).not.toBe('#94A3B8');
-        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).not.toBe('#BFC7D4');
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
+        expect(nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === '교육')).toEqual(
+            expect.objectContaining({mappingStatus: 'UNASSIGNED'}),
+        );
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
         expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N', '교육']);
         expect(parsedWardData.nurses?.[0]?.initialShifts).toEqual([
             {date: '2025-03-01', shiftShortName: 'D'},
@@ -414,7 +738,6 @@ describe('OnboardingWardCreatePage adapter', () => {
             {date: '2025-03-01', shiftShortName: 'D'},
             {date: '2025-03-02', shiftShortName: 'N'},
             {date: '2025-03-03', shiftShortName: 'O'},
-            {date: '2025-03-04', shiftShortName: '교육'},
         ]);
         expect(warnings).toEqual(['확정표가 없어 신뢰도를 낮췄어요.']);
     });
@@ -443,16 +766,14 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '-']);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.classification).toBe('OFF');
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.isOff).toBe(true);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.color).toBe('#465B7A');
-        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'D')).toBe(false);
-        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'E')).toBe(false);
+        expect(nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'DA')?.mappingStatus).toBe('UNASSIGNED');
+        expect(nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'EV')?.mappingStatus).toBe('UNASSIGNED');
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'O')).toBe(false);
         expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
-            {date: '2026-05-01', shiftShortName: 'DA'},
-            {date: '2026-05-02', shiftShortName: 'EV'},
             {date: '2026-05-03', shiftShortName: 'N'},
             {date: '2026-05-04', shiftShortName: '-'},
         ]);
@@ -477,7 +798,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '/']);
         expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: '/'},
             {date: '2026-05-02', shiftShortName: '/'},
@@ -504,8 +825,8 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
-        expect(payload.wardShiftTypes).toHaveLength(1);
-        expect(payload.wardShiftTypes[0]).toEqual(
+        expect(payload.wardShiftTypes).toHaveLength(4);
+        expect(payload.wardShiftTypes[3]).toEqual(
             expect.objectContaining({shortName: '/', isDefault: true, isOff: true, classification: 'OFF'}),
         );
         expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([

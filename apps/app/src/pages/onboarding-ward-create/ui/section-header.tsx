@@ -5,7 +5,7 @@ import type {TOnboardingStep} from '../model';
 
 type TStepLabel = {
     titleKey: TI18nKey;
-    descriptionKey: TI18nKey;
+    descriptionKey?: TI18nKey;
     titleHighlightKeys?: readonly TI18nKey[];
 };
 
@@ -19,16 +19,19 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
         ],
     },
     2: {
+        titleKey: 'page.onboardingWardCreate.section.rotation.title',
+    },
+    3: {
         titleKey: 'page.onboardingWardCreate.section.schedule.title',
         descriptionKey: 'page.onboardingWardCreate.section.schedule.description',
         titleHighlightKeys: ['page.onboardingWardCreate.section.schedule.highlight'],
     },
-    3: {
+    4: {
         titleKey: 'page.onboardingWardCreate.section.shiftType.title',
         descriptionKey: 'page.onboardingWardCreate.section.shiftType.description',
         titleHighlightKeys: ['page.onboardingWardCreate.section.shiftType.highlight'],
     },
-    4: {
+    5: {
         titleKey: 'page.onboardingWardCreate.section.nurse.title',
         descriptionKey: 'page.onboardingWardCreate.section.nurse.description',
         titleHighlightKeys: ['page.onboardingWardCreate.section.nurse.highlight'],
@@ -37,7 +40,6 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
 
 interface ISectionHeaderProps {
     step: TOnboardingStep;
-    aside?: ReactNode;
 }
 
 function escapeRegExp(text: string) {
@@ -78,14 +80,15 @@ function TitleLines({children, highlights}: {children: string; highlights?: read
     );
 }
 
-function SectionHeader({step, aside}: ISectionHeaderProps) {
+function SectionHeader({step}: ISectionHeaderProps) {
     const {t} = useTypedTranslation();
     const label = STEP_LABELS[step];
     const isIdentityStep = step === 1;
     const title = t(label.titleKey);
     const titleHighlights = label.titleHighlightKeys?.map((key) => t(key));
-    const description = t(label.descriptionKey);
-    const headerClassName = isIdentityStep ? 'mb-6 max-w-[480px] space-y-2' : step === 2 ? 'mb-10 max-w-[720px]' : 'mb-10 max-w-[541px]';
+    const description = label.descriptionKey ? t(label.descriptionKey) : undefined;
+    const headerClassName =
+        isIdentityStep || step === 2 ? 'mb-6 max-w-[480px] space-y-2' : step === 3 ? 'mb-10 max-w-[720px]' : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title}</span>
@@ -95,27 +98,13 @@ function SectionHeader({step, aside}: ISectionHeaderProps) {
         </>
     );
 
-    if (!aside) {
-        return (
-            <BaseSectionHeader
-                className={headerClassName}
-                title={renderedTitle}
-                description={description}
-                descriptionClassName={isIdentityStep ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'}
-            />
-        );
-    }
-
     return (
-        <div className="mb-10 flex items-start justify-between gap-8">
-            <BaseSectionHeader
-                className="max-w-[541px]"
-                title={renderedTitle}
-                description={description}
-                descriptionClassName="whitespace-normal sm:whitespace-nowrap"
-            />
-            <div className="shrink-0">{aside}</div>
-        </div>
+        <BaseSectionHeader
+            className={headerClassName}
+            title={renderedTitle}
+            description={description}
+            descriptionClassName={isIdentityStep ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'}
+        />
     );
 }
 

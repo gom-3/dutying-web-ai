@@ -121,7 +121,15 @@ describe('ProfilePage account actions', () => {
             </MemoryRouter>,
         );
 
-        fireEvent.change(screen.getByLabelText('생년월일'), {target: {value: '1996-03-14'}});
+        const birthDateInput = screen.getByLabelText('생년월일');
+
+        expect(birthDateInput).toHaveAttribute('type', 'text');
+        expect(birthDateInput).toHaveAttribute('inputmode', 'numeric');
+
+        fireEvent.change(birthDateInput, {target: {value: '19960314'}});
+
+        expect(birthDateInput).toHaveValue('1996-03-14');
+
         await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
 
         await waitFor(() => {

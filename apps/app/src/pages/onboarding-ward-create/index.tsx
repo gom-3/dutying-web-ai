@@ -9,11 +9,19 @@ import useAuth from '@/features/auth';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getOnboardingInitialScheduleTargets, isOnboardingShiftTypeActive, useOnboardingWardWizard} from './model';
+import {getRequiredRotationClassificationCounts} from '@/shared/lib/shift-rotation-selection';
+import {
+    getOnboardingInitialScheduleTargets,
+    isOnboardingShiftMappingResolved,
+    isOnboardingShiftTypeActive,
+    resolveOnboardingRotationSystem,
+    useOnboardingWardWizard,
+} from './model';
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
 import NurseStep from './ui/steps/nurse-step';
+import RotationStep from './ui/steps/rotation-step';
 import ScheduleInputStep from './ui/steps/schedule-input-step';
 import ShiftTypeStep from './ui/steps/shift-type-step';
 import WardIdentityStep from './ui/steps/ward-identity-step';
@@ -37,6 +45,7 @@ function OnboardingWardCreatePage() {
         goNextStep,
         goPreviousStep,
         updateWardIdentity,
+        updateRotationMode,
         skipOrComplete,
         addShiftType,
         updateShiftType,
@@ -76,8 +85,9 @@ function OnboardingWardCreatePage() {
     const isSuccess = submissionStatus === 'success';
     const isSavingDraft = draftCreationStatus === 'creating';
     const actionsDisabled = isSavingDraft || isStepTransitioning || isSubmitting || isSuccess;
-    const isNurseRegistrationStep = draft.currentStep === 4;
-    const isScheduleInputStep = draft.currentStep === 2;
+    const isNurseRegistrationStep = draft.currentStep === 5;
+    const isScheduleInputStep = draft.currentStep === 3;
+    const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
     const activeTeamNurseCount = draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
     const activeTeamScheduleRowCount = Object.values(draft.scheduleInputs[activeTeamId] ?? {}).reduce(
@@ -127,19 +137,41 @@ function OnboardingWardCreatePage() {
             {t('page.onboardingWardCreate.deleteTeamAction')}
         </WizardButton>
     );
-    const getMissingRequiredShiftTypeLabels = () => {
-        const requiredShiftTypes = [
-            {classification: 'DAY', label: t('page.onboardingWardCreate.shiftType.classification.day')},
-            {classification: 'EVENING', label: t('page.onboardingWardCreate.shiftType.classification.evening')},
-            {classification: 'NIGHT', label: t('page.onboardingWardCreate.shiftType.classification.night')},
-            {classification: 'OFF', label: t('page.onboardingWardCreate.shiftType.classification.off')},
-        ] as const;
-        const activeClassifications = new Set(
-            draft.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => shiftType.classification),
+    const getRequiredShiftTypeStatuses = () => {
+        const activeShiftTypes = draft.shiftTypes.filter(
+            (shiftType) => isOnboardingShiftTypeActive(shiftType) && isOnboardingShiftMappingResolved(shiftType.mappingStatus),
         );
 
-        return requiredShiftTypes.filter(({classification}) => !activeClassifications.has(classification)).map(({label}) => label);
+        return getRequiredRotationClassificationCounts(
+            draft.rotationMode,
+            activeShiftTypes.map((shiftType) => ({
+                classification: shiftType.classification,
+                rotationSystem: resolveOnboardingRotationSystem(shiftType),
+            })),
+        ).map((requiredShiftType) => ({
+            ...requiredShiftType,
+            label:
+                requiredShiftType.rotationSystem === 'TWO'
+                    ? requiredShiftType.classification === 'DAY'
+                        ? t('page.onboardingWardCreate.shiftType.twoDayLabel')
+                        : t('page.onboardingWardCreate.shiftType.twoNightLabel')
+                    : requiredShiftType.classification === 'DAY'
+                      ? t('page.onboardingWardCreate.shiftType.classification.day')
+                      : requiredShiftType.classification === 'EVENING'
+                        ? t('page.onboardingWardCreate.shiftType.classification.evening')
+                        : requiredShiftType.classification === 'NIGHT'
+                          ? t('page.onboardingWardCreate.shiftType.classification.night')
+                          : t('page.onboardingWardCreate.shiftType.classification.off'),
+        }));
     };
+    const getMissingRequiredShiftTypeLabels = () =>
+        getRequiredShiftTypeStatuses()
+            .filter(({count}) => count === 0)
+            .map(({label}) => label);
+    const getDuplicateRequiredShiftTypeLabels = () =>
+        getRequiredShiftTypeStatuses()
+            .filter(({count}) => count > 1)
+            .map(({label}) => label);
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
             return t('page.onboardingWardCreate.blocked.submitting');
@@ -149,7 +181,7 @@ function OnboardingWardCreatePage() {
             return t('page.onboardingWardCreate.blocked.success');
         }
 
-        const blockingIssues = draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
+        const blockingIssues = draft.currentStep === 5 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
         const codes = new Set(blockingIssues.map((issue) => issue.code));
 
         if (codes.has('missing-hospital-name')) {
@@ -180,6 +212,22 @@ function OnboardingWardCreatePage() {
             return t('page.onboardingWardCreate.blocked.duplicateShiftType');
         }
 
+        if (codes.has('unmapped-shift-type')) {
+            const unmappedShiftType = draft.shiftTypes.find(
+                (shiftType) => isOnboardingShiftTypeActive(shiftType) && !isOnboardingShiftMappingResolved(shiftType.mappingStatus),
+            );
+
+            return t('page.onboardingWardCreate.blocked.unmappedShiftType', {
+                shiftCode: unmappedShiftType?.shortName.trim() ? unmappedShiftType.shortName : '-',
+            });
+        }
+
+        if (codes.has('duplicate-required-shift-types')) {
+            return t('page.onboardingWardCreate.blocked.duplicateRequiredShiftTypes', {
+                shiftTypes: getDuplicateRequiredShiftTypeLabels().join(', '),
+            });
+        }
+
         if (codes.has('missing-required-shift-types')) {
             return t('page.onboardingWardCreate.blocked.missingRequiredShiftTypes', {
                 shiftTypes: getMissingRequiredShiftTypeLabels().join(', '),
@@ -190,7 +238,12 @@ function OnboardingWardCreatePage() {
             return t('page.onboardingWardCreate.blocked.invalidShiftTime');
         }
 
-        if (codes.has('missing-shift-short-name') || codes.has('invalid-shift-short-name') || codes.has('empty-shift-types')) {
+        if (
+            codes.has('invalid-shift-rotation') ||
+            codes.has('missing-shift-short-name') ||
+            codes.has('invalid-shift-short-name') ||
+            codes.has('empty-shift-types')
+        ) {
             return t('page.onboardingWardCreate.blocked.invalidShiftType');
         }
 
@@ -318,6 +371,8 @@ function OnboardingWardCreatePage() {
                 );
             }
             case 2:
+                return <RotationStep rotationMode={draft.rotationMode} onRotationModeChange={updateRotationMode} />;
+            case 3:
                 return (
                     <ScheduleInputStep
                         draft={draft}
@@ -337,17 +392,18 @@ function OnboardingWardCreatePage() {
                         isDeleteTeamDisabled={actionsDisabled || !activeTeam}
                     />
                 );
-            case 3:
+            case 4:
                 return (
                     <ShiftTypeStep
-                        shiftTypes={draft.shiftTypes.filter(isOnboardingShiftTypeActive)}
+                        shiftTypes={activeShiftTypes}
+                        rotationMode={draft.rotationMode}
                         onChange={updateShiftType}
                         onDragEnd={handleShiftTypeDragEnd}
                         onAdd={addShiftType}
                         onDelete={deleteShiftType}
                     />
                 );
-            case 4:
+            case 5:
                 return (
                     <NurseStep
                         draft={draft}
@@ -415,7 +471,11 @@ function OnboardingWardCreatePage() {
             <div
                 className={cn(
                     'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',
-                    draft.currentStep === 1 ? 'max-w-[480px]' : isScheduleInputStep ? 'max-w-[1200px]' : 'max-w-[1120px]',
+                    draft.currentStep === 1 || draft.currentStep === 2
+                        ? 'max-w-[480px]'
+                        : isScheduleInputStep
+                          ? 'max-w-[1200px]'
+                          : 'max-w-[1120px]',
                 )}
             >
                 <button
@@ -452,7 +512,7 @@ function OnboardingWardCreatePage() {
                             return;
                         }
 
-                        if (draft.currentStep < 4) {
+                        if (draft.currentStep < 5) {
                             void goNextStep();
 
                             return;
@@ -478,7 +538,7 @@ function OnboardingWardCreatePage() {
                         ) : undefined
                     }
                     nextDisabled={
-                        draft.currentStep < 4
+                        draft.currentStep < 5
                             ? !canGoNext || isSavingDraft || isSubmitting || isSuccess
                             : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
@@ -486,7 +546,7 @@ function OnboardingWardCreatePage() {
                     nextLabel={
                         (draft.currentStep === 1 && isSavingDraft) || isStepTransitioning
                             ? t('page.onboardingWardCreate.action.saving')
-                            : draft.currentStep < 4
+                            : draft.currentStep < 5
                               ? t('page.onboardingWardCreate.action.next')
                               : isSubmitting
                                 ? t('page.onboardingWardCreate.action.creating')

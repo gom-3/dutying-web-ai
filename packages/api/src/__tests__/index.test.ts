@@ -115,6 +115,8 @@ describe('@dutying/api public entry', () => {
                     ...payload.wardShiftTypes[1],
                     startTime: null,
                     endTime: null,
+                    rotationSystem: 'NONE',
+                    paidMinutes: null,
                 },
             ],
             shiftTeams: [
@@ -603,7 +605,7 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenNthCalledWith(2, '/wards/7/req-shifts/301/accept', {isAccepted: true});
     });
 
-    it('preserves explicit classification for overnight shift type create and update payloads', async () => {
+    it('preserves explicit classification and rotation metadata for shift type create and update payloads', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
         const putMock = client.put as ReturnType<typeof vi.fn>;
@@ -618,6 +620,9 @@ describe('@dutying/api public entry', () => {
             isDefault: false,
             isCounted: true,
             classification: 'OTHER_WORK' as const,
+            rotationSystem: 'TWO' as const,
+            paidMinutes: 630,
+            isActive: true,
         };
 
         postMock.mockResolvedValueOnce({data: {wardShiftTypeId: 3}});

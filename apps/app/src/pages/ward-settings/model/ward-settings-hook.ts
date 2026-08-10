@@ -29,19 +29,14 @@ function normalizeShiftType(shiftType: TRawWardShiftType): TWardShiftType {
 }
 
 function normalizeShiftTypes(input: unknown): TWardShiftType[] {
-    if (Array.isArray(input))
-        return (input as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
+    if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType);
 
     if (input && typeof input === 'object') {
         const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
 
-        if (Array.isArray(maybe.shiftTypes))
-            return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
+        if (Array.isArray(maybe.shiftTypes)) return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
 
-        if (Array.isArray(maybe.wardShiftTypes))
-            return (maybe.wardShiftTypes as TRawWardShiftType[])
-                .map(normalizeShiftType)
-                .filter((shiftType) => shiftType.isActive !== false);
+        if (Array.isArray(maybe.wardShiftTypes)) return (maybe.wardShiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
     }
 
     return [];
@@ -148,7 +143,6 @@ export function useWardSettings() {
 
         try {
             await WardAPI.createShiftType(wardId, payload);
-            await invalidateShiftTypeQueries();
 
             return true;
         } catch (error) {
@@ -162,7 +156,6 @@ export function useWardSettings() {
 
         try {
             await WardAPI.updateShiftType(wardId, shiftTypeId, payload);
-            await invalidateShiftTypeQueries();
 
             return true;
         } catch (error) {
@@ -175,29 +168,17 @@ export function useWardSettings() {
         if (!wardId) return false;
 
         try {
-            const latest = await shiftTypesQuery.refetch();
-            const latestShiftTypes = normalizeShiftTypes(latest.data);
-            const exists = latestShiftTypes.some((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
-
-            if (!exists) {
-                showActionErrorFeedback(new Error('shift type not found'), t('page.wardSettings.shiftTypes.toast.notFound'));
-
-                return false;
-            }
-
             await WardAPI.deleteShiftType(wardId, shiftTypeId);
-            await invalidateShiftTypeQueries();
 
             return true;
         } catch (error) {
-            await shiftTypesQuery.refetch();
             showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.deleteFailed'));
 
             return false;
         }
     };
     const retryShiftTypes = async () => {
-        await shiftTypesQuery.refetch();
+        await invalidateShiftTypeQueries();
     };
     const retryShiftTeams = async () => {
         await shiftTeamsQuery.refetch();

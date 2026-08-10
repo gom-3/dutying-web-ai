@@ -105,6 +105,8 @@ const normalizeShiftTypePayload = <T extends TCreateShiftTypeDTO | TCreateWardSh
         return {
             ...shiftType,
             classification: shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE',
+            rotationSystem: 'NONE',
+            paidMinutes: null,
         };
     }
 

@@ -726,6 +726,7 @@ export const ja: TLocale = {
                 colorOptionAria: '{{color}}を選択',
                 deleteAria: '{{name}}を削除',
                 column: {
+                    ...en.page.wardSettings.shiftTypes.column,
                     name: '勤務名',
                     shortName: '略称',
                     type: 'タイプ',
@@ -733,6 +734,7 @@ export const ja: TLocale = {
                     color: '色',
                 },
                 validation: {
+                    ...en.page.wardSettings.shiftTypes.validation,
                     nameRequired: '勤務名を入力してください。',
                     nameDuplicate: '別の勤務名を入力してください。',
                     shortNameRequired: '略称を入力してください。',
@@ -808,6 +810,10 @@ export const ja: TLocale = {
                     title: '病院名と病棟名を入力してください',
                     description: '',
                 },
+                rotation: {
+                    title: '使用する交代制を選択してください',
+                    description: '選択した交代制に合わせて勤務区分と自動割り当ての制約を準備します。',
+                },
                 schedule: {
                     title: '病棟と勤務表設定のため\n直近で使用した勤務表を入力してください',
                     description: '',
@@ -822,11 +828,21 @@ export const ja: TLocale = {
                 },
             },
             identity: {
+                ...en.page.onboardingWardCreate.identity,
                 hospitalName: '病院名',
                 hospitalNamePlaceholder: '病院名を入力してください',
                 wardName: '病棟名',
                 wardNameOptional: '（任意）病棟名',
                 wardNamePlaceholder: '病棟名を入力してください',
+            },
+            rotation: {
+                ...en.page.onboardingWardCreate.rotation,
+                threeTitle: '3交代制のみ',
+                threeDescription: 'D・E・N勤務を使用します。',
+                twoTitle: '2交代制のみ',
+                twoDescription: '日勤・夜勤を使用します。',
+                mixedTitle: '基本は3交代制、必要に応じて2交代制',
+                mixedDescription: 'D・E・Nを基本に、必要に応じて2交代制の日勤・夜勤も使用します。',
             },
             upload: {
                 targetMonth: '勤務表の基準月',
@@ -877,6 +893,7 @@ export const ja: TLocale = {
                 deleteNurseAria: '{{nurseName}}を削除',
             },
             shiftType: {
+                ...en.page.onboardingWardCreate.shiftType,
                 name: '勤務名',
                 shortName: '略称',
                 type: 'タイプ',
@@ -890,6 +907,7 @@ export const ja: TLocale = {
                 colorOptionAria: '{{color}}を選択',
                 deleteAria: '{{shiftName}}を削除',
                 validation: {
+                    ...en.page.onboardingWardCreate.shiftType.validation,
                     nameRequired: '勤務名を入力してください。',
                     nameDuplicate: '別の勤務名を入力してください。',
                     shortNameRequired: '略称を入力してください。',
@@ -1338,6 +1356,7 @@ export const ja: TLocale = {
                 violationCount: '{{count}}件',
                 listTitle: '制約条件',
                 category: {
+                    ...en.page.makeShift.constraints.category,
                     recommended: '推奨',
                     staffing: '人数',
                     forbidden: '禁止パターン',

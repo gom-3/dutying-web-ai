@@ -11,6 +11,7 @@ import useAuthStore from '@/features/auth/model/store';
 import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
+import {Switch} from '@/shared/ui/primitives/switch';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {
@@ -78,6 +79,7 @@ type TShiftTypeLike = {
     color?: string;
     isOff?: boolean;
     classification?: string;
+    rotationSystem?: 'THREE' | 'TWO' | 'NONE';
     isActive?: boolean;
 };
 type TNurseLike = {
@@ -120,6 +122,7 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
     CORE: 'page.makeShift.constraints.category.recommended',
     IMPORTANT: 'page.makeShift.constraints.category.recommended',
+    TWO_SHIFT: 'page.makeShift.constraints.category.twoShift',
 };
 
 function ConstraintModalPortal({children}: {children: ReactNode}) {
@@ -288,7 +291,12 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_OFF_AFTER_NIGHT: 'WORK_REST',
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'FORBIDDEN_PATTERN',
+    TWO_SHIFT_MAX_LINES: 'TWO_SHIFT',
+    CORE_MIN_REST_HOURS: 'TWO_SHIFT',
+    MAX_MONTHLY_WORK_HOURS: 'TWO_SHIFT',
 };
+const TWO_SHIFT_CONFIGURATION_CODES = ['TWO_SHIFT_MAX_LINES', 'CORE_MIN_REST_HOURS', 'MAX_MONTHLY_WORK_HOURS'] as const;
+const TWO_SHIFT_CONFIGURATION_CODE_SET = new Set<string>(TWO_SHIFT_CONFIGURATION_CODES);
 
 function hasFinalConsonant(value: unknown) {
     const trimmed = String(value ?? '').trim();
@@ -652,6 +660,9 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     OFF_AFTER_CONSECUTIVE_WORK: {count: '2'},
     MIN_OFF_AFTER_N: {count: '1'},
     MIN_MONTHLY_OFF: {count: '1'},
+    TWO_SHIFT_MAX_LINES: {count: 2, unpaired: 1},
+    CORE_MIN_REST_HOURS: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 11},
+    MAX_MONTHLY_WORK_HOURS: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 230},
 };
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     target: 'target',
@@ -727,6 +738,8 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
 
 function isRecommendedTemplateCode(templateCode: string, category?: string) {
     if (HIDDEN_RECOMMENDED_RULE_IDS.has(templateCode)) return false;
+
+    if (TWO_SHIFT_CONFIGURATION_CODE_SET.has(templateCode)) return false;
 
     const normalizedCategory = category?.toUpperCase();
 
@@ -2077,6 +2090,109 @@ function Section({action, children}: TSectionProps) {
     );
 }
 
+type TTwoShiftAutomationPanelProps = {
+    enabled: boolean;
+    rules: TShiftConstraintRuleDraft[];
+    onEnabledChange: (enabled: boolean) => void;
+    onRuleCountChange: (templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], count: number | null) => void;
+};
+
+function TwoShiftAutomationPanel({enabled, rules, onEnabledChange, onRuleCountChange}: TTwoShiftAutomationPanelProps) {
+    const {t} = useTypedTranslation();
+    const settings = [
+        {
+            templateCode: 'TWO_SHIFT_MAX_LINES' as const,
+            label: t('page.makeShift.constraints.twoShift.maxLines'),
+            unit: t('page.makeShift.constraints.twoShift.lineUnit'),
+            min: 1,
+            max: 20,
+            fallback: 2,
+            optional: false,
+        },
+        {
+            templateCode: 'CORE_MIN_REST_HOURS' as const,
+            label: t('page.makeShift.constraints.twoShift.minRestHours'),
+            unit: t('page.makeShift.constraints.twoShift.hourUnit'),
+            min: 1,
+            max: 24,
+            fallback: 11,
+            optional: true,
+        },
+        {
+            templateCode: 'MAX_MONTHLY_WORK_HOURS' as const,
+            label: t('page.makeShift.constraints.twoShift.monthlyWorkHours'),
+            unit: t('page.makeShift.constraints.twoShift.hourUnit'),
+            min: 1,
+            max: 400,
+            fallback: 230,
+            optional: true,
+        },
+    ];
+
+    return (
+        <section className="mb-4 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] py-5">
+            <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <p className="font-apple text-[16px] font-bold text-sub-1">{t('page.makeShift.constraints.twoShift.title')}</p>
+                    <p className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
+                        {t('page.makeShift.constraints.twoShift.description')}
+                    </p>
+                </div>
+                <Switch
+                    checked={enabled}
+                    onCheckedChange={onEnabledChange}
+                    aria-label={t('page.makeShift.constraints.twoShift.switchAria')}
+                    className="shrink-0 data-[state=checked]:bg-main-1"
+                />
+            </div>
+            {enabled ? (
+                <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    {settings.map((setting) => {
+                        const rule = rules.find((candidate) => candidate.templateCode === setting.templateCode);
+                        const rawValue = Number(rule?.params.count ?? setting.fallback);
+                        const value = rule && Number.isFinite(rawValue) ? rawValue : setting.optional ? '' : setting.fallback;
+
+                        return (
+                            <label key={setting.templateCode} className="rounded-[14px] bg-[#F8F9FB] px-4 py-3">
+                                <span className="block min-h-10 font-apple text-[12px] leading-[18px] font-semibold text-gray-3">
+                                    {setting.label}
+                                </span>
+                                <span className="mt-2 flex items-center gap-2">
+                                    <input
+                                        type="number"
+                                        min={setting.min}
+                                        max={setting.max}
+                                        value={value}
+                                        placeholder={String(setting.fallback)}
+                                        aria-label={setting.label}
+                                        onChange={(event) => {
+                                            if (setting.optional && event.target.value === '') {
+                                                onRuleCountChange(setting.templateCode, null);
+
+                                                return;
+                                            }
+
+                                            const nextValue = Math.min(
+                                                setting.max,
+                                                Math.max(setting.min, Number(event.target.value) || setting.min),
+                                            );
+
+                                            onRuleCountChange(setting.templateCode, nextValue);
+                                        }}
+                                        className="h-10 min-w-0 flex-1 rounded-[10px] border-0 bg-white px-3 text-right font-poppins text-[15px] font-semibold text-sub-1 ring-1 ring-gray-6 outline-none focus:ring-main-1"
+                                    />
+                                    <span className="shrink-0 font-apple text-[12px] font-semibold text-gray-3">{setting.unit}</span>
+                                </span>
+                            </label>
+                        );
+                    })}
+                </div>
+            ) : null}
+            <p className="mt-3 font-apple text-[12px] leading-5 text-gray-4">{t('page.makeShift.constraints.twoShift.teamOnlyHint')}</p>
+        </section>
+    );
+}
+
 function ConstraintsSkeleton() {
     const {t} = useTypedTranslation();
     const rowWidths = ['w-10/12', 'w-8/12', 'w-9/12', 'w-7/12'];
@@ -2533,9 +2649,18 @@ export function Constraints({
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
     const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
+    const supportsTwoShift =
+        shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO' && shiftType.classification === 'DAY') &&
+        shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO' && shiftType.classification === 'NIGHT');
     const addableSoftTemplates = useMemo(
-        () => softTemplates.filter((template) => !isHiddenAddModalTemplate(template.id) && !isSkillConstraintTemplate(template)),
-        [softTemplates],
+        () =>
+            softTemplates.filter(
+                (template) =>
+                    !isHiddenAddModalTemplate(template.id) &&
+                    !isSkillConstraintTemplate(template) &&
+                    (supportsTwoShift || !TWO_SHIFT_CONFIGURATION_CODE_SET.has(template.id)),
+            ),
+        [softTemplates, supportsTwoShift],
     );
     const optionMap = useMemo(() => {
         const dutyOptions = uniqueByValue([
@@ -2705,6 +2830,55 @@ export function Constraints({
         },
         [replaceRules],
     );
+    const upsertTwoShiftConfigurationRule = (
+        templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number],
+        overrides: Record<string, unknown> = {},
+    ) => {
+        updateRules((prev) => {
+            const existing = prev.find((rule) => rule.templateCode === templateCode);
+            const template = softTemplateByCode.get(templateCode);
+            const nextRule = {
+                clientId: existing?.clientId ?? createClientId({templateCode}),
+                shiftConstraintRuleId: existing?.shiftConstraintRuleId,
+                templateCode,
+                category: template?.category ?? 'TWO_SHIFT',
+                severity: 'HARD' as const,
+                sortOrder: existing?.sortOrder ?? prev.length + 1,
+                params: {
+                    ...(DEFAULT_PARAMS_BY_TEMPLATE_CODE[templateCode] ?? {}),
+                    ...(existing?.params ?? {}),
+                    ...overrides,
+                },
+                selected: true,
+                isImportant: true,
+                displayText: existing?.displayText,
+                isValid: true,
+                invalidReason: null,
+            } satisfies TShiftConstraintRuleDraft;
+
+            return existing ? prev.map((rule) => (rule.clientId === existing.clientId ? nextRule : rule)) : [...prev, nextRule];
+        });
+    };
+    const setTwoShiftAutomationEnabled = (nextEnabled: boolean) => {
+        if (!supportsTwoShift) return;
+
+        if (nextEnabled) {
+            upsertTwoShiftConfigurationRule('TWO_SHIFT_MAX_LINES');
+
+            return;
+        }
+
+        updateRules((prev) => prev.filter((rule) => !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode)));
+    };
+    const updateTwoShiftRuleCount = (templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], count: number | null) => {
+        if (count == null && templateCode !== 'TWO_SHIFT_MAX_LINES') {
+            updateRules((prev) => prev.filter((rule) => rule.templateCode !== templateCode));
+
+            return;
+        }
+
+        upsertTwoShiftConfigurationRule(templateCode, {count});
+    };
 
     useEffect(() => {
         if (!rulesQuery.data || candidatesQuery.isPending) return;
@@ -2740,10 +2914,17 @@ export function Constraints({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
-    const softRules = rules.filter(
-        (rule) => (rule.severity === 'SOFT' || rule.severity === 'HARD') && rule.selected !== false && isVisibleConstraintRule(rule),
+    const twoShiftAutomationEnabled = rules.some(
+        (rule) => rule.templateCode === 'TWO_SHIFT_MAX_LINES' && rule.selected !== false && Number(rule.params.count ?? 0) > 0,
     );
-    const isLoading = candidatesQuery.isPending || rulesQuery.isPending;
+    const softRules = rules.filter(
+        (rule) =>
+            (rule.severity === 'SOFT' || rule.severity === 'HARD') &&
+            rule.selected !== false &&
+            isVisibleConstraintRule(rule) &&
+            !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode),
+    );
+    const isLoading = candidatesQuery.isPending || rulesQuery.isPending || shiftTypeQuery.isPending;
     const isLoadError = rulesQuery.isError;
     const softRuleViewModels = useMemo(
         () =>
@@ -2759,6 +2940,17 @@ export function Constraints({
     );
     const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, unknown>) => {
         const normalizedParams = normalizeNumberParams(template, normalizeCombinationParams(template, params, optionMap));
+
+        if (TWO_SHIFT_CONFIGURATION_CODE_SET.has(template.id)) {
+            if (!supportsTwoShift) return;
+
+            upsertTwoShiftConfigurationRule(template.id as (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], normalizedParams);
+            setSoftModalOpen(false);
+            toast.success(t('page.makeShift.constraints.toast.added'));
+
+            return;
+        }
+
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
         const nextRule: TShiftConstraintRuleDraft = {
@@ -2820,6 +3012,7 @@ export function Constraints({
                 });
                 const next = createRulesFromServer(response.rules)
                     .filter(isVisibleConstraintRule)
+                    .filter((rule) => supportsTwoShift || !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode))
                     .map((rule, index) => ({
                         ...rule,
                         shiftConstraintRuleId: undefined,
@@ -2840,7 +3033,7 @@ export function Constraints({
                 setImportingShiftTeamId(null);
             }
         },
-        [availableShiftTeams, currentShiftTeamId, enabled, importingShiftTeamId, queryClient, replaceRules, t, wardId],
+        [availableShiftTeams, currentShiftTeamId, enabled, importingShiftTeamId, queryClient, replaceRules, supportsTwoShift, t, wardId],
     );
     const updateRuleParam = useCallback(
         (clientId: string, key: string, value: unknown) => {
@@ -2953,6 +3146,14 @@ export function Constraints({
                 <div
                     className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
                 >
+                    {supportsTwoShift ? (
+                        <TwoShiftAutomationPanel
+                            enabled={twoShiftAutomationEnabled}
+                            rules={rules}
+                            onEnabledChange={setTwoShiftAutomationEnabled}
+                            onRuleCountChange={updateTwoShiftRuleCount}
+                        />
+                    ) : null}
                     <Section
                         action={
                             <>

@@ -22,6 +22,7 @@ import {
     setStoredServiceRegion,
     SUPPORTED_LANGUAGES,
 } from '@/shared/i18n/locale';
+import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
 import {
     CONTACT_PHONE_MAX_LENGTH,
     isValidContactPhone,
@@ -48,27 +49,6 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
-const BIRTH_DATE_MIN = '1900-01-01';
-const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const pad2 = (value: number) => value.toString().padStart(2, '0');
-const getDateKeyFromDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
-const getTodayDateKey = () => getDateKeyFromDate(new Date());
-const normalizeBirthDateForStorage = (value: string | null | undefined) => {
-    const trimmed = value?.trim() ?? '';
-
-    return trimmed.length > 0 ? trimmed : null;
-};
-const isValidBirthDate = (value: string | null | undefined, maxDate: string) => {
-    const birthDate = normalizeBirthDateForStorage(value);
-
-    if (!birthDate) return true;
-    if (!LOCAL_DATE_KEY_PATTERN.test(birthDate)) return false;
-    if (birthDate < BIRTH_DATE_MIN || birthDate > maxDate) return false;
-
-    const parsedDate = new Date(`${birthDate}T00:00:00`);
-
-    return !Number.isNaN(parsedDate.getTime()) && birthDate === getDateKeyFromDate(parsedDate);
-};
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const requestName = normalizeNurseNameForRequest(value);
 
@@ -756,16 +736,18 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 </label>
                                 <input
                                     id="birthDate"
-                                    type="date"
-                                    min={BIRTH_DATE_MIN}
-                                    max={birthDateMax}
+                                    type="text"
+                                    inputMode="numeric"
+                                    autoComplete="bday"
+                                    placeholder="YYYY-MM-DD"
+                                    maxLength={10}
                                     className={cn(
                                         FIELD_CLASS,
                                         modalFieldClassName,
                                         !isBirthDateValid && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
                                     )}
                                     value={draftBirthDate}
-                                    onChange={(event) => setDraftBirthDate(event.target.value)}
+                                    onChange={(event) => setDraftBirthDate(formatBirthDateInput(event.target.value))}
                                     aria-invalid={!isBirthDateValid}
                                     aria-describedby={!isBirthDateValid ? 'profile-birth-date-error' : undefined}
                                 />

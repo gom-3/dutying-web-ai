@@ -12,6 +12,14 @@ import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/c
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
+    getDefaultTimeRangeForRotation,
+    getRequiredRotationClassifications,
+    getSelectableClassificationsForWardMode,
+    getSelectableRotationSystemsForClassification,
+    getSelectableShiftRotationSystemsForWardMode,
+    type TSelectableShiftRotationSystem,
+} from '@/shared/lib/shift-rotation-selection';
+import {
     getShiftShortNameEntryKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
@@ -24,6 +32,11 @@ import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {NotificationBell} from '@/widgets/notifications/notification-bell';
+import {
+    inferWardRotationMode,
+    resolveWardShiftRotationSystem as getShiftTypeRotationSystem,
+    type TWardRotationMode,
+} from '../model/shift-type-rotation';
 import {formatShiftDuration} from '../model/utils';
 import {
     type TWardSettingsActions,
@@ -59,20 +72,13 @@ const SHIFT_COLOR_OPTIONS = [
 ] as const;
 const COLOR_PICKER_WIDTH = 148;
 const COLOR_PICKER_VIEWPORT_PADDING = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[32px_minmax(110px,0.95fr)_82px_180px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS_WITH_ROTATION = 'grid-cols-[32px_minmax(110px,0.95fr)_72px_92px_170px_minmax(220px,1.35fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION = 'grid-cols-[32px_minmax(110px,0.95fr)_72px_170px_minmax(220px,1.35fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_CLASSIFICATION_ORDER: Record<TWardSettingsShiftType['classification'], number> = {
-    DAY: 0,
-    EVENING: 1,
-    NIGHT: 2,
-    OTHER_WORK: 3,
-    OFF: 4,
-    OTHER_LEAVE: 5,
-};
 const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'DAY', labelKey: 'feature.createShiftModal.classification.day'},
     {value: 'EVENING', labelKey: 'feature.createShiftModal.classification.evening'},
@@ -81,13 +87,10 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
     {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
 ] as const;
-const REQUIRED_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT', 'OFF'] as const;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const SETTINGS_CONTENT_CLASS = 'mx-auto w-full max-w-[960px]';
 const SETTINGS_PRIMARY_BUTTON_CLASS =
     'h-11 rounded-[12px] bg-main-1 px-5 font-apple text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:bg-gray-6 disabled:text-gray-3';
-const SETTINGS_SECONDARY_BUTTON_CLASS =
-    'flex h-10 items-center gap-2 rounded-[10px] bg-gray-7 px-4 font-apple text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-6/60 hover:text-sub-1';
 
 type TColorPickerPosition = {
     left: number;
@@ -129,42 +132,64 @@ function isOffShiftType(shiftType: TWardSettingsShiftType) {
     return classification === 'OFF' || classification === 'OTHER_LEAVE';
 }
 
-function getAvailableShiftClassificationOptions(shiftTypes: TWardSettingsShiftType[], shiftTypeId: number) {
-    const currentClassification = shiftTypes.find((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
-    const usedClassifications = new Set(
-        shiftTypes.filter((shiftType) => shiftType.wardShiftTypeId !== shiftTypeId).map(getShiftTypeClassification),
+function isUsedShiftShortNameLocked(shiftType: TWardSettingsShiftType) {
+    return shiftType.isUsed === true && getShiftTypeClassification(shiftType) === 'OTHER_WORK';
+}
+
+function getAvailableShiftClassificationOptions(rotationMode: TWardRotationMode) {
+    const selectableClassifications = getSelectableClassificationsForWardMode(rotationMode);
+
+    return SHIFT_CLASSIFICATION_OPTIONS.filter((option) =>
+        selectableClassifications.some((classification) => classification === option.value),
     );
+}
 
-    return SHIFT_CLASSIFICATION_OPTIONS.filter((option) => {
-        const isRequiredClassification = REQUIRED_SHIFT_CLASSIFICATIONS.some((classification) => classification === option.value);
+function getAvailableShiftRotationSystems(shiftType: TWardSettingsShiftType, rotationMode: TWardRotationMode) {
+    if (rotationMode === 'MIXED') return getSelectableShiftRotationSystemsForWardMode(rotationMode);
 
-        return (
-            !isRequiredClassification ||
-            option.value === (currentClassification ? getShiftTypeClassification(currentClassification) : undefined) ||
-            !usedClassifications.has(option.value)
-        );
-    });
+    return getSelectableRotationSystemsForClassification(rotationMode, getShiftTypeClassification(shiftType));
+}
+
+function hasFixedNoneRotationSystem(shiftType: TWardSettingsShiftType) {
+    const classification = getShiftTypeClassification(shiftType);
+
+    return classification === 'OFF' || classification === 'OTHER_WORK' || classification === 'OTHER_LEAVE';
+}
+
+function getSelectedShiftTypeRotationSystem(shiftType: TWardSettingsShiftType): TSelectableShiftRotationSystem {
+    if (hasFixedNoneRotationSystem(shiftType)) return 'NONE';
+
+    return shiftType.rotationSystem ?? getShiftTypeRotationSystem(shiftType);
 }
 
 function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSettingsShiftType) {
-    if (a.displayOrder != null && b.displayOrder != null && a.displayOrder !== b.displayOrder) {
-        return a.displayOrder - b.displayOrder;
-    }
+    const getSettingsOrder = (shiftType: TWardSettingsShiftType) => {
+        const rotationSystem = getShiftTypeRotationSystem(shiftType);
+        const classification = getShiftTypeClassification(shiftType);
 
-    const restOrder = Number(a.isOff) - Number(b.isOff);
+        if (rotationSystem === 'THREE') return 0;
 
-    if (restOrder !== 0) return restOrder;
+        if (rotationSystem === 'TWO') return 1;
 
-    const classificationOrder =
-        SHIFT_TYPE_CLASSIFICATION_ORDER[getShiftTypeClassification(a)] - SHIFT_TYPE_CLASSIFICATION_ORDER[getShiftTypeClassification(b)];
+        if (classification === 'OFF') return 2;
 
-    if (classificationOrder !== 0) return classificationOrder;
+        if (classification === 'OTHER_WORK') return 3;
 
-    return a.wardShiftTypeId - b.wardShiftTypeId;
+        if (classification === 'OTHER_LEAVE') return 4;
+
+        // DAY/EVENING/NIGHT 분류여도 교대제가 NONE이면 사용자 정의 기타근무다.
+        return 3;
+    };
+    const settingsOrder = getSettingsOrder(a) - getSettingsOrder(b);
+
+    if (settingsOrder !== 0) return settingsOrder;
+
+    // 동일 그룹의 사용자 정의 근무는 현재 배열 순서를 유지한다. 따라서 드래그 정렬도 보존된다.
+    return 0;
 }
 
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
-    const shortName = shiftType.shortName.trim().toLocaleUpperCase();
+    const shortName = normalizeShiftShortNameInput(shiftType.shortName.trim());
     const name = shiftType.name.trim() || shortName;
     const classification = getShiftTypeClassification(shiftType);
     const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
@@ -179,12 +204,45 @@ function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTy
         isOff,
         isCounted: isOff ? false : shiftType.isCounted,
         classification,
+        rotationSystem: isOff ? 'NONE' : getShiftTypeRotationSystem(shiftType),
+        paidMinutes: isOff ? null : shiftType.paidMinutes,
+        isActive: shiftType.isActive !== false,
         displayOrder: shiftType.displayOrder,
     };
 }
 
+function areShiftTypePayloadsEqual(left: TCreateShiftTypeDTO, right: TCreateShiftTypeDTO) {
+    return (
+        left.name === right.name &&
+        left.shortName === right.shortName &&
+        left.startTime === right.startTime &&
+        left.endTime === right.endTime &&
+        left.color.toLocaleUpperCase() === right.color.toLocaleUpperCase() &&
+        left.isDefault === right.isDefault &&
+        left.isOff === right.isOff &&
+        left.isCounted === right.isCounted &&
+        left.classification === right.classification &&
+        left.rotationSystem === right.rotationSystem &&
+        (left.paidMinutes ?? null) === (right.paidMinutes ?? null) &&
+        (left.isActive ?? true) === (right.isActive ?? true) &&
+        (left.displayOrder ?? null) === (right.displayOrder ?? null)
+    );
+}
+
+function hasPersistedShiftTypeContractDrift(persisted: TWardSettingsShiftType, desired: TCreateShiftTypeDTO) {
+    return (
+        persisted.rotationSystem !== desired.rotationSystem ||
+        normalizeShiftShortNameInput(persisted.shortName) !== desired.shortName ||
+        (persisted.paidMinutes ?? null) !== (desired.paidMinutes ?? null)
+    );
+}
+
 function withShiftTypeDisplayOrders(shiftTypes: TWardSettingsShiftType[]) {
     return shiftTypes.map((shiftType, index) => ({...shiftType, displayOrder: index + 1}));
+}
+
+function withInitialShiftTypeDisplayOrders(shiftTypes: TWardSettingsShiftType[]) {
+    return withShiftTypeDisplayOrders([...shiftTypes].sort(compareShiftTypesForSettings));
 }
 
 function parseShiftTimeToMinutes(value: string) {
@@ -315,7 +373,7 @@ function ShiftTypeTable({
     onCreate,
     onUpdate,
     onDelete,
-    onRetry,
+    onRefresh,
     status,
 }: {
     shiftTypes: TWardSettingsShiftType[];
@@ -323,15 +381,19 @@ function ShiftTypeTable({
     onCreate: (payload: TCreateShiftTypeDTO) => Promise<boolean | void>;
     onUpdate: (shiftType: TWardSettingsShiftType) => Promise<boolean | void>;
     onDelete: (shiftTypeId: number) => Promise<boolean | void>;
-    onRetry: () => void;
+    onRefresh: () => Promise<void> | void;
 }) {
     const {t} = useTypedTranslation();
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<number | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<number, string>>({});
     const [showValidationHighlight, setShowValidationHighlight] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [draftShiftTypes, setDraftShiftTypes] = useState<TWardSettingsShiftType[]>([]);
+    const [rotationMode, setRotationMode] = useState<TWardRotationMode>('THREE');
     const [deletedShiftTypeIds, setDeletedShiftTypeIds] = useState<number[]>([]);
     const [colorPickerPosition, setColorPickerPosition] = useState<TColorPickerPosition | null>(null);
+    const savingRef = useRef(false);
+    const hasInitializedShiftTypeOrderRef = useRef(false);
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
     const openedColorMenuRef = useRef<HTMLDivElement | null>(null);
     const tempShiftTypeIdRef = useRef(-1);
@@ -343,22 +405,32 @@ function ShiftTypeTable({
     };
 
     useEffect(() => {
-        setDraftShiftTypes(withShiftTypeDisplayOrders([...shiftTypes].sort(compareShiftTypesForSettings)));
+        if (status !== 'success') return;
+
+        setDraftShiftTypes(
+            hasInitializedShiftTypeOrderRef.current
+                ? withShiftTypeDisplayOrders(shiftTypes)
+                : withInitialShiftTypeDisplayOrders(shiftTypes),
+        );
+        setRotationMode(inferWardRotationMode(shiftTypes));
+        hasInitializedShiftTypeOrderRef.current = true;
         setDeletedShiftTypeIds([]);
         setShortNameErrorById({});
         setShowValidationHighlight(false);
-    }, [shiftTypes]);
+    }, [shiftTypes, status]);
 
     const duplicatedShiftShortNameKeys = useMemo(() => {
         const countByShortNameKey = new Map<string, number>();
 
-        draftShiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
+        draftShiftTypes
+            .filter((shiftType) => shiftType.isActive !== false)
+            .forEach((shiftType) => {
+                const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
 
-            if (!normalizedShortNameKey) return;
+                if (!normalizedShortNameKey) return;
 
-            countByShortNameKey.set(normalizedShortNameKey, (countByShortNameKey.get(normalizedShortNameKey) ?? 0) + 1);
-        });
+                countByShortNameKey.set(normalizedShortNameKey, (countByShortNameKey.get(normalizedShortNameKey) ?? 0) + 1);
+            });
 
         return new Set(
             Array.from(countByShortNameKey.entries())
@@ -441,6 +513,8 @@ function ShiftTypeTable({
         return null;
     };
     const getShiftTimeError = (shiftType: TWardSettingsShiftType) => {
+        if (shiftType.isActive === false) return null;
+
         if (isOffShiftType(shiftType)) return null;
 
         const normalizedStartTime = shiftType.startTime?.trim() ?? '';
@@ -457,23 +531,81 @@ function ShiftTypeTable({
 
         return null;
     };
+    const isShiftTypeEnabledByRotationMode = (shiftType: TWardSettingsShiftType) => {
+        const rotationSystem = getShiftTypeRotationSystem(shiftType);
+
+        return rotationSystem === 'NONE' || rotationMode === 'MIXED' || rotationSystem === rotationMode;
+    };
+    const shiftTypesForSave = draftShiftTypes.map((shiftType) =>
+        shiftType.isActive !== false && !isShiftTypeEnabledByRotationMode(shiftType) ? {...shiftType, isActive: false} : shiftType,
+    );
     const hasRowValidationError = (shiftType: TWardSettingsShiftType) =>
+        shiftType.isActive !== false &&
+        isShiftTypeEnabledByRotationMode(shiftType) &&
         Boolean(
             getShiftNameError(shiftType.name) ??
                 getShiftShortNameError(shiftType.wardShiftTypeId, shiftType.shortName) ??
                 getShiftTimeError(shiftType),
         );
-    const missingRequiredShiftTypeLabels = REQUIRED_SHIFT_CLASSIFICATIONS.filter(
-        (classification) => !draftShiftTypes.some((shiftType) => getShiftTypeClassification(shiftType) === classification),
-    ).map((classification) => {
-        const option = SHIFT_CLASSIFICATION_OPTIONS.find((candidate) => candidate.value === classification);
+    const hasShiftRotationValidationError = (shiftType: TWardSettingsShiftType) =>
+        shiftType.isActive !== false &&
+        isShiftTypeEnabledByRotationMode(shiftType) &&
+        !getSelectableRotationSystemsForClassification(rotationMode, getShiftTypeClassification(shiftType)).includes(
+            getSelectedShiftTypeRotationSystem(shiftType),
+        );
+    const activeShiftTypes = shiftTypesForSave.filter((shiftType) => shiftType.isActive !== false);
+    const hasActiveRotationClassification = (
+        rotationSystem: NonNullable<TCreateShiftTypeDTO['rotationSystem']>,
+        classification: TCreateShiftTypeDTO['classification'],
+    ) =>
+        activeShiftTypes.some(
+            (shiftType) =>
+                getSelectedShiftTypeRotationSystem(shiftType) === rotationSystem &&
+                getShiftTypeClassification(shiftType) === classification,
+        );
+    const showRotationSystemColumn = rotationMode === 'MIXED';
+    const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
+    const requiredRotationClassifications = getRequiredRotationClassifications(rotationMode);
+    const missingRequiredShiftTypeLabels = requiredRotationClassifications
+        .filter(({rotationSystem, classification}) => !hasActiveRotationClassification(rotationSystem, classification))
+        .map(({rotationSystem, classification}) => {
+            const option = SHIFT_CLASSIFICATION_OPTIONS.find((candidate) => candidate.value === classification);
+            const classificationLabel = option ? t(option.labelKey) : classification;
 
-        return option ? t(option.labelKey) : classification;
-    });
+            if (rotationSystem === 'TWO') return t('page.wardSettings.shiftTypes.rotation.twoItem', {classification: classificationLabel});
+
+            return classificationLabel;
+        });
     const hasMissingRequiredShiftTypes = missingRequiredShiftTypeLabels.length > 0;
-    const hasAnyValidationError = draftShiftTypes.some(hasRowValidationError) || hasMissingRequiredShiftTypes;
+    const hasAnyValidationError =
+        draftShiftTypes.some(hasRowValidationError) ||
+        draftShiftTypes.some(hasShiftRotationValidationError) ||
+        hasMissingRequiredShiftTypes;
+    const nextTempShiftTypeId = () => tempShiftTypeIdRef.current--;
+    const getSemanticShiftTypePatch = (
+        shiftType: TWardSettingsShiftType,
+        classification: TCreateShiftTypeDTO['classification'],
+        rotationSystem: TSelectableShiftRotationSystem,
+    ): Partial<TWardSettingsShiftType> => {
+        const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+        const timeRange = getDefaultTimeRangeForRotation(rotationSystem, classification);
+
+        return {
+            classification,
+            isOff,
+            isCounted: !isOff,
+            rotationSystem,
+            paidMinutes: rotationSystem === 'TWO' ? 630 : null,
+            isActive: true,
+            startTime: isOff ? '' : (timeRange?.startTime ?? shiftType.startTime),
+            endTime: isOff ? '' : (timeRange?.endTime ?? shiftType.endTime),
+        };
+    };
+    const changeShiftTypeRotationSystem = (shiftType: TWardSettingsShiftType, rotationSystem: TSelectableShiftRotationSystem) => {
+        patchDraft(shiftType.wardShiftTypeId, getSemanticShiftTypePatch(shiftType, getShiftTypeClassification(shiftType), rotationSystem));
+    };
     const addDraftShiftType = () => {
-        const nextTempId = tempShiftTypeIdRef.current--;
+        const nextTempId = nextTempShiftTypeId();
 
         setDraftShiftTypes((prev) =>
             withShiftTypeDisplayOrders([
@@ -489,6 +621,9 @@ function ShiftTypeTable({
                     isOff: false,
                     isCounted: true,
                     classification: 'OTHER_WORK',
+                    rotationSystem: 'NONE',
+                    paidMinutes: null,
+                    isActive: true,
                 },
             ]),
         );
@@ -524,9 +659,17 @@ function ShiftTypeTable({
         closeColorPicker();
     };
     const saveAllShiftTypes = async () => {
+        if (savingRef.current) return;
+
         setShowValidationHighlight(true);
 
         if (hasAnyValidationError) {
+            if (draftShiftTypes.some(hasShiftRotationValidationError)) {
+                toast.error(t('page.onboardingWardCreate.blocked.invalidShiftType'));
+
+                return;
+            }
+
             const firstInvalid = draftShiftTypes.find(hasRowValidationError);
 
             if (!firstInvalid) {
@@ -564,66 +707,127 @@ function ShiftTypeTable({
             return;
         }
 
-        const deletedDefaultShiftTypeReplacements = new Map<number, TWardSettingsShiftType>();
-        const usedReplacementDraftIds = new Set<number>();
+        savingRef.current = true;
+        setIsSaving(true);
 
-        deletedShiftTypeIds.forEach((shiftTypeId) => {
-            const deletedShiftType = shiftTypes.find((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
+        try {
+            const deletedDefaultShiftTypeReplacements = new Map<number, TWardSettingsShiftType>();
+            const replacementShiftTypeIdByDraftId = new Map<number, number>();
+            const usedReplacementDraftIds = new Set<number>();
 
-            if (!deletedShiftType?.isDefault) return;
+            deletedShiftTypeIds.forEach((shiftTypeId) => {
+                const deletedShiftType = shiftTypes.find((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
 
-            const replacement = draftShiftTypes.find(
-                (shiftType) =>
-                    shiftType.wardShiftTypeId < 0 &&
-                    !usedReplacementDraftIds.has(shiftType.wardShiftTypeId) &&
-                    getShiftTypeClassification(shiftType) === getShiftTypeClassification(deletedShiftType),
-            );
+                if (!deletedShiftType?.isDefault) return;
 
-            if (!replacement) return;
-
-            deletedDefaultShiftTypeReplacements.set(shiftTypeId, replacement);
-            usedReplacementDraftIds.add(replacement.wardShiftTypeId);
-        });
-
-        for (const shiftTypeId of deletedShiftTypeIds.filter((id) => !deletedDefaultShiftTypeReplacements.has(id))) {
-            const saved = await onDelete(shiftTypeId);
-
-            if (saved === false) return;
-        }
-
-        for (const shiftType of draftShiftTypes) {
-            if (shiftType.wardShiftTypeId < 0) {
-                const replacementEntry = Array.from(deletedDefaultShiftTypeReplacements.entries()).find(
-                    ([, replacement]) => replacement.wardShiftTypeId === shiftType.wardShiftTypeId,
+                const replacement = shiftTypesForSave.find(
+                    (shiftType) =>
+                        shiftType.wardShiftTypeId < 0 &&
+                        !usedReplacementDraftIds.has(shiftType.wardShiftTypeId) &&
+                        getShiftTypeClassification(shiftType) === getShiftTypeClassification(deletedShiftType) &&
+                        getShiftTypeRotationSystem(shiftType) === getShiftTypeRotationSystem(deletedShiftType),
                 );
 
-                if (replacementEntry) {
-                    const [replacedShiftTypeId] = replacementEntry;
-                    const replacedShiftType = shiftTypes.find((item) => item.wardShiftTypeId === replacedShiftTypeId);
-                    const saved = await onUpdate({
-                        ...shiftType,
-                        wardShiftTypeId: replacedShiftTypeId,
-                        isDefault: replacedShiftType?.isDefault ?? shiftType.isDefault,
-                    });
+                if (!replacement) return;
 
-                    if (saved === false) return;
+                deletedDefaultShiftTypeReplacements.set(shiftTypeId, replacement);
+                replacementShiftTypeIdByDraftId.set(replacement.wardShiftTypeId, shiftTypeId);
+                usedReplacementDraftIds.add(replacement.wardShiftTypeId);
+            });
 
-                    continue;
+            const shiftTypeIdsToDelete = deletedShiftTypeIds.filter((id) => !deletedDefaultShiftTypeReplacements.has(id));
+            const shiftTypeIdsToDeleteBeforeUpdates = shiftTypeIdsToDelete;
+            const updates: TWardSettingsShiftType[] = [];
+            const creations: TCreateShiftTypeDTO[] = [];
+
+            shiftTypesForSave.forEach((shiftType) => {
+                if (shiftType.wardShiftTypeId < 0) {
+                    if (shiftType.isActive === false) return;
+
+                    const replacedShiftTypeId = replacementShiftTypeIdByDraftId.get(shiftType.wardShiftTypeId);
+
+                    if (replacedShiftTypeId != null) {
+                        const replacedShiftType = shiftTypes.find((item) => item.wardShiftTypeId === replacedShiftTypeId);
+                        const replacement = {
+                            ...shiftType,
+                            wardShiftTypeId: replacedShiftTypeId,
+                            isDefault: replacedShiftType?.isDefault ?? shiftType.isDefault,
+                        };
+
+                        if (
+                            !replacedShiftType ||
+                            !areShiftTypePayloadsEqual(toShiftTypeUpdateDTO(replacedShiftType), toShiftTypeUpdateDTO(replacement))
+                        ) {
+                            updates.push(replacement);
+                        }
+
+                        return;
+                    }
+
+                    creations.push(toShiftTypeUpdateDTO(shiftType));
+
+                    return;
                 }
 
-                const saved = await onCreate(toShiftTypeUpdateDTO(shiftType));
+                const original = shiftTypes.find((candidate) => candidate.wardShiftTypeId === shiftType.wardShiftTypeId);
+                const desiredPayload = toShiftTypeUpdateDTO(shiftType);
 
-                if (saved === false) return;
+                if (
+                    !original ||
+                    hasPersistedShiftTypeContractDrift(original, desiredPayload) ||
+                    !areShiftTypePayloadsEqual(toShiftTypeUpdateDTO(original), desiredPayload)
+                ) {
+                    updates.push(shiftType);
+                }
+            });
 
-                continue;
+            const orderedUpdates = [...updates].sort((left, right) => Number(left.isActive !== false) - Number(right.isActive !== false));
+
+            let didMutate = false;
+
+            for (const shiftTypeId of shiftTypeIdsToDeleteBeforeUpdates) {
+                const saved = await onDelete(shiftTypeId);
+
+                if (saved === false) {
+                    await onRefresh();
+
+                    return;
+                }
+
+                didMutate = true;
             }
 
-            const saved = await onUpdate(shiftType);
+            for (const shiftType of orderedUpdates) {
+                const saved = await onUpdate(shiftType);
 
-            if (saved === false) return;
+                if (saved === false) {
+                    await onRefresh();
+
+                    return;
+                }
+
+                didMutate = true;
+            }
+
+            for (const payload of creations) {
+                const saved = await onCreate(payload);
+
+                if (saved === false) {
+                    await onRefresh();
+
+                    return;
+                }
+
+                didMutate = true;
+            }
+
+            if (didMutate) await onRefresh();
+
+            toast.success(t('page.wardSettings.shiftTypes.toast.saveSuccess'));
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
         }
-
-        toast.success(t('page.wardSettings.shiftTypes.toast.saveSuccess'));
     };
 
     if (status === 'pending') {
@@ -641,38 +845,85 @@ function ShiftTypeTable({
                     tone="error"
                     title={t('page.wardSettings.shiftTypes.error')}
                     description={t('page.state.errorDescription')}
-                    action={{label: t('page.state.retry'), onClick: () => void onRetry()}}
+                    action={{label: t('page.state.retry'), onClick: () => void onRefresh()}}
                     className="py-0"
                 />
             </SettingsStateFrame>
         );
     }
 
-    if (draftShiftTypes.length === 0) {
-        return (
-            <SettingsStateFrame>
-                <PageState tone="empty" title={t('page.wardSettings.shiftTypes.empty')} className="py-0">
-                    <div className="mt-1 flex justify-center">
-                        <button type="button" className={SETTINGS_SECONDARY_BUTTON_CLASS} onClick={addDraftShiftType}>
-                            <Plus className="h-4 w-4" />
-                            {t('page.wardSettings.addShiftType')}
-                        </button>
-                    </div>
-                </PageState>
-            </SettingsStateFrame>
-        );
-    }
-
     return (
         <div className="w-full">
+            <fieldset className="mb-4 rounded-[18px] bg-white p-5">
+                <legend className="px-1 font-apple text-[16px] font-semibold text-sub-1">
+                    {t('page.wardSettings.shiftTypes.rotation.modeTitle')}
+                </legend>
+                <p className="mb-4 font-apple text-[13px] leading-5 text-gray-3">
+                    {t('page.wardSettings.shiftTypes.rotation.modeDescription')}
+                </p>
+                <div role="radiogroup" className="grid gap-3 md:grid-cols-3">
+                    {(
+                        [
+                            {
+                                value: 'THREE' as const,
+                                title: t('page.wardSettings.shiftTypes.rotation.threeTitle'),
+                                description: t('page.wardSettings.shiftTypes.rotation.threeDescription'),
+                            },
+                            {
+                                value: 'TWO' as const,
+                                title: t('page.wardSettings.shiftTypes.rotation.twoTitle'),
+                                description: t('page.wardSettings.shiftTypes.rotation.twoDescription'),
+                            },
+                            {
+                                value: 'MIXED' as const,
+                                title: t('page.wardSettings.shiftTypes.rotation.mixedTitle'),
+                                description: t('page.wardSettings.shiftTypes.rotation.mixedDescription'),
+                            },
+                        ] as const
+                    ).map((option) => {
+                        const selected = rotationMode === option.value;
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                onClick={() => setRotationMode(option.value)}
+                                className={cn(
+                                    'flex min-h-[96px] items-start gap-3 rounded-[14px] p-4 text-left ring-1 transition-colors',
+                                    selected
+                                        ? 'bg-main-light text-main-1 ring-main-1'
+                                        : 'bg-gray-7 text-sub-2 ring-transparent hover:bg-gray-6/60',
+                                )}
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border',
+                                        selected ? 'border-main-1 bg-main-1 text-white' : 'border-gray-5 bg-white text-transparent',
+                                    )}
+                                >
+                                    <Check className="size-3" strokeWidth={3} />
+                                </span>
+                                <span className="min-w-0">
+                                    <span className="block font-apple text-[14px] font-semibold">{option.title}</span>
+                                    <span className="mt-1 block font-apple text-[12px] leading-5 text-gray-3">{option.description}</span>
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </fieldset>
             <div className="overflow-x-auto">
-                <div className="min-w-[860px] rounded-[16px] bg-white p-2">
+                <div className="min-w-[960px] rounded-[16px] bg-white p-2">
                     <div
-                        className={`grid ${SHIFT_TYPE_GRID_COLS} items-center gap-3 px-3 py-2.5 text-center font-apple text-[12px] font-semibold text-gray-3`}
+                        className={`grid ${shiftTypeGridCols} items-center gap-3 px-3 py-2.5 text-center font-apple text-[12px] font-semibold text-gray-3`}
                     >
                         <span />
                         <span>{t('page.wardSettings.shiftTypes.column.name')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.shortName')}</span>
+                        {showRotationSystemColumn ? <span>{t('page.wardSettings.shiftTypes.column.rotation')}</span> : null}
                         <span>{t('page.wardSettings.shiftTypes.column.type')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.workTime')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.color')}</span>
@@ -700,7 +951,10 @@ function ShiftTypeTable({
                                                 <div
                                                     ref={dragProvided.innerRef}
                                                     {...dragProvided.draggableProps}
-                                                    className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-3 px-3 py-3.5`}
+                                                    className={cn(
+                                                        `grid ${shiftTypeGridCols} items-start gap-3 px-3 py-3.5`,
+                                                        shiftType.isActive === false && 'opacity-45',
+                                                    )}
                                                 >
                                                     <button
                                                         type="button"
@@ -752,18 +1006,18 @@ function ShiftTypeTable({
                                                             data-shift-shortname-input={shiftType.wardShiftTypeId}
                                                             value={shiftType.shortName}
                                                             maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
-                                                            tabIndex={shiftType.isUsed ? -1 : undefined}
-                                                            readOnly={shiftType.isUsed === true}
-                                                            aria-readonly={shiftType.isUsed === true}
+                                                            tabIndex={isUsedShiftShortNameLocked(shiftType) ? -1 : undefined}
+                                                            readOnly={isUsedShiftShortNameLocked(shiftType)}
+                                                            aria-readonly={isUsedShiftShortNameLocked(shiftType)}
                                                             onMouseDown={(event) => {
-                                                                if (shiftType.isUsed) event.preventDefault();
+                                                                if (isUsedShiftShortNameLocked(shiftType)) event.preventDefault();
                                                             }}
                                                             onClick={() => {
-                                                                if (shiftType.isUsed) showUsedShiftTypeLockedToast();
+                                                                if (isUsedShiftShortNameLocked(shiftType)) showUsedShiftTypeLockedToast();
                                                             }}
                                                             onKeyDown={(event) => {
                                                                 if (
-                                                                    shiftType.isUsed &&
+                                                                    isUsedShiftShortNameLocked(shiftType) &&
                                                                     (event.key.length === 1 ||
                                                                         event.key === 'Backspace' ||
                                                                         event.key === 'Delete')
@@ -773,13 +1027,13 @@ function ShiftTypeTable({
                                                                 }
                                                             }}
                                                             onPaste={(event) => {
-                                                                if (shiftType.isUsed) {
+                                                                if (isUsedShiftShortNameLocked(shiftType)) {
                                                                     event.preventDefault();
                                                                     showUsedShiftTypeLockedToast();
                                                                 }
                                                             }}
                                                             onChange={(event) => {
-                                                                if (shiftType.isUsed) {
+                                                                if (isUsedShiftShortNameLocked(shiftType)) {
                                                                     showUsedShiftTypeLockedToast();
 
                                                                     return;
@@ -830,7 +1084,7 @@ function ShiftTypeTable({
                                                             }
                                                             className={cn(
                                                                 `h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
-                                                                shiftType.isUsed
+                                                                isUsedShiftShortNameLocked(shiftType)
                                                                     ? 'cursor-not-allowed bg-gray-6 text-gray-4 hover:bg-gray-6 focus-visible:bg-gray-6 focus-visible:ring-0'
                                                                     : '',
                                                                 showValidationHighlight &&
@@ -847,15 +1101,59 @@ function ShiftTypeTable({
                                                             </InlineFieldError>
                                                         ) : null}
                                                     </div>
+                                                    {showRotationSystemColumn ? (
+                                                        <div className="flex h-10 items-center justify-center">
+                                                            {hasFixedNoneRotationSystem(shiftType) ? (
+                                                                <span className="flex h-10 w-full items-center justify-center rounded-[10px] bg-gray-7 px-2 font-apple text-[13px] text-gray-3">
+                                                                    {t('page.wardSettings.shiftTypes.rotation.noneBadge')}
+                                                                </span>
+                                                            ) : (
+                                                                <ShiftClassificationDropdown
+                                                                    value={getSelectedShiftTypeRotationSystem(shiftType)}
+                                                                    disabled={shiftType.isUsed === true}
+                                                                    onDisabledClick={showUsedShiftTypeLockedToast}
+                                                                    options={getAvailableShiftRotationSystems(shiftType, rotationMode).map(
+                                                                        (rotationSystem) => ({
+                                                                            value: rotationSystem,
+                                                                            label:
+                                                                                rotationSystem === 'THREE'
+                                                                                    ? t('page.wardSettings.shiftTypes.rotation.threeBadge')
+                                                                                    : rotationSystem === 'TWO'
+                                                                                      ? t('page.wardSettings.shiftTypes.rotation.twoBadge')
+                                                                                      : t(
+                                                                                            'page.wardSettings.shiftTypes.rotation.noneBadge',
+                                                                                        ),
+                                                                        }),
+                                                                    )}
+                                                                    ariaLabel={t('page.onboardingWardCreate.shiftType.rotationAria', {
+                                                                        shiftName:
+                                                                            shiftType.name ||
+                                                                            shiftType.shortName ||
+                                                                            t('page.wardSettings.type.work'),
+                                                                    })}
+                                                                    onChange={(value) =>
+                                                                        changeShiftTypeRotationSystem(
+                                                                            shiftType,
+                                                                            value as TSelectableShiftRotationSystem,
+                                                                        )
+                                                                    }
+                                                                    className={cn(
+                                                                        'px-2 pr-7 text-[13px]',
+                                                                        showValidationHighlight &&
+                                                                            hasShiftRotationValidationError(shiftType)
+                                                                            ? SHIFT_TYPE_INPUT_ERROR_CLASS
+                                                                            : '',
+                                                                    )}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ) : null}
                                                     <div className="relative mx-auto flex h-10 w-full max-w-[180px] items-center">
                                                         <ShiftClassificationDropdown
                                                             value={getShiftTypeClassification(shiftType)}
                                                             disabled={shiftType.isUsed === true}
                                                             onDisabledClick={showUsedShiftTypeLockedToast}
-                                                            options={getAvailableShiftClassificationOptions(
-                                                                draftShiftTypes,
-                                                                shiftType.wardShiftTypeId,
-                                                            ).map((option) => ({
+                                                            options={getAvailableShiftClassificationOptions(rotationMode).map((option) => ({
                                                                 value: option.value,
                                                                 label: t(option.labelKey),
                                                             }))}
@@ -867,15 +1165,22 @@ function ShiftTypeTable({
                                                             })}
                                                             onChange={(value) => {
                                                                 const classification = value as TCreateShiftTypeDTO['classification'];
-                                                                const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+                                                                const currentRotationSystem = getSelectedShiftTypeRotationSystem(shiftType);
+                                                                const selectableRotationSystems =
+                                                                    getSelectableRotationSystemsForClassification(
+                                                                        rotationMode,
+                                                                        classification,
+                                                                    );
+                                                                const rotationSystem = selectableRotationSystems.includes(
+                                                                    currentRotationSystem,
+                                                                )
+                                                                    ? currentRotationSystem
+                                                                    : (selectableRotationSystems[0] ?? 'NONE');
 
-                                                                patchDraft(shiftType.wardShiftTypeId, {
-                                                                    classification,
-                                                                    isOff,
-                                                                    isCounted: !isOff,
-                                                                    startTime: isOff ? '' : shiftType.startTime || '09:00',
-                                                                    endTime: isOff ? '' : shiftType.endTime || '18:00',
-                                                                });
+                                                                patchDraft(
+                                                                    shiftType.wardShiftTypeId,
+                                                                    getSemanticShiftTypePatch(shiftType, classification, rotationSystem),
+                                                                );
                                                             }}
                                                         />
                                                     </div>
@@ -1075,6 +1380,8 @@ function ShiftTypeTable({
                 <button
                     type="button"
                     onClick={saveAllShiftTypes}
+                    disabled={isSaving}
+                    aria-busy={isSaving}
                     className={cn(
                         SETTINGS_PRIMARY_BUTTON_CLASS,
                         'w-full sm:w-auto',
@@ -1384,12 +1691,12 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         onCreate={actions.addShiftType}
                         onUpdate={(shiftType) => actions.updateShiftType(shiftType.wardShiftTypeId, toShiftTypeUpdateDTO(shiftType))}
                         onDelete={actions.deleteShiftType}
-                        onRetry={actions.retryShiftTypes}
+                        onRefresh={actions.retryShiftTypes}
                     />
                 ) : state.currentTab === 'restLeavePolicy' ? (
                     <RestLeavePolicySection
                         wardId={state.wardId}
-                        shiftTypes={state.shiftTypes}
+                        shiftTypes={state.shiftTypes.filter((shiftType) => shiftType.isActive !== false)}
                         onDirtyChange={setHasUnsavedRestLeavePolicyChanges}
                     />
                 ) : state.currentTab === 'requestReception' ? (
