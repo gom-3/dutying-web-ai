@@ -88,7 +88,7 @@ vi.mock('../ui/board-tutorial', () => ({
     BoardTutorial: () => null,
 }));
 
-function renderPage(children: ReactNode) {
+function renderPage(children: ReactNode, options?: {initialEntries?: string[]}) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: {
@@ -98,7 +98,7 @@ function renderPage(children: ReactNode) {
     });
 
     return render(
-        <MemoryRouter>
+        <MemoryRouter initialEntries={options?.initialEntries}>
             <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
         </MemoryRouter>,
     );
@@ -207,6 +207,19 @@ describe('BoardPage', () => {
         expect(within(activeMetricsPost!).getByText('2')).toHaveClass('text-red');
         expect(within(activeMetricsPost!).getByText('3')).toHaveClass('text-[#217A43]');
         expect(within(activeMetricsPost!).getByText('4')).toHaveClass('text-main-1');
+    });
+
+    it('handles a deleted post opened from a notification without loading post relations', async () => {
+        mockGetPost.mockRejectedValue(new Error('missing post'));
+
+        renderPage(<BoardPage />, {initialEntries: ['/board?postId=999']});
+
+        await waitFor(() => expect(mockGetPost).toHaveBeenCalledWith(287, 999));
+
+        expect(await screen.findByText('게시글을 열 수 없어요')).toBeInTheDocument();
+        expect(screen.getByText('삭제되었거나 접근 권한이 변경된 게시글이에요.')).toBeInTheDocument();
+        expect(mockGetComments).not.toHaveBeenCalled();
+        expect(mockGetCheckers).not.toHaveBeenCalled();
     });
 
     it('marks today on the ward calendar', async () => {

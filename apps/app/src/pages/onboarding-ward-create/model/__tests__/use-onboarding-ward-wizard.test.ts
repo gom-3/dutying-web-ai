@@ -227,10 +227,10 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(1);
         expect(savedDraft.currentStep).toBe(4);
         expect(result.current.draft.currentStep).toBe(4);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '/', 'A', 'R', 'Y', 'Z']);
-        expect(result.current.draft.shiftTypes.slice(3).every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/', 'R', 'Z', 'A', 'Y']);
+        expect(result.current.draft.shiftTypes.every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
 
-        const customShiftColors = result.current.draft.shiftTypes.slice(4).map((shiftType) => shiftType.color);
+        const customShiftColors = result.current.draft.shiftTypes.slice(1).map((shiftType) => shiftType.color);
 
         expect(customShiftColors).not.toContain('#94A3B8');
         expect(new Set(customShiftColors).size).toBe(customShiftColors.length);
@@ -694,12 +694,10 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '이브닝', '나이트', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual([
             DEFAULT_SHIFT_TYPE_COLORS[0],
-            DEFAULT_SHIFT_TYPE_COLORS[1],
-            DEFAULT_SHIFT_TYPE_COLORS[2],
             DEFAULT_SHIFT_TYPE_COLORS[3],
         ]);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);

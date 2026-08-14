@@ -76,18 +76,7 @@ vi.mock('@/pages/make-shift/ui/steps/constraints', () => ({
 type TMockValue = {
     state: {
         wardId: number | null;
-        currentTab: 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints' | 'calendar';
-        ward: {
-            wardId: number;
-            name: string;
-            hospitalName: string;
-            code: string;
-            nurseCnt: number;
-            showMemberBirthdaysInCalendar?: boolean;
-            wardShiftTypes: [];
-            shiftTeams: [];
-        };
-        wardStatus: 'success' | 'pending' | 'error';
+        currentTab: 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
         shiftTypes: Array<{
             wardShiftTypeId: number;
             name: string;
@@ -98,7 +87,7 @@ type TMockValue = {
             isDefault: boolean;
             isOff: boolean;
             isCounted: boolean;
-            classification: 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+            classification: 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
             rotationSystem?: 'THREE' | 'TWO' | 'NONE';
             isUsed?: boolean;
             displayOrder?: number;
@@ -129,7 +118,6 @@ type TMockValue = {
         retryShiftTeams: ReturnType<typeof vi.fn>;
         retryRequestReceptionSettings: ReturnType<typeof vi.fn>;
         updateRequestReceptionSettings: ReturnType<typeof vi.fn>;
-        updateCalendarSettings: ReturnType<typeof vi.fn>;
     };
 };
 
@@ -138,17 +126,6 @@ function baseValue() {
         state: {
             wardId: 1,
             currentTab: 'shiftTypes' as const,
-            ward: {
-                wardId: 1,
-                name: '중환자실',
-                hospitalName: '듀팅병원',
-                code: 'A7K29Q',
-                nurseCnt: 1,
-                showMemberBirthdaysInCalendar: true,
-                wardShiftTypes: [],
-                shiftTeams: [],
-            },
-            wardStatus: 'success' as const,
             shiftTypes: [
                 {
                     wardShiftTypeId: 1,
@@ -189,7 +166,6 @@ function baseValue() {
             retryShiftTeams: vi.fn(),
             retryRequestReceptionSettings: vi.fn(),
             updateRequestReceptionSettings: vi.fn(),
-            updateCalendarSettings: vi.fn(),
         },
     };
 }
@@ -246,6 +222,46 @@ function requiredShiftTypes() {
     ];
 }
 
+function twoShiftTypes() {
+    const [day, , night, off] = requiredShiftTypes();
+
+    return [
+        {
+            ...day!,
+            wardShiftTypeId: 5,
+            name: '2교대 주간',
+            shortName: 'ⓓ',
+            endTime: '19:00',
+            isDefault: false,
+            rotationSystem: 'TWO' as const,
+        },
+        {
+            ...night!,
+            wardShiftTypeId: 6,
+            name: '2교대 야간',
+            shortName: 'ⓝ',
+            startTime: '19:00',
+            isDefault: false,
+            rotationSystem: 'TWO' as const,
+        },
+        {...off!, rotationSystem: 'NONE' as const},
+    ];
+}
+
+function mixedShiftTypes() {
+    const [day, evening, night, off] = requiredShiftTypes();
+    const [twoDay, twoNight] = twoShiftTypes();
+
+    return [
+        {...day!, rotationSystem: 'THREE' as const},
+        {...evening!, rotationSystem: 'THREE' as const},
+        {...night!, rotationSystem: 'THREE' as const},
+        twoDay!,
+        twoNight!,
+        {...off!, rotationSystem: 'NONE' as const},
+    ];
+}
+
 describe('WardSettingsPage', () => {
     beforeEach(() => {
         mockUseWardSettings.mockReset();
@@ -293,6 +309,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('근무 설정')).toBeInTheDocument();
         expect(screen.getByText('약자')).toBeInTheDocument();
         expect(screen.getByText('근무 시간')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '캘린더'})).not.toBeInTheDocument();
         expect(screen.getByDisplayValue('D')).toBeInTheDocument();
         expect(screen.getByText('8h')).toBeInTheDocument();
     });
@@ -571,8 +588,7 @@ describe('WardSettingsPage', () => {
         });
     });
 
-    it('does not auto-create two-shift rows when the operation mode changes', async () => {
-        const user = userEvent.setup();
+    it('온보딩에서 정한 교대제는 병동 설정에서 변경할 수 없다', () => {
         const addShiftType = vi.fn().mockResolvedValue(true);
         const retryShiftTypes = vi.fn().mockResolvedValue(undefined);
 
@@ -585,12 +601,11 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        await user.click(screen.getByRole('radio', {name: /2교대만 운영해요/}));
-        await user.click(screen.getByRole('button', {name: '저장하기'}));
-
+        expect(screen.getByText('3교대만 운영해요')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '변경'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
         expect(addShiftType).not.toHaveBeenCalled();
         expect(retryShiftTypes).not.toHaveBeenCalled();
-        expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('2교대'));
     });
 
     it('respects explicit rotation metadata even when a row uses a circled symbol', () => {
@@ -628,13 +643,12 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByRole('radio', {name: /3교대만 운영해요/})).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByText('3교대만 운영해요')).toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
         expect(updateShiftType).not.toHaveBeenCalled();
     });
 
-    it('offers three mutually exclusive ward rotation modes', async () => {
-        const user = userEvent.setup();
-
+    it('설정된 교대제만 읽기 전용으로 보여준다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
                 state: {shiftTypes: requiredShiftTypes()},
@@ -643,72 +657,33 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        const threeShiftOnly = screen.getByRole('radio', {name: /3교대만 운영해요/});
-        const twoShiftOnly = screen.getByRole('radio', {name: /2교대만 운영해요/});
-        const mixed = screen.getByRole('radio', {name: /3교대이지만 필요시 2교대도 해요/});
-
-        expect(threeShiftOnly).toHaveAttribute('aria-checked', 'true');
-        expect(twoShiftOnly).toHaveAttribute('aria-checked', 'false');
-        expect(mixed).toHaveAttribute('aria-checked', 'false');
-
-        await user.click(mixed);
-
-        expect(threeShiftOnly).toHaveAttribute('aria-checked', 'false');
-        expect(twoShiftOnly).toHaveAttribute('aria-checked', 'false');
-        expect(mixed).toHaveAttribute('aria-checked', 'true');
-
-        const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map((input) => input.value);
-
-        expect(names).toEqual(['데이', '이브닝', '나이트', '오프']);
+        expect(screen.getByText('3교대만 운영해요')).toBeInTheDocument();
+        expect(
+            screen.queryByText('가장 가까운 운영 방식을 하나 선택해 주세요. 선택에 맞춰 표준 근무유형을 준비해요.'),
+        ).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '변경'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+        expect(screen.queryByText('데이 · 이브닝 · 나이트 근무를 사용해요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('2교대 주간(07~19) · 야간(19~07)을 사용해요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('데이 · 이브닝 · 나이트를 기본으로 두고 2교대 주간 · 야간도 함께 사용해요.')).not.toBeInTheDocument();
     });
 
-    it('persists a two-shift-only selection by deactivating three-shift rows on save', async () => {
-        const user = userEvent.setup();
+    it('온보딩에서 정한 2교대도 변경 UI 없이 표시한다', () => {
         const updateShiftType = vi.fn().mockResolvedValue(true);
-        const [day, evening, night, off] = requiredShiftTypes();
 
         mockUseWardSettings.mockReturnValue(
             createValue({
-                state: {
-                    shiftTypes: [
-                        day!,
-                        evening!,
-                        night!,
-                        {
-                            ...day!,
-                            wardShiftTypeId: 5,
-                            name: '2교대 주간',
-                            shortName: 'ⓓ',
-                            endTime: '19:00',
-                            isDefault: false,
-                            rotationSystem: 'TWO',
-                        },
-                        {
-                            ...night!,
-                            wardShiftTypeId: 6,
-                            name: '2교대 야간',
-                            shortName: 'ⓝ',
-                            startTime: '19:00',
-                            isDefault: false,
-                            rotationSystem: 'TWO',
-                        },
-                        off!,
-                    ],
-                },
+                state: {shiftTypes: twoShiftTypes()},
                 actions: {updateShiftType},
             }),
         );
 
         render(<WardSettingsPage />);
 
-        await user.click(screen.getByRole('radio', {name: /2교대만 운영해요/}));
-        await user.click(screen.getByRole('button', {name: '저장하기'}));
-
-        await waitFor(() => {
-            expect(updateShiftType).toHaveBeenCalledWith(day!.wardShiftTypeId, expect.objectContaining({isActive: false}));
-            expect(updateShiftType).toHaveBeenCalledWith(evening!.wardShiftTypeId, expect.objectContaining({isActive: false}));
-            expect(updateShiftType).toHaveBeenCalledWith(night!.wardShiftTypeId, expect.objectContaining({isActive: false}));
-        });
+        expect(screen.getByText('2교대만 운영해요')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '변경'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+        expect(updateShiftType).not.toHaveBeenCalled();
     });
 
     it('saves custom work types with no rotation system', async () => {
@@ -791,55 +766,6 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
 
         expect(selectTab).toHaveBeenCalledWith('requestReception');
-    });
-
-    it('캘린더 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
-        const user = userEvent.setup();
-        const selectTab = vi.fn();
-
-        mockUseWardSettings.mockReturnValue(
-            createValue({
-                actions: {
-                    selectTab,
-                },
-            }),
-        );
-
-        render(<WardSettingsPage />);
-
-        await user.click(screen.getByRole('button', {name: '캘린더'}));
-
-        expect(selectTab).toHaveBeenCalledWith('calendar');
-    });
-
-    it('캘린더 탭에서 생일 챙기기 설정을 저장한다', async () => {
-        const user = userEvent.setup();
-        const updateCalendarSettings = vi.fn().mockResolvedValue(true);
-
-        mockUseWardSettings.mockReturnValue(
-            createValue({
-                state: {
-                    currentTab: 'calendar',
-                },
-                actions: {
-                    updateCalendarSettings,
-                },
-            }),
-        );
-
-        render(<WardSettingsPage />);
-
-        const birthdaySwitch = screen.getByRole('switch', {name: '생일 챙기기 사용'});
-
-        expect(screen.getByText('생일 챙기기')).toBeInTheDocument();
-        expect(birthdaySwitch).toHaveAttribute('aria-checked', 'true');
-
-        await user.click(birthdaySwitch);
-
-        await waitFor(() => {
-            expect(updateCalendarSettings).toHaveBeenCalledWith({showMemberBirthdaysInCalendar: false});
-        });
-        expect(toast.success).toHaveBeenCalledWith('캘린더 설정을 저장했어요.');
     });
 
     it('신청근무 접수 설정을 저장한다', async () => {
@@ -1067,6 +993,49 @@ describe('WardSettingsPage', () => {
         expect(screen.getByDisplayValue('W')).toBeInTheDocument();
     });
 
+    it('2교대 근무 유형에서 야간 후반부를 선택해 저장한다', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+        const customShiftType = {
+            ...twoShiftTypes()[0]!,
+            wardShiftTypeId: 9,
+            name: '새 근무',
+            shortName: 'NC',
+            startTime: '09:00',
+            endTime: '18:00',
+            classification: 'OTHER_WORK' as const,
+            rotationSystem: 'NONE' as const,
+        };
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {shiftTypes: [...twoShiftTypes(), customShiftType]},
+                actions: {updateShiftType},
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('combobox', {name: '새 근무 근무 의미 선택'}));
+        await user.click(screen.getByRole('option', {name: '야간 후반부(퇴근날)'}));
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(updateShiftType).toHaveBeenCalledWith(
+                9,
+                expect.objectContaining({
+                    classification: 'NIGHT_CONTINUATION',
+                    rotationSystem: 'TWO',
+                    isOff: false,
+                    isCounted: false,
+                    paidMinutes: 0,
+                    startTime: '00:00',
+                    endTime: '07:00',
+                }),
+            );
+        });
+    });
+
     it('기본 근무 유형도 삭제할 수 있다', async () => {
         const user = userEvent.setup();
 
@@ -1192,43 +1161,31 @@ describe('WardSettingsPage', () => {
         expect(screen.queryByRole('combobox', {name: /교대제 선택/})).not.toBeInTheDocument();
     });
 
-    it('2교대만 운영하는 병동은 근무유형의 교대제 칼럼을 숨긴다', async () => {
-        const user = userEvent.setup();
-
+    it('2교대만 운영하는 병동은 근무유형의 교대제 칼럼을 숨긴다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
-                state: {
-                    shiftTypes: requiredShiftTypes(),
-                },
+                state: {shiftTypes: twoShiftTypes()},
             }),
         );
 
         render(<WardSettingsPage />);
-
-        await user.click(screen.getByRole('radio', {name: /2교대만 운영해요/}));
 
         expect(screen.queryByText('교대제')).not.toBeInTheDocument();
         expect(screen.queryByRole('combobox', {name: /교대제 선택/})).not.toBeInTheDocument();
     });
 
-    it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', async () => {
-        const user = userEvent.setup();
-
+    it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
-                state: {
-                    shiftTypes: requiredShiftTypes(),
-                },
+                state: {shiftTypes: mixedShiftTypes()},
             }),
         );
 
         render(<WardSettingsPage />);
 
-        await user.click(screen.getByRole('radio', {name: /3교대이지만 필요시 2교대도 해요/}));
-
         expect(screen.getByText('교대제')).toBeInTheDocument();
         expect(screen.getByRole('combobox', {name: '데이 교대제 선택'})).toBeInTheDocument();
-        expect(screen.queryByRole('combobox', {name: '2교대 주간 교대제 선택'})).not.toBeInTheDocument();
+        expect(screen.getByRole('combobox', {name: '2교대 주간 교대제 선택'})).toBeInTheDocument();
     });
 
     it('혼합 교대에서 기타 근무는 해당 없음으로 고정하고 D/E/N에만 교대제 드롭다운을 표시한다', async () => {
@@ -1236,15 +1193,12 @@ describe('WardSettingsPage', () => {
 
         mockUseWardSettings.mockReturnValue(
             createValue({
-                state: {
-                    shiftTypes: requiredShiftTypes(),
-                },
+                state: {shiftTypes: mixedShiftTypes()},
             }),
         );
 
         render(<WardSettingsPage />);
 
-        await user.click(screen.getByRole('radio', {name: /3교대이지만 필요시 2교대도 해요/}));
         await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
 
         expect(screen.queryByRole('combobox', {name: '새 근무 교대제 선택'})).not.toBeInTheDocument();

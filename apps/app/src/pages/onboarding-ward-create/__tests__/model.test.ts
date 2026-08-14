@@ -96,6 +96,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(twoShiftDraft.shiftTypes).toEqual([
             expect.objectContaining({
                 name: 'Two-shift day',
+                shortName: 'D',
                 classification: 'DAY',
                 rotationSystem: 'TWO',
                 startTime: '07:00',
@@ -103,6 +104,7 @@ describe('OnboardingWardCreatePage model', () => {
             }),
             expect.objectContaining({
                 name: 'Two-shift night',
+                shortName: 'N',
                 classification: 'NIGHT',
                 rotationSystem: 'TWO',
                 startTime: '19:00',
@@ -121,6 +123,9 @@ describe('OnboardingWardCreatePage model', () => {
             {classification: 'NIGHT', rotationSystem: 'TWO'},
             {classification: 'OFF', rotationSystem: 'NONE'},
         ]);
+        expect(
+            mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.shortName),
+        ).toEqual(['1', '2']);
         expect(getStepValidation({...mixedDraft, currentStep: 4}, 4).isValid).toBe(true);
     });
 
@@ -896,7 +901,7 @@ describe('OnboardingWardCreatePage model', () => {
         const nurse = nextDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
         const teamId = nextDraft.teams[0]?.id ?? '';
 
-        expect(customShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['AAA', 'CCC']);
+        expect(customShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['CCC', 'AAA']);
         expect(customShiftTypes.map((shiftType) => shiftType.color)).toEqual([DEFAULT_SHIFT_TYPE_COLORS[4], DEFAULT_SHIFT_TYPE_COLORS[5]]);
         expect(nurse?.possibleShiftTypeIds).toEqual(nextDraft.shiftTypes.map((shiftType) => shiftType.id));
         expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'CCC', '2': 'AAA'});
@@ -1005,7 +1010,9 @@ describe('OnboardingWardCreatePage model', () => {
         expect(archivedShiftType).toEqual(expect.objectContaining({shortName: 'A', protectedByPreviousSchedule: true}));
         expect(nurse?.possibleShiftTypeIds).toContain(customShiftTypeId);
         expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'A'}]);
-        expect(getStepValidation({...archivedDraft, currentStep: 4}, 4).isValid).toBe(true);
+        expect(getStepValidation({...archivedDraft, currentStep: 4}, 4).issues).toEqual(
+            expect.arrayContaining([expect.objectContaining({code: 'missing-required-shift-types'})]),
+        );
     });
 
     it('keeps a protected previous-schedule type when a new type uses another code', () => {

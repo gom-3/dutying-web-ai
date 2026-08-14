@@ -1,9 +1,9 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {Hospital} from 'lucide-react';
+import {CalendarDays, Hospital, Info} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
-import {getWardDisplayCode, getWardDisplayTitle, wardQueryKeys, wardQueryOptions} from '@/entities/ward';
+import {getWardDisplayCode, getWardDisplayTitle, type TWard, wardQueryKeys, wardQueryOptions} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
@@ -13,6 +13,8 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
+import {Switch} from '@/shared/ui/primitives/switch';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -28,6 +30,101 @@ const WARD_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u304
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const sanitizeWardNameInput = (rawValue: string) => rawValue.replace(WARD_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, WARD_NAME_MAX_LENGTH);
+
+function WardCalendarSettingsSection({
+    ward,
+    onSave,
+}: {
+    ward: TWard;
+    onSave: (settings: Pick<TWard, 'showMemberBirthdaysInCalendar'>) => Promise<boolean>;
+}) {
+    const {t} = useTypedTranslation();
+    const [isSaving, setIsSaving] = useState(false);
+    const [infoPinned, setInfoPinned] = useState(false);
+    const [infoHovered, setInfoHovered] = useState(false);
+    const persistedShowBirthdays = ward.showMemberBirthdaysInCalendar !== false;
+    const [draftShowBirthdays, setDraftShowBirthdays] = useState(persistedShowBirthdays);
+    const infoOpen = infoPinned || infoHovered;
+
+    useEffect(() => {
+        setDraftShowBirthdays(persistedShowBirthdays);
+    }, [persistedShowBirthdays]);
+
+    return (
+        <Card className="rounded-[24px] border-transparent p-6">
+            <h2 className="mb-5 flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
+                <CalendarDays aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                <span>{t('page.wardInfoSettings.calendar.sectionTitle')}</span>
+            </h2>
+            <div className="flex min-h-14 items-center justify-between gap-3 rounded-[12px] bg-gray-7 px-3.5 py-3">
+                <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                        <p className="font-apple text-[14px] font-semibold text-sub-1">
+                            {t('page.wardInfoSettings.calendar.birthdayTitle')}
+                        </p>
+                        <TooltipProvider delayDuration={120}>
+                            <Tooltip
+                                open={infoOpen}
+                                onOpenChange={(next) => {
+                                    if (infoPinned && !next) return;
+
+                                    if (!infoPinned) setInfoHovered(next);
+                                }}
+                            >
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        aria-label={t('page.wardInfoSettings.calendar.birthdayInfoAria')}
+                                        aria-expanded={infoOpen}
+                                        className="inline-flex size-5 shrink-0 items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-white hover:text-main-1 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
+                                        onClick={() => setInfoPinned((prev) => !prev)}
+                                        onPointerEnter={() => setInfoHovered(true)}
+                                        onPointerLeave={() => setInfoHovered(false)}
+                                    >
+                                        <Info className="size-3.5" strokeWidth={2.2} aria-hidden="true" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                    side="top"
+                                    align="start"
+                                    sideOffset={6}
+                                    className="max-w-[260px] rounded-[10px] bg-[#1C2331] px-3 py-2 font-apple text-[12px] leading-4 font-medium text-white"
+                                >
+                                    {t('page.wardInfoSettings.calendar.birthdayDescription')}
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
+                </div>
+                <Switch
+                    checked={draftShowBirthdays}
+                    disabled={isSaving}
+                    onCheckedChange={async (checked) => {
+                        const previousShowBirthdays = draftShowBirthdays;
+
+                        setDraftShowBirthdays(checked);
+                        setIsSaving(true);
+
+                        try {
+                            const saved = await onSave({showMemberBirthdaysInCalendar: checked});
+
+                            if (saved) {
+                                toast.success(t('page.wardInfoSettings.calendar.toast.saveSuccess'));
+                            } else {
+                                setDraftShowBirthdays(previousShowBirthdays);
+                            }
+                        } finally {
+                            setIsSaving(false);
+                        }
+                    }}
+                    className="relative h-6 w-10 shrink-0 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                    thumbClassName="absolute top-0.5 left-0.5 h-5 w-5 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
+                    aria-label={t('page.wardInfoSettings.calendar.birthdaySwitchAria')}
+                />
+            </div>
+        </Card>
+    );
+}
 
 function WardInfoSettingsPage() {
     const {t} = useTypedTranslation();
@@ -116,6 +213,26 @@ function WardInfoSettingsPage() {
             showActionErrorFeedback(error, t('page.wardInfoSettings.toast.saveFailed'));
         } finally {
             setIsSaving(false);
+        }
+    };
+    const updateCalendarSettings = async (settings: Pick<TWard, 'showMemberBirthdaysInCalendar'>) => {
+        if (!wardId) return false;
+
+        try {
+            const nextWard = await WardAPI.editWard(wardId, settings);
+
+            queryClient.setQueryData(wardQueryKeys.id(wardId), nextWard);
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: wardQueryKeys.id(wardId)}),
+                queryClient.invalidateQueries({queryKey: ['ward-board', 'schedules', wardId]}),
+                queryClient.invalidateQueries({queryKey: ['home', 'board-schedules']}),
+            ]);
+
+            return true;
+        } catch (error) {
+            showActionErrorFeedback(error, t('page.wardInfoSettings.calendar.toast.updateFailed'));
+
+            return false;
         }
     };
 
@@ -249,9 +366,10 @@ function WardInfoSettingsPage() {
                         </div>
                     </div>
                 </Card>
+                <WardCalendarSettingsSection ward={ward} onSave={updateCalendarSettings} />
             </div>
 
-            <div className="mx-auto mt-6 max-w-[480px]">
+            <div className="mx-auto mt-4 max-w-[480px]">
                 <WardAdminsPage />
             </div>
 

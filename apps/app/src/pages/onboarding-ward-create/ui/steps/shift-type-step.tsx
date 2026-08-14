@@ -59,6 +59,7 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'DAY', labelKey: 'page.onboardingWardCreate.shiftType.classification.day'},
     {value: 'EVENING', labelKey: 'page.onboardingWardCreate.shiftType.classification.evening'},
     {value: 'NIGHT', labelKey: 'page.onboardingWardCreate.shiftType.classification.night'},
+    {value: 'NIGHT_CONTINUATION', labelKey: 'page.onboardingWardCreate.shiftType.classification.nightContinuation'},
     {value: 'OFF', labelKey: 'page.onboardingWardCreate.shiftType.classification.off'},
     {value: 'OTHER_WORK', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherWork'},
     {value: 'OTHER_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherLeave'},
@@ -121,6 +122,28 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode}: IShiftTypeRequ
             ),
         [rotationMode, shiftTypes],
     );
+    const satisfiedCount = requiredShiftTypeStatuses.filter(({count}) => count === 1).length;
+    const issueCount = requiredShiftTypeStatuses.length - satisfiedCount;
+    const showGroupLabels = rotationMode === 'MIXED';
+    const requirementGroups = showGroupLabels
+        ? [
+              {
+                  key: 'THREE',
+                  title: t('page.onboardingWardCreate.shiftType.rotationThree'),
+                  items: requiredShiftTypeStatuses.filter(({rotationSystem}) => rotationSystem === 'THREE'),
+              },
+              {
+                  key: 'TWO',
+                  title: t('page.onboardingWardCreate.shiftType.rotationTwo'),
+                  items: requiredShiftTypeStatuses.filter(({rotationSystem}) => rotationSystem === 'TWO'),
+              },
+              {
+                  key: 'COMMON',
+                  title: t('page.onboardingWardCreate.shiftType.requirements.groupCommon'),
+                  items: requiredShiftTypeStatuses.filter(({rotationSystem}) => rotationSystem === 'NONE'),
+              },
+          ]
+        : [{key: rotationMode, title: null, items: requiredShiftTypeStatuses}];
     const getRequiredShiftTypeCopy = (requiredShiftType: (typeof requiredShiftTypeStatuses)[number]) => {
         const classificationOption = SHIFT_CLASSIFICATION_OPTIONS.find((option) => option.value === requiredShiftType.classification);
         const classificationLabel = classificationOption ? t(classificationOption.labelKey) : requiredShiftType.classification;
@@ -135,49 +158,82 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode}: IShiftTypeRequ
     };
 
     return (
-        <aside
-            aria-labelledby="required-shift-types-title"
-            className="mt-6 w-[320px] max-w-full rounded-[16px] bg-white px-5 py-5 min-[1480px]:absolute min-[1480px]:top-0 min-[1480px]:left-[calc(100%+12px)] min-[1480px]:mt-0 min-[1480px]:w-[min(320px,calc((100vw-1120px)/2-24px))]"
-        >
+        <section id="required-shift-types" aria-labelledby="required-shift-types-title" className="mb-7 scroll-mt-6">
             <h2 id="required-shift-types-title" className="font-apple text-[16px] font-semibold text-sub-1">
                 {t(titleKey)}
             </h2>
-            <ul className="mt-3 space-y-2" aria-live="polite">
-                {requiredShiftTypeStatuses.map((requiredShiftType) => {
-                    const {classificationLabel, scope} = getRequiredShiftTypeCopy(requiredShiftType);
-                    const isSatisfied = requiredShiftType.count === 1;
-                    const statusLabel = isSatisfied
-                        ? t('page.onboardingWardCreate.shiftType.requirements.satisfied', {scope, shiftType: classificationLabel})
-                        : requiredShiftType.count === 0
-                          ? t('page.onboardingWardCreate.shiftType.requirements.missing', {scope, shiftType: classificationLabel})
-                          : t('page.onboardingWardCreate.shiftType.requirements.duplicate', {
-                                scope,
-                                shiftType: classificationLabel,
-                                count: requiredShiftType.count,
-                            });
-
-                    return (
-                        <li
-                            key={`${requiredShiftType.rotationSystem}-${requiredShiftType.classification}`}
-                            className="flex items-start gap-2.5 py-0.5"
-                        >
-                            {isSatisfied ? (
-                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#147A50]" aria-hidden="true" />
-                            ) : (
-                                <X className="mt-0.5 h-4 w-4 shrink-0 text-[#B4234D]" aria-hidden="true" />
-                            )}
-                            <span
-                                className={`min-w-0 font-apple text-[13px] leading-5 font-semibold break-keep whitespace-normal ${
-                                    isSatisfied ? 'text-[#147A50]' : 'text-[#B4234D]'
-                                }`}
-                            >
-                                {statusLabel}
-                            </span>
-                        </li>
-                    );
+            <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {t('page.onboardingWardCreate.shiftType.requirements.liveSummary', {
+                    ready: satisfiedCount,
+                    total: requiredShiftTypeStatuses.length,
+                    issues: issueCount,
                 })}
-            </ul>
-        </aside>
+            </p>
+            <div className="mt-3 space-y-2.5">
+                {requirementGroups.map((group) => (
+                    <div key={group.key} className="flex flex-wrap items-start gap-x-4 gap-y-2">
+                        {group.title ? (
+                            <h3 className="w-12 shrink-0 pt-0.5 font-apple text-[12px] leading-5 font-semibold text-gray-3">
+                                {group.title}
+                            </h3>
+                        ) : null}
+                        <ul className="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-2">
+                            {group.items.map((requiredShiftType) => {
+                                const {classificationLabel, scope} = getRequiredShiftTypeCopy(requiredShiftType);
+                                const isSatisfied = requiredShiftType.count === 1;
+                                const statusLabel = isSatisfied
+                                    ? t('page.onboardingWardCreate.shiftType.requirements.satisfied', {
+                                          scope,
+                                          shiftType: classificationLabel,
+                                      })
+                                    : requiredShiftType.count === 0
+                                      ? t('page.onboardingWardCreate.shiftType.requirements.missing', {
+                                            scope,
+                                            shiftType: classificationLabel,
+                                        })
+                                      : t('page.onboardingWardCreate.shiftType.requirements.duplicate', {
+                                            scope,
+                                            shiftType: classificationLabel,
+                                            count: requiredShiftType.count,
+                                        });
+                                const issueLabel =
+                                    requiredShiftType.count === 0
+                                        ? t('page.onboardingWardCreate.shiftType.requirements.missingShort')
+                                        : t('page.onboardingWardCreate.shiftType.requirements.duplicateShort', {
+                                              count: requiredShiftType.count,
+                                          });
+
+                                return (
+                                    <li
+                                        key={`${requiredShiftType.rotationSystem}-${requiredShiftType.classification}`}
+                                        aria-label={statusLabel}
+                                        className="flex min-w-0 items-start gap-2"
+                                    >
+                                        {isSatisfied ? (
+                                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#147A50]" aria-hidden="true" />
+                                        ) : (
+                                            <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-[#B4234D]" aria-hidden="true" />
+                                        )}
+                                        <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 font-apple leading-5">
+                                            <span
+                                                className={`text-[13px] font-medium break-keep ${
+                                                    isSatisfied ? 'text-sub-1' : 'text-[#B4234D]'
+                                                }`}
+                                            >
+                                                {classificationLabel}
+                                            </span>
+                                            {!isSatisfied ? (
+                                                <span className="text-[12px] font-semibold break-keep text-[#B4234D]">{issueLabel}</span>
+                                            ) : null}
+                                        </span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }
 
@@ -271,14 +327,15 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
         rotationSystem: TSelectableShiftRotationSystem,
     ): Partial<TOnboardingWardShiftType> => {
         const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+        const isNightContinuation = classification === 'NIGHT_CONTINUATION';
         const timeRange = getDefaultTimeRangeForRotation(rotationSystem, classification);
 
         return {
             classification,
             isOff,
-            isCounted: !isOff,
+            isCounted: !isOff && !isNightContinuation,
             rotationSystem,
-            paidMinutes: rotationSystem === 'TWO' ? 630 : null,
+            paidMinutes: isNightContinuation ? 0 : rotationSystem === 'TWO' ? 630 : null,
             startTime: isOff ? '' : (timeRange?.startTime ?? shiftType.startTime),
             endTime: isOff ? '' : (timeRange?.endTime ?? shiftType.endTime),
             mappingStatus: 'CONFIRMED',
@@ -413,6 +470,7 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
 
     return (
         <div className="relative">
+            <ShiftTypeRequirements shiftTypes={shiftTypes} rotationMode={rotationMode} />
             <Card
                 variant="elevated"
                 padding="none"
@@ -837,7 +895,6 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
                     </button>
                 </div>
             </Card>
-            <ShiftTypeRequirements shiftTypes={shiftTypes} rotationMode={rotationMode} />
         </div>
     );
 }

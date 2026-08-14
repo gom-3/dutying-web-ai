@@ -84,12 +84,46 @@ export const th = {
             },
             constraints: {
                 ...generatedTh.page.makeShift.constraints,
+                toast: {
+                    ...generatedTh.page.makeShift.constraints.toast,
+                    duplicateSkipped: 'มีเงื่อนไขเดียวกันอยู่แล้ว',
+                    staffCountConflict: 'จำนวนขั้นต่ำ สูงสุด และจำนวนที่แน่นอนของวันและเวรนี้ขัดแย้งกัน',
+                },
+                savedWarnings: {
+                    title: 'บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ',
+                },
+                staffCountText: {
+                    min: '{{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}',
+                    max: '{{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}',
+                    exact: '{{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี',
+                },
+                category: {
+                    ...generatedTh.page.makeShift.constraints.category,
+                    workRestStreaks: 'การทำงานต่อเนื่องและวันหยุด',
+                    nightTransition: 'เวรกลางคืนและการเปลี่ยนกะ',
+                    roleCoverage: 'ทักษะและบทบาท',
+                },
                 option: {
                     ...generatedTh.page.makeShift.constraints.option,
                     monthlyDayLabel: 'วันที่ {{day}} ของทุกเดือน',
                     everyday: 'ทุกวัน',
                     weekday: 'วันธรรมดา',
+                    weekend: 'วันหยุดสุดสัปดาห์',
+                    holiday: 'วันหยุดนักขัตฤกษ์',
                     weekendOrHoliday: 'วันหยุดสุดสัปดาห์/วันหยุด',
+                    weekdayName: {
+                        monday: 'วันจันทร์',
+                        tuesday: 'วันอังคาร',
+                        wednesday: 'วันพุธ',
+                        thursday: 'วันพฤหัสบดี',
+                        friday: 'วันศุกร์',
+                        saturday: 'วันเสาร์',
+                        sunday: 'วันอาทิตย์',
+                    },
+                    target: {
+                        rotating: 'พยาบาลระบบ 3 กะทั่วไป',
+                        nightDedicated: 'พยาบาลเวรกลางคืนประจำ',
+                    },
                     staffCountOperator: {
                         min: 'อย่างน้อย',
                         max: 'สูงสุด',
@@ -99,7 +133,7 @@ export const th = {
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
-                        sentence: '{target}ห้ามทำงานติดต่อกันตั้งแต่{count}วันขึ้นไป',
+                        sentence: '{target}ทำงานติดต่อกันได้สูงสุด{count}วัน',
                     },
                     CORE_MIN_NIGHT_INTERVAL: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
@@ -109,13 +143,17 @@ export const th = {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
                         sentence: '{target}ทำเวร N ติดต่อกันได้สูงสุด{count}ครั้ง',
                     },
+                    CORE_MIN_CONTINUOUS_NIGHT: {
+                        label: 'เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ',
+                        sentence: '{target}ทำเวร N ติดต่อกันอย่างน้อย{count}วัน',
+                    },
                     CORE_MIN_OFF_AFTER_NIGHT: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
-                        sentence: '{target}ต้องมี OFF อย่างน้อย{count}วันหลังเวร N',
+                        sentence: '{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N',
                     },
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
-                        sentence: '{target}ห้ามทำเวร N ในวันก่อน OFF ที่ขอไว้',
+                        sentence: '{target}ห้ามทำเวร N ในวันก่อนวันหยุดที่ขอไว้',
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: 'เงื่อนไขจำนวนคน',
@@ -139,19 +177,19 @@ export const th = {
                     },
                     MAX_CONSECUTIVE_WORK_DAYS: {
                         label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ห้ามทำงานติดต่อกันตั้งแต่{count}วันขึ้นไป',
+                        sentence: '{target}ทำงานติดต่อกันได้สูงสุด{count}วัน',
                     },
                     OFF_AFTER_CONSECUTIVE_WORK: {
                         label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ต้องมี OFF หลังทำงานติดต่อกัน{count}วัน',
+                        sentence: '{target}ต้องมีวันหยุดหลังทำงานติดต่อกัน{count}วัน',
                     },
                     MIN_OFF_AFTER_N: {
                         label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ต้องมี OFF อย่างน้อย{count}วันหลังเวร N',
+                        sentence: '{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N',
                     },
                     MIN_MONTHLY_OFF: {
                         label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ต้องมี OFF อย่างน้อย{count}วันต่อเดือน',
+                        sentence: '{target}ต้องมีวันหยุดอย่างน้อย{count}วันต่อเดือน',
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: 'เงื่อนไขรายบุคคล',
@@ -164,6 +202,34 @@ export const th = {
                     NURSE_AVOID_SHIFT: {
                         label: 'เงื่อนไขรายบุคคล',
                         sentence: '{nurse}ต้องการหลีกเลี่ยงเวร{shift}',
+                    },
+                    MIN_OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: 'เงื่อนไขการทำงานต่อเนื่องและวันหยุด',
+                        sentence: '{target}พักอย่างน้อย{offCount}วันหลังทำงานติดต่อกันตั้งแต่{workCount}วัน',
+                    },
+                    AVOID_ISOLATED_WORK_DAY: {
+                        label: 'เงื่อนไขการทำงานต่อเนื่องและวันหยุด',
+                        sentence: '{target}หลีกเลี่ยงการทำงานเพียงวันเดียวระหว่างวันหยุด',
+                    },
+                    AVOID_ISOLATED_OFF_DAY: {
+                        label: 'เงื่อนไขการทำงานต่อเนื่องและวันหยุด',
+                        sentence: '{target}หลีกเลี่ยงการหยุดเพียงวันเดียวระหว่างวันทำงาน',
+                    },
+                    MAX_MONTHLY_NIGHT_COUNT: {
+                        label: 'เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ',
+                        sentence: '{target}ทำเวรกลางคืนได้สูงสุด{count}ครั้งต่อเดือน',
+                    },
+                    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+                        label: 'ข้อจำกัดรายบุคคล',
+                        sentence: '{target}ทำเวร{shift}ในวันหยุดสุดสัปดาห์หรือวันหยุดได้สูงสุด{count}ครั้งต่อ{period}',
+                    },
+                    PRECEPTEE_NOT_ALONE_SHIFT: {
+                        label: 'ทักษะและบทบาท',
+                        sentence: 'จัดพยาบาลอีกคนในเวรเดียวกันเมื่อ{preceptee}ทำงาน',
+                    },
+                    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {
+                        label: 'ทักษะและบทบาท',
+                        sentence: 'จัด{preceptor}และ{preceptee}ให้อยู่เวรเดียวกัน',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',

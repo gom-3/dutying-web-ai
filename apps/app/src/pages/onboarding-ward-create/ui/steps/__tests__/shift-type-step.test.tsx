@@ -7,7 +7,7 @@ import {ShiftTypeStep} from '../shift-type-step';
 const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
     id: 'schedule-night',
     name: '야간 코드',
-    shortName: '1',
+    shortName: 'X',
     startTime: '19:00',
     endTime: '07:00',
     color: '#3580FF',
@@ -86,6 +86,50 @@ describe('ShiftTypeStep', () => {
 
         expect(screen.queryByRole('combobox', {name: '교육 교대제 선택'})).not.toBeInTheDocument();
         expect(screen.getByText('해당 없음')).toBeInTheDocument();
+    });
+
+    it('2교대에서 선택적인 야간 후반부를 근무 유형으로 설정한다', async () => {
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        const customShiftType: TOnboardingWardShiftType = {
+            ...createUnassignedNightShiftType(),
+            id: 'night-continuation',
+            name: '야간 후반부',
+            shortName: 'NC',
+            startTime: '09:00',
+            endTime: '18:00',
+            classification: 'OTHER_WORK',
+            rotationSystem: 'NONE',
+            source: undefined,
+            protectedByPreviousSchedule: false,
+            mappingStatus: 'CONFIRMED',
+            mappingRecommendation: undefined,
+        };
+
+        render(
+            <ShiftTypeStep
+                shiftTypes={[customShiftType]}
+                rotationMode="TWO"
+                onChange={onChange}
+                onDragEnd={vi.fn()}
+                onAdd={vi.fn()}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        await user.click(screen.getByRole('combobox', {name: '야간 후반부 근무 의미 선택'}));
+        await user.click(screen.getByRole('option', {name: '야간 후반부(퇴근날)'}));
+
+        expect(onChange).toHaveBeenCalledWith('night-continuation', {
+            classification: 'NIGHT_CONTINUATION',
+            isOff: false,
+            isCounted: false,
+            rotationSystem: 'TWO',
+            paidMinutes: 0,
+            startTime: '00:00',
+            endTime: '07:00',
+            mappingStatus: 'CONFIRMED',
+        });
     });
 
     it('기타 휴무는 저장된 isOff 값과 관계없이 근무시간을 하이픈으로 고정한다', () => {

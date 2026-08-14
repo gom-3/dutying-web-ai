@@ -298,12 +298,15 @@ describe('RequestCalendar', () => {
         expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-[clamp(12px,1.05vw,16px)]');
     });
 
-    it('신청근무 행 이름은 4자 뒤에 말줄임으로 표시한다', () => {
+    it('신청근무 행 이름은 글자 수로 미리 자르지 않고 넓어진 이름 열에 표시한다', () => {
         mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, nurseName: '박서연지희'}));
 
         renderRequestCalendar();
 
-        expect(screen.getByText('박서연지…').closest('.make-shift-calendar__row-name')).toBeInTheDocument();
+        const nameCell = screen.getByText('박서연지희').closest<HTMLElement>('.make-shift-calendar__row-name');
+
+        expect(nameCell).toBeInTheDocument();
+        expect(screen.queryByText('박서연지…')).not.toBeInTheDocument();
     });
 
     it('간호사 행 사이에 작은 세로 여백을 둔다', () => {

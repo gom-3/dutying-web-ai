@@ -16,7 +16,7 @@ const FALLBACK_SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
 };
 const DEFAULT_SHIFT_TYPE_STYLE = {bg: '#939ba9', text: '#ffffff'};
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL =
-    'minmax(112px,0.72fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
+    'minmax(144px,0.9fr) minmax(156px,1.1fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
 const WORKERS_GRID_GAP = 'gap-[clamp(6px,0.65vw,10px)]';
 const WORKERS_ROW_PADDING_X = 'px-[clamp(10px,1vw,16px)]';
 const WORKERS_NAME_TEXT_CLASS =
@@ -252,7 +252,7 @@ function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWork
                             gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL,
                         }}
                     >
-                        <div className="make-shift-workers__row-name relative flex min-w-0 items-center justify-center px-7">
+                        <div className="make-shift-workers__row-name relative flex min-w-0 items-center justify-center pr-1 pl-7">
                             <button
                                 type="button"
                                 aria-label={t('page.makeShift.workers.dragHandleAria')}
@@ -265,7 +265,7 @@ function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWork
                                 <SixDotsIcon className="size-[clamp(13px,1.1vw,16px)]" />
                             </button>
                             <p className={WORKERS_NAME_TEXT_CLASS} title={nurse.name}>
-                                {formatNurseDisplayName(nurse.name)}
+                                {formatNurseDisplayName(nurse.name, null)}
                             </p>
                         </div>
                         <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.24vw,4px)]">

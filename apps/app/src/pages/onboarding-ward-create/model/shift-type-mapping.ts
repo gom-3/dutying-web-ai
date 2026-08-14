@@ -33,6 +33,8 @@ type TPreviousScheduleRotationModeCorrectionInput = {
 const OFF_CODES = new Set(['O', '/', '-', 'OFF']);
 const TWO_DAY_CODES = new Set(['ⓓ', 'Ⓓ']);
 const TWO_NIGHT_CODES = new Set(['ⓝ', 'Ⓝ']);
+const MIXED_TWO_DAY_CODE = '1';
+const MIXED_TWO_NIGHT_CODE = '2';
 const normalizePreviousScheduleShiftCode = (value: string) =>
     value
         .trim()
@@ -70,6 +72,12 @@ export function getAutomaticPreviousScheduleShiftMapping(
     // two-shift meaning from the glyph alone.
     if (isAmbiguousPreviousScheduleTwoShiftCode(normalizedCode)) return null;
 
+    if (rotationMode === 'MIXED') {
+        if (normalizedCode === MIXED_TWO_DAY_CODE) return {classification: 'DAY', rotationSystem: 'TWO'};
+
+        if (normalizedCode === MIXED_TWO_NIGHT_CODE) return {classification: 'NIGHT', rotationSystem: 'TWO'};
+    }
+
     if (rotationMode === 'TWO') {
         if (normalizedCode === 'D') return {classification: 'DAY', rotationSystem: 'TWO'};
 
@@ -103,7 +111,8 @@ export function getPreviousScheduleRotationModeCorrection({
     if (rotationMode === 'MIXED') return null;
 
     const normalizedCode = normalizePreviousScheduleShiftCode(shortName);
-    const isRotatingClassification = classification === 'DAY' || classification === 'EVENING' || classification === 'NIGHT';
+    const isRotatingClassification =
+        classification === 'DAY' || classification === 'EVENING' || classification === 'NIGHT' || classification === 'NIGHT_CONTINUATION';
     const hasOppositeRotation =
         (rotationMode === 'THREE' && rotationSystem === 'TWO' && isRotatingClassification) ||
         (rotationMode === 'TWO' && rotationSystem === 'THREE' && isRotatingClassification);
@@ -173,7 +182,7 @@ export function getPreviousScheduleShiftMappingRecommendation({
     if (
         classification &&
         rotationSystem &&
-        ['DAY', 'EVENING', 'NIGHT', 'OFF'].includes(classification) &&
+        ['DAY', 'EVENING', 'NIGHT', 'NIGHT_CONTINUATION', 'OFF'].includes(classification) &&
         getSelectableRotationSystemsForClassification(rotationMode, classification).includes(rotationSystem)
     ) {
         return {classification, rotationSystem, reason: 'AI'};

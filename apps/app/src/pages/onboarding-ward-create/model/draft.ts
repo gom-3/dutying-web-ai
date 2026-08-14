@@ -210,6 +210,7 @@ const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 const THREE_SHIFT_REQUIRED_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT'] as const;
 const TWO_SHIFT_REQUIRED_CLASSIFICATIONS = ['DAY', 'NIGHT'] as const;
+const TWO_SHIFT_CLASSIFICATIONS = ['DAY', 'NIGHT', 'NIGHT_CONTINUATION'] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
 const DEFAULT_DIVISION_NAME_PREFIX = '\uADF8\uB8F9';
@@ -507,11 +508,14 @@ const createBaseShiftTypes = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDIN
         autoSeeded: true,
     }),
 ];
-const createTwoShiftTypes = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS): TOnboardingWardShiftType[] => [
+const createTwoShiftTypes = (
+    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
+    rotationMode: Extract<TOnboardingRotationMode, 'TWO' | 'MIXED'> = 'MIXED',
+): TOnboardingWardShiftType[] => [
     createShiftType({
         id: 'shift-two-day',
         name: labels.shiftNames.twoDay,
-        shortName: 'ⓓ',
+        shortName: rotationMode === 'TWO' ? 'D' : '1',
         startTime: '07:00',
         endTime: '19:00',
         color: '#18B69B',
@@ -526,7 +530,7 @@ const createTwoShiftTypes = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING
     createShiftType({
         id: 'shift-two-night',
         name: labels.shiftNames.twoNight,
-        shortName: 'ⓝ',
+        shortName: rotationMode === 'TWO' ? 'N' : '2',
         startTime: '19:00',
         endTime: '07:00',
         color: '#3B82F6',
@@ -573,6 +577,10 @@ export const getDefaultShiftTypeColor = (shortName?: string | null, fallbackInde
             return '#3580FF';
         case 'O':
             return DEFAULT_OFF_SHIFT_TYPE_COLOR;
+        case '1':
+            return '#18B69B';
+        case '2':
+            return '#3B82F6';
         default:
             return DEFAULT_SHIFT_TYPE_COLORS[fallbackIndex % DEFAULT_SHIFT_TYPE_COLORS.length] ?? DEFAULT_SHIFT_TYPE_COLORS[0];
     }
@@ -652,7 +660,7 @@ export const resolveOnboardingRotationSystem = (
     if (shiftType.isOff || shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') return 'NONE';
 
     if (shiftType.rotationSystem === 'TWO') {
-        return TWO_SHIFT_REQUIRED_CLASSIFICATIONS.some((classification) => classification === shiftType.classification) ? 'TWO' : 'NONE';
+        return TWO_SHIFT_CLASSIFICATIONS.some((classification) => classification === shiftType.classification) ? 'TWO' : 'NONE';
     }
 
     if (shiftType.rotationSystem === 'THREE') {
@@ -742,9 +750,21 @@ export const updateRotationModeDraft = (
         });
     };
 
-    if (threeEnabled) ensureShiftTypes(createBaseShiftTypes(labels).filter((shiftType) => !shiftType.isOff));
+    if (twoEnabled) {
+        const desiredTwoShiftTypes = createTwoShiftTypes(labels, rotationMode === 'TWO' ? 'TWO' : 'MIXED');
 
-    if (twoEnabled) ensureShiftTypes(createTwoShiftTypes(labels));
+        shiftTypes = shiftTypes.map((shiftType) => {
+            if (resolveOnboardingRotationSystem(shiftType) !== 'TWO' || shiftType.autoSeeded !== true) return shiftType;
+
+            const desiredShiftType = desiredTwoShiftTypes.find((candidate) => candidate.classification === shiftType.classification);
+
+            return desiredShiftType ? {...shiftType, shortName: desiredShiftType.shortName} : shiftType;
+        });
+
+        ensureShiftTypes(desiredTwoShiftTypes);
+    }
+
+    if (threeEnabled) ensureShiftTypes(createBaseShiftTypes(labels).filter((shiftType) => !shiftType.isOff));
 
     shiftTypes = orderOnboardingShiftTypes(shiftTypes);
 
@@ -1037,7 +1057,7 @@ const collectScheduleShiftShortNames = (schedule: TOnboardingTeamScheduleDraft):
         });
     });
 
-    return Array.from(shiftShortNames).sort((left, right) => left.localeCompare(right, 'ko-KR'));
+    return Array.from(shiftShortNames);
 };
 const collectScheduleInputShiftShortNames = (scheduleInputs: TOnboardingWardDraft['scheduleInputs']): Set<string> => {
     const shiftShortNames = new Set<string>();
@@ -1134,6 +1154,8 @@ const syncScheduleInputShiftTypes = (
         const shouldProtect = Boolean(shortName && observedScheduleShortNames.has(shortName));
         const shouldReplaceAutomaticTwoShiftSeed =
             shouldProtect && shiftType.autoSeeded === true && isAmbiguousPreviousScheduleTwoShiftCode(shortName);
+        const observedAutomaticMapping =
+            shouldProtect && shiftType.autoSeeded === true ? getAutomaticPreviousScheduleShiftMapping(shortName, rotationMode) : null;
         const shiftTypeForPreviousSchedule = shouldReplaceAutomaticTwoShiftSeed
             ? {
                   ...shiftType,
@@ -1151,10 +1173,26 @@ const syncScheduleInputShiftTypes = (
                   mappingStatus: 'CONFIRMED' as const,
                   mappingRecommendation: undefined,
               }
-            : shiftType;
+            : observedAutomaticMapping && observedAutomaticMapping.classification !== 'OFF'
+              ? {
+                    ...shiftType,
+                    classification: observedAutomaticMapping.classification,
+                    rotationSystem: observedAutomaticMapping.rotationSystem,
+                    source: 'schedule-input' as const,
+                    mappingStatus: 'AUTO_MATCHED' as const,
+                    mappingRecommendation: undefined,
+                }
+              : shiftType;
         const nextShiftType = setPreviousScheduleProtection(shiftTypeForPreviousSchedule, shouldProtect);
+        const isUnobservedAutoSeed =
+            observedScheduleShortNames.size > 0 &&
+            nextShiftType.autoSeeded === true &&
+            nextShiftType.source !== 'schedule-input' &&
+            !shouldProtect;
         const shouldRemove =
-            isUnselectedDefaultOff || (isScheduleInputGeneratedShiftType(nextShiftType) && !scheduleShortNames.has(shortName));
+            isUnselectedDefaultOff ||
+            isUnobservedAutoSeed ||
+            (isScheduleInputGeneratedShiftType(nextShiftType) && !scheduleShortNames.has(shortName));
 
         if (shouldRemove) {
             return [];
@@ -1169,19 +1207,17 @@ const syncScheduleInputShiftTypes = (
         return [nextShiftType];
     });
 
-    Array.from(scheduleShortNames)
-        .sort((left, right) => left.localeCompare(right, 'ko-KR'))
-        .forEach((shortName) => {
-            if (existingShortNames.has(shortName)) {
-                return;
-            }
+    Array.from(scheduleShortNames).forEach((shortName) => {
+        if (existingShortNames.has(shortName)) {
+            return;
+        }
 
-            const color = getAvailableOnboardingShiftColor(usedColors, nextShiftTypes.length - CORE_SHIFT_SHORT_NAMES.size);
+        const color = getAvailableOnboardingShiftColor(usedColors, nextShiftTypes.length - CORE_SHIFT_SHORT_NAMES.size);
 
-            existingShortNames.add(shortName);
-            usedColors.add(color);
-            nextShiftTypes.push(createScheduleInputShiftType(shortName, color, rotationMode));
-        });
+        existingShortNames.add(shortName);
+        usedColors.add(color);
+        nextShiftTypes.push(createScheduleInputShiftType(shortName, color, rotationMode));
+    });
 
     const shiftTypesWithUniqueAutomaticMappings = nextShiftTypes.map((shiftType) => {
         if (shiftType.mappingStatus !== 'AUTO_MATCHED' || isUniqueAutomaticPreviousScheduleShiftMapping(shiftType, nextShiftTypes)) {
@@ -1371,6 +1407,7 @@ export const applyScheduleInputDraft = (
     const nextTeamNurses = Array.from(nextNurseById.values()).map((nurse) => ({
         ...nurse,
         divisionNum: normalizeDivisionNum(nurse.divisionNum),
+        possibleShiftTypeIds: getActiveShiftTypeIds(nextShiftTypes),
         initialShifts: (initialShiftsByNurseId.get(nurse.id) ?? []).sort((left, right) => left.date.localeCompare(right.date)),
     }));
     const nextNurses = pruneUnavailableShiftTypeIds([...otherNurses, ...nextTeamNurses], nextShiftTypes);

@@ -84,12 +84,46 @@ export const zh = {
             },
             constraints: {
                 ...generatedZh.page.makeShift.constraints,
+                toast: {
+                    ...generatedZh.page.makeShift.constraints.toast,
+                    duplicateSkipped: '相同条件已存在。',
+                    staffCountConflict: '相同适用日和班次的最少、最多和精确人数条件相互冲突。',
+                },
+                savedWarnings: {
+                    title: '已保存，但有些约束条件需要确认',
+                },
+                staffCountText: {
+                    min: '{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。',
+                    max: '{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。',
+                    exact: '{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。',
+                },
+                category: {
+                    ...generatedZh.page.makeShift.constraints.category,
+                    workRestStreaks: '连续工作与休息',
+                    nightTransition: '夜班与转换',
+                    roleCoverage: '技能与角色',
+                },
                 option: {
                     ...generatedZh.page.makeShift.constraints.option,
                     monthlyDayLabel: '每月{{day}}日',
                     everyday: '每天',
                     weekday: '工作日',
+                    weekend: '周末',
+                    holiday: '节假日',
                     weekendOrHoliday: '周末/节假日',
+                    weekdayName: {
+                        monday: '星期一',
+                        tuesday: '星期二',
+                        wednesday: '星期三',
+                        thursday: '星期四',
+                        friday: '星期五',
+                        saturday: '星期六',
+                        sunday: '星期日',
+                    },
+                    target: {
+                        rotating: '普通三班制护士',
+                        nightDedicated: '专职夜班护士',
+                    },
                     staffCountOperator: {
                         min: '至少',
                         max: '最多',
@@ -99,7 +133,7 @@ export const zh = {
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: '重要基础条件',
-                        sentence: '{target}不能连续工作{count}天或以上',
+                        sentence: '{target}最多可连续工作{count}天',
                     },
                     CORE_MIN_NIGHT_INTERVAL: {
                         label: '重要基础条件',
@@ -109,13 +143,17 @@ export const zh = {
                         label: '重要基础条件',
                         sentence: '{target}连续N班最多只能安排{count}次',
                     },
+                    CORE_MIN_CONTINUOUS_NIGHT: {
+                        label: '夜班与转换条件',
+                        sentence: '{target}至少连续安排{count}天N班',
+                    },
                     CORE_MIN_OFF_AFTER_NIGHT: {
                         label: '重要基础条件',
-                        sentence: '{target}在N班后至少需要{count}天OFF',
+                        sentence: '{target}在N班后至少需要{count}天休息',
                     },
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '重要基础条件',
-                        sentence: '{target}在申请OFF的前一天不能安排N班',
+                        sentence: '{target}在申请休息日的前一天不能安排N班',
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '人数条件',
@@ -139,19 +177,19 @@ export const zh = {
                     },
                     MAX_CONSECUTIVE_WORK_DAYS: {
                         label: '工作休息条件',
-                        sentence: '{target}不能连续工作{count}天或以上',
+                        sentence: '{target}最多可连续工作{count}天',
                     },
                     OFF_AFTER_CONSECUTIVE_WORK: {
                         label: '工作休息条件',
-                        sentence: '{target}连续工作{count}天后需要OFF',
+                        sentence: '{target}连续工作{count}天后需要休息',
                     },
                     MIN_OFF_AFTER_N: {
                         label: '工作休息条件',
-                        sentence: '{target}在N班后至少需要{count}天OFF',
+                        sentence: '{target}在N班后至少需要{count}天休息',
                     },
                     MIN_MONTHLY_OFF: {
                         label: '工作休息条件',
-                        sentence: '{target}每月至少需要{count}天OFF',
+                        sentence: '{target}每月至少需要{count}天休息',
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '个人条件',
@@ -164,6 +202,34 @@ export const zh = {
                     NURSE_AVOID_SHIFT: {
                         label: '个人条件',
                         sentence: '{nurse}希望避免{shift}班',
+                    },
+                    MIN_OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: '连续工作与休息条件',
+                        sentence: '{target}连续工作至少{workCount}天后休息至少{offCount}天',
+                    },
+                    AVOID_ISOLATED_WORK_DAY: {
+                        label: '连续工作与休息条件',
+                        sentence: '{target}避免在两个休息日之间只工作一天',
+                    },
+                    AVOID_ISOLATED_OFF_DAY: {
+                        label: '连续工作与休息条件',
+                        sentence: '{target}避免在两个工作日之间只休息一天',
+                    },
+                    MAX_MONTHLY_NIGHT_COUNT: {
+                        label: '夜班与转换条件',
+                        sentence: '{target}每月最多安排{count}次夜班',
+                    },
+                    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+                        label: '个人限制',
+                        sentence: '{target}在{period}内最多安排{count}次周末或节假日{shift}班',
+                    },
+                    PRECEPTEE_NOT_ALONE_SHIFT: {
+                        label: '技能与角色',
+                        sentence: '{preceptee}上班时，在同一班次安排另一名护士',
+                    },
+                    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {
+                        label: '技能与角色',
+                        sentence: '将{preceptor}和{preceptee}安排在同一班次',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '重要基础条件',

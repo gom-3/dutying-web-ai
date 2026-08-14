@@ -1,3 +1,4 @@
+import type {TWardRotationMode} from '@dutying/domain';
 import type {IApiClient} from '../client';
 import type {
     IWardAPI,
@@ -141,6 +142,7 @@ const toCreateWardShiftTypeRequest = (shiftType: TCreateWardShiftTypeDTO): TCrea
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
     name: createWardDTO.name,
     hospitalName: createWardDTO.hospitalName,
+    ...(createWardDTO.rotationMode ? {rotationMode: createWardDTO.rotationMode} : {}),
     wardShiftTypes: createWardDTO.wardShiftTypes.map(toCreateWardShiftTypeRequest),
     shiftTeams: createWardDTO.shiftTeams.map(toCreateWardShiftTeamRequest),
 });
@@ -240,10 +242,14 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(wardPath(`/${wardId}`), ward)).data,
         getWardConstraint: async (wardId: number, shiftTeamId: number) =>
             (await client.get<TWardConstraintResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/constraint`))).data,
-        getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number) =>
+        getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number, rotationMode?: TWardRotationMode) =>
             (
                 await client.get<TShiftConstraintRuleCandidatesResponse>(
-                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`),
+                    wardPath(
+                        `/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates${
+                            rotationMode ? `?${new URLSearchParams({rotationMode}).toString()}` : ''
+                        }`,
+                    ),
                 )
             ).data,
         getShiftConstraintRules: async (wardId: number, shiftTeamId: number) =>

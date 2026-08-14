@@ -1798,7 +1798,7 @@ function BoardPage() {
         actions: {handleGetAccountMe},
     } = useAuth();
     const queryClient = useQueryClient();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const today = new Date();
     const notificationPostId = useMemo(() => {
         const value = Number(searchParams.get('postId'));
@@ -1848,20 +1848,27 @@ function BoardPage() {
         queryFn: () => BoardAPI.getPosts(activeWardId!, {size: POST_PAGE_SIZE, keyword}),
         enabled: Boolean(activeWardId),
     });
+    const posts = postsQuery.data?.posts ?? [];
+    const selectedPostFromList = useMemo(() => {
+        if (!selectedPostId) return null;
+
+        return posts.find((post) => getPostId(post) === selectedPostId) ?? null;
+    }, [posts, selectedPostId]);
     const selectedPostQuery = useQuery({
         queryKey: activeWardId && selectedPostId ? boardQueryKeys.post(activeWardId, selectedPostId) : boardQueryKeys.post(0, 0),
         queryFn: () => BoardAPI.getPost(activeWardId!, selectedPostId!),
         enabled: Boolean(activeWardId && selectedPostId),
     });
+    const canLoadSelectedPostRelations = Boolean(activeWardId && selectedPostId && selectedPostQuery.isSuccess && selectedPostQuery.data);
     const commentsQuery = useQuery({
         queryKey: activeWardId && selectedPostId ? boardQueryKeys.comments(activeWardId, selectedPostId) : boardQueryKeys.comments(0, 0),
         queryFn: () => BoardAPI.getComments(activeWardId!, selectedPostId!, {size: 50}),
-        enabled: Boolean(activeWardId && selectedPostId),
+        enabled: canLoadSelectedPostRelations,
     });
     const checkersQuery = useQuery({
         queryKey: activeWardId && selectedPostId ? boardQueryKeys.checkers(activeWardId, selectedPostId) : boardQueryKeys.checkers(0, 0),
         queryFn: () => BoardAPI.getCheckers(activeWardId!, selectedPostId!),
-        enabled: Boolean(activeWardId && selectedPostId),
+        enabled: canLoadSelectedPostRelations,
     });
     const deadlinesQuery = useQuery({
         queryKey: activeWardId
@@ -1893,9 +1900,10 @@ function BoardPage() {
         setCalendarMonth({year: date.getFullYear(), month: date.getMonth() + 1});
     }, [notificationCalendarDate]);
 
-    const posts = postsQuery.data?.posts ?? [];
     const schedules = schedulesQuery.data ?? [];
-    const selectedPost = selectedPostQuery.data ?? posts.find((post) => getPostId(post) === selectedPostId) ?? null;
+    const selectedPost = selectedPostQuery.data ?? selectedPostFromList;
+    const selectedPostLoadFailed = Boolean(selectedPostId && selectedPostQuery.isError);
+    const selectedPostIsLoading = Boolean(selectedPostId && selectedPostQuery.isPending && !selectedPost);
     const comments = commentsQuery.data?.comments ?? [];
     const checkers = checkersQuery.data?.checkers ?? [];
     const isPostTitleInvalid = postDraftSubmitAttempted && !postDraft.title.trim();
@@ -2220,6 +2228,24 @@ function BoardPage() {
         setKeyword('');
         setKeywordInput('');
         searchInputRef.current?.focus();
+    };
+    const clearSelectedPost = () => {
+        setPreviewImageUrl(null);
+        setSelectedPostId(null);
+        setIsComposerOpen(false);
+        setCommentDraft('');
+        setReplyDraft('');
+        setReplyingCommentId(null);
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+
+        nextSearchParams.delete('postId');
+        nextSearchParams.delete('commentId');
+        setSearchParams(nextSearchParams, {replace: true});
+
+        if (activeWardId) {
+            void queryClient.invalidateQueries({queryKey: boardQueryKeys.postsRoot(activeWardId)});
+        }
     };
     const handleDeletePost = (post: TWardBoardPost) => {
         const postId = getPostId(post);
@@ -2677,6 +2703,20 @@ function BoardPage() {
                                 </button>
                             </div>
                         </form>
+                    ) : selectedPostLoadFailed ? (
+                        <div className="flex h-full min-h-[320px] items-center justify-center sm:min-h-[480px]">
+                            <PageState
+                                tone="empty"
+                                title={boardT('detail.unavailableTitle')}
+                                description={boardT('detail.unavailableDescription')}
+                                action={{label: boardT('detail.backToList'), onClick: clearSelectedPost}}
+                                className="py-0"
+                            />
+                        </div>
+                    ) : selectedPostIsLoading ? (
+                        <div className="flex h-full min-h-[320px] items-center justify-center sm:min-h-[480px]">
+                            <PageState tone="loading" title={boardT('detail.loading')} className="py-0" />
+                        </div>
                     ) : selectedPost ? (
                         <div id="board_detail_panel" className="flex h-full min-h-0 flex-col">
                             <div className="flex flex-wrap items-start justify-between gap-4">

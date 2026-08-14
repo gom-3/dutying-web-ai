@@ -320,6 +320,8 @@ export default function ShiftCalendar({
                                     focusedCell={focusedCell}
                                     rowNameClassName="text-[clamp(12px,1.05vw,16px)]"
                                     rowGapClassName="gap-y-3"
+                                    nameColumnDensity="comfortable"
+                                    nurseNameMaxChars={null}
                                     canReorderRows={shouldShowRowReorder}
                                     rowReorderDisabled={isRowReorderDisabled}
                                     onRowDragEnd={handleStandaloneRowDragEnd}

@@ -11,4 +11,9 @@ describe('formatNurseDisplayName', () => {
         expect(formatNurseDisplayName('박서연지희')).toBe('박서연지…');
         expect(formatNurseDisplayName('  김철수영희  ')).toBe('김철수영…');
     });
+
+    it('화면별 글자 수를 적용하거나 실제 열 너비에 맡길 수 있다', () => {
+        expect(formatNurseDisplayName('박서연지희수', 5)).toBe('박서연지희…');
+        expect(formatNurseDisplayName('  박서연지희  ', null)).toBe('박서연지희');
+    });
 });

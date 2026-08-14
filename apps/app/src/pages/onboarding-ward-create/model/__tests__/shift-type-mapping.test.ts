@@ -9,7 +9,6 @@ import {
     getStepValidation,
     isUniqueAutomaticPreviousScheduleShiftMapping,
     updateRotationModeDraft,
-    updateShiftTypeDraft,
 } from '..';
 
 describe('previous schedule shift-type mapping', () => {
@@ -31,17 +30,24 @@ describe('previous schedule shift-type mapping', () => {
             classification: 'DAY',
             rotationSystem: 'THREE',
         });
+        expect(getAutomaticPreviousScheduleShiftMapping('1', 'MIXED')).toEqual({
+            classification: 'DAY',
+            rotationSystem: 'TWO',
+        });
+        expect(getAutomaticPreviousScheduleShiftMapping('2', 'MIXED')).toEqual({
+            classification: 'NIGHT',
+            rotationSystem: 'TWO',
+        });
         expect(getAutomaticPreviousScheduleShiftMapping('/', 'MIXED')).toEqual({
             classification: 'OFF',
             rotationSystem: 'NONE',
         });
-        expect(getAutomaticPreviousScheduleShiftMapping('1', 'MIXED')).toBeNull();
     });
 
     it('keeps time and AI semantics as recommendations instead of confirmed mappings', () => {
         expect(
             getPreviousScheduleShiftMappingRecommendation({
-                shortName: '1',
+                shortName: 'W',
                 name: '2교대 데이',
                 startTime: '07:00',
                 endTime: '19:00',
@@ -120,7 +126,7 @@ describe('previous schedule shift-type mapping', () => {
         ).toBe(true);
     });
 
-    it('replaces only matching auto seeds after the user confirms imported mixed-mode codes', () => {
+    it('uses imported mixed-mode numeric codes as two-shift rows without leaving duplicate seeds', () => {
         const initialDraft = updateRotationModeDraft(createInitialDraft(), 'MIXED');
         const teamId = initialDraft.teams[0]!.id;
         const importedDraft = applyScheduleInputDraft(initialDraft, teamId, {
@@ -138,39 +144,16 @@ describe('previous schedule shift-type mapping', () => {
         const importedDay = importedDraft.shiftTypes.find((shiftType) => shiftType.shortName === '1')!;
         const importedNight = importedDraft.shiftTypes.find((shiftType) => shiftType.shortName === '2')!;
 
-        expect(importedDay.mappingStatus).toBe('UNASSIGNED');
-        expect(importedNight.mappingStatus).toBe('UNASSIGNED');
-        expect(getStepValidation({...importedDraft, currentStep: 4}, 4).issues).toEqual(
-            expect.arrayContaining([expect.objectContaining({code: 'unmapped-shift-type'})]),
-        );
+        expect(importedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'ⓓ' || shiftType.shortName === 'ⓝ')).toBe(false);
+        expect(importedDay.mappingStatus).toBe('AUTO_MATCHED');
+        expect(importedNight.mappingStatus).toBe('AUTO_MATCHED');
+        const payload = buildCreateWardPayload(importedDraft);
 
-        const withMappedDay = updateShiftTypeDraft(importedDraft, importedDay.id, {
-            classification: 'DAY',
-            rotationSystem: 'TWO',
-            isOff: false,
-            isCounted: true,
-            startTime: '07:00',
-            endTime: '19:00',
-            paidMinutes: 630,
-        });
-        const mappedDraft = updateShiftTypeDraft(withMappedDay, importedNight.id, {
-            classification: 'NIGHT',
-            rotationSystem: 'TWO',
-            isOff: false,
-            isCounted: true,
-            startTime: '19:00',
-            endTime: '07:00',
-            paidMinutes: 630,
-        });
-        const payload = buildCreateWardPayload(mappedDraft);
-
-        expect(mappedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'ⓓ')).toBe(false);
-        expect(mappedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'ⓝ')).toBe(false);
         expect(payload.wardShiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO')).toEqual([
             expect.objectContaining({shortName: '1', classification: 'DAY'}),
             expect.objectContaining({shortName: '2', classification: 'NIGHT'}),
         ]);
-        expect(getStepValidation({...mappedDraft, currentStep: 4}, 4).isValid).toBe(true);
+        expect(getStepValidation({...importedDraft, currentStep: 4}, 4).isValid).toBe(true);
     });
 
     it('uses imported D and N as the two-shift rows without leaving duplicate seeds', () => {
@@ -192,6 +175,25 @@ describe('previous schedule shift-type mapping', () => {
         expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
         expect(importedDraft.shiftTypes.map((shiftType) => shiftType.rotationSystem)).toEqual(['TWO', 'TWO', 'NONE']);
         expect(getStepValidation({...importedDraft, currentStep: 4}, 4).isValid).toBe(true);
+    });
+
+    it('keeps only shift codes observed in a mixed-mode previous schedule', () => {
+        const initialDraft = updateRotationModeDraft(createInitialDraft(), 'MIXED');
+        const teamId = initialDraft.teams[0]!.id;
+        const importedDraft = applyScheduleInputDraft(initialDraft, teamId, {
+            year: 2026,
+            month: 7,
+            rows: [
+                {
+                    id: 'row-1',
+                    nurseId: null,
+                    name: '간호사 A',
+                    shifts: {'1': 'D', '2': 'E', '3': 'N', '4': 'O'},
+                },
+            ],
+        });
+
+        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
     });
 
     it('keeps circled previous-schedule codes as other work instead of inferring two-shift types', () => {

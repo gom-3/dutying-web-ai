@@ -20,6 +20,7 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
     },
     2: {
         titleKey: 'page.onboardingWardCreate.section.rotation.title',
+        titleHighlightKeys: ['page.onboardingWardCreate.section.rotation.highlight'],
     },
     3: {
         titleKey: 'page.onboardingWardCreate.section.schedule.title',

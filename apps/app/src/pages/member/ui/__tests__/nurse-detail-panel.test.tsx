@@ -149,13 +149,29 @@ describe('NurseDetailPanel', () => {
         expect(screen.getByLabelText('생년월일')).toHaveValue('1996-03-14');
     });
 
-    it('shows a clear empty state when birthDate is missing', () => {
-        renderPanel(createNurse({accountId: null, isConnected: false, birthDate: null}));
+    it('lets an unconnected nurse birthDate be entered directly', async () => {
+        const {updateNurse} = renderPanel(createNurse({accountId: null, isConnected: false, birthDate: null}));
+        const birthDateInput = screen.getByLabelText('생년월일');
 
         expect(screen.getByText('생년월일')).toBeInTheDocument();
         expect(screen.getByText('미입력')).toBeInTheDocument();
-        expect(screen.getByLabelText('생년월일')).toHaveValue('');
-        expect(screen.getByLabelText('생년월일')).toBeDisabled();
+        expect(birthDateInput).toHaveValue('');
+        expect(birthDateInput).toBeEnabled();
+
+        fireEvent.change(birthDateInput, {target: {value: '19960314'}});
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => expect(updateNurse).toHaveBeenCalledWith(101, expect.objectContaining({birthDate: '1996-03-14'})));
+    });
+
+    it('omits birthDate from the nurse patch payload when it was not edited', async () => {
+        const {updateNurse} = renderPanel(createNurse({birthDate: '1996-03-14'}));
+
+        fireEvent.change(screen.getByDisplayValue('김듀티'), {target: {value: '김수정'}});
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => expect(updateNurse).toHaveBeenCalled());
+        expect(updateNurse.mock.calls[0]?.[1]).not.toHaveProperty('birthDate');
     });
 
     it('allows the monthly shift ratio value to be cleared and replaced directly', async () => {

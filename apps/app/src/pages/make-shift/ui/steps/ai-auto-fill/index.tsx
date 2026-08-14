@@ -1327,6 +1327,7 @@ export function AiAutofill() {
                         violationMap={violationMap}
                         teamViolations={teamViolations}
                         showFaults={showFaults}
+                        nurseNameMaxChars={5}
                         onCellClick={isCalendarReadonly ? undefined : focusEditor}
                         readonly={isCalendarReadonly}
                         editableLastShifts={!isCalendarReadonly}

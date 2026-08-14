@@ -1,4 +1,5 @@
-﻿import {cn} from '@dutying/utils/style';
+﻿import type {TUpdateNurseDTO} from '@dutying/api/nurse';
+import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
 import {ArrowRightLeft, Check, ChevronDown, ChevronRight, Loader2} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -206,7 +207,6 @@ function NurseDetailPanel({
     const isPreceptee = hasNursePrecepteeRole(writeNurse);
     const birthDateMax = getTodayDateKey();
     const isBirthDateValid = isValidBirthDate(writeNurse?.birthDate, birthDateMax);
-    const canEditBirthDate = Boolean(writeNurse?.accountId);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
 
@@ -521,16 +521,23 @@ function NurseDetailPanel({
         }
 
         if (hasNurseProfileChanges(selectedNurse, writeNurse)) {
-            const saved = await updateNurse(writeNurse.nurseId, {
+            const birthDate = normalizeBirthDateForStorage(writeNurse.birthDate);
+            const originalBirthDate = normalizeBirthDateForStorage(selectedNurse.birthDate);
+            const nursePayload: TUpdateNurseDTO = {
                 name: writeNurse.name,
                 phoneNum: writeNurse.phoneNum,
                 isWorker: writeNurse.isWorker,
                 isWardManager: writeNurse.isWardManager,
                 memo: getMemoWithoutRoleMarkers(writeNurse.memo),
-                birthDate: normalizeBirthDateForStorage(writeNurse.birthDate),
                 isPreceptor,
                 isPreceptee,
-            });
+            };
+
+            if (birthDate !== originalBirthDate) {
+                nursePayload.birthDate = birthDate;
+            }
+
+            const saved = await updateNurse(writeNurse.nurseId, nursePayload);
 
             if (!saved) return false;
         }
@@ -1023,7 +1030,7 @@ function NurseDetailPanel({
                     <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <BirthDateField
                             value={writeNurse.birthDate}
-                            disabled={isBusy || !canEditBirthDate}
+                            disabled={isBusy}
                             isInvalid={!isBirthDateValid}
                             onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
                         />

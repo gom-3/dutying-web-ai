@@ -12,6 +12,7 @@ import type {
     TWardShiftClassification,
     TWardShiftType,
     TShiftRotationSystem,
+    TWardRotationMode,
 } from '@dutying/domain';
 import type {TNurseResponse, TUpdateNurseDTO} from '../nurse';
 
@@ -170,12 +171,18 @@ export type TShiftConstraintSeverity = 'HARD' | 'SOFT';
 
 export type TShiftConstraintOption = {
     type: string;
+    value?: string;
     label?: string;
     nurseId?: number;
     name?: string;
     wardShiftTypeId?: number;
     code?: string;
     day?: number;
+    rotationSystem?: 'THREE' | 'TWO' | 'NONE';
+    classification?: string;
+    startTime?: string;
+    endTime?: string;
+    paidMinutes?: number;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
 };
@@ -190,6 +197,7 @@ export type TShiftConstraintSlot = {
     required?: boolean;
     min?: number | null;
     max?: number | null;
+    defaultValue?: string | number | null;
 };
 
 export type TShiftConstraintTemplate = {
@@ -207,6 +215,7 @@ export type TShiftConstraintRuleCandidatesResponse = {
     schemaVersion: number;
     wardId: number;
     shiftTeamId: number;
+    rotationMode?: TWardRotationMode;
     options: TShiftConstraintOptions;
     templates: TShiftConstraintTemplate[];
 };
@@ -225,15 +234,23 @@ export type TShiftConstraintRuleResponse = {
     invalidReason?: string | null;
 };
 
+export type TShiftConstraintRuleWarning = {
+    code: string;
+    message: string;
+    relatedTemplateCodes: string[];
+};
+
 export type TShiftConstraintRulesResponse = {
     schemaVersion: number;
     wardId: number;
     shiftTeamId: number;
     rules: TShiftConstraintRuleResponse[];
+    warnings?: TShiftConstraintRuleWarning[];
 };
 
 export type TUpdateShiftConstraintRulesDTO = {
-    rules: {
+    rotationMode?: TWardRotationMode;
+    rules?: {
         shiftConstraintRuleId?: number;
         templateCode: string;
         severity: TShiftConstraintSeverity;
@@ -567,7 +584,11 @@ export type TPublishSnapshotRes = {
 export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
-    getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;
+    getShiftConstraintRuleCandidates: (
+        wardId: number,
+        shiftTeamId: number,
+        rotationMode?: TWardRotationMode,
+    ) => Promise<TShiftConstraintRuleCandidatesResponse>;
     getShiftConstraintRules: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRulesResponse>;
     updateShiftConstraintRules: (
         wardId: number,
@@ -738,6 +759,7 @@ export type TCreateWardShiftTeamDTO = {
 export type TCreateWardDTO = {
     name: string;
     hospitalName: string;
+    rotationMode?: TWardRotationMode;
     wardShiftTypes: TCreateWardShiftTypeDTO[];
     shiftTeams: TCreateWardShiftTeamDTO[];
 };

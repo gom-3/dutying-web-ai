@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     calendarProps: [] as Array<{
         doc: TDutyDoc;
         fixCellOnContextMenu?: boolean;
+        nurseNameMaxChars?: number | null;
         onCellClick?: (rowIndex: number, colIndex: number) => void;
     }>,
     requestAiSchedule: vi.fn(),
@@ -148,6 +149,7 @@ vi.mock('../../shared/make-shift-calendar', () => ({
     MakeShiftCalendar: (props: {
         doc: TDutyDoc;
         fixCellOnContextMenu?: boolean;
+        nurseNameMaxChars?: number | null;
         onCellClick?: (rowIndex: number, colIndex: number) => void;
     }) => {
         const {doc} = props;
@@ -243,6 +245,12 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.fixCellOnContextMenu).toBe(true);
+    });
+
+    it('shows one more name character on the step 4 calendar', () => {
+        render(<AiAutofill />);
+
+        expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.nurseNameMaxChars).toBe(5);
     });
 
     it('clears every filled editor cell except fixed and requested shifts after confirmation', async () => {

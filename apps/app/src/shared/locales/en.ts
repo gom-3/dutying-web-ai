@@ -169,6 +169,10 @@ export const en: TLocale = {
                 closeImage: 'Close photo',
                 checkedPeople: '{{count}} checked',
                 selectPost: 'Select a post',
+                loading: 'Loading post',
+                unavailableTitle: 'Could not open this post',
+                unavailableDescription: 'This post was deleted or your access changed.',
+                backToList: 'Back to list',
             },
             schedule: {
                 calendarTitle: 'Ward calendar',
@@ -765,20 +769,11 @@ export const en: TLocale = {
                     staffing: 'Staffing',
                     forbidden: 'Forbidden patterns',
                     workRest: 'Work/rest',
+                    workRestStreaks: 'Work and rest streaks',
+                    nightTransition: 'Night and transitions',
+                    roleCoverage: 'Skills and roles',
                     personal: 'Person limits',
                     combination: 'Worker pairing',
-                    twoShift: 'Two-shift',
-                },
-                twoShift: {
-                    title: 'Use automatic two-shift assignment',
-                    description: 'Automatically assign two-shift day and night as a pair for this shift team only.',
-                    switchAria: 'Use automatic two-shift assignment',
-                    maxLines: 'Maximum two-shift sets per day',
-                    minRestHours: 'Minimum rest between shifts',
-                    monthlyWorkHours: 'Monthly work-hour cap',
-                    lineUnit: 'sets',
-                    hourUnit: 'hours',
-                    teamOnlyHint: 'This setting applies only to the selected shift team and does not affect other teams.',
                 },
                 option: {
                     all: 'All',
@@ -788,7 +783,22 @@ export const en: TLocale = {
                     monthlyDayLabel: 'Day {{day}} each month',
                     everyday: 'Every day',
                     weekday: 'Weekdays',
+                    weekend: 'Weekends',
+                    holiday: 'Holidays',
                     weekendOrHoliday: 'Weekends/holidays',
+                    weekdayName: {
+                        monday: 'Monday',
+                        tuesday: 'Tuesday',
+                        wednesday: 'Wednesday',
+                        thursday: 'Thursday',
+                        friday: 'Friday',
+                        saturday: 'Saturday',
+                        sunday: 'Sunday',
+                    },
+                    target: {
+                        rotating: 'Rotating three-shift nurses',
+                        nightDedicated: 'Night-only nurses',
+                    },
                     staffCountOperator: {
                         min: 'At least',
                         max: 'At most',
@@ -823,6 +833,9 @@ export const en: TLocale = {
                     addAria: 'Add constraint',
                     addTitle: 'Add',
                 },
+                savedWarnings: {
+                    title: 'Saved, but some constraints need review',
+                },
                 warning: {
                     deleteTitle: 'Delete this recommended constraint?',
                     unmarkTitle: 'Remove the Important mark?',
@@ -839,6 +852,8 @@ export const en: TLocale = {
                 },
                 toast: {
                     duplicatesRemoved: 'Cleaned up {{count}} duplicate constraints.',
+                    duplicateSkipped: 'The same constraint already exists.',
+                    staffCountConflict: 'The minimum, maximum, and exact staffing values conflict for this scope and shift.',
                     added: 'Constraint added.',
                     resetDefaults: 'Reset to {{count}} recommended constraints.',
                     imported: 'Imported constraints from {{teamName}}.',
@@ -846,6 +861,11 @@ export const en: TLocale = {
                     saveFailed: 'Could not save constraints. Please try again shortly.',
                     recommendedDeleted: 'Recommended constraint deleted.',
                     importantUnmarked: 'Important mark removed.',
+                },
+                staffCountText: {
+                    min: '{{dateScope}}: at least {{count}} nurses are needed for {{shift}}.',
+                    max: '{{dateScope}}: up to {{count}} nurses can be assigned to {{shift}}.',
+                    exact: '{{dateScope}}: exactly {{count}} nurses must be assigned to {{shift}}.',
                 },
                 state: {
                     teamRequired: 'Select a shift team first.',
@@ -855,7 +875,7 @@ export const en: TLocale = {
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: 'Default Important constraint',
-                        sentence: '{target} cannot work {count} or more consecutive days',
+                        sentence: '{target} can work up to {count} consecutive days',
                     },
                     CORE_MIN_NIGHT_INTERVAL: {
                         label: 'Default Important constraint',
@@ -865,13 +885,17 @@ export const en: TLocale = {
                         label: 'Default Important constraint',
                         sentence: '{target} can work up to {count} consecutive N shifts',
                     },
+                    CORE_MIN_CONTINUOUS_NIGHT: {
+                        label: 'Night and transition constraint',
+                        sentence: '{target} works at least {count} consecutive night shifts',
+                    },
                     CORE_MIN_OFF_AFTER_NIGHT: {
                         label: 'Default Important constraint',
-                        sentence: '{target} needs at least {count} OFF days after an N shift',
+                        sentence: '{target} needs at least {count} days off after an N shift',
                     },
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: 'Default Important constraint',
-                        sentence: '{target} cannot work N on the day before a requested OFF',
+                        sentence: '{target} cannot work N on the day before a requested day off',
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: 'Staffing constraint',
@@ -895,19 +919,19 @@ export const en: TLocale = {
                     },
                     MAX_CONSECUTIVE_WORK_DAYS: {
                         label: 'Work-rest constraint',
-                        sentence: '{target} cannot work {count} or more consecutive days',
+                        sentence: '{target} can work up to {count} consecutive days',
                     },
                     OFF_AFTER_CONSECUTIVE_WORK: {
                         label: 'Work-rest constraint',
-                        sentence: '{target} needs OFF after {count} consecutive work days',
+                        sentence: '{target} needs a day off after {count} consecutive work days',
                     },
                     MIN_OFF_AFTER_N: {
                         label: 'Work-rest constraint',
-                        sentence: '{target} needs at least {count} OFF days after an N shift',
+                        sentence: '{target} needs at least {count} days off after an N shift',
                     },
                     MIN_MONTHLY_OFF: {
                         label: 'Work-rest constraint',
-                        sentence: '{target} needs at least {count} OFF days per month',
+                        sentence: '{target} needs at least {count} days off per month',
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: 'Personal constraint',
@@ -920,6 +944,34 @@ export const en: TLocale = {
                     NURSE_AVOID_SHIFT: {
                         label: 'Personal constraint',
                         sentence: '{nurse} prefers to avoid {shift} shifts',
+                    },
+                    MIN_OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: 'Work and rest streak constraint',
+                        sentence: '{target} rests at least {offCount} days after {workCount} or more consecutive workdays',
+                    },
+                    AVOID_ISOLATED_WORK_DAY: {
+                        label: 'Work and rest streak constraint',
+                        sentence: '{target} avoids a single workday between days off',
+                    },
+                    AVOID_ISOLATED_OFF_DAY: {
+                        label: 'Work and rest streak constraint',
+                        sentence: '{target} avoids a single day off between workdays',
+                    },
+                    MAX_MONTHLY_NIGHT_COUNT: {
+                        label: 'Night and transition constraint',
+                        sentence: '{target} works at most {count} night shifts per month',
+                    },
+                    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+                        label: 'Person limit',
+                        sentence: '{target} works at most {count} weekend or holiday {shift} shifts per {period}',
+                    },
+                    PRECEPTEE_NOT_ALONE_SHIFT: {
+                        label: 'Skills and roles',
+                        sentence: 'Assign another nurse to the same shift when {preceptee} works',
+                    },
+                    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {
+                        label: 'Skills and roles',
+                        sentence: 'Assign {preceptor} and {preceptee} to the same shift',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'Default Important constraint',
@@ -1575,6 +1627,17 @@ export const en: TLocale = {
             quitWard: 'Leave ward',
             save: 'Save changes',
             saving: 'Saving...',
+            calendar: {
+                sectionTitle: 'Additional features',
+                birthdayTitle: 'Celebrate birthdays',
+                birthdayDescription: 'When a member has a date of birth, show an all-day birthday event on the ward calendar.',
+                birthdayInfoAria: 'Birthday calendar info',
+                birthdaySwitchAria: 'Celebrate birthdays',
+                toast: {
+                    saveSuccess: 'Saved calendar settings.',
+                    updateFailed: 'Could not save calendar settings.',
+                },
+            },
             state: {
                 noWardTitle: 'Ward connection required',
                 noWardDescription: 'Join a ward or create a new ward before editing ward settings.',
@@ -1633,7 +1696,8 @@ export const en: TLocale = {
                 },
                 rotation: {
                     title: 'Select the rotation systems you use',
-                    description: 'We will prepare shift types and automatic-assignment constraints for your selection.',
+                    highlight: 'rotation systems',
+                    description: 'We will prepare shift types for your selection.',
                 },
                 schedule: {
                     title: 'Enter the most recent schedule\nfor ward and schedule setup',

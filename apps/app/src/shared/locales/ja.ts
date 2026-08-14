@@ -161,6 +161,10 @@ export const ja: TLocale = {
                 closeImage: '写真を閉じる',
                 checkedPeople: 'チェック {{count}}名',
                 selectPost: '投稿を選択してください',
+                loading: '投稿を読み込んでいます',
+                unavailableTitle: '投稿を開けません',
+                unavailableDescription: 'この投稿は削除されたか、アクセス権限が変更されています。',
+                backToList: '一覧に戻る',
             },
             schedule: {
                 calendarTitle: '病棟カレンダー',
@@ -812,6 +816,7 @@ export const ja: TLocale = {
                 },
                 rotation: {
                     title: '使用する交代制を選択してください',
+                    highlight: '交代制',
                     description: '選択した交代制に合わせて勤務区分と自動割り当ての制約を準備します。',
                 },
                 schedule: {
@@ -1361,6 +1366,9 @@ export const ja: TLocale = {
                     staffing: '人数',
                     forbidden: '禁止パターン',
                     workRest: '連続勤務/休息',
+                    workRestStreaks: '連続勤務・休み',
+                    nightTransition: '夜勤・切り替え',
+                    roleCoverage: 'スキル・役割',
                     personal: '個人別制限',
                     combination: 'スタッフ組み合わせ',
                 },
@@ -1372,7 +1380,22 @@ export const ja: TLocale = {
                     monthlyDayLabel: '毎月{{day}}日',
                     everyday: '毎日',
                     weekday: '平日',
+                    weekend: '週末',
+                    holiday: '祝日',
                     weekendOrHoliday: '週末・祝日',
+                    weekdayName: {
+                        monday: '月曜日',
+                        tuesday: '火曜日',
+                        wednesday: '水曜日',
+                        thursday: '木曜日',
+                        friday: '金曜日',
+                        saturday: '土曜日',
+                        sunday: '日曜日',
+                    },
+                    target: {
+                        rotating: '通常の3交代看護師',
+                        nightDedicated: '夜勤専従看護師',
+                    },
                     staffCountOperator: {
                         min: '最低',
                         max: '最大',
@@ -1407,6 +1430,9 @@ export const ja: TLocale = {
                     addAria: '制約条件を追加',
                     addTitle: '追加',
                 },
+                savedWarnings: {
+                    title: '保存しましたが、確認が必要な制約条件があります',
+                },
                 warning: {
                     deleteTitle: '推奨条件を削除しますか？',
                     unmarkTitle: '重要マークを外しますか？',
@@ -1423,6 +1449,8 @@ export const ja: TLocale = {
                 },
                 toast: {
                     duplicatesRemoved: '重複する制約条件{{count}}件を整理しました。',
+                    duplicateSkipped: '同じ条件がすでにあります。',
+                    staffCountConflict: '同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。',
                     added: '制約条件を追加しました。',
                     resetDefaults: '推奨条件{{count}}件に初期化しました。',
                     imported: '{{teamName}}の制約条件を読み込みました。',
@@ -1430,6 +1458,11 @@ export const ja: TLocale = {
                     saveFailed: '制約条件を保存できませんでした。しばらくしてからもう一度お試しください。',
                     recommendedDeleted: '推奨条件を削除しました。',
                     importantUnmarked: '重要マークを外しました。',
+                },
+                staffCountText: {
+                    min: '{{dateScope}}の{{shift}}勤務には最低{{count}}人必要です。',
+                    max: '{{dateScope}}の{{shift}}勤務には最大{{count}}人まで配置できます。',
+                    exact: '{{dateScope}}の{{shift}}勤務はちょうど{{count}}人にします。',
                 },
                 state: {
                     teamRequired: '先に勤務チームを選択してください。',
@@ -1439,7 +1472,7 @@ export const ja: TLocale = {
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: '重要な基本条件',
-                        sentence: '{target}は{count}日以上連続で勤務できません',
+                        sentence: '{target}は最大{count}日まで連続勤務できます',
                     },
                     CORE_MIN_NIGHT_INTERVAL: {
                         label: '重要な基本条件',
@@ -1449,13 +1482,17 @@ export const ja: TLocale = {
                         label: '重要な基本条件',
                         sentence: '{target}は連続N勤務を最大{count}回までにします',
                     },
+                    CORE_MIN_CONTINUOUS_NIGHT: {
+                        label: '夜勤・切り替え条件',
+                        sentence: '{target}はN勤務を最低{count}日連続で行います',
+                    },
                     CORE_MIN_OFF_AFTER_NIGHT: {
                         label: '重要な基本条件',
-                        sentence: '{target}はN勤務後に最低{count}日のOFFが必要です',
+                        sentence: '{target}はN勤務後に最低{count}日の休みが必要です',
                     },
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '重要な基本条件',
-                        sentence: '{target}は申請したOFFの前日にN勤務をしてはいけません',
+                        sentence: '{target}は希望休の前日にN勤務をしてはいけません',
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '人数条件',
@@ -1479,19 +1516,19 @@ export const ja: TLocale = {
                     },
                     MAX_CONSECUTIVE_WORK_DAYS: {
                         label: '勤務・休み条件',
-                        sentence: '{target}は{count}日以上連続で勤務できません',
+                        sentence: '{target}は最大{count}日まで連続勤務できます',
                     },
                     OFF_AFTER_CONSECUTIVE_WORK: {
                         label: '勤務・休み条件',
-                        sentence: '{target}は{count}日連続勤務後にOFFが必要です',
+                        sentence: '{target}は{count}日連続勤務後に休みが必要です',
                     },
                     MIN_OFF_AFTER_N: {
                         label: '勤務・休み条件',
-                        sentence: '{target}はN勤務後に最低{count}日のOFFが必要です',
+                        sentence: '{target}はN勤務後に最低{count}日の休みが必要です',
                     },
                     MIN_MONTHLY_OFF: {
                         label: '勤務・休み条件',
-                        sentence: '{target}は月に最低{count}日のOFFが必要です',
+                        sentence: '{target}は月に最低{count}日の休みが必要です',
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '個人条件',
@@ -1504,6 +1541,34 @@ export const ja: TLocale = {
                     NURSE_AVOID_SHIFT: {
                         label: '個人条件',
                         sentence: '{nurse}は{shift}勤務を避けたいと希望しています',
+                    },
+                    MIN_OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: '連続勤務・休み条件',
+                        sentence: '{target}は{workCount}日以上連続勤務した後、最低{offCount}日休みます',
+                    },
+                    AVOID_ISOLATED_WORK_DAY: {
+                        label: '連続勤務・休み条件',
+                        sentence: '{target}は休みの間に1日だけ勤務する配置を避けます',
+                    },
+                    AVOID_ISOLATED_OFF_DAY: {
+                        label: '連続勤務・休み条件',
+                        sentence: '{target}は勤務の間に1日だけ休む配置を避けます',
+                    },
+                    MAX_MONTHLY_NIGHT_COUNT: {
+                        label: '夜勤・切り替え条件',
+                        sentence: '{target}の夜勤は月に最大{count}回です',
+                    },
+                    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+                        label: '個人別制限',
+                        sentence: '{target}の週末・祝日の{shift}勤務は{period}に最大{count}回です',
+                    },
+                    PRECEPTEE_NOT_ALONE_SHIFT: {
+                        label: 'スキル・役割',
+                        sentence: '{preceptee}が勤務する際は同じ勤務に別の看護師を配置します',
+                    },
+                    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {
+                        label: 'スキル・役割',
+                        sentence: '{preceptor}と{preceptee}を同じ勤務に配置します',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '重要な基本条件',

@@ -47,7 +47,7 @@ function RotationStep({rotationMode, onRotationModeChange}: IRotationStepProps) 
                                     aria-hidden="true"
                                     className={cn(
                                         'flex size-5 shrink-0 items-center justify-center rounded-full bg-gray-6 transition-colors group-hover:bg-gray-5 group-focus-visible:bg-main-1',
-                                        selected && 'bg-main-1',
+                                        selected && 'bg-main-1 group-hover:bg-main-1 group-focus-visible:bg-main-1',
                                     )}
                                 >
                                     <span className={cn('size-2 rounded-full bg-transparent', selected && 'bg-white')} />

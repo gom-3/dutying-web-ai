@@ -29,7 +29,6 @@ import {
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {Input} from '@/shared/ui/primitives/input';
-import {Switch} from '@/shared/ui/primitives/switch';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import {
@@ -52,7 +51,7 @@ type TWardSettingsPageViewProps = {
     actions: TWardSettingsActions;
 };
 
-const TAB_ORDER: TWardSettingsTab[] = ['constraints', 'shiftTypes', 'restLeavePolicy', 'requestReception', 'calendar'];
+const TAB_ORDER: TWardSettingsTab[] = ['constraints', 'shiftTypes', 'restLeavePolicy', 'requestReception'];
 const SHIFT_COLOR_OPTIONS = [
     '#63C8B8',
     '#F790A4',
@@ -83,6 +82,7 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'DAY', labelKey: 'feature.createShiftModal.classification.day'},
     {value: 'EVENING', labelKey: 'feature.createShiftModal.classification.evening'},
     {value: 'NIGHT', labelKey: 'feature.createShiftModal.classification.night'},
+    {value: 'NIGHT_CONTINUATION', labelKey: 'feature.createShiftModal.classification.nightContinuation'},
     {value: 'OFF', labelKey: 'feature.createShiftModal.classification.off'},
     {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
     {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
@@ -315,8 +315,6 @@ function getTabDescriptionKey(tab: TWardSettingsTab) {
 
     if (tab === 'requestReception') return 'page.wardSettings.description.requestReception';
 
-    if (tab === 'calendar') return 'page.wardSettings.description.calendar';
-
     return 'page.wardSettings.description.constraints';
 }
 
@@ -329,7 +327,7 @@ function Tabs({currentTab, onSelect}: {currentTab: TWardSettingsTab; onSelect: (
 
     return (
         <div
-            className="grid grid-cols-2 gap-1 rounded-[12px] bg-[#F2F4F6] p-1 lg:grid-cols-5"
+            className="grid grid-cols-2 gap-1 rounded-[12px] bg-[#F2F4F6] p-1 lg:grid-cols-4"
             role="group"
             aria-label={t('page.wardSettings.title')}
         >
@@ -389,9 +387,9 @@ function ShiftTypeTable({
     const [showValidationHighlight, setShowValidationHighlight] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [draftShiftTypes, setDraftShiftTypes] = useState<TWardSettingsShiftType[]>([]);
-    const [rotationMode, setRotationMode] = useState<TWardRotationMode>('THREE');
     const [deletedShiftTypeIds, setDeletedShiftTypeIds] = useState<number[]>([]);
     const [colorPickerPosition, setColorPickerPosition] = useState<TColorPickerPosition | null>(null);
+    const rotationMode = useMemo(() => inferWardRotationMode(shiftTypes), [shiftTypes]);
     const savingRef = useRef(false);
     const hasInitializedShiftTypeOrderRef = useRef(false);
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
@@ -412,7 +410,6 @@ function ShiftTypeTable({
                 ? withShiftTypeDisplayOrders(shiftTypes)
                 : withInitialShiftTypeDisplayOrders(shiftTypes),
         );
-        setRotationMode(inferWardRotationMode(shiftTypes));
         hasInitializedShiftTypeOrderRef.current = true;
         setDeletedShiftTypeIds([]);
         setShortNameErrorById({});
@@ -565,6 +562,12 @@ function ShiftTypeTable({
         );
     const showRotationSystemColumn = rotationMode === 'MIXED';
     const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
+    const selectedRotationTitle =
+        rotationMode === 'THREE'
+            ? t('page.wardSettings.shiftTypes.rotation.threeTitle')
+            : rotationMode === 'TWO'
+              ? t('page.wardSettings.shiftTypes.rotation.twoTitle')
+              : t('page.wardSettings.shiftTypes.rotation.mixedTitle');
     const requiredRotationClassifications = getRequiredRotationClassifications(rotationMode);
     const missingRequiredShiftTypeLabels = requiredRotationClassifications
         .filter(({rotationSystem, classification}) => !hasActiveRotationClassification(rotationSystem, classification))
@@ -588,14 +591,15 @@ function ShiftTypeTable({
         rotationSystem: TSelectableShiftRotationSystem,
     ): Partial<TWardSettingsShiftType> => {
         const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+        const isNightContinuation = classification === 'NIGHT_CONTINUATION';
         const timeRange = getDefaultTimeRangeForRotation(rotationSystem, classification);
 
         return {
             classification,
             isOff,
-            isCounted: !isOff,
+            isCounted: !isOff && !isNightContinuation,
             rotationSystem,
-            paidMinutes: rotationSystem === 'TWO' ? 630 : null,
+            paidMinutes: isNightContinuation ? 0 : rotationSystem === 'TWO' ? 630 : null,
             isActive: true,
             startTime: isOff ? '' : (timeRange?.startTime ?? shiftType.startTime),
             endTime: isOff ? '' : (timeRange?.endTime ?? shiftType.endTime),
@@ -854,67 +858,17 @@ function ShiftTypeTable({
 
     return (
         <div className="w-full">
-            <fieldset className="mb-4 rounded-[18px] bg-white p-5">
-                <legend className="px-1 font-apple text-[16px] font-semibold text-sub-1">
-                    {t('page.wardSettings.shiftTypes.rotation.modeTitle')}
-                </legend>
-                <p className="mb-4 font-apple text-[13px] leading-5 text-gray-3">
-                    {t('page.wardSettings.shiftTypes.rotation.modeDescription')}
-                </p>
-                <div role="radiogroup" className="grid gap-3 md:grid-cols-3">
-                    {(
-                        [
-                            {
-                                value: 'THREE' as const,
-                                title: t('page.wardSettings.shiftTypes.rotation.threeTitle'),
-                                description: t('page.wardSettings.shiftTypes.rotation.threeDescription'),
-                            },
-                            {
-                                value: 'TWO' as const,
-                                title: t('page.wardSettings.shiftTypes.rotation.twoTitle'),
-                                description: t('page.wardSettings.shiftTypes.rotation.twoDescription'),
-                            },
-                            {
-                                value: 'MIXED' as const,
-                                title: t('page.wardSettings.shiftTypes.rotation.mixedTitle'),
-                                description: t('page.wardSettings.shiftTypes.rotation.mixedDescription'),
-                            },
-                        ] as const
-                    ).map((option) => {
-                        const selected = rotationMode === option.value;
-
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                role="radio"
-                                aria-checked={selected}
-                                onClick={() => setRotationMode(option.value)}
-                                className={cn(
-                                    'flex min-h-[96px] items-start gap-3 rounded-[14px] p-4 text-left ring-1 transition-colors',
-                                    selected
-                                        ? 'bg-main-light text-main-1 ring-main-1'
-                                        : 'bg-gray-7 text-sub-2 ring-transparent hover:bg-gray-6/60',
-                                )}
-                            >
-                                <span
-                                    aria-hidden="true"
-                                    className={cn(
-                                        'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border',
-                                        selected ? 'border-main-1 bg-main-1 text-white' : 'border-gray-5 bg-white text-transparent',
-                                    )}
-                                >
-                                    <Check className="size-3" strokeWidth={3} />
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block font-apple text-[14px] font-semibold">{option.title}</span>
-                                    <span className="mt-1 block font-apple text-[12px] leading-5 text-gray-3">{option.description}</span>
-                                </span>
-                            </button>
-                        );
-                    })}
+            <section
+                className="mb-3 inline-flex w-full items-center gap-3 rounded-[14px] bg-white px-4 py-3 sm:w-auto"
+                aria-labelledby="ward-rotation-title"
+            >
+                <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                    <h2 id="ward-rotation-title" className="shrink-0 font-apple text-[13px] leading-5 font-medium text-gray-3">
+                        {t('page.wardSettings.shiftTypes.rotation.modeTitle')}
+                    </h2>
+                    <p className="font-apple text-[16px] leading-6 font-semibold text-sub-1">{selectedRotationTitle}</p>
                 </div>
-            </fieldset>
+            </section>
             <div className="overflow-x-auto">
                 <div className="min-w-[960px] rounded-[16px] bg-white p-2">
                     <div
@@ -1397,83 +1351,6 @@ function ShiftTypeTable({
     );
 }
 
-function CalendarSettingsContent({
-    state,
-    actions,
-}: {
-    state: Pick<TWardSettingsState, 'ward' | 'wardStatus'>;
-    actions: Pick<TWardSettingsActions, 'updateCalendarSettings'>;
-}) {
-    const {t} = useTypedTranslation();
-    const [isSaving, setIsSaving] = useState(false);
-    const persistedShowBirthdays = state.ward?.showMemberBirthdaysInCalendar !== false;
-    const [draftShowBirthdays, setDraftShowBirthdays] = useState(persistedShowBirthdays);
-
-    useEffect(() => {
-        setDraftShowBirthdays(persistedShowBirthdays);
-    }, [persistedShowBirthdays]);
-
-    if (state.wardStatus === 'pending') {
-        return (
-            <SettingsStateFrame>
-                <PageState tone="loading" title={t('page.wardSettings.calendar.loading')} className="py-0" />
-            </SettingsStateFrame>
-        );
-    }
-
-    if (state.wardStatus === 'error' || !state.ward) {
-        return (
-            <SettingsStateFrame>
-                <PageState
-                    tone="error"
-                    title={t('page.wardSettings.calendar.error')}
-                    description={t('page.state.errorDescription')}
-                    className="py-0"
-                />
-            </SettingsStateFrame>
-        );
-    }
-
-    return (
-        <div className="rounded-[16px] bg-white px-5 py-5">
-            <p className="font-apple text-[15px] font-semibold text-sub-1">{t('page.wardSettings.calendar.sectionTitle')}</p>
-            <div className="mt-4 flex min-h-[88px] items-center justify-between gap-4 rounded-[12px] bg-gray-7 px-4 py-4">
-                <div className="min-w-0">
-                    <p className="font-apple text-[14px] font-semibold text-sub-1">{t('page.wardSettings.calendar.birthdayTitle')}</p>
-                    <p className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
-                        {t('page.wardSettings.calendar.birthdayDescription')}
-                    </p>
-                </div>
-                <Switch
-                    checked={draftShowBirthdays}
-                    disabled={isSaving}
-                    onCheckedChange={async (checked) => {
-                        const previousShowBirthdays = draftShowBirthdays;
-
-                        setDraftShowBirthdays(checked);
-                        setIsSaving(true);
-
-                        try {
-                            const saved = await actions.updateCalendarSettings({showMemberBirthdaysInCalendar: checked});
-
-                            if (saved) {
-                                toast.success(t('page.wardSettings.calendar.toast.saveSuccess'));
-                            } else {
-                                setDraftShowBirthdays(previousShowBirthdays);
-                            }
-                        } finally {
-                            setIsSaving(false);
-                        }
-                    }}
-                    className="relative h-7 w-12 shrink-0 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
-                    thumbClassName="absolute top-0.5 left-0.5 h-6 w-6 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-5"
-                    aria-label={t('page.wardSettings.calendar.birthdaySwitchAria')}
-                />
-            </div>
-        </div>
-    );
-}
-
 function ConstraintsContent({
     state,
     actions,
@@ -1585,8 +1462,6 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                 return state.shiftTypesStatus === 'success';
             case 'requestReception':
                 return state.requestReceptionStatus === 'success';
-            case 'calendar':
-                return state.wardStatus === 'success';
             case 'constraints':
                 return state.shiftTeamsStatus === 'success';
         }
@@ -1705,16 +1580,6 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         status={state.requestReceptionStatus}
                         onSave={actions.updateRequestReceptionSettings}
                         onRetry={actions.retryRequestReceptionSettings}
-                    />
-                ) : state.currentTab === 'calendar' ? (
-                    <CalendarSettingsContent
-                        state={{
-                            ward: state.ward,
-                            wardStatus: state.wardStatus,
-                        }}
-                        actions={{
-                            updateCalendarSettings: actions.updateCalendarSettings,
-                        }}
                     />
                 ) : (
                     <ConstraintsContent

@@ -1,5 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import type {IApiClient} from '../client';
+import type {TShiftConstraintRulesResponse} from '../ward';
 import {createAccountApi, createNurseApi, createWardApi} from '../index';
 
 const createClient = (): IApiClient => ({
@@ -301,6 +302,7 @@ describe('@dutying/api public entry', () => {
             wardApi.completeOnboardingWardDraft(10, {
                 name: 'ICU',
                 hospitalName: 'Dutying Hospital',
+                rotationMode: 'TWO',
                 wardShiftTypes: [],
                 shiftTeams: [
                     {
@@ -335,6 +337,7 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenNthCalledWith(2, '/wards/10/onboarding/complete', {
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
+            rotationMode: 'TWO',
             wardShiftTypes: [],
             shiftTeams: [
                 {
@@ -410,7 +413,14 @@ describe('@dutying/api public entry', () => {
                     isImportant: false,
                 },
             ],
-        };
+            warnings: [
+                {
+                    code: 'MAX_WORK_BELOW_WORK_OFF_TRIGGER',
+                    message: 'Maximum consecutive work is lower than the work-off trigger.',
+                    relatedTemplateCodes: ['CORE_MAX_CONTINUOUS_WORK', 'MIN_OFF_AFTER_CONSECUTIVE_WORK'],
+                },
+            ],
+        } satisfies TShiftConstraintRulesResponse;
         const payload = {
             rules: [
                 {
@@ -424,14 +434,24 @@ describe('@dutying/api public entry', () => {
                 },
             ],
         };
+        const candidateResponse = {
+            schemaVersion: 1,
+            wardId: 7,
+            shiftTeamId: 3,
+            rotationMode: 'TWO' as const,
+            options: {},
+            templates: [],
+        };
 
-        getMock.mockResolvedValueOnce({data: response});
+        getMock.mockResolvedValueOnce({data: response}).mockResolvedValueOnce({data: candidateResponse});
         putMock.mockResolvedValueOnce({data: response});
 
         await expect(wardApi.getShiftConstraintRules(7, 3)).resolves.toEqual(response);
+        await expect(wardApi.getShiftConstraintRuleCandidates(7, 3, 'TWO')).resolves.toEqual(candidateResponse);
         await expect(wardApi.updateShiftConstraintRules(7, 3, payload)).resolves.toEqual(response);
 
         expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules');
+        expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules/candidates?rotationMode=TWO');
         expect(putMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules', payload);
     });
 

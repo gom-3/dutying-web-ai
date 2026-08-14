@@ -2,7 +2,7 @@ import type {TCreateShiftTypeDTO} from '@dutying/api/ward';
 import type {TWardShiftType} from '@/entities/ward';
 
 export const THREE_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT'] as const;
-export const TWO_SHIFT_CLASSIFICATIONS = ['DAY', 'NIGHT'] as const;
+export const TWO_SHIFT_CLASSIFICATIONS = ['DAY', 'NIGHT', 'NIGHT_CONTINUATION'] as const;
 
 export type TWardRotationMode = 'THREE' | 'TWO' | 'MIXED';
 export type TWardShiftRotationSystem = NonNullable<TCreateShiftTypeDTO['rotationSystem']>;

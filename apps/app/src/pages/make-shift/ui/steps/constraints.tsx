@@ -1,6 +1,7 @@
+import type {TWardRotationMode} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {ChevronDown, Plus, X} from 'lucide-react';
+import {ChevronDown, Plus, TriangleAlert, X} from 'lucide-react';
 import {type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -11,7 +12,6 @@ import useAuthStore from '@/features/auth/model/store';
 import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
-import {Switch} from '@/shared/ui/primitives/switch';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {
@@ -24,6 +24,7 @@ import {
     type TShiftConstraintRule,
     type TShiftConstraintRuleDraft,
     type TShiftConstraintRulesResponse,
+    type TShiftConstraintSeverity,
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
 } from '../../model/shift-constraint-rules';
@@ -39,19 +40,25 @@ type TSelectOption = {
     isOff?: boolean;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
+    hasShiftAvailabilityConfig?: boolean;
+    canThreeShift?: boolean;
+    canTwoShift?: boolean;
+    disabledReasonKey?: TI18nKey;
     raw?: TShiftConstraintOption;
 };
 type TTemplateCategory = string;
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
 type TControlDef = {
     key: string;
-    kind: 'select' | 'number';
+    kind: 'select' | 'multiSelect' | 'number' | 'time';
+    label?: string;
     optionsKey?: string;
     min?: number;
     max?: number;
     values?: number[];
     prefix?: string;
     suffix?: string;
+    defaultValue?: string | number | null;
 };
 type TModalCategory = string;
 type TSentencePart =
@@ -68,6 +75,7 @@ type TSoftRuleTemplate = {
     sentence: TSentencePart[];
     buildText: (params: Record<string, string>) => string;
     isRecommended?: boolean;
+    targetLockedToAll?: boolean;
     sourceTemplate?: TShiftConstraintTemplate;
 };
 type TRulesUpdate = (prev: TShiftConstraintRuleDraft[]) => TShiftConstraintRuleDraft[];
@@ -89,6 +97,10 @@ type TNurseLike = {
     isPreceptee?: boolean | null;
     isWardManager?: boolean | null;
     memo?: string | null;
+    nurseShiftTypes?: {
+        wardShiftTypeId?: number;
+        isPossible?: boolean;
+    }[];
 };
 type TNurseRoleLike = {
     isPreceptor?: boolean | null;
@@ -99,6 +111,35 @@ type TNurseRoleLike = {
 const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
+const TEMP_ROTATION_MODE_OPTIONS: {value: TWardRotationMode; labelKey: TI18nKey}[] = [
+    {value: 'THREE', labelKey: 'page.makeShift.constraints.rotationMode.three'},
+    {value: 'TWO', labelKey: 'page.makeShift.constraints.rotationMode.two'},
+    {value: 'MIXED', labelKey: 'page.makeShift.constraints.rotationMode.mixed'},
+];
+const MIXED_OPERATION_POLICY_TEMPLATE_CODE = 'MIXED_OPERATION_POLICY';
+const TWO_SHIFT_FIXED_NO_N_TO_D_TEMPLATE_CODE = 'FORBID_N_THEN_D';
+const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set([
+    'MIXED_ROTATION_PARTICIPATION',
+    'TWO_SHIFT_ASSIGNMENT_COUNT',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
+]);
+const NURSE_REFERENCE_PARAM_KEYS = new Set(['nurse', 'nurseA', 'nurseB', 'nurseIds', 'preceptor', 'preceptee']);
+const CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM: Record<string, TI18nKey> = {
+    nurseIds: 'page.makeShift.constraints.accessibility.field.nurses',
+    count: 'page.makeShift.constraints.accessibility.field.count',
+    workCount: 'page.makeShift.constraints.accessibility.field.workCount',
+    offCount: 'page.makeShift.constraints.accessibility.field.offCount',
+    unpairedMax: 'page.makeShift.constraints.accessibility.field.unpairedMax',
+    minRestMinutes: 'page.makeShift.constraints.accessibility.field.minRestMinutes',
+    maxMinutes: 'page.makeShift.constraints.accessibility.field.maxMinutes',
+    maxDifference: 'page.makeShift.constraints.accessibility.field.maxDifference',
+    startTime: 'page.makeShift.constraints.accessibility.field.startTime',
+    endTime: 'page.makeShift.constraints.accessibility.field.endTime',
+};
+
+function isTwoShiftFixedNoNToD(rotationMode: TWardRotationMode, templateCode: string) {
+    return rotationMode === 'TWO' && templateCode === TWO_SHIFT_FIXED_NO_N_TO_D_TEMPLATE_CODE;
+}
 
 function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
     return hasNursePreceptorRole(nurse);
@@ -120,6 +161,10 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     NURSE_LIMIT: 'page.makeShift.constraints.category.personal',
     COMBINATION: 'page.makeShift.constraints.category.combination',
     NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
+    ROLE_COVERAGE: 'page.makeShift.constraints.category.roleCoverage',
+    MIXED_PARTICIPATION: 'page.makeShift.constraints.category.mixedParticipation',
+    MIXED_PLANNING: 'page.makeShift.constraints.category.mixedPlanning',
+    FAIRNESS: 'page.makeShift.constraints.category.fairness',
     CORE: 'page.makeShift.constraints.category.recommended',
     IMPORTANT: 'page.makeShift.constraints.category.recommended',
     TWO_SHIFT: 'page.makeShift.constraints.category.twoShift',
@@ -131,8 +176,14 @@ function ConstraintModalPortal({children}: {children: ReactNode}) {
     return createPortal(children, document.body);
 }
 
-function getCategoryLabel(t: TTypedT, category: TModalCategory) {
+function getCategoryLabel(t: TTypedT, category: TModalCategory, rotationMode: TWardRotationMode = 'THREE') {
     if (category === RECOMMENDED_MODAL_CATEGORY) return t('page.makeShift.constraints.category.recommended');
+
+    if (rotationMode !== 'MIXED' && category === 'WORK_REST') return t('page.makeShift.constraints.category.workRestStreaks');
+
+    if (rotationMode !== 'MIXED' && (category === 'FORBIDDEN' || category === 'FORBIDDEN_PATTERN')) {
+        return t('page.makeShift.constraints.category.nightTransition');
+    }
 
     const key = CATEGORY_LABEL_KEY_BY_CATEGORY[category];
 
@@ -166,7 +217,11 @@ function isSkillConstraintTemplate(template: Pick<TSoftRuleTemplate, 'id' | 'cat
 }
 
 function isVisibleConstraintRule(rule: Pick<TShiftConstraintRuleDraft, 'category' | 'templateCode'>) {
-    return !isSkillConstraintCategory(rule.category) && !isSkillConstraintTemplateCode(rule.templateCode);
+    return (
+        rule.templateCode !== MIXED_OPERATION_POLICY_TEMPLATE_CODE &&
+        !isSkillConstraintCategory(rule.category) &&
+        !isSkillConstraintTemplateCode(rule.templateCode)
+    );
 }
 
 function resolveDutyStyle(optionOrCode: TSelectOption) {
@@ -181,15 +236,14 @@ function resolveDutyStyle(optionOrCode: TSelectOption) {
 
 function DutyTypeBadge({option}: {option: TSelectOption}) {
     const style = resolveDutyStyle(option);
-    const showName = style.name && style.name !== style.code;
+    const displayName = style.name || style.code;
 
     return (
         <span
-            className="inline-flex h-7 shrink-0 items-center gap-1 rounded-[8px] px-2.5 font-apple text-[13px] font-bold text-white shadow-[inset_0_-1px_0_rgba(0,0,0,0.08)]"
+            className="inline-flex h-7 shrink-0 items-center rounded-[8px] px-2.5 font-apple text-[13px] font-bold text-white"
             style={{backgroundColor: style.color}}
         >
-            <span className="text-[14px] font-semibold">{style.code}</span>
-            {showName ? <span className="text-[12px] font-medium opacity-90">{style.name}</span> : null}
+            <span className="text-[13px] font-semibold">{displayName}</span>
         </span>
     );
 }
@@ -198,7 +252,7 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
     if (!options.length) return null;
 
     return (
-        <span className="inline-flex h-8 shrink-0 items-center overflow-hidden rounded-[9px] bg-gray-7 ring-1 ring-gray-6">
+        <span className="inline-flex h-8 shrink-0 items-center overflow-hidden rounded-[9px] bg-gray-7">
             {options.map((option, index) => {
                 const style = resolveDutyStyle(option);
 
@@ -206,11 +260,11 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
                     <span key={`${option.value}-${index}`} className="inline-flex h-full items-center">
                         {index > 0 ? <span className="px-1 font-apple text-[13px] font-bold text-gray-4">-</span> : null}
                         <span
-                            className="inline-flex h-7 items-center gap-1 rounded-[8px] px-2 font-apple text-white"
+                            className="inline-flex h-7 items-center rounded-[8px] px-2 font-apple text-white"
                             style={{backgroundColor: style.color}}
-                            title={style.name && style.name !== style.code ? `${style.code} ${style.name}` : style.code}
+                            title={style.name || style.code}
                         >
-                            <span className="text-[14px] font-semibold">{style.code}</span>
+                            <span className="text-[13px] font-semibold">{style.name || style.code}</span>
                         </span>
                     </span>
                 );
@@ -270,6 +324,159 @@ const RECOMMENDED_DEFAULT_RULE_CODES = [
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const RECOMMENDED_DEFAULT_RULE_IDS = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
+const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
+    'STAFF_COUNT_BY_SHIFT',
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'MAX_MONTHLY_NIGHT_COUNT',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+] as const;
+const THREE_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(THREE_SHIFT_RECOMMENDED_RULE_ORDER);
+const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_PAIR',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'FORBID_N_THEN_D',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+] as const;
+const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
+const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
+    'MIXED_ROTATION_PARTICIPATION',
+    'TWO_SHIFT_DAILY_LINES',
+    'TIME_WINDOW_STAFF_COUNT',
+    'MIN_REST_BETWEEN_SHIFTS',
+    'MAX_WORK_MINUTES_BY_PERIOD',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
+    'STAFF_COUNT_BY_SHIFT',
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+] as const;
+const MIXED_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(MIXED_SHIFT_RECOMMENDED_RULE_ORDER);
+const THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
+const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
+    'CORE_MAX_CONTINUOUS_WORK',
+    'FORBID_N_THEN_D',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+]);
+const MIXED_SHIFT_TEMPLATE_CODES = new Set([
+    'MIXED_ROTATION_PARTICIPATION',
+    'MIXED_DAILY_COMPOSITION',
+    'TWO_SHIFT_DAILY_LINES',
+    'TWO_SHIFT_ASSIGNMENT_COUNT',
+    'TIME_WINDOW_STAFF_COUNT',
+    'MIN_REST_BETWEEN_SHIFTS',
+    'MAX_WORK_MINUTES_BY_PERIOD',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
+]);
+const TARGET_SOFT_ONLY_TEMPLATE_CODES = new Set(['TWO_SHIFT_DAILY_LINES', 'TWO_SHIFT_ASSIGNMENT_COUNT']);
+const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'STAFF_COUNT_BY_SHIFT',
+    'CORE_MAX_CONTINUOUS_WORK',
+    'MIN_OFF_AFTER_CONSECUTIVE_WORK',
+    'AVOID_ISOLATED_WORK_DAY',
+    'AVOID_ISOLATED_OFF_DAY',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_CONTINUOUS_NIGHT',
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_PAIR',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'MAX_MONTHLY_NIGHT_COUNT',
+    'MAX_DAY_NIGHT_TRANSITIONS',
+    'FORBID_N_THEN_D',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+    'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'PRECEPTEE_NOT_ALONE_SHIFT',
+    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
+    'MIN_CHARGE_NURSE_BY_SHIFT',
+    'NURSE_PAIR_NOT_SAME_SHIFT',
+    'NURSE_PAIR_PREFER_SAME_SHIFT',
+]);
+const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'STAFF_COUNT_BY_SHIFT',
+    'CORE_MAX_CONTINUOUS_WORK',
+    'MIN_OFF_AFTER_CONSECUTIVE_WORK',
+    'AVOID_ISOLATED_WORK_DAY',
+    'AVOID_ISOLATED_OFF_DAY',
+    'MIN_MONTHLY_OFF',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'MAX_MONTHLY_NIGHT_COUNT',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+    'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'NURSE_PREFER_SHIFT',
+    'NURSE_AVOID_SHIFT',
+    'PRECEPTEE_NOT_ALONE_SHIFT',
+    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
+    'NURSE_PAIR_NOT_SAME_SHIFT',
+    'NURSE_PAIR_PREFER_SAME_SHIFT',
+]);
+const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'STAFF_COUNT_BY_SHIFT',
+    'CORE_MAX_CONTINUOUS_WORK',
+    'MIN_OFF_AFTER_CONSECUTIVE_WORK',
+    'AVOID_ISOLATED_WORK_DAY',
+    'AVOID_ISOLATED_OFF_DAY',
+    'MIN_MONTHLY_OFF',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'MAX_MONTHLY_NIGHT_COUNT',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+    'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'NURSE_PREFER_SHIFT',
+    'NURSE_AVOID_SHIFT',
+    'PRECEPTEE_NOT_ALONE_SHIFT',
+    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
+    'NURSE_PAIR_NOT_SAME_SHIFT',
+    'NURSE_PAIR_PREFER_SAME_SHIFT',
+    'MIXED_ROTATION_PARTICIPATION',
+    'MIXED_DAILY_COMPOSITION',
+    'TWO_SHIFT_DAILY_LINES',
+    'TWO_SHIFT_ASSIGNMENT_COUNT',
+    'TIME_WINDOW_STAFF_COUNT',
+    'MIN_REST_BETWEEN_SHIFTS',
+    'MAX_WORK_MINUTES_BY_PERIOD',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
+]);
+const ROTATION_MODAL_CATEGORY_ORDER = [
+    'STAFFING_COUNT',
+    'WORK_REST',
+    'FORBIDDEN_PATTERN',
+    'NURSE_LIMIT',
+    'ROLE_COVERAGE',
+    'NURSE_COMBINATION',
+];
+const MIXED_MODAL_CATEGORY_ORDER = [
+    'MIXED_PARTICIPATION',
+    'STAFFING_COUNT',
+    'MIXED_PLANNING',
+    'WORK_REST',
+    'NURSE_LIMIT',
+    'FAIRNESS',
+    'FORBIDDEN_PATTERN',
+    'ROLE_COVERAGE',
+    'NURSE_COMBINATION',
+];
 const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
     'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
     'CORE_FORBIDDEN_DUTY_PATTERNS',
@@ -279,6 +486,7 @@ const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
     'MIN_OFF_AFTER_N',
     'MIN_STAFF_BY_SHIFT',
     'MAX_STAFF_BY_SHIFT',
+    'EXACT_STAFF_BY_SHIFT',
     'MIN_STAFF_BY_DATE_SHIFT',
     'MIN_STAFF_BY_DAY_TYPE_SHIFT',
     'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
@@ -286,17 +494,80 @@ const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
     'PRECEPTEE_NOT_ALONE_N',
 ]);
 const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
+    STAFF_COUNT_BY_SHIFT: 'STAFFING_COUNT',
     CORE_MAX_CONTINUOUS_WORK: 'WORK_REST',
-    CORE_MIN_NIGHT_INTERVAL: 'WORK_REST',
+    MIN_OFF_AFTER_CONSECUTIVE_WORK: 'WORK_REST',
+    AVOID_ISOLATED_WORK_DAY: 'WORK_REST',
+    AVOID_ISOLATED_OFF_DAY: 'WORK_REST',
+    MIN_MONTHLY_OFF: 'WORK_REST',
+    CORE_MIN_NIGHT_INTERVAL: 'FORBIDDEN_PATTERN',
     CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
-    CORE_MIN_OFF_AFTER_NIGHT: 'WORK_REST',
+    CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
+    CORE_MIN_OFF_AFTER_NIGHT: 'FORBIDDEN_PATTERN',
+    MAX_MONTHLY_NIGHT_COUNT: 'FORBIDDEN_PATTERN',
+    FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
+    FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
+    FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
+    FORBID_E_THEN_N: 'FORBIDDEN_PATTERN',
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'FORBIDDEN_PATTERN',
-    TWO_SHIFT_MAX_LINES: 'TWO_SHIFT',
-    CORE_MIN_REST_HOURS: 'TWO_SHIFT',
-    MAX_MONTHLY_WORK_HOURS: 'TWO_SHIFT',
+    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: 'NURSE_LIMIT',
+    NURSE_PREFER_SHIFT: 'NURSE_LIMIT',
+    NURSE_AVOID_SHIFT: 'NURSE_LIMIT',
+    PRECEPTEE_NOT_ALONE_SHIFT: 'ROLE_COVERAGE',
+    PRECEPTOR_PRECEPTEE_SAME_SHIFT: 'ROLE_COVERAGE',
+    NURSE_PAIR_NOT_SAME_SHIFT: 'NURSE_COMBINATION',
+    NURSE_PAIR_PREFER_SAME_SHIFT: 'NURSE_COMBINATION',
+    MIXED_ROTATION_PARTICIPATION: 'MIXED_PARTICIPATION',
+    MIXED_DAILY_COMPOSITION: 'MIXED_PLANNING',
+    TWO_SHIFT_DAILY_LINES: 'STAFFING_COUNT',
+    TWO_SHIFT_ASSIGNMENT_COUNT: 'NURSE_LIMIT',
+    TIME_WINDOW_STAFF_COUNT: 'STAFFING_COUNT',
+    MIN_REST_BETWEEN_SHIFTS: 'WORK_REST',
+    MAX_WORK_MINUTES_BY_PERIOD: 'WORK_REST',
+    MIXED_SHIFT_WORKLOAD_BALANCE: 'FAIRNESS',
 };
-const TWO_SHIFT_CONFIGURATION_CODES = ['TWO_SHIFT_MAX_LINES', 'CORE_MIN_REST_HOURS', 'MAX_MONTHLY_WORK_HOURS'] as const;
-const TWO_SHIFT_CONFIGURATION_CODE_SET = new Set<string>(TWO_SHIFT_CONFIGURATION_CODES);
+const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set(['TWO_SHIFT_MAX_LINES', 'CORE_MIN_REST_HOURS', 'MAX_MONTHLY_WORK_HOURS']);
+const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MIN_CHARGE_NURSE_BY_SHIFT', 'MAX_DAY_NIGHT_TRANSITIONS']);
+
+function isSavedRuleVisibleForRotation(templateCode: string, rotationMode: TWardRotationMode) {
+    if (rotationMode === 'TWO') return TWO_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
+
+    if (rotationMode === 'THREE') return !THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES.has(templateCode);
+
+    return MIXED_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
+}
+
+function isRuleImportableForRotation(templateCode: string, rotationMode: TWardRotationMode) {
+    if (rotationMode === 'TWO') return TWO_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
+
+    if (rotationMode === 'THREE') return THREE_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
+
+    return MIXED_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
+}
+
+function containsNurseReference(value: unknown, paramKey?: string): boolean {
+    if (paramKey && NURSE_REFERENCE_PARAM_KEYS.has(paramKey)) return true;
+
+    if (Array.isArray(value)) return value.some((item) => containsNurseReference(item));
+
+    if (!value || typeof value !== 'object') return false;
+
+    const record = value as Record<string, unknown>;
+
+    if (
+        record.nurseId != null ||
+        String(record.type ?? '')
+            .trim()
+            .toUpperCase() === 'NURSE'
+    )
+        return true;
+
+    return Object.entries(record).some(([key, entryValue]) => containsNurseReference(entryValue, key));
+}
+
+function isNurseSpecificImportRule(rule: TShiftConstraintRuleDraft) {
+    return NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES.has(rule.templateCode) || containsNurseReference(rule.params);
+}
 
 function hasFinalConsonant(value: unknown) {
     const trimmed = String(value ?? '').trim();
@@ -327,6 +598,7 @@ const STAFFING_COUNT_TEMPLATE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'MIN_STAFF_BY_SHIFT',
     'MAX_STAFF_BY_SHIFT',
+    'EXACT_STAFF_BY_SHIFT',
     'MIN_STAFF_BY_DATE_SHIFT',
     'MIN_STAFF_BY_DAY_TYPE_SHIFT',
     'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
@@ -345,6 +617,7 @@ const MIN_STAFFING_COUNT_TEMPLATE_CODES = new Set([
     'SOFT_MIN_STAFF_WEEKEND_HOLIDAY',
 ]);
 const MAX_STAFFING_COUNT_TEMPLATE_CODES = new Set(['MAX_STAFF_BY_SHIFT', 'SOFT_MAX_STAFF_BY_DUTY']);
+const EXACT_STAFFING_COUNT_TEMPLATE_CODES = new Set(['EXACT_STAFF_BY_SHIFT', 'SOFT_EXACT_STAFF_BY_DUTY']);
 
 function getTemplateTranslationKey(templateId: string, property: 'label' | 'sentence') {
     return `page.makeShift.constraints.templates.${templateId}.${property}` as TI18nKey;
@@ -371,6 +644,14 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
     },
     {
         id: 'CORE_MAX_CONTINUOUS_NIGHT',
+        category: 'FORBIDDEN_PATTERN',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'CORE_MIN_CONTINUOUS_NIGHT',
         category: 'FORBIDDEN_PATTERN',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
@@ -474,6 +755,62 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [
             {key: 'nurse', kind: 'select', optionsKey: 'nurse'},
             {key: 'shift', kind: 'select', optionsKey: 'dutyStrict'},
+        ],
+    },
+    {
+        id: 'MIN_OFF_AFTER_CONSECUTIVE_WORK',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'workCount', kind: 'number', min: 1, max: 31},
+            {key: 'offCount', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'AVOID_ISOLATED_WORK_DAY',
+        category: 'WORK_REST',
+        controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
+    },
+    {
+        id: 'AVOID_ISOLATED_OFF_DAY',
+        category: 'WORK_REST',
+        controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
+    },
+    {
+        id: 'MAX_MONTHLY_NIGHT_COUNT',
+        category: 'FORBIDDEN_PATTERN',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'monthlyNightTarget'},
+            {key: 'count', kind: 'number', min: 0, max: 31},
+        ],
+    },
+    {
+        id: 'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+        category: 'NURSE_LIMIT',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'period', kind: 'select', optionsKey: 'period'},
+            {key: 'count', kind: 'number', min: 0, max: 31},
+        ],
+    },
+    {
+        id: 'PRECEPTEE_NOT_ALONE_SHIFT',
+        category: 'ROLE_COVERAGE',
+        controls: [
+            {key: 'preceptee', kind: 'select', optionsKey: 'preceptee'},
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'dateScope', kind: 'select', optionsKey: 'dateScope'},
+        ],
+    },
+    {
+        id: 'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
+        category: 'ROLE_COVERAGE',
+        controls: [
+            {key: 'preceptor', kind: 'select', optionsKey: 'preceptor'},
+            {key: 'preceptee', kind: 'select', optionsKey: 'preceptee'},
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'dateScope', kind: 'select', optionsKey: 'dateScope'},
         ],
     },
     {
@@ -660,15 +997,72 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     OFF_AFTER_CONSECUTIVE_WORK: {count: '2'},
     MIN_OFF_AFTER_N: {count: '1'},
     MIN_MONTHLY_OFF: {count: '1'},
-    TWO_SHIFT_MAX_LINES: {count: 2, unpaired: 1},
-    CORE_MIN_REST_HOURS: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 11},
-    MAX_MONTHLY_WORK_HOURS: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 230},
+    MIN_OFF_AFTER_CONSECUTIVE_WORK: {target: ALL_CONSTRAINT_TARGET_OPTION, workCount: 5, offCount: 2},
+    AVOID_ISOLATED_WORK_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    AVOID_ISOLATED_OFF_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    MAX_MONTHLY_NIGHT_COUNT: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 7},
+    MAX_DAY_NIGHT_TRANSITIONS: {target: ALL_CONSTRAINT_TARGET_OPTION, direction: {type: 'BOTH'}, period: {type: 'MONTH'}, count: 4},
+    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+        target: ALL_CONSTRAINT_TARGET_OPTION,
+        shift: {type: 'ALL'},
+        period: {type: 'MONTH'},
+        count: 4,
+    },
+    PRECEPTEE_NOT_ALONE_SHIFT: {shift: {type: 'ALL'}, dateScope: {type: 'EVERYDAY'}},
+    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {shift: {type: 'ALL'}, dateScope: {type: 'EVERYDAY'}},
+    MIN_CHARGE_NURSE_BY_SHIFT: {dateScope: {type: 'EVERYDAY'}, count: 1},
+    MIXED_ROTATION_PARTICIPATION: {
+        participationMode: {type: 'FALLBACK_TWO'},
+        dateScope: {type: 'EVERYDAY'},
+    },
+    MIXED_DAILY_COMPOSITION: {dateScope: {type: 'EVERYDAY'}, composition: {type: 'AUTO'}},
+    TWO_SHIFT_DAILY_LINES: {
+        dateScope: {type: 'EVERYDAY'},
+        operator: {type: 'MAX'},
+        count: 1,
+        unpairedMax: 0,
+    },
+    TWO_SHIFT_ASSIGNMENT_COUNT: {
+        aggregation: {type: 'PER_NURSE'},
+        shiftScope: {type: 'ALL_TWO'},
+        period: {type: 'MONTH'},
+        operator: {type: 'MAX'},
+        count: 1,
+    },
+    TIME_WINDOW_STAFF_COUNT: {
+        dateScope: {type: 'EVERYDAY'},
+        startTime: '07:00',
+        endTime: '15:00',
+        operator: {type: 'MIN'},
+        count: 1,
+    },
+    MIN_REST_BETWEEN_SHIFTS: {target: ALL_CONSTRAINT_TARGET_OPTION, minRestMinutes: 660},
+    MAX_WORK_MINUTES_BY_PERIOD: {target: ALL_CONSTRAINT_TARGET_OPTION, period: {type: 'WEEK'}, maxMinutes: 2400},
+    MIXED_SHIFT_WORKLOAD_BALANCE: {
+        metric: {type: 'TWO_ASSIGNMENTS'},
+        period: {type: 'MONTH'},
+        maxDifference: 1,
+    },
+};
+const TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> = {
+    CORE_MAX_CONTINUOUS_WORK: {days: 4, maxDays: 4, maxContinuousWorkDays: 4, count: 4},
+    CORE_MAX_CONTINUOUS_NIGHT: {count: 3},
+    CORE_MIN_OFF_AFTER_NIGHT: {count: 2},
+};
+const TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
+    CORE_MAX_CONTINUOUS_NIGHT: 'TWO_SHIFT_MAX_CONTINUOUS_NIGHT',
+    CORE_MIN_OFF_AFTER_NIGHT: 'TWO_SHIFT_MIN_OFF_AFTER_NIGHT',
+    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 };
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     target: 'target',
     targets: 'target',
     TARGET: 'target',
     TARGETS: 'target',
+    monthlyNightTarget: 'monthlyNightTarget',
+    monthlyNightTargets: 'monthlyNightTarget',
+    MONTHLY_NIGHT_TARGET: 'monthlyNightTarget',
+    MONTHLY_NIGHT_TARGETS: 'monthlyNightTarget',
     nurse: 'nurse',
     nurses: 'nurse',
     NURSE: 'nurse',
@@ -707,9 +1101,25 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     staffCountOperators: 'staffCountOperator',
     STAFF_COUNT_OPERATOR: 'staffCountOperator',
     STAFF_COUNT_OPERATORS: 'staffCountOperator',
+    direction: 'transitionDirection',
+    transitionDirections: 'transitionDirection',
+    TRANSITION_DIRECTION: 'transitionDirection',
+    TRANSITION_DIRECTIONS: 'transitionDirection',
+    period: 'period',
+    periods: 'period',
+    PERIOD: 'period',
+    PERIODS: 'period',
     shift: 'duty',
     shifts: 'dutyStrict',
     shiftsWithAll: 'duty',
+    twoShiftNight: 'twoShiftNight',
+    twoShiftNights: 'twoShiftNight',
+    TWO_SHIFT_NIGHT: 'twoShiftNight',
+    TWO_SHIFT_NIGHTS: 'twoShiftNight',
+    twoShiftNightContinuation: 'twoShiftNightContinuation',
+    twoShiftNightContinuations: 'twoShiftNightContinuation',
+    TWO_SHIFT_NIGHT_CONTINUATION: 'twoShiftNightContinuation',
+    TWO_SHIFT_NIGHT_CONTINUATIONS: 'twoShiftNightContinuation',
     dutyStrict: 'dutyStrict',
     DUTY_STRICT: 'dutyStrict',
     DUTYSTRICT: 'dutyStrict',
@@ -718,6 +1128,41 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     SHIFT_TYPE: 'duty',
     SHIFT_TYPES: 'duty',
     SHIFTS_WITH_ALL: 'duty',
+    strategy: 'strategy',
+    strategies: 'strategy',
+    mixedStrategies: 'strategy',
+    STRATEGY: 'strategy',
+    STRATEGIES: 'strategy',
+    participationMode: 'participationMode',
+    participationModes: 'participationMode',
+    mixedParticipationModes: 'participationMode',
+    PARTICIPATION_MODE: 'participationMode',
+    PARTICIPATION_MODES: 'participationMode',
+    composition: 'composition',
+    compositions: 'composition',
+    mixedCompositions: 'composition',
+    COMPOSITION: 'composition',
+    COMPOSITIONS: 'composition',
+    lineOperator: 'lineOperator',
+    lineOperators: 'lineOperator',
+    mixedLineOperators: 'lineOperator',
+    LINE_OPERATOR: 'lineOperator',
+    LINE_OPERATORS: 'lineOperator',
+    assignmentAggregation: 'assignmentAggregation',
+    assignmentAggregations: 'assignmentAggregation',
+    mixedAssignmentAggregations: 'assignmentAggregation',
+    ASSIGNMENT_AGGREGATION: 'assignmentAggregation',
+    ASSIGNMENT_AGGREGATIONS: 'assignmentAggregation',
+    twoShiftScope: 'twoShiftScope',
+    twoShiftScopes: 'twoShiftScope',
+    mixedTwoShiftScopes: 'twoShiftScope',
+    TWO_SHIFT_SCOPE: 'twoShiftScope',
+    TWO_SHIFT_SCOPES: 'twoShiftScope',
+    workloadMetric: 'workloadMetric',
+    workloadMetrics: 'workloadMetric',
+    mixedWorkloadMetrics: 'workloadMetric',
+    WORKLOAD_METRIC: 'workloadMetric',
+    WORKLOAD_METRICS: 'workloadMetric',
 };
 const LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE: Record<string, string> = {
     FORBID_N_THEN_D: 'SOFT_NO_N_TO_D',
@@ -736,21 +1181,12 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
     NOD: ['N', 'OFF', 'D'],
 };
 
-function isRecommendedTemplateCode(templateCode: string, category?: string) {
-    if (HIDDEN_RECOMMENDED_RULE_IDS.has(templateCode)) return false;
+function isRecommendedTemplateCode(templateCode: string, _category?: string, rotationMode: TWardRotationMode = 'THREE') {
+    if (rotationMode === 'TWO') return TWO_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
 
-    if (TWO_SHIFT_CONFIGURATION_CODE_SET.has(templateCode)) return false;
+    if (rotationMode === 'THREE') return THREE_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
 
-    const normalizedCategory = category?.toUpperCase();
-
-    return (
-        RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode) ||
-        templateCode.startsWith('IMPORTANT_') ||
-        templateCode.startsWith('CORE_') ||
-        normalizedCategory === 'CORE' ||
-        normalizedCategory === 'IMPORTANT' ||
-        normalizedCategory === RECOMMENDED_MODAL_CATEGORY
-    );
+    return MIXED_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
 }
 
 function isHiddenAddModalTemplate(templateCode: string) {
@@ -765,17 +1201,33 @@ function isRecommendedOnlyCategory(category: TModalCategory) {
     return category === RECOMMENDED_MODAL_CATEGORY || category === 'CORE' || category === 'IMPORTANT';
 }
 
-function isRecommendedDefaultRuleCode(templateCode: string) {
+function isRecommendedDefaultRuleCode(templateCode: string, rotationMode: TWardRotationMode = 'THREE') {
+    if (rotationMode === 'TWO') return TWO_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
+
+    if (rotationMode === 'MIXED') return MIXED_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
+
     return RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode);
 }
 
+function hasLegacyRecommendedDefaults(rules: TShiftConstraintRuleDraft[], rotationMode: TWardRotationMode) {
+    const existingTemplateCodes = new Set(rules.map((rule) => rule.templateCode));
+    const baseline = rotationMode === 'TWO' ? TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES : THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES;
+
+    return [...baseline].every((templateCode) => existingTemplateCodes.has(templateCode));
+}
+
 function isTemplateSelectable(template: TShiftConstraintTemplate) {
-    return (
+    const hasSelectableSeverity =
         template.severity === 'HARD' ||
         template.severity === 'SOFT' ||
         template.allowedSeverities.includes('HARD') ||
-        template.allowedSeverities.includes('SOFT')
-    );
+        template.allowedSeverities.includes('SOFT');
+
+    if (MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)) {
+        return template.supportedInValidator && hasSelectableSeverity;
+    }
+
+    return template.supportedInGenerator && template.supportedInValidator && hasSelectableSeverity;
 }
 
 function getOptionMapKey(optionGroup?: string) {
@@ -785,7 +1237,13 @@ function getOptionMapKey(optionGroup?: string) {
 }
 
 function getControlKind(slot: TShiftConstraintSlot): TControlDef['kind'] {
-    return slot.inputType.toUpperCase() === 'NUMBER' ? 'number' : 'select';
+    const inputType = slot.inputType.toUpperCase();
+
+    if (inputType === 'NUMBER') return 'number';
+
+    if (inputType === 'TIME') return 'time';
+
+    return inputType === 'MULTI_SELECT' ? 'multiSelect' : 'select';
 }
 
 function createControlFromSlot(slot: TShiftConstraintSlot): TControlDef {
@@ -795,15 +1253,28 @@ function createControlFromSlot(slot: TShiftConstraintSlot): TControlDef {
         return {
             key: slot.key,
             kind,
+            label: slot.label,
             min: slot.min ?? 1,
             max: slot.max ?? slot.min ?? 10,
+            defaultValue: slot.defaultValue,
+        };
+    }
+
+    if (kind === 'time') {
+        return {
+            key: slot.key,
+            kind,
+            label: slot.label,
+            defaultValue: slot.defaultValue,
         };
     }
 
     return {
         key: slot.key,
         kind,
+        label: slot.label,
         optionsKey: getOptionMapKey(slot.optionGroup),
+        defaultValue: slot.defaultValue,
     };
 }
 
@@ -933,51 +1404,122 @@ function interpolateDisplayTemplate(displayTemplate: string, _controls: TControl
     return displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
 }
 
-function createLocalizedSoftRuleTemplate(definition: TSoftRuleTemplateDefinition, t: TTypedT): TSoftRuleTemplate {
-    const sentencePattern = t(getTemplateTranslationKey(definition.id, 'sentence'));
+function createLocalizedSoftRuleTemplate(
+    definition: TSoftRuleTemplateDefinition,
+    t: TTypedT,
+    rotationMode: TWardRotationMode = 'THREE',
+): TSoftRuleTemplate {
+    const sentenceTemplateId =
+        rotationMode === 'TWO' ? (TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE[definition.id] ?? definition.id) : definition.id;
+    const sentencePattern = t(getTemplateTranslationKey(sentenceTemplateId, 'sentence'));
 
     return {
         ...definition,
         label: t(getTemplateTranslationKey(definition.id, 'label')),
         sentence: createSentenceFromPattern(sentencePattern, definition.controls),
         buildText: (params) => interpolateLocalizedPattern(sentencePattern, params),
-        isRecommended: isRecommendedTemplateCode(definition.id, definition.category),
+        isRecommended: isRecommendedTemplateCode(definition.id, definition.category, rotationMode),
     };
 }
 
-function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TTypedT) {
-    const legacyTemplates = createLegacySoftRuleTemplates(t);
+function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TTypedT, rotationMode: TWardRotationMode = 'THREE') {
+    const legacyTemplates = createLegacySoftRuleTemplates(t, rotationMode);
 
     return templates.filter(isTemplateSelectable).map<TSoftRuleTemplate>((template) => {
-        const controls = template.slots.map(createControlFromSlot);
+        const baseControls = template.slots.map(createControlFromSlot).map((control) => {
+            if (template.templateCode === 'MAX_MONTHLY_NIGHT_COUNT' && control.key === 'target') {
+                return {...control, optionsKey: 'monthlyNightTarget'};
+            }
+
+            if (template.templateCode === 'STAFF_COUNT_BY_SHIFT' && control.key === 'shift') {
+                return {...control, optionsKey: 'dutyStrict'};
+            }
+
+            if (rotationMode === 'TWO' && template.templateCode === 'CORE_MIN_OFF_AFTER_NIGHT' && control.key === 'count') {
+                return {...control, min: 1, max: 2};
+            }
+
+            return control;
+        });
+        const hasFixedTwoShiftTarget = isTwoShiftFixedNoNToD(rotationMode, template.templateCode);
+        const controls =
+            hasFixedTwoShiftTarget && !baseControls.some((control) => control.key === 'target')
+                ? [{key: 'target', kind: 'select' as const, optionsKey: 'target'}, ...baseControls]
+                : baseControls;
         const legacyTemplate = legacyTemplates.find(
             (item) => item.id === (LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE[template.templateCode] ?? template.templateCode),
         );
-        const sentence = canUseLegacySentence(legacyTemplate, controls)
-            ? legacyTemplate!.sentence
-            : createSentenceFromTemplate(template, controls);
+        const localizedMixedSentencePattern = MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)
+            ? t(getTemplateTranslationKey(template.templateCode, 'sentence'))
+            : null;
+        const baseSentence = localizedMixedSentencePattern
+            ? createSentenceFromPattern(localizedMixedSentencePattern, controls)
+            : canUseLegacySentence(legacyTemplate, controls)
+              ? legacyTemplate!.sentence
+              : createSentenceFromTemplate(template, controls);
+        const fixedTargetSentencePattern = t(getTemplateTranslationKey('TWO_SHIFT_NO_N_TO_D', 'sentence'));
+        const sentence = hasFixedTwoShiftTarget ? createSentenceFromPattern(fixedTargetSentencePattern, controls) : baseSentence;
+        const baseBuildText =
+            template.templateCode === 'STAFF_COUNT_BY_SHIFT'
+                ? (params: Record<string, string>) => {
+                      const interpolation = {
+                          dateScope: params.dateScope ?? '',
+                          shift: params.shift ?? '',
+                          count: params.count ?? '',
+                      };
+
+                      if (params.operator === t('page.makeShift.constraints.option.staffCountOperator.min')) {
+                          return t('page.makeShift.constraints.staffCountText.min', interpolation);
+                      }
+
+                      if (params.operator === t('page.makeShift.constraints.option.staffCountOperator.max')) {
+                          return t('page.makeShift.constraints.staffCountText.max', interpolation);
+                      }
+
+                      if (params.operator === t('page.makeShift.constraints.option.staffCountOperator.exact')) {
+                          return t('page.makeShift.constraints.staffCountText.exact', interpolation);
+                      }
+
+                      return interpolateDisplayTemplate(template.displayTemplate, controls, params);
+                  }
+                : localizedMixedSentencePattern
+                  ? (params: Record<string, string>) => interpolateLocalizedPattern(localizedMixedSentencePattern, params)
+                  : (legacyTemplate?.buildText ??
+                    ((params: Record<string, string>) => interpolateDisplayTemplate(template.displayTemplate, controls, params)));
+        const buildText = hasFixedTwoShiftTarget
+            ? (params: Record<string, string>) => interpolateLocalizedPattern(fixedTargetSentencePattern, params)
+            : baseBuildText;
 
         return {
             id: template.templateCode,
             category: getTemplateModalCategory(template.templateCode, template.category),
-            label: legacyTemplate?.label ?? getCategoryLabel(t, template.category),
+            label:
+                legacyTemplate?.label ??
+                (MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)
+                    ? t(getTemplateTranslationKey(template.templateCode, 'label'))
+                    : getCategoryLabel(t, template.category)),
             controls,
             sentence,
-            buildText: legacyTemplate?.buildText ?? ((params) => interpolateDisplayTemplate(template.displayTemplate, controls, params)),
-            isRecommended: isRecommendedTemplateCode(template.templateCode, template.category),
+            buildText,
+            isRecommended: isRecommendedTemplateCode(template.templateCode, template.category, rotationMode),
+            targetLockedToAll: hasFixedTwoShiftTarget,
             sourceTemplate: template,
         };
     });
 }
 
-function createLegacySoftRuleTemplates(t: TTypedT) {
-    return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => createLocalizedSoftRuleTemplate(template, t));
+function createLegacySoftRuleTemplates(t: TTypedT, rotationMode: TWardRotationMode = 'THREE') {
+    return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => createLocalizedSoftRuleTemplate(template, t, rotationMode));
 }
 
 function createClientId(rule: {shiftConstraintRuleId?: number; templateCode: string}) {
     if (rule.shiftConstraintRuleId) return `saved-${rule.shiftConstraintRuleId}`;
 
     return `draft-${rule.templateCode}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getConstraintRuleRowId(clientId: string) {
+    return `constraint-rule-${clientId}`;
 }
 
 function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
@@ -989,20 +1531,140 @@ function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
 }
 
 function createRulesFromServer(serverRules: TShiftConstraintRule[]) {
-    return fromServerRules(serverRules);
+    return fromServerRules(serverRules).filter((rule) => !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(rule.templateCode));
 }
 
 function getSelectOptionParamValue(option: TSelectOption | undefined) {
-    return option?.raw ?? option?.value ?? option?.label ?? '';
+    if (!option?.raw) return option?.value ?? option?.label ?? '';
+
+    const value: TShiftConstraintOption = {type: option.raw.type};
+
+    if (option.raw.nurseId != null) value.nurseId = option.raw.nurseId;
+
+    if (option.raw.wardShiftTypeId != null) value.wardShiftTypeId = option.raw.wardShiftTypeId;
+
+    if (option.raw.day != null) value.day = option.raw.day;
+
+    if (option.raw.code) value.code = option.raw.code;
+
+    if (option.raw.value) value.value = option.raw.value;
+
+    return value;
 }
 
-function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string, TSelectOption[]> = {}): Record<string, unknown> {
-    const configuredDefaults = DEFAULT_PARAMS_BY_TEMPLATE_CODE[template.id] ?? {};
+function getRequiredMixedNurseMode(template: TSoftRuleTemplate, params: Record<string, unknown>) {
+    if (template.id === 'MIXED_ROTATION_PARTICIPATION') {
+        return getConstraintOptionType(params.participationMode) ?? 'FALLBACK_TWO';
+    }
+
+    if (template.id === 'TWO_SHIFT_ASSIGNMENT_COUNT' || template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE') return 'TWO_ONLY';
+
+    return null;
+}
+
+function isNurseOptionEligibleForMode(option: TSelectOption, requiredMode: string | null) {
+    if (!requiredMode || option.kind !== 'nurse') return true;
+
+    if (requiredMode === 'THREE_ONLY') return option.canThreeShift !== false;
+
+    if (requiredMode === 'TWO_ONLY') return option.canTwoShift !== false;
+
+    if (requiredMode === 'FLEX' || requiredMode === 'FALLBACK_TWO') {
+        return option.canThreeShift !== false && option.canTwoShift !== false;
+    }
+
+    return true;
+}
+
+function getNurseUnavailableReasonKey(requiredMode: string | null): TI18nKey | undefined {
+    if (requiredMode === 'THREE_ONLY') return 'page.makeShift.constraints.mixed.nurseUnavailable.threeShift';
+
+    if (requiredMode === 'TWO_ONLY') return 'page.makeShift.constraints.mixed.nurseUnavailable.twoShift';
+
+    if (requiredMode === 'FLEX' || requiredMode === 'FALLBACK_TWO') {
+        return 'page.makeShift.constraints.mixed.nurseUnavailable.bothShifts';
+    }
+
+    return undefined;
+}
+
+function getNurseOptionUnavailableReasonKey(option: TSelectOption, requiredMode: string | null) {
+    if (option.hasShiftAvailabilityConfig === false) return 'page.makeShift.constraints.mixed.nurseUnavailable.notConfigured';
+
+    return getNurseUnavailableReasonKey(requiredMode);
+}
+
+function getEligibleNurseOptions(template: TSoftRuleTemplate, params: Record<string, unknown>, options: TSelectOption[]) {
+    const requiredMode = getRequiredMixedNurseMode(template, params);
+
+    return options.filter((option) => isNurseOptionEligibleForMode(option, requiredMode));
+}
+
+function getControlAccessibleLabel(t: TTypedT, template: TSoftRuleTemplate, control: TControlDef) {
+    const fallbackKey: TI18nKey =
+        control.kind === 'multiSelect'
+            ? 'page.makeShift.constraints.accessibility.field.selection'
+            : control.kind === 'time'
+              ? 'page.makeShift.constraints.accessibility.field.time'
+              : control.kind === 'number'
+                ? 'page.makeShift.constraints.accessibility.field.number'
+                : 'page.makeShift.constraints.accessibility.field.selection';
+    const fieldLabel = t(CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM[control.key] ?? fallbackKey);
+
+    return t('page.makeShift.constraints.accessibility.fieldLabel', {
+        constraint: template.label,
+        field: fieldLabel,
+    });
+}
+
+function getNumberBounds(
+    template: TSoftRuleTemplate,
+    control: TControlDef,
+    optionMap: Record<string, TSelectOption[]>,
+    params: Record<string, unknown> = {},
+) {
+    let min = control.min ?? 1;
+    let max = control.max ?? min;
+
+    const usesTeamSize = control.key === 'count' && (template.id === 'STAFF_COUNT_BY_SHIFT' || template.id === 'MIN_CHARGE_NURSE_BY_SHIFT');
+
+    if (usesTeamSize) {
+        const operator = getConstraintOptionType(params.operator);
+
+        min = template.id === 'STAFF_COUNT_BY_SHIFT' && operator === 'MIN' ? 1 : 0;
+
+        const nurseCount = new Set(
+            (optionMap.nurse ?? []).map((option) => option.raw?.nurseId).filter((nurseId): nurseId is number => nurseId != null),
+        ).size;
+
+        if (nurseCount > 0) max = nurseCount;
+    }
+
+    return {min, max: Math.max(min, max)};
+}
+
+function getDefaultParams(
+    template: TSoftRuleTemplate,
+    optionMap: Record<string, TSelectOption[]> = {},
+    rotationMode: TWardRotationMode = 'THREE',
+): Record<string, unknown> {
+    const configuredDefaults = {
+        ...(DEFAULT_PARAMS_BY_TEMPLATE_CODE[template.id] ?? {}),
+        ...(rotationMode === 'TWO' ? (TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE[template.id] ?? {}) : {}),
+    };
     const params: Record<string, unknown> = {};
 
     template.controls.forEach((control) => {
-        if (configuredDefaults[control.key] != null) {
-            params[control.key] = configuredDefaults[control.key];
+        const configuredDefault = configuredDefaults[control.key];
+        const configuredDefaultType = getConstraintOptionType(configuredDefault);
+        const controlOptions = optionMap[control.optionsKey ?? ''] ?? [];
+        const isConfiguredSelectDefaultAllowed =
+            control.kind !== 'select' ||
+            !controlOptions.length ||
+            controlOptions.some((option) => getConstraintOptionType(option.raw ?? option.value) === configuredDefaultType);
+
+        if (configuredDefault != null && isConfiguredSelectDefaultAllowed) {
+            params[control.key] = configuredDefault;
 
             return;
         }
@@ -1013,7 +1675,35 @@ function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string,
             return;
         }
 
-        params[control.key] = getSelectOptionParamValue(optionMap[control.optionsKey ?? '']?.[0]);
+        if (control.kind === 'time') {
+            params[control.key] = control.defaultValue ?? (control.key === 'endTime' ? '15:00' : '07:00');
+
+            return;
+        }
+
+        if (control.kind === 'multiSelect') {
+            const availableOptions = getEligibleNurseOptions(
+                template,
+                {...configuredDefaults, ...params},
+                optionMap[control.optionsKey ?? ''] ?? [],
+            );
+            const defaultCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' && control.key === 'nurseIds' ? 2 : 1;
+
+            params[control.key] = availableOptions.slice(0, defaultCount).map(getSelectOptionParamValue);
+
+            return;
+        }
+
+        params[control.key] = control.defaultValue ?? getSelectOptionParamValue(optionMap[control.optionsKey ?? '']?.[0]);
+    });
+
+    template.controls.forEach((control) => {
+        if (control.kind !== 'number') return;
+
+        const {min, max} = getNumberBounds(template, control, optionMap, params);
+        const value = Number(params[control.key]);
+
+        params[control.key] = Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min;
     });
 
     return params;
@@ -1041,13 +1731,90 @@ function normalizeNumberParams(template: TSoftRuleTemplate | undefined, params: 
     return next;
 }
 
+function clampNumberParams(template: TSoftRuleTemplate, params: Record<string, unknown>, optionMap: Record<string, TSelectOption[]>) {
+    const next = normalizeNumberParams(template, params);
+
+    template.controls.forEach((control) => {
+        if (control.kind !== 'number') return;
+
+        const value = Number(next[control.key]);
+        const {min, max} = getNumberBounds(template, control, optionMap, next);
+
+        next[control.key] = Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : min;
+    });
+
+    return next;
+}
+
+const RULE_PARAM_PRESENTATION_KEYS = new Set(['label', 'name', 'shortName', 'color']);
+
+function sanitizeRuleParamValue(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(sanitizeRuleParamValue);
+
+    if (!value || typeof value !== 'object') return value;
+
+    if (isConstraintOption(value)) {
+        const record = value as Record<string, unknown>;
+        const sanitized: Record<string, unknown> = {type: value.type};
+
+        if (value.nurseId != null) sanitized.nurseId = value.nurseId;
+
+        if (value.wardShiftTypeId != null) sanitized.wardShiftTypeId = value.wardShiftTypeId;
+
+        if (value.day != null) sanitized.day = value.day;
+
+        if (value.code && value.type !== 'WARD_SHIFT_TYPE') sanitized.code = value.code;
+
+        if (value.value) sanitized.value = value.value;
+
+        Object.entries(record).forEach(([key, entryValue]) => {
+            if (key === 'type' || key === 'code' || RULE_PARAM_PRESENTATION_KEYS.has(key)) return;
+
+            if (entryValue == null || key in sanitized) return;
+
+            sanitized[key] = sanitizeRuleParamValue(entryValue);
+        });
+
+        return sanitized;
+    }
+
+    return Object.fromEntries(
+        Object.entries(value)
+            .filter(([key]) => !RULE_PARAM_PRESENTATION_KEYS.has(key))
+            .map(([key, entryValue]) => [key, sanitizeRuleParamValue(entryValue)]),
+    );
+}
+
+function sortNurseIdParams(value: unknown) {
+    if (!Array.isArray(value)) return value;
+
+    return [...value].sort((left, right) => {
+        const leftId = isConstraintOption(left) ? left.nurseId : Number(left);
+        const rightId = isConstraintOption(right) ? right.nurseId : Number(right);
+
+        if (leftId == null || !Number.isFinite(leftId)) return 1;
+
+        if (rightId == null || !Number.isFinite(rightId)) return -1;
+
+        return leftId - rightId;
+    });
+}
+
+function sanitizeRuleParams(params: Record<string, unknown>) {
+    const sanitized = sanitizeRuleParamValue(params) as Record<string, unknown>;
+
+    if ('nurseIds' in sanitized) sanitized.nurseIds = sortNurseIdParams(sanitized.nurseIds);
+
+    return sanitized;
+}
+
 function toSavedRule(rule: TShiftConstraintRuleDraft, index: number, template?: TSoftRuleTemplate) {
     return {
         shiftConstraintRuleId: rule.shiftConstraintRuleId,
         templateCode: rule.templateCode,
         severity: rule.severity,
         sortOrder: index + 1,
-        params: normalizeNumberParams(template, rule.params),
+        params: sanitizeRuleParams(normalizeNumberParams(template, rule.params)),
         selected: rule.selected !== false,
         isImportant: rule.severity === 'HARD',
     };
@@ -1063,6 +1830,7 @@ function toRulesQueryData(
         schemaVersion: previous?.schemaVersion ?? 1,
         wardId,
         shiftTeamId,
+        ...(previous?.warnings !== undefined ? {warnings: previous.warnings} : {}),
         rules: rules.map((rule, index) => ({
             shiftConstraintRuleId: rule.shiftConstraintRuleId,
             templateCode: rule.templateCode,
@@ -1086,7 +1854,7 @@ function getOptionKey(option: TShiftConstraintOption) {
 
     if (option.day != null) return `day-${option.day}`;
 
-    return `${option.type}-${option.label ?? option.name ?? option.code ?? ''}`;
+    return `${option.type}-${option.value ?? option.label ?? option.name ?? option.code ?? ''}`;
 }
 
 function isConstraintOption(value: unknown): value is TShiftConstraintOption {
@@ -1115,6 +1883,7 @@ function normalizeDuplicateParamValue(value: unknown): unknown {
             wardShiftTypeId: value.wardShiftTypeId,
             day: value.day,
             code: value.code,
+            value: value.value,
         };
     }
 
@@ -1135,6 +1904,45 @@ function getConstraintOptionType(value: unknown) {
     if (typeof value === 'string') return value.trim().toUpperCase();
 
     return null;
+}
+
+function getEffectiveAllowedSeverities(
+    template: TShiftConstraintTemplate | undefined,
+    params: Record<string, unknown>,
+): TShiftConstraintSeverity[] {
+    if (template && TARGET_SOFT_ONLY_TEMPLATE_CODES.has(template.templateCode) && getConstraintOptionType(params.operator) === 'TARGET') {
+        return ['SOFT'];
+    }
+
+    const allowedSeverities = Array.from(
+        new Set((template?.allowedSeverities ?? []).filter((severity) => severity === 'HARD' || severity === 'SOFT')),
+    );
+
+    return allowedSeverities.length ? allowedSeverities : ['HARD', 'SOFT'];
+}
+
+function normalizeRuleSeverity(
+    rule: TShiftConstraintRuleDraft,
+    template: TShiftConstraintTemplate | undefined,
+    rotationMode: TWardRotationMode,
+): TShiftConstraintRuleDraft {
+    if (isTwoShiftFixedNoNToD(rotationMode, rule.templateCode)) {
+        return {
+            ...rule,
+            severity: 'HARD',
+            isImportant: true,
+            params: {...rule.params, target: ALL_CONSTRAINT_TARGET_OPTION},
+        };
+    }
+
+    const allowedSeverities = getEffectiveAllowedSeverities(template, rule.params);
+    const severity = allowedSeverities.includes(rule.severity) ? rule.severity : (allowedSeverities[0] ?? rule.severity);
+
+    return {
+        ...rule,
+        severity,
+        isImportant: severity === 'HARD',
+    };
 }
 
 function getConstraintOptionDay(value: unknown) {
@@ -1181,6 +1989,8 @@ function getStaffingDuplicateOperator(rule: TShiftConstraintRuleDraft) {
 
     if (MAX_STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return 'MAX';
 
+    if (EXACT_STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return 'EXACT';
+
     return null;
 }
 
@@ -1223,10 +2033,118 @@ function getStaffingDuplicateKey(rule: TShiftConstraintRuleDraft) {
     return ['STAFF_COUNT_BY_SHIFT', dateScope, shift, operator, count].join('|');
 }
 
+function hasStaffingCountConflict(rules: TShiftConstraintRuleDraft[], candidate: TShiftConstraintRuleDraft) {
+    const candidateScope = getStaffingDuplicateDateScope(candidate);
+    const candidateShift = getStaffingDuplicateShift(candidate);
+    const relevantRules = [...rules, candidate].filter(
+        (rule) =>
+            STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode) &&
+            getStaffingDuplicateDateScope(rule) === candidateScope &&
+            getStaffingDuplicateShift(rule) === candidateShift,
+    );
+    const valuesByOperator = new Map<string, number[]>();
+
+    relevantRules.forEach((rule) => {
+        const operator = getStaffingDuplicateOperator(rule);
+        const count = Number(getStaffingDuplicateCount(rule));
+
+        if (!operator || !Number.isFinite(count)) return;
+
+        valuesByOperator.set(operator, [...(valuesByOperator.get(operator) ?? []), count]);
+    });
+
+    const minimum = Math.max(...(valuesByOperator.get('MIN') ?? [Number.NEGATIVE_INFINITY]));
+    const maximum = Math.min(...(valuesByOperator.get('MAX') ?? [Number.POSITIVE_INFINITY]));
+    const exactValues = new Set(valuesByOperator.get('EXACT') ?? []);
+
+    if (Array.from(valuesByOperator.values()).some((values) => new Set(values).size > 1)) return true;
+
+    if (minimum > maximum || exactValues.size > 1) return true;
+
+    const exact = exactValues.values().next().value as number | undefined;
+
+    return exact != null && (exact < minimum || exact > maximum);
+}
+
+function getSemanticDuplicateCount(value: unknown) {
+    if (value == null || value === '') return null;
+
+    const numericValue = Number(value);
+
+    return Number.isFinite(numericValue) ? numericValue : String(value).trim();
+}
+
+function getAliasConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
+    const target = rule.params.target ?? ALL_CONSTRAINT_TARGET_OPTION;
+
+    if (rule.templateCode === 'MAX_CONSECUTIVE_WORK_DAYS' || rule.templateCode === 'CORE_MAX_CONTINUOUS_WORK') {
+        const count = getSemanticDuplicateCount(
+            rule.params.count ?? rule.params.maxContinuousWorkDays ?? rule.params.maxDays ?? rule.params.days,
+        );
+
+        return count == null ? null : ['CORE_MAX_CONTINUOUS_WORK', stringifyDuplicateParams({target, count})].join('|');
+    }
+
+    if (rule.templateCode === 'MAX_CONSECUTIVE_N' || rule.templateCode === 'CORE_MAX_CONTINUOUS_NIGHT') {
+        const count = getSemanticDuplicateCount(rule.params.count ?? rule.params.maxDays ?? rule.params.days);
+
+        return count == null ? null : ['CORE_MAX_CONTINUOUS_NIGHT', stringifyDuplicateParams({target, count})].join('|');
+    }
+
+    if (rule.templateCode === 'MIN_OFF_AFTER_N' || rule.templateCode === 'CORE_MIN_OFF_AFTER_NIGHT') {
+        const count = getSemanticDuplicateCount(rule.params.count ?? rule.params.minOffDays ?? rule.params.days);
+
+        return count == null ? null : ['CORE_MIN_OFF_AFTER_NIGHT', stringifyDuplicateParams({target, count})].join('|');
+    }
+
+    if (rule.templateCode === 'OFF_AFTER_CONSECUTIVE_WORK' || rule.templateCode === 'MIN_OFF_AFTER_CONSECUTIVE_WORK') {
+        const workCount = getSemanticDuplicateCount(
+            rule.templateCode === 'OFF_AFTER_CONSECUTIVE_WORK' ? rule.params.count : rule.params.workCount,
+        );
+        const offCount = getSemanticDuplicateCount(rule.templateCode === 'OFF_AFTER_CONSECUTIVE_WORK' ? 1 : rule.params.offCount);
+
+        return workCount == null || offCount == null
+            ? null
+            : ['MIN_OFF_AFTER_CONSECUTIVE_WORK', stringifyDuplicateParams({target, workCount, offCount})].join('|');
+    }
+
+    if (rule.templateCode === 'NURSE_FORBID_WEEKEND' || rule.templateCode === 'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS') {
+        const isLegacy = rule.templateCode === 'NURSE_FORBID_WEEKEND';
+        const weekendTarget = isLegacy ? (rule.params.nurse ?? rule.params.target) : rule.params.target;
+        const shift = isLegacy ? {type: 'ALL'} : rule.params.shift;
+        const period = isLegacy ? {type: 'MONTH'} : rule.params.period;
+        const count = getSemanticDuplicateCount(isLegacy ? 0 : rule.params.count);
+
+        if (weekendTarget == null || shift == null || period == null || count == null) return null;
+
+        return ['NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS', stringifyDuplicateParams({target: weekendTarget, shift, period, count})].join('|');
+    }
+
+    return null;
+}
+
 function getConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
     const staffingDuplicateKey = getStaffingDuplicateKey(rule);
 
     if (staffingDuplicateKey) return staffingDuplicateKey;
+
+    const aliasDuplicateKey = getAliasConstraintDuplicateKey(rule);
+
+    if (aliasDuplicateKey) return aliasDuplicateKey;
+
+    if (rule.templateCode === 'NURSE_PAIR_NOT_SAME_SHIFT' || rule.templateCode === 'NURSE_PAIR_PREFER_SAME_SHIFT') {
+        const nursePair = [rule.params.nurseA, rule.params.nurseB]
+            .map((value) => stringifyDuplicateParams({value}))
+            .sort()
+            .join('|');
+        const rest = Object.fromEntries(Object.entries(rule.params).filter(([key]) => key !== 'nurseA' && key !== 'nurseB'));
+
+        return [rule.templateCode, nursePair, stringifyDuplicateParams(rest)].join('|');
+    }
+
+    if (MIXED_SHIFT_TEMPLATE_CODES.has(rule.templateCode) && Array.isArray(rule.params.nurseIds)) {
+        return [rule.templateCode, stringifyDuplicateParams({...rule.params, nurseIds: sortNurseIdParams(rule.params.nurseIds)})].join('|');
+    }
 
     return [rule.templateCode, stringifyDuplicateParams(rule.params)].join('|');
 }
@@ -1355,6 +2273,8 @@ function getCandidateOptionValue(option: TShiftConstraintOption) {
 
     if (option.day != null) return String(option.day);
 
+    if (option.value) return option.value;
+
     if (option.code) return option.code;
 
     if (option.type) return option.type;
@@ -1377,11 +2297,122 @@ function withoutAllSelectOptions(options: TSelectOption[]) {
 }
 
 function getLocalizedAllOptionLabel(t: TTypedT, optionMapKey: string) {
-    if (optionMapKey === 'target') return t('page.makeShift.constraints.option.allPeople');
+    if (optionMapKey === 'target' || optionMapKey === 'monthlyNightTarget') {
+        return t('page.makeShift.constraints.option.allPeople');
+    }
 
     if (optionMapKey === 'date' || optionMapKey === 'dayType') return t('page.makeShift.constraints.option.allDays');
 
     return t('page.makeShift.constraints.option.all');
+}
+
+function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption, optionMapKey: string) {
+    const type = (option.value ?? option.code ?? option.type).trim().toUpperCase();
+
+    if (optionMapKey === 'dateScope' || optionMapKey === 'dayType') {
+        const dateScopeKeyByType: Record<string, TI18nKey> = {
+            EVERYDAY: 'page.makeShift.constraints.option.everyday',
+            WEEKDAY: 'page.makeShift.constraints.option.weekday',
+            WEEKEND: 'page.makeShift.constraints.option.weekend',
+            HOLIDAY: 'page.makeShift.constraints.option.holiday',
+            WEEKEND_OR_HOLIDAY: 'page.makeShift.constraints.option.weekendOrHoliday',
+            MONDAY: 'page.makeShift.constraints.option.weekdayName.monday',
+            TUESDAY: 'page.makeShift.constraints.option.weekdayName.tuesday',
+            WEDNESDAY: 'page.makeShift.constraints.option.weekdayName.wednesday',
+            THURSDAY: 'page.makeShift.constraints.option.weekdayName.thursday',
+            FRIDAY: 'page.makeShift.constraints.option.weekdayName.friday',
+            SATURDAY: 'page.makeShift.constraints.option.weekdayName.saturday',
+            SUNDAY: 'page.makeShift.constraints.option.weekdayName.sunday',
+        };
+        const key = dateScopeKeyByType[type];
+
+        if (key) return t(key);
+    }
+
+    if (optionMapKey === 'staffCountOperator' || optionMapKey === 'lineOperator') {
+        const operatorKeyByType: Record<string, TI18nKey> = {
+            MIN: 'page.makeShift.constraints.option.staffCountOperator.min',
+            MAX: 'page.makeShift.constraints.option.staffCountOperator.max',
+            EXACT: 'page.makeShift.constraints.option.staffCountOperator.exact',
+            TARGET: 'page.makeShift.constraints.option.staffCountOperator.target',
+        };
+        const key = operatorKeyByType[type];
+
+        if (key) return t(key);
+    }
+
+    const mixedOptionKeyByMap: Record<string, Record<string, TI18nKey>> = {
+        strategy: {
+            THREE_BASE_FALLBACK_TWO: 'page.makeShift.constraints.mixed.strategy.threeBaseFallbackTwo',
+            PLANNED_MIXED: 'page.makeShift.constraints.mixed.strategy.plannedMixed',
+            PLANNED_MIXED_WITH_FALLBACK: 'page.makeShift.constraints.mixed.strategy.plannedMixedWithFallback',
+        },
+        participationMode: {
+            THREE_ONLY: 'page.makeShift.constraints.mixed.participation.threeOnly',
+            TWO_ONLY: 'page.makeShift.constraints.mixed.participation.twoOnly',
+            FLEX: 'page.makeShift.constraints.mixed.participation.flex',
+            FALLBACK_TWO: 'page.makeShift.constraints.mixed.participation.fallbackTwo',
+        },
+        composition: {
+            AUTO: 'page.makeShift.constraints.mixed.composition.auto',
+            THREE_ONLY: 'page.makeShift.constraints.mixed.composition.threeOnly',
+            TWO_ONLY: 'page.makeShift.constraints.mixed.composition.twoOnly',
+            COEXIST: 'page.makeShift.constraints.mixed.composition.coexist',
+            CLOSED: 'page.makeShift.constraints.mixed.composition.closed',
+        },
+        assignmentAggregation: {
+            PER_NURSE: 'page.makeShift.constraints.mixed.aggregation.perNurse',
+            GROUP_TOTAL: 'page.makeShift.constraints.mixed.aggregation.groupTotal',
+        },
+        twoShiftScope: {
+            ALL_TWO: 'page.makeShift.constraints.mixed.shiftScope.allTwo',
+            TWO_DAY: 'page.makeShift.constraints.mixed.shiftScope.twoDay',
+            TWO_NIGHT: 'page.makeShift.constraints.mixed.shiftScope.twoNight',
+        },
+        workloadMetric: {
+            TWO_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.twoAssignments',
+            TWO_NIGHT_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.twoNightAssignments',
+            WEEKEND_TWO_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.weekendTwoAssignments',
+        },
+    };
+    const mixedKey = mixedOptionKeyByMap[optionMapKey]?.[type];
+
+    if (mixedKey) return t(mixedKey);
+
+    if (optionMapKey === 'period') {
+        const periodKeyByType: Record<string, TI18nKey> = {
+            DAY: 'page.makeShift.constraints.option.period.day',
+            WEEK: 'page.makeShift.constraints.option.period.week',
+            ROLLING_7_DAYS: 'page.makeShift.constraints.option.period.rollingSevenDays',
+            MONTH: 'page.makeShift.constraints.option.period.month',
+        };
+        const key = periodKeyByType[type];
+
+        if (key) return t(key);
+    }
+
+    if (optionMapKey === 'transitionDirection') {
+        const transitionKeyByType: Record<string, TI18nKey> = {
+            DAY_TO_NIGHT: 'page.makeShift.constraints.option.transition.dayToNight',
+            NIGHT_TO_DAY: 'page.makeShift.constraints.option.transition.nightToDay',
+            BOTH: 'page.makeShift.constraints.option.transition.both',
+        };
+        const key = transitionKeyByType[type];
+
+        if (key) return t(key);
+    }
+
+    if (optionMapKey === 'target' || optionMapKey === 'monthlyNightTarget') {
+        const targetKeyByType: Record<string, TI18nKey> = {
+            ROTATING: 'page.makeShift.constraints.option.target.rotating',
+            NIGHT_DEDICATED: 'page.makeShift.constraints.option.target.nightDedicated',
+        };
+        const key = targetKeyByType[type];
+
+        if (key) return t(key);
+    }
+
+    return null;
 }
 
 function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, optionMapKey: string, shiftType?: TShiftTypeLike) {
@@ -1392,6 +2423,10 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
     if (optionMapKey === 'dateScope' && option.day != null) {
         return t('page.makeShift.constraints.option.monthlyDayLabel', {day: option.day});
     }
+
+    const localizedLabel = getLocalizedTypedOptionLabel(t, option, optionMapKey);
+
+    if (localizedLabel) return localizedLabel;
 
     if (option.label) return option.label;
 
@@ -1407,8 +2442,11 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
 function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, shiftTypes: TShiftTypeLike[], t: TTypedT): TSelectOption {
     const shiftType =
         option.wardShiftTypeId != null ? shiftTypes.find((item) => item.wardShiftTypeId === option.wardShiftTypeId) : undefined;
-    const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict';
-    const label = getCandidateOptionLabel(t, option, optionMapKey, shiftType);
+    const isNamedTwoShiftDuty = optionMapKey === 'twoShiftNight' || optionMapKey === 'twoShiftNightContinuation';
+    const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict' || isNamedTwoShiftDuty;
+    const label = isNamedTwoShiftDuty
+        ? (shiftType?.name ?? option.name ?? getCandidateOptionLabel(t, option, optionMapKey, shiftType))
+        : getCandidateOptionLabel(t, option, optionMapKey, shiftType);
 
     if (!isDuty) {
         const isNurse = option.nurseId != null;
@@ -1473,9 +2511,23 @@ function mergeCandidateOptionMap(
         {includeFallback: true},
     );
     const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes, t);
-    const target = getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t, {
+    const allTargetCandidates = getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t, {
         includeFallback: true,
     });
+    const target = allTargetCandidates.filter((option) => {
+        const type = option.raw?.type?.toUpperCase();
+
+        return type !== 'ROTATING' && type !== 'NIGHT_DEDICATED';
+    });
+    const monthlyNightTarget = getCandidateOptions(
+        candidates,
+        'target',
+        ['monthlyNightTargets', 'MONTHLY_NIGHT_TARGETS', 'targets', 'TARGETS'],
+        fallback.monthlyNightTarget ?? fallback.target,
+        shiftTypes,
+        t,
+        {includeFallback: true},
+    );
     const date = withoutAllSelectOptions(getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes, t));
     const dayType = withoutAllSelectOptions(
         getCandidateOptions(
@@ -1497,10 +2549,41 @@ function mergeCandidateOptionMap(
             t,
         ),
     );
+    const transitionDirection = getCandidateOptions(
+        candidates,
+        'transitionDirection',
+        ['transitionDirections', 'TRANSITION_DIRECTIONS'],
+        fallback.transitionDirection ?? [],
+        shiftTypes,
+        t,
+    );
+    const period = getCandidateOptions(candidates, 'period', ['periods', 'PERIODS'], fallback.period ?? [], shiftTypes, t);
+    const twoShiftNight = getCandidateOptions(
+        candidates,
+        'twoShiftNight',
+        ['twoShiftNights', 'TWO_SHIFT_NIGHTS'],
+        duty.filter((option) => option.classification === 'NIGHT'),
+        shiftTypes,
+        t,
+    );
+    const twoShiftNightContinuation = getCandidateOptions(
+        candidates,
+        'twoShiftNightContinuation',
+        ['twoShiftNightContinuations', 'TWO_SHIFT_NIGHT_CONTINUATIONS'],
+        duty.filter((option) => option.classification === 'NIGHT_CONTINUATION'),
+        shiftTypes,
+        t,
+    );
+    const mixedOptions = (optionMapKey: string, candidateKeys: string[], includeFallback = false) =>
+        getCandidateOptions(candidates, optionMapKey, candidateKeys, fallback[optionMapKey] ?? [], shiftTypes, t, {
+            includeFallback,
+        });
 
     return {
         target,
+        monthlyNightTarget,
         duty,
+        dutyReference: fallback.dutyReference ?? [],
         date: date.length ? date : fallback.date,
         dayType,
         dateScope: dateScope.length ? dateScope : (fallback.dateScope ?? []),
@@ -1515,6 +2598,24 @@ function mergeCandidateOptionMap(
         nurse,
         preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
         preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee, shiftTypes, t),
+        transitionDirection,
+        period,
+        twoShiftNight,
+        twoShiftNightContinuation,
+        participationMode: mixedOptions(
+            'participationMode',
+            ['mixedParticipationModes', 'participationModes', 'PARTICIPATION_MODES'],
+            true,
+        ),
+        composition: mixedOptions('composition', ['mixedCompositions', 'compositions', 'COMPOSITIONS'], true),
+        lineOperator: mixedOptions('lineOperator', ['mixedLineOperators', 'lineOperators', 'LINE_OPERATORS'], true),
+        assignmentAggregation: mixedOptions('assignmentAggregation', [
+            'mixedAssignmentAggregations',
+            'assignmentAggregations',
+            'ASSIGNMENT_AGGREGATIONS',
+        ]),
+        twoShiftScope: mixedOptions('twoShiftScope', ['mixedTwoShiftScopes', 'twoShiftScopes', 'TWO_SHIFT_SCOPES']),
+        workloadMetric: mixedOptions('workloadMetric', ['mixedWorkloadMetrics', 'workloadMetrics', 'WORKLOAD_METRICS']),
         dutyStrict: duty.filter((option) => !isAllSelectOption(option)),
     };
 }
@@ -1547,16 +2648,29 @@ function findDutyOptionByCode(options: TSelectOption[], code: string) {
 function getOptionsForControl(
     control: TControlDef,
     template: TSoftRuleTemplate,
-    params: Record<string, string>,
+    params: Record<string, unknown>,
     optionMap: Record<string, TSelectOption[]>,
 ) {
     const options = optionMap[control.optionsKey ?? ''] ?? [];
+    const requiredMixedNurseMode =
+        control.kind === 'multiSelect' && control.optionsKey === 'nurse' ? getRequiredMixedNurseMode(template, params) : null;
+    const resolvedOptions = requiredMixedNurseMode
+        ? options.map((option) =>
+              isNurseOptionEligibleForMode(option, requiredMixedNurseMode)
+                  ? option
+                  : {...option, disabledReasonKey: getNurseOptionUnavailableReasonKey(option, requiredMixedNurseMode)},
+          )
+        : options;
 
-    if (!template.category.includes('COMBINATION') || control.optionsKey !== 'nurse') return options;
+    if (template.targetLockedToAll && control.optionsKey === 'target') {
+        return resolvedOptions.filter(isAllSelectOption);
+    }
+
+    if (!template.category.includes('COMBINATION') || control.optionsKey !== 'nurse') return resolvedOptions;
 
     const controlIndex = template.controls.findIndex((item) => item.key === control.key);
 
-    if (controlIndex <= 0) return options;
+    if (controlIndex <= 0) return resolvedOptions;
 
     const priorNurseLabels = new Set(
         template.controls
@@ -1564,16 +2678,16 @@ function getOptionsForControl(
             .filter((item) => item.optionsKey === 'nurse')
             .map((item) => {
                 const value = params[item.key];
-                const selectedOption = options.find((option) => doesSelectOptionMatchValue(option, value));
+                const selectedOption = resolvedOptions.find((option) => doesSelectOptionMatchValue(option, value));
 
                 return selectedOption?.label ?? stringifyRuleParamValue(value);
             })
             .filter(Boolean),
     );
 
-    if (!priorNurseLabels.size) return options;
+    if (!priorNurseLabels.size) return resolvedOptions;
 
-    return options.filter((option) => !priorNurseLabels.has(option.label));
+    return resolvedOptions.filter((option) => !priorNurseLabels.has(option.label));
 }
 
 function doesSelectOptionMatchValue(option: TSelectOption, value: unknown) {
@@ -1611,9 +2725,17 @@ function stringifyRuleParamValue(value: unknown): string {
 function getControlParamString(control: TControlDef, value: unknown, optionMap: Record<string, TSelectOption[]>) {
     const stringValue = stringifyRuleParamValue(value);
 
-    if (control.kind === 'number') return stringValue;
+    if (control.kind === 'number' || control.kind === 'time') return stringValue;
 
     const options = optionMap[control.optionsKey ?? ''] ?? [];
+
+    if (control.kind === 'multiSelect' && Array.isArray(value)) {
+        return value
+            .map((item) => options.find((option) => doesSelectOptionMatchValue(option, item))?.label ?? stringifyRuleParamValue(item))
+            .filter(Boolean)
+            .join(', ');
+    }
+
     const matchedOption = options.find((option) => doesSelectOptionMatchValue(option, value));
 
     return matchedOption?.label ?? stringValue;
@@ -1644,7 +2766,7 @@ function getControlDisplayValue(
 ) {
     if (!control) return '';
 
-    if (control.kind === 'number') {
+    if (control.kind === 'number' || control.kind === 'time') {
         return params[control.key] ?? String(control.values?.[0] ?? control.min ?? 1);
     }
 
@@ -1661,14 +2783,40 @@ function normalizeCombinationParams(
     params: Record<string, unknown>,
     optionMap: Record<string, TSelectOption[]>,
 ): Record<string, unknown> {
-    if (!template.category.includes('COMBINATION')) return params;
+    const nextParams = {...params};
+    const mixedNurseControl = template.controls.find(
+        (control) => control.kind === 'multiSelect' && control.optionsKey === 'nurse' && control.key === 'nurseIds',
+    );
+
+    if (mixedNurseControl) {
+        const nurseOptions = optionMap.nurse ?? [];
+        const eligibleOptions = getEligibleNurseOptions(template, nextParams, nurseOptions);
+        const currentValues = Array.isArray(nextParams.nurseIds) ? nextParams.nurseIds : [];
+        const selectedOptions = currentValues
+            .map((value) => eligibleOptions.find((option) => doesSelectOptionMatchValue(option, value)))
+            .filter((option): option is TSelectOption => Boolean(option));
+
+        if (selectedOptions.length < currentValues.length) {
+            const minimumSelectionCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
+            const selectedIds = new Set(selectedOptions.map((option) => option.value));
+
+            eligibleOptions.forEach((option) => {
+                if (selectedOptions.length >= minimumSelectionCount || selectedIds.has(option.value)) return;
+
+                selectedOptions.push(option);
+                selectedIds.add(option.value);
+            });
+            nextParams.nurseIds = selectedOptions.map(getSelectOptionParamValue);
+        }
+    }
+
+    if (!template.category.includes('COMBINATION')) return nextParams;
 
     const nurseControls = template.controls.filter((control) => control.optionsKey === 'nurse');
     const nurseOptions = optionMap.nurse ?? [];
 
-    if (nurseControls.length <= 1 || nurseOptions.length <= 1) return params;
+    if (nurseControls.length <= 1 || nurseOptions.length <= 1) return nextParams;
 
-    const nextParams = {...params};
     const selectedLabels = new Set<string>();
 
     nurseControls.forEach((control) => {
@@ -1701,10 +2849,11 @@ type TInlineDropdownProps = {
     value: string;
     options: TSelectOption[];
     minWidth?: number;
+    ariaLabel?: string;
     onChange: (option: TSelectOption) => void;
 };
 
-function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdownProps) {
+function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TInlineDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
@@ -1774,6 +2923,7 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={open}
+                aria-label={ariaLabel}
                 onClick={toggleOpen}
                 className={buttonClassName}
                 style={{minWidth}}
@@ -1787,6 +2937,7 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                       <div
                           ref={menuRef}
                           role="listbox"
+                          aria-label={ariaLabel}
                           style={menuStyle}
                           className={`fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
@@ -1823,6 +2974,159 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
     );
 }
 
+function InlineMultiSelect({
+    values,
+    options,
+    accessibleLabel,
+    onChange,
+}: {
+    values: unknown[];
+    options: TSelectOption[];
+    accessibleLabel: string;
+    onChange: (values: unknown[]) => void;
+}) {
+    const {t} = useTypedTranslation();
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    const selectedOptionKeys = new Set(
+        values.map((value) => {
+            if (isConstraintOption(value)) return getCandidateOptionValue(value);
+
+            return String(value);
+        }),
+    );
+    const selectedOptions = options.filter((option) => selectedOptionKeys.has(option.value));
+    const selectedText = selectedOptions.map((option) => option.label).join(', ') || '-';
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!ref.current?.contains(event.target as Node)) setOpen(false);
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative inline-flex">
+            <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={`${accessibleLabel}: ${selectedText}`}
+                onClick={() => setOpen((current) => !current)}
+                className="inline-flex h-8 min-w-32 cursor-pointer items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4"
+            >
+                <span className="max-w-48 truncate">{selectedText}</span>
+                <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+            {open ? (
+                <div
+                    role="listbox"
+                    aria-multiselectable="true"
+                    aria-label={accessibleLabel}
+                    className="absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
+                >
+                    {options.map((option) => {
+                        const selected = selectedOptionKeys.has(option.value);
+                        const disabledReason = option.disabledReasonKey ? t(option.disabledReasonKey) : null;
+                        const disabled = Boolean(disabledReason && !selected);
+
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                role="option"
+                                aria-selected={selected}
+                                aria-disabled={disabled}
+                                disabled={disabled}
+                                title={disabledReason ?? undefined}
+                                className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left font-apple text-[14px] ${
+                                    selected
+                                        ? 'bg-main-light font-semibold text-main-1'
+                                        : disabled
+                                          ? 'cursor-not-allowed text-gray-4 opacity-65'
+                                          : 'text-sub-1 hover:bg-gray-7'
+                                }`}
+                                onClick={() => {
+                                    const nextValue = getSelectOptionParamValue(option);
+
+                                    onChange(
+                                        selected
+                                            ? values.filter((value) => {
+                                                  if (isConstraintOption(value)) return getCandidateOptionValue(value) !== option.value;
+
+                                                  return String(value) !== option.value;
+                                              })
+                                            : [...values, nextValue],
+                                    );
+                                }}
+                            >
+                                <span className="min-w-0">
+                                    <span className="block truncate">
+                                        <SelectOptionContent option={option} />
+                                    </span>
+                                    {disabledReason ? (
+                                        <span className="mt-0.5 block text-[11px] leading-4 font-medium text-gray-4">{disabledReason}</span>
+                                    ) : null}
+                                </span>
+                                <span aria-hidden="true">{selected ? '✓' : ''}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function InlineNumberInput({
+    value,
+    min,
+    max,
+    accessibleLabel,
+    onChange,
+}: {
+    value: number;
+    min: number;
+    max: number;
+    accessibleLabel: string;
+    onChange: (value: number) => void;
+}) {
+    return (
+        <input
+            type="number"
+            value={value}
+            min={min}
+            max={max}
+            inputMode="numeric"
+            aria-label={accessibleLabel}
+            onFocus={(event) => event.currentTarget.select()}
+            onChange={(event) => {
+                const next = event.currentTarget.valueAsNumber;
+
+                if (Number.isFinite(next)) onChange(Math.min(max, Math.max(min, next)));
+            }}
+            className="h-8 w-[58px] rounded-[8px] bg-white px-2 text-center font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+        />
+    );
+}
+
+function InlineTimeInput({value, label, onChange}: {value: string; label: string; onChange: (value: string) => void}) {
+    return (
+        <input
+            type="time"
+            value={value}
+            aria-label={label}
+            onChange={(event) => onChange(event.currentTarget.value)}
+            className="h-8 w-[112px] rounded-[8px] bg-white px-2 font-apple text-[14px] font-semibold text-main-1 focus-visible:bg-main-light focus-visible:text-sub-1 focus-visible:outline-none"
+        />
+    );
+}
+
 type TSoftSentenceProps = {
     template: TSoftRuleTemplate;
     params: Record<string, unknown>;
@@ -1831,6 +3135,7 @@ type TSoftSentenceProps = {
 };
 
 function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenceProps) {
+    const {t} = useTypedTranslation();
     const displayParams = useMemo(() => normalizeSoftRuleParams(template, params, optionMap), [optionMap, params, template]);
 
     return (
@@ -1845,7 +3150,10 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                 }
 
                 if (part.type === 'duty') {
-                    const option = findDutyOptionByCode([...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? [])], part.code);
+                    const option = findDutyOptionByCode(
+                        [...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? []), ...(optionMap.dutyReference ?? [])],
+                        part.code,
+                    );
 
                     if (!option) return null;
 
@@ -1854,7 +3162,12 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
 
                 if (part.type === 'dutyPattern') {
                     const options = part.codes
-                        .map((code) => findDutyOptionByCode([...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? [])], code))
+                        .map((code) =>
+                            findDutyOptionByCode(
+                                [...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? []), ...(optionMap.dutyReference ?? [])],
+                                code,
+                            ),
+                        )
                         .filter((option): option is TSelectOption => Boolean(option));
 
                     return <DutyPatternBadge key={`${template.id}-pattern-${idx}`} options={options} />;
@@ -1875,19 +3188,54 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
 
                 if (!control) return null;
 
-                if (control.kind === 'number') {
-                    const min = control.min ?? 1;
-                    const max = control.max ?? min;
-                    const values = control.values ?? Array.from({length: max - min + 1}, (_, i) => min + i);
-                    const current = Number(getControlDisplayValue(control, template, displayParams, optionMap) || values[0] || min);
+                const accessibleLabel = getControlAccessibleLabel(t, template, control);
 
-                    return (
+                if (control.kind === 'number') {
+                    const {min, max} = getNumberBounds(template, control, optionMap, params);
+                    const values = control.values;
+                    const displayValue = getControlDisplayValue(control, template, displayParams, optionMap);
+                    const current = Number(displayValue === '' ? (values?.[0] ?? min) : displayValue);
+
+                    return values ? (
                         <InlineDropdown
                             key={`${template.id}-${control.key}-${idx}`}
                             value={String(current)}
                             options={values.map((v) => ({value: String(v), label: String(v)}))}
                             minWidth={58}
+                            ariaLabel={accessibleLabel}
                             onChange={(nextOption) => onParamChange(control.key, Number(nextOption.value))}
+                        />
+                    ) : (
+                        <InlineNumberInput
+                            key={`${template.id}-${control.key}-${idx}`}
+                            value={Math.min(max, Math.max(min, current))}
+                            min={min}
+                            max={max}
+                            accessibleLabel={accessibleLabel}
+                            onChange={(value) => onParamChange(control.key, value)}
+                        />
+                    );
+                }
+
+                if (control.kind === 'time') {
+                    return (
+                        <InlineTimeInput
+                            key={`${template.id}-${control.key}-${idx}`}
+                            value={String(params[control.key] ?? control.defaultValue ?? '')}
+                            label={accessibleLabel}
+                            onChange={(value) => onParamChange(control.key, value)}
+                        />
+                    );
+                }
+
+                if (control.kind === 'multiSelect') {
+                    return (
+                        <InlineMultiSelect
+                            key={`${template.id}-${control.key}-${idx}`}
+                            values={Array.isArray(params[control.key]) ? (params[control.key] as unknown[]) : []}
+                            options={getOptionsForControl(control, template, params, optionMap)}
+                            accessibleLabel={accessibleLabel}
+                            onChange={(values) => onParamChange(control.key, values)}
                         />
                     );
                 }
@@ -1923,6 +3271,8 @@ type TSlotControlProps = {
 };
 
 function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
+    const {t} = useTypedTranslation();
+
     if (slot.inputType === 'NUMBER') {
         const numberValue = typeof value === 'number' ? value : (slot.min ?? 1);
         const values = Array.from({length: (slot.max ?? 10) - (slot.min ?? 1) + 1}, (_, i) => (slot.min ?? 1) + i);
@@ -1932,7 +3282,18 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
                 value={String(numberValue)}
                 options={values.map((v) => ({value: String(v), label: String(v)}))}
                 minWidth={58}
+                ariaLabel={t('page.makeShift.constraints.accessibility.field.number')}
                 onChange={(nextOption) => onChange(Number(nextOption.value))}
+            />
+        );
+    }
+
+    if (slot.inputType.toUpperCase() === 'TIME') {
+        return (
+            <InlineTimeInput
+                value={typeof value === 'string' ? value : String(slot.defaultValue ?? '')}
+                label={t('page.makeShift.constraints.accessibility.field.time')}
+                onChange={onChange}
             />
         );
     }
@@ -1965,6 +3326,7 @@ type TRuleRowProps = {
     highlighted?: boolean;
     isImportant: boolean;
     isRecommended: boolean;
+    isSeverityLocked?: boolean;
     onDelete: () => void;
     onToggleImportant: (next: boolean) => void;
     onParamChange: (key: string, value: unknown) => void;
@@ -2014,6 +3376,7 @@ const RuleRow = memo(function RuleRow({
     highlighted = false,
     isImportant,
     isRecommended,
+    isSeverityLocked = false,
     onDelete,
     onToggleImportant,
     onParamChange,
@@ -2021,15 +3384,20 @@ const RuleRow = memo(function RuleRow({
 }: TRuleRowProps) {
     const {t} = useTypedTranslation();
     const slots = template?.slots ?? [];
+    const canChangeSeverity = !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
 
     return (
         <div
+            id={getConstraintRuleRowId(rule.clientId)}
+            data-constraint-rule-id={rule.clientId}
             className={`grid min-h-[52px] grid-cols-[minmax(0,1fr)_34px] items-center gap-3 rounded-[10px] bg-white px-3 py-2.5 transition-colors ${
                 highlighted ? 'shadow-[0_0_0_2px_rgba(127,93,255,0.10)] ring-2 ring-main-1/55' : ''
             }`}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
-                <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+                {canChangeSeverity ? (
+                    <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+                ) : null}
                 {softTemplate ? (
                     <SoftSentence
                         template={softTemplate}
@@ -2086,109 +3454,6 @@ function Section({action, children}: TSectionProps) {
                 </div>
                 <div className="space-y-2.5">{children}</div>
             </div>
-        </section>
-    );
-}
-
-type TTwoShiftAutomationPanelProps = {
-    enabled: boolean;
-    rules: TShiftConstraintRuleDraft[];
-    onEnabledChange: (enabled: boolean) => void;
-    onRuleCountChange: (templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], count: number | null) => void;
-};
-
-function TwoShiftAutomationPanel({enabled, rules, onEnabledChange, onRuleCountChange}: TTwoShiftAutomationPanelProps) {
-    const {t} = useTypedTranslation();
-    const settings = [
-        {
-            templateCode: 'TWO_SHIFT_MAX_LINES' as const,
-            label: t('page.makeShift.constraints.twoShift.maxLines'),
-            unit: t('page.makeShift.constraints.twoShift.lineUnit'),
-            min: 1,
-            max: 20,
-            fallback: 2,
-            optional: false,
-        },
-        {
-            templateCode: 'CORE_MIN_REST_HOURS' as const,
-            label: t('page.makeShift.constraints.twoShift.minRestHours'),
-            unit: t('page.makeShift.constraints.twoShift.hourUnit'),
-            min: 1,
-            max: 24,
-            fallback: 11,
-            optional: true,
-        },
-        {
-            templateCode: 'MAX_MONTHLY_WORK_HOURS' as const,
-            label: t('page.makeShift.constraints.twoShift.monthlyWorkHours'),
-            unit: t('page.makeShift.constraints.twoShift.hourUnit'),
-            min: 1,
-            max: 400,
-            fallback: 230,
-            optional: true,
-        },
-    ];
-
-    return (
-        <section className="mb-4 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] py-5">
-            <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                    <p className="font-apple text-[16px] font-bold text-sub-1">{t('page.makeShift.constraints.twoShift.title')}</p>
-                    <p className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
-                        {t('page.makeShift.constraints.twoShift.description')}
-                    </p>
-                </div>
-                <Switch
-                    checked={enabled}
-                    onCheckedChange={onEnabledChange}
-                    aria-label={t('page.makeShift.constraints.twoShift.switchAria')}
-                    className="shrink-0 data-[state=checked]:bg-main-1"
-                />
-            </div>
-            {enabled ? (
-                <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    {settings.map((setting) => {
-                        const rule = rules.find((candidate) => candidate.templateCode === setting.templateCode);
-                        const rawValue = Number(rule?.params.count ?? setting.fallback);
-                        const value = rule && Number.isFinite(rawValue) ? rawValue : setting.optional ? '' : setting.fallback;
-
-                        return (
-                            <label key={setting.templateCode} className="rounded-[14px] bg-[#F8F9FB] px-4 py-3">
-                                <span className="block min-h-10 font-apple text-[12px] leading-[18px] font-semibold text-gray-3">
-                                    {setting.label}
-                                </span>
-                                <span className="mt-2 flex items-center gap-2">
-                                    <input
-                                        type="number"
-                                        min={setting.min}
-                                        max={setting.max}
-                                        value={value}
-                                        placeholder={String(setting.fallback)}
-                                        aria-label={setting.label}
-                                        onChange={(event) => {
-                                            if (setting.optional && event.target.value === '') {
-                                                onRuleCountChange(setting.templateCode, null);
-
-                                                return;
-                                            }
-
-                                            const nextValue = Math.min(
-                                                setting.max,
-                                                Math.max(setting.min, Number(event.target.value) || setting.min),
-                                            );
-
-                                            onRuleCountChange(setting.templateCode, nextValue);
-                                        }}
-                                        className="h-10 min-w-0 flex-1 rounded-[10px] border-0 bg-white px-3 text-right font-poppins text-[15px] font-semibold text-sub-1 ring-1 ring-gray-6 outline-none focus:ring-main-1"
-                                    />
-                                    <span className="shrink-0 font-apple text-[12px] font-semibold text-gray-3">{setting.unit}</span>
-                                </span>
-                            </label>
-                        );
-                    })}
-                </div>
-            ) : null}
-            <p className="mt-3 font-apple text-[12px] leading-5 text-gray-4">{t('page.makeShift.constraints.twoShift.teamOnlyHint')}</p>
         </section>
     );
 }
@@ -2391,22 +3656,127 @@ type TSoftModalProps = {
     open: boolean;
     templates: TSoftRuleTemplate[];
     optionMap: Record<string, TSelectOption[]>;
+    rotationMode: TWardRotationMode;
     onClose: () => void;
     onAdd: (template: TSoftRuleTemplate, params: Record<string, unknown>) => void;
 };
 
-function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
+const CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR =
+    'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
+
+function getSoftRuleAddIssue(template: TSoftRuleTemplate, params: Record<string, unknown>): TI18nKey | null {
+    const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
+
+    if (template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' && selectedNurseCount < 2) {
+        return 'page.makeShift.constraints.mixed.validation.workloadTwoNurses';
+    }
+
+    if (template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') && selectedNurseCount < 1) {
+        return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
+    }
+
+    return null;
+}
+
+function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd}: TSoftModalProps) {
     const {t} = useTypedTranslation();
-    const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const scrollRegionRef = useRef<HTMLDivElement>(null);
+    const onCloseRef = useRef(onClose);
+    const recommendedTemplates = useMemo(() => {
+        const filtered = templates.filter((template) => template.isRecommended);
+        const order =
+            rotationMode === 'TWO'
+                ? TWO_SHIFT_RECOMMENDED_RULE_ORDER
+                : rotationMode === 'MIXED'
+                  ? MIXED_SHIFT_RECOMMENDED_RULE_ORDER
+                  : THREE_SHIFT_RECOMMENDED_RULE_ORDER;
+
+        const indexByCode = new Map<string, number>(order.map((templateCode, index) => [templateCode, index]));
+
+        return [...filtered].sort(
+            (left, right) => (indexByCode.get(left.id) ?? Number.MAX_SAFE_INTEGER) - (indexByCode.get(right.id) ?? Number.MAX_SAFE_INTEGER),
+        );
+    }, [rotationMode, templates]);
     const categories = useMemo<TModalCategory[]>(() => {
         const normalCategories = Array.from(
             new Set(templates.map((template) => template.category).filter((category) => !isRecommendedOnlyCategory(category))),
         );
+        const categoryOrder = rotationMode === 'MIXED' ? MIXED_MODAL_CATEGORY_ORDER : ROTATION_MODAL_CATEGORY_ORDER;
+        const orderedCategories = [...normalCategories].sort((left, right) => {
+            const leftIndex = categoryOrder.indexOf(left);
+            const rightIndex = categoryOrder.indexOf(right);
 
-        return recommendedTemplates.length ? [RECOMMENDED_MODAL_CATEGORY, ...normalCategories] : normalCategories;
-    }, [recommendedTemplates.length, templates]);
+            return (leftIndex < 0 ? Number.MAX_SAFE_INTEGER : leftIndex) - (rightIndex < 0 ? Number.MAX_SAFE_INTEGER : rightIndex);
+        });
+
+        return recommendedTemplates.length ? [RECOMMENDED_MODAL_CATEGORY, ...orderedCategories] : orderedCategories;
+    }, [recommendedTemplates.length, rotationMode, templates]);
     const [selectedCategory, setSelectedCategory] = useState<TModalCategory>(RECOMMENDED_MODAL_CATEGORY);
     const [draftParams, setDraftParams] = useState<Record<string, Record<string, unknown>>>({});
+    const [hasMoreBelow, setHasMoreBelow] = useState(false);
+    const updateScrollHint = useCallback(() => {
+        const scrollRegion = scrollRegionRef.current;
+
+        if (!scrollRegion) return;
+
+        setHasMoreBelow(scrollRegion.scrollHeight - scrollRegion.scrollTop - scrollRegion.clientHeight > 8);
+    }, []);
+
+    useEffect(() => {
+        onCloseRef.current = onClose;
+    }, [onClose]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                onCloseRef.current();
+
+                return;
+            }
+
+            if (event.key !== 'Tab' || !dialogRef.current) return;
+
+            const focusableElements = Array.from(
+                dialogRef.current.querySelectorAll<HTMLElement>(CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR),
+            ).filter((element) => element.getAttribute('aria-hidden') !== 'true');
+
+            if (!focusableElements.length) {
+                event.preventDefault();
+                dialogRef.current.focus();
+
+                return;
+            }
+
+            const firstElement = focusableElements[0]!;
+            const lastElement = focusableElements[focusableElements.length - 1]!;
+            const activeElement = document.activeElement;
+            const focusIsOutsideDialog = !(activeElement instanceof Node) || !dialogRef.current.contains(activeElement);
+
+            if (event.shiftKey && (activeElement === firstElement || focusIsOutsideDialog)) {
+                event.preventDefault();
+                lastElement.focus();
+            } else if (!event.shiftKey && (activeElement === lastElement || focusIsOutsideDialog)) {
+                event.preventDefault();
+                firstElement.focus();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.clearTimeout(focusTimer);
+            document.removeEventListener('keydown', handleKeyDown);
+
+            if (previousActiveElement?.isConnected) previousActiveElement.focus();
+        };
+    }, [open]);
 
     useEffect(() => {
         if (!open) return;
@@ -2414,42 +3784,69 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
         const next: Record<string, Record<string, unknown>> = {};
 
         templates.forEach((template) => {
-            const params = getDefaultParams(template, optionMap);
+            const params = getDefaultParams(template, optionMap, rotationMode);
 
             next[template.id] = normalizeCombinationParams(template, params, optionMap);
         });
         setDraftParams(next);
         setSelectedCategory(categories[0] ?? 'STAFFING');
-    }, [categories, open, optionMap, templates]);
+    }, [categories, open, optionMap, rotationMode, templates]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const frame = window.requestAnimationFrame(updateScrollHint);
+        const scrollRegion = scrollRegionRef.current;
+        const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updateScrollHint);
+
+        if (scrollRegion) resizeObserver?.observe(scrollRegion);
+
+        return () => {
+            window.cancelAnimationFrame(frame);
+            resizeObserver?.disconnect();
+        };
+    }, [open, selectedCategory, templates, updateScrollHint]);
 
     if (!open) return null;
 
-    const visibleTemplates = templates.filter((template) =>
-        selectedCategory === RECOMMENDED_MODAL_CATEGORY ? template.isRecommended : template.category === selectedCategory,
-    );
+    const visibleTemplates =
+        selectedCategory === RECOMMENDED_MODAL_CATEGORY
+            ? recommendedTemplates
+            : templates.filter((template) => template.category === selectedCategory);
 
     return (
         <ConstraintModalPortal>
-            <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
-                <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
-                    <div className="flex items-start justify-between px-6 pt-6 pb-4">
+            <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto bg-black/30 px-4 py-4">
+                <div
+                    ref={dialogRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="constraint-add-dialog-title"
+                    aria-describedby="constraint-add-dialog-description"
+                    tabIndex={-1}
+                    className="relative flex h-[min(90dvh,900px)] max-h-[calc(100dvh-1rem)] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white"
+                >
+                    <div className="flex shrink-0 items-start justify-between px-6 pt-6 pb-4">
                         <div>
-                            <p className="font-apple text-[28px] font-bold text-sub-1">{t('page.makeShift.constraints.modal.title')}</p>
-                            <p className="mt-1 font-apple text-[13px] font-medium text-gray-4">
+                            <p id="constraint-add-dialog-title" className="font-apple text-[28px] font-bold text-sub-1">
+                                {t('page.makeShift.constraints.modal.title')}
+                            </p>
+                            <p id="constraint-add-dialog-description" className="mt-1 font-apple text-[13px] font-medium text-gray-4">
                                 {t('page.makeShift.constraints.modal.description')}
                             </p>
                         </div>
                         <button
+                            ref={closeButtonRef}
                             type="button"
                             onClick={onClose}
-                            className="grid size-8 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            className="grid size-11 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             aria-label={t('page.makeShift.constraints.modal.close')}
                         >
                             <X className="size-5" />
                         </button>
                     </div>
 
-                    <div className="mx-6 flex flex-wrap gap-2 border-b border-gray-6 pb-3">
+                    <div className="mx-6 flex shrink-0 gap-2 overflow-x-auto pb-2">
                         {categories.map((category) => (
                             <button
                                 key={category}
@@ -2461,19 +3858,29 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                                         : 'bg-gray-7 text-gray-4 hover:bg-gray-6/60 hover:text-sub-1'
                                 }`}
                             >
-                                {getCategoryLabel(t, category)}
+                                {getCategoryLabel(t, category, rotationMode)}
                             </button>
                         ))}
                     </div>
 
-                    <div className="mt-4 min-h-[430px] flex-1 space-y-2 overflow-y-auto px-6 pb-6">
+                    <div
+                        ref={scrollRegionRef}
+                        data-constraint-modal-scroll="true"
+                        onScroll={updateScrollHint}
+                        className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-6 pr-2 pb-14 [scrollbar-color:#8C83D8_#EEF0F4] [scrollbar-gutter:stable] [scrollbar-width:auto] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#8C83D8] [&::-webkit-scrollbar-thumb:hover]:bg-main-1 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#EEF0F4]"
+                    >
                         {visibleTemplates.map((template) => {
                             const templateParams = draftParams[template.id] ?? {};
+                            const addDescription = template.buildText(normalizeSoftRuleParams(template, templateParams, optionMap));
+                            const addIssue = getSoftRuleAddIssue(template, templateParams);
+                            const canAdd = addIssue === null;
+                            const addIssueId = `constraint-add-issue-${template.id}`;
 
                             return (
                                 <div
                                     key={template.id}
-                                    className="flex items-center gap-3 rounded-[12px] bg-gray-7 px-4 py-3 transition-colors hover:bg-gray-6/70"
+                                    data-constraint-template-card={template.id}
+                                    className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
                                 >
                                     <div className="min-w-0 flex-1">
                                         <SoftSentence
@@ -2491,22 +3898,49 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                                                 }))
                                             }
                                         />
+                                        {template.sourceTemplate?.supportedInGenerator === false &&
+                                        MIXED_SHIFT_TEMPLATE_CODES.has(template.id) ? (
+                                            <p className="mt-1 font-apple text-[11px] font-medium text-gray-4">
+                                                {t('page.makeShift.constraints.mixed.generatorPending')}
+                                            </p>
+                                        ) : null}
+                                        {addIssue ? (
+                                            <p
+                                                id={addIssueId}
+                                                className="mt-1 font-apple text-[11px] leading-4 font-semibold text-[#A35B00]"
+                                            >
+                                                {t(addIssue)}
+                                            </p>
+                                        ) : null}
                                     </div>
-                                    <div className="shrink-0">
+                                    <div className="flex shrink-0 items-center gap-2">
                                         <button
                                             type="button"
+                                            disabled={!canAdd}
                                             onClick={() => onAdd(template, templateParams)}
-                                            className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-1-hover focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
-                                            aria-label={t('page.makeShift.constraints.modal.addAria')}
+                                            className="group inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-white transition-colors hover:bg-main-light focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                            aria-label={`${t('page.makeShift.constraints.modal.addAria')}: ${addDescription}`}
+                                            aria-describedby={addIssue ? addIssueId : undefined}
                                             title={t('page.makeShift.constraints.modal.addTitle')}
                                         >
-                                            <Plus className="size-4" />
+                                            <span className="inline-flex size-8 items-center justify-center rounded-full bg-main-1 transition-colors group-hover:bg-main-1-hover group-disabled:bg-gray-5">
+                                                <Plus className="size-3.5" />
+                                            </span>
                                         </button>
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
+                    {hasMoreBelow ? (
+                        <div
+                            data-constraint-scroll-hint="true"
+                            className="pointer-events-none absolute bottom-3 left-1/2 grid size-8 -translate-x-1/2 place-items-center rounded-full bg-main-light text-main-1"
+                            aria-hidden="true"
+                        >
+                            <ChevronDown className="size-4" />
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </ConstraintModalPortal>
@@ -2615,15 +4049,23 @@ export function Constraints({
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
+    const [rotationModeOverride, setRotationModeOverride] = useState<TWardRotationMode | null>(null);
     const saveRulesRequestSeqRef = useRef(0);
+    const recommendedDefaultsSeedKeyRef = useRef<string | null>(null);
     const languageQueryKey = i18n.resolvedLanguage ?? i18n.language ?? 'default';
     const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey);
     const candidatesQuery = useQuery({
-        queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey),
-        queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
+        queryKey: shiftConstraintRuleQueryKeys.candidates(
+            wardId ?? -1,
+            currentShiftTeamId ?? -1,
+            languageQueryKey,
+            rotationModeOverride ?? undefined,
+        ),
+        queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1, rotationModeOverride ?? undefined),
         enabled,
         retry: false,
         refetchOnWindowFocus: false,
+        placeholderData: (previousData) => previousData,
     });
     const rulesQuery = useQuery({
         queryKey: rulesQueryKey,
@@ -2640,32 +4082,66 @@ export function Constraints({
         enabled: wardId !== null && wardId !== undefined,
     });
     const templates = candidatesQuery.data?.templates ?? [];
+    const rotationMode: TWardRotationMode = rotationModeOverride ?? candidatesQuery.data?.rotationMode ?? 'THREE';
     const softTemplates = useMemo(
-        () => createSoftRuleTemplates(templates, t).filter((template) => !isSkillConstraintTemplate(template)),
-        [t, templates],
+        () =>
+            createSoftRuleTemplates(templates, t, rotationMode).filter(
+                (template) =>
+                    !isSkillConstraintTemplate(template) &&
+                    !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(template.id) &&
+                    !(rotationMode === 'THREE' && template.id === 'MIN_CHARGE_NURSE_BY_SHIFT'),
+            ),
+        [rotationMode, t, templates],
     );
     const templateByCode = useMemo(() => new Map(templates.map((template) => [template.templateCode, template] as const)), [templates]);
     const softTemplateByCode = useMemo(() => new Map(softTemplates.map((template) => [template.id, template] as const)), [softTemplates]);
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
     const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
-    const supportsTwoShift =
-        shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO' && shiftType.classification === 'DAY') &&
-        shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO' && shiftType.classification === 'NIGHT');
     const addableSoftTemplates = useMemo(
         () =>
             softTemplates.filter(
                 (template) =>
                     !isHiddenAddModalTemplate(template.id) &&
                     !isSkillConstraintTemplate(template) &&
-                    (supportsTwoShift || !TWO_SHIFT_CONFIGURATION_CODE_SET.has(template.id)),
+                    template.id !== MIXED_OPERATION_POLICY_TEMPLATE_CODE &&
+                    (rotationMode === 'TWO'
+                        ? TWO_SHIFT_VISIBLE_RULE_CODES.has(template.id)
+                        : rotationMode === 'THREE'
+                          ? THREE_SHIFT_VISIBLE_RULE_CODES.has(template.id)
+                          : MIXED_SHIFT_VISIBLE_RULE_CODES.has(template.id)),
             ),
-        [softTemplates, supportsTwoShift],
+        [rotationMode, softTemplates],
     );
     const optionMap = useMemo(() => {
+        const constraintShiftTypes = shiftTypes.filter((shiftType) => {
+            if (rotationMode === 'THREE') {
+                return (
+                    shiftType.isActive === true &&
+                    shiftType.rotationSystem === 'THREE' &&
+                    (shiftType.classification === 'DAY' || shiftType.classification === 'EVENING' || shiftType.classification === 'NIGHT')
+                );
+            }
+
+            if (rotationMode === 'MIXED') {
+                if (shiftType.rotationSystem !== 'THREE' && shiftType.rotationSystem !== 'TWO') return false;
+            } else if (shiftType.rotationSystem && shiftType.rotationSystem !== rotationMode) {
+                return false;
+            }
+
+            if (rotationMode === 'TWO') {
+                return (
+                    shiftType.classification === 'DAY' ||
+                    shiftType.classification === 'NIGHT' ||
+                    shiftType.classification === 'NIGHT_CONTINUATION'
+                );
+            }
+
+            return shiftType.classification === 'DAY' || shiftType.classification === 'EVENING' || shiftType.classification === 'NIGHT';
+        });
         const dutyOptions = uniqueByValue([
             {value: 'ALL_DUTY', label: t('page.makeShift.constraints.option.all'), raw: {type: 'ALL'}},
-            ...shiftTypes
+            ...constraintShiftTypes
                 .filter((shiftType) => shiftType.wardShiftTypeId != null && (shiftType.shortName ?? shiftType.name))
                 .map((shiftType) => ({
                     value: String(shiftType.wardShiftTypeId),
@@ -2679,6 +4155,21 @@ export function Constraints({
                     isOff: shiftType.isOff,
                 })),
         ]);
+        const dutyReferenceOptions = uniqueByValue(
+            shiftTypes
+                .filter((shiftType) => shiftType.wardShiftTypeId != null && (shiftType.shortName ?? shiftType.name))
+                .map((shiftType) => ({
+                    value: String(shiftType.wardShiftTypeId),
+                    label: `${shiftType.shortName ?? shiftType.name} ${shiftType.name ?? shiftType.shortName ?? ''}`.trim(),
+                    kind: 'duty' as const,
+                    shortName: shiftType.shortName ?? shiftType.name,
+                    name: shiftType.name,
+                    color: shiftType.color,
+                    raw: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: shiftType.wardShiftTypeId},
+                    classification: shiftType.classification,
+                    isOff: shiftType.isOff,
+                })),
+        );
         const dateOptions = Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
             value: String(idx + 1),
             label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
@@ -2687,11 +4178,28 @@ export function Constraints({
         const dateScopeOptions = [
             {value: 'EVERYDAY', label: t('page.makeShift.constraints.option.everyday'), raw: {type: 'EVERYDAY'}},
             {value: 'WEEKDAY', label: t('page.makeShift.constraints.option.weekday'), raw: {type: 'WEEKDAY'}},
+            {value: 'WEEKEND', label: t('page.makeShift.constraints.option.weekend'), raw: {type: 'WEEKEND'}},
+            {value: 'HOLIDAY', label: t('page.makeShift.constraints.option.holiday'), raw: {type: 'HOLIDAY'}},
             {
                 value: 'WEEKEND_OR_HOLIDAY',
                 label: t('page.makeShift.constraints.option.weekendOrHoliday'),
                 raw: {type: 'WEEKEND_OR_HOLIDAY'},
             },
+            ...(
+                [
+                    ['MONDAY', 'monday'],
+                    ['TUESDAY', 'tuesday'],
+                    ['WEDNESDAY', 'wednesday'],
+                    ['THURSDAY', 'thursday'],
+                    ['FRIDAY', 'friday'],
+                    ['SATURDAY', 'saturday'],
+                    ['SUNDAY', 'sunday'],
+                ] as const
+            ).map(([type, key]) => ({
+                value: type,
+                label: t(`page.makeShift.constraints.option.weekdayName.${key}` as TI18nKey),
+                raw: {type},
+            })),
             ...Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
                 value: `DAY_OF_MONTH-${idx + 1}`,
                 label: t('page.makeShift.constraints.option.monthlyDayLabel', {day: idx + 1}),
@@ -2703,12 +4211,104 @@ export function Constraints({
             {value: 'MAX', label: t('page.makeShift.constraints.option.staffCountOperator.max'), raw: {type: 'MAX'}},
             {value: 'EXACT', label: t('page.makeShift.constraints.option.staffCountOperator.exact'), raw: {type: 'EXACT'}},
         ];
+        const enumOption = (type: string, labelKey: TI18nKey): TSelectOption => ({
+            value: type,
+            label: t(labelKey),
+            raw: {type},
+        });
+        const participationModeOptions = [
+            enumOption('THREE_ONLY', 'page.makeShift.constraints.mixed.participation.threeOnly'),
+            enumOption('TWO_ONLY', 'page.makeShift.constraints.mixed.participation.twoOnly'),
+            enumOption('FLEX', 'page.makeShift.constraints.mixed.participation.flex'),
+            enumOption('FALLBACK_TWO', 'page.makeShift.constraints.mixed.participation.fallbackTwo'),
+        ];
+        const compositionOptions = [
+            enumOption('AUTO', 'page.makeShift.constraints.mixed.composition.auto'),
+            enumOption('THREE_ONLY', 'page.makeShift.constraints.mixed.composition.threeOnly'),
+            enumOption('TWO_ONLY', 'page.makeShift.constraints.mixed.composition.twoOnly'),
+            enumOption('COEXIST', 'page.makeShift.constraints.mixed.composition.coexist'),
+            enumOption('CLOSED', 'page.makeShift.constraints.mixed.composition.closed'),
+        ];
+        const lineOperatorOptions = [
+            ...staffCountOperatorOptions,
+            enumOption('TARGET', 'page.makeShift.constraints.option.staffCountOperator.target'),
+        ];
+        const assignmentAggregationOptions = [
+            enumOption('PER_NURSE', 'page.makeShift.constraints.mixed.aggregation.perNurse'),
+            enumOption('GROUP_TOTAL', 'page.makeShift.constraints.mixed.aggregation.groupTotal'),
+        ];
+        const twoShiftScopeOptions = [
+            enumOption('ALL_TWO', 'page.makeShift.constraints.mixed.shiftScope.allTwo'),
+            enumOption('TWO_DAY', 'page.makeShift.constraints.mixed.shiftScope.twoDay'),
+            enumOption('TWO_NIGHT', 'page.makeShift.constraints.mixed.shiftScope.twoNight'),
+        ];
+        const workloadMetricOptions = [
+            enumOption('TWO_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.twoAssignments'),
+            enumOption('TWO_NIGHT_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.twoNightAssignments'),
+            enumOption('WEEKEND_TWO_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.weekendTwoAssignments'),
+        ];
+        const transitionDirectionOptions = [
+            {
+                value: 'DAY_TO_NIGHT',
+                label: t('page.makeShift.constraints.option.transition.dayToNight'),
+                raw: {type: 'DAY_TO_NIGHT'},
+            },
+            {
+                value: 'NIGHT_TO_DAY',
+                label: t('page.makeShift.constraints.option.transition.nightToDay'),
+                raw: {type: 'NIGHT_TO_DAY'},
+            },
+            {value: 'BOTH', label: t('page.makeShift.constraints.option.transition.both'), raw: {type: 'BOTH'}},
+        ];
+        const periodOptions = [
+            {value: 'DAY', label: t('page.makeShift.constraints.option.period.day'), raw: {type: 'DAY'}},
+            {value: 'WEEK', label: t('page.makeShift.constraints.option.period.week'), raw: {type: 'WEEK'}},
+            {
+                value: 'ROLLING_7_DAYS',
+                label: t('page.makeShift.constraints.option.period.rollingSevenDays'),
+                raw: {type: 'ROLLING_7_DAYS'},
+            },
+            {value: 'MONTH', label: t('page.makeShift.constraints.option.period.month'), raw: {type: 'MONTH'}},
+        ];
+        const shiftTypeById = new Map(
+            shiftTypes
+                .filter((shiftType) => shiftType.wardShiftTypeId != null)
+                .map((shiftType) => [shiftType.wardShiftTypeId!, shiftType] as const),
+        );
+        const getNurseRotationEligibility = (nurse: TNurseLike) => {
+            const configuredShiftTypes = nurse.nurseShiftTypes ?? [];
+
+            if (!configuredShiftTypes.length) {
+                return {hasShiftAvailabilityConfig: false, canThreeShift: false, canTwoShift: false};
+            }
+
+            const possibleRotations = new Set(
+                configuredShiftTypes
+                    .filter((nurseShiftType) => nurseShiftType.isPossible === true && nurseShiftType.wardShiftTypeId != null)
+                    .map((nurseShiftType) => shiftTypeById.get(nurseShiftType.wardShiftTypeId!))
+                    .filter(
+                        (shiftType): shiftType is TShiftTypeLike =>
+                            Boolean(shiftType) && shiftType!.isActive !== false && shiftType!.isOff !== true,
+                    )
+                    .map((shiftType) => shiftType.rotationSystem),
+            );
+
+            return {
+                hasShiftAvailabilityConfig: true,
+                canThreeShift: possibleRotations.has('THREE'),
+                canTwoShift: possibleRotations.has('TWO'),
+            };
+        };
+        const nurseEligibilityById = new Map(
+            nurses.filter((nurse) => nurse.nurseId != null).map((nurse) => [nurse.nurseId!, getNurseRotationEligibility(nurse)] as const),
+        );
         const toNurseOption = (nurse: TNurseLike): TSelectOption => ({
             value: String(nurse.nurseId),
             label: String(nurse.name),
             kind: 'nurse',
             isPreceptor: hasPreceptorRole(nurse),
             isPreceptee: hasPrecepteeRole(nurse),
+            ...getNurseRotationEligibility(nurse),
             raw: {
                 type: 'NURSE',
                 nurseId: nurse.nurseId,
@@ -2728,21 +4328,117 @@ export function Constraints({
                 {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
                 ...nurseOptions,
             ],
+            monthlyNightTarget: [
+                {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
+                ...(rotationMode === 'THREE'
+                    ? [
+                          {
+                              value: 'ROTATING',
+                              label: t('page.makeShift.constraints.option.target.rotating'),
+                              raw: {type: 'ROTATING'},
+                          },
+                          {
+                              value: 'NIGHT_DEDICATED',
+                              label: t('page.makeShift.constraints.option.target.nightDedicated'),
+                              raw: {type: 'NIGHT_DEDICATED'},
+                          },
+                      ]
+                    : []),
+                ...nurseOptions,
+            ],
             duty: dutyOptions,
+            dutyReference: dutyReferenceOptions,
             date: dateOptions,
             dayType: [],
             dateScope: dateScopeOptions,
             staffCountOperator: staffCountOperatorOptions,
+            transitionDirection: transitionDirectionOptions,
+            period: periodOptions,
+            participationMode: participationModeOptions,
+            composition: compositionOptions,
+            lineOperator: lineOperatorOptions,
+            assignmentAggregation: assignmentAggregationOptions,
+            twoShiftScope: twoShiftScopeOptions,
+            workloadMetric: workloadMetricOptions,
             nurse: nurseOptions,
             preceptor: preceptorOptions,
             preceptee: precepteeOptions,
             dutyStrict: dutyOptions.filter((option) => option.value !== 'ALL_DUTY'),
         } as Record<string, TSelectOption[]>;
+        const mergedOptionMap = mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t);
+        const eligibleNurseOptions = (mergedOptionMap.nurse ?? []).map((option) => {
+            const nurseId = option.raw?.nurseId;
+            const eligibility = nurseId != null ? nurseEligibilityById.get(nurseId) : undefined;
+
+            return {
+                ...option,
+                ...(eligibility ?? {
+                    hasShiftAvailabilityConfig: false,
+                    canThreeShift: false,
+                    canTwoShift: false,
+                }),
+            };
+        });
+        const allowedDutyIds = new Set(
+            constraintShiftTypes
+                .map((shiftType) => shiftType.wardShiftTypeId)
+                .filter((wardShiftTypeId): wardShiftTypeId is number => wardShiftTypeId != null),
+        );
+        const allowedDutyCodes = new Set(
+            constraintShiftTypes
+                .flatMap((shiftType) => [shiftType.shortName, shiftType.name])
+                .filter((value): value is string => Boolean(value)),
+        );
+        const filteredDutyOptions = (mergedOptionMap.duty ?? []).filter((option) => {
+            if (isAllSelectOption(option)) return true;
+
+            if (option.raw?.wardShiftTypeId != null) return allowedDutyIds.has(option.raw.wardShiftTypeId);
+
+            return [option.raw?.code, option.shortName, option.name].filter(Boolean).some((value) => allowedDutyCodes.has(String(value)));
+        });
+        const monthDayCount = daysInMonth(year, month);
+        const isOptionInCurrentMonth = (option: TSelectOption) =>
+            option.raw?.type !== 'DAY_OF_MONTH' || (option.raw.day != null && option.raw.day >= 1 && option.raw.day <= monthDayCount);
 
         return {
-            ...mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t),
+            ...mergedOptionMap,
+            nurse: eligibleNurseOptions,
+            duty: filteredDutyOptions,
+            dutyStrict: filteredDutyOptions.filter((option) => !isAllSelectOption(option)),
+            date: (mergedOptionMap.date ?? []).filter(isOptionInCurrentMonth),
+            dateScope: (mergedOptionMap.dateScope ?? []).filter(isOptionInCurrentMonth),
         };
-    }, [nurses, options, shiftTypes, t, year, month]);
+    }, [nurses, options, rotationMode, shiftTypes, t, year, month]);
+    const rotationModeMutation = useMutation({
+        mutationKey: [...shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId), 'rotation-mode'],
+        mutationFn: ({nextRotationMode}: {nextRotationMode: TWardRotationMode; previousOverride: TWardRotationMode | null}) => {
+            if (!enabled || wardId == null || currentShiftTeamId == null) {
+                throw new Error('Cannot save the temporary rotation mode without a ward and shift team.');
+            }
+
+            return putShiftConstraintRules(wardId, currentShiftTeamId, {rotationMode: nextRotationMode});
+        },
+        onSuccess: (response) => {
+            queryClient.setQueryData(rulesQueryKey, response);
+
+            const savedRules = createRulesFromServer(response.rules)
+                .filter(isVisibleConstraintRule)
+                .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode));
+
+            rulesRef.current = savedRules;
+            setRules(savedRules);
+
+            if (wardId != null && currentShiftTeamId != null) {
+                void queryClient.invalidateQueries({
+                    queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace'],
+                });
+            }
+        },
+        onError: (_error, variables) => {
+            setRotationModeOverride(variables.previousOverride);
+            toast.error(t('page.makeShift.constraints.rotationMode.saveFailed'));
+        },
+    });
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
@@ -2751,6 +4447,7 @@ export function Constraints({
             }
 
             return putShiftConstraintRules(wardId, currentShiftTeamId, {
+                rotationMode,
                 rules: rules.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
             });
         },
@@ -2770,7 +4467,9 @@ export function Constraints({
 
             queryClient.setQueryData(rulesQueryKey, response);
 
-            const savedRules = createRulesFromServer(response.rules).filter(isVisibleConstraintRule);
+            const savedRules = createRulesFromServer(response.rules)
+                .filter(isVisibleConstraintRule)
+                .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode));
 
             rulesRef.current = savedRules;
             setRules(savedRules);
@@ -2787,7 +4486,9 @@ export function Constraints({
             if (context?.previousRules) {
                 queryClient.setQueryData(rulesQueryKey, context.previousRules);
 
-                const previousRules = createRulesFromServer(context.previousRules.rules).filter(isVisibleConstraintRule);
+                const previousRules = createRulesFromServer(context.previousRules.rules)
+                    .filter(isVisibleConstraintRule)
+                    .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode));
 
                 rulesRef.current = previousRules;
                 setRules(previousRules);
@@ -2813,7 +4514,10 @@ export function Constraints({
     );
     const replaceRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
-            const normalizedRules = nextRules.filter(isVisibleConstraintRule).map((rule, index) => ({...rule, sortOrder: index + 1}));
+            const normalizedRules = nextRules
+                .filter(isVisibleConstraintRule)
+                .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode))
+                .map((rule, index) => ({...rule, sortOrder: index + 1}));
 
             rulesRef.current = normalizedRules;
             setRules(normalizedRules);
@@ -2822,7 +4526,7 @@ export function Constraints({
                 persistRules(normalizedRules);
             }
         },
-        [persistRules],
+        [persistRules, rotationMode, templateByCode],
     );
     const updateRules = useCallback(
         (updater: TRulesUpdate) => {
@@ -2830,55 +4534,10 @@ export function Constraints({
         },
         [replaceRules],
     );
-    const upsertTwoShiftConfigurationRule = (
-        templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number],
-        overrides: Record<string, unknown> = {},
-    ) => {
-        updateRules((prev) => {
-            const existing = prev.find((rule) => rule.templateCode === templateCode);
-            const template = softTemplateByCode.get(templateCode);
-            const nextRule = {
-                clientId: existing?.clientId ?? createClientId({templateCode}),
-                shiftConstraintRuleId: existing?.shiftConstraintRuleId,
-                templateCode,
-                category: template?.category ?? 'TWO_SHIFT',
-                severity: 'HARD' as const,
-                sortOrder: existing?.sortOrder ?? prev.length + 1,
-                params: {
-                    ...(DEFAULT_PARAMS_BY_TEMPLATE_CODE[templateCode] ?? {}),
-                    ...(existing?.params ?? {}),
-                    ...overrides,
-                },
-                selected: true,
-                isImportant: true,
-                displayText: existing?.displayText,
-                isValid: true,
-                invalidReason: null,
-            } satisfies TShiftConstraintRuleDraft;
 
-            return existing ? prev.map((rule) => (rule.clientId === existing.clientId ? nextRule : rule)) : [...prev, nextRule];
-        });
-    };
-    const setTwoShiftAutomationEnabled = (nextEnabled: boolean) => {
-        if (!supportsTwoShift) return;
-
-        if (nextEnabled) {
-            upsertTwoShiftConfigurationRule('TWO_SHIFT_MAX_LINES');
-
-            return;
-        }
-
-        updateRules((prev) => prev.filter((rule) => !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode)));
-    };
-    const updateTwoShiftRuleCount = (templateCode: (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], count: number | null) => {
-        if (count == null && templateCode !== 'TWO_SHIFT_MAX_LINES') {
-            updateRules((prev) => prev.filter((rule) => rule.templateCode !== templateCode));
-
-            return;
-        }
-
-        upsertTwoShiftConfigurationRule(templateCode, {count});
-    };
+    useEffect(() => {
+        setRotationModeOverride(null);
+    }, [currentShiftTeamId, wardId]);
 
     useEffect(() => {
         if (!rulesQuery.data || candidatesQuery.isPending) return;
@@ -2887,9 +4546,84 @@ export function Constraints({
     }, [candidatesQuery.isPending, replaceRules, rulesQuery.data]);
 
     useEffect(() => {
+        if (
+            !rulesQuery.data?.rules.length ||
+            candidatesQuery.isPending ||
+            nurseQuery.isPending ||
+            shiftTypeQuery.isPending ||
+            wardId == null ||
+            currentShiftTeamId == null
+        ) {
+            return;
+        }
+
+        const seedKey = `${wardId}:${currentShiftTeamId}:${rotationMode}`;
+
+        if (recommendedDefaultsSeedKeyRef.current === seedKey) return;
+
+        recommendedDefaultsSeedKeyRef.current = seedKey;
+
+        const savedRules = createRulesFromServer(rulesQuery.data.rules);
+
+        if (!hasLegacyRecommendedDefaults(savedRules, rotationMode)) return;
+
+        const existingTemplateCodes = new Set(savedRules.map((rule) => rule.templateCode));
+        const missingRecommendedRules = addableSoftTemplates
+            .filter((template) => template.isRecommended && !existingTemplateCodes.has(template.id))
+            .map((template, index): TShiftConstraintRuleDraft | null => {
+                const params = clampNumberParams(
+                    template,
+                    normalizeCombinationParams(template, getDefaultParams(template, optionMap, rotationMode), optionMap),
+                    optionMap,
+                );
+
+                if (getSoftRuleAddIssue(template, params)) return null;
+
+                return {
+                    clientId: createClientId({templateCode: template.id}),
+                    templateCode: template.id,
+                    category: template.category,
+                    severity: 'HARD',
+                    sortOrder: savedRules.length + index + 1,
+                    params,
+                    selected: true,
+                    isImportant: true,
+                    displayText: template.buildText(normalizeSoftRuleParams(template, params, optionMap)),
+                    isValid: true,
+                    invalidReason: null,
+                };
+            })
+            .filter((rule): rule is TShiftConstraintRuleDraft => rule !== null);
+
+        if (missingRecommendedRules.length) {
+            replaceRules([...savedRules, ...missingRecommendedRules]);
+        }
+    }, [
+        addableSoftTemplates,
+        candidatesQuery.isPending,
+        currentShiftTeamId,
+        nurseQuery.isPending,
+        optionMap,
+        replaceRules,
+        rotationMode,
+        rulesQuery.data,
+        shiftTypeQuery.isPending,
+        wardId,
+    ]);
+
+    useEffect(() => {
         rulesRef.current = rules;
     }, [rules]);
 
+    const changeRotationMode = (nextRotationMode: TWardRotationMode) => {
+        if (nextRotationMode === rotationMode || rotationModeMutation.isPending) return;
+
+        const previousOverride = rotationModeOverride;
+
+        setSoftModalOpen(false);
+        setRotationModeOverride(nextRotationMode);
+        rotationModeMutation.mutate({nextRotationMode, previousOverride});
+    };
     const optimizeDuplicateRules = useCallback(() => {
         const result = compactDuplicateRules(rulesRef.current);
 
@@ -2914,18 +4648,17 @@ export function Constraints({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
-    const twoShiftAutomationEnabled = rules.some(
-        (rule) => rule.templateCode === 'TWO_SHIFT_MAX_LINES' && rule.selected !== false && Number(rule.params.count ?? 0) > 0,
-    );
     const softRules = rules.filter(
         (rule) =>
             (rule.severity === 'SOFT' || rule.severity === 'HARD') &&
             rule.selected !== false &&
             isVisibleConstraintRule(rule) &&
-            !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode),
+            !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(rule.templateCode) &&
+            isSavedRuleVisibleForRotation(rule.templateCode, rotationMode),
     );
-    const isLoading = candidatesQuery.isPending || rulesQuery.isPending || shiftTypeQuery.isPending;
+    const isLoading = candidatesQuery.isPending || rulesQuery.isPending || nurseQuery.isPending || shiftTypeQuery.isPending;
     const isLoadError = rulesQuery.isError;
+    const savedRuleWarnings = rulesQuery.data?.warnings ?? [];
     const softRuleViewModels = useMemo(
         () =>
             softRules.map((rule) => ({
@@ -2934,34 +4667,48 @@ export function Constraints({
                 softTemplate: softTemplateByCode.get(rule.templateCode),
                 highlighted: highlightedRuleId === rule.clientId,
                 isImportant: rule.severity === 'HARD',
-                isRecommended: isRecommendedTemplateCode(rule.templateCode, rule.category),
+                isRecommended: isRecommendedTemplateCode(rule.templateCode, rule.category, rotationMode),
+                isSeverityLocked: isTwoShiftFixedNoNToD(rotationMode, rule.templateCode),
             })),
-        [highlightedRuleId, softRules, softTemplateByCode, templateByCode],
+        [highlightedRuleId, rotationMode, softRules, softTemplateByCode, templateByCode],
     );
+    const revealRuleForEditing = useCallback((clientId: string) => {
+        setHighlightedRuleId(clientId);
+        setSoftModalOpen(false);
+
+        window.setTimeout(() => {
+            const row = document.getElementById(getConstraintRuleRowId(clientId));
+            const firstEditor =
+                row?.querySelector<HTMLElement>('button[aria-haspopup="listbox"]:not(:disabled)') ??
+                row?.querySelector<HTMLElement>('input:not(:disabled)') ??
+                row?.querySelector<HTMLElement>('button[role="checkbox"]:not(:disabled)');
+
+            row?.scrollIntoView?.({block: 'center'});
+            firstEditor?.focus();
+        }, 0);
+
+        window.setTimeout(() => {
+            setHighlightedRuleId((current) => (current === clientId ? null : current));
+        }, 1800);
+    }, []);
     const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, unknown>) => {
-        const normalizedParams = normalizeNumberParams(template, normalizeCombinationParams(template, params, optionMap));
-
-        if (TWO_SHIFT_CONFIGURATION_CODE_SET.has(template.id)) {
-            if (!supportsTwoShift) return;
-
-            upsertTwoShiftConfigurationRule(template.id as (typeof TWO_SHIFT_CONFIGURATION_CODES)[number], normalizedParams);
-            setSoftModalOpen(false);
-            toast.success(t('page.makeShift.constraints.toast.added'));
-
-            return;
-        }
-
+        const hasFixedTwoShiftTarget = isTwoShiftFixedNoNToD(rotationMode, template.id);
+        const normalizedParams = {
+            ...clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap),
+            ...(hasFixedTwoShiftTarget ? {target: ALL_CONSTRAINT_TARGET_OPTION} : {}),
+        };
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
+        const defaultSeverity = hasFixedTwoShiftTarget ? 'HARD' : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
             category: template.category,
-            severity: isRecommended ? 'HARD' : 'SOFT',
+            severity: isRecommended ? 'HARD' : defaultSeverity,
             sortOrder: softRules.length + 1,
             params: normalizedParams,
             selected: true,
-            isImportant: isRecommended,
+            isImportant: isRecommended || defaultSeverity === 'HARD',
             displayText: template.buildText(displayParams),
             isValid: true,
             invalidReason: null,
@@ -2971,13 +4718,32 @@ export function Constraints({
             .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
 
         if (duplicateRule) {
-            setHighlightedRuleId(duplicateRule.clientId);
+            if (isRecommended && duplicateRule.severity !== 'HARD') {
+                updateRules((prev) =>
+                    prev.map((rule) => (rule.clientId === duplicateRule.clientId ? {...rule, severity: 'HARD', isImportant: true} : rule)),
+                );
+            }
+
             setSoftModalOpen(false);
+            revealRuleForEditing(duplicateRule.clientId);
             toast.success(t('page.makeShift.constraints.toast.duplicateSkipped'));
 
-            window.setTimeout(() => {
-                setHighlightedRuleId((current) => (current === duplicateRule.clientId ? null : current));
-            }, 1800);
+            return;
+        }
+
+        if (template.id === 'STAFF_COUNT_BY_SHIFT' && hasStaffingCountConflict(rulesRef.current, nextRule)) {
+            const conflictingRule = rulesRef.current.find(
+                (rule) =>
+                    STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode) &&
+                    getStaffingDuplicateDateScope(rule) === getStaffingDuplicateDateScope(nextRule) &&
+                    getStaffingDuplicateShift(rule) === getStaffingDuplicateShift(nextRule),
+            );
+
+            if (conflictingRule) {
+                revealRuleForEditing(conflictingRule.clientId);
+            }
+
+            toast.error(t('page.makeShift.constraints.toast.staffCountConflict'));
 
             return;
         }
@@ -3010,9 +4776,13 @@ export function Constraints({
                     queryKey: shiftConstraintRuleQueryKeys.rules(wardId, sourceShiftTeamId),
                     queryFn: () => getShiftConstraintRules(wardId, sourceShiftTeamId),
                 });
-                const next = createRulesFromServer(response.rules)
+                const rotationCompatibleRules = createRulesFromServer(response.rules)
                     .filter(isVisibleConstraintRule)
-                    .filter((rule) => supportsTwoShift || !TWO_SHIFT_CONFIGURATION_CODE_SET.has(rule.templateCode))
+                    .filter((rule) => !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(rule.templateCode))
+                    .filter((rule) => isRuleImportableForRotation(rule.templateCode, rotationMode));
+                const skippedNurseRuleCount = rotationCompatibleRules.filter(isNurseSpecificImportRule).length;
+                const next = rotationCompatibleRules
+                    .filter((rule) => !isNurseSpecificImportRule(rule))
                     .map((rule, index) => ({
                         ...rule,
                         shiftConstraintRuleId: undefined,
@@ -3020,12 +4790,27 @@ export function Constraints({
                         sortOrder: index + 1,
                     }));
 
+                if (!next.length && skippedNurseRuleCount > 0) {
+                    toast.error(
+                        t('page.makeShift.constraints.toast.importSkippedAllNurseRules', {
+                            count: skippedNurseRuleCount,
+                        }),
+                    );
+
+                    return;
+                }
+
                 replaceRules(next);
                 setHighlightedRuleId(null);
                 toast.success(
-                    t('page.makeShift.constraints.toast.imported', {
-                        teamName: sourceTeam?.name ?? t('page.makeShift.constraints.import.sourceTeamFallback'),
-                    }),
+                    skippedNurseRuleCount > 0
+                        ? t('page.makeShift.constraints.toast.importedWithSkippedNurseRules', {
+                              teamName: sourceTeam?.name ?? t('page.makeShift.constraints.import.sourceTeamFallback'),
+                              count: skippedNurseRuleCount,
+                          })
+                        : t('page.makeShift.constraints.toast.imported', {
+                              teamName: sourceTeam?.name ?? t('page.makeShift.constraints.import.sourceTeamFallback'),
+                          }),
                 );
             } catch {
                 toast.error(t('page.makeShift.constraints.toast.importFailed'));
@@ -3033,7 +4818,7 @@ export function Constraints({
                 setImportingShiftTeamId(null);
             }
         },
-        [availableShiftTeams, currentShiftTeamId, enabled, importingShiftTeamId, queryClient, replaceRules, supportsTwoShift, t, wardId],
+        [availableShiftTeams, currentShiftTeamId, enabled, importingShiftTeamId, queryClient, replaceRules, rotationMode, t, wardId],
     );
     const updateRuleParam = useCallback(
         (clientId: string, key: string, value: unknown) => {
@@ -3050,6 +4835,14 @@ export function Constraints({
                     if (item.clientId !== clientId) return item;
 
                     const nextParams = normalizeCombinationParams(template, {...item.params, [key]: value}, optionMap);
+                    const addIssue = getSoftRuleAddIssue(template, nextParams);
+
+                    if (addIssue) {
+                        toast.error(t(addIssue));
+
+                        return item;
+                    }
+
                     const displayParams = normalizeSoftRuleParams(template, nextParams, optionMap);
 
                     return {
@@ -3060,7 +4853,7 @@ export function Constraints({
                 }),
             );
         },
-        [optionMap, updateRules],
+        [optionMap, t, updateRules],
     );
     const setRuleImportant = useCallback(
         (clientId: string, isImportant: boolean) => {
@@ -3072,7 +4865,7 @@ export function Constraints({
     );
     const toggleRuleImportant = useCallback(
         (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
-            if (!nextImportant && isRecommendedDefaultRuleCode(rule.templateCode)) {
+            if (!nextImportant && isRecommendedDefaultRuleCode(rule.templateCode, rotationMode)) {
                 setRecommendedWarning({rule, action: 'unmark'});
 
                 return;
@@ -3080,11 +4873,11 @@ export function Constraints({
 
             setRuleImportant(rule.clientId, nextImportant);
         },
-        [setRuleImportant],
+        [rotationMode, setRuleImportant],
     );
     const removeRule = useCallback(
         (rule: TShiftConstraintRuleDraft) => {
-            if (isRecommendedDefaultRuleCode(rule.templateCode)) {
+            if (isRecommendedDefaultRuleCode(rule.templateCode, rotationMode)) {
                 setRecommendedWarning({rule, action: 'delete'});
 
                 return;
@@ -3092,7 +4885,7 @@ export function Constraints({
 
             updateRules((prev) => prev.filter((item) => item.clientId !== rule.clientId));
         },
-        [updateRules],
+        [rotationMode, updateRules],
     );
     const confirmRecommendedWarning = () => {
         if (!recommendedWarning) return;
@@ -3146,13 +4939,71 @@ export function Constraints({
                 <div
                     className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
                 >
-                    {supportsTwoShift ? (
-                        <TwoShiftAutomationPanel
-                            enabled={twoShiftAutomationEnabled}
-                            rules={rules}
-                            onEnabledChange={setTwoShiftAutomationEnabled}
-                            onRuleCountChange={updateTwoShiftRuleCount}
-                        />
+                    <div className="mb-4 rounded-[12px] bg-gray-7 px-4 py-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="font-apple text-[13px] font-bold text-sub-2">
+                                    {t('page.makeShift.constraints.rotationMode.title')}
+                                </p>
+                                <p className="mt-0.5 font-apple text-[11px] font-medium text-gray-4">
+                                    {t('page.makeShift.constraints.rotationMode.hint')}
+                                </p>
+                            </div>
+                            <div
+                                role="radiogroup"
+                                aria-label={t('page.makeShift.constraints.rotationMode.ariaLabel')}
+                                className="flex max-w-full flex-wrap items-center rounded-[12px] bg-white p-1"
+                            >
+                                {TEMP_ROTATION_MODE_OPTIONS.map((option) => {
+                                    const selected = rotationMode === option.value;
+
+                                    return (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={selected}
+                                            disabled={rotationModeMutation.isPending}
+                                            onClick={() => changeRotationMode(option.value)}
+                                            className={cn(
+                                                'min-h-11 rounded-[9px] px-3 font-apple text-[12px] font-bold transition-colors focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60',
+                                                selected ? 'bg-[#6C5CFF] text-white' : 'text-gray-4 hover:bg-gray-7 hover:text-sub-2',
+                                            )}
+                                        >
+                                            {t(option.labelKey)}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                    {savedRuleWarnings.length > 0 ? (
+                        <section
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="false"
+                            aria-label={t('page.makeShift.constraints.savedWarnings.title')}
+                            className="mb-4 rounded-[12px] bg-[#FFF7E6] px-4 py-3 text-[#7A4B00]"
+                        >
+                            <div className="flex items-start gap-2.5">
+                                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                                <div className="min-w-0">
+                                    <p className="font-apple text-[13px] font-bold">
+                                        {t('page.makeShift.constraints.savedWarnings.title')}
+                                    </p>
+                                    <ul className="mt-1.5 space-y-1 font-apple text-[12px] font-medium">
+                                        {savedRuleWarnings.map((warning, index) => (
+                                            <li
+                                                key={`${warning.code}-${warning.relatedTemplateCodes.join('-')}-${index}`}
+                                                data-warning-code={warning.code}
+                                            >
+                                                {warning.message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </section>
                     ) : null}
                     <Section
                         action={
@@ -3166,8 +5017,9 @@ export function Constraints({
                                 <button
                                     id="make_constraint_add_button"
                                     type="button"
+                                    disabled={candidatesQuery.isFetching || rotationModeMutation.isPending}
                                     onClick={() => setSoftModalOpen(true)}
-                                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#6C5CFF] px-4 font-apple text-[13px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#6C5CFF] px-4 font-apple text-[13px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
                                 >
                                     <Plus className="size-4" />
                                     {t('page.makeShift.constraints.action.add')}
@@ -3177,25 +5029,28 @@ export function Constraints({
                     >
                         <div className="space-y-2.5">
                             {softRuleViewModels.length ? (
-                                softRuleViewModels.map(({rule, template, softTemplate, highlighted, isImportant, isRecommended}) => (
-                                    <RuleRow
-                                        key={rule.clientId}
-                                        rule={rule}
-                                        template={template}
-                                        softTemplate={softTemplate}
-                                        options={options}
-                                        optionMap={optionMap}
-                                        highlighted={highlighted}
-                                        isImportant={isImportant}
-                                        isRecommended={isRecommended}
-                                        onDelete={() => removeRule(rule)}
-                                        onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
-                                        onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
-                                        onSoftParamChange={(softTemplate, key, value) =>
-                                            updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
-                                        }
-                                    />
-                                ))
+                                softRuleViewModels.map(
+                                    ({rule, template, softTemplate, highlighted, isImportant, isRecommended, isSeverityLocked}) => (
+                                        <RuleRow
+                                            key={rule.clientId}
+                                            rule={rule}
+                                            template={template}
+                                            softTemplate={softTemplate}
+                                            options={options}
+                                            optionMap={optionMap}
+                                            highlighted={highlighted}
+                                            isImportant={isImportant}
+                                            isRecommended={isRecommended}
+                                            isSeverityLocked={isSeverityLocked}
+                                            onDelete={() => removeRule(rule)}
+                                            onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
+                                            onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
+                                            onSoftParamChange={(softTemplate, key, value) =>
+                                                updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
+                                            }
+                                        />
+                                    ),
+                                )
                             ) : (
                                 <div className="rounded-[10px] bg-white px-4 py-5 text-center font-apple text-[13px] font-medium text-gray-4">
                                     {t('page.makeShift.constraints.empty')}
@@ -3210,6 +5065,7 @@ export function Constraints({
                 open={softModalOpen}
                 templates={addableSoftTemplates}
                 optionMap={optionMap}
+                rotationMode={rotationMode}
                 onClose={() => setSoftModalOpen(false)}
                 onAdd={addSoftRule}
             />

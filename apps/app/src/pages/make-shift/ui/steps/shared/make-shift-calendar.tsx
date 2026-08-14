@@ -98,6 +98,10 @@ type TMakeShiftCalendarProps = {
     divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
     rowNameClassName?: string;
     rowGapClassName?: string;
+    /** 이름 열 너비. simplified 화면처럼 여유가 있는 경우 comfortable을 사용한다. */
+    nameColumnDensity?: 'compact' | 'comfortable';
+    /** 이름을 미리 줄일 글자 수. null이면 실제 열 너비에 맞춰 CSS로만 말줄임한다. */
+    nurseNameMaxChars?: number | null;
 };
 type TCellAttention = {target: 'fixed' | 'request'; nonce: number};
 
@@ -135,7 +139,8 @@ const VIOLATION_CONTEXT_TONE: Record<TViolation['level'], {surface: string; acti
 };
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const DRAG_HANDLE_COL = '24px';
-const NAME_COL = 'clamp(84px,5.4cqw,96px)';
+const COMPACT_NAME_COL = 'clamp(84px,5.4cqw,96px)';
+const COMFORTABLE_NAME_COL = 'clamp(112px,8cqw,132px)';
 const CARRY_COL = 'clamp(22px,1.55cqw,28px)';
 const REST_CHECK_COL = 'clamp(48px,3.1cqw,56px)';
 const LAST_COL = 'clamp(58px,4.05cqw,76px)';
@@ -144,11 +149,11 @@ const LAST_COL = 'clamp(58px,4.05cqw,76px)';
  * 사진처럼 division 카드는 이 좌측만 감싸고, 우측 합계(row-summary-counts)는
  * 카드 밖에 별도로 배치된다.
  */
-const getLeftGridTemplateColumns = (showCarryColumn: boolean, showDragHandleColumn: boolean) =>
-    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
+const getLeftGridTemplateColumns = (nameColumnWidth: string, showCarryColumn: boolean, showDragHandleColumn: boolean) =>
+    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${nameColumnWidth} ${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
 /** 전달·통계 열 없이 이름 + 일자만 */
-const getLeftGridTemplateColumnsSimplified = (showDragHandleColumn: boolean) =>
-    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} minmax(0,1fr)`;
+const getLeftGridTemplateColumnsSimplified = (nameColumnWidth: string, showDragHandleColumn: boolean) =>
+    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${nameColumnWidth} minmax(0,1fr)`;
 const ROW_GAP_X = 'clamp(1px,0.18cqw,4px)';
 /**
  * division card ↔ division-summary 사이 간격.
@@ -210,10 +215,10 @@ const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] l
  */
 const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const getDayGridTemplateColumns = (dayCount: number) => `repeat(${dayCount}, minmax(0, 1fr))`;
-const getShimmerInsetLeft = (isSimplified: boolean, showCarryColumn: boolean, showDragHandleColumn: boolean) =>
+const getShimmerInsetLeft = (nameColumnWidth: string, isSimplified: boolean, showCarryColumn: boolean, showDragHandleColumn: boolean) =>
     isSimplified
-        ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X})`
-        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
+        ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${nameColumnWidth} + ${ROW_GAP_X})`
+        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${nameColumnWidth} + ${ROW_GAP_X}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
 
 function formatSignedDays(value: number | undefined) {
     if (value === undefined) return '-';
@@ -1209,6 +1214,8 @@ export function MakeShiftCalendar({
     divisionLabelByNum,
     rowNameClassName,
     rowGapClassName,
+    nameColumnDensity = 'compact',
+    nurseNameMaxChars = 4,
 }: TMakeShiftCalendarProps) {
     const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
@@ -1593,10 +1600,11 @@ export function MakeShiftCalendar({
         showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
     const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn;
     const showDragHandleColumn = canReorderRows;
+    const nameColumnWidth = nameColumnDensity === 'comfortable' ? COMFORTABLE_NAME_COL : COMPACT_NAME_COL;
     const leftGridTemplateColumns = isSimplified
-        ? getLeftGridTemplateColumnsSimplified(showDragHandleColumn)
-        : getLeftGridTemplateColumns(showCarryColumn, showDragHandleColumn);
-    const shimmerInsetLeft = getShimmerInsetLeft(isSimplified, showCarryColumn, showDragHandleColumn);
+        ? getLeftGridTemplateColumnsSimplified(nameColumnWidth, showDragHandleColumn)
+        : getLeftGridTemplateColumns(nameColumnWidth, showCarryColumn, showDragHandleColumn);
+    const shimmerInsetLeft = getShimmerInsetLeft(nameColumnWidth, isSimplified, showCarryColumn, showDragHandleColumn);
     const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn);
 
     let didAssignTutorialCell = false;
@@ -1974,6 +1982,7 @@ export function MakeShiftCalendar({
                                                                         rowReorderDisabled={rowReorderDisabled}
                                                                         dragHandleProps={draggableProvided.dragHandleProps}
                                                                         rowNameClassName={rowNameClassName}
+                                                                        nurseNameMaxChars={nurseNameMaxChars}
                                                                         onCellClick={handleCellClick}
                                                                         onCellPointerDown={handleCellPointerDown}
                                                                         onCellPointerEnter={handleCellPointerEnter}
@@ -2108,6 +2117,7 @@ type TCalendarRowLeftProps = {
     rowReorderDisabled: boolean;
     dragHandleProps?: DraggableProvided['dragHandleProps'];
     rowNameClassName?: string;
+    nurseNameMaxChars: number | null;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
     onCellPointerDown: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
     onCellPointerEnter: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
@@ -2157,6 +2167,7 @@ function CalendarRowLeft({
     rowReorderDisabled,
     dragHandleProps,
     rowNameClassName,
+    nurseNameMaxChars,
     onCellClick,
     onCellPointerDown,
     onCellPointerEnter,
@@ -2168,7 +2179,7 @@ function CalendarRowLeft({
 }: TCalendarRowLeftProps) {
     const {t} = useTypedTranslation();
     const rowViolationPrefix = `${shiftNurseId},`;
-    const displayNurseName = formatNurseDisplayName(nurseName);
+    const displayNurseName = formatNurseDisplayName(nurseName, nurseNameMaxChars);
     const violationsByDayCol = useMemo(() => {
         const byCol = new Map<number, TViolation[]>();
 

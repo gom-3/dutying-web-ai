@@ -167,6 +167,10 @@ export const ko = {
                 closeImage: '사진 닫기',
                 checkedPeople: '체크 {{count}}명',
                 selectPost: '게시글을 선택해 주세요',
+                loading: '게시글을 불러오고 있어요',
+                unavailableTitle: '게시글을 열 수 없어요',
+                unavailableDescription: '삭제되었거나 접근 권한이 변경된 게시글이에요.',
+                backToList: '목록으로 돌아가기',
             },
             schedule: {
                 calendarTitle: '병동 캘린더',
@@ -762,30 +766,36 @@ export const ko = {
                     staffing: '인원수',
                     forbidden: '금지 패턴',
                     workRest: '연속 근무/휴식',
+                    workRestStreaks: '연속 근무·휴무',
+                    nightTransition: '야간·전환',
+                    roleCoverage: '숙련도·역할',
                     personal: '사람별 제한',
                     combination: '근무자 조합',
-                    twoShift: '2교대',
-                },
-                twoShift: {
-                    title: '2교대 자동 배치 사용',
-                    description: '이 근무팀에서만 2교대 주간·야간을 한 세트로 자동 배치해요.',
-                    switchAria: '2교대 자동 배치 사용',
-                    maxLines: '하루 최대 2교대 세트 수',
-                    minRestHours: '근무 사이 최소 휴식시간',
-                    monthlyWorkHours: '월 근로시간 상한',
-                    lineUnit: '세트',
-                    hourUnit: '시간',
-                    teamOnlyHint: '이 설정은 현재 선택한 근무팀에만 적용되며 다른 팀에는 영향을 주지 않아요.',
                 },
                 option: {
                     all: '모든',
-                    allDays: '모든날',
-                    allPeople: '모든사람',
+                    allDays: '모든 날',
+                    allPeople: '모든 간호사',
                     dayLabel: '{{day}}일',
                     monthlyDayLabel: '매월 {{day}}일',
                     everyday: '매일',
                     weekday: '평일',
+                    weekend: '주말',
+                    holiday: '공휴일',
                     weekendOrHoliday: '주말/공휴일',
+                    weekdayName: {
+                        monday: '월요일',
+                        tuesday: '화요일',
+                        wednesday: '수요일',
+                        thursday: '목요일',
+                        friday: '금요일',
+                        saturday: '토요일',
+                        sunday: '일요일',
+                    },
+                    target: {
+                        rotating: '일반 3교대 간호사',
+                        nightDedicated: '야간전담간호사',
+                    },
                     staffCountOperator: {
                         min: '최소',
                         max: '최대',
@@ -820,6 +830,9 @@ export const ko = {
                     addAria: '제약 조건 추가',
                     addTitle: '추가',
                 },
+                savedWarnings: {
+                    title: '저장됐지만 확인이 필요한 제약조건이 있어요',
+                },
                 warning: {
                     deleteTitle: '권장 조건을 삭제할까요?',
                     unmarkTitle: '중요 표시를 뺄까요?',
@@ -836,6 +849,8 @@ export const ko = {
                 },
                 toast: {
                     duplicatesRemoved: '중복 제약조건 {{count}}개를 정리했어요.',
+                    duplicateSkipped: '같은 조건이 이미 있어요.',
+                    staffCountConflict: '같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.',
                     added: '제약조건을 추가했어요.',
                     resetDefaults: '권장 조건 {{count}}개로 초기화했어요.',
                     imported: '{{teamName}} 제약조건을 그대로 불러왔어요.',
@@ -843,6 +858,11 @@ export const ko = {
                     saveFailed: '제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
                     recommendedDeleted: '권장 조건을 삭제했어요.',
                     importantUnmarked: '중요 표시를 해제했어요.',
+                },
+                staffCountText: {
+                    min: '{{dateScope}}에는 {{shift}} 근무자가 최소 {{count}}명 필요해요.',
+                    max: '{{dateScope}}에는 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.',
+                    exact: '{{dateScope}}에는 {{shift}} 근무자가 정확히 {{count}}명이어야 해요.',
                 },
                 state: {
                     teamRequired: '근무팀을 먼저 선택해 주세요.',
@@ -852,7 +872,7 @@ export const ko = {
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: '중요 기본 조건',
-                        sentence: '{target}는 {count}일 이상 연속으로 근무하면 안 돼요',
+                        sentence: '{target}는 최대 {count}일까지 연속으로 근무할 수 있어요',
                     },
                     CORE_MIN_NIGHT_INTERVAL: {
                         label: '중요 기본 조건',
@@ -860,15 +880,19 @@ export const ko = {
                     },
                     CORE_MAX_CONTINUOUS_NIGHT: {
                         label: '중요 기본 조건',
-                        sentence: '{target}는 연속 N 근무를 최대 {count}번까지만 할 수 있어요',
+                        sentence: '{target}는 N 근무를 최대 {count}일까지 연속으로 할 수 있어요',
+                    },
+                    CORE_MIN_CONTINUOUS_NIGHT: {
+                        label: '야간·전환 조건',
+                        sentence: '{target}는 N 근무를 최소 {count}일 이상 이어서 해요',
                     },
                     CORE_MIN_OFF_AFTER_NIGHT: {
                         label: '중요 기본 조건',
-                        sentence: '{target}는 N 근무 후 최소 {count}일의 OFF가 필요해요',
+                        sentence: '{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요',
                     },
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '중요 기본 조건',
-                        sentence: '{target}는 신청한 OFF 전날에는 N 근무를 하면 안 돼요',
+                        sentence: '{target}는 신청 휴무 전날에는 N 근무를 하면 안 돼요',
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '인원 조건',
@@ -892,19 +916,19 @@ export const ko = {
                     },
                     MAX_CONSECUTIVE_WORK_DAYS: {
                         label: '근무·휴식 조건',
-                        sentence: '{target}는 {count}일 이상 연속으로 근무하면 안 돼요',
+                        sentence: '{target}는 최대 {count}일까지 연속으로 근무할 수 있어요',
                     },
                     OFF_AFTER_CONSECUTIVE_WORK: {
                         label: '근무·휴식 조건',
-                        sentence: '{target}는 {count}일 연속 근무 후 OFF가 필요해요',
+                        sentence: '{target}는 {count}일 연속 근무 후 휴무가 필요해요',
                     },
                     MIN_OFF_AFTER_N: {
                         label: '근무·휴식 조건',
-                        sentence: '{target}는 N 근무 후 최소 {count}일의 OFF가 필요해요',
+                        sentence: '{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요',
                     },
                     MIN_MONTHLY_OFF: {
                         label: '근무·휴식 조건',
-                        sentence: '{target}는 한 달에 최소 {count}일의 OFF가 필요해요',
+                        sentence: '{target}는 한 달에 최소 {count}일의 휴무가 필요해요',
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '개인 조건',
@@ -917,6 +941,34 @@ export const ko = {
                     NURSE_AVOID_SHIFT: {
                         label: '개인 조건',
                         sentence: '{nurse}는 {shift} 근무를 피하고 싶어요',
+                    },
+                    MIN_OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: '연속 근무·휴무 조건',
+                        sentence: '{target}는 {workCount}일 이상 연속으로 근무하면 {offCount}일 이상 쉬어요',
+                    },
+                    AVOID_ISOLATED_WORK_DAY: {
+                        label: '연속 근무·휴무 조건',
+                        sentence: '{target}는 휴무 사이에 하루만 근무하는 배치를 피해요',
+                    },
+                    AVOID_ISOLATED_OFF_DAY: {
+                        label: '연속 근무·휴무 조건',
+                        sentence: '{target}는 근무 사이에 하루만 쉬는 배치를 피해요',
+                    },
+                    MAX_MONTHLY_NIGHT_COUNT: {
+                        label: '야간·전환 조건',
+                        sentence: '{target}의 야간 근무는 한 달에 최대 {count}회예요',
+                    },
+                    NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
+                        label: '사람별 제한',
+                        sentence: '{target}의 주말·공휴일 {shift} 근무는 {period}에 최대 {count}회예요',
+                    },
+                    PRECEPTEE_NOT_ALONE_SHIFT: {
+                        label: '숙련도·역할',
+                        sentence: '{preceptee}가 근무할 때 같은 근무에 다른 간호사를 배정해요',
+                    },
+                    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {
+                        label: '숙련도·역할',
+                        sentence: '{preceptor}와 {preceptee}를 같은 근무에 배정해요',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '중요 기본 조건',
@@ -1572,6 +1624,17 @@ export const ko = {
             quitWard: '병동 나가기',
             save: '변경사항 저장',
             saving: '저장 중...',
+            calendar: {
+                sectionTitle: '부가 기능',
+                birthdayTitle: '생일 챙기기',
+                birthdayDescription: '근무자 생년월일이 입력되어 있으면 병동 캘린더에 종일 생일 일정으로 보여요.',
+                birthdayInfoAria: '생일 챙기기 안내',
+                birthdaySwitchAria: '생일 챙기기 사용',
+                toast: {
+                    saveSuccess: '캘린더 설정을 저장했어요.',
+                    updateFailed: '캘린더 설정을 저장하지 못했어요.',
+                },
+            },
             state: {
                 noWardTitle: '병동 연결이 필요해요',
                 noWardDescription: '병동에 입장하거나 새 병동을 만든 뒤 병동 설정을 수정할 수 있어요.',
@@ -1630,7 +1693,8 @@ export const ko = {
                 },
                 rotation: {
                     title: '어떤 교대제를 운영하나요?',
-                    description: '선택한 교대제에 맞는 근무유형과 자동 배치 제약조건을 준비해요.',
+                    highlight: '교대제',
+                    description: '선택한 교대제에 맞는 근무유형을 준비해요.',
                 },
                 schedule: {
                     title: '병동과 근무표 설정을 위해\n가장 최근에 사용한 근무표를 입력해 주세요',

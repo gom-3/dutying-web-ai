@@ -13,7 +13,7 @@ import {
 describe('shift rotation selection', () => {
     it('limits classifications by the selected rotation system', () => {
         expect(getSelectableClassificationsForRotation('THREE')).toEqual(['DAY', 'EVENING', 'NIGHT']);
-        expect(getSelectableClassificationsForRotation('TWO')).toEqual(['DAY', 'NIGHT']);
+        expect(getSelectableClassificationsForRotation('TWO')).toEqual(['DAY', 'NIGHT', 'NIGHT_CONTINUATION']);
         expect(getSelectableClassificationsForRotation('NONE')).toEqual(['OFF', 'OTHER_WORK', 'OTHER_LEAVE']);
         expect(getSelectableClassificationsForRotation('NONE', {primaryOff: true})).toEqual(['OFF']);
     });
@@ -36,9 +36,18 @@ describe('shift rotation selection', () => {
 
     it('keeps classification dropdowns broad while constraining their valid rotation axis', () => {
         expect(getSelectableClassificationsForWardMode('THREE')).toEqual(['DAY', 'EVENING', 'NIGHT', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE']);
-        expect(getSelectableClassificationsForWardMode('TWO')).toEqual(['DAY', 'NIGHT', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE']);
+        expect(getSelectableClassificationsForWardMode('TWO')).toEqual([
+            'DAY',
+            'NIGHT',
+            'NIGHT_CONTINUATION',
+            'OFF',
+            'OTHER_WORK',
+            'OTHER_LEAVE',
+        ]);
         expect(getSelectableRotationSystemsForClassification('MIXED', 'DAY')).toEqual(['THREE', 'TWO']);
         expect(getSelectableRotationSystemsForClassification('MIXED', 'EVENING')).toEqual(['THREE']);
+        expect(getSelectableRotationSystemsForClassification('MIXED', 'NIGHT_CONTINUATION')).toEqual(['TWO']);
+        expect(getSelectableRotationSystemsForClassification('THREE', 'NIGHT_CONTINUATION')).toEqual([]);
         expect(getSelectableRotationSystemsForClassification('MIXED', 'OFF')).toEqual(['NONE']);
     });
 
@@ -72,5 +81,6 @@ describe('shift rotation selection', () => {
     it('provides canonical two-shift time ranges', () => {
         expect(getDefaultTimeRangeForRotation('TWO', 'DAY')).toEqual({startTime: '07:00', endTime: '19:00'});
         expect(getDefaultTimeRangeForRotation('TWO', 'NIGHT')).toEqual({startTime: '19:00', endTime: '07:00'});
+        expect(getDefaultTimeRangeForRotation('TWO', 'NIGHT_CONTINUATION')).toEqual({startTime: '00:00', endTime: '07:00'});
     });
 });

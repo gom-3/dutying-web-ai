@@ -74,6 +74,7 @@ const ward = {
     name: '중환자실',
     hospitalName: '듀팅병원',
     code: 'ABC123',
+    showMemberBirthdaysInCalendar: true,
     wardShiftTypes: [],
     shiftTeams: [],
 };
@@ -135,6 +136,10 @@ describe('WardInfoSettingsPage', () => {
         expect(screen.getByLabelText('병동명')).toHaveValue('중환자실');
         expect(screen.queryByText('현재 병동')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '관리자'})).not.toBeInTheDocument();
+        expect(screen.getByText('부가 기능')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '생일 챙기기 안내'})).toBeInTheDocument();
+        expect(screen.queryByText('근무자 생년월일이 입력되어 있으면 병동 캘린더에 종일 생일 일정으로 보여요.')).not.toBeInTheDocument();
+        expect(screen.getByRole('switch', {name: '생일 챙기기 사용'})).toHaveAttribute('aria-checked', 'true');
         expect(screen.getByText('ward admins panel')).toBeInTheDocument();
 
         const quitWardButton = screen.getByRole('button', {name: '병동 나가기'});
@@ -183,6 +188,37 @@ describe('WardInfoSettingsPage', () => {
         });
         expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: wardQueryKeys.id(1)});
         expect(mockToastSuccess).toHaveBeenCalledWith('병동 정보를 저장했어요.');
+    });
+
+    it('shows the birthday calendar guide from the info icon', async () => {
+        render(<WardInfoSettingsPage />);
+
+        await userEvent.click(screen.getByRole('button', {name: '생일 챙기기 안내'}));
+
+        expect(screen.getAllByText('근무자 생년월일이 입력되어 있으면 병동 캘린더에 종일 생일 일정으로 보여요.').length).toBeGreaterThan(0);
+    });
+
+    it('saves ward calendar settings from the ward settings page', async () => {
+        mockEditWard.mockResolvedValue({
+            ...ward,
+            showMemberBirthdaysInCalendar: false,
+        });
+
+        render(<WardInfoSettingsPage />);
+
+        await userEvent.click(screen.getByRole('switch', {name: '생일 챙기기 사용'}));
+
+        await waitFor(() => {
+            expect(mockEditWard).toHaveBeenCalledWith(1, {showMemberBirthdaysInCalendar: false});
+        });
+        expect(mockSetQueryData).toHaveBeenCalledWith(wardQueryKeys.id(1), {
+            ...ward,
+            showMemberBirthdaysInCalendar: false,
+        });
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['ward-board', 'schedules', 1]});
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['home', 'board-schedules']});
+        expect(mockToastSuccess).toHaveBeenCalledWith('캘린더 설정을 저장했어요.');
     });
 
     it('calls the existing quit ward flow from the bottom action area', async () => {

@@ -69,6 +69,7 @@ export const ko = {
                 "evening": "저녁 근무 (Evening)",
                 "label": "근무 의미",
                 "night": "야간 근무 (Night)",
+                "nightContinuation": "야간 후반부(퇴근날)",
                 "off": "휴무 (Off)",
                 "otherLeave": "기타 휴무",
                 "otherWork": "기타 근무"
@@ -1153,7 +1154,14 @@ export const ko = {
                     "recommended": "권장",
                     "staffing": "인원수",
                     "workRest": "연속 근무/휴식",
-                    "twoShift": "2교대"
+                    "roleCoverage": "숙련도·역할",
+                    "twoShiftWorkRest": "연속 근무·휴무",
+                    "twoShiftNightTransition": "야간·전환",
+                    "nightTransition": "야간·전환",
+                    "workRestStreaks": "연속 근무·휴무",
+                    "mixedParticipation": "사람별 교대 참여",
+                    "mixedPlanning": "혼합 편성 계획",
+                    "fairness": "공정성"
                 },
                 "count": "{{count}}개",
                 "dragHandleAria": "드래그하여 위치를 변경",
@@ -1186,13 +1194,50 @@ export const ko = {
                     "addTitle": "추가",
                     "close": "닫기",
                     "description": "근무표 상황에 따라 일부 조건은 반영되지 않을 수 있어요.",
-                    "title": "제약조건 추가"
+                    "title": "제약조건 추가",
+                    "added": "추가됨"
                 },
                 "option": {
                     "all": "모든",
-                    "allDays": "모든날",
-                    "allPeople": "모든사람",
-                    "dayLabel": "{{day}}일"
+                    "allDays": "모든 날",
+                    "allPeople": "모든 간호사",
+                    "dayLabel": "{{day}}일",
+                    "transition": {
+                        "dayToNight": "주간에서 야간으로",
+                        "nightToDay": "야간에서 주간으로",
+                        "both": "주간·야간 양방향"
+                    },
+                    "period": {
+                        "day": "하루",
+                        "week": "한 주",
+                        "rollingSevenDays": "연속 7일",
+                        "month": "한 달"
+                    },
+                    "everyday": "매일",
+                    "holiday": "공휴일",
+                    "monthlyDayLabel": "매월 {{day}}일",
+                    "staffCountOperator": {
+                        "exact": "정확히",
+                        "max": "최대",
+                        "min": "최소",
+                        "target": "목표"
+                    },
+                    "target": {
+                        "nightDedicated": "야간전담간호사",
+                        "rotating": "일반 3교대 간호사"
+                    },
+                    "weekday": "평일",
+                    "weekdayName": {
+                        "friday": "금요일",
+                        "monday": "월요일",
+                        "saturday": "토요일",
+                        "sunday": "일요일",
+                        "thursday": "목요일",
+                        "tuesday": "화요일",
+                        "wednesday": "수요일"
+                    },
+                    "weekend": "주말",
+                    "weekendOrHoliday": "주말/공휴일"
                 },
                 "phrase": {
                     "day": "일",
@@ -1309,6 +1354,18 @@ export const ko = {
                         "label": "금지 패턴 규칙",
                         "sentence": "{target}은 N나이트 다음 날 D데이 근무를 피해요."
                     },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target}는 N 근무 다음 날 D 근무를 할 수 없어요."
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}는 N 근무를 최대 {count}일까지 연속으로 할 수 있어요."
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}는 연속된 N 근무 후 최소 {count}일의 휴무가 필요해요."
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}는 신청 휴무 전날 N 근무를 할 수 없어요."
+                    },
                     "SOFT_NO_N_TO_E": {
                         "label": "금지 패턴 규칙",
                         "sentence": "{target}은 N나이트 다음 날 E이브닝 근무를 피해요."
@@ -1324,18 +1381,160 @@ export const ko = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "근무자 조합",
                         "sentence": "{nurseA}은 {nurseB}과 같은 근무를 하는 것이 좋아요"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "연속 근무·휴무 조건",
+                        "sentence": "{target}는 근무 사이에 하루만 쉬는 배치를 피해요"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "연속 근무·휴무 조건",
+                        "sentence": "{target}는 휴무 사이에 하루만 근무하는 배치를 피해요"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "중요 기본 조건",
+                        "sentence": "{target}는 신청 휴무 전날에는 N 근무를 하면 안 돼요"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "중요 기본 조건",
+                        "sentence": "{target}는 N 근무를 최대 {count}일까지 연속으로 할 수 있어요"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "중요 기본 조건",
+                        "sentence": "{target}는 최대 {count}일까지 연속으로 근무할 수 있어요"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "야간·전환 조건",
+                        "sentence": "{target}는 N 근무를 최소 {count}일 이상 이어서 해요"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "중요 기본 조건",
+                        "sentence": "{target}는 N 근무 사이에 최소 {count}일의 간격이 필요해요"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "중요 기본 조건",
+                        "sentence": "{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "근무·휴식 조건",
+                        "sentence": "{target}는 최대 {count}일까지 연속으로 근무할 수 있어요"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "야간·전환 조건",
+                        "sentence": "{target}의 야간 근무는 한 달에 최대 {count}회예요"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "인원 조건",
+                        "sentence": "{shift} 근무는 최대 {count}명까지만 배정할 수 있어요"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "근무·휴식 조건",
+                        "sentence": "{target}는 한 달에 최소 {count}일의 휴무가 필요해요"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "연속 근무·휴무 조건",
+                        "sentence": "{target}는 {workCount}일 이상 연속으로 근무하면 {offCount}일 이상 쉬어요"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "근무·휴식 조건",
+                        "sentence": "{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "인원 조건",
+                        "sentence": "매월 {date}에는 {shift} 근무에 최소 {count}명이 필요해요"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "인원 조건",
+                        "sentence": "{shift} 근무에는 최소 {count}명이 있어야 해요"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "인원 조건",
+                        "sentence": "주말/공휴일에는 {shift} 근무에 최소 {count}명이 필요해요"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "개인 조건",
+                        "sentence": "{nurse}는 {shift} 근무를 피하고 싶어요"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "개인 조건",
+                        "sentence": "{nurse}는 주말/공휴일 근무를 하면 안 돼요"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "사람별 제한",
+                        "sentence": "{target}의 주말·공휴일 {shift} 근무는 {period}에 최대 {count}회예요"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "개인 조건",
+                        "sentence": "{nurse}는 {shift} 근무를 선호해요"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "근무·휴식 조건",
+                        "sentence": "{target}는 {count}일 연속 근무 후 휴무가 필요해요"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "숙련도·역할",
+                        "sentence": "{preceptee}가 근무할 때 같은 근무에 다른 간호사를 배정해요"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "숙련도·역할",
+                        "sentence": "{preceptor}와 {preceptee}를 같은 근무에 배정해요"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "금지 패턴 규칙",
+                        "sentence": "{target}은 E이브닝 다음 날 N나이트 근무를 피해요."
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "인원 조건",
+                        "sentence": "{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "혼합교대 운영 방식"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "사람별 교대 참여",
+                        "sentence": "{nurseIds}는 {dateScope}에 {participationMode}으로 참여해요"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "날짜별 혼합 편성",
+                        "sentence": "{dateScope} 편성을 {composition}으로 운영해요"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "일일 2교대 라인",
+                        "sentence": "{dateScope} 2교대 라인을 {operator} {count}개로 하고 미짝 라인은 최대 {unpairedMax}개예요"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "개인·그룹별 2교대 횟수",
+                        "sentence": "{nurseIds}의 {shiftScope} 배정을 {aggregation} 기준으로 {period}에 {operator} {count}회로 정해요"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "시간대별 필요 인원",
+                        "sentence": "{dateScope} {startTime}부터 {endTime}까지 인원을 {operator} {count}명으로 정해요"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "근무 간 최소 휴식",
+                        "sentence": "{target}의 근무 사이 휴식은 최소 {minRestMinutes}분이에요"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "기간별 최대 근로시간",
+                        "sentence": "{target}의 {period} 예정 근로는 최대 {maxMinutes}분이에요"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "혼합교대 부담 균형",
+                        "sentence": "{nurseIds}의 {metric}은 {period}에 최대 {maxDifference}회 차이로 맞춰요"
                     }
                 },
                 "toast": {
                     "added": "제약조건을 추가했어요.",
-                    "duplicateSkipped": "중복 제약조건은 삭제하고 기존 조건만 남겼어요.",
+                    "duplicateSkipped": "같은 조건이 이미 있어요.",
                     "duplicatesRemoved": "중복 제약조건 {{count}}개를 정리했어요.",
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
                     "importFailed": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
                     "resetDefaults": "권장 조건 {{count}}개로 초기화했어요.",
-                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."
+                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+                    "staffCountConflict": "같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.",
+                    "importSkippedAllNurseRules": "간호사별 제약조건 {{count}}개는 다른 팀에 그대로 적용할 수 없어 불러오지 않았어요.",
+                    "importedWithSkippedNurseRules": "{{teamName}} 제약조건을 불러왔어요. 간호사별 제약조건 {{count}}개는 제외했어요."
                 },
                 "violationCount": "{{count}}개",
                 "warning": {
@@ -1348,16 +1547,92 @@ export const ko = {
                     "unmarkDescription": "그래도 중요 표시를 해제할까요?",
                     "unmarkTitle": "중요 표시를 뺄까요?"
                 },
-                "twoShift": {
-                    "title": "2교대 자동 배치 사용",
-                    "description": "이 근무팀에서만 2교대 주간·야간을 한 세트로 자동 배치해요.",
-                    "switchAria": "2교대 자동 배치 사용",
-                    "maxLines": "하루 최대 2교대 세트 수",
-                    "minRestHours": "근무 사이 최소 휴식시간",
-                    "monthlyWorkHours": "월 근로시간 상한",
-                    "lineUnit": "세트",
-                    "hourUnit": "시간",
-                    "teamOnlyHint": "이 설정은 현재 선택한 근무팀에만 적용되며 다른 팀에는 영향을 주지 않아요."
+                "staffCountText": {
+                    "min": "{{dateScope}}에는 {{shift}} 근무자가 최소 {{count}}명 필요해요.",
+                    "max": "{{dateScope}}에는 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.",
+                    "exact": "{{dateScope}}에는 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
+                },
+                "rotationMode": {
+                    "title": "제약조건 교대제",
+                    "hint": "DB 연동 전까지 근무팀별로 임시 저장해요.",
+                    "ariaLabel": "제약조건 교대제 선택",
+                    "three": "3교대",
+                    "two": "2교대",
+                    "mixed": "2+3교대",
+                    "saveFailed": "교대제 임시 설정을 저장하지 못했어요."
+                },
+                "savedWarnings": {
+                    "title": "저장됐지만 확인이 필요한 제약조건이 있어요"
+                },
+                "mixed": {
+                    "policyTitle": "혼합교대 운영 방식",
+                    "policyHelp": "일반적인 근무표를 어떻게 만들지 선택하세요. 사람별 참여와 날짜별 편성은 아래 제약조건에서 더 세밀하게 설정할 수 있어요.",
+                    "participationHelp": "가능 근무는 인력 설정에서 관리하고 여기서는 3교대만·2교대만·계획 병행·인력 부족 시 참여를 선택해요.",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "3교대 우선·부족 시 2교대",
+                        "threeBaseFallbackTwoHelp": "3교대로 먼저 만들고 필수 조건을 만족할 수 없을 때만 2교대를 최소로 사용해요.",
+                        "plannedMixed": "계획한 2·3교대 병행",
+                        "plannedMixedHelp": "날짜·사람별 계획에 따라 2교대와 3교대를 의도적으로 같이 사용해요.",
+                        "plannedMixedWithFallback": "계획 병행·부족 시 추가 2교대",
+                        "plannedMixedWithFallbackHelp": "계획한 2교대를 유지하고 필수 조건을 만족할 수 없을 때 추가 2교대를 사용해요.",
+                        "changeBlocked": "현재 제약조건이 선택한 운영 방식과 맞지 않아 변경할 수 없어요. 먼저 해당 제약조건을 수정해 주세요."
+                    },
+                    "participation": {
+                        "threeOnly": "3교대만",
+                        "twoOnly": "2교대만",
+                        "flex": "계획에 따라 2·3교대",
+                        "fallbackTwo": "인력 부족 시 2교대 가능"
+                    },
+                    "composition": {
+                        "auto": "자동",
+                        "threeOnly": "3교대만",
+                        "twoOnly": "2교대만",
+                        "coexist": "2·3교대 같이 사용",
+                        "closed": "전원 휴무"
+                    },
+                    "aggregation": {
+                        "perNurse": "간호사별",
+                        "groupTotal": "그룹 합계"
+                    },
+                    "shiftScope": {
+                        "allTwo": "모든 2교대 근무",
+                        "twoDay": "2교대 주간",
+                        "twoNight": "2교대 야간"
+                    },
+                    "metric": {
+                        "twoAssignments": "2교대 전체 횟수",
+                        "twoNightAssignments": "2교대 야간 횟수",
+                        "weekendTwoAssignments": "주말 2교대 횟수"
+                    },
+                    "generatorPending": "저장과 검증은 가능하며 자동생성 엔진 반영은 준비 중이에요.",
+                    "nurseUnavailable": {
+                        "threeShift": "3교대 가능 근무가 설정되지 않았어요.",
+                        "twoShift": "2교대 가능 근무가 설정되지 않았어요.",
+                        "bothShifts": "2교대와 3교대 가능 근무가 모두 필요해요.",
+                        "notConfigured": "가능 근무 설정 필요"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "가능 근무가 맞는 간호사를 2명 이상 선택해 주세요.",
+                        "selectEligibleNurse": "가능 근무가 맞는 간호사를 1명 이상 선택해 주세요."
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}: {{field}}",
+                    "field": {
+                        "nurses": "간호사 선택",
+                        "count": "횟수·인원",
+                        "workCount": "연속 근무일",
+                        "offCount": "휴무일",
+                        "unpairedMax": "미짝 라인 최대",
+                        "minRestMinutes": "최소 휴식 시간(분)",
+                        "maxMinutes": "최대 근로 시간(분)",
+                        "maxDifference": "최대 편차",
+                        "startTime": "시작 시각",
+                        "endTime": "종료 시각",
+                        "selection": "항목 선택",
+                        "time": "시각",
+                        "number": "숫자 값"
+                    }
                 }
             },
             "fixedShifts": {
@@ -2033,7 +2308,8 @@ export const ko = {
                 },
                 "rotation": {
                     "title": "어떤 교대제를 운영하나요?",
-                    "description": "선택한 교대제에 맞는 근무유형과 자동 배치 제약조건을 준비해요."
+                    "highlight": "교대제",
+                    "description": "선택한 교대제에 맞는 근무유형을 준비해요."
                 }
             },
             "shiftType": {
@@ -2047,6 +2323,7 @@ export const ko = {
                     "unassigned": "선택 전",
                     "evening": "저녁 근무 (Evening)",
                     "night": "야간 근무 (Night)",
+                    "nightContinuation": "야간 후반부(퇴근날)",
                     "off": "휴무 (Off)",
                     "otherLeave": "기타 휴무",
                     "otherWork": "기타 근무"
@@ -2060,7 +2337,11 @@ export const ko = {
                 "requirements": {
                     "description": "선택한 교대제에 꼭 필요한 근무유형이에요.",
                     "duplicate": "{{scope}}에 {{shiftType}}가 {{count}}개예요. 하나만 남겨 주세요.",
+                    "duplicateShort": "{{count}}개 설정됨 · 하나만 남겨 주세요",
+                    "groupCommon": "공통",
+                    "liveSummary": "필수 근무유형 {{total}}개 중 {{ready}}개 준비, {{issues}}개 확인 필요",
                     "missing": "{{scope}}에 {{shiftType}}가 필요해요.",
+                    "missingShort": "추가가 필요해요",
                     "scopeDefault": "근무유형",
                     "scopeThree": "3교대 근무유형",
                     "scopeTwo": "2교대 근무유형",
@@ -2848,6 +3129,7 @@ export const en: TLocale = {
                 "evening": "Evening shift",
                 "label": "Shift meaning",
                 "night": "Night shift",
+                "nightContinuation": "Night continuation",
                 "off": "Day off",
                 "otherLeave": "Other leave",
                 "otherWork": "Other work"
@@ -3932,7 +4214,14 @@ export const en: TLocale = {
                     "recommended": "Recommended",
                     "staffing": "Staffing",
                     "workRest": "Work/rest",
-                    "twoShift": "Two-shift"
+                    "roleCoverage": "Skill and roles",
+                    "twoShiftWorkRest": "Work and rest streaks",
+                    "twoShiftNightTransition": "Night and transitions",
+                    "nightTransition": "Night and transitions",
+                    "workRestStreaks": "Work and rest streaks",
+                    "mixedParticipation": "Rotation participation",
+                    "mixedPlanning": "Mixed staffing plan",
+                    "fairness": "Fairness"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Drag to reorder",
@@ -3965,13 +4254,50 @@ export const en: TLocale = {
                     "addTitle": "Add",
                     "close": "Close",
                     "description": "Some constraints may not be applied depending on the schedule.",
-                    "title": "Add constraint"
+                    "title": "Add constraint",
+                    "added": "Added"
                 },
                 "option": {
                     "all": "All",
                     "allDays": "All days",
-                    "allPeople": "Everyone",
-                    "dayLabel": "Day {{day}}"
+                    "allPeople": "All nurses",
+                    "dayLabel": "Day {{day}}",
+                    "transition": {
+                        "dayToNight": "Day to night",
+                        "nightToDay": "Night to day",
+                        "both": "Both directions"
+                    },
+                    "period": {
+                        "day": "Day",
+                        "week": "Week",
+                        "rollingSevenDays": "Rolling 7 days",
+                        "month": "Month"
+                    },
+                    "everyday": "Every day",
+                    "holiday": "Holidays",
+                    "monthlyDayLabel": "Day {{day}} each month",
+                    "staffCountOperator": {
+                        "exact": "Exactly",
+                        "max": "At most",
+                        "min": "At least",
+                        "target": "Target"
+                    },
+                    "target": {
+                        "nightDedicated": "Night-only nurses",
+                        "rotating": "Rotating three-shift nurses"
+                    },
+                    "weekday": "Weekdays",
+                    "weekdayName": {
+                        "friday": "Friday",
+                        "monday": "Monday",
+                        "saturday": "Saturday",
+                        "sunday": "Sunday",
+                        "thursday": "Thursday",
+                        "tuesday": "Tuesday",
+                        "wednesday": "Wednesday"
+                    },
+                    "weekend": "Weekends",
+                    "weekendOrHoliday": "Weekends/holidays"
                 },
                 "phrase": {
                     "day": "days",
@@ -4088,6 +4414,18 @@ export const en: TLocale = {
                         "label": "Forbidden pattern constraint",
                         "sentence": "Avoid D the day after N for {target}"
                     },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target} cannot work D on the day after N."
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} can work up to {count} consecutive N shifts."
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target} needs at least {count} days off after consecutive N shifts."
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target} cannot work N on the day before a requested day off."
+                    },
                     "SOFT_NO_N_TO_E": {
                         "label": "Forbidden pattern constraint",
                         "sentence": "Avoid E the day after N for {target}"
@@ -4103,18 +4441,160 @@ export const en: TLocale = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "Worker pairing",
                         "sentence": "Prefer assigning {nurseA} and {nurseB} to the same shift"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "Work and rest streak constraint",
+                        "sentence": "{target} avoids a single day off between workdays"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "Work and rest streak constraint",
+                        "sentence": "{target} avoids a single workday between days off"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "Default Important constraint",
+                        "sentence": "{target} cannot work N on the day before a requested day off"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "Default Important constraint",
+                        "sentence": "{target} can work up to {count} consecutive N shifts"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "Default Important constraint",
+                        "sentence": "{target} can work up to {count} consecutive days"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "Night and transition constraint",
+                        "sentence": "{target} works at least {count} consecutive night shifts"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "Default Important constraint",
+                        "sentence": "{target} needs at least {count} days between N shifts"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "Default Important constraint",
+                        "sentence": "{target} needs at least {count} days off after an N shift"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "Work-rest constraint",
+                        "sentence": "{target} can work up to {count} consecutive days"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "Night and transition constraint",
+                        "sentence": "{target} works at most {count} night shifts per month"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "Staffing constraint",
+                        "sentence": "{shift} can have up to {count} staff"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "Work-rest constraint",
+                        "sentence": "{target} needs at least {count} days off per month"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "Work and rest streak constraint",
+                        "sentence": "{target} rests at least {offCount} days after {workCount} or more consecutive workdays"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "Work-rest constraint",
+                        "sentence": "{target} needs at least {count} days off after an N shift"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "Staffing constraint",
+                        "sentence": "On day {date} each month, {shift} needs at least {count} staff"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "Staffing constraint",
+                        "sentence": "{shift} needs at least {count} staff"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "Staffing constraint",
+                        "sentence": "On weekends and holidays, {shift} needs at least {count} staff"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "Personal constraint",
+                        "sentence": "{nurse} prefers to avoid {shift} shifts"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "Personal constraint",
+                        "sentence": "{nurse} cannot work weekends or holidays"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "Person limit",
+                        "sentence": "{target} works at most {count} weekend or holiday {shift} shifts per {period}"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "Personal constraint",
+                        "sentence": "{nurse} prefers {shift} shifts"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "Work-rest constraint",
+                        "sentence": "{target} needs a day off after {count} consecutive work days"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "Skills and roles",
+                        "sentence": "Assign another nurse to the same shift when {preceptee} works"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "Skills and roles",
+                        "sentence": "Assign {preceptor} and {preceptee} to the same shift"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "Forbidden pattern constraint",
+                        "sentence": "Avoid N the day after E for {target}"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "Staffing constraint",
+                        "sentence": "{dateScope} {shift} shifts must have {operator} {count} staff"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "Mixed-shift operating policy"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "Rotation participation",
+                        "sentence": "{nurseIds} participate as {participationMode} on {dateScope}"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "Daily mixed composition",
+                        "sentence": "Use {composition} composition on {dateScope}"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "Daily two-shift lines",
+                        "sentence": "{dateScope} uses {operator} {count} two-shift lines with up to {unpairedMax} unpaired lines"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "Two-shift assignment count",
+                        "sentence": "Set {nurseIds} {shiftScope} assignments by {aggregation} to {operator} {count} per {period}"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "Staff by time window",
+                        "sentence": "Set staff from {startTime} to {endTime} on {dateScope} to {operator} {count}"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "Minimum rest between shifts",
+                        "sentence": "{target} gets at least {minRestMinutes} minutes between shifts"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "Maximum work by period",
+                        "sentence": "{target} works at most {maxMinutes} planned minutes per {period}"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "Mixed-shift workload balance",
+                        "sentence": "Keep {metric} for {nurseIds} within {maxDifference} per {period}"
                     }
                 },
                 "toast": {
                     "added": "Constraint added.",
-                    "duplicateSkipped": "Duplicate constraint removed; the existing one was kept.",
+                    "duplicateSkipped": "The same constraint already exists.",
                     "duplicatesRemoved": "Cleaned up {{count}} duplicate constraints.",
                     "importantUnmarked": "Important mark removed.",
                     "imported": "Imported constraints from {{teamName}}.",
                     "importFailed": "Could not import constraints. Please try again shortly.",
                     "recommendedDeleted": "Recommended constraint deleted.",
                     "resetDefaults": "Reset to {{count}} recommended constraints.",
-                    "saveFailed": "Could not save constraints. Please try again shortly."
+                    "saveFailed": "Could not save constraints. Please try again shortly.",
+                    "staffCountConflict": "The minimum, maximum, and exact staffing values conflict for this scope and shift.",
+                    "importSkippedAllNurseRules": "No constraints were imported because {{count}} nurse-specific constraints cannot be applied to another team.",
+                    "importedWithSkippedNurseRules": "Imported constraints from {{teamName}} and skipped {{count}} nurse-specific constraints."
                 },
                 "violationCount": "{{count}}",
                 "warning": {
@@ -4127,16 +4607,92 @@ export const en: TLocale = {
                     "unmarkDescription": "Do you still want to remove the Important mark?",
                     "unmarkTitle": "Remove the Important mark?"
                 },
-                "twoShift": {
-                    "title": "Use automatic two-shift assignment",
-                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
-                    "switchAria": "Use automatic two-shift assignment",
-                    "maxLines": "Maximum two-shift sets per day",
-                    "minRestHours": "Minimum rest between shifts",
-                    "monthlyWorkHours": "Monthly work-hour cap",
-                    "lineUnit": "sets",
-                    "hourUnit": "hours",
-                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
+                "staffCountText": {
+                    "min": "{{dateScope}}: at least {{count}} nurses are needed for {{shift}}.",
+                    "max": "{{dateScope}}: up to {{count}} nurses can be assigned to {{shift}}.",
+                    "exact": "{{dateScope}}: exactly {{count}} nurses must be assigned to {{shift}}."
+                },
+                "rotationMode": {
+                    "title": "Constraint rotation mode",
+                    "hint": "Temporarily saved per team until the database is connected.",
+                    "ariaLabel": "Select constraint rotation mode",
+                    "three": "Three-shift",
+                    "two": "Two-shift",
+                    "mixed": "Two + three-shift",
+                    "saveFailed": "Could not save the temporary rotation mode."
+                },
+                "savedWarnings": {
+                    "title": "Saved, but some constraints need review"
+                },
+                "mixed": {
+                    "policyTitle": "Mixed-shift operating policy",
+                    "policyHelp": "Choose how the regular schedule should be built. Refine people and dates with the constraints below.",
+                    "participationHelp": "Shift availability stays in member settings. Here choose three only two only planned flexibility or fallback eligibility.",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "Three-shift first then two-shift if needed",
+                        "threeBaseFallbackTwoHelp": "Build with three shifts first and use the minimum two shifts only when required.",
+                        "plannedMixed": "Planned two and three-shift mix",
+                        "plannedMixedHelp": "Use two and three shifts together according to planned people and dates.",
+                        "plannedMixedWithFallback": "Planned mix with extra fallback",
+                        "plannedMixedWithFallbackHelp": "Keep planned two shifts and add fallback two shifts only when required.",
+                        "changeBlocked": "Some current constraints conflict with this operating policy. Update those constraints first."
+                    },
+                    "participation": {
+                        "threeOnly": "Three-shift only",
+                        "twoOnly": "Two-shift only",
+                        "flex": "Two or three shifts as planned",
+                        "fallbackTwo": "Two-shift eligible when needed"
+                    },
+                    "composition": {
+                        "auto": "Automatic",
+                        "threeOnly": "Three-shift only",
+                        "twoOnly": "Two-shift only",
+                        "coexist": "Use both systems",
+                        "closed": "Closed day"
+                    },
+                    "aggregation": {
+                        "perNurse": "Per nurse",
+                        "groupTotal": "Group total"
+                    },
+                    "shiftScope": {
+                        "allTwo": "All two-shift duties",
+                        "twoDay": "Two-shift day",
+                        "twoNight": "Two-shift night"
+                    },
+                    "metric": {
+                        "twoAssignments": "All two-shift assignments",
+                        "twoNightAssignments": "Two-shift night assignments",
+                        "weekendTwoAssignments": "Weekend two-shift assignments"
+                    },
+                    "generatorPending": "Saving and validation work now. Automatic generation support is being prepared.",
+                    "nurseUnavailable": {
+                        "threeShift": "Three-shift availability is not enabled.",
+                        "twoShift": "Two-shift availability is not enabled.",
+                        "bothShifts": "Both two-shift and three-shift availability are required.",
+                        "notConfigured": "Shift availability setup required"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "Select at least two nurses with matching shift availability.",
+                        "selectEligibleNurse": "Select at least one nurse with matching shift availability."
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}: {{field}}",
+                    "field": {
+                        "nurses": "Nurse selection",
+                        "count": "Count",
+                        "workCount": "Consecutive work days",
+                        "offCount": "Days off",
+                        "unpairedMax": "Maximum unpaired lines",
+                        "minRestMinutes": "Minimum rest minutes",
+                        "maxMinutes": "Maximum work minutes",
+                        "maxDifference": "Maximum difference",
+                        "startTime": "Start time",
+                        "endTime": "End time",
+                        "selection": "Selection",
+                        "time": "Time",
+                        "number": "Numeric value"
+                    }
                 }
             },
             "fixedShifts": {
@@ -4812,7 +5368,8 @@ export const en: TLocale = {
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
-                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
+                    "highlight": "rotation systems",
+                    "description": "We will prepare shift types for your selection."
                 }
             },
             "shiftType": {
@@ -4826,6 +5383,7 @@ export const en: TLocale = {
                     "unassigned": "Not selected",
                     "evening": "Evening shift",
                     "night": "Night shift",
+                    "nightContinuation": "Night continuation",
                     "off": "Day off",
                     "otherLeave": "Other leave",
                     "otherWork": "Other work"
@@ -4839,7 +5397,11 @@ export const en: TLocale = {
                 "requirements": {
                     "description": "These shift types are required for the selected rotation.",
                     "duplicate": "{{scope}} contain {{count}} {{shiftType}} entries. Keep one.",
+                    "duplicateShort": "{{count}} configured · Keep one",
+                    "groupCommon": "Common",
+                    "liveSummary": "{{ready}} of {{total}} required shift types ready; {{issues}} need attention.",
                     "missing": "{{scope}} need {{shiftType}}.",
+                    "missingShort": "Needs to be added",
                     "scopeDefault": "Shift types",
                     "scopeThree": "Three-shift types",
                     "scopeTwo": "Two-shift types",
@@ -5625,6 +6187,7 @@ export const ja: TLocale = {
                 "evening": "準夜勤",
                 "label": "勤務の意味",
                 "night": "夜勤",
+                "nightContinuation": "夜勤後半",
                 "off": "休み",
                 "otherLeave": "その他の休暇",
                 "otherWork": "その他の勤務"
@@ -6709,7 +7272,14 @@ export const ja: TLocale = {
                     "recommended": "推奨",
                     "staffing": "人数",
                     "workRest": "連続勤務/休息",
-                    "twoShift": "Two-shift"
+                    "roleCoverage": "スキル・役割",
+                    "twoShiftWorkRest": "連続勤務・休み",
+                    "twoShiftNightTransition": "夜勤・切り替え",
+                    "nightTransition": "夜勤・切り替え",
+                    "workRestStreaks": "連続勤務・休み",
+                    "mixedParticipation": "個人別の交代参加",
+                    "mixedPlanning": "混合編成計画",
+                    "fairness": "公平性"
                 },
                 "count": "{{count}}件",
                 "dragHandleAria": "ドラッグして順序を変更",
@@ -6742,13 +7312,50 @@ export const ja: TLocale = {
                     "addTitle": "追加",
                     "close": "閉じる",
                     "description": "勤務表の状況によって、一部の条件は反映されない場合があります。",
-                    "title": "制約条件を追加"
+                    "title": "制約条件を追加",
+                    "added": "追加済み"
                 },
                 "option": {
                     "all": "すべて",
-                    "allDays": "全日",
-                    "allPeople": "全員",
-                    "dayLabel": "{{day}}日"
+                    "allDays": "すべての日",
+                    "allPeople": "すべての看護師",
+                    "dayLabel": "{{day}}日",
+                    "transition": {
+                        "dayToNight": "日勤から夜勤へ",
+                        "nightToDay": "夜勤から日勤へ",
+                        "both": "日勤・夜勤の両方向"
+                    },
+                    "period": {
+                        "day": "1日",
+                        "week": "1週間",
+                        "rollingSevenDays": "連続7日",
+                        "month": "1か月"
+                    },
+                    "everyday": "毎日",
+                    "holiday": "祝日",
+                    "monthlyDayLabel": "毎月{{day}}日",
+                    "staffCountOperator": {
+                        "exact": "ちょうど",
+                        "max": "最大",
+                        "min": "最低",
+                        "target": "目標"
+                    },
+                    "target": {
+                        "nightDedicated": "夜勤専従看護師",
+                        "rotating": "通常の3交代看護師"
+                    },
+                    "weekday": "平日",
+                    "weekdayName": {
+                        "friday": "金曜日",
+                        "monday": "月曜日",
+                        "saturday": "土曜日",
+                        "sunday": "日曜日",
+                        "thursday": "木曜日",
+                        "tuesday": "火曜日",
+                        "wednesday": "水曜日"
+                    },
+                    "weekend": "週末",
+                    "weekendOrHoliday": "週末・祝日"
                 },
                 "phrase": {
                     "day": "日",
@@ -6865,6 +7472,18 @@ export const ja: TLocale = {
                         "label": "禁止パターン条件",
                         "sentence": "{target}はNの翌日のD勤務を避けます"
                     },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target}はN勤務の翌日にD勤務はできません。"
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}はN勤務を最大{count}日まで連続して行えます。"
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}は連続したN勤務後に最低{count}日の休みが必要です。"
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}は希望休の前日にN勤務はできません。"
+                    },
                     "SOFT_NO_N_TO_E": {
                         "label": "禁止パターン条件",
                         "sentence": "{target}はNの翌日のE勤務を避けます"
@@ -6880,18 +7499,160 @@ export const ja: TLocale = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "看護師の組み合わせ",
                         "sentence": "{nurseA}は{nurseB}と同じ勤務が望ましいです"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "連続勤務・休み条件",
+                        "sentence": "{target}は勤務の間に1日だけ休む配置を避けます"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "連続勤務・休み条件",
+                        "sentence": "{target}は休みの間に1日だけ勤務する配置を避けます"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "重要な基本条件",
+                        "sentence": "{target}は希望休の前日にN勤務をしてはいけません"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "重要な基本条件",
+                        "sentence": "{target}は連続N勤務を最大{count}回までにします"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "重要な基本条件",
+                        "sentence": "{target}は最大{count}日まで連続勤務できます"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "夜勤・切り替え条件",
+                        "sentence": "{target}はN勤務を最低{count}日連続で行います"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "重要な基本条件",
+                        "sentence": "{target}はN勤務の間に最低{count}日の間隔が必要です"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "重要な基本条件",
+                        "sentence": "{target}はN勤務後に最低{count}日の休みが必要です"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "勤務・休み条件",
+                        "sentence": "{target}は最大{count}日まで連続勤務できます"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "夜勤・切り替え条件",
+                        "sentence": "{target}の夜勤は月に最大{count}回です"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{shift}勤務は最大{count}名まで割り当てられます"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "勤務・休み条件",
+                        "sentence": "{target}は月に最低{count}日の休みが必要です"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "連続勤務・休み条件",
+                        "sentence": "{target}は{workCount}日以上連続勤務した後、最低{offCount}日休みます"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "勤務・休み条件",
+                        "sentence": "{target}はN勤務後に最低{count}日の休みが必要です"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "毎月{date}日は{shift}勤務に最低{count}名が必要です"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{shift}勤務には最低{count}名が必要です"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "週末・祝日は{shift}勤務に最低{count}名が必要です"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "個人条件",
+                        "sentence": "{nurse}は{shift}勤務を避けたいと希望しています"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "個人条件",
+                        "sentence": "{nurse}は週末・祝日勤務をしてはいけません"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "個人別制限",
+                        "sentence": "{target}の週末・祝日の{shift}勤務は{period}に最大{count}回です"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "個人条件",
+                        "sentence": "{nurse}は{shift}勤務を希望しています"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "勤務・休み条件",
+                        "sentence": "{target}は{count}日連続勤務後に休みが必要です"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "スキル・役割",
+                        "sentence": "{preceptee}が勤務する際は同じ勤務に別の看護師を配置します"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "スキル・役割",
+                        "sentence": "{preceptor}と{preceptee}を同じ勤務に配置します"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "禁止パターン条件",
+                        "sentence": "{target}はEの翌日のN勤務を避けます"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{dateScope}の{shift}勤務人数は{operator}{count}名にします"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "混合交代の運用方式"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "個人別の交代参加",
+                        "sentence": "{nurseIds}は{dateScope}に{participationMode}として参加します"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "日付別の混合編成",
+                        "sentence": "{dateScope}の編成を{composition}で運用します"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "日々の2交代ライン",
+                        "sentence": "{dateScope}の2交代ラインを{operator}{count}本とし未対は最大{unpairedMax}本です"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "2交代の割当回数",
+                        "sentence": "{nurseIds}の{shiftScope}割当を{aggregation}基準で{period}に{operator}{count}回とします"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "時間帯別の必要人数",
+                        "sentence": "{dateScope}の{startTime}から{endTime}までを{operator}{count}名とします"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "勤務間の最低休息",
+                        "sentence": "{target}の勤務間休息は最低{minRestMinutes}分です"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "期間別の最大勤務時間",
+                        "sentence": "{target}の{period}の予定勤務は最大{maxMinutes}分です"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "混合交代の負担バランス",
+                        "sentence": "{nurseIds}の{metric}は{period}に最大{maxDifference}回差にします"
                     }
                 },
                 "toast": {
                     "added": "制約条件を追加しました。",
-                    "duplicateSkipped": "重複する制約条件を削除し、既存の条件だけを残しました。",
+                    "duplicateSkipped": "同じ条件がすでにあります。",
                     "duplicatesRemoved": "重複する制約条件{{count}}件を整理しました。",
                     "importantUnmarked": "重要マークを外しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
                     "importFailed": "制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。",
                     "recommendedDeleted": "推奨条件を削除しました。",
                     "resetDefaults": "推奨条件{{count}}件に初期化しました。",
-                    "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。"
+                    "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
+                    "staffCountConflict": "同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。",
+                    "importSkippedAllNurseRules": "看護師別の制約条件{{count}}件は別のチームにそのまま適用できないため読み込みませんでした。",
+                    "importedWithSkippedNurseRules": "{{teamName}}の制約条件を読み込み看護師別の{{count}}件は除外しました。"
                 },
                 "violationCount": "{{count}}件",
                 "warning": {
@@ -6904,16 +7665,92 @@ export const ja: TLocale = {
                     "unmarkDescription": "それでも重要マークを外しますか？",
                     "unmarkTitle": "重要マークを外しますか？"
                 },
-                "twoShift": {
-                    "title": "Use automatic two-shift assignment",
-                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
-                    "switchAria": "Use automatic two-shift assignment",
-                    "maxLines": "Maximum two-shift sets per day",
-                    "minRestHours": "Minimum rest between shifts",
-                    "monthlyWorkHours": "Monthly work-hour cap",
-                    "lineUnit": "sets",
-                    "hourUnit": "hours",
-                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
+                "staffCountText": {
+                    "min": "{{dateScope}}の{{shift}}勤務には最低{{count}}人必要です。",
+                    "max": "{{dateScope}}の{{shift}}勤務には最大{{count}}人まで配置できます。",
+                    "exact": "{{dateScope}}の{{shift}}勤務はちょうど{{count}}人にします。"
+                },
+                "rotationMode": {
+                    "title": "制約条件の交代制",
+                    "hint": "DB連携までは勤務チームごとに一時保存します。",
+                    "ariaLabel": "制約条件の交代制を選択",
+                    "three": "3交代",
+                    "two": "2交代",
+                    "mixed": "2・3交代併用",
+                    "saveFailed": "一時的な交代制設定を保存できませんでした。"
+                },
+                "savedWarnings": {
+                    "title": "保存しましたが、確認が必要な制約条件があります"
+                },
+                "mixed": {
+                    "policyTitle": "混合交代の運用方式",
+                    "policyHelp": "通常の勤務表の作り方を選びます。人と日付は下の制約で詳細に設定できます。",
+                    "participationHelp": "可能な勤務はメンバー設定で管理し、ここでは3交代のみ・2交代のみ・計画併用・人員不足時の参加を選びます。",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "3交代優先・不足時は2交代",
+                        "threeBaseFallbackTwoHelp": "まず3交代で作成し、必須条件を満たせない時のみ2交代を最小限使います。",
+                        "plannedMixed": "計画的な2・3交代併用",
+                        "plannedMixedHelp": "人と日付の計画に従って2交代と3交代を併用します。",
+                        "plannedMixedWithFallback": "計画併用・不足時に追加2交代",
+                        "plannedMixedWithFallbackHelp": "計画した2交代を維持し、必須条件を満たせない時のみ追加します。",
+                        "changeBlocked": "現在の制約条件が選択した運用方式と一致しません。先に該当する制約条件を修正してください。"
+                    },
+                    "participation": {
+                        "threeOnly": "3交代のみ",
+                        "twoOnly": "2交代のみ",
+                        "flex": "2・3交代を計画に従って",
+                        "fallbackTwo": "人員不足時に2交代可"
+                    },
+                    "composition": {
+                        "auto": "自動",
+                        "threeOnly": "3交代のみ",
+                        "twoOnly": "2交代のみ",
+                        "coexist": "両方を併用",
+                        "closed": "全員休み"
+                    },
+                    "aggregation": {
+                        "perNurse": "看護師ごと",
+                        "groupTotal": "グループ合計"
+                    },
+                    "shiftScope": {
+                        "allTwo": "すべての2交代勤務",
+                        "twoDay": "2交代日勤",
+                        "twoNight": "2交代夜勤"
+                    },
+                    "metric": {
+                        "twoAssignments": "2交代の全割当回数",
+                        "twoNightAssignments": "2交代夜勤回数",
+                        "weekendTwoAssignments": "週末の2交代回数"
+                    },
+                    "generatorPending": "保存と検証は可能で、自動作成への対応は準備中です。",
+                    "nurseUnavailable": {
+                        "threeShift": "3交代の勤務可能設定がありません。",
+                        "twoShift": "2交代の勤務可能設定がありません。",
+                        "bothShifts": "2交代と3交代の両方の勤務可能設定が必要です。",
+                        "notConfigured": "勤務可能設定が必要"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "勤務可能設定が合う看護師を2人以上選択してください。",
+                        "selectEligibleNurse": "勤務可能設定が合う看護師を1人以上選択してください。"
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}: {{field}}",
+                    "field": {
+                        "nurses": "看護師の選択",
+                        "count": "回数・人数",
+                        "workCount": "連続勤務日数",
+                        "offCount": "休日数",
+                        "unpairedMax": "未対ラインの上限",
+                        "minRestMinutes": "最小休息時間（分）",
+                        "maxMinutes": "最大勤務時間（分）",
+                        "maxDifference": "最大差",
+                        "startTime": "開始時刻",
+                        "endTime": "終了時刻",
+                        "selection": "項目の選択",
+                        "time": "時刻",
+                        "number": "数値"
+                    }
                 }
             },
             "fixedShifts": {
@@ -7589,7 +8426,8 @@ export const ja: TLocale = {
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
-                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
+                    "highlight": "rotation systems",
+                    "description": "We will prepare shift types for your selection."
                 }
             },
             "shiftType": {
@@ -7603,6 +8441,7 @@ export const ja: TLocale = {
                     "unassigned": "未選択",
                     "evening": "準夜勤",
                     "night": "夜勤",
+                    "nightContinuation": "夜勤後半",
                     "off": "休み",
                     "otherLeave": "その他の休暇",
                     "otherWork": "その他の勤務"
@@ -7616,7 +8455,11 @@ export const ja: TLocale = {
                 "requirements": {
                     "description": "選んだ交代制に必要な勤務区分です。",
                     "duplicate": "{{scope}}には{{shiftType}}が{{count}}件あります。1件だけ残してください。",
+                    "duplicateShort": "{{count}}件設定済み・1件だけ残してください",
+                    "groupCommon": "共通",
+                    "liveSummary": "必須勤務区分{{total}}件中{{ready}}件が準備済み、{{issues}}件は確認が必要です",
                     "missing": "{{scope}}には{{shiftType}}が必要です。",
+                    "missingShort": "追加が必要です",
                     "scopeDefault": "勤務区分",
                     "scopeThree": "3交代の勤務区分",
                     "scopeTwo": "2交代の勤務区分",
@@ -8402,6 +9245,7 @@ export const zh: TLocale = {
                 "evening": "小夜班",
                 "label": "班次含义",
                 "night": "夜班",
+                "nightContinuation": "夜班后半段",
                 "off": "休息",
                 "otherLeave": "其他假期",
                 "otherWork": "其他工作"
@@ -9486,7 +10330,14 @@ export const zh: TLocale = {
                     "recommended": "受到推崇的",
                     "staffing": "人数",
                     "workRest": "连续工作/休息",
-                    "twoShift": "Two-shift"
+                    "roleCoverage": "技能和角色",
+                    "twoShiftWorkRest": "连续工作和休息",
+                    "twoShiftNightTransition": "夜班和转换",
+                    "nightTransition": "夜班与转换",
+                    "workRestStreaks": "连续工作与休息",
+                    "mixedParticipation": "个人轮班参与",
+                    "mixedPlanning": "混合排班计划",
+                    "fairness": "公平性"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "拖动以改变位置",
@@ -9519,13 +10370,50 @@ export const zh: TLocale = {
                     "addTitle": "添加",
                     "close": "关闭",
                     "description": "根据工作日程，某些条件可能无法反映。",
-                    "title": "添加约束"
+                    "title": "添加约束",
+                    "added": "已添加"
                 },
                 "option": {
                     "all": "每一个",
-                    "allDays": "每天",
-                    "allPeople": "每个人",
-                    "dayLabel": "{{day}}天"
+                    "allDays": "所有日期",
+                    "allPeople": "所有护士",
+                    "dayLabel": "{{day}}天",
+                    "transition": {
+                        "dayToNight": "白班到夜班",
+                        "nightToDay": "夜班到白班",
+                        "both": "双向"
+                    },
+                    "period": {
+                        "day": "一天",
+                        "week": "一周",
+                        "rollingSevenDays": "连续7天",
+                        "month": "一个月"
+                    },
+                    "everyday": "每天",
+                    "holiday": "节假日",
+                    "monthlyDayLabel": "每月{{day}}日",
+                    "staffCountOperator": {
+                        "exact": "正好",
+                        "max": "最多",
+                        "min": "至少",
+                        "target": "目标"
+                    },
+                    "target": {
+                        "nightDedicated": "专职夜班护士",
+                        "rotating": "普通三班制护士"
+                    },
+                    "weekday": "工作日",
+                    "weekdayName": {
+                        "friday": "星期五",
+                        "monday": "星期一",
+                        "saturday": "星期六",
+                        "sunday": "星期日",
+                        "thursday": "星期四",
+                        "tuesday": "星期二",
+                        "wednesday": "星期三"
+                    },
+                    "weekend": "周末",
+                    "weekendOrHoliday": "周末/节假日"
                 },
                 "phrase": {
                     "day": "天",
@@ -9576,7 +10464,7 @@ export const zh: TLocale = {
                     },
                     "IMPORTANT_MAX_NIGHT_STREAK": {
                         "label": "重要基本条件",
-                        "sentence": "您可以连续工作 N 最多 {day} 天。"
+                        "sentence": "连续N班最多允许{days}天"
                     },
                     "IMPORTANT_MAX_SAME_DUTY_STREAK": {
                         "label": "重要基本条件",
@@ -9584,7 +10472,7 @@ export const zh: TLocale = {
                     },
                     "IMPORTANT_MAX_WORK_STREAK": {
                         "label": "重要基本条件",
-                        "sentence": "您最多可以连续工作 {day} 天。"
+                        "sentence": "连续工作最多允许{days}天"
                     },
                     "IMPORTANT_MIN_NIGHT_INTERVAL": {
                         "label": "重要基本条件",
@@ -9600,11 +10488,11 @@ export const zh: TLocale = {
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "禁止模式规则",
-                        "sentence": "{target} 最多可以连续执行 N 次。"
+                        "sentence": "{target}连续N班最多{count}次"
                     },
                     "SOFT_MAX_CONSECUTIVE_WORK": {
                         "label": "连续工作/休息规则",
-                        "sentence": "{target} 每月最多可以连续工作 {day} 天。"
+                        "sentence": "{target}连续工作最多{days}天"
                     },
                     "SOFT_MAX_STAFF_BY_DUTY": {
                         "label": "人数规则",
@@ -9632,7 +10520,7 @@ export const zh: TLocale = {
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "连续工作/休息规则",
-                        "sentence": "{target} 工作 N 后至少需要休息 {day}"
+                        "sentence": "{target}在N班后至少需要{days}天休息"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "禁止模式规则",
@@ -9641,6 +10529,18 @@ export const zh: TLocale = {
                     "SOFT_NO_N_TO_D": {
                         "label": "禁止模式规则",
                         "sentence": "{target} 避免在 N 后的第二天工作 D。"
+                    },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target}不能在N班次日安排D班。"
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}最多可连续安排{count}天N班。"
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}连续N班后至少需要休息{count}天。"
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}在申请休息日的前一天不能安排N班。"
                     },
                     "SOFT_NO_N_TO_E": {
                         "label": "禁止模式规则",
@@ -9657,18 +10557,160 @@ export const zh: TLocale = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "工会",
                         "sentence": "{nurseA} 喜欢与 {nurseB} 轮班"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "连续工作与休息条件",
+                        "sentence": "{target}避免在两个工作日之间只休息一天"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "连续工作与休息条件",
+                        "sentence": "{target}避免在两个休息日之间只工作一天"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "重要基础条件",
+                        "sentence": "{target}在申请休息日的前一天不能安排N班"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "重要基础条件",
+                        "sentence": "{target}连续N班最多只能安排{count}次"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "重要基础条件",
+                        "sentence": "{target}最多可连续工作{count}天"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "夜班与转换条件",
+                        "sentence": "{target}至少连续安排{count}天N班"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "重要基础条件",
+                        "sentence": "{target}的N班之间至少需要间隔{count}天"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "重要基础条件",
+                        "sentence": "{target}在N班后至少需要{count}天休息"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "工作休息条件",
+                        "sentence": "{target}最多可连续工作{count}天"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "夜班与转换条件",
+                        "sentence": "{target}每月最多安排{count}次夜班"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{shift}班最多可安排{count}人"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "工作休息条件",
+                        "sentence": "{target}每月至少需要{count}天休息"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "连续工作与休息条件",
+                        "sentence": "{target}连续工作至少{workCount}天后休息至少{offCount}天"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "工作休息条件",
+                        "sentence": "{target}在N班后至少需要{count}天休息"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "每月{date}日的{shift}班至少需要{count}人"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{shift}班至少需要{count}人"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "周末和节假日的{shift}班至少需要{count}人"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "个人条件",
+                        "sentence": "{nurse}希望避免{shift}班"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "个人条件",
+                        "sentence": "{nurse}不能在周末或节假日工作"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "个人限制",
+                        "sentence": "{target}在{period}内最多安排{count}次周末或节假日{shift}班"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "个人条件",
+                        "sentence": "{nurse}偏好{shift}班"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "工作休息条件",
+                        "sentence": "{target}连续工作{count}天后需要休息"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "技能与角色",
+                        "sentence": "{preceptee}上班时，在同一班次安排另一名护士"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "技能与角色",
+                        "sentence": "将{preceptor}和{preceptee}安排在同一班次"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "禁止模式条件",
+                        "sentence": "{target}避免E班次日安排N班"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "人数条件",
+                        "sentence": "{dateScope}的{shift}班人数必须{operator}{count}人"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "混合轮班运行方式"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "个人轮班参与",
+                        "sentence": "{nurseIds}在{dateScope}以{participationMode}方式参与"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "按日混合排班",
+                        "sentence": "{dateScope}按{composition}方式排班"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "每日两班线",
+                        "sentence": "{dateScope}的两班线为{operator}{count}条且最多{unpairedMax}条不成对"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "两班排班次数",
+                        "sentence": "按{aggregation}将{nurseIds}的{shiftScope}排班设为每{period}{operator}{count}次"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "按时间段需求人数",
+                        "sentence": "{dateScope}从{startTime}到{endTime}的人数设为{operator}{count}"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "班次间最短休息",
+                        "sentence": "{target}的班次间休息至少{minRestMinutes}分钟"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "按周期最大工作时间",
+                        "sentence": "{target}每{period}计划工作最多{maxMinutes}分钟"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "混合轮班负担均衡",
+                        "sentence": "将{nurseIds}的{metric}在每{period}内控制在{maxDifference}次差异以内"
                     }
                 },
                 "toast": {
                     "added": "添加了约束条件。",
-                    "duplicateSkipped": "已删除重复约束，仅保留现有约束。",
+                    "duplicateSkipped": "相同条件已存在。",
                     "duplicatesRemoved": "已整理 {{count}} 重复约束。",
                     "importantUnmarked": "未将其标记为重要。",
                     "imported": "{{teamName}} 约束按原样加载。",
                     "importFailed": "无法加载约束。请稍后重试。",
                     "recommendedDeleted": "推荐的条件已被删除。",
                     "resetDefaults": "已初始化为推荐条件{{count}}。",
-                    "saveFailed": "无法保存约束。请稍后重试。"
+                    "saveFailed": "无法保存约束。请稍后重试。",
+                    "staffCountConflict": "相同适用日和班次的最少、最多和精确人数条件相互冲突。",
+                    "importSkippedAllNurseRules": "由于 {{count}} 条护士专属约束无法直接应用到其他小组因此未导入。",
+                    "importedWithSkippedNurseRules": "已导入 {{teamName}} 的约束并跳过 {{count}} 条护士专属约束。"
                 },
                 "violationCount": "{{count}}",
                 "warning": {
@@ -9681,16 +10723,92 @@ export const zh: TLocale = {
                     "unmarkDescription": "也要取消重要标记吗?",
                     "unmarkTitle": "要重要的标记去掉吗？"
                 },
-                "twoShift": {
-                    "title": "Use automatic two-shift assignment",
-                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
-                    "switchAria": "Use automatic two-shift assignment",
-                    "maxLines": "Maximum two-shift sets per day",
-                    "minRestHours": "Minimum rest between shifts",
-                    "monthlyWorkHours": "Monthly work-hour cap",
-                    "lineUnit": "sets",
-                    "hourUnit": "hours",
-                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
+                "staffCountText": {
+                    "min": "{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。",
+                    "max": "{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。",
+                    "exact": "{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。"
+                },
+                "rotationMode": {
+                    "title": "约束条件轮班模式",
+                    "hint": "数据库接入前按班组临时保存。",
+                    "ariaLabel": "选择约束条件轮班模式",
+                    "three": "三班制",
+                    "two": "两班制",
+                    "mixed": "两班制+三班制",
+                    "saveFailed": "无法保存临时轮班模式。"
+                },
+                "savedWarnings": {
+                    "title": "已保存，但有些约束条件需要确认"
+                },
+                "mixed": {
+                    "policyTitle": "混合轮班运行方式",
+                    "policyHelp": "选择常规排班的生成方式。人员和日期可在下方约束中详细设置。",
+                    "participationHelp": "可排班班次在成员设置中管理。此处选择仅三班、仅两班、计划混合或人力不足时参与。",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "三班优先·不足时使用两班",
+                        "threeBaseFallbackTwoHelp": "先按三班排班，仅在无法满足必要条件时最少使用两班。",
+                        "plannedMixed": "计划内两班与三班混合",
+                        "plannedMixedHelp": "按计划的人员和日期同时使用两班与三班。",
+                        "plannedMixedWithFallback": "计划混合·不足时额外两班",
+                        "plannedMixedWithFallbackHelp": "保留计划内两班，仅在无法满足必要条件时增加后备两班。",
+                        "changeBlocked": "当前约束与所选运行策略冲突。请先修改相关约束。"
+                    },
+                    "participation": {
+                        "threeOnly": "仅三班",
+                        "twoOnly": "仅两班",
+                        "flex": "按计划安排两班或三班",
+                        "fallbackTwo": "人力不足时可安排两班"
+                    },
+                    "composition": {
+                        "auto": "自动",
+                        "threeOnly": "仅三班",
+                        "twoOnly": "仅两班",
+                        "coexist": "两种班制同时使用",
+                        "closed": "全员休息"
+                    },
+                    "aggregation": {
+                        "perNurse": "按护士",
+                        "groupTotal": "小组合计"
+                    },
+                    "shiftScope": {
+                        "allTwo": "所有两班班次",
+                        "twoDay": "两班日班",
+                        "twoNight": "两班夜班"
+                    },
+                    "metric": {
+                        "twoAssignments": "两班总排班次数",
+                        "twoNightAssignments": "两班夜班次数",
+                        "weekendTwoAssignments": "周末两班次数"
+                    },
+                    "generatorPending": "现已支持保存和验证，自动生成支持正在准备。",
+                    "nurseUnavailable": {
+                        "threeShift": "未设置可三班工作。",
+                        "twoShift": "未设置可两班工作。",
+                        "bothShifts": "需要同时设置可两班和三班工作。",
+                        "notConfigured": "需要设置可排班次"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "请至少选择两名班次可用性符合的护士。",
+                        "selectEligibleNurse": "请至少选择一名班次可用性符合的护士。"
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}：{{field}}",
+                    "field": {
+                        "nurses": "选择护士",
+                        "count": "次数或人数",
+                        "workCount": "连续工作天数",
+                        "offCount": "休息天数",
+                        "unpairedMax": "未配对班组上限",
+                        "minRestMinutes": "最短休息时间（分钟）",
+                        "maxMinutes": "最长工作时间（分钟）",
+                        "maxDifference": "最大差异",
+                        "startTime": "开始时间",
+                        "endTime": "结束时间",
+                        "selection": "选择项",
+                        "time": "时间",
+                        "number": "数值"
+                    }
                 }
             },
             "fixedShifts": {
@@ -10366,7 +11484,8 @@ export const zh: TLocale = {
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
-                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
+                    "highlight": "rotation systems",
+                    "description": "We will prepare shift types for your selection."
                 }
             },
             "shiftType": {
@@ -10380,6 +11499,7 @@ export const zh: TLocale = {
                     "unassigned": "未选择",
                     "evening": "小夜班",
                     "night": "夜班",
+                    "nightContinuation": "夜班后半段",
                     "off": "休息",
                     "otherLeave": "其他假期",
                     "otherWork": "其他工作"
@@ -10393,7 +11513,11 @@ export const zh: TLocale = {
                 "requirements": {
                     "description": "这些是所选轮班制度必需的班次类型。",
                     "duplicate": "{{scope}}中有{{count}}个{{shiftType}}。请只保留一个。",
+                    "duplicateShort": "已设置{{count}}个 · 请只保留一个",
+                    "groupCommon": "通用",
+                    "liveSummary": "必需班次类型共{{total}}个，已准备{{ready}}个，{{issues}}个需要确认",
                     "missing": "{{scope}}中需要{{shiftType}}。",
+                    "missingShort": "需要添加",
                     "scopeDefault": "班次类型",
                     "scopeThree": "三班制班次类型",
                     "scopeTwo": "两班制班次类型",
@@ -11179,6 +12303,7 @@ export const th: TLocale = {
                 "evening": "กะเย็น",
                 "label": "ความหมายของกะ",
                 "night": "กะกลางคืน",
+                "nightContinuation": "ช่วงหลังของกะกลางคืน",
                 "off": "วันหยุด",
                 "otherLeave": "การลาอื่น ๆ",
                 "otherWork": "งานอื่น ๆ"
@@ -12263,7 +13388,14 @@ export const th: TLocale = {
                     "recommended": "ที่แนะนำ",
                     "staffing": "การจัดหาพนักงาน",
                     "workRest": "ทำงาน/พักผ่อน",
-                    "twoShift": "Two-shift"
+                    "roleCoverage": "ทักษะและบทบาท",
+                    "twoShiftWorkRest": "การทำงานต่อเนื่องและวันหยุด",
+                    "twoShiftNightTransition": "เวรกลางคืนและการเปลี่ยนกะ",
+                    "nightTransition": "เวรกลางคืนและการเปลี่ยนกะ",
+                    "workRestStreaks": "การทำงานต่อเนื่องและวันหยุด",
+                    "mixedParticipation": "การเข้าร่วมกะรายบุคคล",
+                    "mixedPlanning": "แผนจัดกำลังคนแบบผสม",
+                    "fairness": "ความเป็นธรรม"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
@@ -12296,13 +13428,50 @@ export const th: TLocale = {
                     "addTitle": "เพิ่ม",
                     "close": "ปิด",
                     "description": "ข้อจำกัดบางประการอาจใช้ไม่ได้ขึ้นอยู่กับกำหนดการ",
-                    "title": "เพิ่มข้อจำกัด"
+                    "title": "เพิ่มข้อจำกัด",
+                    "added": "เพิ่มแล้ว"
                 },
                 "option": {
                     "all": "ทั้งหมด",
-                    "allDays": "ทั้งวัน",
-                    "allPeople": "ทุกคน",
-                    "dayLabel": "วัน {{day}}"
+                    "allDays": "ทุกวัน",
+                    "allPeople": "พยาบาลทุกคน",
+                    "dayLabel": "วัน {{day}}",
+                    "transition": {
+                        "dayToNight": "จากเวรกลางวันเป็นเวรกลางคืน",
+                        "nightToDay": "จากเวรกลางคืนเป็นเวรกลางวัน",
+                        "both": "ทั้งสองทิศทาง"
+                    },
+                    "period": {
+                        "day": "หนึ่งวัน",
+                        "week": "หนึ่งสัปดาห์",
+                        "rollingSevenDays": "ต่อเนื่อง 7 วัน",
+                        "month": "หนึ่งเดือน"
+                    },
+                    "everyday": "ทุกวัน",
+                    "holiday": "วันหยุดนักขัตฤกษ์",
+                    "monthlyDayLabel": "วันที่ {{day}} ของทุกเดือน",
+                    "staffCountOperator": {
+                        "exact": "พอดี",
+                        "max": "สูงสุด",
+                        "min": "อย่างน้อย",
+                        "target": "เป้าหมาย"
+                    },
+                    "target": {
+                        "nightDedicated": "พยาบาลเวรกลางคืนประจำ",
+                        "rotating": "พยาบาลระบบ 3 กะทั่วไป"
+                    },
+                    "weekday": "วันธรรมดา",
+                    "weekdayName": {
+                        "friday": "วันศุกร์",
+                        "monday": "วันจันทร์",
+                        "saturday": "วันเสาร์",
+                        "sunday": "วันอาทิตย์",
+                        "thursday": "วันพฤหัสบดี",
+                        "tuesday": "วันอังคาร",
+                        "wednesday": "วันพุธ"
+                    },
+                    "weekend": "วันหยุดสุดสัปดาห์",
+                    "weekendOrHoliday": "วันหยุดสุดสัปดาห์/วันหยุด"
                 },
                 "phrase": {
                     "day": "วัน",
@@ -12419,6 +13588,18 @@ export const th: TLocale = {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
                         "sentence": "หลีกเลี่ยง D ในวันถัดไปหลังจาก N สำหรับ {target}"
                     },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target} ไม่สามารถทำงานเวร D ในวันถัดจากเวร N ได้"
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} ทำเวร N ติดต่อกันได้สูงสุด {count} วัน"
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target} ต้องมีวันหยุดอย่างน้อย {count} วันหลังทำเวร N ติดต่อกัน"
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target} ไม่สามารถทำเวร N ในวันก่อนวันหยุดที่ขอไว้"
+                    },
                     "SOFT_NO_N_TO_E": {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
                         "sentence": "หลีกเลี่ยง E ในวันถัดไปหลังจาก N สำหรับ {target}"
@@ -12434,18 +13615,160 @@ export const th: TLocale = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "การจับคู่คนงาน",
                         "sentence": "ต้องการมอบหมายให้ {nurseA} และ {nurseB} อยู่ในกะเดียวกัน"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "เงื่อนไขการทำงานต่อเนื่องและวันหยุด",
+                        "sentence": "{target}หลีกเลี่ยงการหยุดเพียงวันเดียวระหว่างวันทำงาน"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "เงื่อนไขการทำงานต่อเนื่องและวันหยุด",
+                        "sentence": "{target}หลีกเลี่ยงการทำงานเพียงวันเดียวระหว่างวันหยุด"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "เงื่อนไขพื้นฐานสำคัญ",
+                        "sentence": "{target}ห้ามทำเวร N ในวันก่อนวันหยุดที่ขอไว้"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "เงื่อนไขพื้นฐานสำคัญ",
+                        "sentence": "{target}ทำเวร N ติดต่อกันได้สูงสุด{count}ครั้ง"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "เงื่อนไขพื้นฐานสำคัญ",
+                        "sentence": "{target}ทำงานติดต่อกันได้สูงสุด{count}วัน"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ",
+                        "sentence": "{target}ทำเวร N ติดต่อกันอย่างน้อย{count}วัน"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "เงื่อนไขพื้นฐานสำคัญ",
+                        "sentence": "{target}ต้องมีระยะห่างอย่างน้อย{count}วันระหว่างเวร N"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "เงื่อนไขพื้นฐานสำคัญ",
+                        "sentence": "{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "เงื่อนไขงานและพัก",
+                        "sentence": "{target}ทำงานติดต่อกันได้สูงสุด{count}วัน"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ",
+                        "sentence": "{target}ทำเวรกลางคืนได้สูงสุด{count}ครั้งต่อเดือน"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "เงื่อนไขจำนวนคน",
+                        "sentence": "เวร{shift}จัดได้สูงสุด{count}คน"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "เงื่อนไขงานและพัก",
+                        "sentence": "{target}ต้องมีวันหยุดอย่างน้อย{count}วันต่อเดือน"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "เงื่อนไขการทำงานต่อเนื่องและวันหยุด",
+                        "sentence": "{target}พักอย่างน้อย{offCount}วันหลังทำงานติดต่อกันตั้งแต่{workCount}วัน"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "เงื่อนไขงานและพัก",
+                        "sentence": "{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "เงื่อนไขจำนวนคน",
+                        "sentence": "วันที่ {date} ของทุกเดือน เวร{shift}ต้องมีอย่างน้อย{count}คน"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "เงื่อนไขจำนวนคน",
+                        "sentence": "เวร{shift}ต้องมีอย่างน้อย{count}คน"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "เงื่อนไขจำนวนคน",
+                        "sentence": "วันหยุดสุดสัปดาห์และวันหยุด เวร{shift}ต้องมีอย่างน้อย{count}คน"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "เงื่อนไขรายบุคคล",
+                        "sentence": "{nurse}ต้องการหลีกเลี่ยงเวร{shift}"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "เงื่อนไขรายบุคคล",
+                        "sentence": "{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "ข้อจำกัดรายบุคคล",
+                        "sentence": "{target}ทำเวร{shift}ในวันหยุดสุดสัปดาห์หรือวันหยุดได้สูงสุด{count}ครั้งต่อ{period}"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "เงื่อนไขรายบุคคล",
+                        "sentence": "{nurse}ชอบเวร{shift}"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "เงื่อนไขงานและพัก",
+                        "sentence": "{target}ต้องมีวันหยุดหลังทำงานติดต่อกัน{count}วัน"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "ทักษะและบทบาท",
+                        "sentence": "จัดพยาบาลอีกคนในเวรเดียวกันเมื่อ{preceptee}ทำงาน"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "ทักษะและบทบาท",
+                        "sentence": "จัด{preceptor}และ{preceptee}ให้อยู่เวรเดียวกัน"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "เงื่อนไขห้ามรูปแบบ",
+                        "sentence": "{target}ควรหลีกเลี่ยงเวร N ในวันถัดจากเวร E"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "เงื่อนไขจำนวนคน",
+                        "sentence": "{dateScope} เวร{shift}ต้องมี{operator}{count}คน"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "นโยบายการทำงานแบบผสม"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "การเข้าร่วมกะรายบุคคล",
+                        "sentence": "{nurseIds} เข้าร่วมแบบ {participationMode} ใน {dateScope}"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "การจัดกะผสมรายวัน",
+                        "sentence": "ใช้การจัดแบบ {composition} ใน {dateScope}"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "ไลน์ 2 กะรายวัน",
+                        "sentence": "ใช้ไลน์ 2 กะ {operator} {count} ไลน์ใน {dateScope} และไม่จับคู่ได้สูงสุด {unpairedMax}"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "จำนวนการจัด 2 กะ",
+                        "sentence": "กำหนด {shiftScope} ของ {nurseIds} ตาม {aggregation} เป็น {operator} {count} ครั้งต่อ {period}"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "จำนวนคนตามช่วงเวลา",
+                        "sentence": "กำหนดคนช่วง {startTime} ถึง {endTime} ใน {dateScope} เป็น {operator} {count}"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "เวลาพักขั้นต่ำระหว่างกะ",
+                        "sentence": "{target} พักระหว่างกะอย่างน้อย {minRestMinutes} นาที"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "ชั่วโมงทำงานสูงสุดตามช่วง",
+                        "sentence": "{target} ทำงานตามแผนสูงสุด {maxMinutes} นาทีต่อ {period}"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "สมดุลภาระงานกะผสม",
+                        "sentence": "รักษา {metric} ของ {nurseIds} ให้ต่างกันไม่เกิน {maxDifference} ต่อ {period}"
                     }
                 },
                 "toast": {
                     "added": "เพิ่มข้อจำกัดแล้ว",
-                    "duplicateSkipped": "ลบข้อจำกัดที่ซ้ำกันแล้ว และเก็บข้อจำกัดเดิมไว้",
+                    "duplicateSkipped": "มีเงื่อนไขเดียวกันอยู่แล้ว",
                     "duplicatesRemoved": "ทำความสะอาดข้อจำกัดที่ซ้ำกันของ {{count}}",
                     "importantUnmarked": "เครื่องหมายสำคัญถูกลบออก",
                     "imported": "ข้อจำกัดที่นำเข้าจาก {{teamName}}",
                     "importFailed": "ไม่สามารถนำเข้าข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
                     "recommendedDeleted": "ลบข้อจำกัดที่แนะนำแล้ว",
                     "resetDefaults": "รีเซ็ตเป็น {{count}} ข้อจำกัดที่แนะนำ",
-                    "saveFailed": "ไม่สามารถบันทึกข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่"
+                    "saveFailed": "ไม่สามารถบันทึกข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
+                    "staffCountConflict": "จำนวนขั้นต่ำ สูงสุด และจำนวนที่แน่นอนของวันและเวรนี้ขัดแย้งกัน",
+                    "importSkippedAllNurseRules": "ไม่ได้นำเข้า เพราะข้อจำกัดรายพยาบาล {{count}} รายการใช้กับทีมอื่นโดยตรงไม่ได้.",
+                    "importedWithSkippedNurseRules": "นำเข้าข้อจำกัดจาก {{teamName}} และข้ามข้อจำกัดรายพยาบาล {{count}} รายการ."
                 },
                 "violationCount": "{{count}}",
                 "warning": {
@@ -12458,16 +13781,92 @@ export const th: TLocale = {
                     "unmarkDescription": "คุณยังต้องการลบเครื่องหมายสำคัญออกหรือไม่",
                     "unmarkTitle": "ลบเครื่องหมายสำคัญออกใช่ไหม"
                 },
-                "twoShift": {
-                    "title": "Use automatic two-shift assignment",
-                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
-                    "switchAria": "Use automatic two-shift assignment",
-                    "maxLines": "Maximum two-shift sets per day",
-                    "minRestHours": "Minimum rest between shifts",
-                    "monthlyWorkHours": "Monthly work-hour cap",
-                    "lineUnit": "sets",
-                    "hourUnit": "hours",
-                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
+                "staffCountText": {
+                    "min": "{{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}",
+                    "max": "{{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}",
+                    "exact": "{{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี"
+                },
+                "rotationMode": {
+                    "title": "รูปแบบกะของเงื่อนไข",
+                    "hint": "บันทึกชั่วคราวแยกตามทีมจนกว่าจะเชื่อมต่อฐานข้อมูล",
+                    "ariaLabel": "เลือกรูปแบบกะของเงื่อนไข",
+                    "three": "3 กะ",
+                    "two": "2 กะ",
+                    "mixed": "2+3 กะ",
+                    "saveFailed": "บันทึกรูปแบบกะชั่วคราวไม่สำเร็จ"
+                },
+                "savedWarnings": {
+                    "title": "บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ"
+                },
+                "mixed": {
+                    "policyTitle": "นโยบายการทำงานแบบผสม",
+                    "policyHelp": "เลือกวิธีสร้างตารางปกติ และปรับรายละเอียดบุคคลกับวันด้วยข้อจำกัดด้านล่าง",
+                    "participationHelp": "จัดการกะที่ทำได้ในการตั้งค่าสมาชิก ที่นี่เลือกเฉพาะ 3 กะ เฉพาะ 2 กะ แผนผสม หรือสำรองเมื่อคนไม่พอ",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "ใช้ 3 กะก่อน·ขาดคนจึงใช้ 2 กะ",
+                        "threeBaseFallbackTwoHelp": "สร้างด้วย 3 กะก่อน และใช้ 2 กะให้น้อยที่สุดเมื่อจำเป็น",
+                        "plannedMixed": "แผนผสม 2 และ 3 กะ",
+                        "plannedMixedHelp": "ใช้ 2 และ 3 กะร่วมกันตามบุคคลและวันที่ในแผน",
+                        "plannedMixedWithFallback": "แผนผสม·เพิ่ม 2 กะเมื่อขาดคน",
+                        "plannedMixedWithFallbackHelp": "คง 2 กะตามแผนและเพิ่มสำรองเมื่อจำเป็น",
+                        "changeBlocked": "ข้อจำกัดปัจจุบันขัดกับนโยบายนี้ โปรดแก้ไขข้อจำกัดเหล่านั้นก่อน"
+                    },
+                    "participation": {
+                        "threeOnly": "เฉพาะ 3 กะ",
+                        "twoOnly": "เฉพาะ 2 กะ",
+                        "flex": "ใช้ 2 หรือ 3 กะตามแผน",
+                        "fallbackTwo": "ทำ 2 กะได้เมื่อคนไม่พอ"
+                    },
+                    "composition": {
+                        "auto": "อัตโนมัติ",
+                        "threeOnly": "เฉพาะ 3 กะ",
+                        "twoOnly": "เฉพาะ 2 กะ",
+                        "coexist": "ใช้ทั้งสองระบบ",
+                        "closed": "หยุดทั้งหมด"
+                    },
+                    "aggregation": {
+                        "perNurse": "ต่อพยาบาล",
+                        "groupTotal": "รวมกลุ่ม"
+                    },
+                    "shiftScope": {
+                        "allTwo": "ทุกกะแบบ 2 กะ",
+                        "twoDay": "กะกลางวันแบบ 2 กะ",
+                        "twoNight": "กะกลางคืนแบบ 2 กะ"
+                    },
+                    "metric": {
+                        "twoAssignments": "จำนวนกะแบบ 2 กะทั้งหมด",
+                        "twoNightAssignments": "จำนวนกะกลางคืนแบบ 2 กะ",
+                        "weekendTwoAssignments": "จำนวนกะแบบ 2 กะช่วงวันหยุด"
+                    },
+                    "generatorPending": "บันทึกและตรวจสอบได้แล้ว ส่วนการสร้างอัตโนมัติกำลังเตรียม",
+                    "nurseUnavailable": {
+                        "threeShift": "ยังไม่ได้เปิดการทำงานแบบ 3 กะ",
+                        "twoShift": "ยังไม่ได้เปิดการทำงานแบบ 2 กะ",
+                        "bothShifts": "ต้องเปิดทั้งการทำงานแบบ 2 และ 3 กะ",
+                        "notConfigured": "ต้องตั้งค่ากะที่ทำได้"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 2 คน",
+                        "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 1 คน"
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}: {{field}}",
+                    "field": {
+                        "nurses": "เลือกพยาบาล",
+                        "count": "จำนวน",
+                        "workCount": "วันทำงานติดต่อกัน",
+                        "offCount": "วันหยุด",
+                        "unpairedMax": "ไลน์ที่ไม่จับคู่สูงสุด",
+                        "minRestMinutes": "เวลาพักขั้นต่ำ (นาที)",
+                        "maxMinutes": "เวลาทำงานสูงสุด (นาที)",
+                        "maxDifference": "ความแตกต่างสูงสุด",
+                        "startTime": "เวลาเริ่ม",
+                        "endTime": "เวลาสิ้นสุด",
+                        "selection": "การเลือก",
+                        "time": "เวลา",
+                        "number": "ค่าตัวเลข"
+                    }
                 }
             },
             "fixedShifts": {
@@ -13143,7 +14542,8 @@ export const th: TLocale = {
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
-                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
+                    "highlight": "rotation systems",
+                    "description": "We will prepare shift types for your selection."
                 }
             },
             "shiftType": {
@@ -13157,6 +14557,7 @@ export const th: TLocale = {
                     "unassigned": "ยังไม่ได้เลือก",
                     "evening": "กะเย็น",
                     "night": "กะกลางคืน",
+                    "nightContinuation": "ช่วงหลังของกะกลางคืน",
                     "off": "วันหยุด",
                     "otherLeave": "การลาอื่น ๆ",
                     "otherWork": "งานอื่น ๆ"
@@ -13170,7 +14571,11 @@ export const th: TLocale = {
                 "requirements": {
                     "description": "ประเภทกะเหล่านี้จำเป็นสำหรับระบบเวรที่เลือก",
                     "duplicate": "{{scope}}มี {{shiftType}} อยู่ {{count}} รายการ โปรดเหลือไว้เพียงรายการเดียว",
+                    "duplicateShort": "ตั้งค่าแล้ว {{count}} รายการ · โปรดเหลือไว้หนึ่งรายการ",
+                    "groupCommon": "ร่วม",
+                    "liveSummary": "ประเภทกะที่จำเป็นพร้อมแล้ว {{ready}} จาก {{total}} รายการ และต้องตรวจสอบ {{issues}} รายการ",
                     "missing": "{{scope}}ต้องมี {{shiftType}}",
+                    "missingShort": "ต้องเพิ่ม",
                     "scopeDefault": "ประเภทกะ",
                     "scopeThree": "ประเภทกะ 3 ผลัด",
                     "scopeTwo": "ประเภทกะ 2 ผลัด",
@@ -13956,6 +15361,7 @@ export const vi: TLocale = {
                 "evening": "Ca chiều",
                 "label": "Ý nghĩa ca",
                 "night": "Ca đêm",
+                "nightContinuation": "Nửa sau ca đêm",
                 "off": "Ngày nghỉ",
                 "otherLeave": "Nghỉ phép khác",
                 "otherWork": "Công việc khác"
@@ -15040,7 +16446,14 @@ export const vi: TLocale = {
                     "recommended": "Được đề xuất",
                     "staffing": "nhân sự",
                     "workRest": "Làm việc/nghỉ ngơi",
-                    "twoShift": "Two-shift"
+                    "roleCoverage": "Kỹ năng và vai trò",
+                    "twoShiftWorkRest": "Làm liên tiếp và nghỉ",
+                    "twoShiftNightTransition": "Đêm và chuyển ca",
+                    "nightTransition": "Ca đêm và chuyển ca",
+                    "workRestStreaks": "Chuỗi làm việc và nghỉ",
+                    "mixedParticipation": "Tham gia ca theo người",
+                    "mixedPlanning": "Kế hoạch phân ca hỗn hợp",
+                    "fairness": "Công bằng"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Kéo để sắp xếp lại",
@@ -15073,13 +16486,50 @@ export const vi: TLocale = {
                     "addTitle": "Thêm",
                     "close": "Đóng",
                     "description": "Một số ràng buộc có thể không được áp dụng tùy theo lịch.",
-                    "title": "Thêm ràng buộc"
+                    "title": "Thêm ràng buộc",
+                    "added": "Đã thêm"
                 },
                 "option": {
                     "all": "Tất cả",
-                    "allDays": "Tất cả các ngày",
-                    "allPeople": "mọi người",
-                    "dayLabel": "Ngày {{day}}"
+                    "allDays": "Tất cả ngày",
+                    "allPeople": "Tất cả điều dưỡng",
+                    "dayLabel": "Ngày {{day}}",
+                    "transition": {
+                        "dayToNight": "Từ ca ngày sang ca đêm",
+                        "nightToDay": "Từ ca đêm sang ca ngày",
+                        "both": "Cả hai chiều"
+                    },
+                    "period": {
+                        "day": "Một ngày",
+                        "week": "Một tuần",
+                        "rollingSevenDays": "7 ngày liên tiếp",
+                        "month": "Một tháng"
+                    },
+                    "everyday": "Mỗi ngày",
+                    "holiday": "Ngày lễ",
+                    "monthlyDayLabel": "Ngày {{day}} hằng tháng",
+                    "staffCountOperator": {
+                        "exact": "Chính xác",
+                        "max": "Tối đa",
+                        "min": "Tối thiểu",
+                        "target": "Mục tiêu"
+                    },
+                    "target": {
+                        "nightDedicated": "Điều dưỡng chuyên ca đêm",
+                        "rotating": "Điều dưỡng xoay 3 ca"
+                    },
+                    "weekday": "Ngày thường",
+                    "weekdayName": {
+                        "friday": "Thứ Sáu",
+                        "monday": "Thứ Hai",
+                        "saturday": "Thứ Bảy",
+                        "sunday": "Chủ Nhật",
+                        "thursday": "Thứ Năm",
+                        "tuesday": "Thứ Ba",
+                        "wednesday": "Thứ Tư"
+                    },
+                    "weekend": "Cuối tuần",
+                    "weekendOrHoliday": "Cuối tuần/ngày lễ"
                 },
                 "phrase": {
                     "day": "ngày",
@@ -15196,6 +16646,18 @@ export const vi: TLocale = {
                         "label": "Ràng buộc mẫu bị cấm",
                         "sentence": "Tránh D vào ngày sau N trong {target}"
                     },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target} không thể làm ca D vào ngày sau ca N."
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} chỉ được làm tối đa {count} ngày ca N liên tiếp."
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target} cần ít nhất {count} ngày nghỉ sau các ca N liên tiếp."
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target} không được làm ca N vào ngày trước ngày nghỉ đã đăng ký."
+                    },
                     "SOFT_NO_N_TO_E": {
                         "label": "Ràng buộc mẫu bị cấm",
                         "sentence": "Tránh E vào ngày sau N trong {target}"
@@ -15211,18 +16673,160 @@ export const vi: TLocale = {
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "Ghép đôi công nhân",
                         "sentence": "Ưu tiên chỉ định {nurseA} và {nurseB} cho cùng một ca"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "Điều kiện chuỗi làm việc và nghỉ",
+                        "sentence": "{target} tránh chỉ nghỉ một ngày giữa các ngày làm việc"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "Điều kiện chuỗi làm việc và nghỉ",
+                        "sentence": "{target} tránh chỉ làm một ngày giữa hai ngày nghỉ"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "Điều kiện cơ bản quan trọng",
+                        "sentence": "{target} không được làm ca N vào ngày trước ngày nghỉ đã đăng ký"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "Điều kiện cơ bản quan trọng",
+                        "sentence": "{target} chỉ được làm tối đa {count} ca N liên tiếp"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "Điều kiện cơ bản quan trọng",
+                        "sentence": "{target} có thể làm việc liên tiếp tối đa {count} ngày"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "Điều kiện ca đêm và chuyển ca",
+                        "sentence": "{target} làm ít nhất {count} ca N liên tiếp"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "Điều kiện cơ bản quan trọng",
+                        "sentence": "{target} cần cách nhau ít nhất {count} ngày giữa các ca N"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "Điều kiện cơ bản quan trọng",
+                        "sentence": "{target} cần ít nhất {count} ngày nghỉ sau ca N"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "Điều kiện làm việc-nghỉ",
+                        "sentence": "{target} có thể làm việc liên tiếp tối đa {count} ngày"
+                    },
+                    "MAX_MONTHLY_NIGHT_COUNT": {
+                        "label": "Điều kiện ca đêm và chuyển ca",
+                        "sentence": "{target} làm tối đa {count} ca đêm mỗi tháng"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "Điều kiện nhân sự",
+                        "sentence": "Ca {shift} được xếp tối đa {count} người"
+                    },
+                    "MIN_MONTHLY_OFF": {
+                        "label": "Điều kiện làm việc-nghỉ",
+                        "sentence": "{target} cần ít nhất {count} ngày nghỉ mỗi tháng"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "Điều kiện chuỗi làm việc và nghỉ",
+                        "sentence": "{target} nghỉ ít nhất {offCount} ngày sau khi làm liên tiếp từ {workCount} ngày"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "Điều kiện làm việc-nghỉ",
+                        "sentence": "{target} cần ít nhất {count} ngày nghỉ sau ca N"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "Điều kiện nhân sự",
+                        "sentence": "Ngày {date} hằng tháng, ca {shift} cần ít nhất {count} người"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "Điều kiện nhân sự",
+                        "sentence": "Ca {shift} cần ít nhất {count} người"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "Điều kiện nhân sự",
+                        "sentence": "Cuối tuần và ngày lễ, ca {shift} cần ít nhất {count} người"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "Điều kiện cá nhân",
+                        "sentence": "{nurse} muốn tránh ca {shift}"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "Điều kiện cá nhân",
+                        "sentence": "{nurse} không được làm việc cuối tuần hoặc ngày lễ"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "Giới hạn theo người",
+                        "sentence": "{target} làm tối đa {count} ca {shift} cuối tuần hoặc ngày lễ mỗi {period}"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "Điều kiện cá nhân",
+                        "sentence": "{nurse} ưu tiên ca {shift}"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "Điều kiện làm việc-nghỉ",
+                        "sentence": "{target} cần ngày nghỉ sau {count} ngày làm việc liên tiếp"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "Kỹ năng và vai trò",
+                        "sentence": "Xếp thêm một điều dưỡng cùng ca khi {preceptee} làm việc"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "Kỹ năng và vai trò",
+                        "sentence": "Xếp {preceptor} và {preceptee} cùng ca"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "Điều kiện cấm mẫu",
+                        "sentence": "{target} nên tránh ca N vào ngày sau ca E"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "Điều kiện nhân sự",
+                        "sentence": "{dateScope}, ca {shift} phải có {operator} {count} người"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "Chính sách vận hành ca hỗn hợp"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "Tham gia ca theo người",
+                        "sentence": "{nurseIds} tham gia theo {participationMode} vào {dateScope}"
+                    },
+                    "MIXED_DAILY_COMPOSITION": {
+                        "label": "Phân ca hỗn hợp theo ngày",
+                        "sentence": "Dùng cách phân ca {composition} vào {dateScope}"
+                    },
+                    "TWO_SHIFT_DAILY_LINES": {
+                        "label": "Số tuyến 2 ca mỗi ngày",
+                        "sentence": "Dùng {operator} {count} tuyến 2 ca vào {dateScope} và tối đa {unpairedMax} tuyến lẻ"
+                    },
+                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
+                        "label": "Số lượt phân 2 ca",
+                        "sentence": "Đặt {shiftScope} của {nurseIds} theo {aggregation} là {operator} {count} lần mỗi {period}"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "Nhân sự theo khung giờ",
+                        "sentence": "Đặt nhân sự từ {startTime} đến {endTime} vào {dateScope} là {operator} {count}"
+                    },
+                    "MIN_REST_BETWEEN_SHIFTS": {
+                        "label": "Nghỉ tối thiểu giữa các ca",
+                        "sentence": "{target} nghỉ ít nhất {minRestMinutes} phút giữa các ca"
+                    },
+                    "MAX_WORK_MINUTES_BY_PERIOD": {
+                        "label": "Làm việc tối đa theo kỳ",
+                        "sentence": "{target} làm tối đa {maxMinutes} phút dự kiến mỗi {period}"
+                    },
+                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
+                        "label": "Cân bằng tải ca hỗn hợp",
+                        "sentence": "Giữ {metric} của {nurseIds} chênh tối đa {maxDifference} mỗi {period}"
                     }
                 },
                 "toast": {
                     "added": "Đã thêm hạn chế.",
-                    "duplicateSkipped": "Đã xóa ràng buộc trùng lặp và giữ lại ràng buộc hiện có.",
+                    "duplicateSkipped": "Điều kiện này đã tồn tại.",
                     "duplicatesRemoved": "Đã dọn sạch {{count}} các hạn chế trùng lặp.",
                     "importantUnmarked": "Dấu quan trọng đã bị xóa.",
                     "imported": "Đã nhập các ràng buộc từ {{teamName}}.",
                     "importFailed": "Không thể nhập các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
                     "recommendedDeleted": "Đã xóa hạn chế được đề xuất.",
                     "resetDefaults": "Đặt lại về {{count}} các ràng buộc được đề xuất.",
-                    "saveFailed": "Không thể lưu các ràng buộc. Vui lòng thử lại trong thời gian ngắn."
+                    "saveFailed": "Không thể lưu các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
+                    "staffCountConflict": "Số nhân sự tối thiểu, tối đa và chính xác của phạm vi và ca này đang mâu thuẫn.",
+                    "importSkippedAllNurseRules": "Không nhập vì {{count}} ràng buộc theo điều dưỡng không thể áp dụng trực tiếp cho nhóm khác.",
+                    "importedWithSkippedNurseRules": "Đã nhập ràng buộc từ {{teamName}} và bỏ qua {{count}} ràng buộc theo điều dưỡng."
                 },
                 "violationCount": "{{count}}",
                 "warning": {
@@ -15235,16 +16839,92 @@ export const vi: TLocale = {
                     "unmarkDescription": "Bạn vẫn muốn xóa dấu Quan trọng?",
                     "unmarkTitle": "Xóa dấu quan trọng?"
                 },
-                "twoShift": {
-                    "title": "Use automatic two-shift assignment",
-                    "description": "Automatically assign two-shift day and night as a pair for this shift team only.",
-                    "switchAria": "Use automatic two-shift assignment",
-                    "maxLines": "Maximum two-shift sets per day",
-                    "minRestHours": "Minimum rest between shifts",
-                    "monthlyWorkHours": "Monthly work-hour cap",
-                    "lineUnit": "sets",
-                    "hourUnit": "hours",
-                    "teamOnlyHint": "This setting applies only to the selected shift team and does not affect other teams."
+                "staffCountText": {
+                    "min": "{{dateScope}}: cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.",
+                    "max": "{{dateScope}}: có thể phân công tối đa {{count}} điều dưỡng cho ca {{shift}}.",
+                    "exact": "{{dateScope}}: ca {{shift}} phải có chính xác {{count}} điều dưỡng."
+                },
+                "rotationMode": {
+                    "title": "Chế độ ca của điều kiện",
+                    "hint": "Lưu tạm theo nhóm cho đến khi kết nối cơ sở dữ liệu.",
+                    "ariaLabel": "Chọn chế độ ca của điều kiện",
+                    "three": "3 ca",
+                    "two": "2 ca",
+                    "mixed": "2+3 ca",
+                    "saveFailed": "Không thể lưu chế độ ca tạm thời."
+                },
+                "savedWarnings": {
+                    "title": "Đã lưu, nhưng có một số điều kiện cần kiểm tra"
+                },
+                "mixed": {
+                    "policyTitle": "Chính sách vận hành ca hỗn hợp",
+                    "policyHelp": "Chọn cách tạo lịch thông thường. Tinh chỉnh người và ngày bằng các điều kiện bên dưới.",
+                    "participationHelp": "Khả năng ca được quản lý trong cài đặt thành viên. Tại đây chọn chỉ 3 ca chỉ 2 ca linh hoạt theo kế hoạch hoặc dự phòng.",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "Ưu tiên 3 ca·thiếu người mới dùng 2 ca",
+                        "threeBaseFallbackTwoHelp": "Tạo bằng 3 ca trước và chỉ dùng tối thiểu 2 ca khi cần.",
+                        "plannedMixed": "Kết hợp 2 và 3 ca theo kế hoạch",
+                        "plannedMixedHelp": "Dùng 2 và 3 ca cùng nhau theo người và ngày đã lập kế hoạch.",
+                        "plannedMixedWithFallback": "Kế hoạch hỗn hợp·thêm 2 ca khi thiếu",
+                        "plannedMixedWithFallbackHelp": "Giữ 2 ca đã lập kế hoạch và chỉ thêm dự phòng khi cần.",
+                        "changeBlocked": "Các ràng buộc hiện tại xung đột với chính sách này. Hãy sửa các ràng buộc đó trước."
+                    },
+                    "participation": {
+                        "threeOnly": "Chỉ 3 ca",
+                        "twoOnly": "Chỉ 2 ca",
+                        "flex": "2 hoặc 3 ca theo kế hoạch",
+                        "fallbackTwo": "Có thể làm 2 ca khi thiếu người"
+                    },
+                    "composition": {
+                        "auto": "Tự động",
+                        "threeOnly": "Chỉ 3 ca",
+                        "twoOnly": "Chỉ 2 ca",
+                        "coexist": "Dùng cả hai hệ",
+                        "closed": "Nghỉ toàn bộ"
+                    },
+                    "aggregation": {
+                        "perNurse": "Theo điều dưỡng",
+                        "groupTotal": "Tổng nhóm"
+                    },
+                    "shiftScope": {
+                        "allTwo": "Tất cả ca 2 kíp",
+                        "twoDay": "Ca ngày 2 kíp",
+                        "twoNight": "Ca đêm 2 kíp"
+                    },
+                    "metric": {
+                        "twoAssignments": "Tổng lượt 2 ca",
+                        "twoNightAssignments": "Lượt ca đêm 2 kíp",
+                        "weekendTwoAssignments": "Lượt 2 ca cuối tuần"
+                    },
+                    "generatorPending": "Có thể lưu và kiểm tra. Hỗ trợ tạo tự động đang được chuẩn bị.",
+                    "nurseUnavailable": {
+                        "threeShift": "Chưa bật khả năng làm 3 ca.",
+                        "twoShift": "Chưa bật khả năng làm 2 ca.",
+                        "bothShifts": "Cần bật khả năng làm cả 2 ca và 3 ca.",
+                        "notConfigured": "Cần thiết lập ca có thể làm"
+                    },
+                    "validation": {
+                        "workloadTwoNurses": "Chọn ít nhất hai điều dưỡng có khả năng ca phù hợp.",
+                        "selectEligibleNurse": "Chọn ít nhất một điều dưỡng có khả năng ca phù hợp."
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}: {{field}}",
+                    "field": {
+                        "nurses": "Chọn điều dưỡng",
+                        "count": "Số lượng",
+                        "workCount": "Số ngày làm liên tiếp",
+                        "offCount": "Số ngày nghỉ",
+                        "unpairedMax": "Số tuyến lẻ tối đa",
+                        "minRestMinutes": "Thời gian nghỉ tối thiểu (phút)",
+                        "maxMinutes": "Thời gian làm tối đa (phút)",
+                        "maxDifference": "Chênh lệch tối đa",
+                        "startTime": "Giờ bắt đầu",
+                        "endTime": "Giờ kết thúc",
+                        "selection": "Lựa chọn",
+                        "time": "Thời gian",
+                        "number": "Giá trị số"
+                    }
                 }
             },
             "fixedShifts": {
@@ -15920,7 +17600,8 @@ export const vi: TLocale = {
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
-                    "description": "We will prepare shift types and automatic-assignment constraints for your selection."
+                    "highlight": "rotation systems",
+                    "description": "We will prepare shift types for your selection."
                 }
             },
             "shiftType": {
@@ -15934,6 +17615,7 @@ export const vi: TLocale = {
                     "unassigned": "Chưa chọn",
                     "evening": "Ca chiều",
                     "night": "Ca đêm",
+                    "nightContinuation": "Nửa sau ca đêm",
                     "off": "Ngày nghỉ",
                     "otherLeave": "Nghỉ phép khác",
                     "otherWork": "Công việc khác"
@@ -15947,7 +17629,11 @@ export const vi: TLocale = {
                 "requirements": {
                     "description": "Các loại ca này là bắt buộc cho chế độ xoay ca đã chọn.",
                     "duplicate": "{{scope}} có {{count}} mục {{shiftType}}. Chỉ giữ lại một mục.",
+                    "duplicateShort": "Đã thiết lập {{count}} mục · Chỉ giữ lại một mục",
+                    "groupCommon": "Chung",
+                    "liveSummary": "Đã chuẩn bị {{ready}} trong {{total}} loại ca bắt buộc, cần kiểm tra {{issues}} mục",
                     "missing": "{{scope}} cần có {{shiftType}}.",
+                    "missingShort": "Chưa được thêm",
                     "scopeDefault": "Loại ca",
                     "scopeThree": "Loại ca 3 kíp",
                     "scopeTwo": "Loại ca 2 kíp",

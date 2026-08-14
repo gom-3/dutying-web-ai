@@ -1,7 +1,8 @@
 import type {TNurse} from './nurse';
 
-export type TWardShiftClassification = 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+export type TWardShiftClassification = 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
 export type TShiftRotationSystem = 'THREE' | 'TWO' | 'NONE';
+export type TWardRotationMode = 'THREE' | 'TWO' | 'MIXED';
 
 export type TWard = {
     wardId: number;
@@ -10,6 +11,7 @@ export type TWard = {
     hospitalName: string;
     nurseCnt: number;
     setupStatus?: 'SETUP_IN_PROGRESS' | 'ACTIVE' | 'CANCELLED';
+    rotationMode?: TWardRotationMode;
     showMemberBirthdaysInCalendar?: boolean;
     wardShiftTypes: TWardShiftType[];
     shiftTeams: TShiftTeam[];
