@@ -343,6 +343,12 @@ const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
+const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_PAIR',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+]);
 const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
     'MIXED_ROTATION_PARTICIPATION',
     'TWO_SHIFT_DAILY_LINES',
@@ -2449,7 +2455,7 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
         shortName,
         name,
         color: shiftType?.color,
-        classification: shiftType?.classification,
+        classification: shiftType?.classification ?? option.classification,
         isOff: shiftType?.isOff,
         raw: option,
     };
@@ -2765,12 +2771,34 @@ function getControlDisplayValue(
     return options.find((option) => doesSelectOptionMatchValue(option, value))?.label ?? value;
 }
 
+function getFixedTwoShiftNightOption(template: TSoftRuleTemplate, control: TControlDef, optionMap: Record<string, TSelectOption[]>) {
+    if (
+        !FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES.has(template.id) ||
+        control.kind !== 'select' ||
+        control.key !== 'nightShift' ||
+        control.optionsKey !== 'twoShiftNight'
+    ) {
+        return undefined;
+    }
+
+    const options = optionMap.twoShiftNight ?? [];
+
+    return options.find((option) => option.classification === 'NIGHT') ?? options[0];
+}
+
 function normalizeCombinationParams(
     template: TSoftRuleTemplate,
     params: Record<string, unknown>,
     optionMap: Record<string, TSelectOption[]>,
 ): Record<string, unknown> {
     const nextParams = {...params};
+
+    template.controls.forEach((control) => {
+        const fixedNightOption = getFixedTwoShiftNightOption(template, control, optionMap);
+
+        if (fixedNightOption) nextParams[control.key] = getSelectOptionParamValue(fixedNightOption);
+    });
+
     const mixedNurseControl = template.controls.find(
         (control) => control.kind === 'multiSelect' && control.optionsKey === 'nurse' && control.key === 'nurseIds',
     );
@@ -3229,6 +3257,11 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
 
                 const options = getOptionsForControl(control, template, displayParams, optionMap);
                 const selected = getControlDisplayValue(control, template, displayParams, optionMap);
+                const fixedNightOption = getFixedTwoShiftNightOption(template, control, optionMap);
+
+                if (fixedNightOption) {
+                    return <DutyTypeBadge key={`${template.id}-${control.key}-${idx}`} option={fixedNightOption} />;
+                }
 
                 return (
                     <InlineDropdown

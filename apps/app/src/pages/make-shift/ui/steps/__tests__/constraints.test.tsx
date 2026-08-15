@@ -360,9 +360,12 @@ describe('Constraints', () => {
 
         expect(sequenceCard).not.toBeNull();
         expect(minOffCard).not.toBeNull();
+        expect(within(sequenceCard!).getByText('2교대 야간')).toBeInTheDocument();
+        expect(sequenceCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
         expect(within(minOffCard!).getByText('2교대 야간')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
+        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
 
         const offCount = within(minOffCard!).getByRole('spinbutton');
 
@@ -434,7 +437,7 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR',
                     category: 'CORE',
-                    displayTemplate: '{nightShift} 다음에는 {nightShift}가 와야 해요.',
+                    displayTemplate: '모든 간호사의 야간 근무는 {nightShift}-{nightShift}처럼 두 칸을 연속으로 표시해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -468,7 +471,12 @@ describe('Constraints', () => {
 
         expect(sequenceCard).not.toBeNull();
         expect(minOffCard).not.toBeNull();
+        expect(within(sequenceCard!).getAllByText('2교대 야간')).toHaveLength(2);
+        expect(within(sequenceCard!).getByText('처럼 두 칸을 연속으로 표시해요.')).toBeInTheDocument();
+        expect(sequenceCard!.querySelector('button[aria-haspopup="listbox"]')).toBeNull();
+        expect(within(minOffCard!).getAllByText('2교대 야간')).toHaveLength(2);
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
+        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
 
         const offCount = within(minOffCard!).getByRole('spinbutton');
 
@@ -745,7 +753,7 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR',
                     category: 'CORE',
-                    displayTemplate: '모든 간호사의 야간 근무는 {nightShift}-{nightShift} 형태로 두 번씩 연속 배치해요.',
+                    displayTemplate: '모든 간호사의 야간 근무는 {nightShift}-{nightShift}처럼 두 칸을 연속으로 표시해요.',
                     severity: 'HARD' as const,
                     allowedSeverities: ['HARD' as const, 'SOFT' as const],
                     supportedInGenerator: true,
