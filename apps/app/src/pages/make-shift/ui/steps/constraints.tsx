@@ -117,7 +117,6 @@ const TEMP_ROTATION_MODE_OPTIONS: {value: TWardRotationMode; labelKey: TI18nKey}
     {value: 'MIXED', labelKey: 'page.makeShift.constraints.rotationMode.mixed'},
 ];
 const MIXED_OPERATION_POLICY_TEMPLATE_CODE = 'MIXED_OPERATION_POLICY';
-const TWO_SHIFT_FIXED_NO_N_TO_D_TEMPLATE_CODE = 'FORBID_N_THEN_D';
 const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
     'TWO_SHIFT_ASSIGNMENT_COUNT',
@@ -136,10 +135,6 @@ const CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM: Record<string, TI18nKey> = {
     startTime: 'page.makeShift.constraints.accessibility.field.startTime',
     endTime: 'page.makeShift.constraints.accessibility.field.endTime',
 };
-
-function isTwoShiftFixedNoNToD(rotationMode: TWardRotationMode, templateCode: string) {
-    return rotationMode === 'TWO' && templateCode === TWO_SHIFT_FIXED_NO_N_TO_D_TEMPLATE_CODE;
-}
 
 function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
     return hasNursePreceptorRole(nurse);
@@ -343,8 +338,8 @@ const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
     'CORE_MAX_CONTINUOUS_NIGHT',
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_PAIR',
-    'CORE_MIN_OFF_AFTER_NIGHT',
-    'FORBID_N_THEN_D',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
@@ -363,7 +358,6 @@ const MIXED_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(MIXED_SHIFT_RECOMMEND
 const THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
 const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
     'CORE_MAX_CONTINUOUS_WORK',
-    'FORBID_N_THEN_D',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ]);
@@ -388,10 +382,10 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'CORE_MIN_CONTINUOUS_NIGHT',
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_PAIR',
-    'CORE_MIN_OFF_AFTER_NIGHT',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'MAX_MONTHLY_NIGHT_COUNT',
     'MAX_DAY_NIGHT_TRANSITIONS',
-    'FORBID_N_THEN_D',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'PRECEPTEE_NOT_ALONE_SHIFT',
@@ -1047,11 +1041,11 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
 const TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> = {
     CORE_MAX_CONTINUOUS_WORK: {days: 4, maxDays: 4, maxContinuousWorkDays: 4, count: 4},
     CORE_MAX_CONTINUOUS_NIGHT: {count: 3},
-    CORE_MIN_OFF_AFTER_NIGHT: {count: 2},
+    TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF: {count: 1},
+    TWO_SHIFT_NIGHT_PAIR_MIN_OFF: {count: 1},
 };
 const TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'TWO_SHIFT_MAX_CONTINUOUS_NIGHT',
-    CORE_MIN_OFF_AFTER_NIGHT: 'TWO_SHIFT_MIN_OFF_AFTER_NIGHT',
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 };
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
@@ -1120,6 +1114,10 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     twoShiftNightContinuations: 'twoShiftNightContinuation',
     TWO_SHIFT_NIGHT_CONTINUATION: 'twoShiftNightContinuation',
     TWO_SHIFT_NIGHT_CONTINUATIONS: 'twoShiftNightContinuation',
+    offShift: 'offShift',
+    offShifts: 'offShift',
+    OFF_SHIFT: 'offShift',
+    OFF_SHIFTS: 'offShift',
     dutyStrict: 'dutyStrict',
     DUTY_STRICT: 'dutyStrict',
     DUTYSTRICT: 'dutyStrict',
@@ -1435,17 +1433,9 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
                 return {...control, optionsKey: 'dutyStrict'};
             }
 
-            if (rotationMode === 'TWO' && template.templateCode === 'CORE_MIN_OFF_AFTER_NIGHT' && control.key === 'count') {
-                return {...control, min: 1, max: 2};
-            }
-
             return control;
         });
-        const hasFixedTwoShiftTarget = isTwoShiftFixedNoNToD(rotationMode, template.templateCode);
-        const controls =
-            hasFixedTwoShiftTarget && !baseControls.some((control) => control.key === 'target')
-                ? [{key: 'target', kind: 'select' as const, optionsKey: 'target'}, ...baseControls]
-                : baseControls;
+        const controls = baseControls;
         const legacyTemplate = legacyTemplates.find(
             (item) => item.id === (LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE[template.templateCode] ?? template.templateCode),
         );
@@ -1457,8 +1447,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
             : canUseLegacySentence(legacyTemplate, controls)
               ? legacyTemplate!.sentence
               : createSentenceFromTemplate(template, controls);
-        const fixedTargetSentencePattern = t(getTemplateTranslationKey('TWO_SHIFT_NO_N_TO_D', 'sentence'));
-        const sentence = hasFixedTwoShiftTarget ? createSentenceFromPattern(fixedTargetSentencePattern, controls) : baseSentence;
+        const sentence = baseSentence;
         const baseBuildText =
             template.templateCode === 'STAFF_COUNT_BY_SHIFT'
                 ? (params: Record<string, string>) => {
@@ -1486,9 +1475,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
                   ? (params: Record<string, string>) => interpolateLocalizedPattern(localizedMixedSentencePattern, params)
                   : (legacyTemplate?.buildText ??
                     ((params: Record<string, string>) => interpolateDisplayTemplate(template.displayTemplate, controls, params)));
-        const buildText = hasFixedTwoShiftTarget
-            ? (params: Record<string, string>) => interpolateLocalizedPattern(fixedTargetSentencePattern, params)
-            : baseBuildText;
+        const buildText = baseBuildText;
 
         return {
             id: template.templateCode,
@@ -1502,7 +1489,6 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
             sentence,
             buildText,
             isRecommended: isRecommendedTemplateCode(template.templateCode, template.category, rotationMode),
-            targetLockedToAll: hasFixedTwoShiftTarget,
             sourceTemplate: template,
         };
     });
@@ -1924,17 +1910,8 @@ function getEffectiveAllowedSeverities(
 function normalizeRuleSeverity(
     rule: TShiftConstraintRuleDraft,
     template: TShiftConstraintTemplate | undefined,
-    rotationMode: TWardRotationMode,
+    _rotationMode: TWardRotationMode,
 ): TShiftConstraintRuleDraft {
-    if (isTwoShiftFixedNoNToD(rotationMode, rule.templateCode)) {
-        return {
-            ...rule,
-            severity: 'HARD',
-            isImportant: true,
-            params: {...rule.params, target: ALL_CONSTRAINT_TARGET_OPTION},
-        };
-    }
-
     const allowedSeverities = getEffectiveAllowedSeverities(template, rule.params);
     const severity = allowedSeverities.includes(rule.severity) ? rule.severity : (allowedSeverities[0] ?? rule.severity);
 
@@ -2442,7 +2419,8 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
 function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, shiftTypes: TShiftTypeLike[], t: TTypedT): TSelectOption {
     const shiftType =
         option.wardShiftTypeId != null ? shiftTypes.find((item) => item.wardShiftTypeId === option.wardShiftTypeId) : undefined;
-    const isNamedTwoShiftDuty = optionMapKey === 'twoShiftNight' || optionMapKey === 'twoShiftNightContinuation';
+    const isNamedTwoShiftDuty =
+        optionMapKey === 'twoShiftNight' || optionMapKey === 'twoShiftNightContinuation' || optionMapKey === 'offShift';
     const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict' || isNamedTwoShiftDuty;
     const label = isNamedTwoShiftDuty
         ? (shiftType?.name ?? option.name ?? getCandidateOptionLabel(t, option, optionMapKey, shiftType))
@@ -2574,6 +2552,14 @@ function mergeCandidateOptionMap(
         shiftTypes,
         t,
     );
+    const offShift = getCandidateOptions(
+        candidates,
+        'offShift',
+        ['offShifts', 'OFF_SHIFTS'],
+        duty.filter((option) => option.classification === 'OFF' || option.isOff),
+        shiftTypes,
+        t,
+    );
     const mixedOptions = (optionMapKey: string, candidateKeys: string[], includeFallback = false) =>
         getCandidateOptions(candidates, optionMapKey, candidateKeys, fallback[optionMapKey] ?? [], shiftTypes, t, {
             includeFallback,
@@ -2602,6 +2588,7 @@ function mergeCandidateOptionMap(
         period,
         twoShiftNight,
         twoShiftNightContinuation,
+        offShift,
         participationMode: mixedOptions(
             'participationMode',
             ['mixedParticipationModes', 'participationModes', 'PARTICIPATION_MODES'],
@@ -3692,7 +3679,6 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                 : rotationMode === 'MIXED'
                   ? MIXED_SHIFT_RECOMMENDED_RULE_ORDER
                   : THREE_SHIFT_RECOMMENDED_RULE_ORDER;
-
         const indexByCode = new Map<string, number>(order.map((templateCode, index) => [templateCode, index]));
 
         return [...filtered].sort(
@@ -4668,7 +4654,7 @@ export function Constraints({
                 highlighted: highlightedRuleId === rule.clientId,
                 isImportant: rule.severity === 'HARD',
                 isRecommended: isRecommendedTemplateCode(rule.templateCode, rule.category, rotationMode),
-                isSeverityLocked: isTwoShiftFixedNoNToD(rotationMode, rule.templateCode),
+                isSeverityLocked: false,
             })),
         [highlightedRuleId, rotationMode, softRules, softTemplateByCode, templateByCode],
     );
@@ -4692,14 +4678,10 @@ export function Constraints({
         }, 1800);
     }, []);
     const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, unknown>) => {
-        const hasFixedTwoShiftTarget = isTwoShiftFixedNoNToD(rotationMode, template.id);
-        const normalizedParams = {
-            ...clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap),
-            ...(hasFixedTwoShiftTarget ? {target: ALL_CONSTRAINT_TARGET_OPTION} : {}),
-        };
+        const normalizedParams = clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap);
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
-        const defaultSeverity = hasFixedTwoShiftTarget ? 'HARD' : (template.sourceTemplate?.severity ?? 'SOFT');
+        const defaultSeverity = template.sourceTemplate?.severity ?? 'SOFT';
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
