@@ -148,6 +148,10 @@ const moveToRotationStep = async (user: ReturnType<typeof userEvent.setup>) => {
 const selectRotationAndMoveToShiftTypeStep = async (user: ReturnType<typeof userEvent.setup>, rotationName: RegExp) => {
     await moveToRotationStep(user);
     await user.click(screen.getByRole('button', {name: rotationName}));
+    if (rotationName.test('2교대만 운영해요')) {
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: /일반 ‘오프’로 표시해요/}));
+    }
     await user.click(screen.getByRole('button', {name: '다음'}));
     await user.click(screen.getByRole('button', {name: '건너뛰기'}));
 };
@@ -285,6 +289,25 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getByRole('button', {name: /3교대만 운영해요/})).toHaveAttribute('aria-pressed', 'false');
         expect(screen.getByRole('button', {name: /2교대만 운영해요/})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.queryByRole('group', {name: '야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?'})).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(
+            screen.getByRole('group', {
+                name: '야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?',
+            }),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /일반 ‘오프’로 표시해요/})).toBeInTheDocument();
+        expect(screen.getByText('퇴근일 근무')).toBeInTheDocument();
+        expect(screen.getByText(/‘심야근무’, ‘야간 후반부’, ‘야간근무 후 퇴근’처럼/)).toBeInTheDocument();
+        expect(screen.queryByText(/야간근무가 여러 번 연속되면/)).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/}));
+        expect(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/})).toHaveAttribute('aria-pressed', 'true');
+
+        await user.click(screen.getAllByRole('button', {name: '이전'})[0]);
 
         await user.click(screen.getByRole('button', {name: /3교대와 2교대를 함께 운영해요/}));
 

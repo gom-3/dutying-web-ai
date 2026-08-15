@@ -2188,6 +2188,7 @@ export const ko = {
                 "unmappedShiftType": "근무표 코드 ‘{{shiftCode}}’의 근무 의미를 선택해 주세요.",
                 "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
                 "missingHospitalName": "병원명을 입력해 주세요.",
+                "missingTwoShiftNightRecoveryDisplay": "야간근무가 끝난 날의 표시 방식을 선택해 주세요.",
                 "missingRequiredShiftTypes": "다음 유형을 추가해 주세요: {{shiftTypes}}",
                 "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "submitting": "병동을 생성하고 있어요. 잠시만 기다려 주세요.",
@@ -2296,6 +2297,10 @@ export const ko = {
                     "highlight": "간호사",
                     "title": "간호사를 등록해 주세요"
                 },
+                "nightRecovery": {
+                    "description": "병동에 따라 아침에 퇴근한 날을 별도 근무유형으로 표시하거나, 일반 오프로 표시해요.",
+                    "title": "야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "가장 최근에 사용한 근무표",
@@ -2323,7 +2328,7 @@ export const ko = {
                     "unassigned": "선택 전",
                     "evening": "저녁 근무 (Evening)",
                     "night": "야간 근무 (Night)",
-                    "nightContinuation": "야간 후반부(퇴근날)",
+                    "nightContinuation": "퇴근일 근무",
                     "off": "휴무 (Off)",
                     "otherLeave": "기타 휴무",
                     "otherWork": "기타 근무"
@@ -2412,7 +2417,16 @@ export const ko = {
                 "twoTitle": "2교대만 운영해요",
                 "twoDescription": "주간 · 야간 근무를 사용해요.",
                 "mixedTitle": "3교대와 2교대를 함께 운영해요",
-                "mixedDescription": "D · E · N을 기본으로 두고 2교대 주간 · 야간도 함께 사용해요."
+                "mixedDescription": "D · E · N을 기본으로 두고 2교대 주간 · 야간도 함께 사용해요.",
+                "nightRecoveryQuestion": "야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?",
+                "nightContinuationTitle": "별도 근무유형으로 표시해요",
+                "nightContinuationExampleShift": "퇴근일 근무",
+                "nightContinuationDescription": "‘심야근무’, ‘야간 후반부’, ‘야간근무 후 퇴근’처럼 병동에서 사용하는 이름으로 표시해요. 다음 단계에서 실제 근무명을 설정할 수 있어요.",
+                "offRecoveryTitle": "일반 ‘오프’로 표시해요",
+                "offRecoveryExampleShift": "오프",
+                "offRecoveryDescription": "아침에 퇴근한 날도 별도의 근무유형 없이 일반 오프로 표시해요.",
+                "nightExampleShift": "2교대 야간",
+                "offExampleShift": "오프"
             }
         },
         "profile": {
@@ -5248,6 +5262,7 @@ export const en: TLocale = {
                 "unmappedShiftType": "Select a shift meaning for schedule code ‘{{shiftCode}}’.",
                 "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
                 "missingHospitalName": "Enter a hospital name.",
+                "missingTwoShiftNightRecoveryDisplay": "Choose how to display the day a night-shift block ends.",
                 "missingRequiredShiftTypes": "Please add the following shift types: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "submitting": "Creating the ward. Please wait.",
@@ -5356,6 +5371,10 @@ export const en: TLocale = {
                     "highlight": "nurses",
                     "title": "Register nurses"
                 },
+                "nightRecovery": {
+                    "description": "Some wards use a separate shift type for the morning a night shift ends, while others show it as a regular off day.",
+                    "title": "How do you show the morning a night shift ends?"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "the most recent schedule",
@@ -5383,7 +5402,7 @@ export const en: TLocale = {
                     "unassigned": "Not selected",
                     "evening": "Evening shift",
                     "night": "Night shift",
-                    "nightContinuation": "Night continuation",
+                    "nightContinuation": "Night-finish day",
                     "off": "Day off",
                     "otherLeave": "Other leave",
                     "otherWork": "Other work"
@@ -5472,7 +5491,16 @@ export const en: TLocale = {
                 "twoTitle": "Two-shift only",
                 "twoDescription": "Use day · night shifts.",
                 "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "nightRecoveryQuestion": "How do you show the morning a night shift ends?",
+                "nightContinuationTitle": "Show it as a separate shift type",
+                "nightContinuationExampleShift": "Night-finish day",
+                "nightContinuationDescription": "Use your ward's name, such as Late night, Night continuation, or After night shift. You can set the actual shift name in the next step.",
+                "offRecoveryTitle": "Show it as a regular off day",
+                "offRecoveryExampleShift": "Off",
+                "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
+                "nightExampleShift": "Two-shift night",
+                "offExampleShift": "Off"
             }
         },
         "profile": {
@@ -8306,6 +8334,7 @@ export const ja: TLocale = {
                 "unmappedShiftType": "勤務表コード「{{shiftCode}}」の勤務区分を選択してください。",
                 "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
                 "missingHospitalName": "病院名を入力してください。",
+                "missingTwoShiftNightRecoveryDisplay": "夜勤ブロックが終了する日の表示方法を選択してください。",
                 "missingRequiredShiftTypes": "次の勤務区分を追加してください：{{shiftTypes}}",
                 "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "submitting": "病棟を作成しています。しばらくお待ちください。",
@@ -8414,6 +8443,10 @@ export const ja: TLocale = {
                     "highlight": "看護師",
                     "title": "看護師を登録してください"
                 },
+                "nightRecovery": {
+                    "description": "病棟によって、夜勤明けの日を別の勤務区分で表示する場合と、通常の休みで表示する場合があります。",
+                    "title": "夜勤を終えて朝に退勤した日をどのように表示しますか？"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "直近で使用した勤務表",
@@ -8441,7 +8474,7 @@ export const ja: TLocale = {
                     "unassigned": "未選択",
                     "evening": "準夜勤",
                     "night": "夜勤",
-                    "nightContinuation": "夜勤後半",
+                    "nightContinuation": "夜勤終了日",
                     "off": "休み",
                     "otherLeave": "その他の休暇",
                     "otherWork": "その他の勤務"
@@ -8530,7 +8563,16 @@ export const ja: TLocale = {
                 "twoTitle": "Two-shift only",
                 "twoDescription": "Use day · night shifts.",
                 "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "nightRecoveryQuestion": "How do you show the morning a night shift ends?",
+                "nightContinuationTitle": "Show it as a separate shift type",
+                "nightContinuationExampleShift": "Night-finish day",
+                "nightContinuationDescription": "Use your ward's name, such as Late night, Night continuation, or After night shift. You can set the actual shift name in the next step.",
+                "offRecoveryTitle": "Show it as a regular off day",
+                "offRecoveryExampleShift": "Off",
+                "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
+                "nightExampleShift": "Two-shift night",
+                "offExampleShift": "Off"
             }
         },
         "profile": {
@@ -11364,6 +11406,7 @@ export const zh: TLocale = {
                 "unmappedShiftType": "请选择排班代码“{{shiftCode}}”的班次含义。",
                 "invalidWardIdentity": "请输入仅包含韩语、英语、数字和空格的 1 至 20 个字符。",
                 "missingHospitalName": "请输入医院名称。",
+                "missingTwoShiftNightRecoveryDisplay": "请选择夜班结束日期的显示方式。",
                 "missingRequiredShiftTypes": "请添加以下班次类型：{{shiftTypes}}",
                 "scheduleMissingNurseName": "请在输入班次的行中输入护士姓名。",
                 "submitting": "正在创建一个病区。请稍等。",
@@ -11472,6 +11515,10 @@ export const zh: TLocale = {
                     "highlight": "护士",
                     "title": "请注册护士"
                 },
+                "nightRecovery": {
+                    "description": "不同病区会将夜班结束后的早晨显示为单独的班次类型，或显示为普通休息。",
+                    "title": "夜班结束后早晨下班的日期如何显示？"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "最近使用的排班表",
@@ -11499,7 +11546,7 @@ export const zh: TLocale = {
                     "unassigned": "未选择",
                     "evening": "小夜班",
                     "night": "夜班",
-                    "nightContinuation": "夜班后半段",
+                    "nightContinuation": "夜班结束日",
                     "off": "休息",
                     "otherLeave": "其他假期",
                     "otherWork": "其他工作"
@@ -11588,7 +11635,16 @@ export const zh: TLocale = {
                 "twoTitle": "Two-shift only",
                 "twoDescription": "Use day · night shifts.",
                 "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "nightRecoveryQuestion": "How do you show the morning a night shift ends?",
+                "nightContinuationTitle": "Show it as a separate shift type",
+                "nightContinuationExampleShift": "Night-finish day",
+                "nightContinuationDescription": "Use your ward's name, such as Late night, Night continuation, or After night shift. You can set the actual shift name in the next step.",
+                "offRecoveryTitle": "Show it as a regular off day",
+                "offRecoveryExampleShift": "Off",
+                "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
+                "nightExampleShift": "Two-shift night",
+                "offExampleShift": "Off"
             }
         },
         "profile": {
@@ -14422,6 +14478,7 @@ export const th: TLocale = {
                 "unmappedShiftType": "เลือกความหมายของกะสำหรับรหัสตาราง ‘{{shiftCode}}’",
                 "invalidWardIdentity": "ใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น ตัวเลข และช่องว่างเท่านั้น โดยมีความยาวไม่เกิน 1-20 อักขระ",
                 "missingHospitalName": "ป้อนชื่อโรงพยาบาล",
+                "missingTwoShiftNightRecoveryDisplay": "เลือกวิธีแสดงวันที่สิ้นสุดช่วงกะกลางคืน",
                 "missingRequiredShiftTypes": "โปรดเพิ่มประเภทกะต่อไปนี้: {{shiftTypes}}",
                 "scheduleMissingNurseName": "ป้อนชื่อพยาบาลสำหรับแต่ละแถวที่มีกะ",
                 "submitting": "การสร้างวอร์ด โปรดรอ.",
@@ -14530,6 +14587,10 @@ export const th: TLocale = {
                     "highlight": "พยาบาล",
                     "title": "ขึ้นทะเบียนพยาบาล"
                 },
+                "nightRecovery": {
+                    "description": "แต่ละวอร์ดอาจแสดงวันที่เลิกงานตอนเช้าหลังเวรกลางคืนเป็นประเภทกะแยกต่างหาก หรือเป็นวันหยุดปกติ",
+                    "title": "วันที่เลิกงานตอนเช้าหลังเวรกลางคืนแสดงอย่างไร?"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "กำหนดการล่าสุด",
@@ -14557,7 +14618,7 @@ export const th: TLocale = {
                     "unassigned": "ยังไม่ได้เลือก",
                     "evening": "กะเย็น",
                     "night": "กะกลางคืน",
-                    "nightContinuation": "ช่วงหลังของกะกลางคืน",
+                    "nightContinuation": "วันสิ้นสุดกะกลางคืน",
                     "off": "วันหยุด",
                     "otherLeave": "การลาอื่น ๆ",
                     "otherWork": "งานอื่น ๆ"
@@ -14646,7 +14707,16 @@ export const th: TLocale = {
                 "twoTitle": "Two-shift only",
                 "twoDescription": "Use day · night shifts.",
                 "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "nightRecoveryQuestion": "How do you show the morning a night shift ends?",
+                "nightContinuationTitle": "Show it as a separate shift type",
+                "nightContinuationExampleShift": "Night-finish day",
+                "nightContinuationDescription": "Use your ward's name, such as Late night, Night continuation, or After night shift. You can set the actual shift name in the next step.",
+                "offRecoveryTitle": "Show it as a regular off day",
+                "offRecoveryExampleShift": "Off",
+                "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
+                "nightExampleShift": "Two-shift night",
+                "offExampleShift": "Off"
             }
         },
         "profile": {
@@ -17480,6 +17550,7 @@ export const vi: TLocale = {
                 "unmappedShiftType": "Chọn ý nghĩa ca cho mã lịch ‘{{shiftCode}}’.",
                 "invalidWardIdentity": "Chỉ sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật, số và dấu cách, trong vòng 1-20 ký tự.",
                 "missingHospitalName": "Nhập tên bệnh viện.",
+                "missingTwoShiftNightRecoveryDisplay": "Chọn cách hiển thị ngày kết thúc chuỗi ca đêm.",
                 "missingRequiredShiftTypes": "Vui lòng thêm các loại ca sau: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Nhập tên điều dưỡng cho mỗi hàng theo ca.",
                 "submitting": "Tạo khoa. Vui lòng chờ.",
@@ -17588,6 +17659,10 @@ export const vi: TLocale = {
                     "highlight": "Điều dưỡng",
                     "title": "Đăng ký điều dưỡng"
                 },
+                "nightRecovery": {
+                    "description": "Tùy khoa, ngày về vào buổi sáng sau ca đêm được hiển thị bằng một loại ca riêng hoặc bằng ngày nghỉ thông thường.",
+                    "title": "Ngày về vào buổi sáng sau ca đêm được hiển thị như thế nào?"
+                },
                 "schedule": {
                     "description": "",
                     "highlight": "lịch gần đây nhất",
@@ -17615,7 +17690,7 @@ export const vi: TLocale = {
                     "unassigned": "Chưa chọn",
                     "evening": "Ca chiều",
                     "night": "Ca đêm",
-                    "nightContinuation": "Nửa sau ca đêm",
+                    "nightContinuation": "Ngày kết thúc ca đêm",
                     "off": "Ngày nghỉ",
                     "otherLeave": "Nghỉ phép khác",
                     "otherWork": "Công việc khác"
@@ -17704,7 +17779,16 @@ export const vi: TLocale = {
                 "twoTitle": "Two-shift only",
                 "twoDescription": "Use day · night shifts.",
                 "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed."
+                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "nightRecoveryQuestion": "How do you show the morning a night shift ends?",
+                "nightContinuationTitle": "Show it as a separate shift type",
+                "nightContinuationExampleShift": "Night-finish day",
+                "nightContinuationDescription": "Use your ward's name, such as Late night, Night continuation, or After night shift. You can set the actual shift name in the next step.",
+                "offRecoveryTitle": "Show it as a regular off day",
+                "offRecoveryExampleShift": "Off",
+                "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
+                "nightExampleShift": "Two-shift night",
+                "offExampleShift": "Off"
             }
         },
         "profile": {

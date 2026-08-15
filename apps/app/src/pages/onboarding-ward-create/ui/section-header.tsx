@@ -39,8 +39,14 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
     },
 };
 
+const NIGHT_RECOVERY_LABEL: TStepLabel = {
+    titleKey: 'page.onboardingWardCreate.section.nightRecovery.title',
+    descriptionKey: 'page.onboardingWardCreate.section.nightRecovery.description',
+};
+
 interface ISectionHeaderProps {
     step: TOnboardingStep;
+    nightRecovery?: boolean;
 }
 
 function escapeRegExp(text: string) {
@@ -81,15 +87,20 @@ function TitleLines({children, highlights}: {children: string; highlights?: read
     );
 }
 
-function SectionHeader({step}: ISectionHeaderProps) {
+function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
     const {t} = useTypedTranslation();
-    const label = STEP_LABELS[step];
+    const label = nightRecovery ? NIGHT_RECOVERY_LABEL : STEP_LABELS[step];
     const isIdentityStep = step === 1;
     const title = t(label.titleKey);
     const titleHighlights = label.titleHighlightKeys?.map((key) => t(key));
     const description = label.descriptionKey ? t(label.descriptionKey) : undefined;
-    const headerClassName =
-        isIdentityStep || step === 2 ? 'mb-6 max-w-[480px] space-y-2' : step === 3 ? 'mb-10 max-w-[720px]' : 'mb-10 max-w-[541px]';
+    const headerClassName = nightRecovery
+        ? 'mb-6 max-w-[640px] space-y-2'
+        : isIdentityStep || step === 2
+          ? 'mb-6 max-w-[480px] space-y-2'
+          : step === 3
+            ? 'mb-10 max-w-[720px]'
+            : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title}</span>
@@ -104,7 +115,9 @@ function SectionHeader({step}: ISectionHeaderProps) {
             className={headerClassName}
             title={renderedTitle}
             description={description}
-            descriptionClassName={isIdentityStep ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'}
+            descriptionClassName={
+                isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'
+            }
         />
     );
 }

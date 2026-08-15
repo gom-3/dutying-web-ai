@@ -26,6 +26,7 @@ export {normalizeNurseNameForRequest};
 
 export type TOnboardingStep = 1 | 2 | 3 | 4 | 5;
 export type TOnboardingRotationMode = 'THREE' | 'TWO' | 'MIXED';
+export type TTwoShiftNightRecoveryDisplay = 'NIGHT_CONTINUATION' | 'OFF';
 
 export type TOnboardingWardShiftType = TCreateWardDTO['wardShiftTypes'][number] & {
     id: string;
@@ -128,6 +129,7 @@ export type TOnboardingWardDraft = {
     wardName: string;
     hospitalName: string;
     rotationMode: TOnboardingRotationMode;
+    twoShiftNightRecoveryDisplay: TTwoShiftNightRecoveryDisplay | null;
     shiftTypes: TOnboardingWardShiftType[];
     teams: TOnboardingTeamDraft[];
     nurses: TOnboardingNurseDraft[];
@@ -139,6 +141,7 @@ export type TOnboardingValidationIssueCode =
     | 'missing-hospital-name'
     | 'invalid-ward-name'
     | 'invalid-hospital-name'
+    | 'missing-two-shift-night-recovery-display'
     | 'empty-shift-types'
     | 'unmapped-shift-type'
     | 'invalid-shift-rotation'
@@ -209,7 +212,6 @@ const WARD_IDENTITY_REGEX = /^[a-zA-Z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u34
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 const THREE_SHIFT_REQUIRED_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT'] as const;
-const TWO_SHIFT_REQUIRED_CLASSIFICATIONS = ['DAY', 'NIGHT'] as const;
 const TWO_SHIFT_CLASSIFICATIONS = ['DAY', 'NIGHT', 'NIGHT_CONTINUATION'] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
@@ -233,6 +235,7 @@ const DEFAULT_SHIFT_NAMES = {
     off: '\uC624\uD504',
     twoDay: '2\uAD50\uB300 \uC8FC\uAC04',
     twoNight: '2\uAD50\uB300 \uC57C\uAC04',
+    twoNightContinuation: '\uD1F4\uADFC\uC77C \uADFC\uBB34',
 } as const;
 
 export type TOnboardingDraftLabels = {
@@ -543,6 +546,22 @@ const createTwoShiftTypes = (
         autoSeeded: true,
     }),
 ];
+const createTwoShiftNightContinuation = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS): TOnboardingWardShiftType =>
+    createShiftType({
+        id: 'shift-two-night-continuation',
+        name: labels.shiftNames.twoNightContinuation,
+        shortName: 'S',
+        startTime: '00:00',
+        endTime: '07:00',
+        color: '#8ADDE3',
+        isDefault: false,
+        isOff: false,
+        isCounted: false,
+        classification: 'NIGHT_CONTINUATION',
+        rotationSystem: 'TWO',
+        paidMinutes: 0,
+        autoSeeded: true,
+    });
 const createBaseTeams = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS): TOnboardingTeamDraft[] => [
     {id: 'team-4', name: getDefaultTeamName(1, labels), divisions: [createTeamDivision()]},
     {id: 'team-5', name: getDefaultTeamName(2, labels), divisions: [createTeamDivision()]},
@@ -646,6 +665,7 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
         wardName: '',
         hospitalName: '',
         rotationMode: 'THREE',
+        twoShiftNightRecoveryDisplay: null,
         shiftTypes,
         teams,
         nurses,
@@ -699,6 +719,7 @@ export const updateRotationModeDraft = (
     rotationMode: TOnboardingRotationMode,
     labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
 ): TOnboardingWardDraft => {
+    const twoShiftNightRecoveryDisplay = rotationMode === 'TWO' && draft.rotationMode === 'TWO' ? draft.twoShiftNightRecoveryDisplay : null;
     const hasUserConfiguredManagedShiftType = draft.shiftTypes.some((shiftType) => {
         const rotationSystem = resolveOnboardingRotationSystem(shiftType);
         const isManagedRotation = rotationSystem === 'THREE' || rotationSystem === 'TWO';
@@ -709,7 +730,7 @@ export const updateRotationModeDraft = (
     // 운영 방식 선택 직후의 기본 시드만 교체한다. 사용자가 편집했거나 이전
     // 근무표가 참조하는 행은 운영 방식을 다시 선택해도 자동 삭제/변환하지 않는다.
     if (hasUserConfiguredManagedShiftType) {
-        return {...draft, rotationMode};
+        return {...draft, rotationMode, twoShiftNightRecoveryDisplay};
     }
 
     const threeEnabled = rotationMode !== 'TWO';
@@ -721,8 +742,7 @@ export const updateRotationModeDraft = (
             rotationSystem === 'THREE' &&
             THREE_SHIFT_REQUIRED_CLASSIFICATIONS.some((classification) => classification === shiftType.classification);
         const isTwoShiftType =
-            rotationSystem === 'TWO' &&
-            TWO_SHIFT_REQUIRED_CLASSIFICATIONS.some((classification) => classification === shiftType.classification);
+            rotationSystem === 'TWO' && TWO_SHIFT_CLASSIFICATIONS.some((classification) => classification === shiftType.classification);
         const shouldEnable = isThreeShiftType ? threeEnabled : isTwoShiftType ? twoEnabled : null;
 
         if (shouldEnable == null) return [shiftType];
@@ -773,6 +793,44 @@ export const updateRotationModeDraft = (
     return {
         ...draft,
         rotationMode,
+        twoShiftNightRecoveryDisplay,
+        shiftTypes,
+        nurses: draft.nurses.map((nurse) => ({...nurse, possibleShiftTypeIds: activeShiftTypeIds})),
+    };
+};
+
+export const updateTwoShiftNightRecoveryDisplayDraft = (
+    draft: TOnboardingWardDraft,
+    display: TTwoShiftNightRecoveryDisplay,
+    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
+): TOnboardingWardDraft => {
+    if (draft.rotationMode !== 'TWO') return draft;
+
+    let shiftTypes = draft.shiftTypes;
+    const continuationIndex = shiftTypes.findIndex(
+        (shiftType) => resolveOnboardingRotationSystem(shiftType) === 'TWO' && shiftType.classification === 'NIGHT_CONTINUATION',
+    );
+
+    if (display === 'NIGHT_CONTINUATION') {
+        if (continuationIndex >= 0) {
+            shiftTypes = shiftTypes.map((shiftType, index) => (index === continuationIndex ? {...shiftType, isActive: true} : shiftType));
+        } else {
+            shiftTypes = [...shiftTypes, createTwoShiftNightContinuation(labels)];
+        }
+    } else if (continuationIndex >= 0) {
+        shiftTypes = shiftTypes.flatMap((shiftType, index) => {
+            if (index !== continuationIndex) return [shiftType];
+
+            return shiftType.protectedByPreviousSchedule ? [{...shiftType, isActive: false}] : [];
+        });
+    }
+
+    shiftTypes = orderOnboardingShiftTypes(shiftTypes);
+    const activeShiftTypeIds = getActiveShiftTypeIds(shiftTypes);
+
+    return {
+        ...draft,
+        twoShiftNightRecoveryDisplay: display,
         shiftTypes,
         nurses: draft.nurses.map((nurse) => ({...nurse, possibleShiftTypeIds: activeShiftTypeIds})),
     };
@@ -2384,6 +2442,9 @@ export const getStepValidation = (draft: TOnboardingWardDraft, step = draft.curr
             issues = validateWardIdentity(draft, step);
             break;
         case 2:
+            if (draft.rotationMode === 'TWO' && draft.twoShiftNightRecoveryDisplay == null) {
+                issues.push({code: 'missing-two-shift-night-recovery-display', step});
+            }
             break;
         case 3:
             issues = validateScheduleInputs(draft, step);

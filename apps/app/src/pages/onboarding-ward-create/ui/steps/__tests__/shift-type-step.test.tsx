@@ -118,7 +118,7 @@ describe('ShiftTypeStep', () => {
         );
 
         await user.click(screen.getByRole('combobox', {name: '야간 후반부 근무 의미 선택'}));
-        await user.click(screen.getByRole('option', {name: '야간 후반부(퇴근날)'}));
+        await user.click(screen.getByRole('option', {name: '퇴근일 근무'}));
 
         expect(onChange).toHaveBeenCalledWith('night-continuation', {
             classification: 'NIGHT_CONTINUATION',

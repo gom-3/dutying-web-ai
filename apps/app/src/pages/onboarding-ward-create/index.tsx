@@ -20,6 +20,7 @@ import {
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
+import NightRecoveryStep from './ui/steps/night-recovery-step';
 import NurseStep from './ui/steps/nurse-step';
 import RotationStep from './ui/steps/rotation-step';
 import ScheduleInputStep from './ui/steps/schedule-input-step';
@@ -46,6 +47,7 @@ function OnboardingWardCreatePage() {
         goPreviousStep,
         updateWardIdentity,
         updateRotationMode,
+        updateTwoShiftNightRecoveryDisplay,
         skipOrComplete,
         addShiftType,
         updateShiftType,
@@ -81,12 +83,14 @@ function OnboardingWardCreatePage() {
     } = useOnboardingWardWizard();
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
     const [showIdentityNameError, setShowIdentityNameError] = useState(false);
+    const [showTwoShiftNightRecoveryStep, setShowTwoShiftNightRecoveryStep] = useState(false);
     const isSubmitting = submissionStatus === 'submitting';
     const isSuccess = submissionStatus === 'success';
     const isSavingDraft = draftCreationStatus === 'creating';
     const actionsDisabled = isSavingDraft || isStepTransitioning || isSubmitting || isSuccess;
     const isNurseRegistrationStep = draft.currentStep === 5;
     const isScheduleInputStep = draft.currentStep === 3;
+    const isNightRecoveryStep = draft.currentStep === 2 && draft.rotationMode === 'TWO' && showTwoShiftNightRecoveryStep;
     const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
     const activeTeamNurseCount = draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
@@ -137,6 +141,19 @@ function OnboardingWardCreatePage() {
             {t('page.onboardingWardCreate.deleteTeamAction')}
         </WizardButton>
     );
+    const handlePreviousStep = () => {
+        if (isNightRecoveryStep) {
+            setShowTwoShiftNightRecoveryStep(false);
+
+            return;
+        }
+
+        if (draft.currentStep === 3 && draft.rotationMode === 'TWO') {
+            setShowTwoShiftNightRecoveryStep(true);
+        }
+
+        goPreviousStep();
+    };
     const getRequiredShiftTypeStatuses = () => {
         const activeShiftTypes = draft.shiftTypes.filter(
             (shiftType) => isOnboardingShiftTypeActive(shiftType) && isOnboardingShiftMappingResolved(shiftType.mappingStatus),
@@ -186,6 +203,10 @@ function OnboardingWardCreatePage() {
 
         if (codes.has('missing-hospital-name')) {
             return t('page.onboardingWardCreate.blocked.missingHospitalName');
+        }
+
+        if (codes.has('missing-two-shift-night-recovery-display')) {
+            return t('page.onboardingWardCreate.blocked.missingTwoShiftNightRecoveryDisplay');
         }
 
         if (codes.has('invalid-ward-name') || codes.has('invalid-hospital-name')) {
@@ -371,7 +392,11 @@ function OnboardingWardCreatePage() {
                 );
             }
             case 2:
-                return <RotationStep rotationMode={draft.rotationMode} onRotationModeChange={updateRotationMode} />;
+                return isNightRecoveryStep ? (
+                    <NightRecoveryStep value={draft.twoShiftNightRecoveryDisplay} onChange={updateTwoShiftNightRecoveryDisplay} />
+                ) : (
+                    <RotationStep rotationMode={draft.rotationMode} onRotationModeChange={updateRotationMode} />
+                );
             case 3:
                 return (
                     <ScheduleInputStep
@@ -471,11 +496,13 @@ function OnboardingWardCreatePage() {
             <div
                 className={cn(
                     'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',
-                    draft.currentStep === 1 || draft.currentStep === 2
-                        ? 'max-w-[480px]'
-                        : isScheduleInputStep
-                          ? 'max-w-[1200px]'
-                          : 'max-w-[1120px]',
+                    isNightRecoveryStep
+                        ? 'max-w-[640px]'
+                        : draft.currentStep === 1 || draft.currentStep === 2
+                          ? 'max-w-[480px]'
+                          : isScheduleInputStep
+                            ? 'max-w-[1200px]'
+                            : 'max-w-[1120px]',
                 )}
             >
                 <button
@@ -489,7 +516,7 @@ function OnboardingWardCreatePage() {
                             return;
                         }
 
-                        goPreviousStep();
+                        handlePreviousStep();
                     }}
                 >
                     <ArrowLeft className="h-4 w-4" />
@@ -497,10 +524,10 @@ function OnboardingWardCreatePage() {
                         ? t('page.onboardingWardCreate.backToWardSelect')
                         : t('page.onboardingWardCreate.action.previous')}
                 </button>
-                <SectionHeader step={draft.currentStep} />
+                <SectionHeader step={draft.currentStep} nightRecovery={isNightRecoveryStep} />
                 <OnboardingStepLayout
                     step={draft.currentStep}
-                    onPrev={goPreviousStep}
+                    onPrev={handlePreviousStep}
                     onNext={() => {
                         if (draft.currentStep === 1) {
                             setShowIdentityNameError(false);
@@ -508,6 +535,12 @@ function OnboardingWardCreatePage() {
 
                         if (isScheduleInputStep && !hasScheduleInput) {
                             skipOrComplete();
+
+                            return;
+                        }
+
+                        if (draft.currentStep === 2 && draft.rotationMode === 'TWO' && !isNightRecoveryStep) {
+                            setShowTwoShiftNightRecoveryStep(true);
 
                             return;
                         }
@@ -539,7 +572,10 @@ function OnboardingWardCreatePage() {
                     }
                     nextDisabled={
                         draft.currentStep < 5
-                            ? !canGoNext || isSavingDraft || isSubmitting || isSuccess
+                            ? (!canGoNext && !(draft.currentStep === 2 && !isNightRecoveryStep)) ||
+                              isSavingDraft ||
+                              isSubmitting ||
+                              isSuccess
                             : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}

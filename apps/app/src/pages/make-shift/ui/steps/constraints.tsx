@@ -334,21 +334,15 @@ const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
 ] as const;
 const THREE_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(THREE_SHIFT_RECOMMENDED_RULE_ORDER);
 const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MAX_CONTINUOUS_NIGHT',
-    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
-    'TWO_SHIFT_NIGHT_PAIR',
-    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
-    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
-    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+    'CORE_MIN_CONTINUOUS_NIGHT',
 ] as const;
 const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
-const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
-    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
-    'TWO_SHIFT_NIGHT_PAIR',
-    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
-    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
-]);
+const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
+const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
 const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
     'MIXED_ROTATION_PARTICIPATION',
     'TWO_SHIFT_DAILY_LINES',
@@ -362,11 +356,7 @@ const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
 ] as const;
 const MIXED_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(MIXED_SHIFT_RECOMMENDED_RULE_ORDER);
 const THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
-const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
-    'CORE_MAX_CONTINUOUS_WORK',
-    'CORE_MAX_CONTINUOUS_NIGHT',
-    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
-]);
+const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
 const MIXED_SHIFT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
     'MIXED_DAILY_COMPOSITION',
@@ -386,13 +376,9 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'AVOID_ISOLATED_OFF_DAY',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
-    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
-    'TWO_SHIFT_NIGHT_PAIR',
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'MAX_MONTHLY_NIGHT_COUNT',
-    'MAX_DAY_NIGHT_TRANSITIONS',
-    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'PRECEPTEE_NOT_ALONE_SHIFT',
     'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
@@ -526,7 +512,13 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     MAX_WORK_MINUTES_BY_PERIOD: 'WORK_REST',
     MIXED_SHIFT_WORKLOAD_BALANCE: 'FAIRNESS',
 };
-const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set(['TWO_SHIFT_MAX_LINES', 'CORE_MIN_REST_HOURS', 'MAX_MONTHLY_WORK_HOURS']);
+const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
+    'TWO_SHIFT_MAX_LINES',
+    'CORE_MIN_REST_HOURS',
+    'MAX_MONTHLY_WORK_HOURS',
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_PAIR',
+]);
 const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MIN_CHARGE_NURSE_BY_SHIFT', 'MAX_DAY_NIGHT_TRANSITIONS']);
 
 function isSavedRuleVisibleForRotation(templateCode: string, rotationMode: TWardRotationMode) {
@@ -1047,8 +1039,9 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
 const TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> = {
     CORE_MAX_CONTINUOUS_WORK: {days: 4, maxDays: 4, maxContinuousWorkDays: 4, count: 4},
     CORE_MAX_CONTINUOUS_NIGHT: {count: 3},
+    CORE_MIN_CONTINUOUS_NIGHT: {count: 1},
     TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF: {count: 1},
-    TWO_SHIFT_NIGHT_PAIR_MIN_OFF: {count: 1},
+    TWO_SHIFT_NIGHT_PAIR_MIN_OFF: {count: 2},
 };
 const TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'TWO_SHIFT_MAX_CONTINUOUS_NIGHT',
@@ -4732,15 +4725,23 @@ export function Constraints({
             .filter((rule) => rule.selected !== false)
             .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
 
-        if (duplicateRule) {
-            if (isRecommended && duplicateRule.severity !== 'HARD') {
+        const existingNightRecoveryRule = TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(nextRule.templateCode)
+            ? rulesRef.current
+                  .filter((rule) => rule.selected !== false)
+                  .find((rule) => TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(rule.templateCode))
+            : undefined;
+
+        if (duplicateRule || existingNightRecoveryRule) {
+            const existingRule = duplicateRule ?? existingNightRecoveryRule!;
+
+            if (isRecommended && existingRule.severity !== 'HARD') {
                 updateRules((prev) =>
-                    prev.map((rule) => (rule.clientId === duplicateRule.clientId ? {...rule, severity: 'HARD', isImportant: true} : rule)),
+                    prev.map((rule) => (rule.clientId === existingRule.clientId ? {...rule, severity: 'HARD', isImportant: true} : rule)),
                 );
             }
 
             setSoftModalOpen(false);
-            revealRuleForEditing(duplicateRule.clientId);
+            revealRuleForEditing(existingRule.clientId);
             toast.success(t('page.makeShift.constraints.toast.duplicateSkipped'));
 
             return;

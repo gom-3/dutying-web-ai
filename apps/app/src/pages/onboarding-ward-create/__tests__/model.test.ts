@@ -21,6 +21,7 @@ import {
     type TOnboardingDraftLabels,
     updateNurseDraft,
     updateRotationModeDraft,
+    updateTwoShiftNightRecoveryDisplayDraft,
     updateShiftTypeDraft,
 } from '../model';
 
@@ -40,6 +41,7 @@ const localizedLabels: TOnboardingDraftLabels = {
         off: 'Rest',
         twoDay: 'Two-shift day',
         twoNight: 'Two-shift night',
+        twoNightContinuation: 'Night finish',
     },
 };
 
@@ -127,6 +129,28 @@ describe('OnboardingWardCreatePage model', () => {
             mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.shortName),
         ).toEqual(['1', '2']);
         expect(getStepValidation({...mixedDraft, currentStep: 4}, 4).isValid).toBe(true);
+    });
+
+    it('requires a two-shift night recovery display and seeds only the selected shift type', () => {
+        const twoShiftDraft = updateRotationModeDraft(createInitialDraft(localizedLabels), 'TWO', localizedLabels);
+
+        expect(getStepValidation({...twoShiftDraft, currentStep: 2}, 2).issues).toEqual([
+            {code: 'missing-two-shift-night-recovery-display', step: 2},
+        ]);
+
+        const withContinuation = updateTwoShiftNightRecoveryDisplayDraft(twoShiftDraft, 'NIGHT_CONTINUATION', localizedLabels);
+        expect(getStepValidation({...withContinuation, currentStep: 2}, 2).isValid).toBe(true);
+        expect(withContinuation.shiftTypes).toContainEqual(
+            expect.objectContaining({
+                name: 'Night finish',
+                classification: 'NIGHT_CONTINUATION',
+                rotationSystem: 'TWO',
+            }),
+        );
+
+        const withOff = updateTwoShiftNightRecoveryDisplayDraft(withContinuation, 'OFF', localizedLabels);
+        expect(withOff.shiftTypes.some((shiftType) => shiftType.classification === 'NIGHT_CONTINUATION')).toBe(false);
+        expect(withOff.shiftTypes).toContainEqual(expect.objectContaining({classification: 'OFF', rotationSystem: 'NONE'}));
     });
 
     it('does not add, delete, or convert shift rows after a user configures one', () => {

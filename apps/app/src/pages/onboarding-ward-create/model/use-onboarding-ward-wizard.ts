@@ -56,6 +56,7 @@ import {
     updateConstraintCandidateDraft,
     updateNurseDraft,
     updateRotationModeDraft,
+    updateTwoShiftNightRecoveryDisplayDraft,
     updateShiftTypeDraft,
     updateTeamDivisionNameDraft,
     updateTeamNameDraft,
@@ -257,6 +258,18 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDr
     wardName: draft.wardName,
     hospitalName: draft.hospitalName,
     rotationMode: draft.rotationMode ?? 'THREE',
+    twoShiftNightRecoveryDisplay:
+        draft.rotationMode === 'TWO'
+            ? (draft.twoShiftNightRecoveryDisplay ??
+              (draft.shiftTypes.some(
+                  (shiftType) =>
+                      shiftType.isActive !== false &&
+                      shiftType.rotationSystem === 'TWO' &&
+                      shiftType.classification === 'NIGHT_CONTINUATION',
+              )
+                  ? 'NIGHT_CONTINUATION'
+                  : 'OFF'))
+            : null,
     shiftTypes: draft.shiftTypes.map((shiftType) => ({
         ...shiftType,
         rotationSystem: resolveOnboardingRotationSystem(shiftType),
@@ -757,6 +770,7 @@ function useOnboardingWardWizard() {
                 off: t('feature.registerWard.defaultShiftType.off'),
                 twoDay: t('page.onboardingWardCreate.shiftType.twoDayLabel'),
                 twoNight: t('page.onboardingWardCreate.shiftType.twoNightLabel'),
+                twoNightContinuation: t('page.onboardingWardCreate.shiftType.classification.nightContinuation'),
             },
         }),
         [t],
@@ -1195,6 +1209,10 @@ function useOnboardingWardWizard() {
     const updateRotationMode = (rotationMode: TOnboardingWardDraft['rotationMode']) => {
         markDraftTouched();
         setDraft((prev) => updateRotationModeDraft(prev, rotationMode, onboardingDraftLabels));
+    };
+    const updateTwoShiftNightRecoveryDisplay = (display: NonNullable<TOnboardingWardDraft['twoShiftNightRecoveryDisplay']>) => {
+        markDraftTouched();
+        setDraft((prev) => updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels));
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
         markDraftTouched();
@@ -1666,6 +1684,7 @@ function useOnboardingWardWizard() {
         goPreviousStep,
         updateWardIdentity,
         updateRotationMode,
+        updateTwoShiftNightRecoveryDisplay,
         skipOrComplete,
         addShiftType,
         updateShiftType,
