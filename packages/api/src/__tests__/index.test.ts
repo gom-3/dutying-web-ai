@@ -279,7 +279,9 @@ describe('@dutying/api public entry', () => {
             },
         });
 
-        await expect(wardApi.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'})).resolves.toMatchObject({
+        await expect(
+            wardApi.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital', rotationMode: 'THREE'}),
+        ).resolves.toMatchObject({
             wardId: 10,
             setupStatus: 'SETUP_IN_PROGRESS',
         });
@@ -288,6 +290,7 @@ describe('@dutying/api public entry', () => {
             wardApi.updateOnboardingWardDraft(10, {
                 name: 'ICU',
                 hospitalName: 'Dutying Hospital',
+                rotationMode: 'TWO',
                 draftPayload: {draft: {currentStep: 2}},
             }),
         ).resolves.toMatchObject({
@@ -328,10 +331,12 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenNthCalledWith(1, '/wards/onboarding/drafts', {
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
+            rotationMode: 'THREE',
         });
         expect(patchMock).toHaveBeenCalledWith('/wards/10/onboarding/draft', {
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
+            rotationMode: 'TWO',
             draftPayload: {draft: {currentStep: 2}},
         });
         expect(postMock).toHaveBeenNthCalledWith(2, '/wards/10/onboarding/complete', {
@@ -447,11 +452,11 @@ describe('@dutying/api public entry', () => {
         putMock.mockResolvedValueOnce({data: response});
 
         await expect(wardApi.getShiftConstraintRules(7, 3)).resolves.toEqual(response);
-        await expect(wardApi.getShiftConstraintRuleCandidates(7, 3, 'TWO')).resolves.toEqual(candidateResponse);
+        await expect(wardApi.getShiftConstraintRuleCandidates(7, 3)).resolves.toEqual(candidateResponse);
         await expect(wardApi.updateShiftConstraintRules(7, 3, payload)).resolves.toEqual(response);
 
         expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules');
-        expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules/candidates?rotationMode=TWO');
+        expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules/candidates');
         expect(putMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules', payload);
     });
 

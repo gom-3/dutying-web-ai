@@ -1110,38 +1110,22 @@ describe('Constraints', () => {
         });
     });
 
-    it('temporarily saves the selected rotation mode and reloads its candidates', async () => {
-        wardApiMocks.getShiftConstraintRuleCandidates
-            .mockResolvedValueOnce({
-                schemaVersion: 1,
-                wardId: 1,
-                shiftTeamId: 10,
-                rotationMode: 'THREE',
-                options: {},
-                templates: [],
-            })
-            .mockResolvedValueOnce({
-                schemaVersion: 1,
-                wardId: 1,
-                shiftTeamId: 10,
-                rotationMode: 'TWO',
-                options: {},
-                templates: [],
-            });
+    it('uses the stored ward rotation mode without rendering a temporary selector', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'TWO',
+            options: {},
+            templates: [],
+        });
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        const twoShiftRadio = await screen.findByRole('radio', {name: '2교대'});
-
-        expect(screen.getByRole('radio', {name: '3교대'})).toBeChecked();
-
-        await userEvent.click(twoShiftRadio);
-
         await waitFor(() => {
-            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(1, 10, {rotationMode: 'TWO'});
-            expect(wardApiMocks.getShiftConstraintRuleCandidates).toHaveBeenCalledWith(1, 10, 'TWO');
-            expect(twoShiftRadio).toBeChecked();
+            expect(wardApiMocks.getShiftConstraintRuleCandidates).toHaveBeenCalledWith(1, 10);
         });
+        expect(screen.queryByRole('radio', {name: '2교대'})).not.toBeInTheDocument();
     });
 
     it('hides a legacy MIXED operation policy and omits only that policy from the next save', async () => {
@@ -1966,7 +1950,8 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await waitFor(() => expect(screen.getAllByRole('radio')).toHaveLength(3));
+        await waitFor(() => expect(wardApiMocks.getShiftConstraintRuleCandidates).toHaveBeenCalledWith(1, 10));
+        expect(screen.queryAllByRole('radio')).toHaveLength(0);
         expect(screen.queryByText(title)).not.toBeInTheDocument();
         expect(screen.queryByRole('radio', {name: new RegExp(strategyLabel)})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('THREE_BASE_FALLBACK_TWO');

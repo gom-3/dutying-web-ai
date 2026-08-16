@@ -738,6 +738,7 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWard
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
         hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
+        rotationMode: draft.rotationMode,
     };
 };
 

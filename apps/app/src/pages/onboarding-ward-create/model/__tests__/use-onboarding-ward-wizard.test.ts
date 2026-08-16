@@ -117,6 +117,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({
             hospitalName: '듀팅병원',
             name: '중환자실',
+            rotationMode: 'THREE',
             draftPayload: expect.objectContaining({
                 draft: expect.objectContaining({
                     hospitalName: '듀팅병원',
@@ -611,7 +612,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.activeTeamId).toBe(savedDraft.teams[1]?.id);
     });
 
-    it('saves changed draft payload to the existing server draft', async () => {
+    it('saves changed identity and rotation mode to the existing server draft', async () => {
         const savedDraft = {
             ...createInitialDraft(),
             hospitalName: '듀팅병원',
@@ -634,6 +635,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         act(() => {
             result.current.updateWardIdentity({wardName: '응급실'});
+            result.current.updateRotationMode('TWO');
         });
 
         await waitFor(() =>
@@ -642,9 +644,11 @@ describe('useOnboardingWardWizard upload flow', () => {
                 expect.objectContaining({
                     name: '응급실',
                     hospitalName: '듀팅병원',
+                    rotationMode: 'TWO',
                     draftPayload: expect.objectContaining({
                         draft: expect.objectContaining({
                             wardName: '응급실',
+                            rotationMode: 'TWO',
                         }),
                     }),
                 }),

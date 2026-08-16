@@ -249,7 +249,6 @@ export type TShiftConstraintRulesResponse = {
 };
 
 export type TUpdateShiftConstraintRulesDTO = {
-    rotationMode?: TWardRotationMode;
     rules?: {
         shiftConstraintRuleId?: number;
         templateCode: string;
@@ -584,11 +583,7 @@ export type TPublishSnapshotRes = {
 export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
-    getShiftConstraintRuleCandidates: (
-        wardId: number,
-        shiftTeamId: number,
-        rotationMode?: TWardRotationMode,
-    ) => Promise<TShiftConstraintRuleCandidatesResponse>;
+    getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;
     getShiftConstraintRules: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRulesResponse>;
     updateShiftConstraintRules: (
         wardId: number,
@@ -771,12 +766,14 @@ export type TUpdateShiftTeamDivisionDTO = {
 export type TCreateOnboardingWardDraftDTO = {
     name: string;
     hospitalName: string;
+    rotationMode?: TWardRotationMode;
     draftPayload?: Record<string, unknown>;
 };
 
 export type TUpdateOnboardingWardDraftDTO = {
     name?: string;
     hospitalName?: string;
+    rotationMode?: TWardRotationMode;
     draftPayload: Record<string, unknown>;
 };
 

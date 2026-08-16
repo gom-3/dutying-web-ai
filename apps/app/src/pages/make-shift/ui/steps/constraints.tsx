@@ -111,11 +111,6 @@ type TNurseRoleLike = {
 const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
-const TEMP_ROTATION_MODE_OPTIONS: {value: TWardRotationMode; labelKey: TI18nKey}[] = [
-    {value: 'THREE', labelKey: 'page.makeShift.constraints.rotationMode.three'},
-    {value: 'TWO', labelKey: 'page.makeShift.constraints.rotationMode.two'},
-    {value: 'MIXED', labelKey: 'page.makeShift.constraints.rotationMode.mixed'},
-];
 const MIXED_OPERATION_POLICY_TEMPLATE_CODE = 'MIXED_OPERATION_POLICY';
 const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
@@ -4061,19 +4056,13 @@ export function Constraints({
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
-    const [rotationModeOverride, setRotationModeOverride] = useState<TWardRotationMode | null>(null);
     const saveRulesRequestSeqRef = useRef(0);
     const recommendedDefaultsSeedKeyRef = useRef<string | null>(null);
     const languageQueryKey = i18n.resolvedLanguage ?? i18n.language ?? 'default';
     const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey);
     const candidatesQuery = useQuery({
-        queryKey: shiftConstraintRuleQueryKeys.candidates(
-            wardId ?? -1,
-            currentShiftTeamId ?? -1,
-            languageQueryKey,
-            rotationModeOverride ?? undefined,
-        ),
-        queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1, rotationModeOverride ?? undefined),
+        queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey),
+        queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
         retry: false,
         refetchOnWindowFocus: false,
@@ -4094,7 +4083,7 @@ export function Constraints({
         enabled: wardId !== null && wardId !== undefined,
     });
     const templates = candidatesQuery.data?.templates ?? [];
-    const rotationMode: TWardRotationMode = rotationModeOverride ?? candidatesQuery.data?.rotationMode ?? 'THREE';
+    const rotationMode: TWardRotationMode = candidatesQuery.data?.rotationMode ?? 'THREE';
     const softTemplates = useMemo(
         () =>
             createSoftRuleTemplates(templates, t, rotationMode).filter(
@@ -4421,36 +4410,6 @@ export function Constraints({
             dateScope: (mergedOptionMap.dateScope ?? []).filter(isOptionInCurrentMonth),
         };
     }, [nurses, options, rotationMode, shiftTypes, t, year, month]);
-    const rotationModeMutation = useMutation({
-        mutationKey: [...shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId), 'rotation-mode'],
-        mutationFn: ({nextRotationMode}: {nextRotationMode: TWardRotationMode; previousOverride: TWardRotationMode | null}) => {
-            if (!enabled || wardId == null || currentShiftTeamId == null) {
-                throw new Error('Cannot save the temporary rotation mode without a ward and shift team.');
-            }
-
-            return putShiftConstraintRules(wardId, currentShiftTeamId, {rotationMode: nextRotationMode});
-        },
-        onSuccess: (response) => {
-            queryClient.setQueryData(rulesQueryKey, response);
-
-            const savedRules = createRulesFromServer(response.rules)
-                .filter(isVisibleConstraintRule)
-                .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode));
-
-            rulesRef.current = savedRules;
-            setRules(savedRules);
-
-            if (wardId != null && currentShiftTeamId != null) {
-                void queryClient.invalidateQueries({
-                    queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace'],
-                });
-            }
-        },
-        onError: (_error, variables) => {
-            setRotationModeOverride(variables.previousOverride);
-            toast.error(t('page.makeShift.constraints.rotationMode.saveFailed'));
-        },
-    });
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
@@ -4459,7 +4418,6 @@ export function Constraints({
             }
 
             return putShiftConstraintRules(wardId, currentShiftTeamId, {
-                rotationMode,
                 rules: rules.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
             });
         },
@@ -4548,10 +4506,6 @@ export function Constraints({
     );
 
     useEffect(() => {
-        setRotationModeOverride(null);
-    }, [currentShiftTeamId, wardId]);
-
-    useEffect(() => {
         if (!rulesQuery.data || candidatesQuery.isPending) return;
 
         replaceRules(createRulesFromServer(rulesQuery.data.rules), {sync: false});
@@ -4627,15 +4581,6 @@ export function Constraints({
         rulesRef.current = rules;
     }, [rules]);
 
-    const changeRotationMode = (nextRotationMode: TWardRotationMode) => {
-        if (nextRotationMode === rotationMode || rotationModeMutation.isPending) return;
-
-        const previousOverride = rotationModeOverride;
-
-        setSoftModalOpen(false);
-        setRotationModeOverride(nextRotationMode);
-        rotationModeMutation.mutate({nextRotationMode, previousOverride});
-    };
     const optimizeDuplicateRules = useCallback(() => {
         const result = compactDuplicateRules(rulesRef.current);
 
@@ -4724,7 +4669,6 @@ export function Constraints({
         const duplicateRule = rulesRef.current
             .filter((rule) => rule.selected !== false)
             .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
-
         const existingNightRecoveryRule = TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(nextRule.templateCode)
             ? rulesRef.current
                   .filter((rule) => rule.selected !== false)
@@ -4955,44 +4899,6 @@ export function Constraints({
                 <div
                     className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
                 >
-                    <div className="mb-4 rounded-[12px] bg-gray-7 px-4 py-3">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="min-w-0">
-                                <p className="font-apple text-[13px] font-bold text-sub-2">
-                                    {t('page.makeShift.constraints.rotationMode.title')}
-                                </p>
-                                <p className="mt-0.5 font-apple text-[11px] font-medium text-gray-4">
-                                    {t('page.makeShift.constraints.rotationMode.hint')}
-                                </p>
-                            </div>
-                            <div
-                                role="radiogroup"
-                                aria-label={t('page.makeShift.constraints.rotationMode.ariaLabel')}
-                                className="flex max-w-full flex-wrap items-center rounded-[12px] bg-white p-1"
-                            >
-                                {TEMP_ROTATION_MODE_OPTIONS.map((option) => {
-                                    const selected = rotationMode === option.value;
-
-                                    return (
-                                        <button
-                                            key={option.value}
-                                            type="button"
-                                            role="radio"
-                                            aria-checked={selected}
-                                            disabled={rotationModeMutation.isPending}
-                                            onClick={() => changeRotationMode(option.value)}
-                                            className={cn(
-                                                'min-h-11 rounded-[9px] px-3 font-apple text-[12px] font-bold transition-colors focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60',
-                                                selected ? 'bg-[#6C5CFF] text-white' : 'text-gray-4 hover:bg-gray-7 hover:text-sub-2',
-                                            )}
-                                        >
-                                            {t(option.labelKey)}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
                     {savedRuleWarnings.length > 0 ? (
                         <section
                             role="status"
@@ -5033,7 +4939,7 @@ export function Constraints({
                                 <button
                                     id="make_constraint_add_button"
                                     type="button"
-                                    disabled={candidatesQuery.isFetching || rotationModeMutation.isPending}
+                                    disabled={candidatesQuery.isFetching}
                                     onClick={() => setSoftModalOpen(true)}
                                     className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#6C5CFF] px-4 font-apple text-[13px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
                                 >

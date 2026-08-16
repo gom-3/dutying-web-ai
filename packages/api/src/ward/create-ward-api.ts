@@ -1,4 +1,3 @@
-import type {TWardRotationMode} from '@dutying/domain';
 import type {IApiClient} from '../client';
 import type {
     IWardAPI,
@@ -242,14 +241,10 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(wardPath(`/${wardId}`), ward)).data,
         getWardConstraint: async (wardId: number, shiftTeamId: number) =>
             (await client.get<TWardConstraintResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/constraint`))).data,
-        getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number, rotationMode?: TWardRotationMode) =>
+        getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number) =>
             (
                 await client.get<TShiftConstraintRuleCandidatesResponse>(
-                    wardPath(
-                        `/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates${
-                            rotationMode ? `?${new URLSearchParams({rotationMode}).toString()}` : ''
-                        }`,
-                    ),
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`),
                 )
             ).data,
         getShiftConstraintRules: async (wardId: number, shiftTeamId: number) =>

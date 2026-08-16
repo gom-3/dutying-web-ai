@@ -4,7 +4,6 @@ import type {
     TShiftConstraintSeverity,
     TUpdateShiftConstraintRulesDTO,
 } from '@dutying/api/ward';
-import type {TWardRotationMode} from '@dutying/domain';
 import {WardAPI} from '@/shared/api';
 
 export type {
@@ -47,15 +46,8 @@ export type TShiftConstraintRulesSavePayload = TUpdateShiftConstraintRulesDTO;
 
 export const shiftConstraintRuleQueryKeys = {
     all: () => ['shiftConstraintRules'] as const,
-    candidates: (wardId: number, shiftTeamId: number, language?: string, rotationMode?: TWardRotationMode) =>
-        [
-            ...shiftConstraintRuleQueryKeys.all(),
-            'candidates',
-            wardId,
-            shiftTeamId,
-            language ?? 'default',
-            rotationMode ?? 'stored',
-        ] as const,
+    candidates: (wardId: number, shiftTeamId: number, language?: string) =>
+        [...shiftConstraintRuleQueryKeys.all(), 'candidates', wardId, shiftTeamId, language ?? 'default'] as const,
     rules: (wardId: number, shiftTeamId: number, language?: string) =>
         [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId, language ?? 'default'] as const,
     save: (wardId: number | null | undefined, shiftTeamId: number | null | undefined) =>
@@ -65,8 +57,7 @@ export const shiftConstraintRuleQueryKeys = {
 export const getShiftConstraintRuleCandidates = async (
     wardId: number,
     shiftTeamId: number,
-    rotationMode?: TWardRotationMode,
-): Promise<TShiftConstraintRuleCandidatesResponse> => WardAPI.getShiftConstraintRuleCandidates(wardId, shiftTeamId, rotationMode);
+): Promise<TShiftConstraintRuleCandidatesResponse> => WardAPI.getShiftConstraintRuleCandidates(wardId, shiftTeamId);
 
 export const getShiftConstraintRules = async (wardId: number, shiftTeamId: number) => {
     return WardAPI.getShiftConstraintRules(wardId, shiftTeamId);
