@@ -29,7 +29,9 @@ describe('nurse name helpers', () => {
         expect(normalizeNurseNameForRequest('　山田 花子　')).toBe('　山田 花子　');
     });
 
-    it('sanitizes display input to the server-supported character set', () => {
+    it('keeps Korean IME composition characters while sanitizing unsupported input', () => {
+        expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
+        expect(sanitizeNurseNameInput('홍')).toBe('홍');
         expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田花子Nurse1・ー ');
     });
 });

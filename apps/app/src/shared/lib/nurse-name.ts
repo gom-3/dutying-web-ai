@@ -6,7 +6,9 @@ const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
 const NURSE_NAME_ALLOWED_REGEXP = /^[\uAC00-\uD7A3A-Za-z0-9 \u3040-\u309F\u30A0-\u30FF\u3400-\u9FFF\u3005・ー]+$/u;
 const NURSE_NAME_MEANINGFUL_REGEXP = /[\uAC00-\uD7A3A-Za-z0-9\u3040-\u309F\u30A1-\u30FA\u30FD-\u30FF\u3400-\u9FFF\u3005]/u;
-const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^\uAC00-\uD7A3A-Za-z0-9 \u3040-\u309F\u30A0-\u30FF\u3400-\u9FFF\u3005・ー]/gu;
+// Keep Hangul jamo while a Korean IME is composing. Final validation still rejects uncombined jamo.
+const NURSE_NAME_INPUT_SANITIZE_REGEXP =
+    /[^\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF\uAC00-\uD7A3A-Za-z0-9 \u3040-\u309F\u30A0-\u30FF\u3400-\u9FFF\u3005・ー]/gu;
 
 export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
 
