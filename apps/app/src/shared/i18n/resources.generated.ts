@@ -1314,6 +1314,14 @@ export const ko = {
                         "label": "중요 기본 조건",
                         "sentence": "N 근무 후에는 {days}일 이상 쉬어야(OFF) 해요"
                     },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "2교대 야간 회복 조건",
+                        "sentence": "모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요."
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "2교대 야간 회복 조건",
+                        "sentence": "모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요."
+                    },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "금지 패턴 규칙",
                         "sentence": "{target}은 연속 N나이트 근무를 최대 {count}번까지만 할 수 있어요."
@@ -4388,6 +4396,14 @@ export const en: TLocale = {
                         "label": "Default Important constraint",
                         "sentence": "After an N shift, assign at least {days} OFF day"
                     },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "Two-shift night recovery constraint",
+                        "sentence": "All nurses need {nightContinuationShift} and at least {count} {offShift} day(s) after consecutive {nightShift} shifts."
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "Two-shift night recovery constraint",
+                        "sentence": "All nurses need at least {count} {offShift} day(s) after consecutive {nightShift} shifts. The first day counts as the recovery day after night duty."
+                    },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "Forbidden pattern constraint",
                         "sentence": "{target} can work N up to {count} times consecutively"
@@ -7459,6 +7475,14 @@ export const ja: TLocale = {
                     "IMPORTANT_OFF_AFTER_NIGHT": {
                         "label": "重要な基本条件",
                         "sentence": "N勤務後は{days}日以上休みが必要です"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "2交代の夜勤回復条件",
+                        "sentence": "すべての看護師は連続した{nightShift}勤務後、{nightContinuationShift}と最低{count}日の{offShift}が必要です。"
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "2交代の夜勤回復条件",
+                        "sentence": "すべての看護師は連続した{nightShift}勤務後、最低{count}日の{offShift}が必要です。このうち初日は夜勤後の回復日として扱います。"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "禁止パターン条件",
@@ -10532,6 +10556,14 @@ export const zh: TLocale = {
                         "label": "重要基本条件",
                         "sentence": "N 下班后您必须至少休息 {days} 天。"
                     },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "两班制夜班恢复条件",
+                        "sentence": "所有护士在连续{nightShift}班后，需要{nightContinuationShift}和至少{count}天{offShift}。"
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "两班制夜班恢复条件",
+                        "sentence": "所有护士在连续{nightShift}班后，至少需要{count}天{offShift}。其中第一天按夜班后的恢复日计算。"
+                    },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "禁止模式规则",
                         "sentence": "{target}连续N班最多{count}次"
@@ -13604,6 +13636,14 @@ export const th: TLocale = {
                         "label": "ข้อจำกัดสำคัญเริ่มต้น",
                         "sentence": "หลังจากกะ N ให้กำหนดอย่างน้อย {days} OFF วัน"
                     },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "เงื่อนไขพักฟื้นหลังเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "พยาบาลทุกคนต้องมี {nightContinuationShift} และ {offShift} อย่างน้อย {count} วันหลังทำเวร {nightShift} ติดต่อกัน"
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "เงื่อนไขพักฟื้นหลังเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "พยาบาลทุกคนต้องมี {offShift} อย่างน้อย {count} วันหลังทำเวร {nightShift} ติดต่อกัน โดยวันแรกนับเป็นวันพักฟื้นหลังเวรกลางคืน"
+                    },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
                         "sentence": "{target} สามารถทำงานได้ N สูงสุด {count} ครั้งติดต่อกัน"
@@ -16675,6 +16715,14 @@ export const vi: TLocale = {
                     "IMPORTANT_OFF_AFTER_NIGHT": {
                         "label": "Mặc định Ràng buộc quan trọng",
                         "sentence": "Sau ca N, ấn định ít nhất {days} ngày TẮT"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "Điều kiện phục hồi sau ca đêm 2 ca",
+                        "sentence": "Tất cả điều dưỡng cần {nightContinuationShift} và ít nhất {count} ngày {offShift} sau các ca {nightShift} liên tiếp."
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "Điều kiện phục hồi sau ca đêm 2 ca",
+                        "sentence": "Tất cả điều dưỡng cần ít nhất {count} ngày {offShift} sau các ca {nightShift} liên tiếp. Ngày đầu tiên được tính là ngày phục hồi sau ca đêm."
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "Ràng buộc mẫu bị cấm",

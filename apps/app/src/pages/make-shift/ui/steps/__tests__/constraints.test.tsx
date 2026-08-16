@@ -274,6 +274,122 @@ describe('Constraints', () => {
         expect(screen.queryByText((content) => content.includes('연속 근무는'))).not.toBeInTheDocument();
     });
 
+    it('localizes two-shift night recovery templates instead of mixing Korean server text with Japanese options', async () => {
+        await i18n.changeLanguage('ja');
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 2,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'TWO',
+            options: {
+                twoShiftNights: [
+                    {
+                        type: 'WARD_SHIFT_TYPE',
+                        wardShiftTypeId: 5,
+                        code: '夜勤',
+                        name: '夜勤',
+                        label: '夜勤',
+                        classification: 'NIGHT',
+                        rotationSystem: 'TWO',
+                    },
+                ],
+                twoShiftNightContinuations: [
+                    {
+                        type: 'WARD_SHIFT_TYPE',
+                        wardShiftTypeId: 6,
+                        code: '夜勤終了日',
+                        name: '夜勤終了日',
+                        label: '夜勤終了日',
+                        classification: 'NIGHT_CONTINUATION',
+                        rotationSystem: 'TWO',
+                    },
+                ],
+                offShifts: [
+                    {
+                        type: 'WARD_SHIFT_TYPE',
+                        wardShiftTypeId: 7,
+                        code: '休み',
+                        name: '休み',
+                        label: '休み',
+                        classification: 'OFF',
+                        rotationSystem: 'NONE',
+                    },
+                ],
+            },
+            templates: [
+                {
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+                    category: 'CORE',
+                    displayTemplate:
+                        '모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nightShift', label: '야간 근무', inputType: 'SHIFT', optionGroup: 'twoShiftNights'},
+                        {
+                            key: 'nightContinuationShift',
+                            label: '야간 후반부',
+                            inputType: 'SHIFT',
+                            optionGroup: 'twoShiftNightContinuations',
+                        },
+                        {key: 'count', label: '추가 오프 일수', inputType: 'NUMBER', min: 0, max: 7},
+                        {key: 'offShift', label: '휴무', inputType: 'SHIFT', optionGroup: 'offShifts'},
+                    ],
+                },
+                {
+                    templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+                    category: 'CORE',
+                    displayTemplate:
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nightShift', label: '야간 근무', inputType: 'SHIFT', optionGroup: 'twoShiftNights'},
+                        {key: 'count', label: '오프 일수', inputType: 'NUMBER', min: 1, max: 8},
+                        {key: 'offShift', label: '휴무', inputType: 'SHIFT', optionGroup: 'offShifts'},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        const continuationCard = await waitFor(() => {
+            const card = document.querySelector<HTMLElement>(
+                '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF"]',
+            );
+
+            expect(card).toBeInTheDocument();
+
+            return card!;
+        });
+        const pairCard = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_PAIR_MIN_OFF"]');
+
+        expect(continuationCard.textContent).toContain('すべての看護師は連続した');
+        expect(continuationCard.textContent).toContain('勤務後、');
+        expect(continuationCard.textContent).toContain('と最低');
+        expect(continuationCard.textContent).toContain('日の');
+        expect(continuationCard.textContent).toContain('が必要です。');
+        expect(continuationCard.textContent).not.toContain('모든 간호사는');
+        expect(continuationCard.textContent).not.toContain('근무 후');
+        expect(pairCard?.textContent).toContain('このうち初日は夜勤後の回復日として扱います。');
+        expect(pairCard?.textContent).not.toContain('이 중 첫날은');
+    });
+
     it('shows the recommended night-block recovery rule when night continuation exists', async () => {
         const nightContinuation = {
             wardShiftTypeId: 6,
