@@ -102,15 +102,20 @@ const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
 const normalizeShiftTypePayload = <T extends TCreateShiftTypeDTO | TCreateWardShiftTypeDTO>(shiftType: T): T => {
     if (shiftType.isOff) {
+        const classification =
+            shiftType.classification === 'OFF' || shiftType.classification === 'ANNUAL_LEAVE' || shiftType.classification === 'OTHER_LEAVE'
+                ? shiftType.classification
+                : 'OTHER_LEAVE';
+
         return {
             ...shiftType,
-            classification: shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE',
+            classification,
             rotationSystem: 'NONE',
             paidMinutes: null,
         };
     }
 
-    if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {
+    if (shiftType.classification === 'OFF' || shiftType.classification === 'ANNUAL_LEAVE' || shiftType.classification === 'OTHER_LEAVE') {
         return {
             ...shiftType,
             classification: 'OTHER_WORK',

@@ -14,7 +14,7 @@ describe('shift rotation selection', () => {
     it('limits classifications by the selected rotation system', () => {
         expect(getSelectableClassificationsForRotation('THREE')).toEqual(['DAY', 'EVENING', 'NIGHT']);
         expect(getSelectableClassificationsForRotation('TWO')).toEqual(['DAY', 'NIGHT', 'NIGHT_CONTINUATION']);
-        expect(getSelectableClassificationsForRotation('NONE')).toEqual(['OFF', 'OTHER_WORK', 'OTHER_LEAVE']);
+        expect(getSelectableClassificationsForRotation('NONE')).toEqual(['OFF', 'OTHER_WORK', 'ANNUAL_LEAVE', 'OTHER_LEAVE']);
         expect(getSelectableClassificationsForRotation('NONE', {primaryOff: true})).toEqual(['OFF']);
     });
 
@@ -35,13 +35,22 @@ describe('shift rotation selection', () => {
     });
 
     it('keeps classification dropdowns broad while constraining their valid rotation axis', () => {
-        expect(getSelectableClassificationsForWardMode('THREE')).toEqual(['DAY', 'EVENING', 'NIGHT', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE']);
+        expect(getSelectableClassificationsForWardMode('THREE')).toEqual([
+            'DAY',
+            'EVENING',
+            'NIGHT',
+            'OFF',
+            'OTHER_WORK',
+            'ANNUAL_LEAVE',
+            'OTHER_LEAVE',
+        ]);
         expect(getSelectableClassificationsForWardMode('TWO')).toEqual([
             'DAY',
             'NIGHT',
             'NIGHT_CONTINUATION',
             'OFF',
             'OTHER_WORK',
+            'ANNUAL_LEAVE',
             'OTHER_LEAVE',
         ]);
         expect(getSelectableRotationSystemsForClassification('MIXED', 'DAY')).toEqual(['THREE', 'TWO']);
@@ -49,6 +58,7 @@ describe('shift rotation selection', () => {
         expect(getSelectableRotationSystemsForClassification('MIXED', 'NIGHT_CONTINUATION')).toEqual(['TWO']);
         expect(getSelectableRotationSystemsForClassification('THREE', 'NIGHT_CONTINUATION')).toEqual([]);
         expect(getSelectableRotationSystemsForClassification('MIXED', 'OFF')).toEqual(['NONE']);
+        expect(getSelectableRotationSystemsForClassification('MIXED', 'ANNUAL_LEAVE')).toEqual(['NONE']);
     });
 
     it('describes the exact required semantic slots for each ward mode', () => {

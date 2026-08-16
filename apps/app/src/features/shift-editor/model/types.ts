@@ -1,4 +1,5 @@
-import {type TWardConstraint} from '@/entities';
+import {type TShiftRotationSystem} from '@dutying/domain/ward';
+import {type TWardConstraint, type TWardShiftClassification} from '@/entities';
 import type {TScheduleViolationPersisted} from './schedule-violations';
 
 export type TCellValue = string | null;
@@ -22,9 +23,19 @@ export type TDutyRow = {
     cells: TCellValue[];
 };
 
+export type TDutyShiftTypeRef = {
+    wardShiftTypeId: number;
+    shortName: string;
+    classification: TWardShiftClassification;
+    rotationSystem?: TShiftRotationSystem;
+    isDefault: boolean;
+};
+
 export type TDutyDoc = {
     columns: TDateKey[];
     rows: TDutyRow[];
+    /** 임시저장 당시 약자를 안정적인 근무유형 ID로 다시 연결하기 위한 카탈로그. 구 드래프트에는 없을 수 있다. */
+    shiftTypeRefs?: TDutyShiftTypeRef[];
     workerMeta: Record<string, {name: string; nurseId?: number; priority?: number; divisionNum?: number; divisionName?: string | null}>;
     fixedCells: Record<string /* `${workerId}|${date}` */, true>;
     requestCells: Record<string /* `${workerId}|${date}` */, true>;

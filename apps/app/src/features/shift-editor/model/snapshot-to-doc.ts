@@ -1,6 +1,6 @@
 import type {TSnapshotCellDTO, TSnapshotDetailRes, TSnapshotRowOrderDTO} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
-import {buildWardShiftTypeMaps, shiftToDoc} from './shift-adapter';
+import {buildDutyShiftTypeRefs, buildWardShiftTypeMaps, shiftToDoc} from './shift-adapter';
 import type {TCellValue, TDutyDoc} from './types';
 
 function cellValueFromSnapshotCell(
@@ -82,6 +82,7 @@ export function snapshotDetailToDoc(
     return {
         columns: base.columns,
         rows,
+        shiftTypeRefs: buildDutyShiftTypeRefs(shift),
         workerMeta,
         fixedCells,
         requestCells: {...locks.requestCells},

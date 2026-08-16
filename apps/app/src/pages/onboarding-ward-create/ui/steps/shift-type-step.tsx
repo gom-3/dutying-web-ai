@@ -65,6 +65,7 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'NIGHT_CONTINUATION', labelKey: 'page.onboardingWardCreate.shiftType.classification.nightContinuation'},
     {value: 'OFF', labelKey: 'page.onboardingWardCreate.shiftType.classification.off'},
     {value: 'OTHER_WORK', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherWork'},
+    {value: 'ANNUAL_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.annualLeave'},
     {value: 'OTHER_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherLeave'},
 ] as const;
 
@@ -98,12 +99,20 @@ function getAvailableShiftRotationSystems(shiftType: TOnboardingWardShiftType, r
 function hasFixedNoneRotationSystem(shiftType: TOnboardingWardShiftType) {
     return (
         isOnboardingShiftMappingResolved(shiftType.mappingStatus) &&
-        (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_WORK' || shiftType.classification === 'OTHER_LEAVE')
+        (shiftType.classification === 'OFF' ||
+            shiftType.classification === 'OTHER_WORK' ||
+            shiftType.classification === 'ANNUAL_LEAVE' ||
+            shiftType.classification === 'OTHER_LEAVE')
     );
 }
 
 function isOffShiftType(shiftType: TOnboardingWardShiftType) {
-    return shiftType.isOff || shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE';
+    return (
+        shiftType.isOff ||
+        shiftType.classification === 'OFF' ||
+        shiftType.classification === 'ANNUAL_LEAVE' ||
+        shiftType.classification === 'OTHER_LEAVE'
+    );
 }
 
 export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightContinuation = false}: IShiftTypeRequirementsProps) {
@@ -341,7 +350,7 @@ export function ShiftTypeStep({
         classification: TOnboardingWardShiftType['classification'],
         rotationSystem: TSelectableShiftRotationSystem,
     ): Partial<TOnboardingWardShiftType> => {
-        const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+        const isOff = classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
         const isNightContinuation = classification === 'NIGHT_CONTINUATION';
         const timeRange = getDefaultTimeRangeForRotation(rotationSystem, classification);
 

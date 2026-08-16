@@ -71,6 +71,7 @@ export const ko = {
                 "night": "야간 근무 (Night)",
                 "nightContinuation": "야간 후반부(퇴근날)",
                 "off": "휴무 (Off)",
+                "annualLeave": "연차 (유급휴가)",
                 "otherLeave": "기타 휴무",
                 "otherWork": "기타 근무"
             },
@@ -945,6 +946,9 @@ export const ko = {
                     "previewDescription": "있다면 아래에서 해당 근무를 고정해 주세요. 고정한 근무는 AI가 바꾸지 않아요.",
                     "previewHint": "바뀌면 안 되는 근무가 있다면 표에서 해당 칸을 고정해 주세요.",
                     "fix": "고정하러 가기",
+                    "fixAll": "모두 고정",
+                    "fixAllDone": "모두 고정됨",
+                    "fixAllSuccess": "{{count}}칸을 모두 고정했어요.",
                     "edit": "계속 편집하기",
                     "confirm": "진행하기",
                     "cancel": "취소",
@@ -2321,6 +2325,7 @@ export const ko = {
                     "night": "야간 근무 (Night)",
                     "nightContinuation": "퇴근일 근무",
                     "off": "휴무 (Off)",
+                    "annualLeave": "연차 (유급휴가)",
                     "otherLeave": "기타 휴무",
                     "otherWork": "기타 근무"
                 },
@@ -3140,6 +3145,7 @@ export const en: TLocale = {
                 "night": "Night shift",
                 "nightContinuation": "Night continuation",
                 "off": "Day off",
+                "annualLeave": "Annual leave",
                 "otherLeave": "Other leave",
                 "otherWork": "Other work"
             },
@@ -4014,6 +4020,9 @@ export const en: TLocale = {
                     "previewDescription": "If so fix those shifts below. AI will not change fixed shifts.",
                     "previewHint": "If a shift must not change fix that cell in the schedule before continuing.",
                     "fix": "Fix shifts first",
+                    "fixAll": "Fix all",
+                    "fixAllDone": "All fixed",
+                    "fixAllSuccess": "Fixed all {{count}} cells.",
                     "edit": "Keep editing",
                     "confirm": "Continue",
                     "cancel": "Cancel",
@@ -5390,6 +5399,7 @@ export const en: TLocale = {
                     "night": "Night shift",
                     "nightContinuation": "Night-finish day",
                     "off": "Day off",
+                    "annualLeave": "Annual leave",
                     "otherLeave": "Other leave",
                     "otherWork": "Other work"
                 },
@@ -6207,6 +6217,7 @@ export const ja: TLocale = {
                 "night": "夜勤",
                 "nightContinuation": "夜勤後半",
                 "off": "休み",
+                "annualLeave": "年次有給休暇",
                 "otherLeave": "その他の休暇",
                 "otherWork": "その他の勤務"
             },
@@ -7081,6 +7092,9 @@ export const ja: TLocale = {
                     "previewDescription": "該当する勤務があれば下で固定してください。固定した勤務はAIが変更しません。",
                     "previewHint": "変更してはいけない勤務がある場合は、表でそのセルを固定してください。",
                     "fix": "勤務を先に固定",
+                    "fixAll": "すべて固定",
+                    "fixAllDone": "すべて固定済み",
+                    "fixAllSuccess": "{{count}}セルをすべて固定しました。",
                     "edit": "編集を続ける",
                     "confirm": "このまま進む",
                     "cancel": "編集を続ける",
@@ -8439,9 +8453,9 @@ export const ja: TLocale = {
                     "title": "夜勤を終えて朝に退勤した日を\nどのように表示しますか？"
                 },
                 "rotation": {
-                    "title": "Which rotation systems do you use?",
-                    "highlight": "rotation systems",
-                    "description": "We will prepare shift types for your selection."
+                    "title": "どの交代制を運用していますか？",
+                    "highlight": "交代制",
+                    "description": "選択した交代制に合わせて勤務区分を準備します。"
                 }
             },
             "shiftType": {
@@ -8457,6 +8471,7 @@ export const ja: TLocale = {
                     "night": "夜勤",
                     "nightContinuation": "夜勤終了日",
                     "off": "休み",
+                    "annualLeave": "年次有給休暇",
                     "otherLeave": "その他の休暇",
                     "otherWork": "その他の勤務"
                 },
@@ -8539,12 +8554,12 @@ export const ja: TLocale = {
                 "uploadFile": "ファイルをアップロード"
             },
             "rotation": {
-                "threeTitle": "Three-shift only",
-                "threeDescription": "Use D · E · N shifts.",
-                "twoTitle": "Two-shift only",
-                "twoDescription": "Use day · night shifts.",
-                "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "threeTitle": "3交代制のみ",
+                "threeDescription": "D・E・N勤務を使用します。",
+                "twoTitle": "2交代制のみ",
+                "twoDescription": "日勤・夜勤を使用します。",
+                "mixedTitle": "3交代制と2交代制の両方",
+                "mixedDescription": "D・E・Nを基本に、必要に応じて2交代制の日勤・夜勤も使用します。",
                 "nightRecoveryQuestion": "夜勤を終えて朝に退勤した日をどのように表示しますか？",
                 "nightContinuationTitle": "別の勤務区分で表示します",
                 "nightContinuationExampleShift": "夜勤終了日",
@@ -9274,6 +9289,7 @@ export const zh: TLocale = {
                 "night": "夜班",
                 "nightContinuation": "夜班后半段",
                 "off": "休息",
+                "annualLeave": "年假",
                 "otherLeave": "其他假期",
                 "otherWork": "其他工作"
             },
@@ -10148,6 +10164,9 @@ export const zh: TLocale = {
                     "previewDescription": "如果有，请在下方固定这些班次。AI 不会更改已固定的班次。",
                     "previewHint": "如果有不应更改的班次，请先在表中固定该单元格。",
                     "fix": "先固定班次",
+                    "fixAll": "全部固定",
+                    "fixAllDone": "已全部固定",
+                    "fixAllSuccess": "已固定全部 {{count}} 个单元格。",
                     "edit": "继续编辑",
                     "confirm": "继续",
                     "cancel": "继续编辑",
@@ -11506,9 +11525,9 @@ export const zh: TLocale = {
                     "title": "夜班结束后早晨下班的日期\n如何显示？"
                 },
                 "rotation": {
-                    "title": "Which rotation systems do you use?",
-                    "highlight": "rotation systems",
-                    "description": "We will prepare shift types for your selection."
+                    "title": "采用哪种轮班制度？",
+                    "highlight": "轮班制度",
+                    "description": "我们会根据您选择的轮班制度准备相应的班次类型。"
                 }
             },
             "shiftType": {
@@ -11524,6 +11543,7 @@ export const zh: TLocale = {
                     "night": "夜班",
                     "nightContinuation": "夜班结束日",
                     "off": "休息",
+                    "annualLeave": "年假",
                     "otherLeave": "其他假期",
                     "otherWork": "其他工作"
                 },
@@ -11606,12 +11626,12 @@ export const zh: TLocale = {
                 "uploadFile": "文件上传"
             },
             "rotation": {
-                "threeTitle": "Three-shift only",
-                "threeDescription": "Use D · E · N shifts.",
-                "twoTitle": "Two-shift only",
-                "twoDescription": "Use day · night shifts.",
-                "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "threeTitle": "仅采用三班制",
+                "threeDescription": "使用 D · E · N 班次。",
+                "twoTitle": "仅采用两班制",
+                "twoDescription": "使用日班 · 夜班。",
+                "mixedTitle": "同时采用三班制和两班制",
+                "mixedDescription": "默认使用 D · E · N，并在需要时同时使用两班制的日班 · 夜班。",
                 "nightRecoveryQuestion": "夜班结束后早晨下班的日期如何显示？",
                 "nightContinuationTitle": "显示为单独的班次类型",
                 "nightContinuationExampleShift": "夜班结束日",
@@ -12341,6 +12361,7 @@ export const th: TLocale = {
                 "night": "กะกลางคืน",
                 "nightContinuation": "ช่วงหลังของกะกลางคืน",
                 "off": "วันหยุด",
+                "annualLeave": "วันลาพักร้อน",
                 "otherLeave": "การลาอื่น ๆ",
                 "otherWork": "งานอื่น ๆ"
             },
@@ -13215,6 +13236,9 @@ export const th: TLocale = {
                     "previewDescription": "หากมี โปรดตรึงเวรเหล่านั้นด้านล่าง AI จะไม่เปลี่ยนเวรที่ตรึงไว้",
                     "previewHint": "หากมีเวรที่ห้ามเปลี่ยน โปรดตรึงช่องนั้นในตารางก่อนดำเนินการต่อ",
                     "fix": "ตรึงเวรก่อน",
+                    "fixAll": "ตรึงทั้งหมด",
+                    "fixAllDone": "ตรึงทั้งหมดแล้ว",
+                    "fixAllSuccess": "ตรึงทั้งหมด {{count}} ช่องแล้ว",
                     "edit": "แก้ไขต่อ",
                     "confirm": "ดำเนินการต่อ",
                     "cancel": "แก้ไขต่อ",
@@ -14573,9 +14597,9 @@ export const th: TLocale = {
                     "title": "วันที่เลิกงานตอนเช้าหลังเวรกลางคืน\nแสดงอย่างไร?"
                 },
                 "rotation": {
-                    "title": "Which rotation systems do you use?",
-                    "highlight": "rotation systems",
-                    "description": "We will prepare shift types for your selection."
+                    "title": "คุณใช้ระบบกะแบบใด?",
+                    "highlight": "ระบบกะ",
+                    "description": "เราจะเตรียมประเภทกะให้เหมาะกับระบบที่คุณเลือก"
                 }
             },
             "shiftType": {
@@ -14591,6 +14615,7 @@ export const th: TLocale = {
                     "night": "กะกลางคืน",
                     "nightContinuation": "วันสิ้นสุดกะกลางคืน",
                     "off": "วันหยุด",
+                    "annualLeave": "วันลาพักร้อน",
                     "otherLeave": "การลาอื่น ๆ",
                     "otherWork": "งานอื่น ๆ"
                 },
@@ -14673,12 +14698,12 @@ export const th: TLocale = {
                 "uploadFile": "อัพโหลดไฟล์"
             },
             "rotation": {
-                "threeTitle": "Three-shift only",
-                "threeDescription": "Use D · E · N shifts.",
-                "twoTitle": "Two-shift only",
-                "twoDescription": "Use day · night shifts.",
-                "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "threeTitle": "ใช้เฉพาะระบบ 3 กะ",
+                "threeDescription": "ใช้กะ D · E · N",
+                "twoTitle": "ใช้เฉพาะระบบ 2 กะ",
+                "twoDescription": "ใช้กะกลางวัน · กะกลางคืน",
+                "mixedTitle": "ใช้ทั้งระบบ 3 กะและ 2 กะ",
+                "mixedDescription": "ใช้ D · E · N เป็นหลัก และใช้กะกลางวัน · กะกลางคืนของระบบ 2 กะเมื่อจำเป็น",
                 "nightRecoveryQuestion": "วันที่เลิกงานตอนเช้าหลังเวรกลางคืนแสดงอย่างไร?",
                 "nightContinuationTitle": "แสดงเป็นประเภทกะแยกต่างหาก",
                 "nightContinuationExampleShift": "วันสิ้นสุดกะกลางคืน",
@@ -15408,6 +15433,7 @@ export const vi: TLocale = {
                 "night": "Ca đêm",
                 "nightContinuation": "Nửa sau ca đêm",
                 "off": "Ngày nghỉ",
+                "annualLeave": "Nghỉ phép năm",
                 "otherLeave": "Nghỉ phép khác",
                 "otherWork": "Công việc khác"
             },
@@ -16282,6 +16308,9 @@ export const vi: TLocale = {
                     "previewDescription": "Những ca đó hãy cố định bên dưới. AI sẽ không thay đổi ca đã cố định.",
                     "previewHint": " Nếu một ca không được thay đổi hãy cố định ô đó trong lịch trước khi tiếp tục.",
                     "fix": " Cố định ca trước",
+                    "fixAll": "Cố định tất cả",
+                    "fixAllDone": "Đã cố định tất cả",
+                    "fixAllSuccess": "Đã cố định tất cả {{count}} ô.",
                     "edit": "Tiếp tục chỉnh sửa",
                     "confirm": "Tiếp tục",
                     "cancel": "Tiếp tục chỉnh sửa",
@@ -17640,9 +17669,9 @@ export const vi: TLocale = {
                     "title": "Ngày về vào buổi sáng sau ca đêm\nđược hiển thị như thế nào?"
                 },
                 "rotation": {
-                    "title": "Which rotation systems do you use?",
-                    "highlight": "rotation systems",
-                    "description": "We will prepare shift types for your selection."
+                    "title": "Bạn sử dụng chế độ luân ca nào?",
+                    "highlight": "chế độ luân ca",
+                    "description": "Chúng tôi sẽ chuẩn bị các loại ca phù hợp với lựa chọn của bạn."
                 }
             },
             "shiftType": {
@@ -17658,6 +17687,7 @@ export const vi: TLocale = {
                     "night": "Ca đêm",
                     "nightContinuation": "Ngày kết thúc ca đêm",
                     "off": "Ngày nghỉ",
+                    "annualLeave": "Nghỉ phép năm",
                     "otherLeave": "Nghỉ phép khác",
                     "otherWork": "Công việc khác"
                 },
@@ -17740,12 +17770,12 @@ export const vi: TLocale = {
                 "uploadFile": "Tải tập tin lên"
             },
             "rotation": {
-                "threeTitle": "Three-shift only",
-                "threeDescription": "Use D · E · N shifts.",
-                "twoTitle": "Two-shift only",
-                "twoDescription": "Use day · night shifts.",
-                "mixedTitle": "Both three- and two-shift",
-                "mixedDescription": "Use D · E · N by default with two-shift day · night when needed.",
+                "threeTitle": "Chỉ sử dụng chế độ 3 ca",
+                "threeDescription": "Sử dụng các ca D · E · N.",
+                "twoTitle": "Chỉ sử dụng chế độ 2 ca",
+                "twoDescription": "Sử dụng ca ngày · ca đêm.",
+                "mixedTitle": "Sử dụng cả chế độ 3 ca và 2 ca",
+                "mixedDescription": "Mặc định sử dụng D · E · N, đồng thời dùng ca ngày · ca đêm của chế độ 2 ca khi cần.",
                 "nightRecoveryQuestion": "Ngày về vào buổi sáng sau ca đêm được hiển thị như thế nào?",
                 "nightContinuationTitle": "Hiển thị bằng một loại ca riêng",
                 "nightContinuationExampleShift": "Ngày kết thúc ca đêm",

@@ -1,5 +1,13 @@
 export type TSelectableShiftRotationSystem = 'THREE' | 'TWO' | 'NONE';
-export type TSelectableShiftClassification = 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+export type TSelectableShiftClassification =
+    | 'DAY'
+    | 'EVENING'
+    | 'NIGHT'
+    | 'NIGHT_CONTINUATION'
+    | 'OTHER_WORK'
+    | 'OFF'
+    | 'ANNUAL_LEAVE'
+    | 'OTHER_LEAVE';
 export type TSelectableWardRotationMode = 'THREE' | 'TWO' | 'MIXED';
 
 export const SELECTABLE_SHIFT_ROTATION_SYSTEMS = ['THREE', 'TWO', 'NONE'] as const;
@@ -12,12 +20,12 @@ const SELECTABLE_SHIFT_ROTATION_SYSTEMS_BY_WARD_MODE = {
 const CLASSIFICATIONS_BY_ROTATION: Record<TSelectableShiftRotationSystem, readonly TSelectableShiftClassification[]> = {
     THREE: ['DAY', 'EVENING', 'NIGHT'],
     TWO: ['DAY', 'NIGHT', 'NIGHT_CONTINUATION'],
-    NONE: ['OFF', 'OTHER_WORK', 'OTHER_LEAVE'],
+    NONE: ['OFF', 'OTHER_WORK', 'ANNUAL_LEAVE', 'OTHER_LEAVE'],
 };
 const CLASSIFICATIONS_BY_WARD_MODE = {
-    THREE: ['DAY', 'EVENING', 'NIGHT', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE'],
-    TWO: ['DAY', 'NIGHT', 'NIGHT_CONTINUATION', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE'],
-    MIXED: ['DAY', 'EVENING', 'NIGHT', 'NIGHT_CONTINUATION', 'OFF', 'OTHER_WORK', 'OTHER_LEAVE'],
+    THREE: ['DAY', 'EVENING', 'NIGHT', 'OFF', 'OTHER_WORK', 'ANNUAL_LEAVE', 'OTHER_LEAVE'],
+    TWO: ['DAY', 'NIGHT', 'NIGHT_CONTINUATION', 'OFF', 'OTHER_WORK', 'ANNUAL_LEAVE', 'OTHER_LEAVE'],
+    MIXED: ['DAY', 'EVENING', 'NIGHT', 'NIGHT_CONTINUATION', 'OFF', 'OTHER_WORK', 'ANNUAL_LEAVE', 'OTHER_LEAVE'],
 } as const satisfies Record<TSelectableWardRotationMode, readonly TSelectableShiftClassification[]>;
 const TIME_RANGE_BY_ROTATION_CLASSIFICATION: Partial<
     Record<TSelectableShiftRotationSystem, Partial<Record<TSelectableShiftClassification, {startTime: string; endTime: string}>>>
@@ -55,7 +63,13 @@ export function getSelectableRotationSystemsForClassification(
     rotationMode: TSelectableWardRotationMode,
     classification: TSelectableShiftClassification,
 ): readonly TSelectableShiftRotationSystem[] {
-    if (classification === 'OFF' || classification === 'OTHER_WORK' || classification === 'OTHER_LEAVE') return ['NONE'];
+    if (
+        classification === 'OFF' ||
+        classification === 'OTHER_WORK' ||
+        classification === 'ANNUAL_LEAVE' ||
+        classification === 'OTHER_LEAVE'
+    )
+        return ['NONE'];
 
     if (classification === 'EVENING') return rotationMode === 'TWO' ? [] : ['THREE'];
 

@@ -41,6 +41,7 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'NIGHT', labelKey: 'feature.createShiftModal.classification.night'},
     {value: 'OFF', labelKey: 'feature.createShiftModal.classification.off'},
     {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
+    {value: 'ANNUAL_LEAVE', labelKey: 'feature.createShiftModal.classification.annualLeave'},
     {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
 ] as const;
 
@@ -177,10 +178,11 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete, existingS
                               <select
                                   value={writeShift.classification}
                                   aria-label={t('feature.createShiftModal.classification.label')}
-                                  className="h-13.5 w-full cursor-pointer appearance-none rounded-[.625rem] border border-sub-4.5 bg-white px-4 pr-11 font-apple text-[1.1rem] font-medium text-sub-1 outline-none transition-colors focus:border-main-1"
+                                  className="h-13.5 w-full cursor-pointer appearance-none rounded-[.625rem] border border-sub-4.5 bg-white px-4 pr-11 font-apple text-[1.1rem] font-medium text-sub-1 transition-colors outline-none focus:border-main-1"
                                   onChange={(event) => {
                                       const classification = event.target.value as TCreateShiftTypeDTO['classification'];
-                                      const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+                                      const isOff =
+                                          classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
 
                                       setWriteShift({
                                           ...writeShift,

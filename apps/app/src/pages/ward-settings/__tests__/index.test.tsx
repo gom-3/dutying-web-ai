@@ -87,7 +87,7 @@ type TMockValue = {
             isDefault: boolean;
             isOff: boolean;
             isCounted: boolean;
-            classification: 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+            classification: 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'ANNUAL_LEAVE' | 'OTHER_LEAVE';
             rotationSystem?: 'THREE' | 'TWO' | 'NONE';
             isUsed?: boolean;
             displayOrder?: number;
@@ -1137,8 +1137,9 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
         await user.click(screen.getByRole('combobox', {name: '새 근무 근무 의미 선택'}));
 
-        expect(screen.getAllByRole('option')).toHaveLength(6);
+        expect(screen.getAllByRole('option')).toHaveLength(7);
         expect(screen.getByRole('option', {name: '기타 근무'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '연차 (유급휴가)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '기타 휴무'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '주간 근무 (Day)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();
@@ -1228,12 +1229,13 @@ describe('WardSettingsPage', () => {
 
         await user.click(screen.getByRole('combobox', {name: '데이 근무 의미 선택'}));
 
-        expect(screen.getAllByRole('option')).toHaveLength(6);
+        expect(screen.getAllByRole('option')).toHaveLength(7);
         expect(screen.getByRole('option', {name: '주간 근무 (Day)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '야간 근무 (Night)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '휴무 (Off)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '기타 근무'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '연차 (유급휴가)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '기타 휴무'})).toBeInTheDocument();
     });
 

@@ -319,7 +319,8 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
                     category: 'CORE',
-                    displayTemplate: '모든 간호사는 연속 야간근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate:
+                        '모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -347,6 +348,7 @@ describe('Constraints', () => {
         const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF"]');
 
         expect(minOffCard).not.toBeNull();
+        expect(within(minOffCard!).getByText('2교대 야간')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
         expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
@@ -424,7 +426,7 @@ describe('Constraints', () => {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
                     displayTemplate:
-                        '모든 간호사는 연속 야간근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -446,6 +448,7 @@ describe('Constraints', () => {
         const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_PAIR_MIN_OFF"]');
 
         expect(minOffCard).not.toBeNull();
+        expect(within(minOffCard!).getByText('2교대 야간')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
         expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
 
@@ -727,7 +730,7 @@ describe('Constraints', () => {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
                     displayTemplate:
-                        '모든 간호사는 연속 야간근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
                     severity: 'HARD' as const,
                     allowedSeverities: ['HARD' as const, 'SOFT' as const],
                     supportedInGenerator: true,
@@ -774,6 +777,7 @@ describe('Constraints', () => {
         const minOffCard = recommendationCards[0]!;
         const offCount = within(minOffCard).getByRole('spinbutton');
 
+        expect(within(minOffCard).getByText('2교대 야간')).toBeInTheDocument();
         expect(within(minOffCard).getByText('휴무')).toBeInTheDocument();
         expect(offCount).toHaveValue(2);
         expect(offCount).toHaveAttribute('min', '1');

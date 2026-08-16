@@ -22,7 +22,13 @@ function isLegacyTwoShiftSymbol(shiftType: TWardShiftType) {
 }
 
 export function resolveWardShiftRotationSystem(shiftType: TWardShiftType): TWardShiftRotationSystem {
-    if (shiftType.isOff || shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') return 'NONE';
+    if (
+        shiftType.isOff ||
+        shiftType.classification === 'OFF' ||
+        shiftType.classification === 'ANNUAL_LEAVE' ||
+        shiftType.classification === 'OTHER_LEAVE'
+    )
+        return 'NONE';
 
     if (shiftType.rotationSystem === 'TWO') return isTwoShiftClassification(shiftType.classification) ? 'TWO' : 'NONE';
 

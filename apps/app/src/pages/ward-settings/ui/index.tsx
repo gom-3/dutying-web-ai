@@ -85,6 +85,7 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'NIGHT_CONTINUATION', labelKey: 'feature.createShiftModal.classification.nightContinuation'},
     {value: 'OFF', labelKey: 'feature.createShiftModal.classification.off'},
     {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
+    {value: 'ANNUAL_LEAVE', labelKey: 'feature.createShiftModal.classification.annualLeave'},
     {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
 ] as const;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
@@ -115,7 +116,17 @@ function isOvernightShiftTime(startTime: string | null | undefined, endTime: str
 }
 
 function getShiftTypeClassification(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO['classification'] {
-    if (shiftType.isOff) return shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE';
+    if (shiftType.isOff) {
+        if (
+            shiftType.classification === 'OFF' ||
+            shiftType.classification === 'ANNUAL_LEAVE' ||
+            shiftType.classification === 'OTHER_LEAVE'
+        ) {
+            return shiftType.classification;
+        }
+
+        return 'OTHER_LEAVE';
+    }
 
     if (shiftType.classification) return shiftType.classification;
 
@@ -129,7 +140,7 @@ function getShiftTypeClassification(shiftType: TWardSettingsShiftType): TCreateS
 function isOffShiftType(shiftType: TWardSettingsShiftType) {
     const classification = getShiftTypeClassification(shiftType);
 
-    return classification === 'OFF' || classification === 'OTHER_LEAVE';
+    return classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
 }
 
 function isUsedShiftShortNameLocked(shiftType: TWardSettingsShiftType) {
@@ -153,7 +164,9 @@ function getAvailableShiftRotationSystems(shiftType: TWardSettingsShiftType, rot
 function hasFixedNoneRotationSystem(shiftType: TWardSettingsShiftType) {
     const classification = getShiftTypeClassification(shiftType);
 
-    return classification === 'OFF' || classification === 'OTHER_WORK' || classification === 'OTHER_LEAVE';
+    return (
+        classification === 'OFF' || classification === 'OTHER_WORK' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE'
+    );
 }
 
 function getSelectedShiftTypeRotationSystem(shiftType: TWardSettingsShiftType): TSelectableShiftRotationSystem {
@@ -175,7 +188,9 @@ function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSetting
 
         if (classification === 'OTHER_WORK') return 3;
 
-        if (classification === 'OTHER_LEAVE') return 4;
+        if (classification === 'ANNUAL_LEAVE') return 4;
+
+        if (classification === 'OTHER_LEAVE') return 5;
 
         // DAY/EVENING/NIGHT 분류여도 교대제가 NONE이면 사용자 정의 기타근무다.
         return 3;
@@ -192,7 +207,7 @@ function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTy
     const shortName = normalizeShiftShortNameInput(shiftType.shortName.trim());
     const name = shiftType.name.trim() || shortName;
     const classification = getShiftTypeClassification(shiftType);
-    const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+    const isOff = classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
 
     return {
         name,
@@ -590,7 +605,7 @@ function ShiftTypeTable({
         classification: TCreateShiftTypeDTO['classification'],
         rotationSystem: TSelectableShiftRotationSystem,
     ): Partial<TWardSettingsShiftType> => {
-        const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+        const isOff = classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
         const isNightContinuation = classification === 'NIGHT_CONTINUATION';
         const timeRange = getDefaultTimeRangeForRotation(rotationSystem, classification);
 

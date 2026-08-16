@@ -1,6 +1,14 @@
 import type {TNurse} from './nurse';
 
-export type TWardShiftClassification = 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+export type TWardShiftClassification =
+    | 'DAY'
+    | 'EVENING'
+    | 'NIGHT'
+    | 'NIGHT_CONTINUATION'
+    | 'OTHER_WORK'
+    | 'OFF'
+    | 'ANNUAL_LEAVE'
+    | 'OTHER_LEAVE';
 export type TShiftRotationSystem = 'THREE' | 'TWO' | 'NONE';
 export type TWardRotationMode = 'THREE' | 'TWO' | 'MIXED';
 

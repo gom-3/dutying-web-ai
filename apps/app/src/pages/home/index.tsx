@@ -31,6 +31,7 @@ const SHIFT_CLASSIFICATION_ORDER: Partial<Record<TWardShiftClassification, numbe
     EVENING: 20,
     NIGHT: 30,
     OFF: 80,
+    ANNUAL_LEAVE: 90,
     OTHER_LEAVE: 90,
 };
 

@@ -494,6 +494,7 @@ export function AiAutofill() {
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
         [editorDoc, lastAiGeneratedDocVersion],
     );
+    const aiFillDecisionFixableCells = aiFillDecisionContext?.kind === 'regenerate' ? editedFilledCellsSinceLastAi : unprotectedFilledCells;
     const isAiFillDecisionPreviewOpen = aiFillDecisionContext !== null;
     const hasUnsavedEditableChanges = useMemo(
         () => hasAiGeneratedUnsavedChanges || hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
@@ -1195,6 +1196,15 @@ export function AiAutofill() {
             toast.success(t(nextFixed ? 'page.makeShift.calendar.fixCellSuccess' : 'page.makeShift.calendar.unfixCellSuccess'));
         }
     };
+    const handleFixAllAiFillDecisionCells = () => {
+        if (!aiFillDecisionContext || aiFillDecisionFixableCells.length === 0) return;
+
+        const changedCount = commands.setCellsFixed(aiFillDecisionFixableCells, true);
+
+        if (changedCount > 0) {
+            toast.success(t('page.makeShift.aiRefill.prefillDecision.fixAllSuccess', {count: changedCount}));
+        }
+    };
     const handleConfirmLastShiftBlankWarning = () => {
         const warningIntent = lastShiftBlankWarningIntent;
 
@@ -1382,8 +1392,10 @@ export function AiAutofill() {
                 teamViolations={teamViolations}
                 onClose={handleEditAiFillDecision}
                 onToggleCellFixed={handleToggleAiFillDecisionCell}
+                onFixAll={handleFixAllAiFillDecisionCells}
                 onEdit={handleEditAiFillDecision}
                 onConfirm={aiFillDecisionContext?.kind === 'regenerate' ? handleCancelAiFillDecision : handleConfirmAiFillDecision}
+                fixableCellCount={aiFillDecisionFixableCells.length}
                 cancelLabel={t('shared.confirmActionDialog.cancel')}
                 confirmLabel={
                     aiFillDecisionContext?.kind === 'regenerate'
