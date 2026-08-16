@@ -1,5 +1,6 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {wardQueryKeys} from '@/entities/ward';
+import i18n from '@/i18n';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import WardInfoSettingsPage from '..';
 
@@ -97,6 +98,10 @@ describe('WardInfoSettingsPage', () => {
         });
     });
 
+    afterEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     it('anchors the notification bell to the same 480px frame as the save button', () => {
         mockAuthState.accessToken = 'ward-admin-token';
 
@@ -149,6 +154,22 @@ describe('WardInfoSettingsPage', () => {
         expect(quitWardButton.parentElement).toHaveClass('justify-end', 'px-1');
         expect(quitWardButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(saveButton).toBeDisabled();
+    });
+
+    it('localizes ward code and additional feature labels in Japanese', async () => {
+        await i18n.changeLanguage('ja');
+
+        render(<WardInfoSettingsPage />);
+
+        expect(screen.getByRole('heading', {name: '病棟設定'})).toBeInTheDocument();
+        expect(screen.getByText('病棟コード')).toBeInTheDocument();
+        expect(screen.getByText('追加機能')).toBeInTheDocument();
+        expect(screen.getByText('誕生日を表示')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '誕生日表示の案内'})).toBeInTheDocument();
+        expect(screen.getByRole('switch', {name: '誕生日を表示'})).toBeInTheDocument();
+        expect(screen.queryByText('Ward code')).not.toBeInTheDocument();
+        expect(screen.queryByText('Additional features')).not.toBeInTheDocument();
+        expect(screen.queryByText('Celebrate birthdays')).not.toBeInTheDocument();
     });
 
     it('opens the ward code guide from the ward code badge', async () => {

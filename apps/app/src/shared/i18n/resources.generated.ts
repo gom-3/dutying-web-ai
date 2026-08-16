@@ -2807,6 +2807,18 @@ export const ko = {
         "wardInfoSettings": {
             "hospitalName": "병원명",
             "hospitalNamePlaceholder": "병원명을 입력하세요",
+            "calendar": {
+                "birthdayDescription": "근무자 생년월일이 입력되어 있으면 병동 캘린더에 종일 생일 일정으로 보여요.",
+                "birthdayInfoAria": "생일 챙기기 안내",
+                "birthdaySwitchAria": "생일 챙기기 사용",
+                "birthdayTitle": "생일 챙기기",
+                "sectionTitle": "부가 기능",
+                "toast": {
+                    "saveSuccess": "캘린더 설정을 저장했어요.",
+                    "updateFailed": "캘린더 설정을 저장하지 못했어요."
+                }
+            },
+            "quitWard": "병동 나가기",
             "save": "변경사항 저장",
             "saving": "저장 중...",
             "sectionTitle": "병동 정보",
@@ -2827,6 +2839,7 @@ export const ko = {
                 "invalid": "{{label}}은 {{count}}자 이하, 한글/영문/일문/숫자만 입력할 수 있어요.",
                 "required": "{{label}}을 입력해 주세요."
             },
+            "wardCode": "병동 코드",
             "wardName": "병동명",
             "wardNamePlaceholder": "병동명을 입력하세요"
         },
@@ -5889,6 +5902,18 @@ export const en: TLocale = {
         "wardInfoSettings": {
             "hospitalName": "Hospital name",
             "hospitalNamePlaceholder": "Enter hospital name",
+            "calendar": {
+                "birthdayDescription": "When a member has a date of birth, show an all-day birthday event on the ward calendar.",
+                "birthdayInfoAria": "Birthday calendar info",
+                "birthdaySwitchAria": "Celebrate birthdays",
+                "birthdayTitle": "Celebrate birthdays",
+                "sectionTitle": "Additional features",
+                "toast": {
+                    "saveSuccess": "Saved calendar settings.",
+                    "updateFailed": "Could not save calendar settings."
+                }
+            },
+            "quitWard": "Leave ward",
             "save": "Save changes",
             "saving": "Saving...",
             "sectionTitle": "Ward information",
@@ -5909,6 +5934,7 @@ export const en: TLocale = {
                 "invalid": "{{label}} must be {{count}} characters or fewer and use Korean, English, Japanese, or numbers.",
                 "required": "Enter {{label}}."
             },
+            "wardCode": "Ward code",
             "wardName": "Ward name",
             "wardNamePlaceholder": "Enter ward name"
         },
@@ -8969,6 +8995,18 @@ export const ja: TLocale = {
         "wardInfoSettings": {
             "hospitalName": "病院名",
             "hospitalNamePlaceholder": "病院名を入力してください",
+            "calendar": {
+                "birthdayDescription": "勤務者の生年月日が入力されている場合、病棟カレンダーに終日の誕生日予定として表示します。",
+                "birthdayInfoAria": "誕生日表示の案内",
+                "birthdaySwitchAria": "誕生日を表示",
+                "birthdayTitle": "誕生日を表示",
+                "sectionTitle": "追加機能",
+                "toast": {
+                    "saveSuccess": "カレンダー設定を保存しました。",
+                    "updateFailed": "カレンダー設定を保存できませんでした。"
+                }
+            },
+            "quitWard": "病棟から退出",
             "save": "変更を保存",
             "saving": "保存中…",
             "sectionTitle": "病棟情報",
@@ -8989,6 +9027,7 @@ export const ja: TLocale = {
                 "invalid": "{{label}}は{{count}}文字以内で、韓国語・英語・日本語・数字のみ使用できます。",
                 "required": "{{label}}を入力してください。"
             },
+            "wardCode": "病棟コード",
             "wardName": "病棟名",
             "wardNamePlaceholder": "病棟名を入力してください"
         },
@@ -12049,6 +12088,18 @@ export const zh: TLocale = {
         "wardInfoSettings": {
             "hospitalName": "医院名称",
             "hospitalNamePlaceholder": "请输入医院名称",
+            "calendar": {
+                "birthdayDescription": "如果已输入工作人员的出生日期，则会在病区日历中显示为全天生日日程。",
+                "birthdayInfoAria": "生日日历说明",
+                "birthdaySwitchAria": "庆祝生日",
+                "birthdayTitle": "庆祝生日",
+                "sectionTitle": "附加功能",
+                "toast": {
+                    "saveSuccess": "日历设置已保存。",
+                    "updateFailed": "无法保存日历设置。"
+                }
+            },
+            "quitWard": "离开病区",
             "save": "保存更改",
             "saving": "保存...",
             "sectionTitle": "区信息",
@@ -12069,6 +12120,7 @@ export const zh: TLocale = {
                 "invalid": "对于 {{label}}，只能输入韩语/英语/日语/{{count}} 字符或更少的数字。",
                 "required": "请输入{{label}}。"
             },
+            "wardCode": "病区代码",
             "wardName": "病区名称",
             "wardNamePlaceholder": "请输入病区名称"
         },
@@ -15129,6 +15181,18 @@ export const th: TLocale = {
         "wardInfoSettings": {
             "hospitalName": "ชื่อโรงพยาบาล",
             "hospitalNamePlaceholder": "กรอกชื่อโรงพยาบาล",
+            "calendar": {
+                "birthdayDescription": "หากกรอกวันเกิดของเจ้าหน้าที่ไว้ จะแสดงเป็นกิจกรรมวันเกิดทั้งวันในปฏิทินวอร์ด",
+                "birthdayInfoAria": "ข้อมูลปฏิทินวันเกิด",
+                "birthdaySwitchAria": "แสดงวันเกิด",
+                "birthdayTitle": "แสดงวันเกิด",
+                "sectionTitle": "คุณสมบัติเพิ่มเติม",
+                "toast": {
+                    "saveSuccess": "บันทึกการตั้งค่าปฏิทินแล้ว",
+                    "updateFailed": "ไม่สามารถบันทึกการตั้งค่าปฏิทินได้"
+                }
+            },
+            "quitWard": "ออกจากวอร์ด",
             "save": "บันทึกการเปลี่ยนแปลง",
             "saving": "ประหยัด...",
             "sectionTitle": "ข้อมูลวอร์ด",
@@ -15149,6 +15213,7 @@ export const th: TLocale = {
                 "invalid": "{{label}} ต้องเป็นอักขระ {{count}} หรือน้อยกว่า และใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น หรือตัวเลข",
                 "required": "ป้อน {{label}}"
             },
+            "wardCode": "รหัสวอร์ด",
             "wardName": "ชื่อวอร์ด",
             "wardNamePlaceholder": "กรอกชื่อวอร์ด"
         },
@@ -18209,6 +18274,18 @@ export const vi: TLocale = {
         "wardInfoSettings": {
             "hospitalName": "Tên bệnh viện",
             "hospitalNamePlaceholder": "Nhập tên bệnh viện",
+            "calendar": {
+                "birthdayDescription": "Nếu đã nhập ngày sinh của nhân viên, hiển thị sự kiện sinh nhật cả ngày trên lịch khoa.",
+                "birthdayInfoAria": "Thông tin lịch sinh nhật",
+                "birthdaySwitchAria": "Hiển thị sinh nhật",
+                "birthdayTitle": "Hiển thị sinh nhật",
+                "sectionTitle": "Tính năng bổ sung",
+                "toast": {
+                    "saveSuccess": "Đã lưu cài đặt lịch.",
+                    "updateFailed": "Không thể lưu cài đặt lịch."
+                }
+            },
+            "quitWard": "Rời khoa",
             "save": "Lưu thay đổi",
             "saving": "Đang lưu...",
             "sectionTitle": "Thông tin khoa",
@@ -18229,6 +18306,7 @@ export const vi: TLocale = {
                 "invalid": "{{label}} phải có {{count}} ký tự trở xuống và sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật hoặc số.",
                 "required": "Nhập {{label}}."
             },
+            "wardCode": "Mã khoa",
             "wardName": "Tên khoa",
             "wardNamePlaceholder": "Nhập tên khoa"
         },
