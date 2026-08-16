@@ -9001,7 +9001,7 @@ export const ja: TLocale = {
                     "shortName": "略称",
                     "type": "区分",
                     "workTime": "勤務時間",
-                    "rotation": "Rotation"
+                    "rotation": "交代制"
                 },
                 "deleteAria": "{{name}}を削除",
                 "editAria": "{{name}}の勤務区分を編集",
@@ -9029,26 +9029,26 @@ export const ja: TLocale = {
                     "timeFormat": "時間は00:00形式で入力してください。",
                     "timeRequired": "時間を入力してください。",
                     "timeSame": "開始時間と終了時間は別にしてください。",
-                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                    "rotationRequired": "2交代制または3交代制のどちらか一つ以上を有効にしてください。"
                 },
                 "rotation": {
-                    "modeTitle": "Ward rotation system",
+                    "modeTitle": "病棟の交代制",
                     "modeDescription": "運用方式を選び必要な勤務区分を設定してください。必須勤務は保存時に確認します。",
-                    "threeTitle": "Three-shift only",
-                    "threeDescription": "Use day · evening · night shifts.",
-                    "twoTitle": "Two-shift only",
-                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
-                    "mixedTitle": "Mostly three-shift with two-shift when needed",
-                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
-                    "threeBadge": "Three-shift",
-                    "twoBadge": "Two-shift",
-                    "noneBadge": "N/A",
-                    "threeDay": "Day",
-                    "threeEvening": "Evening",
-                    "threeNight": "Night",
-                    "twoDay": "Two-shift day",
-                    "twoNight": "Two-shift night",
-                    "twoItem": "Two-shift {{classification}}"
+                    "threeTitle": "3交代制のみ",
+                    "threeDescription": "日勤・準夜勤・夜勤を使用します。",
+                    "twoTitle": "2交代制のみ",
+                    "twoDescription": "2交代制の日勤（07～19）・夜勤（19～07）を使用します。",
+                    "mixedTitle": "基本は3交代制、必要に応じて2交代制",
+                    "mixedDescription": "日勤・準夜勤・夜勤を基本に、必要に応じて2交代制の日勤・夜勤も使用します。",
+                    "threeBadge": "3交代制",
+                    "twoBadge": "2交代制",
+                    "noneBadge": "該当なし",
+                    "threeDay": "日勤",
+                    "threeEvening": "準夜勤",
+                    "threeNight": "夜勤",
+                    "twoDay": "2交代制・日勤",
+                    "twoNight": "2交代制・夜勤",
+                    "twoItem": "2交代制の{{classification}}"
                 }
             },
             "tabs": {
@@ -12073,7 +12073,7 @@ export const zh: TLocale = {
                     "shortName": "缩写",
                     "type": "类别",
                     "workTime": "时间",
-                    "rotation": "Rotation"
+                    "rotation": "轮班制"
                 },
                 "deleteAria": "删除{{name}}",
                 "editAria": "{{name}} 编辑班次类型",
@@ -12101,26 +12101,26 @@ export const zh: TLocale = {
                     "timeFormat": "请以 00:00 格式输入时间。",
                     "timeRequired": "请输入时间。",
                     "timeSame": "请输入不同的开始/结束时间。",
-                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                    "rotationRequired": "请至少启用两班制或三班制中的一种。"
                 },
                 "rotation": {
-                    "modeTitle": "Ward rotation system",
+                    "modeTitle": "病区轮班制度",
                     "modeDescription": "请选择运行模式并配置所需班次类型。保存时会检查必需班次。",
-                    "threeTitle": "Three-shift only",
-                    "threeDescription": "Use day · evening · night shifts.",
-                    "twoTitle": "Two-shift only",
-                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
-                    "mixedTitle": "Mostly three-shift with two-shift when needed",
-                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
-                    "threeBadge": "Three-shift",
-                    "twoBadge": "Two-shift",
-                    "noneBadge": "N/A",
-                    "threeDay": "Day",
-                    "threeEvening": "Evening",
-                    "threeNight": "Night",
-                    "twoDay": "Two-shift day",
-                    "twoNight": "Two-shift night",
-                    "twoItem": "Two-shift {{classification}}"
+                    "threeTitle": "仅采用三班制",
+                    "threeDescription": "使用白班 · 小夜班 · 夜班。",
+                    "twoTitle": "仅采用两班制",
+                    "twoDescription": "使用两班制白班（07–19）· 夜班（19–07）。",
+                    "mixedTitle": "以三班制为主，必要时采用两班制",
+                    "mixedDescription": "默认使用白班 · 小夜班 · 夜班，必要时也使用两班制白班 · 夜班。",
+                    "threeBadge": "三班制",
+                    "twoBadge": "两班制",
+                    "noneBadge": "不适用",
+                    "threeDay": "白班",
+                    "threeEvening": "小夜班",
+                    "threeNight": "夜班",
+                    "twoDay": "两班制白班",
+                    "twoNight": "两班制夜班",
+                    "twoItem": "两班制{{classification}}"
                 }
             },
             "tabs": {
@@ -15145,7 +15145,7 @@ export const th: TLocale = {
                     "shortName": "คำย่อ",
                     "type": "พิมพ์",
                     "workTime": "เวลาทำงาน",
-                    "rotation": "Rotation"
+                    "rotation": "ระบบกะ"
                 },
                 "deleteAria": "ลบ {{name}}",
                 "editAria": "แก้ไขประเภทกะ {{name}}",
@@ -15173,26 +15173,26 @@ export const th: TLocale = {
                     "timeFormat": "ใช้รูปแบบเวลา 00:00",
                     "timeRequired": "ป้อนเวลา",
                     "timeSame": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน",
-                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                    "rotationRequired": "เปิดใช้งานระบบ 2 กะหรือ 3 กะอย่างน้อยหนึ่งระบบ"
                 },
                 "rotation": {
-                    "modeTitle": "Ward rotation system",
+                    "modeTitle": "ระบบกะของวอร์ด",
                     "modeDescription": "เลือกโหมดการทำงานและกำหนดประเภทกะ ระบบจะตรวจสอบกะที่จำเป็นเมื่อบันทึก",
-                    "threeTitle": "Three-shift only",
-                    "threeDescription": "Use day · evening · night shifts.",
-                    "twoTitle": "Two-shift only",
-                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
-                    "mixedTitle": "Mostly three-shift with two-shift when needed",
-                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
-                    "threeBadge": "Three-shift",
-                    "twoBadge": "Two-shift",
-                    "noneBadge": "N/A",
-                    "threeDay": "Day",
-                    "threeEvening": "Evening",
-                    "threeNight": "Night",
-                    "twoDay": "Two-shift day",
-                    "twoNight": "Two-shift night",
-                    "twoItem": "Two-shift {{classification}}"
+                    "threeTitle": "ใช้เฉพาะระบบ 3 กะ",
+                    "threeDescription": "ใช้กะกลางวัน · กะเย็น · กะกลางคืน",
+                    "twoTitle": "ใช้เฉพาะระบบ 2 กะ",
+                    "twoDescription": "ใช้กะกลางวัน (07–19) · กะกลางคืน (19–07) แบบ 2 กะ",
+                    "mixedTitle": "ใช้ระบบ 3 กะเป็นหลัก และระบบ 2 กะเมื่อจำเป็น",
+                    "mixedDescription": "ใช้กะกลางวัน · กะเย็น · กะกลางคืนเป็นหลัก และใช้กะกลางวัน · กะกลางคืนของระบบ 2 กะเมื่อจำเป็น",
+                    "threeBadge": "ระบบ 3 กะ",
+                    "twoBadge": "ระบบ 2 กะ",
+                    "noneBadge": "ไม่เกี่ยวข้อง",
+                    "threeDay": "กะกลางวัน",
+                    "threeEvening": "กะเย็น",
+                    "threeNight": "กะกลางคืน",
+                    "twoDay": "กะกลางวันระบบ 2 กะ",
+                    "twoNight": "กะกลางคืนระบบ 2 กะ",
+                    "twoItem": "{{classification}}ของระบบ 2 กะ"
                 }
             },
             "tabs": {
@@ -18217,7 +18217,7 @@ export const vi: TLocale = {
                     "shortName": "Viết nghỉ",
                     "type": "loại",
                     "workTime": "thời gian làm việc",
-                    "rotation": "Rotation"
+                    "rotation": "Chế độ luân ca"
                 },
                 "deleteAria": "Xóa {{name}}",
                 "editAria": "Chỉnh sửa loại ca {{name}}",
@@ -18245,26 +18245,26 @@ export const vi: TLocale = {
                     "timeFormat": "Sử dụng định dạng thời gian 00:00.",
                     "timeRequired": "Nhập thời gian.",
                     "timeSame": "Sử dụng thời gian bắt đầu và kết thúc khác nhau.",
-                    "rotationRequired": "Enable at least one of two-shift or three-shift."
+                    "rotationRequired": "Hãy bật ít nhất một trong hai chế độ 2 ca hoặc 3 ca."
                 },
                 "rotation": {
-                    "modeTitle": "Ward rotation system",
+                    "modeTitle": "Chế độ luân ca của khoa",
                     "modeDescription": "Chọn chế độ vận hành và cấu hình loại ca. Ca bắt buộc sẽ được kiểm tra khi lưu.",
-                    "threeTitle": "Three-shift only",
-                    "threeDescription": "Use day · evening · night shifts.",
-                    "twoTitle": "Two-shift only",
-                    "twoDescription": "Use two-shift day (07–19) · night (19–07).",
-                    "mixedTitle": "Mostly three-shift with two-shift when needed",
-                    "mixedDescription": "Use day · evening · night by default with two-shift day · night when needed.",
-                    "threeBadge": "Three-shift",
-                    "twoBadge": "Two-shift",
-                    "noneBadge": "N/A",
-                    "threeDay": "Day",
-                    "threeEvening": "Evening",
-                    "threeNight": "Night",
-                    "twoDay": "Two-shift day",
-                    "twoNight": "Two-shift night",
-                    "twoItem": "Two-shift {{classification}}"
+                    "threeTitle": "Chỉ sử dụng chế độ 3 ca",
+                    "threeDescription": "Sử dụng ca ngày · ca chiều · ca đêm.",
+                    "twoTitle": "Chỉ sử dụng chế độ 2 ca",
+                    "twoDescription": "Sử dụng ca ngày (07–19) · ca đêm (19–07) của chế độ 2 ca.",
+                    "mixedTitle": "Chủ yếu sử dụng chế độ 3 ca, dùng chế độ 2 ca khi cần",
+                    "mixedDescription": "Mặc định sử dụng ca ngày · ca chiều · ca đêm, đồng thời dùng ca ngày · ca đêm của chế độ 2 ca khi cần.",
+                    "threeBadge": "Chế độ 3 ca",
+                    "twoBadge": "Chế độ 2 ca",
+                    "noneBadge": "Không áp dụng",
+                    "threeDay": "Ca ngày",
+                    "threeEvening": "Ca chiều",
+                    "threeNight": "Ca đêm",
+                    "twoDay": "Ca ngày của chế độ 2 ca",
+                    "twoNight": "Ca đêm của chế độ 2 ca",
+                    "twoItem": "{{classification}} của chế độ 2 ca"
                 }
             },
             "tabs": {
