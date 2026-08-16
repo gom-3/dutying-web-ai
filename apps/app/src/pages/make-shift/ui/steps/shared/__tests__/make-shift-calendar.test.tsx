@@ -465,6 +465,60 @@ describe('MakeShiftCalendar', () => {
         expect(document.querySelector('[data-active-violation-cell="true"]')).not.toBeInTheDocument();
     });
 
+    it('localizes Korean server violation messages in the Japanese violation popover', async () => {
+        await i18n.changeLanguage('ja');
+        const user = userEvent.setup();
+        const maxWorkViolation: TViolation = {
+            ruleId: '9005',
+            templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+            message: '新規看護師 1님은 근무가 5일 연속이에요. 최대 4일까지 가능해요.',
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+        };
+        const nightContinuationViolation: TViolation = {
+            ruleId: '9006',
+            templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_REQUIRED',
+            message: '新規看護師 1님의 연속 夜勤 근무 후에는 夜勤終了日가 필요해요.',
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={
+                    new Map([
+                        ['2,1-max-work', maxWorkViolation],
+                        ['2,1-night-continuation', nightContinuationViolation],
+                    ])
+                }
+                showFaults
+                readonly
+            />,
+        );
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+        await act(async () => {
+            await user.click(trigger!);
+        });
+
+        const popover = screen.getByRole('dialog', {name: '制約の問題 2件'});
+        const content = popover.textContent ?? '';
+
+        expect(content).toContain('重要');
+        expect(content).toContain('連続勤務が5日で、4日の上限を超えています。');
+        expect(content).toContain('新規看護師 1さんは連続した夜勤後に夜勤終了日が必要です。');
+        expect(content).not.toContain('님은');
+        expect(content).not.toContain('님의');
+        expect(content).not.toContain('근무가');
+        expect(content).not.toContain('필요해요');
+    });
+
     it('opens the violation popover after hovering a violation cell briefly', () => {
         vi.useFakeTimers();
 

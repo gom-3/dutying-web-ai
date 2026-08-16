@@ -1,5 +1,6 @@
 import type {TScheduleViolationDto, TValidationRes} from '@dutying/api/ward';
 import type {TCellPos, TDutyDoc, TViolation} from '../types';
+import {localizeScheduleValidationMessage} from './format-validation-message';
 
 function findRowIndexByShiftNurseId(doc: TDutyDoc, shiftNurseId: number): number | null {
     const workerId = String(shiftNurseId);
@@ -62,7 +63,7 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
         ruleId: String(item.ruleId),
         violationId: item.violationId,
         templateCode: item.templateCode,
-        message: item.message,
+        message: localizeScheduleValidationMessage(item),
         level,
         cells,
         scope,

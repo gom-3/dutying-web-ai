@@ -1,8 +1,9 @@
 import type {TValidationRes} from '@dutying/api/ward';
-import {describe, expect, it} from 'vitest';
+import {afterEach, describe, expect, it} from 'vitest';
 import {buildViolationMapAll} from '../../validator';
 import type {TDutyDoc} from '../../types';
 import {violationsFromSpringValidation} from '../convert-spring-validation';
+import i18n from '@/i18n';
 
 const doc: TDutyDoc = {
     columns: Array.from({length: 5}, (_, i) => `2026-05-0${i + 1}`),
@@ -19,6 +20,10 @@ const doc: TDutyDoc = {
 };
 
 describe('violationsFromSpringValidation', () => {
+    afterEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     it('maps nurse-specific violations using affectedCells', () => {
         const validation: TValidationRes = {
             draftRevision: 1,
@@ -215,5 +220,42 @@ describe('violationsFromSpringValidation', () => {
         ]);
         expect(violations[0]?.displayContext?.cells).toEqual(Array.from({length: 7}, (_, col) => ({row: 0, col})));
         expect(violations[0]?.displayContext?.period).toEqual({startDate: '2026-05-01', endDate: '2026-05-07'});
+    });
+
+    it('localizes known Korean Spring validation messages for the active language', async () => {
+        await i18n.changeLanguage('ja');
+
+        const validation: TValidationRes = {
+            draftRevision: 1,
+            rulesHash: 'hash',
+            summary: {valid: false, hardCount: 2, softCount: 0, totalCount: 2},
+            violations: [
+                {
+                    violationId: 'v-work',
+                    ruleId: 9005,
+                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    severity: 'HARD',
+                    message: '新規看護師 1님은 근무가 5일 연속이에요. 최대 4일까지 가능해요.',
+                    affectedCells: [{cellKey: '8753:2026-05-02', shiftNurseId: 8753, date: '2026-05-02', wardShiftTypeId: 101}],
+                    fixable: true,
+                },
+                {
+                    violationId: 'v-continuation',
+                    ruleId: 9006,
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_REQUIRED',
+                    severity: 'HARD',
+                    message: '新規看護師 1님의 연속 夜勤 근무 후에는 夜勤終了日가 필요해요.',
+                    affectedCells: [{cellKey: '8753:2026-05-02', shiftNurseId: 8753, date: '2026-05-02', wardShiftTypeId: 101}],
+                    fixable: true,
+                },
+            ],
+        };
+
+        const violations = violationsFromSpringValidation(validation, doc);
+
+        expect(violations.map((violation) => violation.message)).toEqual([
+            '連続勤務が5日で、4日の上限を超えています。',
+            '新規看護師 1さんは連続した夜勤後に夜勤終了日が必要です。',
+        ]);
     });
 });

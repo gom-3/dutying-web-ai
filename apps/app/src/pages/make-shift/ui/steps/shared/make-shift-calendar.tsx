@@ -25,6 +25,7 @@ import {
     useShiftEditorStore,
 } from '@/features/shift-editor/model';
 import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-editor/model/duty-doc-cells';
+import {formatKnownScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import i18n from '@/i18n';
 import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days';
@@ -301,7 +302,7 @@ const LEGACY_TITLE_KEY_BY_TITLE = new Map([
     [LEGACY_TITLE_MIN_OFF_AFTER_NIGHT, 'feature.shiftEditor.validation.title.minOffAfterNight'],
     [LEGACY_TITLE_MIN_STAFF_SHORTAGE, 'feature.shiftEditor.validation.title.minStaffShortage'],
 ]);
-const KOREAN_NURSE_SUBJECT_PATTERN = /^[^\s:]+\uB2D8\uC740\s+/;
+const KOREAN_NURSE_SUBJECT_PATTERN = /^.+?\uB2D8\uC740\s+/;
 const LEGACY_OFF_AFTER_NIGHT_PATTERN =
     /^\uC57C\uAC04 \uD6C4 \uD734\uBB34\uAC00 (\d+)\uC77C\uC774\uC5D0\uC694\.?\s*(\d+)\uC77C \uD544\uC694\uD574\uC694\.?$/;
 const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
@@ -478,6 +479,10 @@ function getViolationProblemSentence(violation: TViolation): string {
     const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
     const detail = detailParts.join(': ').trim();
     const source = detail || fallback || violation.message.trim();
+    const localizedKnownMessage = formatKnownScheduleValidationMessage(source);
+
+    if (localizedKnownMessage) return localizedKnownMessage;
+
     const withoutName = source.replace(KOREAN_NURSE_SUBJECT_PATTERN, '');
     const offAfterNightMatch = withoutName.match(LEGACY_OFF_AFTER_NIGHT_PATTERN);
 
