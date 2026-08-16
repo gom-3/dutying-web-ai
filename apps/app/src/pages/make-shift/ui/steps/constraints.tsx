@@ -604,6 +604,13 @@ function getTemplateTranslationKey(templateId: string, property: 'label' | 'sent
     return `page.makeShift.constraints.templates.${templateId}.${property}` as TI18nKey;
 }
 
+function getTranslatedTemplatePattern(t: TTypedT, templateId: string) {
+    const key = getTemplateTranslationKey(templateId, 'sentence');
+    const translated = t(key);
+
+    return translated === key ? null : translated;
+}
+
 type TSoftRuleTemplateDefinition = Pick<TSoftRuleTemplate, 'id' | 'category' | 'controls'>;
 
 const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
@@ -1420,11 +1427,9 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
         const legacyTemplate = legacyTemplates.find(
             (item) => item.id === (LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE[template.templateCode] ?? template.templateCode),
         );
-        const localizedMixedSentencePattern = MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)
-            ? t(getTemplateTranslationKey(template.templateCode, 'sentence'))
-            : null;
-        const baseSentence = localizedMixedSentencePattern
-            ? createSentenceFromPattern(localizedMixedSentencePattern, controls)
+        const localizedSentencePattern = getTranslatedTemplatePattern(t, template.templateCode);
+        const baseSentence = localizedSentencePattern
+            ? createSentenceFromPattern(localizedSentencePattern, controls)
             : canUseLegacySentence(legacyTemplate, controls)
               ? legacyTemplate!.sentence
               : createSentenceFromTemplate(template, controls);
@@ -1452,8 +1457,8 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
 
                       return interpolateDisplayTemplate(template.displayTemplate, controls, params);
                   }
-                : localizedMixedSentencePattern
-                  ? (params: Record<string, string>) => interpolateLocalizedPattern(localizedMixedSentencePattern, params)
+                : localizedSentencePattern
+                  ? (params: Record<string, string>) => interpolateLocalizedPattern(localizedSentencePattern, params)
                   : (legacyTemplate?.buildText ??
                     ((params: Record<string, string>) => interpolateDisplayTemplate(template.displayTemplate, controls, params)));
         const buildText = baseBuildText;

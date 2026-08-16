@@ -10370,7 +10370,7 @@ export const zh: TLocale = {
                     "reset": "重置"
                 },
                 "category": {
-                    "combination": "工会",
+                    "combination": "人员组合",
                     "forbidden": "禁止图案",
                     "personal": "每人限制",
                     "recommended": "受到推崇的",
@@ -10396,10 +10396,10 @@ export const zh: TLocale = {
                     "currentTeam": "当前团队：{{teamName}}",
                     "disabledTitle": "当有两个或更多团队时可以使用",
                     "loading": "加载中",
-                    "modalTitle": "负载限制",
+                    "modalTitle": "导入约束条件",
                     "selectedTeamFallback": "选定的团队",
                     "sourceTeamFallback": "另一队",
-                    "teamLabel": "团队加载",
+                    "teamLabel": "要导入的团队",
                     "title": "导入其他团队约束"
                 },
                 "important": {
@@ -10473,7 +10473,7 @@ export const zh: TLocale = {
                         "label": "避免 ND/ED/NE/NOD 工作模式"
                     },
                     "excludeNightBeforeReqOff": {
-                        "label": "避免在下班前一天晚上使用"
+                        "label": "避免申请休息日前一天排夜班"
                     },
                     "maxContinuousNight": {
                         "label": "连续的夜晚"
@@ -10488,19 +10488,19 @@ export const zh: TLocale = {
                         "label": "夜间间隔"
                     },
                     "minOffAssignAfterNight": {
-                        "label": "夜班结束后分配任务"
+                        "label": "夜班后建议安排休息"
                     }
                 },
                 "ruleAction": {
                     "deleteAria": "删除约束"
                 },
                 "section": {
-                    "strong": "河流限制",
-                    "weak": "关于约束"
+                    "strong": "硬性约束",
+                    "weak": "软性约束"
                 },
                 "state": {
                     "loadError": "无法加载约束。请稍后重试。",
-                    "loading": "负载限制",
+                    "loading": "正在加载约束条件",
                     "teamRequired": "请先选择您的工作团队。"
                 },
                 "templates": {
@@ -10542,7 +10542,7 @@ export const zh: TLocale = {
                     },
                     "SOFT_MAX_STAFF_BY_DUTY": {
                         "label": "人数规则",
-                        "sentence": "最多可分配 {count} 人执行 {duty} Dutying。"
+                        "sentence": "{duty}班最多可安排{count}人"
                     },
                     "SOFT_MIN_MONTHLY_OFF": {
                         "label": "连续工作/休息规则",
@@ -10554,7 +10554,7 @@ export const zh: TLocale = {
                     },
                     "SOFT_MIN_STAFF_BY_DUTY": {
                         "label": "人数规则",
-                        "sentence": "必须至少有 {count} 人在执行 {duty}"
+                        "sentence": "{duty}班至少需要{count}人"
                     },
                     "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
                         "label": "人数规则",
@@ -10562,7 +10562,7 @@ export const zh: TLocale = {
                     },
                     "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
                         "label": "连续工作/休息规则",
-                        "sentence": "连续工作 {days} 天后，{target} 需要关闭。"
+                        "sentence": "{target}连续工作{days}天后需要休息"
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "连续工作/休息规则",
@@ -10593,7 +10593,7 @@ export const zh: TLocale = {
                         "sentence": "{target} 避免在 N 后的第二天工作 E。"
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
-                        "label": "工会",
+                        "label": "人员组合",
                         "sentence": "{nurseA} 和 {nurseB} 避免同班"
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
@@ -10601,8 +10601,8 @@ export const zh: TLocale = {
                         "sentence": "{nurse} 避免在周末或节假日工作"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
-                        "label": "工会",
-                        "sentence": "{nurseA} 喜欢与 {nurseB} 轮班"
+                        "label": "人员组合",
+                        "sentence": "{nurseA}和{nurseB}尽量安排同班"
                     },
                     "AVOID_ISOLATED_OFF_DAY": {
                         "label": "连续工作与休息条件",
@@ -13309,12 +13309,12 @@ export const th: TLocale = {
                 "error": "ไม่สามารถโหลดตารางการปฏิบัติหน้าที่ได้",
                 "firstFill": "ป้อนอัตโนมัติ",
                 "fixedOnly": "คงที่เท่านั้น",
-                "fixedDisplay": "Show fixed",
-                "fixedDisplayHidden": "Fixed shifts hidden",
-                "fixedDisplayShown": "Fixed shifts shown",
-                "requestDisplay": "Show requests",
-                "requestDisplayHidden": "Requested shifts hidden",
-                "requestDisplayShown": "Requested shifts shown",
+                "fixedDisplay": "แสดงเวรที่ล็อกไว้",
+                "fixedDisplayHidden": "ซ่อนเวรที่ล็อกไว้แล้ว",
+                "fixedDisplayShown": "กำลังแสดงเวรที่ล็อกไว้",
+                "requestDisplay": "แสดงคำขอเวร",
+                "requestDisplayHidden": "ซ่อนคำขอเวรแล้ว",
+                "requestDisplayShown": "กำลังแสดงคำขอเวร",
                 "generating": "กำลังกรอก...",
                 "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
                 "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
@@ -13339,7 +13339,7 @@ export const th: TLocale = {
                 "saveSnapshotFailed": "บันทึกฉบับร่างไม่สำเร็จ",
                 "saveSnapshotSuccess": "บันทึกฉบับร่างแล้ว",
                 "savingSnapshot": "กำลังบันทึกฉบับร่าง...",
-                "showViolations": "Show violations",
+                "showViolations": "แสดงข้อผิดเงื่อนไข",
                 "showingFaults": "กำลังแสดงข้อผิดพลาด",
                 "snapshotLimitDialog": {
                     "cancel": "ยกเลิก",
@@ -13396,9 +13396,9 @@ export const th: TLocale = {
                     "checking": "การตรวจสอบข้อจำกัด"
                 },
                 "viewAll": "ดูทั้งหมด",
-                "viewOptions": "Display options",
-                "violationsHidden": "Constraint violations hidden",
-                "violationsShown": "Constraint violations shown"
+                "viewOptions": "ตัวเลือกการแสดงผล",
+                "violationsHidden": "ซ่อนข้อผิดเงื่อนไขแล้ว",
+                "violationsShown": "กำลังแสดงข้อผิดเงื่อนไข"
             },
             "calendar": {
                 "carried": "พก",
@@ -13442,9 +13442,9 @@ export const th: TLocale = {
                     "reset": "รีเซ็ต"
                 },
                 "category": {
-                    "combination": "การจับคู่คนงาน",
+                    "combination": "การจับคู่เจ้าหน้าที่",
                     "forbidden": "รูปแบบต้องห้าม",
-                    "personal": "ข้อจำกัดของบุคคล",
+                    "personal": "ข้อจำกัดรายบุคคล",
                     "recommended": "ที่แนะนำ",
                     "staffing": "การจัดหาพนักงาน",
                     "workRest": "ทำงาน/พักผ่อน",
@@ -13468,10 +13468,10 @@ export const th: TLocale = {
                     "currentTeam": "ทีมปัจจุบัน: {{teamName}}",
                     "disabledTitle": "ใช้ได้เมื่อมีอย่างน้อยสองทีม",
                     "loading": "กำลังนำเข้า",
-                    "modalTitle": "ข้อจำกัดในการนำเข้า",
+                    "modalTitle": "นำเข้าข้อจำกัด",
                     "selectedTeamFallback": "ทีมที่ได้รับการคัดเลือก",
                     "sourceTeamFallback": "อีกทีม",
-                    "teamLabel": "ทีมงานนำเข้า",
+                    "teamLabel": "ทีมที่จะนำเข้า",
                     "title": "ข้อจำกัดการนำเข้าจากทีมอื่น"
                 },
                 "important": {
@@ -13538,14 +13538,14 @@ export const th: TLocale = {
                     "gte": "หรือมากกว่านั้น",
                     "lte": "หรือน้อยกว่า",
                     "max": "สูงสุด",
-                    "min": "นาที"
+                    "min": "ขั้นต่ำ"
                 },
                 "rule": {
                     "excludeCertainWorkTypes": {
                         "label": "หลีกเลี่ยงรูปแบบ ND / ED / NE / NOD"
                     },
                     "excludeNightBeforeReqOff": {
-                        "label": "หลีกเลี่ยงคืนก่อนที่จะขอ OFF"
+                        "label": "หลีกเลี่ยงเวรกลางคืนก่อนวันหยุดที่ขอไว้"
                     },
                     "maxContinuousNight": {
                         "label": "คืนติดต่อกันสูงสุด"
@@ -13560,15 +13560,15 @@ export const th: TLocale = {
                         "label": "ช่วงเวลาขั้นต่ำระหว่างคืน"
                     },
                     "minOffAssignAfterNight": {
-                        "label": "แนะนำ OFF หลังคืนครับ"
+                        "label": "แนะนำวันหยุดหลังเวรกลางคืน"
                     }
                 },
                 "ruleAction": {
                     "deleteAria": "ลบข้อจำกัด"
                 },
                 "section": {
-                    "strong": "ข้อจำกัดที่ยาก",
-                    "weak": "ข้อจำกัดที่นุ่มนวล"
+                    "strong": "ข้อจำกัดแบบบังคับ",
+                    "weak": "ข้อจำกัดแบบยืดหยุ่น"
                 },
                 "state": {
                     "loadError": "ไม่สามารถโหลดข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
@@ -13618,7 +13618,7 @@ export const th: TLocale = {
                     },
                     "SOFT_MIN_MONTHLY_OFF": {
                         "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
-                        "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันต่อเดือน"
+                        "sentence": "{target} ต้องมีวันหยุดอย่างน้อย {days} วันต่อเดือน"
                     },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "ข้อจำกัดด้านบุคลากร",
@@ -13634,11 +13634,11 @@ export const th: TLocale = {
                     },
                     "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
                         "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
-                        "sentence": "{target} ต้องการ OFF หลังจาก {days} วันทำงานติดต่อกัน"
+                        "sentence": "{target} ต้องมีวันหยุดหลังทำงานติดต่อกัน {days} วัน"
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
-                        "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันหลังจากการเปลี่ยน N"
+                        "sentence": "{target} ต้องมีวันหยุดอย่างน้อย {days} วันหลังเวร N"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
@@ -16514,11 +16514,11 @@ export const vi: TLocale = {
                     "reset": "Đặt lại"
                 },
                 "category": {
-                    "combination": "Ghép đôi công nhân",
+                    "combination": "Ghép cặp nhân sự",
                     "forbidden": "mẫu bị cấm",
                     "personal": "Giới hạn người",
                     "recommended": "Được đề xuất",
-                    "staffing": "nhân sự",
+                    "staffing": "Nhân sự",
                     "workRest": "Làm việc/nghỉ ngơi",
                     "roleCoverage": "Kỹ năng và vai trò",
                     "twoShiftWorkRest": "Làm liên tiếp và nghỉ",
@@ -16536,14 +16536,14 @@ export const vi: TLocale = {
                 "excludeRuleAria": "Vô hiệu hóa hạn chế này",
                 "import": {
                     "cancel": "Hủy bỏ",
-                    "confirm": "Nhập khẩu",
+                    "confirm": "Nhập",
                     "currentTeam": "Đội hiện tại: {{teamName}}",
                     "disabledTitle": "Có sẵn khi có ít nhất hai đội",
-                    "loading": "Nhập khẩu",
-                    "modalTitle": "Hạn chế nhập khẩu",
+                    "loading": "Đang nhập",
+                    "modalTitle": "Nhập ràng buộc",
                     "selectedTeamFallback": "Đội đã chọn",
                     "sourceTeamFallback": "Một đội khác",
-                    "teamLabel": "Nhóm nhập khẩu",
+                    "teamLabel": "Nhóm cần nhập",
                     "title": "Nhập các ràng buộc từ một nhóm khác"
                 },
                 "important": {
@@ -16617,7 +16617,7 @@ export const vi: TLocale = {
                         "label": "Tránh các mẫu ND/ED/NE/NOD"
                     },
                     "excludeNightBeforeReqOff": {
-                        "label": "Tránh đêm trước khi yêu cầu TẮT"
+                        "label": "Tránh ca đêm trước ngày nghỉ đã đăng ký"
                     },
                     "maxContinuousNight": {
                         "label": "Tối đa số đêm liên tiếp"
@@ -16632,7 +16632,7 @@ export const vi: TLocale = {
                         "label": "Khoảng cách tối thiểu giữa các đêm"
                     },
                     "minOffAssignAfterNight": {
-                        "label": "Khuyến nghị TẮT sau đêm"
+                        "label": "Khuyến nghị nghỉ sau ca đêm"
                     }
                 },
                 "ruleAction": {
@@ -16686,11 +16686,11 @@ export const vi: TLocale = {
                     },
                     "SOFT_MAX_STAFF_BY_DUTY": {
                         "label": "Hạn chế về nhân sự",
-                        "sentence": "{duty} ca làm việc có thể có tối đa {count} người"
+                        "sentence": "Ca {duty} được xếp tối đa {count} người"
                     },
                     "SOFT_MIN_MONTHLY_OFF": {
                         "label": "Hạn chế làm việc/nghỉ ngơi",
-                        "sentence": "{target} cần ít nhất {days} ngày OFF mỗi tháng"
+                        "sentence": "{target} cần ít nhất {days} ngày nghỉ mỗi tháng"
                     },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "Hạn chế về nhân sự",
@@ -16698,7 +16698,7 @@ export const vi: TLocale = {
                     },
                     "SOFT_MIN_STAFF_BY_DUTY": {
                         "label": "Hạn chế về nhân sự",
-                        "sentence": "{duty} ca cần ít nhất {count} người"
+                        "sentence": "Ca {duty} cần ít nhất {count} người"
                     },
                     "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
                         "label": "Hạn chế về nhân sự",
@@ -16706,19 +16706,19 @@ export const vi: TLocale = {
                     },
                     "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
                         "label": "Hạn chế làm việc/nghỉ ngơi",
-                        "sentence": "{target} cần TẮT sau {days} ngày làm việc liên tiếp"
+                        "sentence": "{target} cần nghỉ sau {days} ngày làm việc liên tiếp"
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "Hạn chế làm việc/nghỉ ngơi",
-                        "sentence": "{target} cần ít nhất {days} ngày TẮT sau ca N"
+                        "sentence": "{target} cần ít nhất {days} ngày nghỉ sau ca N"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "Ràng buộc mẫu bị cấm",
-                        "sentence": "Tránh D vào ngày sau E trong {target}"
+                        "sentence": "{target} tránh ca D vào ngày sau ca E"
                     },
                     "SOFT_NO_N_TO_D": {
                         "label": "Ràng buộc mẫu bị cấm",
-                        "sentence": "Tránh D vào ngày sau N trong {target}"
+                        "sentence": "{target} tránh ca D vào ngày sau ca N"
                     },
                     "TWO_SHIFT_NO_N_TO_D": {
                         "sentence": "{target} không thể làm ca D vào ngày sau ca N."
@@ -16734,19 +16734,19 @@ export const vi: TLocale = {
                     },
                     "SOFT_NO_N_TO_E": {
                         "label": "Ràng buộc mẫu bị cấm",
-                        "sentence": "Tránh E vào ngày sau N trong {target}"
+                        "sentence": "{target} tránh ca E vào ngày sau ca N"
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
                         "label": "Ghép đôi công nhân",
-                        "sentence": "Tránh chỉ định {nurseA} và {nurseB} cho cùng một ca"
+                        "sentence": "Tránh xếp {nurseA} và {nurseB} cùng ca"
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "Ràng buộc dành riêng cho từng người",
-                        "sentence": "Tránh làm ca cuối tuần hoặc ngày lễ cho {nurse}"
+                        "sentence": "{nurse} tránh làm cuối tuần hoặc ngày lễ"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "Ghép đôi công nhân",
-                        "sentence": "Ưu tiên chỉ định {nurseA} và {nurseB} cho cùng một ca"
+                        "sentence": "Ưu tiên xếp {nurseA} và {nurseB} cùng ca"
                     },
                     "AVOID_ISOLATED_OFF_DAY": {
                         "label": "Điều kiện chuỗi làm việc và nghỉ",

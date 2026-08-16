@@ -254,6 +254,26 @@ describe('Constraints', () => {
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
 
+    it('renders constraint templates from the active locale instead of Korean server templates', async () => {
+        await i18n.changeLanguage('ja');
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        await waitFor(() => expect(document.body.textContent).toContain('N勤務後に最低'));
+        expect(document.body.textContent).toContain('日の休みが必要です');
+        expect(screen.queryByText((content) => content.includes('연속 근무는'))).not.toBeInTheDocument();
+    });
+
     it('shows the recommended night-block recovery rule when night continuation exists', async () => {
         const nightContinuation = {
             wardShiftTypeId: 6,
@@ -845,7 +865,8 @@ describe('Constraints', () => {
         );
         await userEvent.click(screen.getByRole('button', {name: rotationMode === 'MIXED' ? '연속 근무/휴식' : '연속 근무·휴무'}));
 
-        expect(screen.getByText('sentinel-min_off_after_consecutive_work')).toBeInTheDocument();
+        expect(screen.getByText(/일 이상 연속으로 근무하면/)).toBeInTheDocument();
+        expect(screen.queryByText('sentinel-min_off_after_consecutive_work')).not.toBeInTheDocument();
 
         if (rotationMode === 'THREE') {
             await userEvent.click(screen.getByRole('button', {name: '권장'}));
@@ -965,7 +986,7 @@ describe('Constraints', () => {
             'FORBID_N_THEN_E',
             'FORBID_E_THEN_D',
             'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
-        ].map((templateCode) => within(dialog).getByText(`sentinel-${templateCode.toLowerCase()}`));
+        ].map((templateCode) => dialog.querySelector<HTMLElement>(`[data-constraint-template-card="${templateCode}"]`)!);
 
         recommendedOrder.slice(0, -1).forEach((template, index) => {
             expect(template.compareDocumentPosition(recommendedOrder[index + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
@@ -982,9 +1003,9 @@ describe('Constraints', () => {
         }
 
         await userEvent.click(screen.getByRole('button', {name: '인원수'}));
-        expect(within(dialog).getByText('sentinel-staff_count_by_shift')).toBeInTheDocument();
+        expect(dialog.querySelector('[data-constraint-template-card="STAFF_COUNT_BY_SHIFT"]')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '연속 근무·휴무'}));
-        expect(within(dialog).getByText('sentinel-core_max_continuous_work')).toBeInTheDocument();
+        expect(dialog.querySelector('[data-constraint-template-card="CORE_MAX_CONTINUOUS_WORK"]')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
         for (const normalCategoryCode of [
             'CORE_MIN_NIGHT_INTERVAL',
@@ -992,7 +1013,7 @@ describe('Constraints', () => {
             'MAX_MONTHLY_NIGHT_COUNT',
             'FORBID_E_THEN_N',
         ]) {
-            expect(within(dialog).getByText(`sentinel-${normalCategoryCode.toLowerCase()}`)).toBeInTheDocument();
+            expect(dialog.querySelector(`[data-constraint-template-card="${normalCategoryCode}"]`)).toBeInTheDocument();
         }
 
         let normalRuleCount = 0;
@@ -2307,7 +2328,8 @@ describe('Constraints', () => {
 
         await userEvent.click(addButton);
 
-        expect(await screen.findByText('VISIBLE_RECOMMENDED_SENTINEL')).toBeInTheDocument();
+        expect(await screen.findByText('{nurse}')).toBeInTheDocument();
+        expect(screen.queryByText('VISIBLE_RECOMMENDED_SENTINEL')).not.toBeInTheDocument();
         expect(screen.queryByText('LEGACY_BUNDLE_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('DUPLICATE_MAX_WORK_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('DUPLICATE_MAX_NIGHT_SHOULD_HIDE')).not.toBeInTheDocument();
@@ -3479,7 +3501,8 @@ describe('Constraints', () => {
         await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '매월 1일'}));
 
         expect(screen.getByRole('button', {name: '매월 1일'})).toBeInTheDocument();
-        expect(document.body.textContent).toContain('매월 1일에는');
+        expect(document.body.textContent).toContain('매월 1일');
+        expect(document.body.textContent).toContain('근무 인원이');
         expect(document.body.textContent).not.toContain('매월 매월');
         expect(document.body.textContent).not.toContain('1일일에는');
     });
