@@ -151,7 +151,6 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     NURSE_LIMIT: 'page.makeShift.constraints.category.personal',
     COMBINATION: 'page.makeShift.constraints.category.combination',
     NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
-    ROLE_COVERAGE: 'page.makeShift.constraints.category.roleCoverage',
     MIXED_PARTICIPATION: 'page.makeShift.constraints.category.mixedParticipation',
     MIXED_PLANNING: 'page.makeShift.constraints.category.mixedPlanning',
     FAIRNESS: 'page.makeShift.constraints.category.fairness',
@@ -180,28 +179,31 @@ function getCategoryLabel(t: TTypedT, category: TModalCategory, rotationMode: TW
     return key ? t(key) : category;
 }
 
-function isSkillConstraintCategory(category: string) {
-    return category === 'SKILL' || category === 'PROFICIENCY';
+function isRemovedSkillOrRoleCategory(category: string) {
+    return category === 'SKILL' || category === 'PROFICIENCY' || category === 'ROLE_COVERAGE';
 }
 
-const SKILL_CONSTRAINT_TEMPLATE_CODES = new Set([
+const REMOVED_SKILL_OR_ROLE_TEMPLATE_CODES = new Set([
     'NURSE_NOT_ALONE_N',
     'NEW_NURSE_NOT_ALONE_N',
     'MIN_PROFICIENCY_STAFF_BY_SHIFT',
     'SOFT_NEWBIE_NO_SOLO_N',
     'SOFT_MIN_SKILL_IN_DUTY',
+    'PRECEPTEE_NOT_ALONE_SHIFT',
+    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
+    'MIN_CHARGE_NURSE_BY_SHIFT',
 ]);
 
-function isSkillConstraintTemplateCode(templateCode: string | null | undefined) {
+function isRemovedSkillOrRoleTemplateCode(templateCode: string | null | undefined) {
     if (!templateCode) return false;
 
-    return SKILL_CONSTRAINT_TEMPLATE_CODES.has(templateCode) || /(?:SKILL|PROFICIENCY)/i.test(templateCode);
+    return REMOVED_SKILL_OR_ROLE_TEMPLATE_CODES.has(templateCode) || /(?:SKILL|PROFICIENCY)/i.test(templateCode);
 }
 
-function isSkillConstraintTemplate(template: Pick<TSoftRuleTemplate, 'id' | 'category' | 'controls'>) {
+function isRemovedSkillOrRoleTemplate(template: Pick<TSoftRuleTemplate, 'id' | 'category' | 'controls'>) {
     return (
-        isSkillConstraintCategory(template.category) ||
-        isSkillConstraintTemplateCode(template.id) ||
+        isRemovedSkillOrRoleCategory(template.category) ||
+        isRemovedSkillOrRoleTemplateCode(template.id) ||
         template.controls.some((control) => control.key === 'level' || control.optionsKey === 'level')
     );
 }
@@ -209,8 +211,8 @@ function isSkillConstraintTemplate(template: Pick<TSoftRuleTemplate, 'id' | 'cat
 function isVisibleConstraintRule(rule: Pick<TShiftConstraintRuleDraft, 'category' | 'templateCode'>) {
     return (
         rule.templateCode !== MIXED_OPERATION_POLICY_TEMPLATE_CODE &&
-        !isSkillConstraintCategory(rule.category) &&
-        !isSkillConstraintTemplateCode(rule.templateCode)
+        !isRemovedSkillOrRoleCategory(rule.category) &&
+        !isRemovedSkillOrRoleTemplateCode(rule.templateCode)
     );
 }
 
@@ -303,28 +305,27 @@ function SelectOptionContent({option, compact = false}: {option: TSelectOption; 
 
 const ALL_CONSTRAINT_TARGET_OPTION: TShiftConstraintOption = {type: 'ALL'};
 const RECOMMENDED_DEFAULT_RULE_CODES = [
-    'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MIN_NIGHT_INTERVAL',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
-    'FORBID_E_THEN_N',
-    'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const RECOMMENDED_DEFAULT_RULE_IDS = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
-const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
+const THREE_SHIFT_NON_RECOMMENDED_RULE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MAX_CONTINUOUS_NIGHT',
-    'CORE_MIN_OFF_AFTER_NIGHT',
     'MAX_MONTHLY_NIGHT_COUNT',
+    'FORBID_E_THEN_N',
+]);
+const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
+    'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_MIN_NIGHT_INTERVAL',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
-    'FORBID_E_THEN_N',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const THREE_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(THREE_SHIFT_RECOMMENDED_RULE_ORDER);
@@ -351,6 +352,17 @@ const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
 ] as const;
 const MIXED_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(MIXED_SHIFT_RECOMMENDED_RULE_ORDER);
 const THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
+const MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+]);
 const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
 const MIXED_SHIFT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
@@ -375,9 +387,6 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'MAX_MONTHLY_NIGHT_COUNT',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
-    'PRECEPTEE_NOT_ALONE_SHIFT',
-    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
-    'MIN_CHARGE_NURSE_BY_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
 ]);
@@ -401,8 +410,6 @@ const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'NURSE_PREFER_SHIFT',
     'NURSE_AVOID_SHIFT',
-    'PRECEPTEE_NOT_ALONE_SHIFT',
-    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
 ]);
@@ -426,8 +433,6 @@ const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'NURSE_PREFER_SHIFT',
     'NURSE_AVOID_SHIFT',
-    'PRECEPTEE_NOT_ALONE_SHIFT',
-    'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
     'MIXED_ROTATION_PARTICIPATION',
@@ -439,14 +444,7 @@ const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
     'MAX_WORK_MINUTES_BY_PERIOD',
     'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
-const ROTATION_MODAL_CATEGORY_ORDER = [
-    'STAFFING_COUNT',
-    'WORK_REST',
-    'FORBIDDEN_PATTERN',
-    'NURSE_LIMIT',
-    'ROLE_COVERAGE',
-    'NURSE_COMBINATION',
-];
+const ROTATION_MODAL_CATEGORY_ORDER = ['STAFFING_COUNT', 'WORK_REST', 'FORBIDDEN_PATTERN', 'NURSE_LIMIT', 'NURSE_COMBINATION'];
 const MIXED_MODAL_CATEGORY_ORDER = [
     'MIXED_PARTICIPATION',
     'STAFFING_COUNT',
@@ -455,7 +453,6 @@ const MIXED_MODAL_CATEGORY_ORDER = [
     'NURSE_LIMIT',
     'FAIRNESS',
     'FORBIDDEN_PATTERN',
-    'ROLE_COVERAGE',
     'NURSE_COMBINATION',
 ];
 const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
@@ -494,8 +491,6 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: 'NURSE_LIMIT',
     NURSE_PREFER_SHIFT: 'NURSE_LIMIT',
     NURSE_AVOID_SHIFT: 'NURSE_LIMIT',
-    PRECEPTEE_NOT_ALONE_SHIFT: 'ROLE_COVERAGE',
-    PRECEPTOR_PRECEPTEE_SAME_SHIFT: 'ROLE_COVERAGE',
     NURSE_PAIR_NOT_SAME_SHIFT: 'NURSE_COMBINATION',
     NURSE_PAIR_PREFER_SAME_SHIFT: 'NURSE_COMBINATION',
     MIXED_ROTATION_PARTICIPATION: 'MIXED_PARTICIPATION',
@@ -514,7 +509,7 @@ const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_PAIR',
 ]);
-const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MIN_CHARGE_NURSE_BY_SHIFT', 'MAX_DAY_NIGHT_TRANSITIONS']);
+const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MAX_DAY_NIGHT_TRANSITIONS']);
 
 function isSavedRuleVisibleForRotation(templateCode: string, rotationMode: TWardRotationMode) {
     if (rotationMode === 'TWO') return TWO_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
@@ -782,25 +777,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         ],
     },
     {
-        id: 'PRECEPTEE_NOT_ALONE_SHIFT',
-        category: 'ROLE_COVERAGE',
-        controls: [
-            {key: 'preceptee', kind: 'select', optionsKey: 'preceptee'},
-            {key: 'shift', kind: 'select', optionsKey: 'duty'},
-            {key: 'dateScope', kind: 'select', optionsKey: 'dateScope'},
-        ],
-    },
-    {
-        id: 'PRECEPTOR_PRECEPTEE_SAME_SHIFT',
-        category: 'ROLE_COVERAGE',
-        controls: [
-            {key: 'preceptor', kind: 'select', optionsKey: 'preceptor'},
-            {key: 'preceptee', kind: 'select', optionsKey: 'preceptee'},
-            {key: 'shift', kind: 'select', optionsKey: 'duty'},
-            {key: 'dateScope', kind: 'select', optionsKey: 'dateScope'},
-        ],
-    },
-    {
         id: 'IMPORTANT_MAX_WORK_STREAK',
         category: 'WORK_REST',
         controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6]}],
@@ -995,9 +971,6 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
         period: {type: 'MONTH'},
         count: 4,
     },
-    PRECEPTEE_NOT_ALONE_SHIFT: {shift: {type: 'ALL'}, dateScope: {type: 'EVERYDAY'}},
-    PRECEPTOR_PRECEPTEE_SAME_SHIFT: {shift: {type: 'ALL'}, dateScope: {type: 'EVERYDAY'}},
-    MIN_CHARGE_NURSE_BY_SHIFT: {dateScope: {type: 'EVERYDAY'}, count: 1},
     MIXED_ROTATION_PARTICIPATION: {
         participationMode: {type: 'FALLBACK_TWO'},
         dateScope: {type: 'EVERYDAY'},
@@ -1203,7 +1176,12 @@ function isRecommendedDefaultRuleCode(templateCode: string, rotationMode: TWardR
 
 function hasLegacyRecommendedDefaults(rules: TShiftConstraintRuleDraft[], rotationMode: TWardRotationMode) {
     const existingTemplateCodes = new Set(rules.map((rule) => rule.templateCode));
-    const baseline = rotationMode === 'TWO' ? TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES : THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES;
+    const baseline =
+        rotationMode === 'TWO'
+            ? TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES
+            : rotationMode === 'MIXED'
+              ? MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES
+              : THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES;
 
     return [...baseline].every((templateCode) => existingTemplateCodes.has(templateCode));
 }
@@ -1606,7 +1584,7 @@ function getNumberBounds(
     let min = control.min ?? 1;
     let max = control.max ?? min;
 
-    const usesTeamSize = control.key === 'count' && (template.id === 'STAFF_COUNT_BY_SHIFT' || template.id === 'MIN_CHARGE_NURSE_BY_SHIFT');
+    const usesTeamSize = control.key === 'count' && template.id === 'STAFF_COUNT_BY_SHIFT';
 
     if (usesTeamSize) {
         const operator = getConstraintOptionType(params.operator);
@@ -3099,19 +3077,57 @@ function InlineNumberInput({
     accessibleLabel: string;
     onChange: (value: number) => void;
 }) {
+    const [inputValue, setInputValue] = useState(String(value));
+    const isEditingRef = useRef(false);
+
+    useEffect(() => {
+        if (!isEditingRef.current) setInputValue(String(value));
+    }, [value]);
+
+    const commitInputValue = () => {
+        const numericValue = Number(inputValue);
+        const nextValue = inputValue.trim() && Number.isFinite(numericValue) ? Math.min(max, Math.max(min, numericValue)) : value;
+
+        setInputValue(String(nextValue));
+        onChange(nextValue);
+    };
+
     return (
         <input
             type="number"
-            value={value}
+            value={inputValue}
             min={min}
             max={max}
             inputMode="numeric"
             aria-label={accessibleLabel}
-            onFocus={(event) => event.currentTarget.select()}
+            onFocus={(event) => {
+                isEditingRef.current = true;
+                event.currentTarget.select();
+            }}
             onChange={(event) => {
+                const nextInputValue = event.currentTarget.value;
                 const next = event.currentTarget.valueAsNumber;
 
-                if (Number.isFinite(next)) onChange(Math.min(max, Math.max(min, next)));
+                setInputValue(nextInputValue);
+
+                if (Number.isFinite(next) && next >= min && next <= max) onChange(next);
+            }}
+            onBlur={() => {
+                isEditingRef.current = false;
+                commitInputValue();
+            }}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitInputValue();
+                    event.currentTarget.blur();
+                }
+
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setInputValue(String(value));
+                    event.currentTarget.blur();
+                }
             }}
             className="h-8 w-[58px] rounded-[8px] bg-white px-2 text-center font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
         />
@@ -4087,10 +4103,7 @@ export function Constraints({
     const softTemplates = useMemo(
         () =>
             createSoftRuleTemplates(templates, t, rotationMode).filter(
-                (template) =>
-                    !isSkillConstraintTemplate(template) &&
-                    !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(template.id) &&
-                    !(rotationMode === 'THREE' && template.id === 'MIN_CHARGE_NURSE_BY_SHIFT'),
+                (template) => !isRemovedSkillOrRoleTemplate(template) && !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(template.id),
             ),
         [rotationMode, t, templates],
     );
@@ -4104,7 +4117,7 @@ export function Constraints({
             softTemplates.filter(
                 (template) =>
                     !isHiddenAddModalTemplate(template.id) &&
-                    !isSkillConstraintTemplate(template) &&
+                    !isRemovedSkillOrRoleTemplate(template) &&
                     template.id !== MIXED_OPERATION_POLICY_TEMPLATE_CODE &&
                     (rotationMode === 'TWO'
                         ? TWO_SHIFT_VISIBLE_RULE_CODES.has(template.id)
@@ -4652,7 +4665,10 @@ export function Constraints({
         const normalizedParams = clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap);
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
-        const defaultSeverity = template.sourceTemplate?.severity ?? 'SOFT';
+        const defaultSeverity =
+            rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
+                ? 'SOFT'
+                : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,

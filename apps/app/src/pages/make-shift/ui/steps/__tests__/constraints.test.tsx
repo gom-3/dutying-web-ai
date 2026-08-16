@@ -63,6 +63,14 @@ const recommendedTemplateCodes = [
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ];
+const threeShiftDefaultTemplateCodes = [
+    'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+];
 const recommendedDefaultParamsByTemplateCode: Record<string, Record<string, unknown>> = {
     CORE_MAX_CONTINUOUS_WORK: {target: {type: 'ALL'}, count: 5},
     CORE_MIN_NIGHT_INTERVAL: {target: {type: 'ALL'}, count: 5},
@@ -97,7 +105,7 @@ const recommendedTemplates = recommendedTemplateCodes.map((templateCode, index) 
                   {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 7},
               ],
 }));
-const recommendedServerRules = recommendedTemplateCodes.map((templateCode, index) => ({
+const recommendedServerRules = threeShiftDefaultTemplateCodes.map((templateCode, index) => ({
     shiftConstraintRuleId: index + 1,
     templateCode,
     category: recommendedCategoryByTemplateCode[templateCode] ?? 'CORE',
@@ -349,7 +357,10 @@ describe('Constraints', () => {
         expect(offCount).toHaveValue(1);
         expect(offCount).toHaveAttribute('min', '0');
         expect(offCount).toHaveAttribute('max', '7');
-        fireEvent.change(offCount, {target: {value: '2'}});
+        await userEvent.clear(offCount);
+        expect(offCount).toHaveValue(null);
+        await userEvent.type(offCount, '2');
+        expect(offCount).toHaveValue(2);
         await userEvent.click(within(minOffCard!).getByTitle('추가'));
 
         await waitFor(() => {
@@ -854,7 +865,7 @@ describe('Constraints', () => {
         expect(screen.getByRole('button', {name: '모든 간호사'})).toBeInTheDocument();
     });
 
-    it('shows exactly the 23 three-shift rules and only the explicit 11 recommendations', async () => {
+    it('shows exactly the 21 three-shift rules without the removed skills and roles category', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 93,
@@ -916,12 +927,8 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={93} shiftTeamId={930} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await waitFor(() => {
-            const savedRecommendedRules = getLastUpdatePayload()?.rules ?? [];
-
-            expect(savedRecommendedRules).toHaveLength(11);
-            expect(savedRecommendedRules.every((rule) => rule.severity === 'HARD' && rule.isImportant === true)).toBe(true);
-        });
+        await waitFor(() => expect(screen.getAllByRole('checkbox', {name: '중요 표시 해제'})).toHaveLength(6));
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
 
         await userEvent.click(
             await waitFor(() => {
@@ -943,38 +950,52 @@ describe('Constraints', () => {
             '[scrollbar-gutter:stable]',
             '[&::-webkit-scrollbar]:w-3',
         );
-        expect(recommendationCards).toHaveLength(11);
+        expect(recommendationCards).toHaveLength(6);
         recommendationCards.forEach((card) => expect(card).toHaveClass('py-1.5'));
         expect(within(recommendationCards[0]!).getByTitle('추가').firstElementChild).toHaveClass('size-8');
         expect(within(dialog).queryByText('중요')).not.toBeInTheDocument();
-        expect(screen.getAllByTitle('추가')).toHaveLength(11);
+        expect(screen.getAllByTitle('추가')).toHaveLength(6);
 
         const recommendedOrder = [
-            'STAFF_COUNT_BY_SHIFT',
-            'CORE_MAX_CONTINUOUS_WORK',
-            'CORE_MAX_CONTINUOUS_NIGHT',
             'CORE_MIN_OFF_AFTER_NIGHT',
-            'MAX_MONTHLY_NIGHT_COUNT',
             'CORE_MIN_NIGHT_INTERVAL',
             'FORBID_N_THEN_D',
             'FORBID_N_THEN_E',
             'FORBID_E_THEN_D',
-            'FORBID_E_THEN_N',
             'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
         ].map((templateCode) => within(dialog).getByText(`sentinel-${templateCode.toLowerCase()}`));
 
         recommendedOrder.slice(0, -1).forEach((template, index) => {
             expect(template.compareDocumentPosition(recommendedOrder[index + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         });
+        for (const removedRecommendedCode of [
+            'STAFF_COUNT_BY_SHIFT',
+            'CORE_MAX_CONTINUOUS_WORK',
+            'CORE_MAX_CONTINUOUS_NIGHT',
+            'MAX_MONTHLY_NIGHT_COUNT',
+            'FORBID_E_THEN_N',
+        ]) {
+            expect(within(dialog).queryByText(`sentinel-${removedRecommendedCode.toLowerCase()}`)).not.toBeInTheDocument();
+        }
+
+        await userEvent.click(screen.getByRole('button', {name: '인원수'}));
+        expect(within(dialog).getByText('sentinel-staff_count_by_shift')).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '연속 근무·휴무'}));
+        expect(within(dialog).getByText('sentinel-core_max_continuous_work')).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
+        for (const normalCategoryCode of ['CORE_MAX_CONTINUOUS_NIGHT', 'MAX_MONTHLY_NIGHT_COUNT', 'FORBID_E_THEN_N']) {
+            expect(within(dialog).getByText(`sentinel-${normalCategoryCode.toLowerCase()}`)).toBeInTheDocument();
+        }
 
         let normalRuleCount = 0;
 
-        for (const category of ['인원수', '연속 근무·휴무', '야간·전환', '사람별 제한', '숙련도·역할', '근무자 조합']) {
+        for (const category of ['인원수', '연속 근무·휴무', '야간·전환', '사람별 제한', '근무자 조합']) {
             await userEvent.click(screen.getByRole('button', {name: category}));
             normalRuleCount += screen.queryAllByTitle('추가').length;
         }
 
-        expect(normalRuleCount).toBe(23);
+        expect(normalRuleCount).toBe(21);
+        expect(screen.queryByRole('button', {name: '숙련도·역할'})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('sentinel-exact_staff_by_shift');
         expect(document.body.textContent).not.toContain('sentinel-max_day_night_transitions');
         expect(document.body.textContent).not.toContain('sentinel-min_charge_nurse_by_shift');
@@ -990,7 +1011,7 @@ describe('Constraints', () => {
             rules: [
                 {
                     shiftConstraintRuleId: 51,
-                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    templateCode: 'CORE_MIN_NIGHT_INTERVAL',
                     category: 'CORE',
                     severity: 'SOFT',
                     sortOrder: 1,
@@ -1007,7 +1028,7 @@ describe('Constraints', () => {
 
         const recommendedCard = screen
             .getByRole('dialog')
-            .querySelector<HTMLElement>('[data-constraint-template-card="CORE_MAX_CONTINUOUS_WORK"]');
+            .querySelector<HTMLElement>('[data-constraint-template-card="CORE_MIN_NIGHT_INTERVAL"]');
 
         expect(recommendedCard).not.toBeNull();
         await userEvent.click(within(recommendedCard!).getByTitle('추가'));
@@ -1016,7 +1037,7 @@ describe('Constraints', () => {
             expect(getLastUpdatePayload()?.rules).toEqual([
                 expect.objectContaining({
                     shiftConstraintRuleId: 51,
-                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    templateCode: 'CORE_MIN_NIGHT_INTERVAL',
                     severity: 'HARD',
                     params: {target: {type: 'ALL'}, count: 5},
                 }),
@@ -1024,7 +1045,7 @@ describe('Constraints', () => {
         });
     });
 
-    it('hides non-three-shift saved rules without deleting them from the next save', async () => {
+    it('removes retired role rules while preserving other hidden compatible rules on save', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
@@ -1101,12 +1122,7 @@ describe('Constraints', () => {
         await waitFor(() => {
             const savedCodes = getLastUpdatePayload()?.rules?.map((rule) => rule.templateCode);
 
-            expect(savedCodes).toEqual([
-                'NURSE_PAIR_NOT_SAME_SHIFT',
-                'MIN_CHARGE_NURSE_BY_SHIFT',
-                'MAX_DAY_NIGHT_TRANSITIONS',
-                'MAX_CONSECUTIVE_WORK_DAYS',
-            ]);
+            expect(savedCodes).toEqual(['NURSE_PAIR_NOT_SAME_SHIFT', 'MAX_DAY_NIGHT_TRANSITIONS', 'MAX_CONSECUTIVE_WORK_DAYS']);
         });
     });
 
@@ -2532,7 +2548,7 @@ describe('Constraints', () => {
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
 
-    it('blocks and highlights a canonical continuous-work rule when its legacy alias already exists', async () => {
+    it('blocks and highlights a non-recommended continuous-work rule when its legacy alias already exists', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
@@ -2588,13 +2604,7 @@ describe('Constraints', () => {
             expect(legacyCard).toHaveClass('ring-2');
         });
 
-        expect(getLastUpdatePayload()?.rules).toEqual([
-            expect.objectContaining({
-                shiftConstraintRuleId: 1,
-                templateCode: 'MAX_CONSECUTIVE_WORK_DAYS',
-                severity: 'HARD',
-            }),
-        ]);
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
         expect(scrollIntoViewMock).toHaveBeenCalledWith({block: 'center'});
         expect(openButton).toBeEnabled();
     });
@@ -2723,6 +2733,19 @@ describe('Constraints', () => {
 
         expect(document.body.textContent).toContain('최대 일까지 연속으로 근무');
         expect(screen.getByRole('spinbutton')).toHaveValue(5);
+
+        const maxWorkCard = screen
+            .getByRole('dialog')
+            .querySelector<HTMLElement>('[data-constraint-template-card="CORE_MAX_CONTINUOUS_WORK"]');
+
+        expect(maxWorkCard).not.toBeNull();
+        await userEvent.click(within(maxWorkCard!).getByTitle('추가'));
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules).toEqual([
+                expect.objectContaining({templateCode: 'CORE_MAX_CONTINUOUS_WORK', severity: 'SOFT', isImportant: false}),
+            ]);
+        });
     });
 
     it('shows date-scope staffing options above the add modal and saves the selected option', async () => {
