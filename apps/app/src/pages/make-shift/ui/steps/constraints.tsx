@@ -65,6 +65,7 @@ type TSentencePart =
     | {type: 'text'; text: string}
     | {type: 'duty'; code: string}
     | {type: 'dutyPattern'; codes: string[]}
+    | {type: 'dutyClassification'; classification: string}
     | {type: 'control'; key: string}
     | {type: 'particle'; key: string; withBatchim: string; withoutBatchim: string};
 type TSoftRuleTemplate = {
@@ -1356,6 +1357,8 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
 
                 continue;
             }
+        } else if (key === 'nightShift') {
+            parts.push({type: 'dutyClassification', classification: 'NIGHT'});
         } else {
             parts.push({type: 'text', text: `{${key}}`});
         }
@@ -1375,7 +1378,13 @@ function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls
 }
 
 function interpolateLocalizedPattern(pattern: string, params: Record<string, string>) {
-    return pattern.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
+    return pattern.replace(/\{([^}]+)\}/g, (_, key: string) => {
+        const normalizedKey = key.trim();
+
+        if (normalizedKey === 'nightShift') return 'N';
+
+        return params[normalizedKey] ?? '';
+    });
 }
 
 function canUseLegacySentence(legacyTemplate: TSoftRuleTemplate | undefined, controls: TControlDef[]) {
@@ -1387,7 +1396,13 @@ function canUseLegacySentence(legacyTemplate: TSoftRuleTemplate | undefined, con
 }
 
 function interpolateDisplayTemplate(displayTemplate: string, _controls: TControlDef[], params: Record<string, string>) {
-    return displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
+    return displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => {
+        const normalizedKey = key.trim();
+
+        if (normalizedKey === 'nightShift') return 'N';
+
+        return params[normalizedKey] ?? '';
+    });
 }
 
 function createLocalizedSoftRuleTemplate(
@@ -1512,6 +1527,8 @@ function getSelectOptionParamValue(option: TSelectOption | undefined) {
     const value: TShiftConstraintOption = {type: option.raw.type};
 
     if (option.raw.nurseId != null) value.nurseId = option.raw.nurseId;
+
+    if (option.raw.divisionNum != null) value.divisionNum = option.raw.divisionNum;
 
     if (option.raw.wardShiftTypeId != null) value.wardShiftTypeId = option.raw.wardShiftTypeId;
 
@@ -1731,6 +1748,8 @@ function sanitizeRuleParamValue(value: unknown): unknown {
 
         if (value.nurseId != null) sanitized.nurseId = value.nurseId;
 
+        if (value.divisionNum != null) sanitized.divisionNum = value.divisionNum;
+
         if (value.wardShiftTypeId != null) sanitized.wardShiftTypeId = value.wardShiftTypeId;
 
         if (value.day != null) sanitized.day = value.day;
@@ -1821,6 +1840,8 @@ function toRulesQueryData(
 
 function getOptionKey(option: TShiftConstraintOption) {
     if (option.nurseId != null) return `nurse-${option.nurseId}`;
+
+    if (option.divisionNum != null) return `division-${option.divisionNum}`;
 
     if (option.wardShiftTypeId != null) return `shift-${option.wardShiftTypeId}`;
 
@@ -2231,6 +2252,8 @@ function getCandidateOptionValue(option: TShiftConstraintOption) {
     if (isAllCandidateOption(option)) return 'ALL';
 
     if (option.nurseId != null) return String(option.nurseId);
+
+    if (option.divisionNum != null) return `DIVISION:${option.divisionNum}`;
 
     if (option.wardShiftTypeId != null) return String(option.wardShiftTypeId);
 
@@ -3206,6 +3229,22 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                     return <DutyPatternBadge key={`${template.id}-pattern-${idx}`} options={options} />;
                 }
 
+                if (part.type === 'dutyClassification') {
+                    const option = [...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? []), ...(optionMap.dutyReference ?? [])].find(
+                        (candidate) => candidate.classification === part.classification,
+                    ) ?? {
+                        value: part.classification,
+                        label: part.classification === 'NIGHT' ? 'N' : part.classification,
+                        kind: 'duty' as const,
+                        shortName: part.classification === 'NIGHT' ? 'N' : part.classification,
+                        name: part.classification === 'NIGHT' ? 'N' : part.classification,
+                        color: '#3580FF',
+                        classification: part.classification,
+                    };
+
+                    return <DutyTypeBadge key={`${template.id}-classification-${part.classification}-${idx}`} option={option} />;
+                }
+
                 if (part.type === 'particle') {
                     const control = template.controls.find((item) => item.key === part.key);
                     const particleValue = getControlDisplayValue(control, template, displayParams, optionMap);
@@ -4126,6 +4165,7 @@ export function Constraints({
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
     const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
+    const currentShiftTeam = availableShiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId);
     const addableSoftTemplates = useMemo(
         () =>
             softTemplates.filter(
@@ -4351,6 +4391,15 @@ export function Constraints({
         const precepteeOptions = nurses
             .filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse))
             .map(toNurseOption);
+        const divisionOptions: TSelectOption[] = (currentShiftTeam?.divisions ?? []).map((division) => {
+            const label = division.name?.trim() || `그룹${division.divisionNum}`;
+
+            return {
+                value: `DIVISION:${division.divisionNum}`,
+                label,
+                raw: {type: 'DIVISION', divisionNum: division.divisionNum, name: label},
+            };
+        });
         const fallbackOptionMap = {
             target: [
                 {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
@@ -4372,6 +4421,7 @@ export function Constraints({
                           },
                       ]
                     : []),
+                ...divisionOptions,
                 ...nurseOptions,
             ],
             duty: dutyOptions,
@@ -4436,7 +4486,7 @@ export function Constraints({
             date: (mergedOptionMap.date ?? []).filter(isOptionInCurrentMonth),
             dateScope: (mergedOptionMap.dateScope ?? []).filter(isOptionInCurrentMonth),
         };
-    }, [nurses, options, rotationMode, shiftTypes, t, year, month]);
+    }, [currentShiftTeam?.divisions, nurses, options, rotationMode, shiftTypes, t, year, month]);
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {

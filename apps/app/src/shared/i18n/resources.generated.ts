@@ -1433,7 +1433,7 @@ export const ko = {
                     },
                     "MAX_MONTHLY_NIGHT_COUNT": {
                         "label": "야간·전환 조건",
-                        "sentence": "{target}의 야간 근무는 한 달에 최대 {count}회예요"
+                        "sentence": "{target}의 {nightShift} 근무는 한 달에 최대 {count}회예요"
                     },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "인원 조건",
@@ -4529,7 +4529,7 @@ export const en: TLocale = {
                     },
                     "MAX_MONTHLY_NIGHT_COUNT": {
                         "label": "Night and transition constraint",
-                        "sentence": "{target} works at most {count} night shifts per month"
+                        "sentence": "{target} works at most {count} {nightShift} shifts per month"
                     },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "Staffing constraint",

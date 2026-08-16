@@ -962,7 +962,7 @@ export const en: TLocale = {
                     },
                     MAX_MONTHLY_NIGHT_COUNT: {
                         label: 'Night and transition constraint',
-                        sentence: '{target} works at most {count} night shifts per month',
+                        sentence: '{target} works at most {count} {nightShift} shifts per month',
                     },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: 'Person limit',

@@ -175,6 +175,7 @@ export type TShiftConstraintOption = {
     label?: string;
     nurseId?: number;
     name?: string;
+    divisionNum?: number;
     wardShiftTypeId?: number;
     code?: string;
     day?: number;

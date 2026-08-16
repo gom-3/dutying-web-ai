@@ -3409,6 +3409,7 @@ describe('Constraints', () => {
                     {type: 'ALL', label: '모든 사람'},
                     {type: 'ROTATING', label: '일반 3교대 간호사'},
                     {type: 'NIGHT_DEDICATED', label: '야간전담간호사'},
+                    {type: 'DIVISION', label: 'New nurse group', divisionNum: 2},
                 ],
             },
             templates: [
@@ -3445,8 +3446,9 @@ describe('Constraints', () => {
 
         expect(within(listbox).getByRole('option', {name: 'Rotating three-shift nurses'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: 'Night-only nurses'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: 'New nurse group'})).toBeInTheDocument();
 
-        await userEvent.click(within(listbox).getByRole('option', {name: 'Night-only nurses'}));
+        await userEvent.click(within(listbox).getByRole('option', {name: 'New nurse group'}));
         await userEvent.click(screen.getByTitle('Add'));
 
         await waitFor(() => {
@@ -3454,9 +3456,9 @@ describe('Constraints', () => {
 
             expect(savedRule).toMatchObject({
                 templateCode: 'MAX_MONTHLY_NIGHT_COUNT',
-                params: {target: {type: 'NIGHT_DEDICATED'}, count: 7},
+                params: {target: {type: 'DIVISION', divisionNum: 2}, count: 7},
             });
-            expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|야간전담/);
+            expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|New nurse/);
         });
     });
 
