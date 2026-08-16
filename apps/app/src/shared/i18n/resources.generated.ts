@@ -2299,7 +2299,8 @@ export const ko = {
                 },
                 "nightRecovery": {
                     "description": "병동에 따라 아침에 퇴근한 날을 별도 근무유형으로 표시하거나, 일반 오프로 표시해요.",
-                    "title": "야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?"
+                    "highlight": "아침에 퇴근한 날",
+                    "title": "야간근무 후 아침에 퇴근한 날을\n어떻게 표시하나요?"
                 },
                 "rotation": {
                     "title": "어떤 교대제를 운영하나요?",
@@ -2415,8 +2416,12 @@ export const ko = {
                 "offRecoveryTitle": "일반 ‘오프’로 표시해요",
                 "offRecoveryExampleShift": "오프",
                 "offRecoveryDescription": "아침에 퇴근한 날도 별도의 근무유형 없이 일반 오프로 표시해요.",
-                "nightExampleShift": "2교대 야간",
-                "offExampleShift": "오프"
+                "nightExampleShift": "야간 근무",
+                "offExampleShift": "오프",
+                "exampleFirstDate": "8월 12일",
+                "exampleLabel": "예시",
+                "exampleSecondDate": "8월 13일",
+                "exampleThirdDate": "8월 14일"
             }
         },
         "profile": {
@@ -5363,7 +5368,8 @@ export const en: TLocale = {
                 },
                 "nightRecovery": {
                     "description": "Some wards use a separate shift type for the morning a night shift ends, while others show it as a regular off day.",
-                    "title": "How do you show the morning a night shift ends?"
+                    "highlight": "the morning",
+                    "title": "How do you show the morning\na night shift ends?"
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
@@ -5479,8 +5485,12 @@ export const en: TLocale = {
                 "offRecoveryTitle": "Show it as a regular off day",
                 "offRecoveryExampleShift": "Off",
                 "offRecoveryDescription": "Show the morning the night shift ends as a regular off day without a separate shift type.",
-                "nightExampleShift": "Two-shift night",
-                "offExampleShift": "Off"
+                "nightExampleShift": "Night shift",
+                "offExampleShift": "Off",
+                "exampleFirstDate": "Aug 12",
+                "exampleLabel": "Example",
+                "exampleSecondDate": "Aug 13",
+                "exampleThirdDate": "Aug 14"
             }
         },
         "profile": {
@@ -8425,7 +8435,8 @@ export const ja: TLocale = {
                 },
                 "nightRecovery": {
                     "description": "病棟によって夜勤明けの日を別の勤務区分または通常の休みで表示します。",
-                    "title": "夜勤を終えて朝に退勤した日をどのように表示しますか？"
+                    "highlight": "朝に退勤した日",
+                    "title": "夜勤を終えて朝に退勤した日を\nどのように表示しますか？"
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
@@ -8541,8 +8552,12 @@ export const ja: TLocale = {
                 "offRecoveryTitle": "通常の休みで表示します",
                 "offRecoveryExampleShift": "休み",
                 "offRecoveryDescription": "夜勤明けの日も別の勤務区分を使わず通常の休みで表示します。",
-                "nightExampleShift": "2交代夜勤",
-                "offExampleShift": "休み"
+                "nightExampleShift": "夜勤",
+                "offExampleShift": "休み",
+                "exampleFirstDate": "8月12日",
+                "exampleLabel": "例",
+                "exampleSecondDate": "8月13日",
+                "exampleThirdDate": "8月14日"
             }
         },
         "profile": {
@@ -11487,7 +11502,8 @@ export const zh: TLocale = {
                 },
                 "nightRecovery": {
                     "description": "不同病区会将夜班结束后的早晨显示为单独班次或普通休息。",
-                    "title": "夜班结束后早晨下班的日期如何显示？"
+                    "highlight": "早晨下班的日期",
+                    "title": "夜班结束后早晨下班的日期\n如何显示？"
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
@@ -11603,8 +11619,12 @@ export const zh: TLocale = {
                 "offRecoveryTitle": "显示为普通休息",
                 "offRecoveryExampleShift": "休息",
                 "offRecoveryDescription": "夜班结束后的早晨也不使用单独班次而显示为普通休息。",
-                "nightExampleShift": "两班制夜班",
-                "offExampleShift": "休息"
+                "nightExampleShift": "夜班",
+                "offExampleShift": "休息",
+                "exampleFirstDate": "8月12日",
+                "exampleLabel": "示例",
+                "exampleSecondDate": "8月13日",
+                "exampleThirdDate": "8月14日"
             }
         },
         "profile": {
@@ -14549,7 +14569,8 @@ export const th: TLocale = {
                 },
                 "nightRecovery": {
                     "description": "แต่ละวอร์ดอาจแสดงวันเลิกงานตอนเช้าหลังเวรกลางคืนเป็นประเภทกะแยกหรือวันหยุดปกติ",
-                    "title": "วันที่เลิกงานตอนเช้าหลังเวรกลางคืนแสดงอย่างไร?"
+                    "highlight": "วันที่เลิกงานตอนเช้า",
+                    "title": "วันที่เลิกงานตอนเช้าหลังเวรกลางคืน\nแสดงอย่างไร?"
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
@@ -14665,8 +14686,12 @@ export const th: TLocale = {
                 "offRecoveryTitle": "แสดงเป็นวันหยุดปกติ",
                 "offRecoveryExampleShift": "วันหยุด",
                 "offRecoveryDescription": "แสดงวันที่เลิกงานตอนเช้าหลังเวรกลางคืนเป็นวันหยุดปกติโดยไม่มีประเภทกะแยก",
-                "nightExampleShift": "เวรกลางคืนแบบ 2 กะ",
-                "offExampleShift": "วันหยุด"
+                "nightExampleShift": "เวรกลางคืน",
+                "offExampleShift": "วันหยุด",
+                "exampleFirstDate": "12 ส.ค.",
+                "exampleLabel": "ตัวอย่าง",
+                "exampleSecondDate": "13 ส.ค.",
+                "exampleThirdDate": "14 ส.ค."
             }
         },
         "profile": {
@@ -17611,7 +17636,8 @@ export const vi: TLocale = {
                 },
                 "nightRecovery": {
                     "description": "Tùy khoa, ngày về buổi sáng sau ca đêm được hiển thị bằng loại ca riêng hoặc ngày nghỉ thông thường.",
-                    "title": "Ngày về vào buổi sáng sau ca đêm được hiển thị như thế nào?"
+                    "highlight": "Ngày về vào buổi sáng",
+                    "title": "Ngày về vào buổi sáng sau ca đêm\nđược hiển thị như thế nào?"
                 },
                 "rotation": {
                     "title": "Which rotation systems do you use?",
@@ -17727,8 +17753,12 @@ export const vi: TLocale = {
                 "offRecoveryTitle": "Hiển thị bằng ngày nghỉ thông thường",
                 "offRecoveryExampleShift": "Nghỉ",
                 "offRecoveryDescription": "Hiển thị ngày về buổi sáng sau ca đêm là ngày nghỉ thông thường mà không có loại ca riêng.",
-                "nightExampleShift": "Ca đêm 2 ca",
-                "offExampleShift": "Nghỉ"
+                "nightExampleShift": "Ca đêm",
+                "offExampleShift": "Nghỉ",
+                "exampleFirstDate": "12 thg 8",
+                "exampleLabel": "Ví dụ",
+                "exampleSecondDate": "13 thg 8",
+                "exampleThirdDate": "14 thg 8"
             }
         },
         "profile": {

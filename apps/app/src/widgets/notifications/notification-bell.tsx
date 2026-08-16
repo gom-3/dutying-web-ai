@@ -1,7 +1,8 @@
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {Bell, Loader2} from 'lucide-react';
+import {Bell, Loader2, Trash2} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
+import {toast} from 'react-hot-toast';
 import {useNavigate} from 'react-router';
 import {notificationQueryKeys, notificationQueryOptions} from '@/entities/notification';
 import useAuth from '@/features/auth';
@@ -142,6 +143,38 @@ export function NotificationBell() {
             await queryClient.invalidateQueries({queryKey: notificationQueryKeys.all()});
         },
     });
+    const notificationListQueryKey = notificationQueryKeys.list({size: NOTIFICATION_LIST_SIZE});
+    const unreadCountQueryKey = notificationQueryKeys.unreadCount();
+    const deleteNotificationMutation = useMutation({
+        mutationFn: (notification: TNotification) => NotificationAPI.deleteNotification(notification.id),
+        onMutate: async (notification) => {
+            await Promise.all([
+                queryClient.cancelQueries({queryKey: notificationListQueryKey}),
+                queryClient.cancelQueries({queryKey: unreadCountQueryKey}),
+            ]);
+
+            const previousNotifications = queryClient.getQueryData<TNotification[]>(notificationListQueryKey);
+            const previousUnreadCount = queryClient.getQueryData<number>(unreadCountQueryKey);
+
+            queryClient.setQueryData<TNotification[]>(notificationListQueryKey, (current) =>
+                current?.filter((item) => item.id !== notification.id),
+            );
+
+            if (!notification.isRead) {
+                queryClient.setQueryData<number>(unreadCountQueryKey, (current) => Math.max(0, (current ?? 0) - 1));
+            }
+
+            return {previousNotifications, previousUnreadCount};
+        },
+        onError: (_error, _notification, context) => {
+            queryClient.setQueryData(notificationListQueryKey, context?.previousNotifications);
+            queryClient.setQueryData(unreadCountQueryKey, context?.previousUnreadCount);
+            toast.error(t('page.notifications.deleteFailed'));
+        },
+        onSettled: async () => {
+            await queryClient.invalidateQueries({queryKey: notificationQueryKeys.all()});
+        },
+    });
     const unreadCount = unreadCountQuery.data ?? 0;
     const unreadLabel = unreadCount > 99 ? '99+' : String(unreadCount);
     const notifications = notificationsQuery.data ?? [];
@@ -206,6 +239,11 @@ export function NotificationBell() {
         setIsOpen(false);
         navigate(resolveNotificationNavigationPath(notification));
     };
+    const handleNotificationDelete = (notification: TNotification) => {
+        if (!globalThis.confirm(t('page.notifications.deleteConfirm'))) return;
+
+        deleteNotificationMutation.mutate(notification);
+    };
 
     return (
         <div ref={rootRef} className="pointer-events-auto relative font-apple">
@@ -265,36 +303,49 @@ export function NotificationBell() {
                             </p>
                         ) : (
                             notifications.map((notification) => (
-                                <button
+                                <div
                                     key={notification.id}
-                                    type="button"
                                     className={cn(
-                                        'flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-7',
+                                        'flex w-full items-stretch transition-colors hover:bg-gray-7',
                                         !notification.isRead && 'bg-main-light/55',
                                     )}
-                                    onClick={() => void handleNotificationClick(notification)}
                                 >
-                                    <span
-                                        className={cn(
-                                            'mt-1 size-2 shrink-0 rounded-full',
-                                            notification.isRead ? 'bg-gray-5' : 'bg-[#E55C6E]',
-                                        )}
-                                        aria-hidden="true"
-                                    />
-                                    <span className="min-w-0 flex-1">
+                                    <button
+                                        type="button"
+                                        className="flex min-w-0 flex-1 gap-3 px-4 py-3 text-left"
+                                        onClick={() => void handleNotificationClick(notification)}
+                                    >
                                         <span
                                             className={cn(
-                                                'block text-[13px] leading-5 break-words text-sub-1',
-                                                notification.isRead ? 'font-medium' : 'font-semibold',
+                                                'mt-1 size-2 shrink-0 rounded-full',
+                                                notification.isRead ? 'bg-gray-5' : 'bg-[#E55C6E]',
                                             )}
-                                        >
-                                            {notification.content}
+                                            aria-hidden="true"
+                                        />
+                                        <span className="min-w-0 flex-1">
+                                            <span
+                                                className={cn(
+                                                    'block text-[13px] leading-5 break-words text-sub-1',
+                                                    notification.isRead ? 'font-medium' : 'font-semibold',
+                                                )}
+                                            >
+                                                {notification.content}
+                                            </span>
+                                            <span className="mt-1 block text-[11px] leading-4 font-medium text-gray-4">
+                                                {formatTime(notification.createdAt, t)}
+                                            </span>
                                         </span>
-                                        <span className="mt-1 block text-[11px] leading-4 font-medium text-gray-4">
-                                            {formatTime(notification.createdAt, t)}
-                                        </span>
-                                    </span>
-                                </button>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="my-2 mr-2 grid size-8 shrink-0 place-items-center self-center rounded-[7px] text-gray-4 transition-colors hover:bg-white hover:text-[#E55C6E] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:outline-none"
+                                        aria-label={t('page.notifications.deleteAria', {content: notification.content})}
+                                        title={t('page.notifications.deleteAria', {content: notification.content})}
+                                        onClick={() => handleNotificationDelete(notification)}
+                                    >
+                                        <Trash2 className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                                    </button>
+                                </div>
                             ))
                         )}
                     </div>

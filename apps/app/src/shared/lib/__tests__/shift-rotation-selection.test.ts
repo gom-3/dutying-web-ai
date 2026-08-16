@@ -57,6 +57,12 @@ describe('shift rotation selection', () => {
             {rotationSystem: 'TWO', classification: 'NIGHT'},
             {rotationSystem: 'NONE', classification: 'OFF'},
         ]);
+        expect(getRequiredRotationClassifications('TWO', {includeNightContinuation: true})).toEqual([
+            {rotationSystem: 'TWO', classification: 'DAY'},
+            {rotationSystem: 'TWO', classification: 'NIGHT'},
+            {rotationSystem: 'TWO', classification: 'NIGHT_CONTINUATION'},
+            {rotationSystem: 'NONE', classification: 'OFF'},
+        ]);
         expect(getRequiredRotationClassifications('MIXED')).toHaveLength(6);
     });
 

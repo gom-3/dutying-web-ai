@@ -68,7 +68,14 @@ export function getSelectableRotationSystemsForClassification(
     return ['THREE', 'TWO'];
 }
 
-export function getRequiredRotationClassifications(rotationMode: TSelectableWardRotationMode) {
+interface IRequiredRotationClassificationOptions {
+    includeNightContinuation?: boolean;
+}
+
+export function getRequiredRotationClassifications(
+    rotationMode: TSelectableWardRotationMode,
+    {includeNightContinuation = false}: IRequiredRotationClassificationOptions = {},
+) {
     return [
         ...(rotationMode !== 'TWO'
             ? [
@@ -83,6 +90,9 @@ export function getRequiredRotationClassifications(rotationMode: TSelectableWard
                   {rotationSystem: 'TWO' as const, classification: 'NIGHT' as const},
               ]
             : []),
+        ...(rotationMode !== 'THREE' && includeNightContinuation
+            ? [{rotationSystem: 'TWO' as const, classification: 'NIGHT_CONTINUATION' as const}]
+            : []),
         {rotationSystem: 'NONE' as const, classification: 'OFF' as const},
     ];
 }
@@ -93,8 +103,9 @@ export function getRequiredRotationClassificationCounts(
         classification: TSelectableShiftClassification;
         rotationSystem?: TSelectableShiftRotationSystem;
     }>,
+    options: IRequiredRotationClassificationOptions = {},
 ) {
-    return getRequiredRotationClassifications(rotationMode).map((requiredShiftType) => ({
+    return getRequiredRotationClassifications(rotationMode, options).map((requiredShiftType) => ({
         ...requiredShiftType,
         count: shiftTypes.filter(
             (shiftType) =>

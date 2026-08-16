@@ -7,6 +7,13 @@ import ROUTE from '@/shared/constant/path';
 import {buildApiLocaleHeaders, getStoredServiceRegion} from '@/shared/i18n/locale';
 import {normalizeApiErrorResponse, resolveApiErrorMessage, type TApiClientError} from './error';
 
+declare module 'axios' {
+    // eslint-disable-next-line @typescript-eslint/naming-convention -- Axios module augmentation must use the library interface name.
+    interface AxiosRequestConfig {
+        suppressErrorToast?: boolean;
+    }
+}
+
 const AUTH_REDIRECT_IGNORED_PATHS = new Set(['/demo/start', '/token/refresh', '/token/blacklist']);
 const AUTH_REDIRECT_IGNORED_PREFIXES = ['/auth/'];
 const createAxiosInstance = (options: {withCredentials?: boolean} = {}) =>
@@ -72,7 +79,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
                     }
                 })
                 .with(400, 404, () => {
-                    toast.error(message);
+                    if (!error?.config?.suppressErrorToast) toast.error(message);
                 })
                 .otherwise(() => {
                     // no-op

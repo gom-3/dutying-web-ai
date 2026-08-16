@@ -254,7 +254,11 @@ class ApiBoardAPI {
     }
 
     public async getPost(wardId: number, postId: number) {
-        return (await axiosInstance.get<TWardBoardPost>(`/wards/${wardId}/board/posts/${postId}`)).data;
+        return (
+            await axiosInstance.get<TWardBoardPost>(`/wards/${wardId}/board/posts/${postId}`, {
+                suppressErrorToast: true,
+            })
+        ).data;
     }
 
     public async createPost(wardId: number, post: TCreateWardBoardPostDTO) {

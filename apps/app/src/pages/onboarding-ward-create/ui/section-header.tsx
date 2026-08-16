@@ -38,10 +38,9 @@ const STEP_LABELS: Record<TOnboardingStep, TStepLabel> = {
         titleHighlightKeys: ['page.onboardingWardCreate.section.nurse.highlight'],
     },
 };
-
 const NIGHT_RECOVERY_LABEL: TStepLabel = {
     titleKey: 'page.onboardingWardCreate.section.nightRecovery.title',
-    descriptionKey: 'page.onboardingWardCreate.section.nightRecovery.description',
+    titleHighlightKeys: ['page.onboardingWardCreate.section.nightRecovery.highlight'],
 };
 
 interface ISectionHeaderProps {
@@ -95,7 +94,7 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
     const titleHighlights = label.titleHighlightKeys?.map((key) => t(key));
     const description = label.descriptionKey ? t(label.descriptionKey) : undefined;
     const headerClassName = nightRecovery
-        ? 'mb-6 max-w-[640px] space-y-2'
+        ? 'mb-6 max-w-[560px] space-y-2'
         : isIdentityStep || step === 2
           ? 'mb-6 max-w-[480px] space-y-2'
           : step === 3
@@ -103,7 +102,7 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
             : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
-            <span className="sr-only">{title}</span>
+            <span className="sr-only">{title.replace(/\n/g, ' ')}</span>
             <span aria-hidden="true">
                 <TitleLines highlights={titleHighlights}>{title}</TitleLines>
             </span>
@@ -114,6 +113,7 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
         <BaseSectionHeader
             className={headerClassName}
             title={renderedTitle}
+            titleClassName={nightRecovery ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap' : undefined}
             description={description}
             descriptionClassName={
                 isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'

@@ -97,7 +97,7 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(twoShiftDraft.shiftTypes).toEqual([
             expect.objectContaining({
-                name: 'Two-shift day',
+                name: 'Morning',
                 shortName: 'D',
                 classification: 'DAY',
                 rotationSystem: 'TWO',
@@ -105,7 +105,7 @@ describe('OnboardingWardCreatePage model', () => {
                 endTime: '19:00',
             }),
             expect.objectContaining({
-                name: 'Two-shift night',
+                name: 'Overnight',
                 shortName: 'N',
                 classification: 'NIGHT',
                 rotationSystem: 'TWO',
@@ -128,6 +128,10 @@ describe('OnboardingWardCreatePage model', () => {
         expect(
             mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.shortName),
         ).toEqual(['1', '2']);
+        expect(mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.name)).toEqual([
+            'Two-shift day',
+            'Two-shift night',
+        ]);
         expect(getStepValidation({...mixedDraft, currentStep: 4}, 4).isValid).toBe(true);
     });
 
@@ -139,6 +143,7 @@ describe('OnboardingWardCreatePage model', () => {
         ]);
 
         const withContinuation = updateTwoShiftNightRecoveryDisplayDraft(twoShiftDraft, 'NIGHT_CONTINUATION', localizedLabels);
+
         expect(getStepValidation({...withContinuation, currentStep: 2}, 2).isValid).toBe(true);
         expect(withContinuation.shiftTypes).toContainEqual(
             expect.objectContaining({
@@ -147,10 +152,28 @@ describe('OnboardingWardCreatePage model', () => {
                 rotationSystem: 'TWO',
             }),
         );
+        expect(getStepValidation({...withContinuation, currentStep: 4}, 4).isValid).toBe(true);
 
-        const withOff = updateTwoShiftNightRecoveryDisplayDraft(withContinuation, 'OFF', localizedLabels);
+        const continuationShiftType = withContinuation.shiftTypes.find((shiftType) => shiftType.classification === 'NIGHT_CONTINUATION');
+
+        expect(continuationShiftType).toBeDefined();
+
+        const withoutRequiredContinuation = deleteShiftTypeDraft(withContinuation, continuationShiftType!.id);
+
+        expect(getStepValidation({...withoutRequiredContinuation, currentStep: 4}, 4).issues).toContainEqual({
+            code: 'missing-required-shift-types',
+            step: 4,
+        });
+
+        const withDuplicateContinuation = {
+            ...withContinuation,
+            shiftTypes: [...withContinuation.shiftTypes, {...continuationShiftType!, id: 'shift-two-night-continuation-duplicate'}],
+        };
+        const withOff = updateTwoShiftNightRecoveryDisplayDraft(withDuplicateContinuation, 'OFF', localizedLabels);
+
         expect(withOff.shiftTypes.some((shiftType) => shiftType.classification === 'NIGHT_CONTINUATION')).toBe(false);
         expect(withOff.shiftTypes).toContainEqual(expect.objectContaining({classification: 'OFF', rotationSystem: 'NONE'}));
+        expect(getStepValidation({...withOff, currentStep: 4}, 4).isValid).toBe(true);
     });
 
     it('does not add, delete, or convert shift rows after a user configures one', () => {

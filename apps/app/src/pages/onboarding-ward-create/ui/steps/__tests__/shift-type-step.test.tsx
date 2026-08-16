@@ -110,6 +110,7 @@ describe('ShiftTypeStep', () => {
             <ShiftTypeStep
                 shiftTypes={[customShiftType]}
                 rotationMode="TWO"
+                allowNightContinuation
                 onChange={onChange}
                 onDragEnd={vi.fn()}
                 onAdd={vi.fn()}
@@ -130,6 +131,26 @@ describe('ShiftTypeStep', () => {
             endTime: '07:00',
             mappingStatus: 'CONFIRMED',
         });
+    });
+
+    it('일반 오프를 선택한 2교대에서는 퇴근일 근무를 선택지에서 숨긴다', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <ShiftTypeStep
+                shiftTypes={[createUnassignedNightShiftType()]}
+                rotationMode="TWO"
+                allowNightContinuation={false}
+                onChange={vi.fn()}
+                onDragEnd={vi.fn()}
+                onAdd={vi.fn()}
+                onDelete={vi.fn()}
+            />,
+        );
+
+        await user.click(screen.getByRole('combobox', {name: '야간 코드 근무 의미 선택'}));
+
+        expect(screen.queryByRole('option', {name: '퇴근일 근무'})).not.toBeInTheDocument();
     });
 
     it('기타 휴무는 저장된 isOff 값과 관계없이 근무시간을 하이픈으로 고정한다', () => {

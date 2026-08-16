@@ -60,6 +60,9 @@ export const en: TLocale = {
             loadFailed: 'Could not load notifications.',
             retry: 'Retry',
             empty: 'No new notifications.',
+            deleteAria: 'Delete notification: {{content}}',
+            deleteConfirm: 'Delete this notification?',
+            deleteFailed: 'Could not delete the notification.',
         },
         board: {
             title: 'Board',

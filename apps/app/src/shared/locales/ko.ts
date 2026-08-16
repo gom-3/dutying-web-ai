@@ -58,6 +58,9 @@ export const ko = {
             loadFailed: '알림을 불러오지 못했어요.',
             retry: '다시 시도',
             empty: '새 알림이 없어요.',
+            deleteAria: '{{content}} 알림 삭제',
+            deleteConfirm: '이 알림을 삭제할까요?',
+            deleteFailed: '알림을 삭제하지 못했어요.',
         },
         board: {
             title: '게시판',

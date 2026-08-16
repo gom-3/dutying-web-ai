@@ -517,7 +517,7 @@ const createTwoShiftTypes = (
 ): TOnboardingWardShiftType[] => [
     createShiftType({
         id: 'shift-two-day',
-        name: labels.shiftNames.twoDay,
+        name: rotationMode === 'TWO' ? labels.shiftNames.day : labels.shiftNames.twoDay,
         shortName: rotationMode === 'TWO' ? 'D' : '1',
         startTime: '07:00',
         endTime: '19:00',
@@ -532,7 +532,7 @@ const createTwoShiftTypes = (
     }),
     createShiftType({
         id: 'shift-two-night',
-        name: labels.shiftNames.twoNight,
+        name: rotationMode === 'TWO' ? labels.shiftNames.night : labels.shiftNames.twoNight,
         shortName: rotationMode === 'TWO' ? 'N' : '2',
         startTime: '19:00',
         endTime: '07:00',
@@ -778,7 +778,7 @@ export const updateRotationModeDraft = (
 
             const desiredShiftType = desiredTwoShiftTypes.find((candidate) => candidate.classification === shiftType.classification);
 
-            return desiredShiftType ? {...shiftType, shortName: desiredShiftType.shortName} : shiftType;
+            return desiredShiftType ? {...shiftType, name: desiredShiftType.name, shortName: desiredShiftType.shortName} : shiftType;
         });
 
         ensureShiftTypes(desiredTwoShiftTypes);
@@ -807,6 +807,7 @@ export const updateTwoShiftNightRecoveryDisplayDraft = (
     if (draft.rotationMode !== 'TWO') return draft;
 
     let shiftTypes = draft.shiftTypes;
+
     const continuationIndex = shiftTypes.findIndex(
         (shiftType) => resolveOnboardingRotationSystem(shiftType) === 'TWO' && shiftType.classification === 'NIGHT_CONTINUATION',
     );
@@ -817,15 +818,16 @@ export const updateTwoShiftNightRecoveryDisplayDraft = (
         } else {
             shiftTypes = [...shiftTypes, createTwoShiftNightContinuation(labels)];
         }
-    } else if (continuationIndex >= 0) {
-        shiftTypes = shiftTypes.flatMap((shiftType, index) => {
-            if (index !== continuationIndex) return [shiftType];
+    } else {
+        shiftTypes = shiftTypes.flatMap((shiftType) => {
+            if (shiftType.classification !== 'NIGHT_CONTINUATION') return [shiftType];
 
             return shiftType.protectedByPreviousSchedule ? [{...shiftType, isActive: false}] : [];
         });
     }
 
     shiftTypes = orderOnboardingShiftTypes(shiftTypes);
+
     const activeShiftTypeIds = getActiveShiftTypeIds(shiftTypes);
 
     return {
@@ -2289,6 +2291,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
             classification: shiftType.classification,
             rotationSystem: getSelectedRotationSystem(shiftType),
         })),
+        {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'},
     );
 
     if (requiredShiftTypeCounts.some(({count}) => count === 0)) {
@@ -2445,6 +2448,7 @@ export const getStepValidation = (draft: TOnboardingWardDraft, step = draft.curr
             if (draft.rotationMode === 'TWO' && draft.twoShiftNightRecoveryDisplay == null) {
                 issues.push({code: 'missing-two-shift-night-recovery-display', step});
             }
+
             break;
         case 3:
             issues = validateScheduleInputs(draft, step);

@@ -12,6 +12,7 @@ interface IOnboardingStepLayoutProps {
     leftAction?: ReactNode;
     nextDisabled?: boolean;
     actionsDisabled?: boolean;
+    hidePrevious?: boolean;
     nextLabel?: string;
     children: ReactNode;
 }
@@ -24,6 +25,7 @@ function OnboardingStepLayout({
     leftAction,
     nextDisabled = false,
     actionsDisabled = false,
+    hidePrevious = false,
     nextLabel,
     children,
 }: IOnboardingStepLayoutProps) {
@@ -35,7 +37,7 @@ function OnboardingStepLayout({
             <div className="mt-14 flex items-center justify-between">
                 {leftAction ?? <div />}
                 <div className="flex items-center gap-[42px]">
-                    {step > 1 ? (
+                    {step > 1 && !hidePrevious ? (
                         <WizardButton variant="secondary" onClick={onPrev} disabled={actionsDisabled}>
                             {t('page.onboardingWardCreate.action.previous')}
                         </WizardButton>

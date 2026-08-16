@@ -57,6 +57,14 @@ class ApiNotificationAPI {
     public async markAsRead(notificationId: number) {
         return (await axiosInstance.put<void>(`/notifications/${notificationId}/read`)).data;
     }
+
+    public async deleteNotification(notificationId: number) {
+        return (
+            await axiosInstance.delete<void>(`/notifications/${notificationId}`, {
+                suppressErrorToast: true,
+            })
+        ).data;
+    }
 }
 
 export default new ApiNotificationAPI();

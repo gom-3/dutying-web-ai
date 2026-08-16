@@ -34,6 +34,8 @@ import {
 interface IShiftTypeStepProps {
     shiftTypes: TOnboardingWardShiftType[];
     rotationMode: TOnboardingRotationMode;
+    allowNightContinuation?: boolean;
+    requireNightContinuation?: boolean;
     onChange: (shiftTypeId: string, updater: Partial<TOnboardingWardShiftType>) => void;
     onDragEnd: (result: DropResult) => void;
     onAdd: () => void;
@@ -43,6 +45,7 @@ interface IShiftTypeStepProps {
 interface IShiftTypeRequirementsProps {
     shiftTypes: TOnboardingWardShiftType[];
     rotationMode: TOnboardingRotationMode;
+    requireNightContinuation?: boolean;
 }
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
@@ -65,11 +68,13 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'OTHER_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherLeave'},
 ] as const;
 
-function getAvailableShiftClassificationOptions(rotationMode: TOnboardingRotationMode) {
+function getAvailableShiftClassificationOptions(rotationMode: TOnboardingRotationMode, allowNightContinuation: boolean) {
     const selectableClassifications = getSelectableClassificationsForWardMode(rotationMode);
 
-    return SHIFT_CLASSIFICATION_OPTIONS.filter((option) =>
-        selectableClassifications.some((classification) => classification === option.value),
+    return SHIFT_CLASSIFICATION_OPTIONS.filter(
+        (option) =>
+            selectableClassifications.some((classification) => classification === option.value) &&
+            (allowNightContinuation || option.value !== 'NIGHT_CONTINUATION'),
     );
 }
 
@@ -101,7 +106,7 @@ function isOffShiftType(shiftType: TOnboardingWardShiftType) {
     return shiftType.isOff || shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE';
 }
 
-export function ShiftTypeRequirements({shiftTypes, rotationMode}: IShiftTypeRequirementsProps) {
+export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightContinuation = false}: IShiftTypeRequirementsProps) {
     const {t} = useTypedTranslation();
     const titleKey =
         rotationMode === 'TWO'
@@ -119,8 +124,9 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode}: IShiftTypeRequ
                         classification: shiftType.classification,
                         rotationSystem: resolveOnboardingRotationSystem(shiftType),
                     })),
+                {includeNightContinuation: requireNightContinuation},
             ),
-        [rotationMode, shiftTypes],
+        [requireNightContinuation, rotationMode, shiftTypes],
     );
     const satisfiedCount = requiredShiftTypeStatuses.filter(({count}) => count === 1).length;
     const issueCount = requiredShiftTypeStatuses.length - satisfiedCount;
@@ -311,7 +317,16 @@ function InlineFieldError({id, children}: {id?: string; children: ReactNode}) {
     );
 }
 
-export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, onAdd, onDelete}: IShiftTypeStepProps) {
+export function ShiftTypeStep({
+    shiftTypes,
+    rotationMode,
+    allowNightContinuation = true,
+    requireNightContinuation = false,
+    onChange,
+    onDragEnd,
+    onAdd,
+    onDelete,
+}: IShiftTypeStepProps) {
     const {t} = useTypedTranslation();
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
@@ -435,7 +450,7 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
     const getMappingRecommendationLabel = (shiftType: TOnboardingWardShiftType) => {
         const recommendation = shiftType.mappingRecommendation;
 
-        if (!recommendation) return null;
+        if (!recommendation || (!allowNightContinuation && recommendation.classification === 'NIGHT_CONTINUATION')) return null;
 
         const classificationOption = SHIFT_CLASSIFICATION_OPTIONS.find((option) => option.value === recommendation.classification);
         const classificationLabel = classificationOption ? t(classificationOption.labelKey) : recommendation.classification;
@@ -470,7 +485,11 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
 
     return (
         <div className="relative">
-            <ShiftTypeRequirements shiftTypes={shiftTypes} rotationMode={rotationMode} />
+            <ShiftTypeRequirements
+                shiftTypes={shiftTypes}
+                rotationMode={rotationMode}
+                requireNightContinuation={requireNightContinuation}
+            />
             <Card
                 variant="elevated"
                 padding="none"
@@ -669,7 +688,10 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
                                                                       },
                                                                   ]
                                                                 : []),
-                                                            ...getAvailableShiftClassificationOptions(rotationMode).map((option) => ({
+                                                            ...getAvailableShiftClassificationOptions(
+                                                                rotationMode,
+                                                                allowNightContinuation,
+                                                            ).map((option) => ({
                                                                 value: option.value,
                                                                 label: t(option.labelKey),
                                                             })),
@@ -694,6 +716,8 @@ export function ShiftTypeStep({shiftTypes, rotationMode, onChange, onDragEnd, on
 
                                                                 return;
                                                             }
+
+                                                            if (value === 'NIGHT_CONTINUATION' && !allowNightContinuation) return;
 
                                                             const classification = value as TOnboardingWardShiftType['classification'];
                                                             const currentRotationSystem =

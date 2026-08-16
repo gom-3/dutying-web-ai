@@ -145,13 +145,19 @@ const moveToRotationStep = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.type(screen.getByLabelText('병동명'), TEST_WARD_NAME);
     await user.click(screen.getByRole('button', {name: '다음'}));
 };
-const selectRotationAndMoveToShiftTypeStep = async (user: ReturnType<typeof userEvent.setup>, rotationName: RegExp) => {
+const selectRotationAndMoveToShiftTypeStep = async (
+    user: ReturnType<typeof userEvent.setup>,
+    rotationName: RegExp,
+    nightRecoveryName: RegExp = /일반 ‘오프’로 표시해요/,
+) => {
     await moveToRotationStep(user);
     await user.click(screen.getByRole('button', {name: rotationName}));
+
     if (rotationName.test('2교대만 운영해요')) {
         await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: /일반 ‘오프’로 표시해요/}));
+        await user.click(screen.getByRole('button', {name: nightRecoveryName}));
     }
+
     await user.click(screen.getByRole('button', {name: '다음'}));
     await user.click(screen.getByRole('button', {name: '건너뛰기'}));
 };
@@ -298,16 +304,56 @@ describe('OnboardingWardCreatePage', () => {
                 name: '야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?',
             }),
         ).toBeInTheDocument();
+
+        const nightRecoveryHeading = screen.getByRole('heading', {
+            name: '야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?',
+        });
+
+        expect(nightRecoveryHeading).toHaveClass('whitespace-nowrap');
+        expect(Array.from(nightRecoveryHeading.querySelectorAll('[aria-hidden="true"] > span')).map((line) => line.textContent)).toEqual([
+            '야간근무 후 아침에 퇴근한 날을',
+            '어떻게 표시하나요?',
+        ]);
+        expect(within(nightRecoveryHeading).getByText('아침에 퇴근한 날')).toHaveClass(
+            'text-highlight-soft',
+            'text-highlight-soft--subtle',
+        );
+        expect(
+            screen.queryByText('병동에 따라 아침에 퇴근한 날을 별도 근무유형으로 표시하거나, 일반 오프로 표시해요.'),
+        ).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /일반 ‘오프’로 표시해요/})).toBeInTheDocument();
-        expect(screen.getByText('퇴근일 근무')).toBeInTheDocument();
+
+        const continuationOption = screen.getByRole('button', {name: /별도 근무유형으로 표시해요/});
+        const offOption = screen.getByRole('button', {name: /일반 ‘오프’로 표시해요/});
+        const continuationExampleShift = within(continuationOption).getByText('퇴근일 근무');
+        const continuationExampleBadge = continuationExampleShift.parentElement;
+
+        expect(continuationExampleBadge).toHaveClass('bg-[#FFF3C4]', 'text-[#6F4D00]');
+        expect(within(continuationExampleBadge!).getByText('예시 ·')).toBeInTheDocument();
+        expect(within(continuationOption).getByText('8월 12일')).toBeInTheDocument();
+        expect(within(continuationOption).getByText('8월 13일')).toBeInTheDocument();
+        expect(within(continuationOption).getByText('8월 14일')).toBeInTheDocument();
+        expect(within(continuationOption).getByText('야간 근무')).toHaveClass('group-hover:bg-white');
+        expect(within(offOption).getByText('야간 근무')).toHaveClass('group-hover:bg-white');
+        expect(within(offOption).getByText('8월 14일')).toBeInTheDocument();
+
+        const offExampleShifts = within(offOption).getAllByText('오프');
+
+        expect(offExampleShifts).toHaveLength(2);
+        expect(offExampleShifts[0]).toHaveClass('bg-[#FFF3C4]', 'text-[#6F4D00]');
+        expect(offExampleShifts[1]).toHaveClass('group-hover:bg-white');
+        expect(offExampleShifts[1]).not.toHaveClass('bg-[#FFF3C4]', 'text-[#6F4D00]');
+        expect(screen.queryByText('2교대 야간')).not.toBeInTheDocument();
         expect(screen.getByText(/‘심야근무’, ‘야간 후반부’, ‘야간근무 후 퇴근’처럼/)).toBeInTheDocument();
         expect(screen.queryByText(/야간근무가 여러 번 연속되면/)).not.toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/}));
-        expect(screen.getByRole('button', {name: /별도 근무유형으로 표시해요/})).toHaveAttribute('aria-pressed', 'true');
+        await user.click(continuationOption);
+        expect(continuationOption).toHaveAttribute('aria-pressed', 'true');
+        expect(continuationExampleBadge).toHaveClass('bg-[#FFF3C4]', 'text-[#6F4D00]');
+        expect(screen.getAllByRole('button', {name: '이전'})).toHaveLength(1);
 
-        await user.click(screen.getAllByRole('button', {name: '이전'})[0]);
+        await user.click(screen.getByRole('button', {name: '이전'}));
 
         await user.click(screen.getByRole('button', {name: /3교대와 2교대를 함께 운영해요/}));
 
@@ -865,14 +911,18 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByText('교대제')).not.toBeInTheDocument();
         expect(screen.queryByRole('combobox', {name: /교대제 선택/})).not.toBeInTheDocument();
 
-        expect(screen.getByDisplayValue('2교대 주간')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('2교대 야간')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('데이')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('나이트')).toBeInTheDocument();
         expect(screen.getByDisplayValue('D')).toBeInTheDocument();
         expect(screen.getByDisplayValue('N')).toBeInTheDocument();
         expect(screen.getByDisplayValue('오프')).toBeInTheDocument();
-        expect(screen.queryByDisplayValue('데이')).not.toBeInTheDocument();
         expect(screen.queryByDisplayValue('이브닝')).not.toBeInTheDocument();
-        expect(screen.queryByDisplayValue('나이트')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('2교대 주간')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('2교대 야간')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('combobox', {name: '데이 근무 의미 선택'}));
+
+        expect(screen.queryByRole('option', {name: '퇴근일 근무'})).not.toBeInTheDocument();
 
         const requirements = screen.getByRole('region', {name: '2교대 필수 근무유형'});
 
@@ -884,6 +934,33 @@ describe('OnboardingWardCreatePage', () => {
         expect(within(requirements).getByText('휴무 (Off)')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /필수 근무유형/})).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog', {name: '2교대 필수 근무유형'})).not.toBeInTheDocument();
+    });
+
+    it('별도 근무유형을 선택하면 퇴근일 근무를 2교대 필수 근무유형으로 유지한다', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await selectRotationAndMoveToShiftTypeStep(user, /2교대만 운영해요/, /별도 근무유형으로 표시해요/);
+
+        expect(screen.getByDisplayValue('퇴근일 근무')).toBeInTheDocument();
+
+        const requirements = screen.getByRole('region', {name: '2교대 필수 근무유형'});
+
+        expect(within(requirements).getByText('퇴근일 근무')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '퇴근일 근무 삭제'}));
+
+        expect(screen.queryByDisplayValue('퇴근일 근무')).not.toBeInTheDocument();
+        expect(within(requirements).getByText('퇴근일 근무')).toBeInTheDocument();
+
+        const nextButton = screen.getByRole('button', {name: '다음'});
+
+        expect(nextButton).toHaveAttribute('aria-disabled', 'true');
+
+        await user.click(nextButton);
+
+        expect(toastError).toHaveBeenCalledWith(expect.stringContaining('퇴근일 근무'));
     });
 
     it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', async () => {

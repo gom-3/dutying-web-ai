@@ -165,13 +165,16 @@ function OnboardingWardCreatePage() {
                 classification: shiftType.classification,
                 rotationSystem: resolveOnboardingRotationSystem(shiftType),
             })),
+            {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'},
         ).map((requiredShiftType) => ({
             ...requiredShiftType,
             label:
                 requiredShiftType.rotationSystem === 'TWO'
                     ? requiredShiftType.classification === 'DAY'
                         ? t('page.onboardingWardCreate.shiftType.twoDayLabel')
-                        : t('page.onboardingWardCreate.shiftType.twoNightLabel')
+                        : requiredShiftType.classification === 'NIGHT_CONTINUATION'
+                          ? t('page.onboardingWardCreate.shiftType.classification.nightContinuation')
+                          : t('page.onboardingWardCreate.shiftType.twoNightLabel')
                     : requiredShiftType.classification === 'DAY'
                       ? t('page.onboardingWardCreate.shiftType.classification.day')
                       : requiredShiftType.classification === 'EVENING'
@@ -422,6 +425,8 @@ function OnboardingWardCreatePage() {
                     <ShiftTypeStep
                         shiftTypes={activeShiftTypes}
                         rotationMode={draft.rotationMode}
+                        allowNightContinuation={draft.rotationMode !== 'TWO' || draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
+                        requireNightContinuation={draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'}
                         onChange={updateShiftType}
                         onDragEnd={handleShiftTypeDragEnd}
                         onAdd={addShiftType}
@@ -497,7 +502,7 @@ function OnboardingWardCreatePage() {
                 className={cn(
                     'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',
                     isNightRecoveryStep
-                        ? 'max-w-[640px]'
+                        ? 'max-w-[560px]'
                         : draft.currentStep === 1 || draft.currentStep === 2
                           ? 'max-w-[480px]'
                           : isScheduleInputStep
@@ -579,6 +584,7 @@ function OnboardingWardCreatePage() {
                             : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}
+                    hidePrevious={isNightRecoveryStep}
                     nextLabel={
                         (draft.currentStep === 1 && isSavingDraft) || isStepTransitioning
                             ? t('page.onboardingWardCreate.action.saving')

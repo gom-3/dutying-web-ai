@@ -22,6 +22,16 @@ describe('BoardAPI', () => {
         vi.clearAllMocks();
     });
 
+    it('lets the board handle an unavailable notification post without a global API toast', async () => {
+        const response = {postId: 64, title: 'notice', content: 'body'};
+
+        mockGet.mockResolvedValue({data: response});
+
+        await expect(BoardAPI.getPost(287, 64)).resolves.toBe(response);
+
+        expect(mockGet).toHaveBeenCalledWith('/wards/287/board/posts/64', {suppressErrorToast: true});
+    });
+
     it('creates a post with a JSON body instead of query params', async () => {
         const payload = {title: '123', content: '123'};
         const response = {...payload, postId: 1};
