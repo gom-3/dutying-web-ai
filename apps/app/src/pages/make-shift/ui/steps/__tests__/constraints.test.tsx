@@ -2541,6 +2541,58 @@ describe('Constraints', () => {
         });
     });
 
+    it('offers division groups in general target dropdowns', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [
+                    {type: 'ALL', label: '전체'},
+                    {type: 'DIVISION', label: '신규 간호사', divisionNum: 2},
+                    {type: 'NURSE', nurseId: 7, label: '홍길동'},
+                ],
+            },
+            templates: [
+                {
+                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    category: 'CORE',
+                    displayTemplate: '{target}은 {count}일 이상 연속으로 근무하면 안 돼요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 7},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '모든 간호사'}));
+
+        const listbox = await screen.findByRole('listbox');
+
+        expect(within(listbox).getByRole('option', {name: '신규 간호사'})).toBeInTheDocument();
+
+        await userEvent.click(within(listbox).getByRole('option', {name: '신규 간호사'}));
+        await userEvent.click(screen.getByTitle('추가'));
+
+        await waitFor(() => {
+            const savedRule = getLastUpdatePayload()?.rules?.[0];
+
+            expect(savedRule).toMatchObject({
+                templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                params: {target: {type: 'DIVISION', divisionNum: 2}, count: 5},
+            });
+            expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|신규/);
+        });
+    });
+
     it('closes the modal and moves focus to the existing editable rule when an exact duplicate is added', async () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 

@@ -4403,6 +4403,7 @@ export function Constraints({
         const fallbackOptionMap = {
             target: [
                 {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
+                ...divisionOptions,
                 ...nurseOptions,
             ],
             monthlyNightTarget: [

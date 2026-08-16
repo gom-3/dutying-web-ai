@@ -5,17 +5,14 @@ import {useCallback, useEffect, useState} from 'react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
+import redWarnIcon from '@/shared/assets/images/red_warn.png';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {
-    getAiAutofillExitGuardReason,
-    type TAiAutofillExitGuardReason,
-    useAiAutofillExitGuardStore,
-} from '../model/ai-autofill-exit-guard';
+import {getAiAutofillExitGuardReason, type TAiAutofillExitGuardReason, useAiAutofillExitGuardStore} from '../model/ai-autofill-exit-guard';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
@@ -73,6 +70,7 @@ export const MakeShiftPageView = () => {
         (action: () => void) => {
             if (!aiAutofillExitGuardReason) {
                 action();
+
                 return;
             }
 
@@ -123,10 +121,8 @@ export const MakeShiftPageView = () => {
             : t('page.makeShift.aiRefill.exitGuard.unsavedDescription');
 
     return (
-        <div
-            className={cn('min-h-full w-full', isStepping ? 'overflow-x-auto' : 'overflow-x-hidden')}
-        >
-            <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 transition-[padding-right] duration-300 ease-out lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4 min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10">
+        <div className={cn('min-h-full w-full', isStepping ? 'overflow-x-auto' : 'overflow-x-hidden')}>
+            <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 transition-[padding-right] duration-300 ease-out min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10 lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4">
                 <MakeShiftHeader onBeforeContextChange={runWithAiAutofillExitGuard} />
 
                 <div
@@ -259,6 +255,11 @@ export const MakeShiftPageView = () => {
                 confirmLabel={t('page.makeShift.aiRefill.exitGuard.leaveConfirm')}
                 cancelLabel={t('page.makeShift.aiRefill.exitGuard.stayCancel')}
                 tone="danger"
+                icon={
+                    aiAutofillExitDialogReason === 'unsavedChanges' ? (
+                        <img src={redWarnIcon} alt="" className="h-12 w-12 object-contain" />
+                    ) : undefined
+                }
                 onClose={closeAiAutofillExitDialog}
                 onConfirm={confirmAiAutofillExitDialog}
             />

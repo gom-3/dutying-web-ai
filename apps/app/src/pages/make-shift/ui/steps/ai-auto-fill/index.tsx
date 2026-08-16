@@ -18,6 +18,7 @@ import {
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
+import purpleWarnIcon from '@/shared/assets/images/purple_warn.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -1441,6 +1442,7 @@ export function AiAutofill() {
                 onCancel={handleCancelLastShiftBlankWarning}
                 onConfirm={handleConfirmLastShiftBlankWarning}
                 confirmButtonVariant={lastShiftBlankWarningIntent === 'aiFill' ? 'ai' : 'default'}
+                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
                 spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shift-cell"
             />
             <ConfirmActionDialog
