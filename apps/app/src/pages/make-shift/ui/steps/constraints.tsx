@@ -305,7 +305,6 @@ function SelectOptionContent({option, compact = false}: {option: TSelectOption; 
 
 const ALL_CONSTRAINT_TARGET_OPTION: TShiftConstraintOption = {type: 'ALL'};
 const RECOMMENDED_DEFAULT_RULE_CODES = [
-    'CORE_MIN_NIGHT_INTERVAL',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
@@ -316,13 +315,13 @@ const RECOMMENDED_DEFAULT_RULE_IDS = new Set<string>(RECOMMENDED_DEFAULT_RULE_CO
 const THREE_SHIFT_NON_RECOMMENDED_RULE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_E_THEN_N',
 ]);
 const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
     'CORE_MIN_OFF_AFTER_NIGHT',
-    'CORE_MIN_NIGHT_INTERVAL',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
@@ -1184,6 +1183,16 @@ function hasLegacyRecommendedDefaults(rules: TShiftConstraintRuleDraft[], rotati
               : THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES;
 
     return [...baseline].every((templateCode) => existingTemplateCodes.has(templateCode));
+}
+
+function isLegacyThreeShiftNightIntervalDefault(rule: TShiftConstraintRuleDraft, rotationMode: TWardRotationMode) {
+    return (
+        rotationMode === 'THREE' &&
+        rule.templateCode === 'CORE_MIN_NIGHT_INTERVAL' &&
+        rule.severity === 'HARD' &&
+        getConstraintOptionType(rule.params.target) === 'ALL' &&
+        Number(rule.params.count) === 5
+    );
 }
 
 function isTemplateSelectable(template: TShiftConstraintTemplate) {
@@ -4546,7 +4555,15 @@ export function Constraints({
 
         if (!hasLegacyRecommendedDefaults(savedRules, rotationMode)) return;
 
-        const existingTemplateCodes = new Set(savedRules.map((rule) => rule.templateCode));
+        const hasLegacyNightIntervalDefault = savedRules.some((rule) => isLegacyThreeShiftNightIntervalDefault(rule, rotationMode));
+        const migratedSavedRules = hasLegacyNightIntervalDefault
+            ? savedRules.map((rule) =>
+                  isLegacyThreeShiftNightIntervalDefault(rule, rotationMode)
+                      ? {...rule, severity: 'SOFT' as const, isImportant: false}
+                      : rule,
+              )
+            : savedRules;
+        const existingTemplateCodes = new Set(migratedSavedRules.map((rule) => rule.templateCode));
         const missingRecommendedRules = addableSoftTemplates
             .filter((template) => template.isRecommended && !existingTemplateCodes.has(template.id))
             .map((template, index): TShiftConstraintRuleDraft | null => {
@@ -4563,7 +4580,7 @@ export function Constraints({
                     templateCode: template.id,
                     category: template.category,
                     severity: 'HARD',
-                    sortOrder: savedRules.length + index + 1,
+                    sortOrder: migratedSavedRules.length + index + 1,
                     params,
                     selected: true,
                     isImportant: true,
@@ -4574,8 +4591,8 @@ export function Constraints({
             })
             .filter((rule): rule is TShiftConstraintRuleDraft => rule !== null);
 
-        if (missingRecommendedRules.length) {
-            replaceRules([...savedRules, ...missingRecommendedRules]);
+        if (hasLegacyNightIntervalDefault || missingRecommendedRules.length) {
+            replaceRules([...migratedSavedRules, ...missingRecommendedRules]);
         }
     }, [
         addableSoftTemplates,

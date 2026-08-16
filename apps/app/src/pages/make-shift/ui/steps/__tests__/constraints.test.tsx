@@ -64,7 +64,6 @@ const recommendedTemplateCodes = [
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ];
 const threeShiftDefaultTemplateCodes = [
-    'CORE_MIN_NIGHT_INTERVAL',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
@@ -927,7 +926,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={93} shiftTeamId={930} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await waitFor(() => expect(screen.getAllByRole('checkbox', {name: '중요 표시 해제'})).toHaveLength(6));
+        await waitFor(() => expect(screen.getAllByRole('checkbox', {name: '중요 표시 해제'})).toHaveLength(5));
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
 
         await userEvent.click(
@@ -950,15 +949,14 @@ describe('Constraints', () => {
             '[scrollbar-gutter:stable]',
             '[&::-webkit-scrollbar]:w-3',
         );
-        expect(recommendationCards).toHaveLength(6);
+        expect(recommendationCards).toHaveLength(5);
         recommendationCards.forEach((card) => expect(card).toHaveClass('py-1.5'));
         expect(within(recommendationCards[0]!).getByTitle('추가').firstElementChild).toHaveClass('size-8');
         expect(within(dialog).queryByText('중요')).not.toBeInTheDocument();
-        expect(screen.getAllByTitle('추가')).toHaveLength(6);
+        expect(screen.getAllByTitle('추가')).toHaveLength(5);
 
         const recommendedOrder = [
             'CORE_MIN_OFF_AFTER_NIGHT',
-            'CORE_MIN_NIGHT_INTERVAL',
             'FORBID_N_THEN_D',
             'FORBID_N_THEN_E',
             'FORBID_E_THEN_D',
@@ -971,6 +969,7 @@ describe('Constraints', () => {
         for (const removedRecommendedCode of [
             'STAFF_COUNT_BY_SHIFT',
             'CORE_MAX_CONTINUOUS_WORK',
+            'CORE_MIN_NIGHT_INTERVAL',
             'CORE_MAX_CONTINUOUS_NIGHT',
             'MAX_MONTHLY_NIGHT_COUNT',
             'FORBID_E_THEN_N',
@@ -983,7 +982,12 @@ describe('Constraints', () => {
         await userEvent.click(screen.getByRole('button', {name: '연속 근무·휴무'}));
         expect(within(dialog).getByText('sentinel-core_max_continuous_work')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
-        for (const normalCategoryCode of ['CORE_MAX_CONTINUOUS_NIGHT', 'MAX_MONTHLY_NIGHT_COUNT', 'FORBID_E_THEN_N']) {
+        for (const normalCategoryCode of [
+            'CORE_MIN_NIGHT_INTERVAL',
+            'CORE_MAX_CONTINUOUS_NIGHT',
+            'MAX_MONTHLY_NIGHT_COUNT',
+            'FORBID_E_THEN_N',
+        ]) {
             expect(within(dialog).getByText(`sentinel-${normalCategoryCode.toLowerCase()}`)).toBeInTheDocument();
         }
 
@@ -1011,11 +1015,11 @@ describe('Constraints', () => {
             rules: [
                 {
                     shiftConstraintRuleId: 51,
-                    templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+                    templateCode: 'CORE_MIN_OFF_AFTER_NIGHT',
                     category: 'CORE',
                     severity: 'SOFT',
                     sortOrder: 1,
-                    params: {target: {type: 'ALL'}, count: 5},
+                    params: {target: {type: 'ALL'}, count: 2},
                     selected: true,
                     isImportant: false,
                 },
@@ -1028,7 +1032,7 @@ describe('Constraints', () => {
 
         const recommendedCard = screen
             .getByRole('dialog')
-            .querySelector<HTMLElement>('[data-constraint-template-card="CORE_MIN_NIGHT_INTERVAL"]');
+            .querySelector<HTMLElement>('[data-constraint-template-card="CORE_MIN_OFF_AFTER_NIGHT"]');
 
         expect(recommendedCard).not.toBeNull();
         await userEvent.click(within(recommendedCard!).getByTitle('추가'));
@@ -1037,11 +1041,70 @@ describe('Constraints', () => {
             expect(getLastUpdatePayload()?.rules).toEqual([
                 expect.objectContaining({
                     shiftConstraintRuleId: 51,
-                    templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+                    templateCode: 'CORE_MIN_OFF_AFTER_NIGHT',
                     severity: 'HARD',
-                    params: {target: {type: 'ALL'}, count: 5},
+                    params: {target: {type: 'ALL'}, count: 2},
                 }),
             ]);
+        });
+    });
+
+    it('keeps the three-shift night interval rule optional and non-important', async () => {
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(await waitFor(() => document.getElementById('make_constraint_add_button') as HTMLButtonElement));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog.querySelector('[data-constraint-template-card="CORE_MIN_NIGHT_INTERVAL"]')).toBeNull();
+
+        await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
+
+        const nightIntervalCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="CORE_MIN_NIGHT_INTERVAL"]');
+
+        expect(nightIntervalCard).not.toBeNull();
+        await userEvent.click(within(nightIntervalCard!).getByTitle('추가'));
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules).toEqual([
+                expect.objectContaining({templateCode: 'CORE_MIN_NIGHT_INTERVAL', severity: 'SOFT', isImportant: false}),
+            ]);
+        });
+    });
+
+    it('unmarks the legacy default night interval rule for an existing three-shift team', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 98,
+            shiftTeamId: 980,
+            rules: [
+                {
+                    shiftConstraintRuleId: 99,
+                    templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+                    category: 'CORE',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}, count: 5},
+                    selected: true,
+                    isImportant: true,
+                },
+                ...recommendedServerRules.map((rule, index) => ({
+                    ...rule,
+                    shiftConstraintRuleId: index + 100,
+                    sortOrder: index + 2,
+                })),
+            ],
+        });
+
+        render(<Constraints wardId={98} shiftTeamId={980} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => {
+            const savedRules = getLastUpdatePayload()?.rules;
+
+            expect(savedRules?.find((rule) => rule.templateCode === 'CORE_MIN_NIGHT_INTERVAL')).toEqual(
+                expect.objectContaining({severity: 'SOFT', isImportant: false}),
+            );
+            expect(savedRules?.filter((rule) => rule.templateCode !== 'CORE_MIN_NIGHT_INTERVAL')).toHaveLength(5);
         });
     });
 
