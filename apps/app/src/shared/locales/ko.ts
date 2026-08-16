@@ -959,7 +959,7 @@ export const ko = {
                     },
                     MAX_MONTHLY_NIGHT_COUNT: {
                         label: '야간·전환 조건',
-                        sentence: '{target}의 야간 근무는 한 달에 최대 {count}회예요',
+                        sentence: '{target}의 {nightShift} 근무는 한 달에 최대 {count}회예요',
                     },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: '사람별 제한',
