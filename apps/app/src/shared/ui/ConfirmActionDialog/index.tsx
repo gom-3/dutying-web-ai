@@ -18,6 +18,7 @@ interface IConfirmActionDialogProps {
     onConfirm: () => void;
     onCancel?: () => void;
     confirmButtonVariant?: 'default' | 'ai';
+    icon?: ReactNode;
     /** 선택한 영역은 보여주되, 모달 뒤의 입력은 막는다. */
     spotlightSelector?: string;
 }
@@ -138,6 +139,7 @@ function ConfirmActionDialog({
     onConfirm,
     onCancel,
     confirmButtonVariant = 'default',
+    icon,
     spotlightSelector,
 }: IConfirmActionDialogProps) {
     const {t} = useTypedTranslation();
@@ -151,15 +153,21 @@ function ConfirmActionDialog({
                 <ConfirmActionDialogOverlay spotlightSelector={spotlightSelector} />
                 <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]">
                     <div className="flex items-start justify-between gap-4">
-                        <div
-                            className={cn(
-                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                                isDanger ? 'bg-[#FFF5F5] text-[#D14343]' : 'bg-main-light text-main-1',
-                            )}
-                            aria-hidden="true"
-                        >
-                            <AlertTriangle className="h-5 w-5" strokeWidth={2.2} />
-                        </div>
+                        {icon ? (
+                            <div className="shrink-0" aria-hidden="true">
+                                {icon}
+                            </div>
+                        ) : (
+                            <div
+                                className={cn(
+                                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                                    isDanger ? 'bg-[#FFF5F5] text-[#D14343]' : 'bg-main-light text-main-1',
+                                )}
+                                aria-hidden="true"
+                            >
+                                <AlertTriangle className="h-5 w-5" strokeWidth={2.2} />
+                            </div>
+                        )}
                         <Dialog.Close asChild>
                             <button
                                 type="button"

@@ -118,6 +118,15 @@ describe('AiAutofillToolbar', () => {
         expect(screen.getByRole('tooltip', {name: 'Redo'})).toBeInTheDocument();
         expect(screen.getByRole('tooltip', {name: 'Save draft'})).toBeInTheDocument();
         expect(screen.getByRole('tooltip', {name: 'History'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Fix selected shifts'}).closest('.ai-autofill-toolbar__fixed-actions')).toBe(
+            screen.getByRole('button', {name: 'Unfix selected shifts'}).closest('.ai-autofill-toolbar__fixed-actions'),
+        );
+        expect(
+            screen.getByRole('button', {name: 'Clear all except fixed shifts'}).closest('.ai-autofill-toolbar__fixed-actions'),
+        ).toBeNull();
+        expect(
+            screen.getByRole('button', {name: 'Clear all except fixed shifts'}).closest('.ai-autofill-toolbar__clear-actions'),
+        ).toBeInTheDocument();
         expect(
             screen
                 .getAllByRole('button')
@@ -159,6 +168,10 @@ describe('AiAutofillToolbar', () => {
         expect(screen.getByRole('button', {name: 'Highlight requested shifts'})).toHaveTextContent('');
         expect(screen.getByText('Fixed shifts')).toBeInTheDocument();
         expect(screen.getByText('Requested shifts')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Highlight requested shifts'}).querySelector('img')).toHaveAttribute(
+            'src',
+            '/img/make-request-display.png',
+        );
     });
 
     it('keeps fixed shift positions highlighted while hovered', async () => {

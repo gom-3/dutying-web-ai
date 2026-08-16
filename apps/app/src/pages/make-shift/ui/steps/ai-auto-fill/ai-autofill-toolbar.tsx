@@ -143,7 +143,9 @@ export function AiAutofillToolbar({
                         >
                             <PinOff className="size-3.5" aria-hidden />
                         </IconButton>
-                        <span aria-hidden="true" className="mx-1 h-5 w-px rounded-full bg-gray-5" />
+                    </div>
+
+                    <div className="ai-autofill-toolbar__clear-actions flex min-h-[43px] shrink-0 items-center rounded-[13px] bg-gray-7 px-1">
                         <IconButton
                             className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--clear-unlocked hover:text-[#D14343]"
                             onClick={onRequestClearUnlockedCells}
@@ -423,7 +425,7 @@ function StatusHighlightMenu({
                         tooltip={t('page.makeShift.aiRefill.requestDisplay')}
                         activeClassName="text-[#2877CC] hover:bg-gray-7 hover:shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                     >
-                        <img src="/img/navigation/request-active.png" alt="" className="size-4 object-contain" aria-hidden />
+                        <img src="/img/make-request-display.png" alt="" className="size-4 object-contain" aria-hidden />
                     </IconToolButton>
 
                     <IconToolButton

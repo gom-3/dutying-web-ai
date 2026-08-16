@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
-import {ArrowRight, Pin, Sparkles, X} from 'lucide-react';
+import {ArrowRight, Pin, X} from 'lucide-react';
 import type {TShift} from '@/entities';
 import type {TDutyDoc, TViolation} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -55,10 +55,7 @@ export function AiFillDecisionDialog({
                 >
                     <div className="shrink-0 bg-[#FAF8FF] px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-5">
                         <div className="flex items-start justify-between gap-4">
-                            <div className="flex min-w-0 items-start gap-3.5">
-                                <div className="grid size-11 shrink-0 place-items-center rounded-[15px] bg-[#ECE7FF] text-[#6546D7]">
-                                    <Sparkles className="size-5" strokeWidth={2.2} aria-hidden />
-                                </div>
+                            <div className="flex min-w-0 items-start">
                                 <div className="min-w-0">
                                     <Dialog.Title className="font-apple text-[22px] leading-7 font-semibold tracking-[-0.025em] text-sub-1 sm:text-[25px] sm:leading-8">
                                         {t(
@@ -93,7 +90,7 @@ export function AiFillDecisionDialog({
                                 <Button
                                     type="button"
                                     variant="subtle"
-                                    className="h-11 shrink-0 rounded-[12px] border-0 bg-[#EEE9FF] px-4 font-apple text-[14px] font-semibold text-[#6546D7] shadow-none hover:bg-[#E4DCFF] focus-visible:bg-[#6546D7] focus-visible:text-white focus-visible:ring-0 focus-visible:outline-none disabled:bg-gray-7 disabled:text-gray-3"
+                                    className="h-11 shrink-0 rounded-[12px] border-0 bg-white px-4 font-apple text-[14px] font-semibold text-[#6546D7] shadow-none hover:bg-white focus-visible:bg-white focus-visible:text-[#6546D7] focus-visible:ring-0 focus-visible:outline-none disabled:bg-white disabled:text-gray-3"
                                     disabled={fixableCellCount === 0}
                                     onClick={onFixAll}
                                 >
