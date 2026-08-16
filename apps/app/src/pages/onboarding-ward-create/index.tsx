@@ -510,25 +510,17 @@ function OnboardingWardCreatePage() {
                             : 'max-w-[1120px]',
                 )}
             >
-                <button
-                    type="button"
-                    className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 font-apple text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={actionsDisabled}
-                    onClick={() => {
-                        if (draft.currentStep === 1) {
-                            navigate(ROUTE.REGISTER);
-
-                            return;
-                        }
-
-                        handlePreviousStep();
-                    }}
-                >
-                    <ArrowLeft className="h-4 w-4" />
-                    {draft.currentStep === 1
-                        ? t('page.onboardingWardCreate.backToWardSelect')
-                        : t('page.onboardingWardCreate.action.previous')}
-                </button>
+                {draft.currentStep === 1 ? (
+                    <button
+                        type="button"
+                        className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 font-apple text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={actionsDisabled}
+                        onClick={() => navigate(ROUTE.REGISTER)}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        {t('page.onboardingWardCreate.backToWardSelect')}
+                    </button>
+                ) : null}
                 <SectionHeader step={draft.currentStep} nightRecovery={isNightRecoveryStep} />
                 <OnboardingStepLayout
                     step={draft.currentStep}
@@ -584,7 +576,6 @@ function OnboardingWardCreatePage() {
                             : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}
-                    hidePrevious={isNightRecoveryStep}
                     nextLabel={
                         (draft.currentStep === 1 && isSavingDraft) || isStepTransitioning
                             ? t('page.onboardingWardCreate.action.saving')

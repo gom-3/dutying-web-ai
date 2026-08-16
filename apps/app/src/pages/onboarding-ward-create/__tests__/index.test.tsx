@@ -289,6 +289,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByText('주간 · 야간 근무를 사용해요.')).not.toBeInTheDocument();
         expect(screen.queryByText('D · E · N을 기본으로 두고 2교대 주간 · 야간도 함께 사용해요.')).not.toBeInTheDocument();
 
+        expect(screen.getAllByRole('button', {name: '이전'})).toHaveLength(1);
         expect(screen.getByRole('button', {name: /3교대만 운영해요/})).toHaveAttribute('aria-pressed', 'true');
 
         await user.click(screen.getByRole('button', {name: /2교대만 운영해요/}));
