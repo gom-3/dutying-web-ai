@@ -15,7 +15,7 @@ export type TOnboardingWardParseApiShiftType = {
     color?: string | null;
     isDefault?: boolean | null;
     isOff?: boolean | null;
-    classification?: 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE' | null;
+    classification?: 'DAY' | 'EVENING' | 'NIGHT' | 'NIGHT_CONTINUATION' | 'OTHER_WORK' | 'OFF' | 'ANNUAL_LEAVE' | 'OTHER_LEAVE' | null;
     rotationSystem?: 'THREE' | 'TWO' | 'NONE' | null;
     paidMinutes?: number | null;
 };

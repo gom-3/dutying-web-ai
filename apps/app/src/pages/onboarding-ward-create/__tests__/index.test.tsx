@@ -882,8 +882,9 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('combobox', {name: '근무 근무 의미 선택'}));
 
-        expect(screen.getAllByRole('option')).toHaveLength(6);
+        expect(screen.getAllByRole('option')).toHaveLength(7);
         expect(screen.getByRole('option', {name: '기타 근무'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '연차 (유급휴가)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '기타 휴무'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '주간 근무 (Day)'})).toBeInTheDocument();
         expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();

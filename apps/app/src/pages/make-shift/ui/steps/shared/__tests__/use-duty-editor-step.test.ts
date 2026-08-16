@@ -349,6 +349,98 @@ describe('useDutyEditorStep', () => {
         });
     });
 
+    it('keeps an unconfirmed legacy D cell when the day shift short name changes to T', async () => {
+        window.localStorage.setItem(
+            'shift-editor:draft:1:10:2026:5',
+            JSON.stringify({
+                doc: {
+                    columns: ['2026-05-01'],
+                    rows: [{workerId: '2', lastCells: [], cells: ['D']}],
+                    workerMeta: {2: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+                    fixedCells: {},
+                    requestCells: {},
+                },
+                history: JSON.stringify({past: [], future: [], maxDepth: 100}),
+                scheduleViolations: {validationSnapshot: null},
+                savedAt: Date.now(),
+            }),
+        );
+        wardApiMocks.getShift.mockResolvedValue(makeShift({shortName: 'T', wardShiftList: [null]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('T');
+        });
+    });
+
+    it('rebases a custom renamed shift through its persisted shift type id', async () => {
+        window.localStorage.setItem(
+            'shift-editor:draft:1:10:2026:5',
+            JSON.stringify({
+                doc: {
+                    columns: ['2026-05-01'],
+                    rows: [{workerId: '2', lastCells: [], cells: ['X']}],
+                    shiftTypeRefs: [{wardShiftTypeId: 10, shortName: 'X', classification: 'DAY', rotationSystem: 'THREE', isDefault: true}],
+                    workerMeta: {2: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+                    fixedCells: {},
+                    requestCells: {},
+                },
+                history: JSON.stringify({past: [], future: [], maxDepth: 100}),
+                scheduleViolations: {validationSnapshot: null},
+                savedAt: Date.now(),
+            }),
+        );
+        wardApiMocks.getShift.mockResolvedValue(makeShift({shortName: 'T', wardShiftList: [null]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('T');
+        });
+    });
+
+    it('recovers a D cell from applied history after the old migration already persisted it as blank', async () => {
+        window.localStorage.setItem(
+            'shift-editor:draft:1:10:2026:5',
+            JSON.stringify({
+                doc: {
+                    columns: ['2026-05-01'],
+                    rows: [{workerId: '2', lastCells: [], cells: [null]}],
+                    workerMeta: {2: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+                    fixedCells: {},
+                    requestCells: {},
+                },
+                history: JSON.stringify({
+                    past: [
+                        {
+                            tx: {
+                                ops: [{kind: 'setCells', cells: [{row: 0, col: 0, prev: null, next: 'D'}]}],
+                                source: 'user',
+                                timestamp: Date.now(),
+                            },
+                            inverseOps: [{kind: 'setCells', cells: [{row: 0, col: 0, prev: 'D', next: null}]}],
+                        },
+                    ],
+                    future: [],
+                    maxDepth: 100,
+                }),
+                scheduleViolations: {validationSnapshot: null},
+                savedAt: Date.now(),
+            }),
+        );
+        wardApiMocks.getShift.mockResolvedValue(makeShift({shortName: 'T', wardShiftList: [null]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('T');
+        });
+    });
+
     it('does not request duty data until the selected team belongs to the current ward context', async () => {
         useMakeShiftStore.setState({
             wardId: 301,

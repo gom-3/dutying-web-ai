@@ -207,6 +207,7 @@ describe('shift-adapter', () => {
         );
 
         expect(doc.rows[0]?.cells).toEqual(['-', null]);
+        expect(doc.shiftTypeRefs?.find((shiftType) => shiftType.wardShiftTypeId === 20)?.shortName).toBe('-');
     });
 
     it('converts editor doc back to ward shifts dto', () => {

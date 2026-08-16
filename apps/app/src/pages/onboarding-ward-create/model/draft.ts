@@ -677,7 +677,13 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
 export const resolveOnboardingRotationSystem = (
     shiftType: Pick<TOnboardingWardShiftType, 'classification' | 'isDefault' | 'isOff' | 'rotationSystem'>,
 ): NonNullable<TOnboardingWardShiftType['rotationSystem']> => {
-    if (shiftType.isOff || shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') return 'NONE';
+    if (
+        shiftType.isOff ||
+        shiftType.classification === 'OFF' ||
+        shiftType.classification === 'ANNUAL_LEAVE' ||
+        shiftType.classification === 'OTHER_LEAVE'
+    )
+        return 'NONE';
 
     if (shiftType.rotationSystem === 'TWO') {
         return TWO_SHIFT_CLASSIFICATIONS.some((classification) => classification === shiftType.classification) ? 'TWO' : 'NONE';
@@ -707,7 +713,9 @@ const getOnboardingShiftTypeSettingsOrder = (shiftType: TOnboardingWardShiftType
 
     if (shiftType.classification === 'OTHER_WORK') return 3;
 
-    if (shiftType.classification === 'OTHER_LEAVE') return 4;
+    if (shiftType.classification === 'ANNUAL_LEAVE') return 4;
+
+    if (shiftType.classification === 'OTHER_LEAVE') return 5;
 
     return 3;
 };
@@ -2277,7 +2285,10 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
     const mappedShiftTypes = activeShiftTypes.filter((shiftType) => isOnboardingShiftMappingResolved(shiftType.mappingStatus));
     const getSelectedRotationSystem = (shiftType: TOnboardingWardShiftType) =>
-        shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_WORK' || shiftType.classification === 'OTHER_LEAVE'
+        shiftType.classification === 'OFF' ||
+        shiftType.classification === 'OTHER_WORK' ||
+        shiftType.classification === 'ANNUAL_LEAVE' ||
+        shiftType.classification === 'OTHER_LEAVE'
             ? ('NONE' as const)
             : (shiftType.rotationSystem ?? resolveOnboardingRotationSystem(shiftType));
 
@@ -2341,6 +2352,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
             !isOnboardingShiftMappingResolved(shiftType.mappingStatus) ||
             shiftType.isOff ||
             shiftType.classification === 'OFF' ||
+            shiftType.classification === 'ANNUAL_LEAVE' ||
             shiftType.classification === 'OTHER_LEAVE'
         ) {
             return;

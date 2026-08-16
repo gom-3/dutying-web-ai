@@ -1,7 +1,7 @@
 import type {TSnapshotCellDTO, TSnapshotRowOrderDTO, TWardShiftsDTO} from '@dutying/api/ward';
 import type {TShift, TWardShiftType} from '@/entities';
 import {getShiftShortNameEntryKey} from '@/shared/lib/shift-short-name';
-import type {TCellValue, TDutyDoc, TWorkKeyMap} from './types';
+import type {TCellValue, TDutyDoc, TDutyShiftTypeRef, TWorkKeyMap} from './types';
 
 type TWardShiftTypeMaps = {
     idToType: Map<number, TWardShiftType>;
@@ -32,6 +32,16 @@ export function buildWardShiftTypeMaps(shift: TShift): TWardShiftTypeMaps {
     }
 
     return {idToType, shortNameToType};
+}
+
+export function buildDutyShiftTypeRefs(shift: TShift): TDutyShiftTypeRef[] {
+    return shift.wardShiftTypes.map((shiftType) => ({
+        wardShiftTypeId: shiftType.wardShiftTypeId,
+        shortName: shiftType.shortName,
+        classification: shiftType.classification,
+        rotationSystem: shiftType.rotationSystem,
+        isDefault: shiftType.isDefault,
+    }));
 }
 
 function normalizeLastShiftIds(list: (number | null)[] | undefined): (number | null)[] {

@@ -179,6 +179,34 @@ describe('@dutying/api public entry', () => {
         });
     });
 
+    it('preserves annual leave as a distinct non-working classification', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+        const wardApi = createWardApi(client);
+        const annualLeave = {
+            name: '연차',
+            shortName: '연',
+            startTime: '',
+            endTime: '',
+            color: '#B9A6F3',
+            isOff: true,
+            isDefault: false,
+            isCounted: false,
+            classification: 'ANNUAL_LEAVE' as const,
+        };
+
+        postMock.mockResolvedValueOnce({data: {wardShiftTypeId: 3}});
+
+        await wardApi.createShiftType(7, annualLeave);
+
+        expect(postMock).toHaveBeenCalledWith('/wards/7/shift-types', {
+            ...annualLeave,
+            classification: 'ANNUAL_LEAVE',
+            rotationSystem: 'NONE',
+            paidMinutes: null,
+        });
+    });
+
     it('sends inactive onboarding ward shift types without work times', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;

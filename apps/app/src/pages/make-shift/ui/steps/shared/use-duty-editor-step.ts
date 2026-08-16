@@ -1,11 +1,12 @@
 import {type TWorkspaceScheduleResponse} from '@dutying/api/ward';
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {type TShift} from '@/entities';
+import {type TShift, type TWardShiftClassification, type TWardShiftType} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {
     buildWardShiftTypeMaps,
+    buildDutyShiftTypeRefs,
     buildWorkKeyMap,
     getShiftEditorDraftStorageKey,
     isDutyShiftFullyAssigned,
@@ -13,6 +14,8 @@ import {
     workspaceCellsToFixedCells,
     type TCellValue,
     type TDutyDoc,
+    type TDutyShiftTypeRef,
+    type THistoryState,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
     useShiftEditorStore,
@@ -53,19 +56,134 @@ function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] 
     return base.map((_cell, index) => persisted[index] ?? null);
 }
 
-function rebasePersistedCell(cell: TCellValue, baseCell: TCellValue, currentShortNames: Set<string>): TCellValue {
-    if (cell === null || currentShortNames.has(cell)) return cell;
+type TShiftTypeRebaseContext = {
+    currentIdToType: Map<number, TWardShiftType>;
+    currentShortNames: Set<string>;
+    currentShiftTypes: TWardShiftType[];
+    persistedTypeIdByShortName: Map<string, number>;
+};
+
+const LEGACY_CORE_SHIFT: Partial<Record<string, {classification: TWardShiftClassification; rotationSystem: 'THREE' | 'NONE'}>> = {
+    D: {classification: 'DAY', rotationSystem: 'THREE'},
+    E: {classification: 'EVENING', rotationSystem: 'THREE'},
+    N: {classification: 'NIGHT', rotationSystem: 'THREE'},
+    O: {classification: 'OFF', rotationSystem: 'NONE'},
+};
+
+function persistedTypeIdMap(refs: TDutyShiftTypeRef[] | undefined): Map<string, number> {
+    return new Map((refs ?? []).map((ref) => [ref.shortName, ref.wardShiftTypeId]));
+}
+
+function resolveLegacyCoreShift(cell: string, currentShiftTypes: TWardShiftType[]): string | null {
+    const legacy = LEGACY_CORE_SHIFT[cell.trim().toUpperCase()];
+
+    if (!legacy) return null;
+
+    const candidates = currentShiftTypes.filter((shiftType) => {
+        if (shiftType.isActive === false || shiftType.classification !== legacy.classification) return false;
+
+        const rotationSystem = shiftType.rotationSystem ?? (shiftType.isOff ? 'NONE' : 'THREE');
+
+        return rotationSystem === legacy.rotationSystem;
+    });
+    const defaultCandidates = candidates.filter((shiftType) => shiftType.isDefault);
+
+    if (defaultCandidates.length === 1) return defaultCandidates[0]!.shortName;
+
+    return candidates.length === 1 ? candidates[0]!.shortName : null;
+}
+
+function rebasePersistedCell(cell: TCellValue, baseCell: TCellValue, context: TShiftTypeRebaseContext): TCellValue {
+    if (cell === null || context.currentShortNames.has(cell)) return cell;
+
+    const persistedTypeId = context.persistedTypeIdByShortName.get(cell);
+    const currentType = persistedTypeId === undefined ? undefined : context.currentIdToType.get(persistedTypeId);
+
+    if (currentType) return currentType.shortName;
+
+    if (baseCell !== null && context.currentShortNames.has(baseCell)) return baseCell;
+
+    const legacyCoreShift = resolveLegacyCoreShift(cell, context.currentShiftTypes);
+
+    if (legacyCoreShift !== null) return legacyCoreShift;
 
     return baseCell;
 }
 
-function rebaseDocRowsToCurrentShiftTypes(doc: TDutyDoc, baseDoc: TDutyDoc, currentShortNames: Set<string>): TDutyDoc | null {
-    let changed = false;
+function buildLatestAppliedHistoryCellValues(historyRaw: string, rowCount: number): Map<string, TCellValue> {
+    let history: THistoryState;
+
+    try {
+        history = JSON.parse(historyRaw) as THistoryState;
+    } catch {
+        return new Map();
+    }
+
+    if (!Array.isArray(history.past)) return new Map();
+
+    const latestValues = new Map<string, TCellValue>();
+
+    let historicalRowIndexByCurrentRow = Array.from({length: rowCount}, (_value, index) => index);
+
+    for (let entryIndex = history.past.length - 1; entryIndex >= 0; entryIndex -= 1) {
+        const operations = history.past[entryIndex]?.tx?.ops;
+
+        if (!Array.isArray(operations)) continue;
+
+        for (let operationIndex = operations.length - 1; operationIndex >= 0; operationIndex -= 1) {
+            const operation = operations[operationIndex];
+
+            if (!operation) continue;
+
+            if (operation.kind === 'setCells') {
+                const currentRowIndexByHistoricalRow = new Map(
+                    historicalRowIndexByCurrentRow.map((historicalRowIndex, currentRowIndex) => [historicalRowIndex, currentRowIndex]),
+                );
+
+                for (let cellIndex = operation.cells.length - 1; cellIndex >= 0; cellIndex -= 1) {
+                    const historyCell = operation.cells[cellIndex];
+
+                    if (!historyCell) continue;
+
+                    const currentRowIndex = currentRowIndexByHistoricalRow.get(historyCell.row);
+
+                    if (currentRowIndex === undefined) continue;
+
+                    const key = `${currentRowIndex}|${historyCell.col}`;
+
+                    if (!latestValues.has(key)) latestValues.set(key, historyCell.next);
+                }
+
+                continue;
+            }
+
+            historicalRowIndexByCurrentRow = historicalRowIndexByCurrentRow.map((historicalRowIndex) => {
+                const rowIdentity = operation.nextOrder[historicalRowIndex];
+
+                return rowIdentity === undefined ? -1 : operation.prevOrder.indexOf(rowIdentity);
+            });
+        }
+    }
+
+    return latestValues;
+}
+
+function rebaseDocRowsToCurrentShiftTypes(
+    doc: TDutyDoc,
+    baseDoc: TDutyDoc,
+    historyRaw: string,
+    context: TShiftTypeRebaseContext,
+): TDutyDoc | null {
+    let changed = doc.shiftTypeRefs !== baseDoc.shiftTypeRefs;
+
     const baseRowByWorkerId = new Map(baseDoc.rows.map((row) => [row.workerId, row]));
+    const latestHistoryCellValues = buildLatestAppliedHistoryCellValues(historyRaw, doc.rows.length);
     const rows = doc.rows.map((row, rowIdx) => {
         const baseRow = baseRowByWorkerId.get(row.workerId) ?? baseDoc.rows[rowIdx];
         const cells = row.cells.map((cell, colIdx) => {
-            const nextCell = rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
+            const recoveredCell = cell === null ? latestHistoryCellValues.get(`${rowIdx}|${colIdx}`) : undefined;
+            const candidateCell = cell ?? recoveredCell ?? null;
+            const nextCell = rebasePersistedCell(candidateCell, baseRow?.cells[colIdx] ?? null, context);
 
             if (nextCell !== cell) changed = true;
 
@@ -80,6 +198,7 @@ function rebaseDocRowsToCurrentShiftTypes(doc: TDutyDoc, baseDoc: TDutyDoc, curr
     return {
         ...doc,
         rows,
+        shiftTypeRefs: baseDoc.shiftTypeRefs,
     };
 }
 
@@ -226,12 +345,25 @@ export function useDutyEditorStep({
             initialHydrationDoneRef.current &&
             hydratedDraftRevisionRef.current !== null &&
             useShiftEditorStore.getState().draftRevision > hydratedDraftRevisionRef.current;
-
-        const baseDoc = sortDutyDocByTeamNurseOrder(shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift}), currentTeamNurses);
-        const currentShortNames = new Set(buildWardShiftTypeMaps(dutyQuery.data).shortNameToType.keys());
+        const baseDoc = {
+            ...sortDutyDocByTeamNurseOrder(shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift}), currentTeamNurses),
+            shiftTypeRefs: buildDutyShiftTypeRefs(dutyQuery.data),
+        };
+        const currentTypeMaps = buildWardShiftTypeMaps(dutyQuery.data);
+        const currentShortNames = new Set(currentTypeMaps.shortNameToType.keys());
 
         if (!hasContextChanged && hasDutyDataChanged && hasLocalChangesSinceHydration && !isStoreEmpty) {
-            const rebasedDoc = rebaseDocRowsToCurrentShiftTypes(editorDoc, baseDoc, currentShortNames);
+            const rebasedDoc = rebaseDocRowsToCurrentShiftTypes(
+                editorDoc,
+                baseDoc,
+                JSON.stringify(useShiftEditorStore.getState().history),
+                {
+                    currentIdToType: currentTypeMaps.idToType,
+                    currentShortNames,
+                    currentShiftTypes: dutyQuery.data.wardShiftTypes,
+                    persistedTypeIdByShortName: persistedTypeIdMap(editorDoc.shiftTypeRefs),
+                },
+            );
 
             if (rebasedDoc) {
                 const orderedRebasedDoc = sortDutyDocByTeamNurseOrder(rebasedDoc, currentTeamNurses);
@@ -280,7 +412,14 @@ export function useDutyEditorStep({
         const persisted = commands.getPersisted();
 
         if (persisted && isSameDutyDocShape(persisted.doc, nextDoc)) {
+            const rebaseContext: TShiftTypeRebaseContext = {
+                currentIdToType: currentTypeMaps.idToType,
+                currentShortNames,
+                currentShiftTypes: dutyQuery.data.wardShiftTypes,
+                persistedTypeIdByShortName: persistedTypeIdMap(persisted.doc.shiftTypeRefs),
+            };
             const persistedRowByWorkerId = new Map(persisted.doc.rows.map((row) => [row.workerId, row]));
+            const latestHistoryCellValues = buildLatestAppliedHistoryCellValues(persisted.history, persisted.doc.rows.length);
             const mergedRows = baseDoc.rows.map((baseRow) => {
                 const row = persistedRowByWorkerId.get(baseRow.workerId);
 
@@ -303,7 +442,10 @@ export function useDutyEditorStep({
                             return baseRow.cells[colIdx] ?? null;
                         }
 
-                        return rebasePersistedCell(cell, baseRow.cells[colIdx] ?? null, currentShortNames);
+                        const persistedRowIndex = persisted.doc.rows.indexOf(row);
+                        const recoveredCell = cell === null ? latestHistoryCellValues.get(`${persistedRowIndex}|${colIdx}`) : undefined;
+
+                        return rebasePersistedCell(cell ?? recoveredCell ?? null, baseRow.cells[colIdx] ?? null, rebaseContext);
                     }),
                 };
             });
@@ -313,6 +455,7 @@ export function useDutyEditorStep({
                 doc: {
                     ...persisted.doc,
                     rows: mergedRows,
+                    shiftTypeRefs: baseDoc.shiftTypeRefs,
                     fixedCells: excludeRequestCellsFromFixedCells(persisted.doc.fixedCells ?? {}, requestCells),
                     requestCells,
                 },

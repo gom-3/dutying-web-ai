@@ -105,6 +105,7 @@ const SHIFT_CODE_LABELS: Record<string, string> = {
 const DAY_SHIFT_SHORT_NAME_ALIASES = new Set(['D', 'DAY', 'DA', '\uB370\uC774']);
 const EVENING_SHIFT_SHORT_NAME_ALIASES = new Set(['E', 'EV', 'EVENING', '\uC774\uBE0C', '\uC774\uBE0C\uB2DD']);
 const NIGHT_SHIFT_SHORT_NAME_ALIASES = new Set(['N', 'NIGHT', '\uB098\uC774\uD2B8']);
+const ANNUAL_LEAVE_SHIFT_SHORT_NAME_ALIASES = new Set(['\uC5F0\uCC28']);
 const OFF_SHIFT_SHORT_NAME_ALIASES = new Set([
     'O',
     'OFF',
@@ -151,6 +152,7 @@ const VALID_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classifica
     'NIGHT_CONTINUATION',
     'OTHER_WORK',
     'OFF',
+    'ANNUAL_LEAVE',
     'OTHER_LEAVE',
 ]);
 const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
@@ -158,10 +160,14 @@ const getPayloadShiftClassification = (
     shiftType: TCreateWardDTO['wardShiftTypes'][number],
 ): TCreateWardDTO['wardShiftTypes'][number]['classification'] => {
     if (shiftType.isOff) {
-        return shiftType.classification === 'OFF' || isOffShiftShortName(shiftType.shortName) ? 'OFF' : 'OTHER_LEAVE';
+        if (shiftType.classification === 'OFF' || isOffShiftShortName(shiftType.shortName)) return 'OFF';
+
+        if (shiftType.classification === 'ANNUAL_LEAVE') return 'ANNUAL_LEAVE';
+
+        return 'OTHER_LEAVE';
     }
 
-    if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {
+    if (shiftType.classification === 'OFF' || shiftType.classification === 'ANNUAL_LEAVE' || shiftType.classification === 'OTHER_LEAVE') {
         return 'OTHER_WORK';
     }
 
@@ -262,6 +268,8 @@ const inferClassificationFromShortName = (shortName: string, isOff: boolean): TO
     if (EVENING_SHIFT_SHORT_NAME_ALIASES.has(normalizedShortName)) return 'EVENING';
 
     if (NIGHT_SHIFT_SHORT_NAME_ALIASES.has(normalizedShortName)) return 'NIGHT';
+
+    if (ANNUAL_LEAVE_SHIFT_SHORT_NAME_ALIASES.has(normalizedShortName)) return 'ANNUAL_LEAVE';
 
     if (OFF_SHIFT_SHORT_NAME_ALIASES.has(normalizedShortName)) return 'OFF';
 
@@ -785,7 +793,7 @@ const appendObservedShiftTypes = (shiftTypes: TOnboardingParsedShiftType[], obse
                       name: getShiftTypeNameFromShortName(shortName),
                       shortName,
                       isDefault: false,
-                      isOff: classification === 'OFF' || classification === 'OTHER_LEAVE',
+                      isOff: classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE',
                       classification,
                       source: 'schedule-input',
                   },
@@ -916,7 +924,9 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                     .map((shiftType) => {
                         const shortName = normalizeShiftShortName(shiftType.shortName);
                         const classification = shortName ? normalizeShiftClassification(shiftType.classification, shortName) : undefined;
-                        const isOff = shiftType.isOff ?? (classification === 'OFF' || classification === 'OTHER_LEAVE');
+                        const isOff =
+                            shiftType.isOff ??
+                            (classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE');
 
                         return {
                             name: trimToUndefined(shiftType.name) ?? getShiftTypeNameFromShortName(shortName ?? ''),
@@ -956,7 +966,7 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                         name: shortName ? getShiftTypeNameFromShortName(shortName) : shortName,
                         shortName,
                         isDefault: false,
-                        isOff: classification === 'OFF' || classification === 'OTHER_LEAVE',
+                        isOff: classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE',
                         classification,
                         source: 'schedule-input' as const,
                     };

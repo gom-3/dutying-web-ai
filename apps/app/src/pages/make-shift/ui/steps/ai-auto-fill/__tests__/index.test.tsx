@@ -319,6 +319,40 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
     });
 
+    it('fixes every editable filled shift from the decision dialog at once', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAll'}));
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({
+            '10|2026-07-01': true,
+            '10|2026-07-03': true,
+        });
+        expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'10|2026-07-02': true});
+        expect(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAllDone'})).toBeDisabled();
+    });
+
+    it('restores bulk-fixed shifts when the decision dialog is canceled', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAll'}));
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.cancel'}));
+
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
+        );
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
+    });
+
     it('does not change a requested shift when it is clicked in the decision dialog', async () => {
         const user = userEvent.setup();
 
