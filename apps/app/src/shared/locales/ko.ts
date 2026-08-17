@@ -957,10 +957,6 @@ export const ko = {
                         label: '연속 근무·휴무 조건',
                         sentence: '{target}는 근무 사이에 하루만 쉬는 배치를 피해요',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: '야간·전환 조건',
-                        sentence: '{target}의 {nightShift} 근무는 한 달에 최대 {count}회예요',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: '사람별 제한',
                         sentence: '{target}의 주말·공휴일 {shift} 근무는 {period}에 최대 {count}회예요',

@@ -1099,7 +1099,7 @@ describe('Constraints', () => {
         expect(screen.getByRole('button', {name: '모든 간호사'})).toBeInTheDocument();
     });
 
-    it('shows exactly the 21 three-shift rules without the removed skills and roles category', async () => {
+    it('shows exactly the 20 three-shift rules without the removed skills and roles category', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 93,
@@ -1118,7 +1118,6 @@ describe('Constraints', () => {
             CORE_MAX_CONTINUOUS_NIGHT: 'CORE',
             CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
             CORE_MIN_OFF_AFTER_NIGHT: 'CORE',
-            MAX_MONTHLY_NIGHT_COUNT: 'FORBIDDEN_PATTERN',
             FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
             FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
             FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
@@ -1220,11 +1219,11 @@ describe('Constraints', () => {
         for (const normalCategoryCode of [
             'CORE_MIN_NIGHT_INTERVAL',
             'CORE_MAX_CONTINUOUS_NIGHT',
-            'MAX_MONTHLY_NIGHT_COUNT',
             'FORBID_E_THEN_N',
         ]) {
             expect(dialog.querySelector(`[data-constraint-template-card="${normalCategoryCode}"]`)).toBeInTheDocument();
         }
+        expect(dialog.querySelector('[data-constraint-template-card="MAX_MONTHLY_NIGHT_COUNT"]')).not.toBeInTheDocument();
 
         let normalRuleCount = 0;
 
@@ -1233,7 +1232,7 @@ describe('Constraints', () => {
             normalRuleCount += screen.queryAllByTitle('추가').length;
         }
 
-        expect(normalRuleCount).toBe(21);
+        expect(normalRuleCount).toBe(20);
         expect(screen.queryByRole('button', {name: '숙련도·역할'})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('sentinel-exact_staff_by_shift');
         expect(document.body.textContent).not.toContain('sentinel-max_day_night_transitions');
@@ -2210,18 +2209,14 @@ describe('Constraints', () => {
         expect(bothOption).toHaveAttribute('aria-selected', 'true');
     });
 
-    it('shows every mixed participation, daily composition, and line operator option without a policy selector', async () => {
+    it('shows mixed participation options without deleted mixed planning templates', async () => {
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
             rotationMode: 'MIXED',
-            options: {
-                mixedParticipationModes: [{type: 'FALLBACK_TWO', label: '인력 부족 시 2교대 가능'}],
-                mixedCompositions: [{type: 'AUTO', label: '자동'}],
-                mixedLineOperators: [{type: 'MAX', label: '최대'}],
-            },
+            options: {},
             templates: [
                 {
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
@@ -2242,71 +2237,27 @@ describe('Constraints', () => {
                         {key: 'dateScope', label: 'Date', inputType: 'SELECT', optionGroup: 'dateScopes'},
                     ],
                 },
-                {
-                    templateCode: 'MIXED_DAILY_COMPOSITION',
-                    category: 'MIXED_PLANNING',
-                    displayTemplate: '{dateScope} {composition}',
-                    severity: 'HARD',
-                    allowedSeverities: ['HARD'],
-                    supportedInGenerator: false,
-                    supportedInValidator: true,
-                    slots: [
-                        {key: 'dateScope', label: 'Date', inputType: 'SELECT', optionGroup: 'dateScopes'},
-                        {key: 'composition', label: 'Composition', inputType: 'SELECT', optionGroup: 'mixedCompositions'},
-                    ],
-                },
-                {
-                    templateCode: 'TWO_SHIFT_DAILY_LINES',
-                    category: 'MIXED_STAFFING',
-                    displayTemplate: '{dateScope} {operator} {count} {unpairedMax}',
-                    severity: 'HARD',
-                    allowedSeverities: ['HARD', 'SOFT'],
-                    supportedInGenerator: false,
-                    supportedInValidator: true,
-                    slots: [
-                        {key: 'dateScope', label: 'Date', inputType: 'SELECT', optionGroup: 'dateScopes'},
-                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'mixedLineOperators'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 0, max: 100},
-                        {key: 'unpairedMax', label: 'Unpaired', inputType: 'NUMBER', min: 0, max: 100},
-                    ],
-                },
             ],
         });
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        const openModal = async () => userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
         const openOptions = async (name: string) => {
             await userEvent.click(screen.getByRole('button', {name}));
 
             return screen.findByRole('listbox');
         };
 
-        await openModal();
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
 
-        let listbox = await openOptions('최대');
-
-        expect(within(listbox).getByRole('option', {name: '최소'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '최대'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '정확히'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '목표'})).toBeInTheDocument();
-        await userEvent.click(within(listbox).getByRole('option', {name: '최대'}));
-
-        listbox = await openOptions('인력 부족 시 2교대 가능');
+        const listbox = await openOptions('인력 부족 시 2교대 가능');
 
         expect(within(listbox).getByRole('option', {name: '3교대만'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: '2교대만'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: '계획에 따라 2·3교대'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: '인력 부족 시 2교대 가능'})).toBeInTheDocument();
-        await userEvent.click(within(listbox).getByRole('option', {name: '인력 부족 시 2교대 가능'}));
-
-        await userEvent.click(screen.getByRole('button', {name: '혼합 편성 계획'}));
-        listbox = await openOptions('자동');
-        expect(within(listbox).getByRole('option', {name: '자동'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '3교대만'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '2교대만'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '2·3교대 같이 사용'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '전원 휴무'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '혼합 편성 계획'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '공정성'})).not.toBeInTheDocument();
     });
 
     it.each([
@@ -3606,71 +3557,6 @@ describe('Constraints', () => {
                 nurseB: {type: 'NURSE', nurseId: 2},
             });
             expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|shortName|color|간호사|Nested|#FFFFFF|#000000/);
-        });
-    });
-
-    it('offers localized rotating and night-dedicated targets only for the monthly night limit', async () => {
-        await i18n.changeLanguage('en');
-        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValue({
-            schemaVersion: 1,
-            wardId: 1,
-            shiftTeamId: 10,
-            rotationMode: 'THREE',
-            options: {
-                monthlyNightTargets: [
-                    {type: 'ALL', label: '모든 사람'},
-                    {type: 'ROTATING', label: '일반 3교대 간호사'},
-                    {type: 'NIGHT_DEDICATED', label: '야간전담간호사'},
-                    {type: 'DIVISION', label: 'New nurse group', divisionNum: 2},
-                ],
-            },
-            templates: [
-                {
-                    templateCode: 'MAX_MONTHLY_NIGHT_COUNT',
-                    category: 'FORBIDDEN_PATTERN',
-                    displayTemplate: '{target} monthly night shifts {count}',
-                    severity: 'SOFT',
-                    allowedSeverities: ['SOFT'],
-                    supportedInGenerator: true,
-                    supportedInValidator: true,
-                    slots: [
-                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'monthlyNightTargets'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 0, max: 31},
-                    ],
-                },
-            ],
-        });
-
-        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
-
-        const openButton = await waitFor(() => {
-            const button = document.getElementById('make_constraint_add_button') as HTMLButtonElement;
-
-            expect(button).toBeEnabled();
-
-            return button;
-        });
-
-        await userEvent.click(openButton);
-        await userEvent.click(await screen.findByRole('button', {name: 'All nurses'}));
-
-        const listbox = await screen.findByRole('listbox');
-
-        expect(within(listbox).getByRole('option', {name: 'Rotating three-shift nurses'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: 'Night-only nurses'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: 'New nurse group'})).toBeInTheDocument();
-
-        await userEvent.click(within(listbox).getByRole('option', {name: 'New nurse group'}));
-        await userEvent.click(screen.getByTitle('Add'));
-
-        await waitFor(() => {
-            const savedRule = getLastUpdatePayload()?.rules?.[0];
-
-            expect(savedRule).toMatchObject({
-                templateCode: 'MAX_MONTHLY_NIGHT_COUNT',
-                params: {target: {type: 'DIVISION', divisionNum: 2}, count: 7},
-            });
-            expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|New nurse/);
         });
     });
 

@@ -215,10 +215,6 @@ export const th = {
                         label: 'เงื่อนไขการทำงานต่อเนื่องและวันหยุด',
                         sentence: '{target}หลีกเลี่ยงการหยุดเพียงวันเดียวระหว่างวันทำงาน',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: 'เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ',
-                        sentence: '{target}ทำเวรกลางคืนได้สูงสุด{count}ครั้งต่อเดือน',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: 'ข้อจำกัดรายบุคคล',
                         sentence: '{target}ทำเวร{shift}ในวันหยุดสุดสัปดาห์หรือวันหยุดได้สูงสุด{count}ครั้งต่อ{period}',

@@ -215,10 +215,6 @@ export const zh = {
                         label: '连续工作与休息条件',
                         sentence: '{target}避免在两个工作日之间只休息一天',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: '夜班与转换条件',
-                        sentence: '{target}每月最多安排{count}次夜班',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: '个人限制',
                         sentence: '{target}在{period}内最多安排{count}次周末或节假日{shift}班',

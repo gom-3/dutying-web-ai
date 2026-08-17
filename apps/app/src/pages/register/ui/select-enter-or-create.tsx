@@ -1,6 +1,7 @@
-import {ArrowLeft, Building2, ChevronRight, DoorOpen} from 'lucide-react';
+import {ArrowLeft, ChevronRight, DoorOpen} from 'lucide-react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings.png';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
@@ -44,7 +45,7 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                     onClick={() => navigate(ROUTE.ONBOARDING_WARD_CREATE, {state: {resetOnboardingWardCreateStep: true}})}
                 >
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-main-light text-main-1">
-                        <Building2 className="h-6 w-6" />
+                        <img src={wardInfoSettingsIcon} alt="" aria-hidden="true" className="h-12 w-12 object-contain" />
                     </span>
                     <span className="min-w-0 flex-1">
                         <span className="block text-[22px] leading-tight font-semibold text-sub-1">{t('page.register.select.createTitle')}</span>

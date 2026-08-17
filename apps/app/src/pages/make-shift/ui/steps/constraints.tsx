@@ -115,8 +115,6 @@ const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
 const MIXED_OPERATION_POLICY_TEMPLATE_CODE = 'MIXED_OPERATION_POLICY';
 const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
-    'TWO_SHIFT_ASSIGNMENT_COUNT',
-    'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
 const NURSE_REFERENCE_PARAM_KEYS = new Set(['nurse', 'nurseA', 'nurseB', 'nurseIds', 'preceptor', 'preceptee']);
 const CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM: Record<string, TI18nKey> = {
@@ -153,8 +151,6 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     COMBINATION: 'page.makeShift.constraints.category.combination',
     NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
     MIXED_PARTICIPATION: 'page.makeShift.constraints.category.mixedParticipation',
-    MIXED_PLANNING: 'page.makeShift.constraints.category.mixedPlanning',
-    FAIRNESS: 'page.makeShift.constraints.category.fairness',
     CORE: 'page.makeShift.constraints.category.recommended',
     IMPORTANT: 'page.makeShift.constraints.category.recommended',
     TWO_SHIFT: 'page.makeShift.constraints.category.twoShift',
@@ -318,7 +314,6 @@ const THREE_SHIFT_NON_RECOMMENDED_RULE_CODES = new Set([
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MIN_NIGHT_INTERVAL',
     'CORE_MAX_CONTINUOUS_NIGHT',
-    'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_E_THEN_N',
 ]);
 const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
@@ -337,6 +332,7 @@ const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
 const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
@@ -352,11 +348,7 @@ const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set([
 ]);
 const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
     'MIXED_ROTATION_PARTICIPATION',
-    'TWO_SHIFT_DAILY_LINES',
     'TIME_WINDOW_STAFF_COUNT',
-    'MIN_REST_BETWEEN_SHIFTS',
-    'MAX_WORK_MINUTES_BY_PERIOD',
-    'MIXED_SHIFT_WORKLOAD_BALANCE',
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MAX_CONTINUOUS_NIGHT',
@@ -377,13 +369,7 @@ const MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
 const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
 const MIXED_SHIFT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
-    'MIXED_DAILY_COMPOSITION',
-    'TWO_SHIFT_DAILY_LINES',
-    'TWO_SHIFT_ASSIGNMENT_COUNT',
     'TIME_WINDOW_STAFF_COUNT',
-    'MIN_REST_BETWEEN_SHIFTS',
-    'MAX_WORK_MINUTES_BY_PERIOD',
-    'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
 const TARGET_SOFT_ONLY_TEMPLATE_CODES = new Set(['TWO_SHIFT_DAILY_LINES', 'TWO_SHIFT_ASSIGNMENT_COUNT']);
 const NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES = new Set(['NURSE_PREFER_SHIFT', 'NURSE_AVOID_SHIFT']);
@@ -401,6 +387,9 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_N_THEN_D',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'NURSE_FORBID_WEEKEND',
+    'NURSE_PREFER_SHIFT',
+    'NURSE_AVOID_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
 ]);
@@ -415,13 +404,13 @@ const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
-    'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
     'FORBID_E_THEN_N',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'NURSE_FORBID_WEEKEND',
     'NURSE_PREFER_SHIFT',
     'NURSE_AVOID_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
@@ -433,39 +422,29 @@ const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
     'MIN_OFF_AFTER_CONSECUTIVE_WORK',
     'AVOID_ISOLATED_WORK_DAY',
     'AVOID_ISOLATED_OFF_DAY',
-    'MIN_MONTHLY_OFF',
     'CORE_MIN_NIGHT_INTERVAL',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
-    'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
     'FORBID_E_THEN_N',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
-    'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
+    'NURSE_FORBID_WEEKEND',
     'NURSE_PREFER_SHIFT',
     'NURSE_AVOID_SHIFT',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
     'MIXED_ROTATION_PARTICIPATION',
-    'MIXED_DAILY_COMPOSITION',
-    'TWO_SHIFT_DAILY_LINES',
-    'TWO_SHIFT_ASSIGNMENT_COUNT',
     'TIME_WINDOW_STAFF_COUNT',
-    'MIN_REST_BETWEEN_SHIFTS',
-    'MAX_WORK_MINUTES_BY_PERIOD',
-    'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
 const ROTATION_MODAL_CATEGORY_ORDER = ['STAFFING_COUNT', 'WORK_REST', 'FORBIDDEN_PATTERN', 'NURSE_LIMIT', 'NURSE_COMBINATION'];
 const MIXED_MODAL_CATEGORY_ORDER = [
     'MIXED_PARTICIPATION',
     'STAFFING_COUNT',
-    'MIXED_PLANNING',
     'WORK_REST',
     'NURSE_LIMIT',
-    'FAIRNESS',
     'FORBIDDEN_PATTERN',
     'NURSE_COMBINATION',
 ];
@@ -505,18 +484,13 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     FORBID_E_THEN_N: 'FORBIDDEN_PATTERN',
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'FORBIDDEN_PATTERN',
     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: 'NURSE_LIMIT',
+    NURSE_FORBID_WEEKEND: 'NURSE_LIMIT',
     NURSE_PREFER_SHIFT: 'NURSE_LIMIT',
     NURSE_AVOID_SHIFT: 'NURSE_LIMIT',
     NURSE_PAIR_NOT_SAME_SHIFT: 'NURSE_COMBINATION',
     NURSE_PAIR_PREFER_SAME_SHIFT: 'NURSE_COMBINATION',
     MIXED_ROTATION_PARTICIPATION: 'MIXED_PARTICIPATION',
-    MIXED_DAILY_COMPOSITION: 'MIXED_PLANNING',
-    TWO_SHIFT_DAILY_LINES: 'STAFFING_COUNT',
-    TWO_SHIFT_ASSIGNMENT_COUNT: 'NURSE_LIMIT',
     TIME_WINDOW_STAFF_COUNT: 'STAFFING_COUNT',
-    MIN_REST_BETWEEN_SHIFTS: 'WORK_REST',
-    MAX_WORK_MINUTES_BY_PERIOD: 'WORK_REST',
-    MIXED_SHIFT_WORKLOAD_BALANCE: 'FAIRNESS',
 };
 const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_MAX_LINES',
@@ -525,12 +499,17 @@ const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR',
 ]);
-const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MAX_DAY_NIGHT_TRANSITIONS']);
+const THREE_SHIFT_LEGACY_VISIBLE_RULE_CODES = new Set([
+    'MAX_CONSECUTIVE_WORK_DAYS',
+    'OFF_AFTER_CONSECUTIVE_WORK',
+]);
 
 function isSavedRuleVisibleForRotation(templateCode: string, rotationMode: TWardRotationMode) {
     if (rotationMode === 'TWO') return TWO_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
 
-    if (rotationMode === 'THREE') return !THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES.has(templateCode);
+    if (rotationMode === 'THREE') {
+        return THREE_SHIFT_VISIBLE_RULE_CODES.has(templateCode) || THREE_SHIFT_LEGACY_VISIBLE_RULE_CODES.has(templateCode);
+    }
 
     return MIXED_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
 }
@@ -782,14 +761,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
     },
     {
-        id: 'MAX_MONTHLY_NIGHT_COUNT',
-        category: 'FORBIDDEN_PATTERN',
-        controls: [
-            {key: 'target', kind: 'select', optionsKey: 'monthlyNightTarget'},
-            {key: 'count', kind: 'number', min: 0, max: 31},
-        ],
-    },
-    {
         id: 'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
         category: 'NURSE_LIMIT',
         controls: [
@@ -986,7 +957,6 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     MIN_OFF_AFTER_CONSECUTIVE_WORK: {target: ALL_CONSTRAINT_TARGET_OPTION, workCount: 5, offCount: 2},
     AVOID_ISOLATED_WORK_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
     AVOID_ISOLATED_OFF_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
-    MAX_MONTHLY_NIGHT_COUNT: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 7},
     MAX_DAY_NIGHT_TRANSITIONS: {target: ALL_CONSTRAINT_TARGET_OPTION, direction: {type: 'BOTH'}, period: {type: 'MONTH'}, count: 4},
     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
         target: ALL_CONSTRAINT_TARGET_OPTION,
@@ -998,33 +968,12 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
         participationMode: {type: 'FALLBACK_TWO'},
         dateScope: {type: 'EVERYDAY'},
     },
-    MIXED_DAILY_COMPOSITION: {dateScope: {type: 'EVERYDAY'}, composition: {type: 'AUTO'}},
-    TWO_SHIFT_DAILY_LINES: {
-        dateScope: {type: 'EVERYDAY'},
-        operator: {type: 'MAX'},
-        count: 1,
-        unpairedMax: 0,
-    },
-    TWO_SHIFT_ASSIGNMENT_COUNT: {
-        aggregation: {type: 'PER_NURSE'},
-        shiftScope: {type: 'ALL_TWO'},
-        period: {type: 'MONTH'},
-        operator: {type: 'MAX'},
-        count: 1,
-    },
     TIME_WINDOW_STAFF_COUNT: {
         dateScope: {type: 'EVERYDAY'},
         startTime: '07:00',
         endTime: '15:00',
         operator: {type: 'MIN'},
         count: 1,
-    },
-    MIN_REST_BETWEEN_SHIFTS: {target: ALL_CONSTRAINT_TARGET_OPTION, minRestMinutes: 660},
-    MAX_WORK_MINUTES_BY_PERIOD: {target: ALL_CONSTRAINT_TARGET_OPTION, period: {type: 'WEEK'}, maxMinutes: 2400},
-    MIXED_SHIFT_WORKLOAD_BALANCE: {
-        metric: {type: 'TWO_ASSIGNMENTS'},
-        period: {type: 'MONTH'},
-        maxDifference: 1,
     },
 };
 const TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> = {
@@ -1043,10 +992,10 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     targets: 'target',
     TARGET: 'target',
     TARGETS: 'target',
-    monthlyNightTarget: 'monthlyNightTarget',
-    monthlyNightTargets: 'monthlyNightTarget',
-    MONTHLY_NIGHT_TARGET: 'monthlyNightTarget',
-    MONTHLY_NIGHT_TARGETS: 'monthlyNightTarget',
+    nightShift: 'nightShift',
+    nightShifts: 'nightShift',
+    NIGHT_SHIFT: 'nightShift',
+    NIGHT_SHIFTS: 'nightShift',
     nurse: 'nurse',
     nurses: 'nurse',
     NURSE: 'nurse',
@@ -1126,31 +1075,6 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     mixedParticipationModes: 'participationMode',
     PARTICIPATION_MODE: 'participationMode',
     PARTICIPATION_MODES: 'participationMode',
-    composition: 'composition',
-    compositions: 'composition',
-    mixedCompositions: 'composition',
-    COMPOSITION: 'composition',
-    COMPOSITIONS: 'composition',
-    lineOperator: 'lineOperator',
-    lineOperators: 'lineOperator',
-    mixedLineOperators: 'lineOperator',
-    LINE_OPERATOR: 'lineOperator',
-    LINE_OPERATORS: 'lineOperator',
-    assignmentAggregation: 'assignmentAggregation',
-    assignmentAggregations: 'assignmentAggregation',
-    mixedAssignmentAggregations: 'assignmentAggregation',
-    ASSIGNMENT_AGGREGATION: 'assignmentAggregation',
-    ASSIGNMENT_AGGREGATIONS: 'assignmentAggregation',
-    twoShiftScope: 'twoShiftScope',
-    twoShiftScopes: 'twoShiftScope',
-    mixedTwoShiftScopes: 'twoShiftScope',
-    TWO_SHIFT_SCOPE: 'twoShiftScope',
-    TWO_SHIFT_SCOPES: 'twoShiftScope',
-    workloadMetric: 'workloadMetric',
-    workloadMetrics: 'workloadMetric',
-    mixedWorkloadMetrics: 'workloadMetric',
-    WORKLOAD_METRIC: 'workloadMetric',
-    WORKLOAD_METRICS: 'workloadMetric',
 };
 const LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE: Record<string, string> = {
     FORBID_N_THEN_D: 'SOFT_NO_N_TO_D',
@@ -1448,10 +1372,6 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
 
     return templates.filter(isTemplateSelectable).map<TSoftRuleTemplate>((template) => {
         const baseControls = template.slots.map(createControlFromSlot).map((control) => {
-            if (template.templateCode === 'MAX_MONTHLY_NIGHT_COUNT' && control.key === 'target') {
-                return {...control, optionsKey: 'monthlyNightTarget'};
-            }
-
             if (template.templateCode === 'STAFF_COUNT_BY_SHIFT' && control.key === 'shift') {
                 return {...control, optionsKey: 'dutyStrict'};
             }
@@ -1570,8 +1490,6 @@ function getRequiredMixedNurseMode(template: TSoftRuleTemplate, params: Record<s
     if (template.id === 'MIXED_ROTATION_PARTICIPATION') {
         return getConstraintOptionType(params.participationMode) ?? 'FALLBACK_TWO';
     }
-
-    if (template.id === 'TWO_SHIFT_ASSIGNMENT_COUNT' || template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE') return 'TWO_ONLY';
 
     return null;
 }
@@ -1701,9 +1619,7 @@ function getDefaultParams(
                 {...configuredDefaults, ...params},
                 optionMap[control.optionsKey ?? ''] ?? [],
             );
-            const defaultCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' && control.key === 'nurseIds' ? 2 : 1;
-
-            params[control.key] = availableOptions.slice(0, defaultCount).map(getSelectOptionParamValue);
+            params[control.key] = availableOptions.slice(0, 1).map(getSelectOptionParamValue);
 
             return;
         }
@@ -2322,7 +2238,7 @@ function withoutAllSelectOptions(options: TSelectOption[]) {
 }
 
 function getLocalizedAllOptionLabel(t: TTypedT, optionMapKey: string) {
-    if (optionMapKey === 'target' || optionMapKey === 'monthlyNightTarget') {
+    if (optionMapKey === 'target') {
         return t('page.makeShift.constraints.option.allPeople');
     }
 
@@ -2378,27 +2294,6 @@ function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption
             FLEX: 'page.makeShift.constraints.mixed.participation.flex',
             FALLBACK_TWO: 'page.makeShift.constraints.mixed.participation.fallbackTwo',
         },
-        composition: {
-            AUTO: 'page.makeShift.constraints.mixed.composition.auto',
-            THREE_ONLY: 'page.makeShift.constraints.mixed.composition.threeOnly',
-            TWO_ONLY: 'page.makeShift.constraints.mixed.composition.twoOnly',
-            COEXIST: 'page.makeShift.constraints.mixed.composition.coexist',
-            CLOSED: 'page.makeShift.constraints.mixed.composition.closed',
-        },
-        assignmentAggregation: {
-            PER_NURSE: 'page.makeShift.constraints.mixed.aggregation.perNurse',
-            GROUP_TOTAL: 'page.makeShift.constraints.mixed.aggregation.groupTotal',
-        },
-        twoShiftScope: {
-            ALL_TWO: 'page.makeShift.constraints.mixed.shiftScope.allTwo',
-            TWO_DAY: 'page.makeShift.constraints.mixed.shiftScope.twoDay',
-            TWO_NIGHT: 'page.makeShift.constraints.mixed.shiftScope.twoNight',
-        },
-        workloadMetric: {
-            TWO_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.twoAssignments',
-            TWO_NIGHT_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.twoNightAssignments',
-            WEEKEND_TWO_ASSIGNMENTS: 'page.makeShift.constraints.mixed.metric.weekendTwoAssignments',
-        },
     };
     const mixedKey = mixedOptionKeyByMap[optionMapKey]?.[type];
 
@@ -2423,16 +2318,6 @@ function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption
             BOTH: 'page.makeShift.constraints.option.transition.both',
         };
         const key = transitionKeyByType[type];
-
-        if (key) return t(key);
-    }
-
-    if (optionMapKey === 'target' || optionMapKey === 'monthlyNightTarget') {
-        const targetKeyByType: Record<string, TI18nKey> = {
-            ROTATING: 'page.makeShift.constraints.option.target.rotating',
-            NIGHT_DEDICATED: 'page.makeShift.constraints.option.target.nightDedicated',
-        };
-        const key = targetKeyByType[type];
 
         if (key) return t(key);
     }
@@ -2468,7 +2353,10 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
     const shiftType =
         option.wardShiftTypeId != null ? shiftTypes.find((item) => item.wardShiftTypeId === option.wardShiftTypeId) : undefined;
     const isNamedTwoShiftDuty =
-        optionMapKey === 'twoShiftNight' || optionMapKey === 'twoShiftNightContinuation' || optionMapKey === 'offShift';
+        optionMapKey === 'nightShift' ||
+        optionMapKey === 'twoShiftNight' ||
+        optionMapKey === 'twoShiftNightContinuation' ||
+        optionMapKey === 'offShift';
     const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict' || isNamedTwoShiftDuty;
     const label = isNamedTwoShiftDuty
         ? (shiftType?.name ?? option.name ?? getCandidateOptionLabel(t, option, optionMapKey, shiftType))
@@ -2545,15 +2433,6 @@ function mergeCandidateOptionMap(
 
         return type !== 'ROTATING' && type !== 'NIGHT_DEDICATED';
     });
-    const monthlyNightTarget = getCandidateOptions(
-        candidates,
-        'target',
-        ['monthlyNightTargets', 'MONTHLY_NIGHT_TARGETS', 'targets', 'TARGETS'],
-        fallback.monthlyNightTarget ?? fallback.target,
-        shiftTypes,
-        t,
-        {includeFallback: true},
-    );
     const date = withoutAllSelectOptions(getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes, t));
     const dayType = withoutAllSelectOptions(
         getCandidateOptions(
@@ -2592,6 +2471,14 @@ function mergeCandidateOptionMap(
         shiftTypes,
         t,
     );
+    const nightShift = getCandidateOptions(
+        candidates,
+        'nightShift',
+        ['nightShifts', 'NIGHT_SHIFTS'],
+        duty.filter((option) => option.classification === 'NIGHT'),
+        shiftTypes,
+        t,
+    );
     const twoShiftNightContinuation = getCandidateOptions(
         candidates,
         'twoShiftNightContinuation',
@@ -2615,7 +2502,6 @@ function mergeCandidateOptionMap(
 
     return {
         target,
-        monthlyNightTarget,
         duty,
         dutyReference: fallback.dutyReference ?? [],
         date: date.length ? date : fallback.date,
@@ -2634,6 +2520,7 @@ function mergeCandidateOptionMap(
         preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee, shiftTypes, t),
         transitionDirection,
         period,
+        nightShift,
         twoShiftNight,
         twoShiftNightContinuation,
         offShift,
@@ -2642,15 +2529,6 @@ function mergeCandidateOptionMap(
             ['mixedParticipationModes', 'participationModes', 'PARTICIPATION_MODES'],
             true,
         ),
-        composition: mixedOptions('composition', ['mixedCompositions', 'compositions', 'COMPOSITIONS'], true),
-        lineOperator: mixedOptions('lineOperator', ['mixedLineOperators', 'lineOperators', 'LINE_OPERATORS'], true),
-        assignmentAggregation: mixedOptions('assignmentAggregation', [
-            'mixedAssignmentAggregations',
-            'assignmentAggregations',
-            'ASSIGNMENT_AGGREGATIONS',
-        ]),
-        twoShiftScope: mixedOptions('twoShiftScope', ['mixedTwoShiftScopes', 'twoShiftScopes', 'TWO_SHIFT_SCOPES']),
-        workloadMetric: mixedOptions('workloadMetric', ['mixedWorkloadMetrics', 'workloadMetrics', 'WORKLOAD_METRICS']),
         dutyStrict: duty.filter((option) => !isAllSelectOption(option)),
     };
 }
@@ -2854,7 +2732,7 @@ function normalizeCombinationParams(
             .filter((option): option is TSelectOption => Boolean(option));
 
         if (selectedOptions.length < currentValues.length) {
-            const minimumSelectionCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
+            const minimumSelectionCount = 1;
             const selectedIds = new Set(selectedOptions.map((option) => option.value));
 
             eligibleOptions.forEach((option) => {
@@ -3818,10 +3696,6 @@ const CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR =
 function getSoftRuleAddIssue(template: TSoftRuleTemplate, params: Record<string, unknown>): TI18nKey | null {
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
 
-    if (template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' && selectedNurseCount < 2) {
-        return 'page.makeShift.constraints.mixed.validation.workloadTwoNurses';
-    }
-
     if (template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') && selectedNurseCount < 1) {
         return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
     }
@@ -4364,31 +4238,6 @@ export function Constraints({
             enumOption('FLEX', 'page.makeShift.constraints.mixed.participation.flex'),
             enumOption('FALLBACK_TWO', 'page.makeShift.constraints.mixed.participation.fallbackTwo'),
         ];
-        const compositionOptions = [
-            enumOption('AUTO', 'page.makeShift.constraints.mixed.composition.auto'),
-            enumOption('THREE_ONLY', 'page.makeShift.constraints.mixed.composition.threeOnly'),
-            enumOption('TWO_ONLY', 'page.makeShift.constraints.mixed.composition.twoOnly'),
-            enumOption('COEXIST', 'page.makeShift.constraints.mixed.composition.coexist'),
-            enumOption('CLOSED', 'page.makeShift.constraints.mixed.composition.closed'),
-        ];
-        const lineOperatorOptions = [
-            ...staffCountOperatorOptions,
-            enumOption('TARGET', 'page.makeShift.constraints.option.staffCountOperator.target'),
-        ];
-        const assignmentAggregationOptions = [
-            enumOption('PER_NURSE', 'page.makeShift.constraints.mixed.aggregation.perNurse'),
-            enumOption('GROUP_TOTAL', 'page.makeShift.constraints.mixed.aggregation.groupTotal'),
-        ];
-        const twoShiftScopeOptions = [
-            enumOption('ALL_TWO', 'page.makeShift.constraints.mixed.shiftScope.allTwo'),
-            enumOption('TWO_DAY', 'page.makeShift.constraints.mixed.shiftScope.twoDay'),
-            enumOption('TWO_NIGHT', 'page.makeShift.constraints.mixed.shiftScope.twoNight'),
-        ];
-        const workloadMetricOptions = [
-            enumOption('TWO_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.twoAssignments'),
-            enumOption('TWO_NIGHT_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.twoNightAssignments'),
-            enumOption('WEEKEND_TWO_ASSIGNMENTS', 'page.makeShift.constraints.mixed.metric.weekendTwoAssignments'),
-        ];
         const transitionDirectionOptions = [
             {
                 value: 'DAY_TO_NIGHT',
@@ -4480,25 +4329,6 @@ export function Constraints({
                 ...divisionOptions,
                 ...nurseOptions,
             ],
-            monthlyNightTarget: [
-                {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
-                ...(rotationMode === 'THREE'
-                    ? [
-                          {
-                              value: 'ROTATING',
-                              label: t('page.makeShift.constraints.option.target.rotating'),
-                              raw: {type: 'ROTATING'},
-                          },
-                          {
-                              value: 'NIGHT_DEDICATED',
-                              label: t('page.makeShift.constraints.option.target.nightDedicated'),
-                              raw: {type: 'NIGHT_DEDICATED'},
-                          },
-                      ]
-                    : []),
-                ...divisionOptions,
-                ...nurseOptions,
-            ],
             duty: dutyOptions,
             dutyReference: dutyReferenceOptions,
             date: dateOptions,
@@ -4508,11 +4338,6 @@ export function Constraints({
             transitionDirection: transitionDirectionOptions,
             period: periodOptions,
             participationMode: participationModeOptions,
-            composition: compositionOptions,
-            lineOperator: lineOperatorOptions,
-            assignmentAggregation: assignmentAggregationOptions,
-            twoShiftScope: twoShiftScopeOptions,
-            workloadMetric: workloadMetricOptions,
             nurse: nurseOptions,
             preceptor: preceptorOptions,
             preceptee: precepteeOptions,

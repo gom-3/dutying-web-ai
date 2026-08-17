@@ -1164,9 +1164,7 @@ export const ko = {
                     "twoShiftNightTransition": "야간·전환",
                     "nightTransition": "야간·전환",
                     "workRestStreaks": "연속 근무·휴무",
-                    "mixedParticipation": "사람별 교대 참여",
-                    "mixedPlanning": "혼합 편성 계획",
-                    "fairness": "공정성"
+                    "mixedParticipation": "사람별 교대 참여"
                 },
                 "count": "{{count}}개",
                 "dragHandleAria": "드래그하여 위치를 변경",
@@ -1439,10 +1437,6 @@ export const ko = {
                         "label": "근무·휴식 조건",
                         "sentence": "{target}는 최대 {count}일까지 연속으로 근무할 수 있어요"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "야간·전환 조건",
-                        "sentence": "{target}의 {nightShift} 근무는 한 달에 최대 {count}회예요"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "인원 조건",
                         "sentence": "{shift} 근무는 최대 {count}명까지만 배정할 수 있어요"
@@ -1514,33 +1508,9 @@ export const ko = {
                         "label": "사람별 교대 참여",
                         "sentence": "{nurseIds}는 {dateScope}에 {participationMode}으로 참여해요"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "날짜별 혼합 편성",
-                        "sentence": "{dateScope} 편성을 {composition}으로 운영해요"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "일일 2교대 라인",
-                        "sentence": "{dateScope} 2교대 라인을 {operator} {count}개로 하고 미짝 라인은 최대 {unpairedMax}개예요"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "개인·그룹별 2교대 횟수",
-                        "sentence": "{nurseIds}의 {shiftScope} 배정을 {aggregation} 기준으로 {period}에 {operator} {count}회로 정해요"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "시간대별 필요 인원",
                         "sentence": "{dateScope} {startTime}부터 {endTime}까지 인원을 {operator} {count}명으로 정해요"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "근무 간 최소 휴식",
-                        "sentence": "{target}의 근무 사이 휴식은 최소 {minRestMinutes}분이에요"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "기간별 최대 근로시간",
-                        "sentence": "{target}의 {period} 예정 근로는 최대 {maxMinutes}분이에요"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "혼합교대 부담 균형",
-                        "sentence": "{nurseIds}의 {metric}은 {period}에 최대 {maxDifference}회 차이로 맞춰요"
                     }
                 },
                 "toast": {
@@ -1596,27 +1566,6 @@ export const ko = {
                         "flex": "계획에 따라 2·3교대",
                         "fallbackTwo": "인력 부족 시 2교대 가능"
                     },
-                    "composition": {
-                        "auto": "자동",
-                        "threeOnly": "3교대만",
-                        "twoOnly": "2교대만",
-                        "coexist": "2·3교대 같이 사용",
-                        "closed": "전원 휴무"
-                    },
-                    "aggregation": {
-                        "perNurse": "간호사별",
-                        "groupTotal": "그룹 합계"
-                    },
-                    "shiftScope": {
-                        "allTwo": "모든 2교대 근무",
-                        "twoDay": "2교대 주간",
-                        "twoNight": "2교대 야간"
-                    },
-                    "metric": {
-                        "twoAssignments": "2교대 전체 횟수",
-                        "twoNightAssignments": "2교대 야간 횟수",
-                        "weekendTwoAssignments": "주말 2교대 횟수"
-                    },
                     "generatorPending": "저장과 검증은 가능하며 자동생성 엔진 반영은 준비 중이에요.",
                     "nurseUnavailable": {
                         "threeShift": "3교대 가능 근무가 설정되지 않았어요.",
@@ -1625,7 +1574,6 @@ export const ko = {
                         "notConfigured": "가능 근무 설정 필요"
                     },
                     "validation": {
-                        "workloadTwoNurses": "가능 근무가 맞는 간호사를 2명 이상 선택해 주세요.",
                         "selectEligibleNurse": "가능 근무가 맞는 간호사를 1명 이상 선택해 주세요."
                     }
                 },
@@ -4269,9 +4217,7 @@ export const en: TLocale = {
                     "twoShiftNightTransition": "Night and transitions",
                     "nightTransition": "Night and transitions",
                     "workRestStreaks": "Work and rest streaks",
-                    "mixedParticipation": "Rotation participation",
-                    "mixedPlanning": "Mixed staffing plan",
-                    "fairness": "Fairness"
+                    "mixedParticipation": "Rotation participation"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Drag to reorder",
@@ -4544,10 +4490,6 @@ export const en: TLocale = {
                         "label": "Work-rest constraint",
                         "sentence": "{target} can work up to {count} consecutive days"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "Night and transition constraint",
-                        "sentence": "{target} works at most {count} {nightShift} shifts per month"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "Staffing constraint",
                         "sentence": "{shift} can have up to {count} staff"
@@ -4619,33 +4561,9 @@ export const en: TLocale = {
                         "label": "Rotation participation",
                         "sentence": "{nurseIds} participate as {participationMode} on {dateScope}"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "Daily mixed composition",
-                        "sentence": "Use {composition} composition on {dateScope}"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "Daily two-shift lines",
-                        "sentence": "{dateScope} uses {operator} {count} two-shift lines with up to {unpairedMax} unpaired lines"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "Two-shift assignment count",
-                        "sentence": "Set {nurseIds} {shiftScope} assignments by {aggregation} to {operator} {count} per {period}"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "Staff by time window",
                         "sentence": "Set staff from {startTime} to {endTime} on {dateScope} to {operator} {count}"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "Minimum rest between shifts",
-                        "sentence": "{target} gets at least {minRestMinutes} minutes between shifts"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "Maximum work by period",
-                        "sentence": "{target} works at most {maxMinutes} planned minutes per {period}"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "Mixed-shift workload balance",
-                        "sentence": "Keep {metric} for {nurseIds} within {maxDifference} per {period}"
                     }
                 },
                 "toast": {
@@ -4701,27 +4619,6 @@ export const en: TLocale = {
                         "flex": "Two or three shifts as planned",
                         "fallbackTwo": "Two-shift eligible when needed"
                     },
-                    "composition": {
-                        "auto": "Automatic",
-                        "threeOnly": "Three-shift only",
-                        "twoOnly": "Two-shift only",
-                        "coexist": "Use both systems",
-                        "closed": "Closed day"
-                    },
-                    "aggregation": {
-                        "perNurse": "Per nurse",
-                        "groupTotal": "Group total"
-                    },
-                    "shiftScope": {
-                        "allTwo": "All two-shift duties",
-                        "twoDay": "Two-shift day",
-                        "twoNight": "Two-shift night"
-                    },
-                    "metric": {
-                        "twoAssignments": "All two-shift assignments",
-                        "twoNightAssignments": "Two-shift night assignments",
-                        "weekendTwoAssignments": "Weekend two-shift assignments"
-                    },
                     "generatorPending": "Saving and validation work now. Automatic generation support is being prepared.",
                     "nurseUnavailable": {
                         "threeShift": "Three-shift availability is not enabled.",
@@ -4730,7 +4627,6 @@ export const en: TLocale = {
                         "notConfigured": "Shift availability setup required"
                     },
                     "validation": {
-                        "workloadTwoNurses": "Select at least two nurses with matching shift availability.",
                         "selectEligibleNurse": "Select at least one nurse with matching shift availability."
                     }
                 },
@@ -7372,9 +7268,7 @@ export const ja: TLocale = {
                     "twoShiftNightTransition": "夜勤・切り替え",
                     "nightTransition": "夜勤・切り替え",
                     "workRestStreaks": "連続勤務・休み",
-                    "mixedParticipation": "個人別の交代参加",
-                    "mixedPlanning": "混合編成計画",
-                    "fairness": "公平性"
+                    "mixedParticipation": "個人別の交代参加"
                 },
                 "count": "{{count}}件",
                 "dragHandleAria": "ドラッグして順序を変更",
@@ -7647,10 +7541,6 @@ export const ja: TLocale = {
                         "label": "勤務・休み条件",
                         "sentence": "{target}は最大{count}日まで連続勤務できます"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "夜勤・切り替え条件",
-                        "sentence": "{target}の夜勤は月に最大{count}回です"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "人数条件",
                         "sentence": "{shift}勤務は最大{count}名まで割り当てられます"
@@ -7722,33 +7612,9 @@ export const ja: TLocale = {
                         "label": "個人別の交代参加",
                         "sentence": "{nurseIds}は{dateScope}に{participationMode}として参加します"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "日付別の混合編成",
-                        "sentence": "{dateScope}の編成を{composition}で運用します"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "日々の2交代ライン",
-                        "sentence": "{dateScope}の2交代ラインを{operator}{count}本とし未対は最大{unpairedMax}本です"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "2交代の割当回数",
-                        "sentence": "{nurseIds}の{shiftScope}割当を{aggregation}基準で{period}に{operator}{count}回とします"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "時間帯別の必要人数",
                         "sentence": "{dateScope}の{startTime}から{endTime}までを{operator}{count}名とします"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "勤務間の最低休息",
-                        "sentence": "{target}の勤務間休息は最低{minRestMinutes}分です"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "期間別の最大勤務時間",
-                        "sentence": "{target}の{period}の予定勤務は最大{maxMinutes}分です"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "混合交代の負担バランス",
-                        "sentence": "{nurseIds}の{metric}は{period}に最大{maxDifference}回差にします"
                     }
                 },
                 "toast": {
@@ -7804,27 +7670,6 @@ export const ja: TLocale = {
                         "flex": "2・3交代を計画に従って",
                         "fallbackTwo": "人員不足時に2交代可"
                     },
-                    "composition": {
-                        "auto": "自動",
-                        "threeOnly": "3交代のみ",
-                        "twoOnly": "2交代のみ",
-                        "coexist": "両方を併用",
-                        "closed": "全員休み"
-                    },
-                    "aggregation": {
-                        "perNurse": "看護師ごと",
-                        "groupTotal": "グループ合計"
-                    },
-                    "shiftScope": {
-                        "allTwo": "すべての2交代勤務",
-                        "twoDay": "2交代日勤",
-                        "twoNight": "2交代夜勤"
-                    },
-                    "metric": {
-                        "twoAssignments": "2交代の全割当回数",
-                        "twoNightAssignments": "2交代夜勤回数",
-                        "weekendTwoAssignments": "週末の2交代回数"
-                    },
                     "generatorPending": "保存と検証は可能で、自動作成への対応は準備中です。",
                     "nurseUnavailable": {
                         "threeShift": "3交代の勤務可能設定がありません。",
@@ -7833,7 +7678,6 @@ export const ja: TLocale = {
                         "notConfigured": "勤務可能設定が必要"
                     },
                     "validation": {
-                        "workloadTwoNurses": "勤務可能設定が合う看護師を2人以上選択してください。",
                         "selectEligibleNurse": "勤務可能設定が合う看護師を1人以上選択してください。"
                     }
                 },
@@ -10475,9 +10319,7 @@ export const zh: TLocale = {
                     "twoShiftNightTransition": "夜班和转换",
                     "nightTransition": "夜班与转换",
                     "workRestStreaks": "连续工作与休息",
-                    "mixedParticipation": "个人轮班参与",
-                    "mixedPlanning": "混合排班计划",
-                    "fairness": "公平性"
+                    "mixedParticipation": "个人轮班参与"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "拖动以改变位置",
@@ -10750,10 +10592,6 @@ export const zh: TLocale = {
                         "label": "工作休息条件",
                         "sentence": "{target}最多可连续工作{count}天"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "夜班与转换条件",
-                        "sentence": "{target}每月最多安排{count}次夜班"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "人数条件",
                         "sentence": "{shift}班最多可安排{count}人"
@@ -10825,33 +10663,9 @@ export const zh: TLocale = {
                         "label": "个人轮班参与",
                         "sentence": "{nurseIds}在{dateScope}以{participationMode}方式参与"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "按日混合排班",
-                        "sentence": "{dateScope}按{composition}方式排班"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "每日两班线",
-                        "sentence": "{dateScope}的两班线为{operator}{count}条且最多{unpairedMax}条不成对"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "两班排班次数",
-                        "sentence": "按{aggregation}将{nurseIds}的{shiftScope}排班设为每{period}{operator}{count}次"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "按时间段需求人数",
                         "sentence": "{dateScope}从{startTime}到{endTime}的人数设为{operator}{count}"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "班次间最短休息",
-                        "sentence": "{target}的班次间休息至少{minRestMinutes}分钟"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "按周期最大工作时间",
-                        "sentence": "{target}每{period}计划工作最多{maxMinutes}分钟"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "混合轮班负担均衡",
-                        "sentence": "将{nurseIds}的{metric}在每{period}内控制在{maxDifference}次差异以内"
                     }
                 },
                 "toast": {
@@ -10907,27 +10721,6 @@ export const zh: TLocale = {
                         "flex": "按计划安排两班或三班",
                         "fallbackTwo": "人力不足时可安排两班"
                     },
-                    "composition": {
-                        "auto": "自动",
-                        "threeOnly": "仅三班",
-                        "twoOnly": "仅两班",
-                        "coexist": "两种班制同时使用",
-                        "closed": "全员休息"
-                    },
-                    "aggregation": {
-                        "perNurse": "按护士",
-                        "groupTotal": "小组合计"
-                    },
-                    "shiftScope": {
-                        "allTwo": "所有两班班次",
-                        "twoDay": "两班日班",
-                        "twoNight": "两班夜班"
-                    },
-                    "metric": {
-                        "twoAssignments": "两班总排班次数",
-                        "twoNightAssignments": "两班夜班次数",
-                        "weekendTwoAssignments": "周末两班次数"
-                    },
                     "generatorPending": "现已支持保存和验证，自动生成支持正在准备。",
                     "nurseUnavailable": {
                         "threeShift": "未设置可三班工作。",
@@ -10936,7 +10729,6 @@ export const zh: TLocale = {
                         "notConfigured": "需要设置可排班次"
                     },
                     "validation": {
-                        "workloadTwoNurses": "请至少选择两名班次可用性符合的护士。",
                         "selectEligibleNurse": "请至少选择一名班次可用性符合的护士。"
                     }
                 },
@@ -13578,9 +13370,7 @@ export const th: TLocale = {
                     "twoShiftNightTransition": "เวรกลางคืนและการเปลี่ยนกะ",
                     "nightTransition": "เวรกลางคืนและการเปลี่ยนกะ",
                     "workRestStreaks": "การทำงานต่อเนื่องและวันหยุด",
-                    "mixedParticipation": "การเข้าร่วมกะรายบุคคล",
-                    "mixedPlanning": "แผนจัดกำลังคนแบบผสม",
-                    "fairness": "ความเป็นธรรม"
+                    "mixedParticipation": "การเข้าร่วมกะรายบุคคล"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
@@ -13853,10 +13643,6 @@ export const th: TLocale = {
                         "label": "เงื่อนไขงานและพัก",
                         "sentence": "{target}ทำงานติดต่อกันได้สูงสุด{count}วัน"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "เงื่อนไขเวรกลางคืนและการเปลี่ยนกะ",
-                        "sentence": "{target}ทำเวรกลางคืนได้สูงสุด{count}ครั้งต่อเดือน"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "เงื่อนไขจำนวนคน",
                         "sentence": "เวร{shift}จัดได้สูงสุด{count}คน"
@@ -13928,33 +13714,9 @@ export const th: TLocale = {
                         "label": "การเข้าร่วมกะรายบุคคล",
                         "sentence": "{nurseIds} เข้าร่วมแบบ {participationMode} ใน {dateScope}"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "การจัดกะผสมรายวัน",
-                        "sentence": "ใช้การจัดแบบ {composition} ใน {dateScope}"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "ไลน์ 2 กะรายวัน",
-                        "sentence": "ใช้ไลน์ 2 กะ {operator} {count} ไลน์ใน {dateScope} และไม่จับคู่ได้สูงสุด {unpairedMax}"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "จำนวนการจัด 2 กะ",
-                        "sentence": "กำหนด {shiftScope} ของ {nurseIds} ตาม {aggregation} เป็น {operator} {count} ครั้งต่อ {period}"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "จำนวนคนตามช่วงเวลา",
                         "sentence": "กำหนดคนช่วง {startTime} ถึง {endTime} ใน {dateScope} เป็น {operator} {count}"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "เวลาพักขั้นต่ำระหว่างกะ",
-                        "sentence": "{target} พักระหว่างกะอย่างน้อย {minRestMinutes} นาที"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "ชั่วโมงทำงานสูงสุดตามช่วง",
-                        "sentence": "{target} ทำงานตามแผนสูงสุด {maxMinutes} นาทีต่อ {period}"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "สมดุลภาระงานกะผสม",
-                        "sentence": "รักษา {metric} ของ {nurseIds} ให้ต่างกันไม่เกิน {maxDifference} ต่อ {period}"
                     }
                 },
                 "toast": {
@@ -14010,27 +13772,6 @@ export const th: TLocale = {
                         "flex": "ใช้ 2 หรือ 3 กะตามแผน",
                         "fallbackTwo": "ทำ 2 กะได้เมื่อคนไม่พอ"
                     },
-                    "composition": {
-                        "auto": "อัตโนมัติ",
-                        "threeOnly": "เฉพาะ 3 กะ",
-                        "twoOnly": "เฉพาะ 2 กะ",
-                        "coexist": "ใช้ทั้งสองระบบ",
-                        "closed": "หยุดทั้งหมด"
-                    },
-                    "aggregation": {
-                        "perNurse": "ต่อพยาบาล",
-                        "groupTotal": "รวมกลุ่ม"
-                    },
-                    "shiftScope": {
-                        "allTwo": "ทุกกะแบบ 2 กะ",
-                        "twoDay": "กะกลางวันแบบ 2 กะ",
-                        "twoNight": "กะกลางคืนแบบ 2 กะ"
-                    },
-                    "metric": {
-                        "twoAssignments": "จำนวนกะแบบ 2 กะทั้งหมด",
-                        "twoNightAssignments": "จำนวนกะกลางคืนแบบ 2 กะ",
-                        "weekendTwoAssignments": "จำนวนกะแบบ 2 กะช่วงวันหยุด"
-                    },
                     "generatorPending": "บันทึกและตรวจสอบได้แล้ว ส่วนการสร้างอัตโนมัติกำลังเตรียม",
                     "nurseUnavailable": {
                         "threeShift": "ยังไม่ได้เปิดการทำงานแบบ 3 กะ",
@@ -14039,7 +13780,6 @@ export const th: TLocale = {
                         "notConfigured": "ต้องตั้งค่ากะที่ทำได้"
                     },
                     "validation": {
-                        "workloadTwoNurses": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 2 คน",
                         "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 1 คน"
                     }
                 },
@@ -16681,9 +16421,7 @@ export const vi: TLocale = {
                     "twoShiftNightTransition": "Đêm và chuyển ca",
                     "nightTransition": "Ca đêm và chuyển ca",
                     "workRestStreaks": "Chuỗi làm việc và nghỉ",
-                    "mixedParticipation": "Tham gia ca theo người",
-                    "mixedPlanning": "Kế hoạch phân ca hỗn hợp",
-                    "fairness": "Công bằng"
+                    "mixedParticipation": "Tham gia ca theo người"
                 },
                 "count": "{{count}}",
                 "dragHandleAria": "Kéo để sắp xếp lại",
@@ -16956,10 +16694,6 @@ export const vi: TLocale = {
                         "label": "Điều kiện làm việc-nghỉ",
                         "sentence": "{target} có thể làm việc liên tiếp tối đa {count} ngày"
                     },
-                    "MAX_MONTHLY_NIGHT_COUNT": {
-                        "label": "Điều kiện ca đêm và chuyển ca",
-                        "sentence": "{target} làm tối đa {count} ca đêm mỗi tháng"
-                    },
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "Điều kiện nhân sự",
                         "sentence": "Ca {shift} được xếp tối đa {count} người"
@@ -17031,33 +16765,9 @@ export const vi: TLocale = {
                         "label": "Tham gia ca theo người",
                         "sentence": "{nurseIds} tham gia theo {participationMode} vào {dateScope}"
                     },
-                    "MIXED_DAILY_COMPOSITION": {
-                        "label": "Phân ca hỗn hợp theo ngày",
-                        "sentence": "Dùng cách phân ca {composition} vào {dateScope}"
-                    },
-                    "TWO_SHIFT_DAILY_LINES": {
-                        "label": "Số tuyến 2 ca mỗi ngày",
-                        "sentence": "Dùng {operator} {count} tuyến 2 ca vào {dateScope} và tối đa {unpairedMax} tuyến lẻ"
-                    },
-                    "TWO_SHIFT_ASSIGNMENT_COUNT": {
-                        "label": "Số lượt phân 2 ca",
-                        "sentence": "Đặt {shiftScope} của {nurseIds} theo {aggregation} là {operator} {count} lần mỗi {period}"
-                    },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "Nhân sự theo khung giờ",
                         "sentence": "Đặt nhân sự từ {startTime} đến {endTime} vào {dateScope} là {operator} {count}"
-                    },
-                    "MIN_REST_BETWEEN_SHIFTS": {
-                        "label": "Nghỉ tối thiểu giữa các ca",
-                        "sentence": "{target} nghỉ ít nhất {minRestMinutes} phút giữa các ca"
-                    },
-                    "MAX_WORK_MINUTES_BY_PERIOD": {
-                        "label": "Làm việc tối đa theo kỳ",
-                        "sentence": "{target} làm tối đa {maxMinutes} phút dự kiến mỗi {period}"
-                    },
-                    "MIXED_SHIFT_WORKLOAD_BALANCE": {
-                        "label": "Cân bằng tải ca hỗn hợp",
-                        "sentence": "Giữ {metric} của {nurseIds} chênh tối đa {maxDifference} mỗi {period}"
                     }
                 },
                 "toast": {
@@ -17113,27 +16823,6 @@ export const vi: TLocale = {
                         "flex": "2 hoặc 3 ca theo kế hoạch",
                         "fallbackTwo": "Có thể làm 2 ca khi thiếu người"
                     },
-                    "composition": {
-                        "auto": "Tự động",
-                        "threeOnly": "Chỉ 3 ca",
-                        "twoOnly": "Chỉ 2 ca",
-                        "coexist": "Dùng cả hai hệ",
-                        "closed": "Nghỉ toàn bộ"
-                    },
-                    "aggregation": {
-                        "perNurse": "Theo điều dưỡng",
-                        "groupTotal": "Tổng nhóm"
-                    },
-                    "shiftScope": {
-                        "allTwo": "Tất cả ca 2 kíp",
-                        "twoDay": "Ca ngày 2 kíp",
-                        "twoNight": "Ca đêm 2 kíp"
-                    },
-                    "metric": {
-                        "twoAssignments": "Tổng lượt 2 ca",
-                        "twoNightAssignments": "Lượt ca đêm 2 kíp",
-                        "weekendTwoAssignments": "Lượt 2 ca cuối tuần"
-                    },
                     "generatorPending": "Có thể lưu và kiểm tra. Hỗ trợ tạo tự động đang được chuẩn bị.",
                     "nurseUnavailable": {
                         "threeShift": "Chưa bật khả năng làm 3 ca.",
@@ -17142,7 +16831,6 @@ export const vi: TLocale = {
                         "notConfigured": "Cần thiết lập ca có thể làm"
                     },
                     "validation": {
-                        "workloadTwoNurses": "Chọn ít nhất hai điều dưỡng có khả năng ca phù hợp.",
                         "selectEligibleNurse": "Chọn ít nhất một điều dưỡng có khả năng ca phù hợp."
                     }
                 },

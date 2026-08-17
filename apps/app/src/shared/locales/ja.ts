@@ -1554,10 +1554,6 @@ export const ja: TLocale = {
                         label: '連続勤務・休み条件',
                         sentence: '{target}は勤務の間に1日だけ休む配置を避けます',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: '夜勤・切り替え条件',
-                        sentence: '{target}の夜勤は月に最大{count}回です',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: '個人別制限',
                         sentence: '{target}の週末・祝日の{shift}勤務は{period}に最大{count}回です',
