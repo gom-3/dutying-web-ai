@@ -332,6 +332,7 @@ const THREE_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(THREE_SHIFT_RECOMMEND
 const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+    'FORBID_N_THEN_D',
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
@@ -386,6 +387,7 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'MAX_MONTHLY_NIGHT_COUNT',
+    'FORBID_N_THEN_D',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
@@ -3444,6 +3446,33 @@ function ImportantToggle({
     );
 }
 
+function RecommendedBadge() {
+    const {t} = useTypedTranslation();
+
+    return (
+        <span className="inline-flex h-6 min-w-10 shrink-0 items-center justify-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-bold whitespace-nowrap text-main-1 ring-1 ring-main-4">
+            {t('page.makeShift.constraints.category.recommended')}
+        </span>
+    );
+}
+
+function StaticImportantBadge({isRecommended}: {isRecommended: boolean}) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <span
+            title={
+                isRecommended
+                    ? t('page.makeShift.constraints.important.recommendedTitle')
+                    : t('page.makeShift.constraints.important.ariaMark')
+            }
+            className="mr-6 inline-flex h-6 min-w-10 shrink-0 items-center justify-center rounded-full bg-[#FFF3D6] px-2.5 font-apple text-[12px] font-bold whitespace-nowrap text-[#B86E00] ring-1 ring-[#FFD88A]"
+        >
+            {t('page.makeShift.constraints.important.label')}
+        </span>
+    );
+}
+
 const RuleRow = memo(function RuleRow({
     rule,
     template,
@@ -3472,8 +3501,11 @@ const RuleRow = memo(function RuleRow({
             }`}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
+                {isRecommended ? <RecommendedBadge /> : null}
                 {canChangeSeverity ? (
                     <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+                ) : isImportant ? (
+                    <StaticImportantBadge isRecommended={isRecommended} />
                 ) : null}
                 {softTemplate ? (
                     <SoftSentence

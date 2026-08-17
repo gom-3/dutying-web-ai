@@ -888,6 +888,7 @@ describe('Constraints', () => {
         const dialog = screen.getByRole('dialog');
         const recommendationCodes = [
             'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+            'FORBID_N_THEN_D',
             'CORE_MAX_CONTINUOUS_WORK',
             'CORE_MAX_CONTINUOUS_NIGHT',
             'CORE_MIN_CONTINUOUS_NIGHT',
@@ -900,15 +901,14 @@ describe('Constraints', () => {
             return card!;
         });
 
-        expect(dialog.querySelectorAll('[data-constraint-template-card]')).toHaveLength(4);
+        expect(dialog.querySelectorAll('[data-constraint-template-card]')).toHaveLength(5);
         recommendationCards.slice(0, -1).forEach((card, index) => {
             expect(card.compareDocumentPosition(recommendationCards[index + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         });
         expect(dialog.querySelector('[data-constraint-template-card="CORE_MIN_OFF_AFTER_NIGHT"]')).toBeNull();
-        expect(dialog.querySelector('[data-constraint-template-card="FORBID_N_THEN_D"]')).toBeNull();
-        expect(within(recommendationCards[1]!).getByRole('spinbutton')).toHaveValue(4);
-        expect(within(recommendationCards[2]!).getByRole('spinbutton')).toHaveValue(3);
-        expect(within(recommendationCards[3]!).getByRole('spinbutton')).toHaveValue(1);
+        expect(within(recommendationCards[2]!).getByRole('spinbutton')).toHaveValue(4);
+        expect(within(recommendationCards[3]!).getByRole('spinbutton')).toHaveValue(3);
+        expect(within(recommendationCards[4]!).getByRole('spinbutton')).toHaveValue(1);
 
         const minOffCard = recommendationCards[0]!;
         const offCount = within(minOffCard).getByRole('spinbutton');
@@ -933,6 +933,63 @@ describe('Constraints', () => {
                 }),
             ]);
         });
+    });
+
+    it('shows recommended and important badges for the two-shift N-to-D rule even when severity is fixed', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce(twoShiftWardShiftTypes as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rotationMode: 'TWO',
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+            },
+            templates: [
+                {
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    displayTemplate: '{target}은 N 근무 다음 날 D 근무를 피해요.',
+                    severity: 'HARD' as const,
+                    allowedSeverities: ['HARD' as const],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'target', label: '대상자', inputType: 'SELECT' as const, optionGroup: 'targets'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rules: [
+                {
+                    shiftConstraintRuleId: 70,
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}},
+                    selected: true,
+                    isImportant: true,
+                    displayText: '전체은 N 근무 다음 날 D 근무를 피해요.',
+                    isValid: true,
+                    invalidReason: null,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={95} shiftTeamId={950} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const row = await waitFor(() => {
+            const element = document.getElementById('constraint-rule-saved-70');
+            expect(element).not.toBeNull();
+            return element as HTMLElement;
+        });
+
+        expect(within(row).getByText('권장')).toBeInTheDocument();
+        expect(within(row).getByText('중요')).toBeInTheDocument();
+        expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
     it.each(['THREE', 'MIXED'] as const)('keeps the shared existing rules available in %s catalogs', async (rotationMode) => {
