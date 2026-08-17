@@ -1425,6 +1425,33 @@ export const ko = {
                         "label": "중요 기본 조건",
                         "sentence": "{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target}는 야간 근무 사이에 최소 {count}일의 간격이 필요해요"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}는 야간 근무를 최대 {count}일까지 연속으로 할 수 있어요"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}는 야간 근무를 최소 {count}일 이상 이어서 해요"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}는 연속 야간 근무 후 최소 {count}일의 휴무가 필요해요"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target}는 야간 근무 다음 날 데이·주간 근무를 피해요"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target}는 야간 근무 다음 날 {eveningShift} 근무를 피해요"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target}는 {eveningShift} 근무 다음 날 데이·주간 근무를 피해요"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target}는 {eveningShift} 근무 다음 날 야간 근무를 피해요"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}는 신청 휴무 전날에는 야간 근무를 하면 안 돼요"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "근무·휴식 조건",
                         "sentence": "{target}는 최대 {count}일까지 연속으로 근무할 수 있어요"
@@ -1498,7 +1525,7 @@ export const ko = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "사람별 교대 참여",
-                        "sentence": "{nurseIds}는 {dateScope}에 {participationMode}으로 참여해요"
+                        "sentence": "{target}은 {dateScope}에 {participationMode}으로 참여해요"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "시간대별 필요 인원",
@@ -4469,6 +4496,33 @@ export const en: TLocale = {
                         "label": "Default Important constraint",
                         "sentence": "{target} needs at least {count} days off after an N shift"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target} needs at least {count} days between night shifts"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} can work up to {count} consecutive night shifts"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} works at least {count} consecutive night shifts"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target} needs at least {count} days off after consecutive night shifts"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target} avoids day shifts on the day after night shifts"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target} avoids {eveningShift} shifts on the day after night shifts"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target} avoids day shifts on the day after {eveningShift} shifts"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target} avoids night shifts on the day after {eveningShift} shifts"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target} cannot work a night shift on the day before a requested day off"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "Work-rest constraint",
                         "sentence": "{target} can work up to {count} consecutive days"
@@ -4542,7 +4596,7 @@ export const en: TLocale = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "Rotation participation",
-                        "sentence": "{nurseIds} participate as {participationMode} on {dateScope}"
+                        "sentence": "{target} participate as {participationMode} on {dateScope}"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "Staff by time window",
@@ -7511,6 +7565,33 @@ export const ja: TLocale = {
                         "label": "重要な基本条件",
                         "sentence": "{target}はN勤務後に最低{count}日の休みが必要です"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target}は夜勤の間に最低{count}日の間隔が必要です"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}は夜勤を最大{count}日まで連続して行えます"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}は夜勤を最低{count}日連続で行います"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}は連続夜勤後に最低{count}日の休みが必要です"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target}は夜勤の翌日に日勤を避けます"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target}は夜勤の翌日に{eveningShift}勤務を避けます"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target}は{eveningShift}勤務の翌日に日勤を避けます"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target}は{eveningShift}勤務の翌日に夜勤を避けます"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}は希望休の前日に夜勤をしてはいけません"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "勤務・休み条件",
                         "sentence": "{target}は最大{count}日まで連続勤務できます"
@@ -7584,7 +7665,7 @@ export const ja: TLocale = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "個人別の交代参加",
-                        "sentence": "{nurseIds}は{dateScope}に{participationMode}として参加します"
+                        "sentence": "{target}は{dateScope}に{participationMode}として参加します"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "時間帯別の必要人数",
@@ -10553,6 +10634,33 @@ export const zh: TLocale = {
                         "label": "重要基础条件",
                         "sentence": "{target}在N班后至少需要{count}天休息"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target}的夜班之间至少需要间隔{count}天"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}最多可连续安排{count}天夜班"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}至少连续安排{count}天夜班"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}连续夜班后至少需要{count}天休息"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target}避免夜班次日安排日班"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target}避免夜班次日安排{eveningShift}班"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target}避免{eveningShift}班次日安排日班"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target}避免{eveningShift}班次日安排夜班"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}在申请休息日的前一天不能安排夜班"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "工作休息条件",
                         "sentence": "{target}最多可连续工作{count}天"
@@ -10626,7 +10734,7 @@ export const zh: TLocale = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "个人轮班参与",
-                        "sentence": "{nurseIds}在{dateScope}以{participationMode}方式参与"
+                        "sentence": "{target}在{dateScope}以{participationMode}方式参与"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "按时间段需求人数",
@@ -13595,6 +13703,33 @@ export const th: TLocale = {
                         "label": "เงื่อนไขพื้นฐานสำคัญ",
                         "sentence": "{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target}ต้องมีระยะห่างอย่างน้อย{count}วันระหว่างเวรกลางคืน"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}ทำเวรกลางคืนติดต่อกันได้สูงสุด {count} วัน"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}ทำเวรกลางคืนติดต่อกันอย่างน้อย {count} วัน"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}ต้องมีวันหยุดอย่างน้อย {count} วันหลังทำเวรกลางคืนติดต่อกัน"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target}หลีกเลี่ยงเวรกลางวันในวันถัดจากเวรกลางคืน"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target}หลีกเลี่ยงเวร {eveningShift} ในวันถัดจากเวรกลางคืน"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target}หลีกเลี่ยงเวรกลางวันในวันถัดจากเวร {eveningShift}"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target}หลีกเลี่ยงเวรกลางคืนในวันถัดจากเวร {eveningShift}"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}ห้ามทำเวรกลางคืนในวันก่อนวันหยุดที่ขอไว้"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "เงื่อนไขงานและพัก",
                         "sentence": "{target}ทำงานติดต่อกันได้สูงสุด{count}วัน"
@@ -13668,7 +13803,7 @@ export const th: TLocale = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "การเข้าร่วมกะรายบุคคล",
-                        "sentence": "{nurseIds} เข้าร่วมแบบ {participationMode} ใน {dateScope}"
+                        "sentence": "{target} เข้าร่วมแบบ {participationMode} ใน {dateScope}"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "จำนวนคนตามช่วงเวลา",
@@ -16637,6 +16772,33 @@ export const vi: TLocale = {
                         "label": "Điều kiện cơ bản quan trọng",
                         "sentence": "{target} cần ít nhất {count} ngày nghỉ sau ca N"
                     },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target} cần cách nhau ít nhất {count} ngày giữa các ca đêm"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} chỉ được làm tối đa {count} ngày ca đêm liên tiếp"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target} làm ít nhất {count} ngày ca đêm liên tiếp"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target} cần ít nhất {count} ngày nghỉ sau các ca đêm liên tiếp"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target} tránh ca ngày vào ngày sau ca đêm"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target} tránh ca {eveningShift} vào ngày sau ca đêm"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target} tránh ca ngày vào ngày sau ca {eveningShift}"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target} tránh ca đêm vào ngày sau ca {eveningShift}"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target} không được làm ca đêm vào ngày trước ngày nghỉ đã đăng ký"
+                    },
                     "MAX_CONSECUTIVE_WORK_DAYS": {
                         "label": "Điều kiện làm việc-nghỉ",
                         "sentence": "{target} có thể làm việc liên tiếp tối đa {count} ngày"
@@ -16710,7 +16872,7 @@ export const vi: TLocale = {
                     },
                     "MIXED_ROTATION_PARTICIPATION": {
                         "label": "Tham gia ca theo người",
-                        "sentence": "{nurseIds} tham gia theo {participationMode} vào {dateScope}"
+                        "sentence": "{target} tham gia theo {participationMode} vào {dateScope}"
                     },
                     "TIME_WINDOW_STAFF_COUNT": {
                         "label": "Nhân sự theo khung giờ",

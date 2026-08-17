@@ -1,7 +1,8 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
-import {AlertTriangle, X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {type ReactNode, type SyntheticEvent, useCallback, useLayoutEffect, useState} from 'react';
+import redWarnIcon from '@/shared/assets/images/red_warn.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 
@@ -158,14 +159,8 @@ function ConfirmActionDialog({
                                 {icon}
                             </div>
                         ) : (
-                            <div
-                                className={cn(
-                                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                                    isDanger ? 'bg-[#FFF5F5] text-[#D14343]' : 'bg-main-light text-main-1',
-                                )}
-                                aria-hidden="true"
-                            >
-                                <AlertTriangle className="h-5 w-5" strokeWidth={2.2} />
+                            <div className="shrink-0" aria-hidden="true">
+                                <img src={redWarnIcon} alt="" className="h-12 w-12 object-contain" />
                             </div>
                         )}
                         <Dialog.Close asChild>

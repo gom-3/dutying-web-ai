@@ -193,6 +193,7 @@ function NurseDetailPanel({
     const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
     const [moveTeamMenuOpen, setMoveTeamMenuOpen] = useState(false);
     const [isMovingTeam, setIsMovingTeam] = useState(false);
+    const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [exitConfirmModalOpen, setExitConfirmModalOpen] = useState(false);
     const [isShiftRatioOpen, setIsShiftRatioOpen] = useState(false);
     const [manualShiftRatioWeightKeys, setManualShiftRatioWeightKeys] = useState<ReadonlySet<string>>(() => new Set());
@@ -201,7 +202,8 @@ function NurseDetailPanel({
     const memoTextareaRef = useRef<HTMLTextAreaElement>(null);
     const moveTeamMenuRef = useRef<HTMLDivElement>(null);
     const modalRoot = document.getElementById('modal-root') ?? document.body;
-    const isBusy = nurseSaveStatus === 'saving' || isDeletingNurse || isMovingTeam;
+    const isSavingNurseDetail = nurseSaveStatus === 'saving' || isSavingDraft;
+    const isBusy = isSavingNurseDetail || isDeletingNurse || isMovingTeam;
     const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptor = hasNursePreceptorRole(writeNurse);
     const isPreceptee = hasNursePrecepteeRole(writeNurse);
@@ -458,95 +460,101 @@ function NurseDetailPanel({
 
         if (!isBirthDateValid) return false;
 
-        const originalShiftTypeByWardShiftTypeId = new Map(
-            selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
-                typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
-            ),
-        );
-        const originalShiftTypeByNurseShiftTypeId = new Map(
-            selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
-        );
-        const changedShiftTypes = shiftTypeOptions.filter((draftShiftType) => {
-            const draftShiftTypeKey = getNurseShiftTypeKey(draftShiftType);
-            const originalShiftType =
-                (typeof draftShiftType.wardShiftTypeId === 'number'
-                    ? originalShiftTypeByWardShiftTypeId.get(draftShiftType.wardShiftTypeId)
-                    : undefined) ?? originalShiftTypeByNurseShiftTypeId.get(draftShiftType.apiShiftTypeId);
-            const originalIsPossible = originalShiftType?.isPossible ?? true;
-            const originalTargetRatioWeight = toShiftRatioWeight(originalShiftType?.targetRatioWeight);
-            const draftTargetRatioWeight = toShiftRatioWeight(draftShiftType.targetRatioWeight);
-            const baselineTargetRatioWeight = manualShiftRatioBaselineWeights.get(draftShiftTypeKey);
-            const hasManualTargetRatioWeightChange =
-                manualShiftRatioWeightKeys.has(draftShiftTypeKey) &&
-                typeof baselineTargetRatioWeight === 'number' &&
-                baselineTargetRatioWeight !== draftTargetRatioWeight;
+        setIsSavingDraft(true);
 
-            return (
-                originalIsPossible !== draftShiftType.isPossible ||
-                originalTargetRatioWeight !== draftTargetRatioWeight ||
-                hasManualTargetRatioWeightChange
+        try {
+            const originalShiftTypeByWardShiftTypeId = new Map(
+                selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
+                    typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
+                ),
             );
-        });
-
-        for (const shiftType of changedShiftTypes) {
-            const saved = await updateNurseShift(
-                writeNurse.nurseId,
-                shiftType.apiShiftTypeId,
-                {isPossible: shiftType.isPossible, targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight)},
-                {
-                    wardShiftTypeId: shiftType.wardShiftTypeId,
-                    name: shiftType.name,
-                    shortName: shiftType.shortName ?? '',
-                    targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight),
-                },
+            const originalShiftTypeByNurseShiftTypeId = new Map(
+                selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
             );
+            const changedShiftTypes = shiftTypeOptions.filter((draftShiftType) => {
+                const draftShiftTypeKey = getNurseShiftTypeKey(draftShiftType);
+                const originalShiftType =
+                    (typeof draftShiftType.wardShiftTypeId === 'number'
+                        ? originalShiftTypeByWardShiftTypeId.get(draftShiftType.wardShiftTypeId)
+                        : undefined) ?? originalShiftTypeByNurseShiftTypeId.get(draftShiftType.apiShiftTypeId);
+                const originalIsPossible = originalShiftType?.isPossible ?? true;
+                const originalTargetRatioWeight = toShiftRatioWeight(originalShiftType?.targetRatioWeight);
+                const draftTargetRatioWeight = toShiftRatioWeight(draftShiftType.targetRatioWeight);
+                const baselineTargetRatioWeight = manualShiftRatioBaselineWeights.get(draftShiftTypeKey);
+                const hasManualTargetRatioWeightChange =
+                    manualShiftRatioWeightKeys.has(draftShiftTypeKey) &&
+                    typeof baselineTargetRatioWeight === 'number' &&
+                    baselineTargetRatioWeight !== draftTargetRatioWeight;
 
-            if (!saved) return false;
-        }
-
-        if (changedShiftTypes.length > 0) {
-            setManualShiftRatioBaselineWeights((prev) => {
-                const next = new Map(prev);
-
-                changedShiftTypes.forEach((shiftType) => {
-                    const shiftTypeKey = getNurseShiftTypeKey(shiftType);
-
-                    if (manualShiftRatioWeightKeys.has(shiftTypeKey)) {
-                        next.set(shiftTypeKey, toShiftRatioWeight(shiftType.targetRatioWeight));
-                    }
-                });
-
-                return next;
+                return (
+                    originalIsPossible !== draftShiftType.isPossible ||
+                    originalTargetRatioWeight !== draftTargetRatioWeight ||
+                    hasManualTargetRatioWeightChange
+                );
             });
-        }
 
-        if (hasNurseProfileChanges(selectedNurse, writeNurse)) {
-            const birthDate = normalizeBirthDateForStorage(writeNurse.birthDate);
-            const originalBirthDate = normalizeBirthDateForStorage(selectedNurse.birthDate);
-            const nursePayload: TUpdateNurseDTO = {
-                name: writeNurse.name,
-                phoneNum: writeNurse.phoneNum,
-                isWorker: writeNurse.isWorker,
-                isWardManager: writeNurse.isWardManager,
-                memo: getMemoWithoutRoleMarkers(writeNurse.memo),
-                isPreceptor,
-                isPreceptee,
-            };
+            for (const shiftType of changedShiftTypes) {
+                const saved = await updateNurseShift(
+                    writeNurse.nurseId,
+                    shiftType.apiShiftTypeId,
+                    {isPossible: shiftType.isPossible, targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight)},
+                    {
+                        wardShiftTypeId: shiftType.wardShiftTypeId,
+                        name: shiftType.name,
+                        shortName: shiftType.shortName ?? '',
+                        targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight),
+                    },
+                );
 
-            if (birthDate !== originalBirthDate) {
-                nursePayload.birthDate = birthDate;
+                if (!saved) return false;
             }
 
-            const saved = await updateNurse(writeNurse.nurseId, nursePayload);
+            if (changedShiftTypes.length > 0) {
+                setManualShiftRatioBaselineWeights((prev) => {
+                    const next = new Map(prev);
 
-            if (!saved) return false;
+                    changedShiftTypes.forEach((shiftType) => {
+                        const shiftTypeKey = getNurseShiftTypeKey(shiftType);
+
+                        if (manualShiftRatioWeightKeys.has(shiftTypeKey)) {
+                            next.set(shiftTypeKey, toShiftRatioWeight(shiftType.targetRatioWeight));
+                        }
+                    });
+
+                    return next;
+                });
+            }
+
+            if (hasNurseProfileChanges(selectedNurse, writeNurse)) {
+                const birthDate = normalizeBirthDateForStorage(writeNurse.birthDate);
+                const originalBirthDate = normalizeBirthDateForStorage(selectedNurse.birthDate);
+                const nursePayload: TUpdateNurseDTO = {
+                    name: writeNurse.name,
+                    phoneNum: writeNurse.phoneNum,
+                    isWorker: writeNurse.isWorker,
+                    isWardManager: writeNurse.isWardManager,
+                    memo: getMemoWithoutRoleMarkers(writeNurse.memo),
+                    isPreceptor,
+                    isPreceptee,
+                };
+
+                if (birthDate !== originalBirthDate) {
+                    nursePayload.birthDate = birthDate;
+                }
+
+                const saved = await updateNurse(writeNurse.nurseId, nursePayload);
+
+                if (!saved) return false;
+            }
+
+            if (isDirty) {
+                toast.success(t('page.member.toast.saveNurseInfo'));
+            }
+
+            return true;
+        } finally {
+            setIsSavingDraft(false);
         }
-
-        if (isDirty) {
-            toast.success(t('page.member.toast.saveNurseInfo'));
-        }
-
-        return true;
     }, [
         isBusy,
         isCreateMode,
@@ -1138,10 +1146,17 @@ function NurseDetailPanel({
                     <button
                         type="button"
                         disabled={isBusy || !isDirty || !isBirthDateValid}
-                        className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
+                        className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >
-                        {t('page.member.detail.saveAction')}
+                        {isSavingNurseDetail ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.4} aria-hidden="true" />
+                                <span>{t('page.member.detail.saving')}</span>
+                            </>
+                        ) : (
+                            t('page.member.detail.saveAction')
+                        )}
                     </button>
                 </div>
 

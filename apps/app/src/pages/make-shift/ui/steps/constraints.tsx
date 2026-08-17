@@ -43,6 +43,7 @@ type TSelectOption = {
     hasShiftAvailabilityConfig?: boolean;
     canThreeShift?: boolean;
     canTwoShift?: boolean;
+    divisionNum?: number;
     disabledReasonKey?: TI18nKey;
     raw?: TShiftConstraintOption;
 };
@@ -80,6 +81,10 @@ type TSoftRuleTemplate = {
     sourceTemplate?: TShiftConstraintTemplate;
 };
 type TRulesUpdate = (prev: TShiftConstraintRuleDraft[]) => TShiftConstraintRuleDraft[];
+type TTimeOption = {
+    value: string;
+    label: string;
+};
 
 type TShiftTypeLike = {
     wardShiftTypeId?: number;
@@ -94,6 +99,7 @@ type TShiftTypeLike = {
 type TNurseLike = {
     nurseId?: number;
     name?: string;
+    divisionNum?: number | null;
     isPreceptor?: boolean | null;
     isPreceptee?: boolean | null;
     isWardManager?: boolean | null;
@@ -112,10 +118,20 @@ type TNurseRoleLike = {
 const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
+const SERVER_WARNING_MESSAGE_PREFIX = 'shiftConstraintRule.warning.';
+const SAVED_RULE_WARNING_FALLBACK_MESSAGES: Record<string, string> = {
+    MAX_WORK_BELOW_WORK_OFF_TRIGGER:
+        '최대 연속 근무와 휴무 규칙이 서로 맞지 않아 휴무 규칙이 적용되지 않을 수 있어요. 두 조건의 일수를 다시 확인해 주세요.',
+    EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE:
+        '같은 근무와 적용일의 정확 인원이 1명이라 프리셉티를 다른 간호사와 함께 배정할 수 없어요. 정확 인원을 늘리거나 프리셉티 단독 근무 금지를 권장으로 바꿔 주세요.',
+    NURSE_SHIFT_PREFER_AVOID_CONFLICT:
+        '같은 간호사의 같은 근무에 선호와 회피가 동시에 설정되어 있어요. 둘 중 하나를 삭제하거나 서로 다른 근무로 바꿔 주세요.',
+};
+const INLINE_TIME_OPTION_INTERVAL_MINUTES = 30;
+const INLINE_TIME_MENU_MAX_HEIGHT = 240;
+const INLINE_TIME_MENU_VIEWPORT_PADDING = 12;
 const MIXED_OPERATION_POLICY_TEMPLATE_CODE = 'MIXED_OPERATION_POLICY';
-const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set([
-    'MIXED_ROTATION_PARTICIPATION',
-]);
+const NURSE_SPECIFIC_MIXED_IMPORT_TEMPLATE_CODES = new Set(['MIXED_ROTATION_PARTICIPATION']);
 const NURSE_REFERENCE_PARAM_KEYS = new Set(['nurse', 'nurseA', 'nurseB', 'nurseIds', 'preceptor', 'preceptee']);
 const CONTROL_ACCESSIBLE_LABEL_KEY_BY_PARAM: Record<string, TI18nKey> = {
     nurseIds: 'page.makeShift.constraints.accessibility.field.nurses',
@@ -136,6 +152,14 @@ function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
 
 function hasPrecepteeRole(nurse: TNurseRoleLike | null | undefined) {
     return hasNursePrecepteeRole(nurse);
+}
+
+function getSavedRuleWarningMessage(warning: {code: string; message?: string | null}) {
+    if (warning.message && !warning.message.startsWith(SERVER_WARNING_MESSAGE_PREFIX)) {
+        return warning.message;
+    }
+
+    return SAVED_RULE_WARNING_FALLBACK_MESSAGES[warning.code] ?? '저장됐지만 확인이 필요한 제약조건이 있어요. 조건을 다시 확인해 주세요.';
 }
 
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
@@ -337,11 +361,11 @@ const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_R
 const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
 const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
 const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
-    'MIXED_ROTATION_PARTICIPATION',
-    'TIME_WINDOW_STAFF_COUNT',
-    'STAFF_COUNT_BY_SHIFT',
-    'CORE_MAX_CONTINUOUS_WORK',
-    'CORE_MAX_CONTINUOUS_NIGHT',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const MIXED_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(MIXED_SHIFT_RECOMMENDED_RULE_ORDER);
 const THREE_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
@@ -356,11 +380,14 @@ const MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ]);
-const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
-const MIXED_SHIFT_TEMPLATE_CODES = new Set([
-    'MIXED_ROTATION_PARTICIPATION',
-    'TIME_WINDOW_STAFF_COUNT',
+const MIXED_SHIFT_REMOVED_LEGACY_DEFAULT_RULE_CODES = new Set([
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_E_THEN_N',
+    'CORE_MAX_CONTINUOUS_NIGHT',
 ]);
+const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
+const MIXED_SHIFT_TEMPLATE_CODES = new Set(['MIXED_ROTATION_PARTICIPATION', 'TIME_WINDOW_STAFF_COUNT']);
 const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
@@ -483,10 +510,7 @@ const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_PAIR',
 ]);
-const THREE_SHIFT_LEGACY_VISIBLE_RULE_CODES = new Set([
-    'MAX_CONSECUTIVE_WORK_DAYS',
-    'OFF_AFTER_CONSECUTIVE_WORK',
-]);
+const THREE_SHIFT_LEGACY_VISIBLE_RULE_CODES = new Set(['MAX_CONSECUTIVE_WORK_DAYS', 'OFF_AFTER_CONSECUTIVE_WORK']);
 
 function isSavedRuleVisibleForRotation(templateCode: string, rotationMode: TWardRotationMode) {
     if (rotationMode === 'TWO') return TWO_SHIFT_VISIBLE_RULE_CODES.has(templateCode);
@@ -949,6 +973,7 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
         count: 4,
     },
     MIXED_ROTATION_PARTICIPATION: {
+        target: ALL_CONSTRAINT_TARGET_OPTION,
         participationMode: {type: 'FALLBACK_TWO'},
         dateScope: {type: 'EVERYDAY'},
     },
@@ -971,6 +996,25 @@ const TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'TWO_SHIFT_MAX_CONTINUOUS_NIGHT',
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 };
+const MIXED_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
+    CORE_MIN_NIGHT_INTERVAL: 'MIXED_CORE_MIN_NIGHT_INTERVAL',
+    CORE_MAX_CONTINUOUS_NIGHT: 'MIXED_CORE_MAX_CONTINUOUS_NIGHT',
+    CORE_MIN_CONTINUOUS_NIGHT: 'MIXED_CORE_MIN_CONTINUOUS_NIGHT',
+    CORE_MIN_OFF_AFTER_NIGHT: 'MIXED_CORE_MIN_OFF_AFTER_NIGHT',
+    FORBID_N_THEN_D: 'MIXED_FORBID_N_THEN_D',
+    FORBID_N_THEN_E: 'MIXED_FORBID_N_THEN_E',
+    FORBID_E_THEN_D: 'MIXED_FORBID_E_THEN_D',
+    FORBID_E_THEN_N: 'MIXED_FORBID_E_THEN_N',
+    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+};
+
+function getSentenceTemplateId(templateCode: string, rotationMode: TWardRotationMode) {
+    if (rotationMode === 'TWO') return TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE[templateCode] ?? templateCode;
+
+    if (rotationMode === 'MIXED') return MIXED_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE[templateCode] ?? templateCode;
+
+    return templateCode;
+}
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     target: 'target',
     targets: 'target',
@@ -1076,6 +1120,15 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
     EN: ['E', 'N'],
     NOD: ['N', 'OFF', 'D'],
 };
+const DUTY_CLASSIFICATION_BY_PLACEHOLDER: Record<string, string> = {
+    nightShift: 'NIGHT',
+    eveningShift: 'EVENING',
+};
+const DUTY_CLASSIFICATION_FALLBACK_BY_CLASSIFICATION: Record<string, string> = {
+    DAY: 'D',
+    EVENING: 'E',
+    NIGHT: 'N',
+};
 
 function isRecommendedTemplateCode(templateCode: string, _category?: string, rotationMode: TWardRotationMode = 'THREE') {
     if (rotationMode === 'TWO') return TWO_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
@@ -1125,6 +1178,28 @@ function isLegacyThreeShiftNightIntervalDefault(rule: TShiftConstraintRuleDraft,
         getConstraintOptionType(rule.params.target) === 'ALL' &&
         Number(rule.params.count) === 5
     );
+}
+
+function isRemovedLegacyMixedDefault(rule: TShiftConstraintRuleDraft, rotationMode: TWardRotationMode) {
+    if (
+        rotationMode !== 'MIXED' ||
+        !MIXED_SHIFT_REMOVED_LEGACY_DEFAULT_RULE_CODES.has(rule.templateCode) ||
+        rule.severity !== 'HARD' ||
+        getConstraintOptionType(rule.params.target) !== 'ALL'
+    ) {
+        return false;
+    }
+
+    if (rule.templateCode === 'FORBID_E_THEN_N') return true;
+
+    const expectedCount =
+        rule.templateCode === 'CORE_MAX_CONTINUOUS_WORK' || rule.templateCode === 'CORE_MIN_NIGHT_INTERVAL'
+            ? 5
+            : rule.templateCode === 'CORE_MAX_CONTINUOUS_NIGHT'
+              ? 3
+              : null;
+
+    return expectedCount !== null && Number(rule.params.count) === expectedCount;
 }
 
 function isTemplateSelectable(template: TShiftConstraintTemplate) {
@@ -1281,8 +1356,8 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
 
                 continue;
             }
-        } else if (key === 'nightShift') {
-            parts.push({type: 'dutyClassification', classification: 'NIGHT'});
+        } else if (DUTY_CLASSIFICATION_BY_PLACEHOLDER[key]) {
+            parts.push({type: 'dutyClassification', classification: DUTY_CLASSIFICATION_BY_PLACEHOLDER[key]});
         } else {
             parts.push({type: 'text', text: `{${key}}`});
         }
@@ -1305,7 +1380,9 @@ function interpolateLocalizedPattern(pattern: string, params: Record<string, str
     return pattern.replace(/\{([^}]+)\}/g, (_, key: string) => {
         const normalizedKey = key.trim();
 
-        if (normalizedKey === 'nightShift') return 'N';
+        if (DUTY_CLASSIFICATION_BY_PLACEHOLDER[normalizedKey]) {
+            return DUTY_CLASSIFICATION_FALLBACK_BY_CLASSIFICATION[DUTY_CLASSIFICATION_BY_PLACEHOLDER[normalizedKey]] ?? normalizedKey;
+        }
 
         return params[normalizedKey] ?? '';
     });
@@ -1323,7 +1400,9 @@ function interpolateDisplayTemplate(displayTemplate: string, _controls: TControl
     return displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => {
         const normalizedKey = key.trim();
 
-        if (normalizedKey === 'nightShift') return 'N';
+        if (DUTY_CLASSIFICATION_BY_PLACEHOLDER[normalizedKey]) {
+            return DUTY_CLASSIFICATION_FALLBACK_BY_CLASSIFICATION[DUTY_CLASSIFICATION_BY_PLACEHOLDER[normalizedKey]] ?? normalizedKey;
+        }
 
         return params[normalizedKey] ?? '';
     });
@@ -1334,8 +1413,7 @@ function createLocalizedSoftRuleTemplate(
     t: TTypedT,
     rotationMode: TWardRotationMode = 'THREE',
 ): TSoftRuleTemplate {
-    const sentenceTemplateId =
-        rotationMode === 'TWO' ? (TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE[definition.id] ?? definition.id) : definition.id;
+    const sentenceTemplateId = getSentenceTemplateId(definition.id, rotationMode);
     const sentencePattern = t(getTemplateTranslationKey(sentenceTemplateId, 'sentence'));
 
     return {
@@ -1362,7 +1440,8 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
         const legacyTemplate = legacyTemplates.find(
             (item) => item.id === (LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE[template.templateCode] ?? template.templateCode),
         );
-        const localizedSentencePattern = getTranslatedTemplatePattern(t, template.templateCode);
+        const sentenceTemplateId = getSentenceTemplateId(template.templateCode, rotationMode);
+        const localizedSentencePattern = getTranslatedTemplatePattern(t, sentenceTemplateId);
         const baseSentence = localizedSentencePattern
             ? createSentenceFromPattern(localizedSentencePattern, controls)
             : canUseLegacySentence(legacyTemplate, controls)
@@ -1501,6 +1580,44 @@ function getNurseOptionUnavailableReasonKey(option: TSelectOption, requiredMode:
     return getNurseUnavailableReasonKey(requiredMode);
 }
 
+function getTargetNurseOptions(option: TSelectOption, nurseOptions: TSelectOption[]) {
+    const type = getConstraintOptionType(option.raw) ?? option.value;
+
+    if (type === 'ALL') return nurseOptions;
+
+    if (type === 'DIVISION') {
+        const divisionNum = option.raw?.divisionNum;
+
+        return nurseOptions.filter((nurseOption) => nurseOption.divisionNum === divisionNum);
+    }
+
+    if (type === 'NURSE') {
+        return nurseOptions.filter((nurseOption) => nurseOption.raw?.nurseId === option.raw?.nurseId || nurseOption.value === option.value);
+    }
+
+    return [];
+}
+
+function getTargetOptionUnavailableReasonKey(
+    option: TSelectOption,
+    requiredMode: string | null,
+    nurseOptions: TSelectOption[],
+): TI18nKey | undefined {
+    if (!requiredMode) return undefined;
+
+    const targetNurseOptions = getTargetNurseOptions(option, nurseOptions);
+
+    if (!targetNurseOptions.length) return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
+
+    const unavailableNurse = targetNurseOptions.find((nurseOption) => !isNurseOptionEligibleForMode(nurseOption, requiredMode));
+
+    return unavailableNurse ? getNurseOptionUnavailableReasonKey(unavailableNurse, requiredMode) : undefined;
+}
+
+function isTargetOptionEligibleForMode(option: TSelectOption, requiredMode: string | null, nurseOptions: TSelectOption[]) {
+    return !getTargetOptionUnavailableReasonKey(option, requiredMode, nurseOptions);
+}
+
 function getEligibleNurseOptions(template: TSoftRuleTemplate, params: Record<string, unknown>, options: TSelectOption[]) {
     const requiredMode = getRequiredMixedNurseMode(template, params);
 
@@ -1594,6 +1711,7 @@ function getDefaultParams(
                 {...configuredDefaults, ...params},
                 optionMap[control.optionsKey ?? ''] ?? [],
             );
+
             params[control.key] = availableOptions.slice(0, 1).map(getSelectOptionParamValue);
 
             return;
@@ -2133,6 +2251,10 @@ function mergeSelectOptionDetails(left: TSelectOption, right: TSelectOption): TS
         isOff: left.isOff ?? right.isOff,
         isPreceptor: left.isPreceptor === true || right.isPreceptor === true ? true : (left.isPreceptor ?? right.isPreceptor),
         isPreceptee: left.isPreceptee === true || right.isPreceptee === true ? true : (left.isPreceptee ?? right.isPreceptee),
+        hasShiftAvailabilityConfig: left.hasShiftAvailabilityConfig ?? right.hasShiftAvailabilityConfig,
+        canThreeShift: left.canThreeShift ?? right.canThreeShift,
+        canTwoShift: left.canTwoShift ?? right.canTwoShift,
+        divisionNum: left.divisionNum ?? right.divisionNum,
         raw: mergeConstraintOptionDetails(left.raw, right.raw),
     };
 }
@@ -2521,12 +2643,22 @@ function getOptionsForControl(
     const options = optionMap[control.optionsKey ?? ''] ?? [];
     const requiredMixedNurseMode =
         control.kind === 'multiSelect' && control.optionsKey === 'nurse' ? getRequiredMixedNurseMode(template, params) : null;
+    const requiredMixedTargetMode =
+        control.kind === 'select' && control.optionsKey === 'target' && template.id === 'MIXED_ROTATION_PARTICIPATION'
+            ? getRequiredMixedNurseMode(template, params)
+            : null;
     const resolvedOptions = requiredMixedNurseMode
         ? options.map((option) =>
               isNurseOptionEligibleForMode(option, requiredMixedNurseMode)
                   ? option
                   : {...option, disabledReasonKey: getNurseOptionUnavailableReasonKey(option, requiredMixedNurseMode)},
           )
+        : requiredMixedTargetMode
+          ? options.map((option) => {
+                const disabledReasonKey = getTargetOptionUnavailableReasonKey(option, requiredMixedTargetMode, optionMap.nurse ?? []);
+
+                return disabledReasonKey ? {...option, disabledReasonKey} : option;
+            })
         : options;
 
     if (template.targetLockedToAll && control.optionsKey === 'target') {
@@ -2743,6 +2875,7 @@ type TInlineDropdownProps = {
 };
 
 function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TInlineDropdownProps) {
+    const {t} = useTypedTranslation();
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
@@ -2834,6 +2967,8 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                       >
                           {options.map((option) => {
                               const isSelected = option.label === selected?.label;
+                              const disabledReason = option.disabledReasonKey ? t(option.disabledReasonKey) : null;
+                              const disabled = Boolean(disabledReason && !isSelected);
 
                               return (
                                   <button
@@ -2841,17 +2976,28 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                                       type="button"
                                       role="option"
                                       aria-selected={isSelected}
+                                      aria-disabled={disabled}
+                                      disabled={disabled}
+                                      title={disabledReason ?? undefined}
                                       className={cn(
                                           'flex w-full cursor-pointer items-center px-3 py-2 font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
                                           alignOptionsLeft ? 'justify-start text-left' : 'justify-center text-center',
                                           isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                          disabled ? 'cursor-not-allowed text-gray-4 opacity-55 hover:bg-transparent' : null,
                                       )}
                                       onClick={() => {
+                                          if (disabled) return;
+
                                           onChange(option);
                                           setOpen(false);
                                       }}
                                   >
                                       <SelectOptionContent option={option} />
+                                      {disabledReason ? (
+                                          <span className="ml-2 shrink-0 rounded-full bg-gray-7 px-1.5 py-0.5 text-[11px] font-semibold text-gray-4">
+                                              {disabledReason}
+                                          </span>
+                                      ) : null}
                                   </button>
                               );
                           })}
@@ -3042,15 +3188,200 @@ function InlineNumberInput({
     );
 }
 
+function parseInlineTimeValue(value: string) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+
+    if (!match) return null;
+
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+
+    if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return {
+        hour,
+        minute,
+        value: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    };
+}
+
+function formatInlineTimeLabel(value: string, locale: string) {
+    const parsed = parseInlineTimeValue(value);
+
+    if (!parsed) return value || '--:--';
+
+    try {
+        return new Intl.DateTimeFormat(locale, {hour: '2-digit', minute: '2-digit', hour12: true}).format(
+            new Date(2026, 0, 1, parsed.hour, parsed.minute),
+        );
+    } catch {
+        const period = parsed.hour < 12 ? '오전' : '오후';
+        const displayHour = parsed.hour % 12 || 12;
+
+        return `${period} ${String(displayHour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')}`;
+    }
+}
+
+function compareInlineTimeValues(left: string, right: string) {
+    const leftParsed = parseInlineTimeValue(left);
+    const rightParsed = parseInlineTimeValue(right);
+
+    return (leftParsed?.hour ?? 0) * 60 + (leftParsed?.minute ?? 0) - ((rightParsed?.hour ?? 0) * 60 + (rightParsed?.minute ?? 0));
+}
+
+function getInlineTimeOptions(value: string, locale: string): TTimeOption[] {
+    const options = Array.from({length: (24 * 60) / INLINE_TIME_OPTION_INTERVAL_MINUTES}, (_, index) => {
+        const totalMinutes = index * INLINE_TIME_OPTION_INTERVAL_MINUTES;
+        const hour = Math.floor(totalMinutes / 60);
+        const minute = totalMinutes % 60;
+        const optionValue = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+        return {value: optionValue, label: formatInlineTimeLabel(optionValue, locale)};
+    });
+    const parsedValue = parseInlineTimeValue(value);
+
+    if (parsedValue && !options.some((option) => option.value === parsedValue.value)) {
+        options.push({value: parsedValue.value, label: formatInlineTimeLabel(parsedValue.value, locale)});
+        options.sort((left, right) => compareInlineTimeValues(left.value, right.value));
+    }
+
+    return options;
+}
+
 function InlineTimeInput({value, label, onChange}: {value: string; label: string; onChange: (value: string) => void}) {
+    const {i18n} = useTranslation();
+    const locale = i18n.resolvedLanguage ?? i18n.language ?? 'ko';
+    const selectedValue = parseInlineTimeValue(value)?.value ?? value;
+    const options = useMemo(() => getInlineTimeOptions(selectedValue, locale), [locale, selectedValue]);
+    const selectedLabel = formatInlineTimeLabel(selectedValue, locale);
+    const [open, setOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+    const updateMenuPosition = useCallback(() => {
+        if (!triggerRef.current) return;
+
+        const rect = triggerRef.current.getBoundingClientRect();
+        const estimatedMenuHeight = Math.min(INLINE_TIME_MENU_MAX_HEIGHT, Math.max(44, options.length * 38 + 8));
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const nextOpenUpward = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+        const minWidth = Math.max(rect.width, 126);
+        const left = Math.max(
+            INLINE_TIME_MENU_VIEWPORT_PADDING,
+            Math.min(rect.left, window.innerWidth - minWidth - INLINE_TIME_MENU_VIEWPORT_PADDING),
+        );
+
+        setOpenUpward(nextOpenUpward);
+        setMenuPosition(
+            nextOpenUpward ? {left, bottom: window.innerHeight - rect.top + 4, minWidth} : {left, top: rect.bottom + 4, minWidth},
+        );
+    }, [options.length]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (triggerRef.current?.contains(event.target as Node) || menuRef.current?.contains(event.target as Node)) return;
+
+            setOpen(false);
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+
+        updateMenuPosition();
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', updateMenuPosition);
+        window.addEventListener('scroll', updateMenuPosition, true);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('resize', updateMenuPosition);
+            window.removeEventListener('scroll', updateMenuPosition, true);
+        };
+    }, [open, updateMenuPosition]);
+
+    useEffect(() => {
+        if (!open || !menuRef.current) return;
+
+        menuRef.current.querySelector<HTMLElement>('[data-selected-time="true"]')?.scrollIntoView({block: 'nearest'});
+    }, [open, selectedValue]);
+
+    const menuStyle = menuPosition
+        ? {
+              left: `${menuPosition.left}px`,
+              minWidth: `${menuPosition.minWidth}px`,
+              ...(openUpward ? {bottom: `${menuPosition.bottom}px`} : {top: `${menuPosition.top}px`}),
+          }
+        : undefined;
+
     return (
-        <input
-            type="time"
-            value={value}
-            aria-label={label}
-            onChange={(event) => onChange(event.currentTarget.value)}
-            className="h-8 w-[112px] rounded-[8px] bg-white px-2 font-apple text-[14px] font-semibold text-main-1 focus-visible:bg-main-light focus-visible:text-sub-1 focus-visible:outline-none"
-        />
+        <div ref={triggerRef} className="relative inline-flex">
+            <button
+                type="button"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={open}
+                aria-label={label}
+                aria-valuetext={selectedLabel}
+                value={selectedValue}
+                onClick={() => {
+                    if (!open) updateMenuPosition();
+
+                    setOpen((previous) => !previous);
+                }}
+                className="inline-flex h-8 min-w-[126px] cursor-pointer items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 transition-[box-shadow,background-color] hover:bg-[#FBFAFF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+            >
+                <span className="tabular-nums">{selectedLabel}</span>
+                <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+
+            {open && menuPosition && typeof document !== 'undefined'
+                ? createPortal(
+                      <div
+                          ref={menuRef}
+                          role="listbox"
+                          aria-label={label}
+                          style={menuStyle}
+                          className={`fixed z-[2147483647] max-h-[240px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                              openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+                          }`}
+                      >
+                          {options.map((option) => {
+                              const isSelected = option.value === selectedValue;
+
+                              return (
+                                  <button
+                                      key={option.value}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={isSelected}
+                                      data-selected-time={isSelected ? 'true' : undefined}
+                                      className={`flex min-h-9 w-full cursor-pointer items-center justify-between gap-3 px-3 py-2 text-left font-apple text-[14px] leading-[1.4] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1 ${
+                                          isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1'
+                                      }`}
+                                      onClick={() => {
+                                          onChange(option.value);
+                                          setOpen(false);
+                                      }}
+                                  >
+                                      <span className="tabular-nums">{option.label}</span>
+                                      <span
+                                          className={`size-1.5 shrink-0 rounded-full ${isSelected ? 'bg-main-1' : 'bg-transparent'}`}
+                                          aria-hidden="true"
+                                      />
+                                  </button>
+                              );
+                          })}
+                      </div>,
+                      document.body,
+                  )
+                : null}
+        </div>
     );
 }
 
@@ -3101,14 +3432,15 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                 }
 
                 if (part.type === 'dutyClassification') {
+                    const fallbackLabel = DUTY_CLASSIFICATION_FALLBACK_BY_CLASSIFICATION[part.classification] ?? part.classification;
                     const option = [...(optionMap.duty ?? []), ...(optionMap.dutyStrict ?? []), ...(optionMap.dutyReference ?? [])].find(
                         (candidate) => candidate.classification === part.classification,
                     ) ?? {
                         value: part.classification,
-                        label: part.classification === 'NIGHT' ? 'N' : part.classification,
+                        label: fallbackLabel,
                         kind: 'duty' as const,
-                        shortName: part.classification === 'NIGHT' ? 'N' : part.classification,
-                        name: part.classification === 'NIGHT' ? 'N' : part.classification,
+                        shortName: fallbackLabel,
+                        name: fallbackLabel,
                         color: '#3580FF',
                         classification: part.classification,
                     };
@@ -3183,7 +3515,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                     );
                 }
 
-                const options = getOptionsForControl(control, template, displayParams, optionMap);
+                const options = getOptionsForControl(control, template, params, optionMap);
                 const selected = getControlDisplayValue(control, template, displayParams, optionMap);
                 const fixedNightOption = getFixedTwoShiftNightOption(template, control, optionMap);
 
@@ -3612,8 +3944,22 @@ type TSoftModalProps = {
 const CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR =
     'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])';
 
-function getSoftRuleAddIssue(template: TSoftRuleTemplate, params: Record<string, unknown>): TI18nKey | null {
+function getSoftRuleAddIssue(
+    template: TSoftRuleTemplate,
+    params: Record<string, unknown>,
+    optionMap: Record<string, TSelectOption[]> = {},
+): TI18nKey | null {
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
+
+    if (template.id === 'MIXED_ROTATION_PARTICIPATION' && template.controls.some((control) => control.key === 'target')) {
+        const targetOptions = optionMap.target ?? [];
+        const targetValue = params.target;
+        const targetOption = targetOptions.find((option) => doesSelectOptionMatchValue(option, targetValue));
+
+        if (!targetOption || !isTargetOptionEligibleForMode(targetOption, getRequiredMixedNurseMode(template, params), optionMap.nurse ?? [])) {
+            return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
+        }
+    }
 
     if (template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') && selectedNurseCount < 1) {
         return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
@@ -3767,7 +4113,7 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                     aria-labelledby="constraint-add-dialog-title"
                     aria-describedby="constraint-add-dialog-description"
                     tabIndex={-1}
-                    className="relative flex h-[min(90dvh,900px)] max-h-[calc(100dvh-1rem)] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white"
+                    className="relative flex h-[min(90dvh,900px)] max-h-[calc(100dvh-1rem)] w-full max-w-[960px] flex-col overflow-hidden rounded-[18px] bg-white"
                 >
                     <div className="flex shrink-0 items-start justify-between px-6 pt-6 pb-4">
                         <div>
@@ -3815,7 +4161,7 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                         {visibleTemplates.map((template) => {
                             const templateParams = draftParams[template.id] ?? {};
                             const addDescription = template.buildText(normalizeSoftRuleParams(template, templateParams, optionMap));
-                            const addIssue = getSoftRuleAddIssue(template, templateParams);
+                            const addIssue = getSoftRuleAddIssue(template, templateParams, optionMap);
                             const canAdd = addIssue === null;
                             const addIssueId = `constraint-add-issue-${template.id}`;
 
@@ -3841,12 +4187,6 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                                 }))
                                             }
                                         />
-                                        {template.sourceTemplate?.supportedInGenerator === false &&
-                                        MIXED_SHIFT_TEMPLATE_CODES.has(template.id) ? (
-                                            <p className="mt-1 font-apple text-[11px] font-medium text-gray-4">
-                                                {t('page.makeShift.constraints.mixed.generatorPending')}
-                                            </p>
-                                        ) : null}
                                         {addIssue ? (
                                             <p
                                                 id={addIssueId}
@@ -4216,6 +4556,7 @@ export function Constraints({
             value: String(nurse.nurseId),
             label: String(nurse.name),
             kind: 'nurse',
+            divisionNum: nurse.divisionNum ?? undefined,
             isPreceptor: hasPreceptorRole(nurse),
             isPreceptee: hasPrecepteeRole(nurse),
             ...getNurseRotationEligibility(nurse),
@@ -4234,7 +4575,8 @@ export function Constraints({
             .filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse))
             .map(toNurseOption);
         const divisionOptions: TSelectOption[] = (currentShiftTeam?.divisions ?? []).map((division) => {
-            const label = division.name?.trim() || `그룹${division.divisionNum}`;
+            const trimmedName = division.name?.trim();
+            const label = trimmedName && trimmedName.length > 0 ? trimmedName : `그룹${division.divisionNum}`;
 
             return {
                 value: `DIVISION:${division.divisionNum}`,
@@ -4429,14 +4771,16 @@ export function Constraints({
 
         if (!hasLegacyRecommendedDefaults(savedRules, rotationMode)) return;
 
-        const hasLegacyNightIntervalDefault = savedRules.some((rule) => isLegacyThreeShiftNightIntervalDefault(rule, rotationMode));
+        const prunedSavedRules = savedRules.filter((rule) => !isRemovedLegacyMixedDefault(rule, rotationMode));
+        const hasRemovedLegacyMixedDefaults = prunedSavedRules.length !== savedRules.length;
+        const hasLegacyNightIntervalDefault = prunedSavedRules.some((rule) => isLegacyThreeShiftNightIntervalDefault(rule, rotationMode));
         const migratedSavedRules = hasLegacyNightIntervalDefault
-            ? savedRules.map((rule) =>
+            ? prunedSavedRules.map((rule) =>
                   isLegacyThreeShiftNightIntervalDefault(rule, rotationMode)
                       ? {...rule, severity: 'SOFT' as const, isImportant: false}
                       : rule,
               )
-            : savedRules;
+            : prunedSavedRules;
         const existingTemplateCodes = new Set(migratedSavedRules.map((rule) => rule.templateCode));
         const missingRecommendedRules = addableSoftTemplates
             .filter((template) => template.isRecommended && !existingTemplateCodes.has(template.id))
@@ -4447,7 +4791,7 @@ export function Constraints({
                     optionMap,
                 );
 
-                if (getSoftRuleAddIssue(template, params)) return null;
+                if (getSoftRuleAddIssue(template, params, optionMap)) return null;
 
                 return {
                     clientId: createClientId({templateCode: template.id}),
@@ -4465,7 +4809,7 @@ export function Constraints({
             })
             .filter((rule): rule is TShiftConstraintRuleDraft => rule !== null);
 
-        if (hasLegacyNightIntervalDefault || missingRecommendedRules.length) {
+        if (hasLegacyNightIntervalDefault || hasRemovedLegacyMixedDefaults || missingRecommendedRules.length) {
             replaceRules([...migratedSavedRules, ...missingRecommendedRules]);
         }
     }, [
@@ -4702,7 +5046,7 @@ export function Constraints({
                     if (item.clientId !== clientId) return item;
 
                     const nextParams = normalizeCombinationParams(template, {...item.params, [key]: value}, optionMap);
-                    const addIssue = getSoftRuleAddIssue(template, nextParams);
+                    const addIssue = getSoftRuleAddIssue(template, nextParams, optionMap);
 
                     if (addIssue) {
                         toast.error(t(addIssue));
@@ -4826,7 +5170,7 @@ export function Constraints({
                                                 key={`${warning.code}-${warning.relatedTemplateCodes.join('-')}-${index}`}
                                                 data-warning-code={warning.code}
                                             >
-                                                {warning.message}
+                                                {getSavedRuleWarningMessage(warning)}
                                             </li>
                                         ))}
                                     </ul>

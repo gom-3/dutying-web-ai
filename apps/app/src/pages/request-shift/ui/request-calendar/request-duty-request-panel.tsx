@@ -7,7 +7,7 @@ import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
 import i18n from '@/i18n';
-import requestEmptyShiftImage from '@/shared/assets/images/request-empty-shift.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import PageState from '@/shared/ui/PageState';
@@ -56,10 +56,10 @@ const REVIEW_PANEL_SURFACE_CLASS_NAME = 'bg-gray-7';
 const REVIEW_ROW_SURFACE_CLASS_NAME = 'bg-white';
 const REQUEST_EMPTY_VISUAL = (
     <img
-        src={requestEmptyShiftImage}
+        src={pageEmptyStateIcon}
         alt=""
         aria-hidden="true"
-        className="h-[180px] w-[208px] object-contain"
+        className="h-[198px] w-[229px] object-contain"
         draggable={false}
         loading="lazy"
         decoding="async"

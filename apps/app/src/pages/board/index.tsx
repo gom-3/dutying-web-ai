@@ -34,6 +34,7 @@ import {
     type TWardBoardScheduleId,
     type TUpdateWardBoardScheduleDTO,
 } from '@/shared/api/board';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
@@ -2928,11 +2929,11 @@ function BoardPage() {
                                 className="py-0"
                                 visual={
                                     <img
-                                        src="/img/board-empty-nurse.png"
+                                        src={pageEmptyStateIcon}
                                         alt=""
                                         aria-hidden="true"
                                         draggable={false}
-                                        className="h-auto w-[153px] object-contain"
+                                        className="h-auto w-[168px] object-contain"
                                     />
                                 }
                             />

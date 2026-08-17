@@ -5,7 +5,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
-import redWarnIcon from '@/shared/assets/images/red_warn.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
@@ -198,11 +198,11 @@ export const MakeShiftPageView = () => {
                                     titleClassName="mx-auto max-w-full break-normal whitespace-normal [overflow-wrap:anywhere] [text-wrap:balance]"
                                     visual={
                                         <img
-                                            src="/img/empty-schedule-nurse.webp"
+                                            src={pageEmptyStateIcon}
                                             alt=""
                                             aria-hidden="true"
                                             decoding="async"
-                                            className="h-[clamp(120px,21vh,168px)] w-auto object-contain select-none sm:h-[clamp(132px,25vh,210px)]"
+                                            className="h-[clamp(132px,23.1vh,185px)] w-auto object-contain select-none sm:h-[clamp(145px,27.5vh,231px)]"
                                         />
                                     }
                                 >
@@ -255,11 +255,6 @@ export const MakeShiftPageView = () => {
                 confirmLabel={t('page.makeShift.aiRefill.exitGuard.leaveConfirm')}
                 cancelLabel={t('page.makeShift.aiRefill.exitGuard.stayCancel')}
                 tone="danger"
-                icon={
-                    aiAutofillExitDialogReason === 'unsavedChanges' ? (
-                        <img src={redWarnIcon} alt="" className="h-12 w-12 object-contain" />
-                    ) : undefined
-                }
                 onClose={closeAiAutofillExitDialog}
                 onConfirm={confirmAiAutofillExitDialog}
             />

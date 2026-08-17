@@ -1,6 +1,7 @@
-import {ArrowLeft, ChevronRight, DoorOpen} from 'lucide-react';
+import {ArrowLeft, ChevronRight} from 'lucide-react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import wardCodeEnterIcon from '@/shared/assets/images/ward-code-enter.png';
 import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings.png';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -44,7 +45,7 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                     className="group flex min-h-36 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-6 text-left transition-colors hover:bg-gray-7"
                     onClick={() => navigate(ROUTE.ONBOARDING_WARD_CREATE, {state: {resetOnboardingWardCreateStep: true}})}
                 >
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-main-light text-main-1">
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center">
                         <img src={wardInfoSettingsIcon} alt="" aria-hidden="true" className="h-12 w-12 object-contain" />
                     </span>
                     <span className="min-w-0 flex-1">
@@ -59,8 +60,8 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                     className="group flex min-h-24 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-5 text-left transition-colors hover:bg-gray-7"
                     onClick={() => navigate(ROUTE.ENTER_WARD)}
                 >
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-main-light text-main-1">
-                        <DoorOpen className="h-5 w-5" />
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center">
+                        <img src={wardCodeEnterIcon} alt="" aria-hidden="true" className="h-10 w-10 object-contain" />
                     </span>
                     <span className="min-w-0 flex-1">
                         <span className="block text-[17px] leading-tight font-semibold text-sub-1">{t('page.register.select.enterTitle')}</span>

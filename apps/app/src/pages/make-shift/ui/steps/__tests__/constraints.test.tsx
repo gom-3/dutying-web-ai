@@ -668,6 +668,29 @@ describe('Constraints', () => {
         expect(document.getElementById('make_constraint_add_button')).toBeEnabled();
     });
 
+    it('shows a readable saved-warning message when the server returns a warning key', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [],
+            warnings: [
+                {
+                    code: 'NURSE_SHIFT_PREFER_AVOID_CONFLICT',
+                    message: 'shiftConstraintRule.warning.NURSE_SHIFT_PREFER_AVOID_CONFLICT',
+                    relatedTemplateCodes: ['NURSE_PREFER_SHIFT', 'NURSE_AVOID_SHIFT'],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        expect(
+            await screen.findByText('같은 간호사의 같은 근무에 선호와 회피가 동시에 설정되어 있어요. 둘 중 하나를 삭제하거나 서로 다른 근무로 바꿔 주세요.'),
+        ).toHaveAttribute('data-warning-code', 'NURSE_SHIFT_PREFER_AVOID_CONFLICT');
+        expect(screen.queryByText('shiftConstraintRule.warning.NURSE_SHIFT_PREFER_AVOID_CONFLICT')).not.toBeInTheDocument();
+    });
+
     it('keeps previous warnings during an optimistic save and replaces them from the successful response', async () => {
         type TSaveResponse = Awaited<ReturnType<typeof WardAPI.updateShiftConstraintRules>>;
 
@@ -991,18 +1014,184 @@ describe('Constraints', () => {
 
         await userEvent.click(screen.getByRole('button', {name: rotationMode === 'MIXED' ? '금지 패턴' : '야간·전환'}));
 
-        expect(screen.getByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /제약 조건 추가:.*N 근무 후 최소.*휴무/})).toBeInTheDocument();
+        if (rotationMode === 'MIXED') {
+            expect(screen.getByRole('button', {name: /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /제약 조건 추가:.*야간 근무 후 최소.*휴무/})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).not.toBeInTheDocument();
+        } else {
+            expect(screen.getByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /제약 조건 추가:.*N 근무 후 최소.*휴무/})).toBeInTheDocument();
+        }
         expect(screen.getAllByRole('button', {name: '모든 간호사'}).length).toBeGreaterThan(0);
 
-        await userEvent.click(screen.getByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/}));
+        await userEvent.click(
+            screen.getByRole('button', {
+                name:
+                    rotationMode === 'MIXED'
+                        ? /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/
+                        : /제약 조건 추가:.*N.*다음 날.*D/,
+            }),
+        );
 
-        const importantToggle = await screen.findByRole('checkbox', {
-            name: rotationMode === 'THREE' ? '중요 표시 해제' : '중요 표시',
+        const importantToggle = await screen.findByRole('checkbox', {name: '중요 표시 해제'});
+
+        expect(importantToggle).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('button', {name: '모든 간호사'})).toBeInTheDocument();
+    });
+
+    it('renders mixed night rules with group wording instead of two-shift shift names', async () => {
+        const mixedTemplateCodes = [
+            'CORE_MIN_NIGHT_INTERVAL',
+            'CORE_MAX_CONTINUOUS_NIGHT',
+            'CORE_MIN_CONTINUOUS_NIGHT',
+            'CORE_MIN_OFF_AFTER_NIGHT',
+            'FORBID_N_THEN_D',
+            'FORBID_N_THEN_E',
+            'FORBID_E_THEN_D',
+            'FORBID_E_THEN_N',
+            'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+        ];
+        const categoryByCode: Record<string, string> = {
+            FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
+            FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
+            FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
+            FORBID_E_THEN_N: 'FORBIDDEN_PATTERN',
+        };
+        const template = (templateCode: string) => ({
+            templateCode,
+            category: categoryByCode[templateCode] ?? 'CORE',
+            displayTemplate: `{target}는 2교대 야간 ${templateCode} SENTINEL`,
+            severity: 'SOFT' as const,
+            allowedSeverities: ['HARD' as const, 'SOFT' as const],
+            supportedInGenerator: true,
+            supportedInValidator: true,
+            slots:
+                templateCode.startsWith('FORBID_') || templateCode === 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF'
+                    ? [{key: 'target', label: 'Target', inputType: 'SELECT' as const, optionGroup: 'TARGETS'}]
+                    : [
+                          {key: 'target', label: 'Target', inputType: 'SELECT' as const, optionGroup: 'TARGETS'},
+                          {key: 'count', label: 'Count', inputType: 'NUMBER' as const, min: 1, max: 31},
+                      ],
         });
 
-        expect(importantToggle).toHaveAttribute('aria-checked', rotationMode === 'THREE' ? 'true' : 'false');
-        expect(screen.getByRole('button', {name: '모든 간호사'})).toBeInTheDocument();
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([
+            ...twoShiftWardShiftTypes,
+            {...threeShiftWardShiftTypes[0], name: '데이'},
+            {...threeShiftWardShiftTypes[1], name: '이브닝'},
+            {...threeShiftWardShiftTypes[2], name: '나이트'},
+        ] as never);
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rules: mixedTemplateCodes.map((templateCode, index) => ({
+                shiftConstraintRuleId: 300 + index,
+                templateCode,
+                category: categoryByCode[templateCode] ?? 'CORE',
+                severity: 'SOFT' as const,
+                sortOrder: index + 1,
+                params: recommendedDefaultParamsByTemplateCode[templateCode],
+                selected: true,
+                isImportant: false,
+                displayText: `모든 간호사는 2교대 야간 ${templateCode} OLD`,
+                isValid: true,
+                invalidReason: null,
+            })),
+        });
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rotationMode: 'MIXED',
+            options: {
+                targets: [{type: 'ALL', label: '모든 간호사'}],
+            },
+            templates: mixedTemplateCodes.map(template),
+        });
+
+        render(<Constraints wardId={95} shiftTeamId={950} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => expect(document.body.textContent).toContain('야간 근무 사이에 최소'));
+
+        expect(document.body.textContent).toContain('야간 근무를 최대');
+        expect(document.body.textContent).toContain('연속 야간 근무 후 최소');
+        expect(document.body.textContent).toContain('야간 근무 다음 날 데이·주간 근무');
+        expect(document.body.textContent).toContain('이브닝 근무 다음 날 야간 근무');
+        expect(screen.getAllByText('이브닝').some((node) => Boolean(node.closest('span[class*="text-white"]')))).toBe(true);
+        expect(document.body.textContent).toContain('신청 휴무 전날에는 야간 근무를 하면 안 돼요');
+        expect(document.body.textContent).not.toContain('2교대 야간');
+        expect(document.body.textContent).not.toContain('2교대 주간');
+        expect(document.body.textContent).not.toContain('N 근무 사이');
+    });
+
+    it('shows only the requested mixed-shift templates as recommendations', async () => {
+        const recommendedOrder = [
+            'FORBID_N_THEN_D',
+            'FORBID_N_THEN_E',
+            'FORBID_E_THEN_D',
+            'CORE_MIN_OFF_AFTER_NIGHT',
+            'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+        ];
+        const oldRecommendedCodes = [
+            'CORE_MAX_CONTINUOUS_WORK',
+            'CORE_MIN_NIGHT_INTERVAL',
+            'FORBID_E_THEN_N',
+            'CORE_MAX_CONTINUOUS_NIGHT',
+        ];
+        const categoryByCode: Record<string, string> = {
+            FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
+            FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
+            FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
+            FORBID_E_THEN_N: 'FORBIDDEN_PATTERN',
+        };
+        const template = (templateCode: string) => ({
+            templateCode,
+            category: categoryByCode[templateCode] ?? 'CORE',
+            displayTemplate: `sentinel-${templateCode.toLowerCase()}`,
+            severity: 'SOFT' as const,
+            allowedSeverities: ['HARD' as const, 'SOFT' as const],
+            supportedInGenerator: true,
+            supportedInValidator: true,
+            slots:
+                templateCode.startsWith('FORBID_') || templateCode === 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF'
+                    ? [{key: 'target', label: 'Target', inputType: 'SELECT' as const, optionGroup: 'TARGETS'}]
+                    : [
+                          {key: 'target', label: 'Target', inputType: 'SELECT' as const, optionGroup: 'TARGETS'},
+                          {key: 'count', label: 'Count', inputType: 'NUMBER' as const, min: 1, max: 31},
+                      ],
+        });
+
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 96,
+            shiftTeamId: 960,
+            rotationMode: 'MIXED',
+            options: {
+                targets: [{type: 'ALL', label: '모든 간호사'}],
+            },
+            templates: [...recommendedOrder, ...oldRecommendedCodes].map(template),
+        });
+
+        render(<Constraints wardId={96} shiftTeamId={960} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(
+            await waitFor(() => {
+                const button = document.getElementById('make_constraint_add_button');
+
+                expect(button).toBeInTheDocument();
+
+                return button as HTMLButtonElement;
+            }),
+        );
+
+        const dialog = screen.getByRole('dialog');
+        const recommendationCards = Array.from(dialog.querySelectorAll<HTMLElement>('[data-constraint-template-card]'));
+
+        expect(recommendationCards.map((card) => card.dataset.constraintTemplateCard)).toEqual(recommendedOrder);
+        expect(screen.getAllByTitle('추가')).toHaveLength(5);
+        oldRecommendedCodes.forEach((templateCode) => {
+            expect(dialog.querySelector(`[data-constraint-template-card="${templateCode}"]`)).not.toBeInTheDocument();
+        });
     });
 
     it('shows exactly the 20 three-shift rules without the removed skills and roles category', async () => {
@@ -1248,6 +1437,56 @@ describe('Constraints', () => {
         });
     });
 
+    it('prunes removed legacy defaults for an existing mixed-shift team', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 97,
+            shiftTeamId: 970,
+            rules: recommendedTemplateCodes.map((templateCode, index) => ({
+                shiftConstraintRuleId: index + 200,
+                templateCode,
+                category: recommendedCategoryByTemplateCode[templateCode] ?? 'CORE',
+                severity: 'HARD' as const,
+                sortOrder: index + 1,
+                params: recommendedDefaultParamsByTemplateCode[templateCode],
+                selected: true,
+                isImportant: true,
+            })),
+        });
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 97,
+            shiftTeamId: 970,
+            rotationMode: 'MIXED',
+            options: {
+                targets: [{type: 'ALL', label: '모든 간호사'}],
+            },
+            templates: recommendedTemplates,
+        });
+
+        render(<Constraints wardId={97} shiftTeamId={970} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => {
+            const savedRules = getLastUpdatePayload()?.rules;
+
+            if (!savedRules) throw new Error('Expected mixed legacy defaults to be resaved');
+
+            expect(savedRules.map((rule) => rule.templateCode)).toEqual([
+                'FORBID_N_THEN_D',
+                'FORBID_N_THEN_E',
+                'FORBID_E_THEN_D',
+                'CORE_MIN_OFF_AFTER_NIGHT',
+                'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+            ]);
+            expect(savedRules).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({templateCode: 'CORE_MIN_OFF_AFTER_NIGHT', severity: 'HARD', isImportant: true}),
+                    expect.objectContaining({templateCode: 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF', severity: 'HARD', isImportant: true}),
+                ]),
+            );
+        });
+    });
+
     it('removes retired role rules while preserving other hidden compatible rules on save', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
@@ -1436,8 +1675,30 @@ describe('Constraints', () => {
         });
     });
 
-    it('saves MIXED participation with typed nurse options and exposes all four understandable modes', async () => {
+    it('saves MIXED participation with target options and exposes all four understandable modes', async () => {
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([
+            {
+                nurseId: 1,
+                name: 'Nurse A',
+                divisionNum: 1,
+                isPreceptor: false,
+                nurseShiftTypes: [
+                    {wardShiftTypeId: 1, isPossible: true},
+                    {wardShiftTypeId: 4, isPossible: true},
+                ],
+            },
+            {
+                nurseId: 2,
+                name: 'Nurse B',
+                divisionNum: 1,
+                isPreceptor: false,
+                nurseShiftTypes: [
+                    {wardShiftTypeId: 1, isPossible: true},
+                    {wardShiftTypeId: 4, isPossible: true},
+                ],
+            },
+        ] as never);
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
@@ -1460,18 +1721,23 @@ describe('Constraints', () => {
             wardId: 1,
             shiftTeamId: 10,
             rotationMode: 'MIXED',
-            options: {},
+            options: {
+                targets: [
+                    {type: 'ALL', label: '모든 간호사'},
+                    {type: 'DIVISION', divisionNum: 1, label: '신규 간호사 1'},
+                ],
+            },
             templates: [
                 {
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
                     category: 'MIXED_PARTICIPATION',
-                    displayTemplate: '{nurseIds} {participationMode} {dateScope}',
+                    displayTemplate: '{target} {participationMode} {dateScope}',
                     severity: 'HARD',
                     allowedSeverities: ['HARD'],
                     supportedInGenerator: false,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
                         {
                             key: 'participationMode',
                             label: 'Participation',
@@ -1484,9 +1750,27 @@ describe('Constraints', () => {
             ],
         });
 
-        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+        render(
+            <Constraints
+                wardId={1}
+                shiftTeamId={10}
+                shiftTeams={[{shiftTeamId: 10, name: 'A Team', divisions: [{divisionNum: 1, name: '신규 간호사 1'}]}] as never}
+                year={2026}
+                month={6}
+                variant="settings"
+            />,
+        );
 
         await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+
+        await userEvent.click(screen.getByRole('button', {name: '모든 간호사'}));
+
+        const targetListbox = await screen.findByRole('listbox');
+
+        expect(within(targetListbox).getByRole('option', {name: '모든 간호사'})).toBeInTheDocument();
+        expect(within(targetListbox).getByRole('option', {name: '신규 간호사 1'})).toBeInTheDocument();
+        expect(within(targetListbox).getByRole('option', {name: /Nurse A/})).toBeInTheDocument();
+        await userEvent.click(within(targetListbox).getByRole('option', {name: '신규 간호사 1'}));
 
         const participationButton = screen.getByRole('button', {name: '인력 부족 시 2교대 가능'});
 
@@ -1507,7 +1791,7 @@ describe('Constraints', () => {
                 expect.objectContaining({
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
                     params: {
-                        nurseIds: [{type: 'NURSE', nurseId: 1}],
+                        target: {type: 'DIVISION', divisionNum: 1},
                         participationMode: {type: 'FALLBACK_TWO'},
                         dateScope: {type: 'EVERYDAY'},
                     },
@@ -1583,16 +1867,18 @@ describe('Constraints', () => {
     it('fails closed and explains unavailable mixed-shift nurses when possible shifts are missing or incompatible', async () => {
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
         wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([
-            {nurseId: 1, name: 'No Config', isPreceptor: false},
+            {nurseId: 1, name: 'No Config', divisionNum: 1, isPreceptor: false},
             {
                 nurseId: 2,
                 name: 'Three Only',
+                divisionNum: 1,
                 isPreceptor: false,
                 nurseShiftTypes: [{wardShiftTypeId: 1, isPossible: true}],
             },
             {
                 nurseId: 3,
                 name: 'Both Shifts',
+                divisionNum: 2,
                 isPreceptor: false,
                 nurseShiftTypes: [
                     {wardShiftTypeId: 1, isPossible: true},
@@ -1610,13 +1896,13 @@ describe('Constraints', () => {
                 {
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
                     category: 'MIXED_PARTICIPATION',
-                    displayTemplate: '{nurseIds} {participationMode} {dateScope}',
+                    displayTemplate: '{target} {participationMode} {dateScope}',
                     severity: 'HARD',
                     allowedSeverities: ['HARD'],
                     supportedInGenerator: false,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
                         {
                             key: 'participationMode',
                             label: 'Participation',
@@ -1629,22 +1915,47 @@ describe('Constraints', () => {
             ],
         });
 
-        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+        render(
+            <Constraints
+                wardId={1}
+                shiftTeamId={10}
+                shiftTeams={
+                    [
+                        {
+                            shiftTeamId: 10,
+                            name: 'A Team',
+                            divisions: [
+                                {divisionNum: 1, name: '신규 간호사 1'},
+                                {divisionNum: 2, name: '신규 간호사 2'},
+                            ],
+                        },
+                    ] as never
+                }
+                year={2026}
+                month={6}
+                variant="settings"
+            />,
+        );
 
         await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
-        await userEvent.click(screen.getByRole('button', {name: /사람별 교대 참여: 간호사 선택/}));
+        await userEvent.click(screen.getByRole('button', {name: '모든 간호사'}));
 
-        const listbox = await screen.findByRole('listbox', {name: '사람별 교대 참여: 간호사 선택'});
+        const listbox = await screen.findByRole('listbox');
+        const groupOneOption = within(listbox).getByRole('option', {name: /신규 간호사 1/});
+        const groupTwoOption = within(listbox).getByRole('option', {name: /신규 간호사 2/});
         const noConfigOption = within(listbox).getByRole('option', {name: /No Config/});
         const threeOnlyOption = within(listbox).getByRole('option', {name: /Three Only/});
         const bothOption = within(listbox).getByRole('option', {name: /Both Shifts/});
 
+        expect(groupOneOption).toBeDisabled();
+        expect(groupOneOption).toHaveTextContent('가능 근무 설정 필요');
+        expect(groupTwoOption).toBeEnabled();
         expect(noConfigOption).toBeDisabled();
         expect(noConfigOption).toHaveTextContent('가능 근무 설정 필요');
         expect(threeOnlyOption).toBeDisabled();
         expect(threeOnlyOption).toHaveTextContent('2교대와 3교대 가능 근무가 모두 필요해요.');
         expect(bothOption).toBeEnabled();
-        expect(bothOption).toHaveAttribute('aria-selected', 'true');
+        expect(bothOption).toHaveAttribute('aria-selected', 'false');
     });
 
     it('shows mixed participation options without deleted mixed planning templates', async () => {
@@ -1659,13 +1970,13 @@ describe('Constraints', () => {
                 {
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
                     category: 'MIXED_PARTICIPATION',
-                    displayTemplate: '{nurseIds} {participationMode} {dateScope}',
+                    displayTemplate: '{target} {participationMode} {dateScope}',
                     severity: 'HARD',
                     allowedSeverities: ['HARD'],
                     supportedInGenerator: false,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
                         {
                             key: 'participationMode',
                             label: 'Participation',
@@ -1807,13 +2118,13 @@ describe('Constraints', () => {
                 {
                     templateCode: 'MIXED_ROTATION_PARTICIPATION',
                     category: 'MIXED_PARTICIPATION',
-                    displayTemplate: '{nurseIds} {participationMode} {dateScope}',
+                    displayTemplate: '{target} {participationMode} {dateScope}',
                     severity: 'HARD',
                     allowedSeverities: ['HARD'],
                     supportedInGenerator: false,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
                         {
                             key: 'participationMode',
                             label: 'Participation',
