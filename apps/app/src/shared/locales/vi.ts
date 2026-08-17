@@ -215,10 +215,6 @@ export const vi = {
                         label: 'Điều kiện chuỗi làm việc và nghỉ',
                         sentence: '{target} tránh chỉ nghỉ một ngày giữa các ngày làm việc',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: 'Điều kiện ca đêm và chuyển ca',
-                        sentence: '{target} làm tối đa {count} ca đêm mỗi tháng',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: 'Giới hạn theo người',
                         sentence: '{target} làm tối đa {count} ca {shift} cuối tuần hoặc ngày lễ mỗi {period}',

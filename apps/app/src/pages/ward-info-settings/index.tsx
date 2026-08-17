@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {CalendarDays, Hospital, Info} from 'lucide-react';
+import {CalendarDays, Info} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
 import {getWardDisplayCode, getWardDisplayTitle, type TWard, wardQueryKeys, wardQueryOptions} from '@/entities/ward';
@@ -9,6 +9,7 @@ import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
+import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
@@ -301,7 +302,7 @@ function WardInfoSettingsPage() {
             <div className="mx-auto mt-6 max-w-[480px] space-y-4">
                 <Card className="rounded-[24px] border-transparent p-6">
                     <h2 className="mb-5 flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
-                        <Hospital aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                        <img src={wardInfoSettingsIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
                         <span>{t('page.wardInfoSettings.sectionTitle')}</span>
                     </h2>
                     <div className="grid grid-cols-1 gap-3">

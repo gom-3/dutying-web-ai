@@ -960,10 +960,6 @@ export const en: TLocale = {
                         label: 'Work and rest streak constraint',
                         sentence: '{target} avoids a single day off between workdays',
                     },
-                    MAX_MONTHLY_NIGHT_COUNT: {
-                        label: 'Night and transition constraint',
-                        sentence: '{target} works at most {count} {nightShift} shifts per month',
-                    },
                     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
                         label: 'Person limit',
                         sentence: '{target} works at most {count} weekend or holiday {shift} shifts per {period}',
