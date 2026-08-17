@@ -888,6 +888,7 @@ describe('Constraints', () => {
         const dialog = screen.getByRole('dialog');
         const recommendationCodes = [
             'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+            'FORBID_N_THEN_D',
             'CORE_MAX_CONTINUOUS_WORK',
             'CORE_MAX_CONTINUOUS_NIGHT',
             'CORE_MIN_CONTINUOUS_NIGHT',
@@ -900,15 +901,14 @@ describe('Constraints', () => {
             return card!;
         });
 
-        expect(dialog.querySelectorAll('[data-constraint-template-card]')).toHaveLength(4);
+        expect(dialog.querySelectorAll('[data-constraint-template-card]')).toHaveLength(5);
         recommendationCards.slice(0, -1).forEach((card, index) => {
             expect(card.compareDocumentPosition(recommendationCards[index + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         });
         expect(dialog.querySelector('[data-constraint-template-card="CORE_MIN_OFF_AFTER_NIGHT"]')).toBeNull();
-        expect(dialog.querySelector('[data-constraint-template-card="FORBID_N_THEN_D"]')).toBeNull();
-        expect(within(recommendationCards[1]!).getByRole('spinbutton')).toHaveValue(4);
-        expect(within(recommendationCards[2]!).getByRole('spinbutton')).toHaveValue(3);
-        expect(within(recommendationCards[3]!).getByRole('spinbutton')).toHaveValue(1);
+        expect(within(recommendationCards[2]!).getByRole('spinbutton')).toHaveValue(4);
+        expect(within(recommendationCards[3]!).getByRole('spinbutton')).toHaveValue(3);
+        expect(within(recommendationCards[4]!).getByRole('spinbutton')).toHaveValue(1);
 
         const minOffCard = recommendationCards[0]!;
         const offCount = within(minOffCard).getByRole('spinbutton');
