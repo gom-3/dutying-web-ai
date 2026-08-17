@@ -3446,16 +3446,6 @@ function ImportantToggle({
     );
 }
 
-function RecommendedBadge() {
-    const {t} = useTypedTranslation();
-
-    return (
-        <span className="inline-flex h-6 min-w-10 shrink-0 items-center justify-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-bold whitespace-nowrap text-main-1 ring-1 ring-main-4">
-            {t('page.makeShift.constraints.category.recommended')}
-        </span>
-    );
-}
-
 function StaticImportantBadge({isRecommended}: {isRecommended: boolean}) {
     const {t} = useTypedTranslation();
 
@@ -3501,7 +3491,6 @@ const RuleRow = memo(function RuleRow({
             }`}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
-                {isRecommended ? <RecommendedBadge /> : null}
                 {canChangeSeverity ? (
                     <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
                 ) : isImportant ? (

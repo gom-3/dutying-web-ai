@@ -935,7 +935,7 @@ describe('Constraints', () => {
         });
     });
 
-    it('shows recommended and important badges for the two-shift N-to-D rule even when severity is fixed', async () => {
+    it('shows the important badge without a row recommendation badge for the two-shift N-to-D rule', async () => {
         wardApiMocks.getShiftTypes.mockResolvedValueOnce(twoShiftWardShiftTypes as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
@@ -987,7 +987,7 @@ describe('Constraints', () => {
             return element as HTMLElement;
         });
 
-        expect(within(row).getByText('권장')).toBeInTheDocument();
+        expect(within(row).queryByText('권장')).not.toBeInTheDocument();
         expect(within(row).getByText('중요')).toBeInTheDocument();
         expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
     });
