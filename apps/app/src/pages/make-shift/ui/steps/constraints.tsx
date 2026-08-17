@@ -330,7 +330,8 @@ const THREE_SHIFT_RECOMMENDED_RULE_ORDER = [
 ] as const;
 const THREE_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(THREE_SHIFT_RECOMMENDED_RULE_ORDER);
 const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
-    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'FORBID_N_THEN_D',
     'CORE_MAX_CONTINUOUS_WORK',
@@ -338,8 +339,17 @@ const TWO_SHIFT_RECOMMENDED_RULE_ORDER = [
     'CORE_MIN_CONTINUOUS_NIGHT',
 ] as const;
 const TWO_SHIFT_RECOMMENDED_RULE_CODES = new Set<string>(TWO_SHIFT_RECOMMENDED_RULE_ORDER);
-const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
-const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF']);
+const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+]);
+const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set([
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+]);
 const MIXED_SHIFT_RECOMMENDED_RULE_ORDER = [
     'MIXED_ROTATION_PARTICIPATION',
     'TWO_SHIFT_DAILY_LINES',
@@ -376,6 +386,7 @@ const MIXED_SHIFT_TEMPLATE_CODES = new Set([
     'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
 const TARGET_SOFT_ONLY_TEMPLATE_CODES = new Set(['TWO_SHIFT_DAILY_LINES', 'TWO_SHIFT_ASSIGNMENT_COUNT']);
+const NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES = new Set(['NURSE_PREFER_SHIFT', 'NURSE_AVOID_SHIFT']);
 const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
@@ -384,7 +395,8 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'AVOID_ISOLATED_OFF_DAY',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
-    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
     'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_N_THEN_D',
@@ -484,6 +496,8 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_OFF_AFTER_NIGHT: 'FORBIDDEN_PATTERN',
+    TWO_SHIFT_NIGHT_THEN_CONTINUATION: 'FORBIDDEN_PATTERN',
+    TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF: 'WORK_REST',
     MAX_MONTHLY_NIGHT_COUNT: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
@@ -508,7 +522,7 @@ const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_MAX_LINES',
     'CORE_MIN_REST_HOURS',
     'MAX_MONTHLY_WORK_HOURS',
-    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR',
 ]);
 const THREE_SHIFT_DISPLAY_BLOCKED_RULE_CODES = new Set(['MAX_DAY_NIGHT_TRANSITIONS']);
@@ -1017,7 +1031,7 @@ const TWO_SHIFT_DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, u
     CORE_MAX_CONTINUOUS_WORK: {days: 4, maxDays: 4, maxContinuousWorkDays: 4, count: 4},
     CORE_MAX_CONTINUOUS_NIGHT: {count: 3},
     CORE_MIN_CONTINUOUS_NIGHT: {count: 1},
-    TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF: {count: 1},
+    TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF: {count: 1},
     TWO_SHIFT_NIGHT_PAIR_MIN_OFF: {count: 2},
 };
 const TWO_SHIFT_SENTENCE_TEMPLATE_ID_BY_CODE: Record<string, string> = {
@@ -1181,6 +1195,10 @@ function isRecommendedDefaultRuleCode(templateCode: string, rotationMode: TWardR
     if (rotationMode === 'MIXED') return MIXED_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
 
     return RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode);
+}
+
+function isNurseShiftPreferenceSoftOnlyRule(templateCode: string) {
+    return NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES.has(templateCode);
 }
 
 function hasLegacyRecommendedDefaults(rules: TShiftConstraintRuleDraft[], rotationMode: TWardRotationMode) {
@@ -1512,11 +1530,16 @@ function getConstraintRuleRowId(clientId: string) {
 }
 
 function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
-    return rules.map((rule) => ({
-        ...rule,
-        isImportant: rule.severity === 'HARD',
-        clientId: createClientId(rule),
-    }));
+    return rules.map((rule) => {
+        const severity = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity;
+
+        return {
+            ...rule,
+            severity,
+            isImportant: severity === 'HARD',
+            clientId: createClientId(rule),
+        };
+    });
 }
 
 function createRulesFromServer(serverRules: TShiftConstraintRule[]) {
@@ -1802,14 +1825,16 @@ function sanitizeRuleParams(params: Record<string, unknown>) {
 }
 
 function toSavedRule(rule: TShiftConstraintRuleDraft, index: number, template?: TSoftRuleTemplate) {
+    const severity = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity;
+
     return {
         shiftConstraintRuleId: rule.shiftConstraintRuleId,
         templateCode: rule.templateCode,
-        severity: rule.severity,
+        severity,
         sortOrder: index + 1,
         params: sanitizeRuleParams(normalizeNumberParams(template, rule.params)),
         selected: rule.selected !== false,
-        isImportant: rule.severity === 'HARD',
+        isImportant: severity === 'HARD',
     };
 }
 
@@ -1828,11 +1853,11 @@ function toRulesQueryData(
             shiftConstraintRuleId: rule.shiftConstraintRuleId,
             templateCode: rule.templateCode,
             category: rule.category,
-            severity: rule.severity,
+            severity: isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity,
             sortOrder: index + 1,
             params: rule.params,
             selected: rule.selected !== false,
-            isImportant: rule.severity === 'HARD',
+            isImportant: isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? false : rule.severity === 'HARD',
             displayText: rule.displayText,
             isValid: rule.isValid,
             invalidReason: rule.invalidReason,
@@ -1905,6 +1930,10 @@ function getEffectiveAllowedSeverities(
     template: TShiftConstraintTemplate | undefined,
     params: Record<string, unknown>,
 ): TShiftConstraintSeverity[] {
+    if (template && isNurseShiftPreferenceSoftOnlyRule(template.templateCode)) {
+        return ['SOFT'];
+    }
+
     if (template && TARGET_SOFT_ONLY_TEMPLATE_CODES.has(template.templateCode) && getConstraintOptionType(params.operator) === 'TARGET') {
         return ['SOFT'];
     }
@@ -1921,6 +1950,14 @@ function normalizeRuleSeverity(
     template: TShiftConstraintTemplate | undefined,
     _rotationMode: TWardRotationMode,
 ): TShiftConstraintRuleDraft {
+    if (isNurseShiftPreferenceSoftOnlyRule(rule.templateCode)) {
+        return {
+            ...rule,
+            severity: 'SOFT',
+            isImportant: false,
+        };
+    }
+
     const allowedSeverities = getEffectiveAllowedSeverities(template, rule.params);
     const severity = allowedSeverities.includes(rule.severity) ? rule.severity : (allowedSeverities[0] ?? rule.severity);
 
@@ -2959,7 +2996,7 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                           role="listbox"
                           aria-label={ariaLabel}
                           style={menuStyle}
-                          className={`fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                          className={`dropdown-scrollbar-visible fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
                           }`}
                       >
@@ -3048,7 +3085,7 @@ function InlineMultiSelect({
                     role="listbox"
                     aria-multiselectable="true"
                     aria-label={accessibleLabel}
-                    className="absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
+                    className="dropdown-scrollbar-visible absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
                 >
                     {options.map((option) => {
                         const selected = selectedOptionKeys.has(option.value);
@@ -3415,10 +3452,12 @@ type TRuleRowProps = {
 function ImportantToggle({
     checked,
     isRecommended,
+    isBlocked = false,
     onChange,
 }: {
     checked: boolean;
     isRecommended: boolean;
+    isBlocked?: boolean;
     onChange: (next: boolean) => void;
 }) {
     const {t} = useTypedTranslation();
@@ -3428,17 +3467,22 @@ function ImportantToggle({
             type="button"
             role="checkbox"
             aria-checked={checked}
+            aria-disabled={isBlocked || undefined}
             aria-label={checked ? t('page.makeShift.constraints.important.ariaRemove') : t('page.makeShift.constraints.important.ariaMark')}
             title={
-                isRecommended
-                    ? t('page.makeShift.constraints.important.recommendedTitle')
-                    : t('page.makeShift.constraints.important.ariaMark')
+                isBlocked
+                    ? t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked')
+                    : isRecommended
+                      ? t('page.makeShift.constraints.important.recommendedTitle')
+                      : t('page.makeShift.constraints.important.ariaMark')
             }
             onClick={() => onChange(!checked)}
             className={`mr-6 inline-flex h-6 min-w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2.5 font-apple text-[12px] font-bold whitespace-nowrap ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
-                checked
-                    ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
-                    : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
+                isBlocked
+                    ? 'cursor-not-allowed bg-white text-gray-4 ring-gray-6 hover:bg-gray-7'
+                    : checked
+                      ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
+                      : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
             }`}
         >
             {t('page.makeShift.constraints.important.label')}
@@ -3480,7 +3524,9 @@ const RuleRow = memo(function RuleRow({
 }: TRuleRowProps) {
     const {t} = useTypedTranslation();
     const slots = template?.slots ?? [];
-    const canChangeSeverity = !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
+    const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
+    const canChangeSeverity =
+        !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
 
     return (
         <div
@@ -3491,7 +3537,14 @@ const RuleRow = memo(function RuleRow({
             }`}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
-                {canChangeSeverity ? (
+                {isImportantBlocked ? (
+                    <ImportantToggle
+                        checked={isImportant}
+                        isRecommended={isRecommended}
+                        isBlocked
+                        onChange={onToggleImportant}
+                    />
+                ) : canChangeSeverity ? (
                     <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
                 ) : isImportant ? (
                     <StaticImportantBadge isRecommended={isRecommended} />
@@ -4760,7 +4813,9 @@ export function Constraints({
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
         const defaultSeverity =
-            rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
+            isNurseShiftPreferenceSoftOnlyRule(template.id)
+                ? 'SOFT'
+                : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
                 ? 'SOFT'
                 : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
@@ -4779,10 +4834,15 @@ export function Constraints({
         const duplicateRule = rulesRef.current
             .filter((rule) => rule.selected !== false)
             .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
+        const conflictingNightRecoveryCodes =
+            nextRule.templateCode === 'TWO_SHIFT_NIGHT_THEN_CONTINUATION' ||
+            nextRule.templateCode === 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF'
+                ? new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF'])
+                : TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES;
         const existingNightRecoveryRule = TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(nextRule.templateCode)
             ? rulesRef.current
                   .filter((rule) => rule.selected !== false)
-                  .find((rule) => TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(rule.templateCode))
+                  .find((rule) => conflictingNightRecoveryCodes.has(rule.templateCode))
             : undefined;
 
         if (duplicateRule || existingNightRecoveryRule) {
@@ -4928,13 +4988,25 @@ export function Constraints({
     const setRuleImportant = useCallback(
         (clientId: string, isImportant: boolean) => {
             updateRules((prev) =>
-                prev.map((item) => (item.clientId === clientId ? {...item, severity: isImportant ? 'HARD' : 'SOFT', isImportant} : item)),
+                prev.map((item) => {
+                    if (item.clientId !== clientId) return item;
+
+                    const nextImportant = isNurseShiftPreferenceSoftOnlyRule(item.templateCode) ? false : isImportant;
+
+                    return {...item, severity: nextImportant ? 'HARD' : 'SOFT', isImportant: nextImportant};
+                }),
             );
         },
         [updateRules],
     );
     const toggleRuleImportant = useCallback(
         (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
+            if (nextImportant && isNurseShiftPreferenceSoftOnlyRule(rule.templateCode)) {
+                toast.error(t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked'));
+
+                return;
+            }
+
             if (!nextImportant && isRecommendedDefaultRuleCode(rule.templateCode, rotationMode)) {
                 setRecommendedWarning({rule, action: 'unmark'});
 
@@ -4943,7 +5015,7 @@ export function Constraints({
 
             setRuleImportant(rule.clientId, nextImportant);
         },
-        [rotationMode, setRuleImportant],
+        [rotationMode, setRuleImportant, t],
     );
     const removeRule = useCallback(
         (rule: TShiftConstraintRuleDraft) => {

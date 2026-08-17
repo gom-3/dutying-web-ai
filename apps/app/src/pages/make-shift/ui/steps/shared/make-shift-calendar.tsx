@@ -1121,7 +1121,7 @@ function ShiftTypeDropdown({
             aria-label={t('page.makeShift.calendar.shiftTypeDropdownAria')}
             style={menuStyle}
             className={cn(
-                'make-shift-calendar__shift-type-dropdown fixed z-[2147483647] max-h-[280px] overflow-y-scroll rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0_16px_36px_rgba(15,23,42,0.18)] [scrollbar-color:#aab2c0_#f3f5f9] [scrollbar-gutter:stable] [scrollbar-width:thin] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-[3px] [&::-webkit-scrollbar-thumb]:border-[#f3f5f9] [&::-webkit-scrollbar-thumb]:bg-[#aab2c0] [&::-webkit-scrollbar-thumb:hover]:bg-[#8f98a8] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#f3f5f9]',
+                'make-shift-calendar__shift-type-dropdown dropdown-scrollbar-visible fixed z-[2147483647] max-h-[280px] overflow-y-scroll rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0_16px_36px_rgba(15,23,42,0.18)]',
                 'animate-in duration-150 fade-in-0 zoom-in-95',
                 dropdown.position.placement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1',
             )}

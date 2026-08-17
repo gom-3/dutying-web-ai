@@ -136,7 +136,7 @@ export default function ShiftClassificationDropdown({
                           aria-label={ariaLabel}
                           style={menuStyle}
                           className={cn(
-                              'fixed z-[2147483647] max-h-[240px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95',
+                              'dropdown-scrollbar-visible fixed z-[2147483647] max-h-[240px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95',
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1',
                           )}
                       >

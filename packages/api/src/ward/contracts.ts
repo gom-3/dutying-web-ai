@@ -675,7 +675,12 @@ export interface IWardAPI {
         month: number,
         workflowDTO: TUpdateShiftWorkflowDTO,
     ) => Promise<TShiftWorkflowResponse>;
-    validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TValidationRes>;
+    validateSnapshot: (
+        wardId: number,
+        shiftTeamId: number,
+        validateSnapshotDTO: TValidateSnapshotDTO,
+        options?: {signal?: AbortSignal},
+    ) => Promise<TValidationRes>;
     autofillSchedule: (
         wardId: number,
         shiftTeamId: number,

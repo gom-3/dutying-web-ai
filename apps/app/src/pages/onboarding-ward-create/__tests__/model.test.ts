@@ -147,6 +147,14 @@ describe('OnboardingWardCreatePage model', () => {
         expect(getStepValidation({...withContinuation, currentStep: 2}, 2).isValid).toBe(true);
         expect(withContinuation.shiftTypes).toContainEqual(
             expect.objectContaining({
+                classification: 'NIGHT',
+                rotationSystem: 'TWO',
+                startTime: '19:00',
+                endTime: '00:00',
+            }),
+        );
+        expect(withContinuation.shiftTypes).toContainEqual(
+            expect.objectContaining({
                 name: 'Night finish',
                 classification: 'NIGHT_CONTINUATION',
                 rotationSystem: 'TWO',
@@ -172,8 +180,34 @@ describe('OnboardingWardCreatePage model', () => {
         const withOff = updateTwoShiftNightRecoveryDisplayDraft(withDuplicateContinuation, 'OFF', localizedLabels);
 
         expect(withOff.shiftTypes.some((shiftType) => shiftType.classification === 'NIGHT_CONTINUATION')).toBe(false);
+        expect(withOff.shiftTypes).toContainEqual(
+            expect.objectContaining({
+                classification: 'NIGHT',
+                rotationSystem: 'TWO',
+                startTime: '19:00',
+                endTime: '07:00',
+            }),
+        );
         expect(withOff.shiftTypes).toContainEqual(expect.objectContaining({classification: 'OFF', rotationSystem: 'NONE'}));
         expect(getStepValidation({...withOff, currentStep: 4}, 4).isValid).toBe(true);
+    });
+
+    it('keeps a user-configured two-shift night time when night continuation is selected', () => {
+        const twoShiftDraft = updateRotationModeDraft(createInitialDraft(localizedLabels), 'TWO', localizedLabels);
+        const nightShiftType = twoShiftDraft.shiftTypes.find(
+            (shiftType) => shiftType.classification === 'NIGHT' && shiftType.rotationSystem === 'TWO',
+        );
+
+        if (!nightShiftType) {
+            throw new Error('two-shift night shift type is required for this test');
+        }
+
+        const configuredDraft = updateShiftTypeDraft(twoShiftDraft, nightShiftType.id, {startTime: '18:30', endTime: '06:30'});
+        const withContinuation = updateTwoShiftNightRecoveryDisplayDraft(configuredDraft, 'NIGHT_CONTINUATION', localizedLabels);
+
+        expect(withContinuation.shiftTypes.find((shiftType) => shiftType.id === nightShiftType.id)).toEqual(
+            expect.objectContaining({startTime: '18:30', endTime: '06:30', autoSeeded: false}),
+        );
     });
 
     it('does not add, delete, or convert shift rows after a user configures one', () => {

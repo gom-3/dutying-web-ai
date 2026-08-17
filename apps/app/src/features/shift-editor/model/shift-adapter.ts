@@ -166,6 +166,36 @@ export function shiftToDoc(shift: TShift, year: number, month: number, options: 
     return {columns, rows, workerMeta, fixedCells: {}, requestCells: {}};
 }
 
+export function isDutyDocInScheduleScope(doc: TDutyDoc, shift: TShift, year: number, month: number): boolean {
+    const expectedColumns = shift.days.map((d) => formatDateKey(year, month, d.day));
+
+    if (doc.columns.length !== expectedColumns.length) return false;
+
+    for (let i = 0; i < expectedColumns.length; i += 1) {
+        if (doc.columns[i] !== expectedColumns[i]) return false;
+    }
+
+    const expectedWorkerIds = new Set<string>();
+
+    for (const division of shift.divisionShiftNurses) {
+        for (const row of division) {
+            if (row.shiftNurse.isWorker) {
+                expectedWorkerIds.add(String(row.shiftNurse.shiftNurseId));
+            }
+        }
+    }
+
+    if (doc.rows.length !== expectedWorkerIds.size) return false;
+
+    for (const row of doc.rows) {
+        if (!expectedWorkerIds.has(row.workerId)) return false;
+
+        if (row.cells.length !== expectedColumns.length) return false;
+    }
+
+    return true;
+}
+
 function cellToWardShiftTypeId(cell: TCellValue, maps: TWardShiftTypeMaps): number | null {
     if (cell === null || cell === '') return null;
 

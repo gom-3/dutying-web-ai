@@ -8,6 +8,7 @@ import {
     buildSaveSnapshotDTO,
     docToShift,
     fetchAndApplyScheduleValidation,
+    isDutyDocInScheduleScope,
     snapshotDetailToDoc,
     useAsyncScheduleValidation,
     useShiftEditorCommands,
@@ -69,6 +70,10 @@ type TSelectionFixedStats = {
     fixableFilledCount: number;
     fixedCount: number;
 };
+
+function hasScheduleScopeShape(shift: NonNullable<Parameters<typeof isDutyDocInScheduleScope>[1]>) {
+    return shift.days.length > 0 && shift.divisionShiftNurses.some((division) => division.some((row) => row.shiftNurse.isWorker));
+}
 
 function getDocCellKey(doc: TDutyDoc, row: number, col: number): string | null {
     if (col < 0) return null;
@@ -406,7 +411,13 @@ export function AiAutofill() {
         month,
         originalShift: orderedShift,
         enabled:
-            isCurrentShiftTeamReady && Boolean(orderedShift) && !isAiGenerating && !isWorking && !isSavingSnapshot && !isReorderingRows,
+            isCurrentShiftTeamReady &&
+            Boolean(orderedShift) &&
+            !isHydratingEditor &&
+            !isAiGenerating &&
+            !isWorking &&
+            !isSavingSnapshot &&
+            !isReorderingRows,
         debounceMs: 1000,
     });
     const isScheduleValidationChecking = scheduleValidation.status === 'validating';
@@ -568,6 +579,8 @@ export function AiAutofill() {
         const progressToastId = 'make-shift-snapshot-save-progress';
         const docToSave = useShiftEditorStore.getState().doc;
 
+        if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(docToSave, orderedShift, year, month)) return;
+
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
         try {
@@ -603,6 +616,8 @@ export function AiAutofill() {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const docToPublish = useShiftEditorStore.getState().doc;
+
+        if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(docToPublish, orderedShift, year, month)) return;
 
         if (snapshotToDelete) {
             setDeletingSnapshotId(snapshotToDelete.snapshotId);
@@ -705,7 +720,19 @@ export function AiAutofill() {
         setLoadingSnapshotId(snapshotId);
 
         try {
+            const requestContext = {wardId, shiftTeamId: currentShiftTeamId, year, month};
             const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
+            const latestContext = currentAiContextRef.current;
+
+            if (
+                latestContext.wardId !== requestContext.wardId ||
+                latestContext.shiftTeamId !== requestContext.shiftTeamId ||
+                latestContext.year !== requestContext.year ||
+                latestContext.month !== requestContext.month
+            ) {
+                return;
+            }
+
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
                 fixedCells: editorDoc.fixedCells,
                 requestCells: editorDoc.requestCells,
@@ -916,6 +943,12 @@ export function AiAutofill() {
         if (isAiGenerating || isAiLoadingOverlayFinishing) return null;
 
         if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !orderedShift) {
+            toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
+
+            return null;
+        }
+
+        if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(useShiftEditorStore.getState().doc, orderedShift, year, month)) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
             return null;

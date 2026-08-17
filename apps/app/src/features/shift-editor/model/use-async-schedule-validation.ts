@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {type TShift} from '@/entities';
 import {fetchAndApplyScheduleValidation} from './schedule-violations';
+import {isDutyDocInScheduleScope} from './shift-adapter';
 import {useShiftEditorStore} from './store';
 import {useShiftEditorCommands} from './use-shift-editor-commands';
 
@@ -29,6 +30,7 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
     const requestSeqRef = useRef(0);
     const applyValidationRef = useRef(commands.setScheduleValidationFromApi);
     const clearValidationRef = useRef(commands.clearScheduleValidationFromApi);
+    const abortControllerRef = useRef<AbortController | null>(null);
     const [status, setStatus] = useState<TAsyncScheduleValidationStatus>('idle');
 
     applyValidationRef.current = commands.setScheduleValidationFromApi;
@@ -41,7 +43,18 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
 
         if (timerRef.current) clearTimeout(timerRef.current);
 
-        if (!enabled || !wardId || !shiftTeamId || !originalShift || !rulesHash || draftRevision === 0) {
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
+
+        if (
+            !enabled ||
+            !wardId ||
+            !shiftTeamId ||
+            !originalShift ||
+            !rulesHash ||
+            draftRevision === 0 ||
+            !isDutyDocInScheduleScope(doc, originalShift, year, month)
+        ) {
             setStatus('idle');
 
             return;
@@ -50,6 +63,10 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
         setStatus('validating');
 
         timerRef.current = setTimeout(async () => {
+            const abortController = new AbortController();
+
+            abortControllerRef.current = abortController;
+
             const applied = await fetchAndApplyScheduleValidation(
                 {
                     wardId,
@@ -60,6 +77,7 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
                     month,
                     draftRevision,
                     rulesHash,
+                    signal: abortController.signal,
                 },
                 applyValidationRef.current,
                 clearValidationRef.current,
@@ -74,6 +92,9 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
 
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
+
+            abortControllerRef.current?.abort();
+            abortControllerRef.current = null;
         };
     }, [doc, draftRevision, rulesHash, enabled, wardId, shiftTeamId, year, month, originalShift, debounceMs]);
 
