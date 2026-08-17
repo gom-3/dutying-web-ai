@@ -188,6 +188,7 @@ function ConstraintModalPortal({children}: {children: ReactNode}) {
 
 function getCategoryLabel(t: TTypedT, category: TModalCategory, rotationMode: TWardRotationMode = 'THREE') {
     if (category === RECOMMENDED_MODAL_CATEGORY) return t('page.makeShift.constraints.category.recommended');
+    if (category === 'MIXED_BALANCE') return '공정성';
 
     if (rotationMode !== 'MIXED' && category === 'WORK_REST') return t('page.makeShift.constraints.category.workRestStreaks');
 
@@ -365,6 +366,7 @@ const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
 ]);
 const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set([
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
@@ -389,14 +391,19 @@ const MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ]);
-const MIXED_SHIFT_REMOVED_LEGACY_DEFAULT_RULE_CODES = new Set([
-    'CORE_MAX_CONTINUOUS_WORK',
-    'CORE_MIN_NIGHT_INTERVAL',
-    'FORBID_E_THEN_N',
-    'CORE_MAX_CONTINUOUS_NIGHT',
-]);
 const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
-const MIXED_SHIFT_TEMPLATE_CODES = new Set(['MIXED_ROTATION_PARTICIPATION', 'TIME_WINDOW_STAFF_COUNT']);
+const MIXED_SHIFT_TEMPLATE_CODES = new Set([
+    'MIXED_ROTATION_PARTICIPATION',
+    'MIXED_DAILY_COMPOSITION',
+    'TWO_SHIFT_DAILY_LINES',
+    'TWO_SHIFT_ASSIGNMENT_COUNT',
+    'TIME_WINDOW_STAFF_COUNT',
+    'MIN_REST_BETWEEN_SHIFTS',
+    'MAX_WORK_MINUTES_BY_PERIOD',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
+]);
+const TARGET_SOFT_ONLY_TEMPLATE_CODES = new Set(['TWO_SHIFT_DAILY_LINES', 'TWO_SHIFT_ASSIGNMENT_COUNT']);
+const NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES = new Set(['NURSE_PREFER_SHIFT', 'NURSE_AVOID_SHIFT']);
 const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
@@ -408,8 +415,8 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+    'MAX_MONTHLY_NIGHT_COUNT',
     'FORBID_N_THEN_D',
-    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
     'NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS',
     'NURSE_FORBID_WEEKEND',
     'NURSE_PREFER_SHIFT',
@@ -461,7 +468,13 @@ const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
     'NURSE_PAIR_NOT_SAME_SHIFT',
     'NURSE_PAIR_PREFER_SAME_SHIFT',
     'MIXED_ROTATION_PARTICIPATION',
+    'MIXED_DAILY_COMPOSITION',
+    'TWO_SHIFT_DAILY_LINES',
+    'TWO_SHIFT_ASSIGNMENT_COUNT',
     'TIME_WINDOW_STAFF_COUNT',
+    'MIN_REST_BETWEEN_SHIFTS',
+    'MAX_WORK_MINUTES_BY_PERIOD',
+    'MIXED_SHIFT_WORKLOAD_BALANCE',
 ]);
 const ROTATION_MODAL_CATEGORY_ORDER = ['STAFFING_COUNT', 'WORK_REST', 'FORBIDDEN_PATTERN', 'NURSE_LIMIT', 'NURSE_COMBINATION'];
 const MIXED_MODAL_CATEGORY_ORDER = [
@@ -469,6 +482,7 @@ const MIXED_MODAL_CATEGORY_ORDER = [
     'STAFFING_COUNT',
     'WORK_REST',
     'NURSE_LIMIT',
+    'MIXED_BALANCE',
     'FORBIDDEN_PATTERN',
     'NURSE_COMBINATION',
 ];
@@ -499,6 +513,9 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_OFF_AFTER_NIGHT: 'FORBIDDEN_PATTERN',
+    TWO_SHIFT_NIGHT_THEN_CONTINUATION: 'FORBIDDEN_PATTERN',
+    TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF: 'WORK_REST',
+    MAX_MONTHLY_NIGHT_COUNT: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
     FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
@@ -511,12 +528,19 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     NURSE_PAIR_NOT_SAME_SHIFT: 'NURSE_COMBINATION',
     NURSE_PAIR_PREFER_SAME_SHIFT: 'NURSE_COMBINATION',
     MIXED_ROTATION_PARTICIPATION: 'MIXED_PARTICIPATION',
+    MIXED_DAILY_COMPOSITION: 'STAFFING_COUNT',
+    TWO_SHIFT_DAILY_LINES: 'STAFFING_COUNT',
+    TWO_SHIFT_ASSIGNMENT_COUNT: 'NURSE_LIMIT',
     TIME_WINDOW_STAFF_COUNT: 'STAFFING_COUNT',
+    MIN_REST_BETWEEN_SHIFTS: 'WORK_REST',
+    MAX_WORK_MINUTES_BY_PERIOD: 'WORK_REST',
+    MIXED_SHIFT_WORKLOAD_BALANCE: 'MIXED_BALANCE',
 };
 const RETIRED_TWO_SHIFT_CONFIGURATION_CODES = new Set([
     'TWO_SHIFT_MAX_LINES',
     'CORE_MIN_REST_HOURS',
     'MAX_MONTHLY_WORK_HOURS',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR',
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
 ]);
@@ -616,6 +640,20 @@ const EXACT_STAFFING_COUNT_TEMPLATE_CODES = new Set(['EXACT_STAFF_BY_SHIFT', 'SO
 
 function getTemplateTranslationKey(templateId: string, property: 'label' | 'sentence') {
     return `page.makeShift.constraints.templates.${templateId}.${property}` as TI18nKey;
+}
+
+function getMixedTemplateFallbackLabel(templateId: string) {
+    const labelByTemplateId: Record<string, string> = {
+        MIXED_DAILY_COMPOSITION: '혼합교대 편성',
+        TWO_SHIFT_DAILY_LINES: '2교대 라인 수',
+        TWO_SHIFT_ASSIGNMENT_COUNT: '2교대 배정 횟수',
+        TIME_WINDOW_STAFF_COUNT: '시간대별 필요 인원',
+        MIN_REST_BETWEEN_SHIFTS: '근무 간 휴식',
+        MAX_WORK_MINUTES_BY_PERIOD: '기간별 최대 근무시간',
+        MIXED_SHIFT_WORKLOAD_BALANCE: '혼합교대 부담 균형',
+    };
+
+    return labelByTemplateId[templateId];
 }
 
 function getTranslatedTemplatePattern(t: TTypedT, templateId: string) {
@@ -1106,6 +1144,19 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     strategy: 'strategy',
     strategies: 'strategy',
     mixedStrategies: 'strategy',
+    mixedCompositions: 'mixedComposition',
+    lineOperator: 'lineOperator',
+    lineOperators: 'lineOperator',
+    mixedLineOperators: 'lineOperator',
+    assignmentAggregation: 'assignmentAggregation',
+    assignmentAggregations: 'assignmentAggregation',
+    mixedAssignmentAggregations: 'assignmentAggregation',
+    twoShiftScope: 'twoShiftScope',
+    twoShiftScopes: 'twoShiftScope',
+    mixedTwoShiftScopes: 'twoShiftScope',
+    workloadMetric: 'workloadMetric',
+    workloadMetrics: 'workloadMetric',
+    mixedWorkloadMetrics: 'workloadMetric',
     STRATEGY: 'strategy',
     STRATEGIES: 'strategy',
     participationMode: 'participationMode',
@@ -1166,6 +1217,10 @@ function isRecommendedDefaultRuleCode(templateCode: string, rotationMode: TWardR
     if (rotationMode === 'MIXED') return MIXED_SHIFT_RECOMMENDED_RULE_CODES.has(templateCode);
 
     return RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode);
+}
+
+function isNurseShiftPreferenceSoftOnlyRule(templateCode: string) {
+    return NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES.has(templateCode);
 }
 
 function hasLegacyRecommendedDefaults(rules: TShiftConstraintRuleDraft[], rotationMode: TWardRotationMode) {
@@ -1493,7 +1548,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
             label:
                 legacyTemplate?.label ??
                 (MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)
-                    ? t(getTemplateTranslationKey(template.templateCode, 'label'))
+                    ? (getMixedTemplateFallbackLabel(template.templateCode) ?? t(getTemplateTranslationKey(template.templateCode, 'label')))
                     : getCategoryLabel(t, template.category)),
             controls,
             sentence,
@@ -1519,11 +1574,16 @@ function getConstraintRuleRowId(clientId: string) {
 }
 
 function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
-    return rules.map((rule) => ({
-        ...rule,
-        isImportant: rule.severity === 'HARD',
-        clientId: createClientId(rule),
-    }));
+    return rules.map((rule) => {
+        const severity = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity;
+
+        return {
+            ...rule,
+            severity,
+            isImportant: severity === 'HARD',
+            clientId: createClientId(rule),
+        };
+    });
 }
 
 function createRulesFromServer(serverRules: TShiftConstraintRule[]) {
@@ -1844,14 +1904,16 @@ function sanitizeRuleParams(params: Record<string, unknown>) {
 }
 
 function toSavedRule(rule: TShiftConstraintRuleDraft, index: number, template?: TSoftRuleTemplate) {
+    const severity = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity;
+
     return {
         shiftConstraintRuleId: rule.shiftConstraintRuleId,
         templateCode: rule.templateCode,
-        severity: rule.severity,
+        severity,
         sortOrder: index + 1,
         params: sanitizeRuleParams(normalizeNumberParams(template, rule.params)),
         selected: rule.selected !== false,
-        isImportant: rule.severity === 'HARD',
+        isImportant: severity === 'HARD',
     };
 }
 
@@ -1870,11 +1932,11 @@ function toRulesQueryData(
             shiftConstraintRuleId: rule.shiftConstraintRuleId,
             templateCode: rule.templateCode,
             category: rule.category,
-            severity: rule.severity,
+            severity: isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? 'SOFT' : rule.severity,
             sortOrder: index + 1,
             params: rule.params,
             selected: rule.selected !== false,
-            isImportant: rule.severity === 'HARD',
+            isImportant: isNurseShiftPreferenceSoftOnlyRule(rule.templateCode) ? false : rule.severity === 'HARD',
             displayText: rule.displayText,
             isValid: rule.isValid,
             invalidReason: rule.invalidReason,
@@ -1943,7 +2005,18 @@ function getConstraintOptionType(value: unknown) {
     return null;
 }
 
-function getEffectiveAllowedSeverities(template: TShiftConstraintTemplate | undefined): TShiftConstraintSeverity[] {
+function getEffectiveAllowedSeverities(
+    template: TShiftConstraintTemplate | undefined,
+    params: Record<string, unknown>,
+): TShiftConstraintSeverity[] {
+    if (template && isNurseShiftPreferenceSoftOnlyRule(template.templateCode)) {
+        return ['SOFT'];
+    }
+
+    if (template && TARGET_SOFT_ONLY_TEMPLATE_CODES.has(template.templateCode) && getConstraintOptionType(params.operator) === 'TARGET') {
+        return ['SOFT'];
+    }
+
     const allowedSeverities = Array.from(
         new Set((template?.allowedSeverities ?? []).filter((severity) => severity === 'HARD' || severity === 'SOFT')),
     );
@@ -1956,7 +2029,15 @@ function normalizeRuleSeverity(
     template: TShiftConstraintTemplate | undefined,
     _rotationMode: TWardRotationMode,
 ): TShiftConstraintRuleDraft {
-    const allowedSeverities = getEffectiveAllowedSeverities(template);
+    if (isNurseShiftPreferenceSoftOnlyRule(rule.templateCode)) {
+        return {
+            ...rule,
+            severity: 'SOFT',
+            isImportant: false,
+        };
+    }
+
+    const allowedSeverities = getEffectiveAllowedSeverities(template, rule.params);
     const severity = allowedSeverities.includes(rule.severity) ? rule.severity : (allowedSeverities[0] ?? rule.severity);
 
     return {
@@ -2385,6 +2466,32 @@ function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption
 
     if (mixedKey) return t(mixedKey);
 
+    const mixedFallbackLabelByMap: Record<string, Record<string, string>> = {
+        mixedComposition: {
+            BALANCED: '균형 편성',
+            THREE_FIRST: '3교대 우선',
+            TWO_FIRST: '2교대 우선',
+            CLOSED: '폐쇄형',
+            OPEN: '개방형',
+        },
+        assignmentAggregation: {
+            PER_NURSE: '간호사별',
+            GROUP_TOTAL: '그룹 합계',
+        },
+        twoShiftScope: {
+            ALL_TWO: '모든 2교대',
+            TWO_DAY: '2교대 주간',
+            TWO_NIGHT: '2교대 야간',
+        },
+        workloadMetric: {
+            TWO_ASSIGNMENTS: '2교대 횟수',
+            WEEKEND_TWO_ASSIGNMENTS: '주말 2교대 횟수',
+        },
+    };
+    const mixedFallbackLabel = mixedFallbackLabelByMap[optionMapKey]?.[type];
+
+    if (mixedFallbackLabel) return mixedFallbackLabel;
+
     if (optionMapKey === 'period') {
         const periodKeyByType: Record<string, TI18nKey> = {
             DAY: 'page.makeShift.constraints.option.period.day',
@@ -2615,6 +2722,16 @@ function mergeCandidateOptionMap(
             ['mixedParticipationModes', 'participationModes', 'PARTICIPATION_MODES'],
             true,
         ),
+        strategy: mixedOptions('strategy', ['mixedStrategies', 'strategies', 'STRATEGIES'], true),
+        mixedComposition: mixedOptions('mixedComposition', ['mixedCompositions', 'compositions', 'COMPOSITIONS'], true),
+        lineOperator: mixedOptions('lineOperator', ['mixedLineOperators', 'lineOperators', 'LINE_OPERATORS'], true),
+        assignmentAggregation: mixedOptions(
+            'assignmentAggregation',
+            ['mixedAssignmentAggregations', 'assignmentAggregations', 'ASSIGNMENT_AGGREGATIONS'],
+            true,
+        ),
+        twoShiftScope: mixedOptions('twoShiftScope', ['mixedTwoShiftScopes', 'twoShiftScopes', 'TWO_SHIFT_SCOPES'], true),
+        workloadMetric: mixedOptions('workloadMetric', ['mixedWorkloadMetrics', 'workloadMetrics', 'WORKLOAD_METRICS'], true),
         dutyStrict: duty.filter((option) => !isAllSelectOption(option)),
     };
 }
@@ -2827,8 +2944,9 @@ function normalizeCombinationParams(
             .map((value) => eligibleOptions.find((option) => doesSelectOptionMatchValue(option, value)))
             .filter((option): option is TSelectOption => Boolean(option));
 
-        if (selectedOptions.length < currentValues.length) {
-            const minimumSelectionCount = 1;
+        const minimumSelectionCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
+
+        if (selectedOptions.length < Math.min(minimumSelectionCount, eligibleOptions.length) || selectedOptions.length < currentValues.length) {
             const selectedIds = new Set(selectedOptions.map((option) => option.value));
 
             eligibleOptions.forEach((option) => {
@@ -2971,7 +3089,7 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                           role="listbox"
                           aria-label={ariaLabel}
                           style={menuStyle}
-                          className={`fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                          className={`dropdown-scrollbar-visible fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
                           }`}
                       >
@@ -3073,7 +3191,7 @@ function InlineMultiSelect({
                     role="listbox"
                     aria-multiselectable="true"
                     aria-label={accessibleLabel}
-                    className="absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
+                    className="dropdown-scrollbar-visible absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
                 >
                     {options.map((option) => {
                         const selected = selectedOptionKeys.has(option.value);
@@ -3626,10 +3744,12 @@ type TRuleRowProps = {
 function ImportantToggle({
     checked,
     isRecommended,
+    isBlocked = false,
     onChange,
 }: {
     checked: boolean;
     isRecommended: boolean;
+    isBlocked?: boolean;
     onChange: (next: boolean) => void;
 }) {
     const {t} = useTypedTranslation();
@@ -3639,21 +3759,43 @@ function ImportantToggle({
             type="button"
             role="checkbox"
             aria-checked={checked}
+            aria-disabled={isBlocked || undefined}
             aria-label={checked ? t('page.makeShift.constraints.important.ariaRemove') : t('page.makeShift.constraints.important.ariaMark')}
+            title={
+                isBlocked
+                    ? t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked')
+                    : isRecommended
+                      ? t('page.makeShift.constraints.important.recommendedTitle')
+                      : t('page.makeShift.constraints.important.ariaMark')
+            }
+            onClick={() => onChange(!checked)}
+            className={`mr-6 inline-flex h-6 min-w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2.5 font-apple text-[12px] font-bold whitespace-nowrap ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
+                isBlocked
+                    ? 'cursor-not-allowed bg-white text-gray-4 ring-gray-6 hover:bg-gray-7'
+                    : checked
+                      ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
+                      : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
+            }`}
+        >
+            {t('page.makeShift.constraints.important.label')}
+        </button>
+    );
+}
+
+function StaticImportantBadge({isRecommended}: {isRecommended: boolean}) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <span
             title={
                 isRecommended
                     ? t('page.makeShift.constraints.important.recommendedTitle')
                     : t('page.makeShift.constraints.important.ariaMark')
             }
-            onClick={() => onChange(!checked)}
-            className={`mr-6 inline-flex h-6 min-w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2.5 font-apple text-[12px] font-bold whitespace-nowrap ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
-                checked
-                    ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
-                    : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
-            }`}
+            className="mr-6 inline-flex h-6 min-w-10 shrink-0 items-center justify-center rounded-full bg-[#FFF3D6] px-2.5 font-apple text-[12px] font-bold whitespace-nowrap text-[#B86E00] ring-1 ring-[#FFD88A]"
         >
             {t('page.makeShift.constraints.important.label')}
-        </button>
+        </span>
     );
 }
 
@@ -3674,7 +3816,9 @@ const RuleRow = memo(function RuleRow({
 }: TRuleRowProps) {
     const {t} = useTypedTranslation();
     const slots = template?.slots ?? [];
-    const canChangeSeverity = !isSeverityLocked && getEffectiveAllowedSeverities(template).length > 1;
+    const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
+    const canChangeSeverity =
+        !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
 
     return (
         <div
@@ -3685,8 +3829,17 @@ const RuleRow = memo(function RuleRow({
             }`}
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
-                {canChangeSeverity ? (
+                {isImportantBlocked ? (
+                    <ImportantToggle
+                        checked={isImportant}
+                        isRecommended={isRecommended}
+                        isBlocked
+                        onChange={onToggleImportant}
+                    />
+                ) : canChangeSeverity ? (
                     <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+                ) : isImportant ? (
+                    <StaticImportantBadge isRecommended={isRecommended} />
                 ) : null}
                 {softTemplate ? (
                     <SoftSentence
@@ -3960,18 +4113,12 @@ function getSoftRuleAddIssue(
     optionMap: Record<string, TSelectOption[]> = {},
 ): TI18nKey | null {
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
+    const minimumNurseCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
 
-    if (template.id === 'MIXED_ROTATION_PARTICIPATION' && template.controls.some((control) => control.key === 'target')) {
-        const targetOptions = optionMap.target ?? [];
-        const targetValue = params.target;
-        const targetOption = targetOptions.find((option) => doesSelectOptionMatchValue(option, targetValue));
-
-        if (!targetOption || !isTargetOptionEligibleForMode(targetOption, getRequiredMixedNurseMode(template, params), optionMap.nurse ?? [])) {
-            return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
-        }
-    }
-
-    if (template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') && selectedNurseCount < 1) {
+    if (
+        template.controls.some((control) => control.kind === 'multiSelect' && control.key === 'nurseIds') &&
+        selectedNurseCount < minimumNurseCount
+    ) {
         return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
     }
 
@@ -4496,6 +4643,10 @@ export function Constraints({
             {value: 'MAX', label: t('page.makeShift.constraints.option.staffCountOperator.max'), raw: {type: 'MAX'}},
             {value: 'EXACT', label: t('page.makeShift.constraints.option.staffCountOperator.exact'), raw: {type: 'EXACT'}},
         ];
+        const lineOperatorOptions = [
+            ...staffCountOperatorOptions,
+            {value: 'TARGET', label: t('page.makeShift.constraints.option.staffCountOperator.target'), raw: {type: 'TARGET'}},
+        ];
         const enumOption = (type: string, labelKey: TI18nKey): TSelectOption => ({
             value: type,
             label: t(labelKey),
@@ -4506,6 +4657,24 @@ export function Constraints({
             enumOption('TWO_ONLY', 'page.makeShift.constraints.mixed.participation.twoOnly'),
             enumOption('FLEX', 'page.makeShift.constraints.mixed.participation.flex'),
             enumOption('FALLBACK_TWO', 'page.makeShift.constraints.mixed.participation.fallbackTwo'),
+        ];
+        const mixedCompositionOptions = [
+            {value: 'BALANCED', label: '균형 편성', raw: {type: 'BALANCED'}},
+            {value: 'THREE_FIRST', label: '3교대 우선', raw: {type: 'THREE_FIRST'}},
+            {value: 'TWO_FIRST', label: '2교대 우선', raw: {type: 'TWO_FIRST'}},
+        ];
+        const assignmentAggregationOptions = [
+            {value: 'PER_NURSE', label: '간호사별', raw: {type: 'PER_NURSE'}},
+            {value: 'GROUP_TOTAL', label: '그룹 합계', raw: {type: 'GROUP_TOTAL'}},
+        ];
+        const twoShiftScopeOptions = [
+            {value: 'ALL_TWO', label: '모든 2교대', raw: {type: 'ALL_TWO'}},
+            {value: 'TWO_DAY', label: '2교대 주간', raw: {type: 'TWO_DAY'}},
+            {value: 'TWO_NIGHT', label: '2교대 야간', raw: {type: 'TWO_NIGHT'}},
+        ];
+        const workloadMetricOptions = [
+            {value: 'TWO_ASSIGNMENTS', label: '2교대 횟수', raw: {type: 'TWO_ASSIGNMENTS'}},
+            {value: 'WEEKEND_TWO_ASSIGNMENTS', label: '주말 2교대 횟수', raw: {type: 'WEEKEND_TWO_ASSIGNMENTS'}},
         ];
         const transitionDirectionOptions = [
             {
@@ -4606,9 +4775,14 @@ export function Constraints({
             dayType: [],
             dateScope: dateScopeOptions,
             staffCountOperator: staffCountOperatorOptions,
+            lineOperator: lineOperatorOptions,
             transitionDirection: transitionDirectionOptions,
             period: periodOptions,
             participationMode: participationModeOptions,
+            mixedComposition: mixedCompositionOptions,
+            assignmentAggregation: assignmentAggregationOptions,
+            twoShiftScope: twoShiftScopeOptions,
+            workloadMetric: workloadMetricOptions,
             nurse: nurseOptions,
             preceptor: preceptorOptions,
             preceptee: precepteeOptions,
@@ -4911,7 +5085,9 @@ export function Constraints({
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
         const defaultSeverity =
-            rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
+            isNurseShiftPreferenceSoftOnlyRule(template.id)
+                ? 'SOFT'
+                : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
                 ? 'SOFT'
                 : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
@@ -4930,10 +5106,15 @@ export function Constraints({
         const duplicateRule = rulesRef.current
             .filter((rule) => rule.selected !== false)
             .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
+        const conflictingNightRecoveryCodes =
+            nextRule.templateCode === 'TWO_SHIFT_NIGHT_THEN_CONTINUATION' ||
+            nextRule.templateCode === 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF'
+                ? new Set(['TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF', 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF'])
+                : TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES;
         const existingNightRecoveryRule = TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(nextRule.templateCode)
             ? rulesRef.current
                   .filter((rule) => rule.selected !== false)
-                  .find((rule) => TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES.has(rule.templateCode))
+                  .find((rule) => conflictingNightRecoveryCodes.has(rule.templateCode))
             : undefined;
 
         if (duplicateRule || existingNightRecoveryRule) {
@@ -5079,13 +5260,25 @@ export function Constraints({
     const setRuleImportant = useCallback(
         (clientId: string, isImportant: boolean) => {
             updateRules((prev) =>
-                prev.map((item) => (item.clientId === clientId ? {...item, severity: isImportant ? 'HARD' : 'SOFT', isImportant} : item)),
+                prev.map((item) => {
+                    if (item.clientId !== clientId) return item;
+
+                    const nextImportant = isNurseShiftPreferenceSoftOnlyRule(item.templateCode) ? false : isImportant;
+
+                    return {...item, severity: nextImportant ? 'HARD' : 'SOFT', isImportant: nextImportant};
+                }),
             );
         },
         [updateRules],
     );
     const toggleRuleImportant = useCallback(
         (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
+            if (nextImportant && isNurseShiftPreferenceSoftOnlyRule(rule.templateCode)) {
+                toast.error(t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked'));
+
+                return;
+            }
+
             if (!nextImportant && isRecommendedDefaultRuleCode(rule.templateCode, rotationMode)) {
                 setRecommendedWarning({rule, action: 'unmark'});
 
@@ -5094,7 +5287,7 @@ export function Constraints({
 
             setRuleImportant(rule.clientId, nextImportant);
         },
-        [rotationMode, setRuleImportant],
+        [rotationMode, setRuleImportant, t],
     );
     const removeRule = useCallback(
         (rule: TShiftConstraintRuleDraft) => {

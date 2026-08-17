@@ -7,6 +7,7 @@ import {
     docToShift,
     docToSnapshotCellsDTO,
     docToWardShiftsDTO,
+    isDutyDocInScheduleScope,
     isDutyShiftFullyAssigned,
     isDutyShiftWithoutAssignments,
     shiftToDoc,
@@ -144,6 +145,17 @@ describe('shift-adapter', () => {
         };
 
         expect(isDutyShiftFullyAssigned(noWorkers)).toBe(false);
+    });
+
+    it('checks that a draft belongs to the current schedule scope', () => {
+        const shift = createShift();
+        const doc = shiftToDoc(shift, 2026, 9);
+
+        expect(isDutyDocInScheduleScope(doc, shift, 2026, 9)).toBe(true);
+        expect(isDutyDocInScheduleScope(doc, shift, 2026, 8)).toBe(false);
+
+        expect(isDutyDocInScheduleScope({...doc, rows: [{...doc.rows[0]!, workerId: '999'}]}, shift, 2026, 9)).toBe(false);
+        expect(isDutyDocInScheduleScope({...doc, columns: ['2026-09-01']}, shift, 2026, 9)).toBe(false);
     });
 
     it('converts only worker rows into editor doc', () => {

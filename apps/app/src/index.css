@@ -74,6 +74,32 @@
 }
 
 @layer components {
+    .dropdown-scrollbar-visible {
+        scrollbar-color: #aab2c0 #f3f5f9;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+    }
+
+    .dropdown-scrollbar-visible::-webkit-scrollbar {
+        display: block;
+        width: 10px;
+    }
+
+    .dropdown-scrollbar-visible::-webkit-scrollbar-track {
+        background: #f3f5f9;
+        border-radius: 999px;
+    }
+
+    .dropdown-scrollbar-visible::-webkit-scrollbar-thumb {
+        background: #aab2c0;
+        border: 3px solid #f3f5f9;
+        border-radius: 999px;
+    }
+
+    .dropdown-scrollbar-visible::-webkit-scrollbar-thumb:hover {
+        background: #8f98a8;
+    }
+
     .text-highlight-soft {
         position: relative;
         z-index: 0;

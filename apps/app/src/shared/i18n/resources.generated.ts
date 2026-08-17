@@ -1314,11 +1314,11 @@ export const ko = {
                         "sentence": "N 근무 후에는 {days}일 이상 쉬어야(OFF) 해요"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "2교대 야간 표시 조건",
+                        "label": "2교대 야간 회복 조건",
                         "sentence": "모든 간호사의 {nightShift} 다음 표시일에는 {nightContinuationShift}가 필요해요."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "2교대 야간 후반부 회복 조건",
+                        "label": "2교대 야간 회복 조건",
                         "sentence": "모든 간호사의 {nightContinuationShift} 다음에는 최소 {count}일의 {offShift}가 필요해요."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
@@ -1327,7 +1327,7 @@ export const ko = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "2교대 야간 회복 조건",
-                        "sentence": "모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요."
+                        "sentence": "모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요."
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "금지 패턴 규칙",
@@ -1545,6 +1545,7 @@ export const ko = {
                     "duplicateSkipped": "같은 조건이 이미 있어요.",
                     "duplicatesRemoved": "중복 제약조건 {{count}}개를 정리했어요.",
                     "importantUnmarked": "중요 표시를 해제했어요.",
+                    "nurseShiftPreferenceImportantBlocked": "간호사별 근무 선호·회피 조건은 중요로 설정할 수 없어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
                     "importFailed": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
@@ -1600,7 +1601,7 @@ export const ko = {
                         "notConfigured": "가능 근무 설정 필요"
                     },
                     "validation": {
-                        "selectEligibleNurse": "가능 근무가 맞는 간호사를 1명 이상 선택해 주세요."
+                        "selectEligibleNurse": "가능 근무가 맞는 간호사를 2명 이상 선택해 주세요."
                     }
                 },
                 "accessibility": {
@@ -4393,12 +4394,12 @@ export const en: TLocale = {
                         "sentence": "After an N shift, assign at least {days} OFF day"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "Two-shift night display constraint",
-                        "sentence": "Every nurse needs {nightContinuationShift} on the display day after {nightShift}."
+                        "label": "Two-shift night recovery constraint",
+                        "sentence": "All nurses need {nightContinuationShift} on the display day after {nightShift}."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "Two-shift night-continuation recovery constraint",
-                        "sentence": "Every nurse needs at least {count} day(s) of {offShift} after {nightContinuationShift}."
+                        "label": "Two-shift night recovery constraint",
+                        "sentence": "All nurses need at least {count} {offShift} day(s) after {nightContinuationShift}."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "Two-shift night recovery constraint",
@@ -4406,7 +4407,7 @@ export const en: TLocale = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "Two-shift night recovery constraint",
-                        "sentence": "All nurses need at least {count} {offShift} day(s) after consecutive {nightShift} shifts. The first day counts as the recovery day after night duty."
+                        "sentence": "All nurses need at least {count} {offShift} day(s) after consecutive {nightShift} shifts."
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "Forbidden pattern constraint",
@@ -4624,6 +4625,7 @@ export const en: TLocale = {
                     "duplicateSkipped": "The same constraint already exists.",
                     "duplicatesRemoved": "Cleaned up {{count}} duplicate constraints.",
                     "importantUnmarked": "Important mark removed.",
+                    "nurseShiftPreferenceImportantBlocked": "Nurse-specific shift preference and avoidance constraints cannot be marked important.",
                     "imported": "Imported constraints from {{teamName}}.",
                     "importFailed": "Could not import constraints. Please try again shortly.",
                     "recommendedDeleted": "Recommended constraint deleted.",
@@ -4679,7 +4681,7 @@ export const en: TLocale = {
                         "notConfigured": "Shift availability setup required"
                     },
                     "validation": {
-                        "selectEligibleNurse": "Select at least one nurse with matching shift availability."
+                        "selectEligibleNurse": "Select at least two nurses with matching shift availability."
                     }
                 },
                 "accessibility": {
@@ -7470,12 +7472,12 @@ export const ja: TLocale = {
                         "sentence": "N勤務後は{days}日以上休みが必要です"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "2交代の夜勤表示条件",
+                        "label": "2交代夜勤回復条件",
                         "sentence": "すべての看護師の{nightShift}の次の表示日には{nightContinuationShift}が必要です。"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "2交代の夜勤後半回復条件",
-                        "sentence": "すべての看護師は{nightContinuationShift}の後に最低{count}日の{offShift}が必要です。"
+                        "label": "2交代夜勤回復条件",
+                        "sentence": "すべての看護師の{nightContinuationShift}の後には最低{count}日の{offShift}が必要です。"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "2交代の夜勤回復条件",
@@ -7483,7 +7485,7 @@ export const ja: TLocale = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "2交代の夜勤回復条件",
-                        "sentence": "すべての看護師は連続した{nightShift}勤務後、最低{count}日の{offShift}が必要です。このうち初日は夜勤後の回復日として扱います。"
+                        "sentence": "すべての看護師は連続した{nightShift}勤務後、最低{count}日の{offShift}が必要です。"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "禁止パターン条件",
@@ -7701,6 +7703,7 @@ export const ja: TLocale = {
                     "duplicateSkipped": "同じ条件がすでにあります。",
                     "duplicatesRemoved": "重複する制約条件{{count}}件を整理しました。",
                     "importantUnmarked": "重要マークを外しました。",
+                    "nurseShiftPreferenceImportantBlocked": "看護師別の勤務希望・回避条件は重要に設定できません。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
                     "importFailed": "制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。",
                     "recommendedDeleted": "推奨条件を削除しました。",
@@ -7756,7 +7759,7 @@ export const ja: TLocale = {
                         "notConfigured": "勤務可能設定が必要"
                     },
                     "validation": {
-                        "selectEligibleNurse": "勤務可能設定が合う看護師を1人以上選択してください。"
+                        "selectEligibleNurse": "勤務可能設定が合う看護師を2人以上選択してください。"
                     }
                 },
                 "accessibility": {
@@ -10547,12 +10550,12 @@ export const zh: TLocale = {
                         "sentence": "N 下班后您必须至少休息 {days} 天。"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "两班制夜班显示条件",
-                        "sentence": "所有护士在{nightShift}后的显示日需要{nightContinuationShift}。"
+                        "label": "两班制夜班恢复条件",
+                        "sentence": "所有护士的{nightShift}之后的显示日需要{nightContinuationShift}。"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "两班制夜班后半段恢复条件",
-                        "sentence": "所有护士在{nightContinuationShift}后至少需要{count}天{offShift}。"
+                        "label": "两班制夜班恢复条件",
+                        "sentence": "所有护士的{nightContinuationShift}之后至少需要{count}天{offShift}。"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "两班制夜班恢复条件",
@@ -10560,7 +10563,7 @@ export const zh: TLocale = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "两班制夜班恢复条件",
-                        "sentence": "所有护士在连续{nightShift}班后，至少需要{count}天{offShift}。其中第一天按夜班后的恢复日计算。"
+                        "sentence": "所有护士在连续{nightShift}班后，至少需要{count}天{offShift}。"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "禁止模式规则",
@@ -10778,6 +10781,7 @@ export const zh: TLocale = {
                     "duplicateSkipped": "相同条件已存在。",
                     "duplicatesRemoved": "已整理 {{count}} 重复约束。",
                     "importantUnmarked": "未将其标记为重要。",
+                    "nurseShiftPreferenceImportantBlocked": "护士个人班次偏好和回避条件不能设为重要。",
                     "imported": "{{teamName}} 约束按原样加载。",
                     "importFailed": "无法加载约束。请稍后重试。",
                     "recommendedDeleted": "推荐的条件已被删除。",
@@ -10833,7 +10837,7 @@ export const zh: TLocale = {
                         "notConfigured": "需要设置可排班次"
                     },
                     "validation": {
-                        "selectEligibleNurse": "请至少选择一名班次可用性符合的护士。"
+                        "selectEligibleNurse": "请至少选择两名班次可用性符合的护士。"
                     }
                 },
                 "accessibility": {
@@ -13624,12 +13628,12 @@ export const th: TLocale = {
                         "sentence": "หลังจากกะ N ให้กำหนดอย่างน้อย {days} OFF วัน"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "เงื่อนไขการแสดงเวรกลางคืนแบบ 2 กะ",
-                        "sentence": "สำหรับพยาบาลทุกคน วันแสดงผลถัดจาก {nightShift} ต้องเป็น {nightContinuationShift}"
+                        "label": "เงื่อนไขฟื้นตัวหลังเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "สำหรับพยาบาลทุกคน วันแสดงผลถัดจาก{nightShift}ต้องเป็น{nightContinuationShift}"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "เงื่อนไขพักฟื้นหลังช่วงหลังเวรกลางคืนแบบ 2 กะ",
-                        "sentence": "หลัง {nightContinuationShift} พยาบาลทุกคนต้องมี {offShift} อย่างน้อย {count} วัน"
+                        "label": "เงื่อนไขฟื้นตัวหลังเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "หลัง{nightContinuationShift} พยาบาลทุกคนต้องมี{offShift}อย่างน้อย{count}วัน"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "เงื่อนไขพักฟื้นหลังเวรกลางคืนแบบ 2 กะ",
@@ -13637,7 +13641,7 @@ export const th: TLocale = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "เงื่อนไขพักฟื้นหลังเวรกลางคืนแบบ 2 กะ",
-                        "sentence": "พยาบาลทุกคนต้องมี {offShift} อย่างน้อย {count} วันหลังทำเวร {nightShift} ติดต่อกัน โดยวันแรกนับเป็นวันพักฟื้นหลังเวรกลางคืน"
+                        "sentence": "พยาบาลทุกคนต้องมี {offShift} อย่างน้อย {count} วันหลังทำเวร {nightShift} ติดต่อกัน"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
@@ -13855,6 +13859,7 @@ export const th: TLocale = {
                     "duplicateSkipped": "มีเงื่อนไขเดียวกันอยู่แล้ว",
                     "duplicatesRemoved": "ทำความสะอาดข้อจำกัดที่ซ้ำกันของ {{count}}",
                     "importantUnmarked": "เครื่องหมายสำคัญถูกลบออก",
+                    "nurseShiftPreferenceImportantBlocked": "เงื่อนไขความชอบหรือหลีกเลี่ยงเวรเฉพาะพยาบาลไม่สามารถตั้งเป็นสำคัญได้",
                     "imported": "ข้อจำกัดที่นำเข้าจาก {{teamName}}",
                     "importFailed": "ไม่สามารถนำเข้าข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
                     "recommendedDeleted": "ลบข้อจำกัดที่แนะนำแล้ว",
@@ -13910,7 +13915,7 @@ export const th: TLocale = {
                         "notConfigured": "ต้องตั้งค่ากะที่ทำได้"
                     },
                     "validation": {
-                        "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 1 คน"
+                        "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 2 คน"
                     }
                 },
                 "accessibility": {
@@ -16701,11 +16706,11 @@ export const vi: TLocale = {
                         "sentence": "Sau ca N, ấn định ít nhất {days} ngày TẮT"
                     },
                     "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
-                        "label": "Điều kiện hiển thị ca đêm 2 ca",
+                        "label": "Ràng buộc phục hồi ca đêm 2 ca",
                         "sentence": "Mọi điều dưỡng cần {nightContinuationShift} vào ngày hiển thị sau {nightShift}."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
-                        "label": "Điều kiện phục hồi sau nửa sau ca đêm 2 ca",
+                        "label": "Ràng buộc phục hồi ca đêm 2 ca",
                         "sentence": "Mọi điều dưỡng cần ít nhất {count} ngày {offShift} sau {nightContinuationShift}."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
@@ -16714,7 +16719,7 @@ export const vi: TLocale = {
                     },
                     "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
                         "label": "Điều kiện phục hồi sau ca đêm 2 ca",
-                        "sentence": "Tất cả điều dưỡng cần ít nhất {count} ngày {offShift} sau các ca {nightShift} liên tiếp. Ngày đầu tiên được tính là ngày phục hồi sau ca đêm."
+                        "sentence": "Tất cả điều dưỡng cần ít nhất {count} ngày {offShift} sau các ca {nightShift} liên tiếp."
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "Ràng buộc mẫu bị cấm",
@@ -16932,6 +16937,7 @@ export const vi: TLocale = {
                     "duplicateSkipped": "Điều kiện này đã tồn tại.",
                     "duplicatesRemoved": "Đã dọn sạch {{count}} các hạn chế trùng lặp.",
                     "importantUnmarked": "Dấu quan trọng đã bị xóa.",
+                    "nurseShiftPreferenceImportantBlocked": "Không thể đánh dấu điều kiện ưu tiên hoặc tránh ca theo từng điều dưỡng là quan trọng.",
                     "imported": "Đã nhập các ràng buộc từ {{teamName}}.",
                     "importFailed": "Không thể nhập các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
                     "recommendedDeleted": "Đã xóa hạn chế được đề xuất.",
@@ -16987,7 +16993,7 @@ export const vi: TLocale = {
                         "notConfigured": "Cần thiết lập ca có thể làm"
                     },
                     "validation": {
-                        "selectEligibleNurse": "Chọn ít nhất một điều dưỡng có khả năng ca phù hợp."
+                        "selectEligibleNurse": "Chọn ít nhất hai điều dưỡng có khả năng ca phù hợp."
                     }
                 },
                 "accessibility": {

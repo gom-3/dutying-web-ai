@@ -460,11 +460,12 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     workflowDTO,
                 )
             ).data,
-        validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO) =>
+        validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO, options) =>
             (
                 await client.post<TValidationRes>(
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/validate-snapshot`),
                     validateSnapshotDTO,
+                    options,
                 )
             ).data,
         autofillSchedule: async (wardId, shiftTeamId, autofillDTO, options) =>

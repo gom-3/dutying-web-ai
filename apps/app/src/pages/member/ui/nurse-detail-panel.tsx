@@ -1097,7 +1097,7 @@ function NurseDetailPanel({
                             {moveTeamMenuOpen ? (
                                 <div
                                     role="listbox"
-                                    className="absolute right-0 bottom-full left-0 z-20 mb-2 overflow-hidden rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
+                                    className="dropdown-scrollbar-visible absolute right-0 bottom-full left-0 z-20 mb-2 max-h-[260px] overflow-y-auto rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
                                 >
                                     <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">
                                         {t('page.member.detail.moveTargetTeam')}

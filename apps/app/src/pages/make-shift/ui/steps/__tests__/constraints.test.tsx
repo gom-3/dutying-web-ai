@@ -358,7 +358,7 @@ describe('Constraints', () => {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
                     displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -384,26 +384,30 @@ describe('Constraints', () => {
 
         await userEvent.click(addButton);
 
-        const thenCard = await waitFor(() => {
-            const card = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
+        const continuationCard = await waitFor(() => {
+            const card = document.querySelector<HTMLElement>(
+                '[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]',
+            );
 
             expect(card).toBeInTheDocument();
 
             return card!;
         });
-        const afterMinOffCard = document.querySelector<HTMLElement>(
+        const continuationOffCard = document.querySelector<HTMLElement>(
             '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
         );
         const pairCard = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_PAIR_MIN_OFF"]');
 
-        expect(thenCard.textContent).toContain('すべての看護師の');
-        expect(thenCard.textContent).toContain('次の表示日には');
-        expect(thenCard.textContent).toContain('が必要です。');
-        expect(thenCard.textContent).not.toContain('모든 간호사의');
-        expect(afterMinOffCard?.textContent).toContain('後に最低');
-        expect(afterMinOffCard?.textContent).toContain('日の');
-        expect(afterMinOffCard?.textContent).not.toContain('다음에는');
-        expect(pairCard?.textContent).toContain('このうち初日は夜勤後の回復日として扱います。');
+        expect(continuationCard.textContent).toContain('すべての看護師の');
+        expect(continuationCard.textContent).toContain('次の表示日には');
+        expect(continuationCard.textContent).toContain('が必要です。');
+        expect(continuationCard.textContent).not.toContain('모든 간호사는');
+        expect(continuationCard.textContent).not.toContain('근무 후');
+        expect(continuationOffCard?.textContent).toContain('後には最低');
+        expect(continuationOffCard?.textContent).toContain('日の');
+        expect(continuationOffCard?.textContent).not.toContain('모든 간호사의');
+        expect(pairCard?.textContent).toContain('すべての看護師は連続した');
+        expect(pairCard?.textContent).not.toContain('このうち初日は');
         expect(pairCard?.textContent).not.toContain('이 중 첫날은');
     });
 
@@ -514,19 +518,14 @@ describe('Constraints', () => {
         await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
 
         const dialog = screen.getByRole('dialog');
-        const thenCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
-        const afterMinOffCard = dialog.querySelector<HTMLElement>(
-            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
-        );
+        const sequenceCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
+        const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]');
 
-        expect(thenCard).not.toBeNull();
-        expect(afterMinOffCard).not.toBeNull();
-        expect(within(thenCard!).getByText('2교대 야간')).toBeInTheDocument();
-        expect(within(thenCard!).getByText('야간 후반부')).toBeInTheDocument();
-        expect(thenCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
-        expect(within(afterMinOffCard!).getByText('야간 후반부')).toBeInTheDocument();
-        expect(within(afterMinOffCard!).getByText('휴무')).toBeInTheDocument();
-        expect(afterMinOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
+        expect(sequenceCard).not.toBeNull();
+        expect(minOffCard).not.toBeNull();
+        expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
+        expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
+        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
 
         await userEvent.click(within(thenCard!).getByTitle('추가'));
 
@@ -566,10 +565,9 @@ describe('Constraints', () => {
         await waitFor(() => {
             expect(getLastUpdatePayload()?.rules).toEqual([
                 expect.objectContaining({
-                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
                     severity: 'HARD',
                     params: {
-                        nightShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5},
                         nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
                     },
                 }),
@@ -632,7 +630,7 @@ describe('Constraints', () => {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
                     displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -959,7 +957,7 @@ describe('Constraints', () => {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
                     displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요. 이 중 첫날은 야간근무 후 회복일로 계산해요.',
+                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD' as const,
                     allowedSeverities: ['HARD' as const, 'SOFT' as const],
                     supportedInGenerator: true,
@@ -1026,6 +1024,63 @@ describe('Constraints', () => {
                 }),
             ]);
         });
+    });
+
+    it('shows the important badge without a row recommendation badge for the two-shift N-to-D rule', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce(twoShiftWardShiftTypes as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rotationMode: 'TWO',
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+            },
+            templates: [
+                {
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    displayTemplate: '{target}은 N 근무 다음 날 D 근무를 피해요.',
+                    severity: 'HARD' as const,
+                    allowedSeverities: ['HARD' as const],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'target', label: '대상자', inputType: 'SELECT' as const, optionGroup: 'targets'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 95,
+            shiftTeamId: 950,
+            rules: [
+                {
+                    shiftConstraintRuleId: 70,
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}},
+                    selected: true,
+                    isImportant: true,
+                    displayText: '전체은 N 근무 다음 날 D 근무를 피해요.',
+                    isValid: true,
+                    invalidReason: null,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={95} shiftTeamId={950} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const row = await waitFor(() => {
+            const element = document.getElementById('constraint-rule-saved-70');
+            expect(element).not.toBeNull();
+            return element as HTMLElement;
+        });
+
+        expect(within(row).queryByText('권장')).not.toBeInTheDocument();
+        expect(within(row).getByText('중요')).toBeInTheDocument();
+        expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
     it.each(['THREE', 'MIXED'] as const)('keeps the shared existing rules available in %s catalogs', async (rotationMode) => {
@@ -1932,6 +1987,474 @@ describe('Constraints', () => {
                 }),
             ]);
         });
+    });
+
+    it('keeps HARD-only and SOFT-only mixed templates at the server-declared severity without an editable toggle', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'MIXED',
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+                nurses: [{type: 'NURSE', nurseId: 1, label: 'Nurse A', name: 'Nurse A'}],
+            },
+            templates: [
+                {
+                    templateCode: 'MIN_REST_BETWEEN_SHIFTS',
+                    category: 'MIXED_SAFETY',
+                    displayTemplate: '{target} {minRestMinutes}',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'targets'},
+                        {key: 'minRestMinutes', label: 'Rest', inputType: 'NUMBER', min: 1, max: 2880},
+                    ],
+                },
+                {
+                    templateCode: 'MIXED_SHIFT_WORKLOAD_BALANCE',
+                    category: 'MIXED_BALANCE',
+                    displayTemplate: '{nurseIds} {metric} {period} {maxDifference}',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'metric', label: 'Metric', inputType: 'SELECT', optionGroup: 'workloadMetrics'},
+                        {key: 'period', label: 'Period', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'maxDifference', label: 'Difference', inputType: 'NUMBER', min: 0, max: 100},
+                    ],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 101,
+                    templateCode: 'MIN_REST_BETWEEN_SHIFTS',
+                    category: 'MIXED_SAFETY',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}, minRestMinutes: 660},
+                    selected: true,
+                    isImportant: false,
+                },
+                {
+                    shiftConstraintRuleId: 102,
+                    templateCode: 'MIXED_SHIFT_WORKLOAD_BALANCE',
+                    category: 'MIXED_BALANCE',
+                    severity: 'HARD',
+                    sortOrder: 2,
+                    params: {
+                        nurseIds: [{type: 'NURSE', nurseId: 1}],
+                        metric: {type: 'TWO_ASSIGNMENTS'},
+                        period: {type: 'MONTH'},
+                        maxDifference: 1,
+                    },
+                    selected: true,
+                    isImportant: true,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const restInput = await screen.findByDisplayValue('660');
+        const restRow = document.getElementById('constraint-rule-saved-101') as HTMLElement;
+        const balanceRow = document.getElementById('constraint-rule-saved-102') as HTMLElement;
+
+        expect(within(restRow).queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(within(balanceRow).queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+
+        await userEvent.click(restInput);
+        await userEvent.keyboard('720');
+
+        await waitFor(() => {
+            const savedRules = getLastUpdatePayload()?.rules ?? [];
+
+            expect(savedRules.find((rule) => rule.templateCode === 'MIN_REST_BETWEEN_SHIFTS')).toEqual(
+                expect.objectContaining({severity: 'HARD', isImportant: true}),
+            );
+            expect(savedRules.find((rule) => rule.templateCode === 'MIXED_SHIFT_WORKLOAD_BALANCE')).toEqual(
+                expect.objectContaining({severity: 'SOFT', isImportant: false}),
+            );
+        });
+    });
+
+    it('forces both two-shift count templates to SOFT for TARGET and restores editable severity for other operators', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'MIXED',
+            options: {
+                nurses: [{type: 'NURSE', nurseId: 1, label: 'Nurse A', name: 'Nurse A'}],
+            },
+            templates: [
+                {
+                    templateCode: 'TWO_SHIFT_DAILY_LINES',
+                    category: 'MIXED_STAFFING',
+                    displayTemplate: '{dateScope} {operator} {count} {unpairedMax}',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'dateScope', label: 'Date', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'lineOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 0, max: 100},
+                        {key: 'unpairedMax', label: 'Unpaired', inputType: 'NUMBER', min: 0, max: 100},
+                    ],
+                },
+                {
+                    templateCode: 'TWO_SHIFT_ASSIGNMENT_COUNT',
+                    category: 'MIXED_PARTICIPATION',
+                    displayTemplate: '{nurseIds} {aggregation} {shiftScope} {period} {operator} {count}',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'aggregation', label: 'Aggregation', inputType: 'SELECT', optionGroup: 'assignmentAggregations'},
+                        {key: 'shiftScope', label: 'Scope', inputType: 'SELECT', optionGroup: 'twoShiftScopes'},
+                        {key: 'period', label: 'Period', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'lineOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 0, max: 100},
+                    ],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 200,
+                    templateCode: 'MIXED_OPERATION_POLICY',
+                    category: 'MIXED_POLICY',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {strategy: {type: 'PLANNED_MIXED_WITH_FALLBACK'}},
+                    selected: true,
+                    isImportant: true,
+                },
+                {
+                    shiftConstraintRuleId: 201,
+                    templateCode: 'TWO_SHIFT_DAILY_LINES',
+                    category: 'MIXED_STAFFING',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {dateScope: {type: 'EVERYDAY'}, operator: {type: 'MIN'}, count: 1, unpairedMax: 0},
+                    selected: true,
+                    isImportant: true,
+                },
+                {
+                    shiftConstraintRuleId: 202,
+                    templateCode: 'TWO_SHIFT_ASSIGNMENT_COUNT',
+                    category: 'MIXED_PARTICIPATION',
+                    severity: 'HARD',
+                    sortOrder: 2,
+                    params: {
+                        nurseIds: [{type: 'NURSE', nurseId: 1}],
+                        aggregation: {type: 'PER_NURSE'},
+                        shiftScope: {type: 'ALL_TWO'},
+                        period: {type: 'MONTH'},
+                        operator: {type: 'MIN'},
+                        count: 1,
+                    },
+                    selected: true,
+                    isImportant: true,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const getRuleRow = (id: number) => document.getElementById(`constraint-rule-saved-${id}`) as HTMLElement;
+
+        await waitFor(() => expect(within(getRuleRow(201)).getByRole('button', {name: '최소'})).toBeInTheDocument());
+        expect(within(getRuleRow(201)).getByRole('checkbox')).toBeChecked();
+        expect(within(getRuleRow(202)).getByRole('checkbox')).toBeChecked();
+
+        await userEvent.click(within(getRuleRow(201)).getByRole('button', {name: '최소'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '목표'}));
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'TWO_SHIFT_DAILY_LINES')).toEqual(
+                expect.objectContaining({severity: 'SOFT', isImportant: false}),
+            );
+            expect(within(getRuleRow(201)).queryByRole('checkbox')).not.toBeInTheDocument();
+            expect(within(getRuleRow(202)).getByRole('checkbox')).toBeChecked();
+        });
+
+        await userEvent.click(within(getRuleRow(202)).getByRole('button', {name: '최소'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '목표'}));
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'TWO_SHIFT_ASSIGNMENT_COUNT')).toEqual(
+                expect.objectContaining({severity: 'SOFT', isImportant: false}),
+            );
+            expect(within(getRuleRow(202)).queryByRole('checkbox')).not.toBeInTheDocument();
+        });
+
+        await userEvent.click(within(getRuleRow(201)).getByRole('button', {name: '목표'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '최소'}));
+
+        const editableImportantToggle = await waitFor(() => within(getRuleRow(201)).getByRole('checkbox'));
+
+        expect(editableImportantToggle).not.toBeChecked();
+        expect(getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'TWO_SHIFT_DAILY_LINES')).toEqual(
+            expect.objectContaining({severity: 'SOFT', isImportant: false}),
+        );
+
+        await userEvent.click(editableImportantToggle);
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'TWO_SHIFT_DAILY_LINES')).toEqual(
+                expect.objectContaining({severity: 'HARD', isImportant: true}),
+            );
+        });
+    });
+
+    it('blocks marking nurse shift preference rules as important with a toast', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'THREE',
+            options: {
+                nurses: [{type: 'NURSE', nurseId: 1, label: '신규 간호사 1', name: '신규 간호사 1'}],
+                dutyStrict: [{type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 1, label: '데이', name: '데이', code: 'D'}],
+            },
+            templates: [
+                {
+                    templateCode: 'NURSE_PREFER_SHIFT',
+                    category: 'NURSE_LIMIT',
+                    displayTemplate: '{nurse}는 {shift} 근무를 선호해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nurse', label: '간호사', inputType: 'NURSE', optionGroup: 'nurses'},
+                        {key: 'shift', label: '근무', inputType: 'SHIFT', optionGroup: 'dutyStrict'},
+                    ],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 31,
+                    templateCode: 'NURSE_PREFER_SHIFT',
+                    category: 'NURSE_LIMIT',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {
+                        nurse: {type: 'NURSE', nurseId: 1},
+                        shift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 1},
+                    },
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const ruleRow = await waitFor(() => {
+            const row = document.getElementById('constraint-rule-saved-31');
+
+            expect(row).toBeInTheDocument();
+
+            return row as HTMLElement;
+        });
+        const importantToggle = within(ruleRow).getByRole('checkbox', {name: '중요 표시'});
+
+        expect(importantToggle).toHaveAttribute('aria-disabled', 'true');
+
+        await userEvent.click(importantToggle);
+
+        expect(toast.error).toHaveBeenCalledWith('간호사별 근무 선호·회피 조건은 중요로 설정할 수 없어요.');
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+    });
+
+    it('uses the real mixed candidate option groups from the server before fallback options', async () => {
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'MIXED',
+            options: {
+                mixedStrategies: [{type: 'PLANNED_MIXED', label: 'SERVER_STRATEGY'}],
+                mixedParticipationModes: [{type: 'THREE_ONLY', label: 'SERVER_PARTICIPATION'}],
+                mixedCompositions: [{type: 'CLOSED', label: 'SERVER_COMPOSITION'}],
+                mixedLineOperators: [{type: 'MAX', label: 'SERVER_OPERATOR'}],
+                mixedAssignmentAggregations: [{type: 'GROUP_TOTAL', label: 'SERVER_AGGREGATION'}],
+                mixedTwoShiftScopes: [{type: 'TWO_NIGHT', label: 'SERVER_SCOPE'}],
+                mixedWorkloadMetrics: [{type: 'WEEKEND_TWO_ASSIGNMENTS', label: 'SERVER_METRIC'}],
+            },
+            templates: [
+                {
+                    templateCode: 'TWO_SHIFT_ASSIGNMENT_COUNT',
+                    category: 'MIXED_PARTICIPATION',
+                    displayTemplate: '{nurseIds} {aggregation} {shiftScope} {period} {operator} {count}',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'aggregation', label: 'Aggregation', inputType: 'SELECT', optionGroup: 'mixedAssignmentAggregations'},
+                        {key: 'shiftScope', label: 'Scope', inputType: 'SELECT', optionGroup: 'mixedTwoShiftScopes'},
+                        {key: 'period', label: 'Period', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'mixedLineOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 0, max: 100},
+                    ],
+                },
+                {
+                    templateCode: 'MIXED_SHIFT_WORKLOAD_BALANCE',
+                    category: 'MIXED_BALANCE',
+                    displayTemplate: '{nurseIds} {metric} {period} {maxDifference}',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: false,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                        {key: 'metric', label: 'Metric', inputType: 'SELECT', optionGroup: 'mixedWorkloadMetrics'},
+                        {key: 'period', label: 'Period', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'maxDifference', label: 'Difference', inputType: 'NUMBER', min: 0, max: 100},
+                    ],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 401,
+                    templateCode: 'MIXED_OPERATION_POLICY',
+                    category: 'MIXED_POLICY',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {strategy: {type: 'PLANNED_MIXED'}},
+                    selected: true,
+                    isImportant: true,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
+
+        expect(screen.getByRole('button', {name: '그룹 합계'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '2교대 야간'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '최대'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '간호사별'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '모든 2교대'})).not.toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '공정성'}));
+        expect(screen.getByRole('button', {name: '주말 2교대 횟수'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '2교대 횟수'})).not.toBeInTheDocument();
+    });
+
+    it('selects two nurses by default for mixed workload balance and disables add when fewer than two are available', async () => {
+        const workloadTemplate = {
+            templateCode: 'MIXED_SHIFT_WORKLOAD_BALANCE',
+            category: 'MIXED_BALANCE',
+            displayTemplate: '{nurseIds} {metric} {period} {maxDifference}',
+            severity: 'SOFT' as const,
+            allowedSeverities: ['SOFT' as const],
+            supportedInGenerator: false,
+            supportedInValidator: true,
+            slots: [
+                {key: 'nurseIds', label: 'Nurses', inputType: 'MULTI_SELECT', optionGroup: 'nurses'},
+                {key: 'metric', label: 'Metric', inputType: 'SELECT', optionGroup: 'workloadMetrics'},
+                {key: 'period', label: 'Period', inputType: 'SELECT', optionGroup: 'periods'},
+                {key: 'maxDifference', label: 'Difference', inputType: 'NUMBER', min: 0, max: 100},
+            ],
+        };
+
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'MIXED',
+            options: {},
+            templates: [workloadTemplate],
+        });
+
+        const {unmount} = render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+
+        const enabledAddButton = screen.getByTitle('추가');
+
+        expect(screen.getByRole('button', {name: '혼합교대 부담 균형: 간호사 선택: Nurse A, Nurse B'})).toBeInTheDocument();
+        expect(enabledAddButton).toBeEnabled();
+        await userEvent.click(enabledAddButton);
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules?.[0]).toEqual(
+                expect.objectContaining({
+                    templateCode: 'MIXED_SHIFT_WORKLOAD_BALANCE',
+                    severity: 'SOFT',
+                    isImportant: false,
+                    params: expect.objectContaining({
+                        nurseIds: [
+                            {type: 'NURSE', nurseId: 1},
+                            {type: 'NURSE', nurseId: 2},
+                        ],
+                    }),
+                }),
+            );
+        });
+
+        unmount();
+        vi.clearAllMocks();
+        wardApiMocks.getShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, rules: []});
+        wardApiMocks.updateShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, rules: []});
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode: 'MIXED',
+            options: {},
+            templates: [workloadTemplate],
+        });
+        wardApiMocks.getShiftTeamNurses.mockResolvedValue([{nurseId: 1, name: 'Nurse A', isPreceptor: false}] as never);
+        wardApiMocks.getShiftTypes.mockResolvedValue([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+
+        const disabledAddButton = screen.getByTitle('추가');
+        const guidance = screen.getByText('가능 근무가 맞는 간호사를 2명 이상 선택해 주세요.');
+
+        expect(disabledAddButton).toBeDisabled();
+        expect(disabledAddButton).toHaveAttribute('aria-describedby', guidance.id);
     });
 
     it('fails closed and explains unavailable mixed-shift nurses when possible shifts are missing or incompatible', async () => {

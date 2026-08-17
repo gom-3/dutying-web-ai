@@ -701,6 +701,28 @@ export const resolveOnboardingRotationSystem = (
         ? 'THREE'
         : 'NONE';
 };
+const getTwoShiftNightDefaultTimeRange = (display: TTwoShiftNightRecoveryDisplay) => ({
+    startTime: '19:00',
+    endTime: display === 'NIGHT_CONTINUATION' ? '00:00' : '07:00',
+});
+const syncTwoShiftNightDefaultTimeRange = (
+    shiftTypes: TOnboardingWardShiftType[],
+    display: TTwoShiftNightRecoveryDisplay,
+): TOnboardingWardShiftType[] =>
+    shiftTypes.map((shiftType) => {
+        const isAutoSeededTwoShiftNight =
+            shiftType.autoSeeded === true &&
+            !shiftType.protectedByPreviousSchedule &&
+            resolveOnboardingRotationSystem(shiftType) === 'TWO' &&
+            shiftType.classification === 'NIGHT';
+
+        if (!isAutoSeededTwoShiftNight) return shiftType;
+
+        return {
+            ...shiftType,
+            ...getTwoShiftNightDefaultTimeRange(display),
+        };
+    });
 
 const getOnboardingShiftTypeSettingsOrder = (shiftType: TOnboardingWardShiftType) => {
     const rotationSystem = resolveOnboardingRotationSystem(shiftType);
@@ -834,6 +856,7 @@ export const updateTwoShiftNightRecoveryDisplayDraft = (
         });
     }
 
+    shiftTypes = syncTwoShiftNightDefaultTimeRange(shiftTypes, display);
     shiftTypes = orderOnboardingShiftTypes(shiftTypes);
 
     const activeShiftTypeIds = getActiveShiftTypeIds(shiftTypes);
