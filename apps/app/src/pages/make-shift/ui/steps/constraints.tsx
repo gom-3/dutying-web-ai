@@ -391,6 +391,12 @@ const MIXED_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set([
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ]);
+const MIXED_SHIFT_REMOVED_LEGACY_DEFAULT_RULE_CODES = new Set([
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_E_THEN_N',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+]);
 const TWO_SHIFT_LEGACY_DEFAULT_RULE_CODES = new Set(['CORE_MAX_CONTINUOUS_WORK', 'CORE_MAX_CONTINUOUS_NIGHT', 'CORE_MIN_CONTINUOUS_NIGHT']);
 const MIXED_SHIFT_TEMPLATE_CODES = new Set([
     'MIXED_ROTATION_PARTICIPATION',
@@ -1682,10 +1688,6 @@ function getTargetOptionUnavailableReasonKey(
     const unavailableNurse = targetNurseOptions.find((nurseOption) => !isNurseOptionEligibleForMode(nurseOption, requiredMode));
 
     return unavailableNurse ? getNurseOptionUnavailableReasonKey(unavailableNurse, requiredMode) : undefined;
-}
-
-function isTargetOptionEligibleForMode(option: TSelectOption, requiredMode: string | null, nurseOptions: TSelectOption[]) {
-    return !getTargetOptionUnavailableReasonKey(option, requiredMode, nurseOptions);
 }
 
 function getEligibleNurseOptions(template: TSoftRuleTemplate, params: Record<string, unknown>, options: TSelectOption[]) {
@@ -4110,7 +4112,7 @@ const CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR =
 function getSoftRuleAddIssue(
     template: TSoftRuleTemplate,
     params: Record<string, unknown>,
-    optionMap: Record<string, TSelectOption[]> = {},
+    _optionMap: Record<string, TSelectOption[]> = {},
 ): TI18nKey | null {
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
     const minimumNurseCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;

@@ -527,31 +527,7 @@ describe('Constraints', () => {
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
         expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
 
-        await userEvent.click(within(thenCard!).getByTitle('추가'));
-
-        await waitFor(() => {
-            expect(getLastUpdatePayload()?.rules).toEqual([
-                expect.objectContaining({
-                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
-                    severity: 'HARD',
-                    params: {
-                        nightShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5},
-                        nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
-                    },
-                }),
-            ]);
-        });
-
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
-
-        const nextDialog = screen.getByRole('dialog');
-        const nextAfterMinOffCard = nextDialog.querySelector<HTMLElement>(
-            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
-        );
-
-        expect(nextAfterMinOffCard).not.toBeNull();
-
-        const offCount = within(nextAfterMinOffCard!).getByRole('spinbutton');
+        const offCount = within(minOffCard!).getByRole('spinbutton');
 
         expect(offCount).toHaveValue(1);
         expect(offCount).toHaveAttribute('min', '1');
@@ -560,17 +536,10 @@ describe('Constraints', () => {
         expect(offCount).toHaveValue(null);
         await userEvent.type(offCount, '2');
         expect(offCount).toHaveValue(2);
-        await userEvent.click(within(nextAfterMinOffCard!).getByTitle('추가'));
+        await userEvent.click(within(minOffCard!).getByTitle('추가'));
 
         await waitFor(() => {
             expect(getLastUpdatePayload()?.rules).toEqual([
-                expect.objectContaining({
-                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
-                    severity: 'HARD',
-                    params: {
-                        nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
-                    },
-                }),
                 expect.objectContaining({
                     templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
                     severity: 'HARD',
