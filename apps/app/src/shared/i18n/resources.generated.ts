@@ -1574,7 +1574,7 @@ export const ko = {
                         "notConfigured": "가능 근무 설정 필요"
                     },
                     "validation": {
-                        "selectEligibleNurse": "가능 근무가 맞는 간호사를 1명 이상 선택해 주세요."
+                        "selectEligibleNurse": "가능 근무가 맞는 간호사를 2명 이상 선택해 주세요."
                     }
                 },
                 "accessibility": {
@@ -4627,7 +4627,7 @@ export const en: TLocale = {
                         "notConfigured": "Shift availability setup required"
                     },
                     "validation": {
-                        "selectEligibleNurse": "Select at least one nurse with matching shift availability."
+                        "selectEligibleNurse": "Select at least two nurses with matching shift availability."
                     }
                 },
                 "accessibility": {
@@ -7678,7 +7678,7 @@ export const ja: TLocale = {
                         "notConfigured": "勤務可能設定が必要"
                     },
                     "validation": {
-                        "selectEligibleNurse": "勤務可能設定が合う看護師を1人以上選択してください。"
+                        "selectEligibleNurse": "勤務可能設定が合う看護師を2人以上選択してください。"
                     }
                 },
                 "accessibility": {
@@ -10729,7 +10729,7 @@ export const zh: TLocale = {
                         "notConfigured": "需要设置可排班次"
                     },
                     "validation": {
-                        "selectEligibleNurse": "请至少选择一名班次可用性符合的护士。"
+                        "selectEligibleNurse": "请至少选择两名班次可用性符合的护士。"
                     }
                 },
                 "accessibility": {
@@ -13780,7 +13780,7 @@ export const th: TLocale = {
                         "notConfigured": "ต้องตั้งค่ากะที่ทำได้"
                     },
                     "validation": {
-                        "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 1 คน"
+                        "selectEligibleNurse": "เลือกพยาบาลที่มีกะที่ทำได้ตรงกันอย่างน้อย 2 คน"
                     }
                 },
                 "accessibility": {
@@ -16831,7 +16831,7 @@ export const vi: TLocale = {
                         "notConfigured": "Cần thiết lập ca có thể làm"
                     },
                     "validation": {
-                        "selectEligibleNurse": "Chọn ít nhất một điều dưỡng có khả năng ca phù hợp."
+                        "selectEligibleNurse": "Chọn ít nhất hai điều dưỡng có khả năng ca phù hợp."
                     }
                 },
                 "accessibility": {
