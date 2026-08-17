@@ -300,12 +300,12 @@ export default function ShiftCalendar({
             )}
         >
             <section
-                className={cn('min-h-0 min-w-0 overflow-hidden rounded-[18px] bg-white p-2', !hasCurrentTeamNurses && 'h-full')}
+                className={cn('min-h-0 min-w-0 overflow-visible rounded-[18px] bg-white p-2', !hasCurrentTeamNurses && 'h-full')}
                 aria-label={t('page.request.calendar.ariaLabel')}
             >
                 <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col rounded-[18px] bg-white">
                     {hasCurrentTeamNurses ? (
-                        <div ref={containerRef} className="min-h-[420px] w-full overflow-x-auto overflow-y-visible rounded-[18px] bg-white">
+                        <div ref={containerRef} className="min-h-[420px] w-full overflow-visible rounded-[18px] bg-white">
                             <div className="request-calendar__calendar-frame min-w-[840px]">
                                 <MakeShiftCalendar
                                     shift={requestCalendarData.shift}
@@ -328,6 +328,7 @@ export default function ShiftCalendar({
                                     showDivisionHeaders
                                     divisionLabelByNum={divisionLabelByNum}
                                     onCellClick={handleCalendarCellClick}
+                                    stickyHeader
                                 />
                             </div>
                         </div>

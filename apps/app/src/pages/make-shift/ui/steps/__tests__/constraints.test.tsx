@@ -318,10 +318,9 @@ describe('Constraints', () => {
             },
             templates: [
                 {
-                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
                     category: 'CORE',
-                    displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate: '모든 간호사의 {nightShift} 다음 표시일에는 {nightContinuationShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -334,7 +333,24 @@ describe('Constraints', () => {
                             inputType: 'SHIFT',
                             optionGroup: 'twoShiftNightContinuations',
                         },
-                        {key: 'count', label: '추가 오프 일수', inputType: 'NUMBER', min: 0, max: 7},
+                    ],
+                },
+                {
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
+                    category: 'CORE',
+                    displayTemplate: '모든 간호사의 {nightContinuationShift} 다음에는 최소 {count}일의 {offShift}가 필요해요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {
+                            key: 'nightContinuationShift',
+                            label: '야간 후반부',
+                            inputType: 'SHIFT',
+                            optionGroup: 'twoShiftNightContinuations',
+                        },
+                        {key: 'count', label: '휴무일', inputType: 'NUMBER', min: 1, max: 7},
                         {key: 'offShift', label: '휴무', inputType: 'SHIFT', optionGroup: 'offShifts'},
                     ],
                 },
@@ -368,24 +384,25 @@ describe('Constraints', () => {
 
         await userEvent.click(addButton);
 
-        const continuationCard = await waitFor(() => {
-            const card = document.querySelector<HTMLElement>(
-                '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF"]',
-            );
+        const thenCard = await waitFor(() => {
+            const card = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
 
             expect(card).toBeInTheDocument();
 
             return card!;
         });
+        const afterMinOffCard = document.querySelector<HTMLElement>(
+            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
+        );
         const pairCard = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_PAIR_MIN_OFF"]');
 
-        expect(continuationCard.textContent).toContain('すべての看護師は連続した');
-        expect(continuationCard.textContent).toContain('勤務後、');
-        expect(continuationCard.textContent).toContain('と最低');
-        expect(continuationCard.textContent).toContain('日の');
-        expect(continuationCard.textContent).toContain('が必要です。');
-        expect(continuationCard.textContent).not.toContain('모든 간호사는');
-        expect(continuationCard.textContent).not.toContain('근무 후');
+        expect(thenCard.textContent).toContain('すべての看護師の');
+        expect(thenCard.textContent).toContain('次の表示日には');
+        expect(thenCard.textContent).toContain('が必要です。');
+        expect(thenCard.textContent).not.toContain('모든 간호사의');
+        expect(afterMinOffCard?.textContent).toContain('後に最低');
+        expect(afterMinOffCard?.textContent).toContain('日の');
+        expect(afterMinOffCard?.textContent).not.toContain('다음에는');
         expect(pairCard?.textContent).toContain('このうち初日は夜勤後の回復日として扱います。');
         expect(pairCard?.textContent).not.toContain('이 중 첫날은');
     });
@@ -453,10 +470,9 @@ describe('Constraints', () => {
             },
             templates: [
                 {
-                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
                     category: 'CORE',
-                    displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate: '모든 간호사의 {nightShift} 다음 표시일에는 {nightContinuationShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -469,7 +485,24 @@ describe('Constraints', () => {
                             inputType: 'SHIFT',
                             optionGroup: 'twoShiftNightContinuations',
                         },
-                        {key: 'count', label: '추가 오프 일수', inputType: 'NUMBER', min: 0, max: 7},
+                    ],
+                },
+                {
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
+                    category: 'CORE',
+                    displayTemplate: '모든 간호사의 {nightContinuationShift} 다음에는 최소 {count}일의 {offShift}가 필요해요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {
+                            key: 'nightContinuationShift',
+                            label: '야간 후반부',
+                            inputType: 'SHIFT',
+                            optionGroup: 'twoShiftNightContinuations',
+                        },
+                        {key: 'count', label: '휴무일', inputType: 'NUMBER', min: 1, max: 7},
                         {key: 'offShift', label: '휴무', inputType: 'SHIFT', optionGroup: 'offShifts'},
                     ],
                 },
@@ -481,32 +514,69 @@ describe('Constraints', () => {
         await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
 
         const dialog = screen.getByRole('dialog');
-        const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF"]');
+        const thenCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
+        const afterMinOffCard = dialog.querySelector<HTMLElement>(
+            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
+        );
 
-        expect(minOffCard).not.toBeNull();
-        expect(within(minOffCard!).getByText('2교대 야간')).toBeInTheDocument();
-        expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
-        expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
-        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
+        expect(thenCard).not.toBeNull();
+        expect(afterMinOffCard).not.toBeNull();
+        expect(within(thenCard!).getByText('2교대 야간')).toBeInTheDocument();
+        expect(within(thenCard!).getByText('야간 후반부')).toBeInTheDocument();
+        expect(thenCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
+        expect(within(afterMinOffCard!).getByText('야간 후반부')).toBeInTheDocument();
+        expect(within(afterMinOffCard!).getByText('휴무')).toBeInTheDocument();
+        expect(afterMinOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
 
-        const offCount = within(minOffCard!).getByRole('spinbutton');
+        await userEvent.click(within(thenCard!).getByTitle('추가'));
+
+        await waitFor(() => {
+            expect(getLastUpdatePayload()?.rules).toEqual([
+                expect.objectContaining({
+                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+                    severity: 'HARD',
+                    params: {
+                        nightShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5},
+                        nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
+                    },
+                }),
+            ]);
+        });
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+
+        const nextDialog = screen.getByRole('dialog');
+        const nextAfterMinOffCard = nextDialog.querySelector<HTMLElement>(
+            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
+        );
+
+        expect(nextAfterMinOffCard).not.toBeNull();
+
+        const offCount = within(nextAfterMinOffCard!).getByRole('spinbutton');
 
         expect(offCount).toHaveValue(1);
-        expect(offCount).toHaveAttribute('min', '0');
+        expect(offCount).toHaveAttribute('min', '1');
         expect(offCount).toHaveAttribute('max', '7');
         await userEvent.clear(offCount);
         expect(offCount).toHaveValue(null);
         await userEvent.type(offCount, '2');
         expect(offCount).toHaveValue(2);
-        await userEvent.click(within(minOffCard!).getByTitle('추가'));
+        await userEvent.click(within(nextAfterMinOffCard!).getByTitle('추가'));
 
         await waitFor(() => {
             expect(getLastUpdatePayload()?.rules).toEqual([
                 expect.objectContaining({
-                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+                    templateCode: 'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
                     severity: 'HARD',
                     params: {
                         nightShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5},
+                        nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
+                    },
+                }),
+                expect.objectContaining({
+                    templateCode: 'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
+                    severity: 'HARD',
+                    params: {
                         nightContinuationShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 6},
                         count: 2,
                         offShift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 7},

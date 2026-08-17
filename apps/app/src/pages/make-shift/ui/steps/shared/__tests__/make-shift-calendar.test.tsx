@@ -109,6 +109,28 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('keeps the full calendar header at the top when sticky mode is enabled', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly stickyHeader />);
+
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__header');
+
+        expect(header).toHaveAttribute('data-sticky-header', 'true');
+        expect(header).toHaveClass('sticky', 'top-0', 'z-[90]', 'bg-white');
+        expect(header).toHaveTextContent('이름');
+        expect(header).toHaveTextContent('전달 근무');
+        expect(header).toHaveTextContent('1');
+        expect(header).toHaveTextContent('D');
+    });
+
+    it('leaves the calendar header in normal flow by default', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
+
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__header');
+
+        expect(header).not.toHaveAttribute('data-sticky-header');
+        expect(header).not.toHaveClass('sticky');
+    });
+
     it('shows division header with group name and member count when enabled', () => {
         const namedShift = {
             ...shift,
@@ -467,6 +489,7 @@ describe('MakeShiftCalendar', () => {
 
     it('localizes Korean server violation messages in the Japanese violation popover', async () => {
         await i18n.changeLanguage('ja');
+
         const user = userEvent.setup();
         const maxWorkViolation: TViolation = {
             ruleId: '9005',

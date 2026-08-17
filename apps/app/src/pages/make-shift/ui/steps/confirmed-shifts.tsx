@@ -224,6 +224,7 @@ export function ConfirmedShifts() {
                                 readonly
                                 disableInitialSelection
                                 restCheckByShiftNurseId={restCheckByShiftNurseId}
+                                stickyHeader
                             />
                         </ConfirmedCalendarBoundary>
                     </div>

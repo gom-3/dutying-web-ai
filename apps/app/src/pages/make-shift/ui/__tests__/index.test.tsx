@@ -151,7 +151,8 @@ describe('MakeShiftPageView layout', () => {
         const stepContentWrapper = screen.getByTestId('make-shift-step-content').parentElement;
         const contentCard = screen.getByTestId('make-shift-stepper').parentElement;
 
-        expect(pageRoot).toHaveClass('overflow-x-auto');
+        expect(pageRoot).toHaveClass('overflow-visible');
+        expect(pageRoot).not.toHaveClass('overflow-x-auto');
         expect(pageRoot).not.toHaveClass('transition-[padding-right]');
         expect(pageRoot).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(pageFrame).toHaveClass('min-w-0');

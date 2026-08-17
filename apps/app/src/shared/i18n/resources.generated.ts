@@ -1313,6 +1313,14 @@ export const ko = {
                         "label": "중요 기본 조건",
                         "sentence": "N 근무 후에는 {days}일 이상 쉬어야(OFF) 해요"
                     },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "2교대 야간 표시 조건",
+                        "sentence": "모든 간호사의 {nightShift} 다음 표시일에는 {nightContinuationShift}가 필요해요."
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "2교대 야간 후반부 회복 조건",
+                        "sentence": "모든 간호사의 {nightContinuationShift} 다음에는 최소 {count}일의 {offShift}가 필요해요."
+                    },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "2교대 야간 회복 조건",
                         "sentence": "모든 간호사는 연속 {nightShift} 근무 후 {nightContinuationShift}와 최소 {count}일의 {offShift}가 필요해요."
@@ -4384,6 +4392,14 @@ export const en: TLocale = {
                         "label": "Default Important constraint",
                         "sentence": "After an N shift, assign at least {days} OFF day"
                     },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "Two-shift night display constraint",
+                        "sentence": "Every nurse needs {nightContinuationShift} on the display day after {nightShift}."
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "Two-shift night-continuation recovery constraint",
+                        "sentence": "Every nurse needs at least {count} day(s) of {offShift} after {nightContinuationShift}."
+                    },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "Two-shift night recovery constraint",
                         "sentence": "All nurses need {nightContinuationShift} and at least {count} {offShift} day(s) after consecutive {nightShift} shifts."
@@ -7452,6 +7468,14 @@ export const ja: TLocale = {
                     "IMPORTANT_OFF_AFTER_NIGHT": {
                         "label": "重要な基本条件",
                         "sentence": "N勤務後は{days}日以上休みが必要です"
+                    },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "2交代の夜勤表示条件",
+                        "sentence": "すべての看護師の{nightShift}の次の表示日には{nightContinuationShift}が必要です。"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "2交代の夜勤後半回復条件",
+                        "sentence": "すべての看護師は{nightContinuationShift}の後に最低{count}日の{offShift}が必要です。"
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "2交代の夜勤回復条件",
@@ -10522,6 +10546,14 @@ export const zh: TLocale = {
                         "label": "重要基本条件",
                         "sentence": "N 下班后您必须至少休息 {days} 天。"
                     },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "两班制夜班显示条件",
+                        "sentence": "所有护士在{nightShift}后的显示日需要{nightContinuationShift}。"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "两班制夜班后半段恢复条件",
+                        "sentence": "所有护士在{nightContinuationShift}后至少需要{count}天{offShift}。"
+                    },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "两班制夜班恢复条件",
                         "sentence": "所有护士在连续{nightShift}班后，需要{nightContinuationShift}和至少{count}天{offShift}。"
@@ -13591,6 +13623,14 @@ export const th: TLocale = {
                         "label": "ข้อจำกัดสำคัญเริ่มต้น",
                         "sentence": "หลังจากกะ N ให้กำหนดอย่างน้อย {days} OFF วัน"
                     },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "เงื่อนไขการแสดงเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "สำหรับพยาบาลทุกคน วันแสดงผลถัดจาก {nightShift} ต้องเป็น {nightContinuationShift}"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "เงื่อนไขพักฟื้นหลังช่วงหลังเวรกลางคืนแบบ 2 กะ",
+                        "sentence": "หลัง {nightContinuationShift} พยาบาลทุกคนต้องมี {offShift} อย่างน้อย {count} วัน"
+                    },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "เงื่อนไขพักฟื้นหลังเวรกลางคืนแบบ 2 กะ",
                         "sentence": "พยาบาลทุกคนต้องมี {nightContinuationShift} และ {offShift} อย่างน้อย {count} วันหลังทำเวร {nightShift} ติดต่อกัน"
@@ -16659,6 +16699,14 @@ export const vi: TLocale = {
                     "IMPORTANT_OFF_AFTER_NIGHT": {
                         "label": "Mặc định Ràng buộc quan trọng",
                         "sentence": "Sau ca N, ấn định ít nhất {days} ngày TẮT"
+                    },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "Điều kiện hiển thị ca đêm 2 ca",
+                        "sentence": "Mọi điều dưỡng cần {nightContinuationShift} vào ngày hiển thị sau {nightShift}."
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "Điều kiện phục hồi sau nửa sau ca đêm 2 ca",
+                        "sentence": "Mọi điều dưỡng cần ít nhất {count} ngày {offShift} sau {nightContinuationShift}."
                     },
                     "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
                         "label": "Điều kiện phục hồi sau ca đêm 2 ca",

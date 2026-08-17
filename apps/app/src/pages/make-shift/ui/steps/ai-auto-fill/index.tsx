@@ -1355,6 +1355,7 @@ export function AiAutofill() {
                         }}
                         showDivisionHeaders
                         divisionLabelByNum={divisionLabelByNum}
+                        stickyHeader
                         restPolicyControl={
                             <RestLeavePolicySummaryButton
                                 wardId={wardId}

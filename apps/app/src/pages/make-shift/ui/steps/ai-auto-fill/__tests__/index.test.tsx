@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
         fixCellOnContextMenu?: boolean;
         nurseNameMaxChars?: number | null;
         onCellClick?: (rowIndex: number, colIndex: number) => void;
+        stickyHeader?: boolean;
     }>,
     requestAiSchedule: vi.fn(),
     setStepNavigationBusy: vi.fn(),
@@ -151,6 +152,7 @@ vi.mock('../../shared/make-shift-calendar', () => ({
         fixCellOnContextMenu?: boolean;
         nurseNameMaxChars?: number | null;
         onCellClick?: (rowIndex: number, colIndex: number) => void;
+        stickyHeader?: boolean;
     }) => {
         const {doc} = props;
 
@@ -251,6 +253,12 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.nurseNameMaxChars).toBe(5);
+    });
+
+    it('pins the step 4 calendar header while scrolling', () => {
+        render(<AiAutofill />);
+
+        expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.stickyHeader).toBe(true);
     });
 
     it('clears every filled editor cell except fixed and requested shifts after confirmation', async () => {

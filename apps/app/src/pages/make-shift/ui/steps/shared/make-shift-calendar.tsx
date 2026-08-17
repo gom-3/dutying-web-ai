@@ -103,6 +103,8 @@ type TMakeShiftCalendarProps = {
     nameColumnDensity?: 'compact' | 'comfortable';
     /** 이름을 미리 줄일 글자 수. null이면 실제 열 너비에 맞춰 CSS로만 말줄임한다. */
     nurseNameMaxChars?: number | null;
+    /** true면 이름·전달 근무·날짜·근무별 합계 헤더를 세로 스크롤 중 화면 상단에 고정한다. */
+    stickyHeader?: boolean;
 };
 type TCellAttention = {target: 'fixed' | 'request'; nonce: number};
 
@@ -1221,6 +1223,7 @@ export function MakeShiftCalendar({
     rowGapClassName,
     nameColumnDensity = 'compact',
     nurseNameMaxChars = 4,
+    stickyHeader = false,
 }: TMakeShiftCalendarProps) {
     const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
@@ -1636,7 +1639,11 @@ export function MakeShiftCalendar({
         >
             {/* HEADER */}
             <div
-                className="make-shift-calendar__header flex w-full min-w-0 items-center py-1"
+                className={cn(
+                    'make-shift-calendar__header flex w-full min-w-0 items-center',
+                    stickyHeader ? 'sticky top-0 z-[90] -mb-2 bg-white pt-1 pb-3' : 'py-1',
+                )}
+                data-sticky-header={stickyHeader ? 'true' : undefined}
                 style={{gap: isSimplified || !hasRightColumns ? 0 : DIVISION_TO_SUMMARY_GAP}}
             >
                 <div

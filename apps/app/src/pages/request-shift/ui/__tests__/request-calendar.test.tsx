@@ -278,6 +278,20 @@ describe('RequestCalendar', () => {
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
     });
 
+    it('페이지를 내려도 이름과 날짜 헤더가 화면 상단에 고정되도록 렌더링한다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar();
+
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__header');
+        const calendarViewport = document.querySelector<HTMLElement>('.request-calendar__calendar-frame')?.parentElement;
+
+        expect(header).toHaveAttribute('data-sticky-header', 'true');
+        expect(header).toHaveClass('sticky', 'top-0', 'bg-white');
+        expect(calendarViewport).toHaveClass('overflow-visible');
+        expect(calendarViewport).not.toHaveClass('overflow-x-auto');
+    });
+
     it('신청근무 캘린더에 그룹 구분선을 보여준다', () => {
         mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, divisionName: '나이트킵'}));
 
