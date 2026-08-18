@@ -2,8 +2,8 @@ import {cn} from '@dutying/utils/style';
 import {RotateCcw} from 'lucide-react';
 import type {ButtonHTMLAttributes, ReactNode} from 'react';
 import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
-import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
-import redWarnIcon from '@/shared/assets/images/red_warn.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state-visual.webp';
+import redWarnIcon from '@/shared/assets/images/red-warn-icon.webp';
 import Button from '@/shared/ui/form-controls/Button';
 
 type TPageStateTone = 'loading' | 'error' | 'empty';

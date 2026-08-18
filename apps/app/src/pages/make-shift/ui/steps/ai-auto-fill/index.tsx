@@ -19,7 +19,7 @@ import {
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
-import purpleWarnIcon from '@/shared/assets/images/purple_warn.png';
+import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -948,7 +948,10 @@ export function AiAutofill() {
             return null;
         }
 
-        if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(useShiftEditorStore.getState().doc, orderedShift, year, month)) {
+        if (
+            hasScheduleScopeShape(orderedShift) &&
+            !isDutyDocInScheduleScope(useShiftEditorStore.getState().doc, orderedShift, year, month)
+        ) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
             return null;

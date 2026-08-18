@@ -1,8 +1,8 @@
 import {ArrowLeft, ChevronRight} from 'lucide-react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
-import wardCodeEnterIcon from '@/shared/assets/images/ward-code-enter.png';
-import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings.png';
+import wardCodeEnterIcon from '@/shared/assets/images/ward-code-enter-icon.webp';
+import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings-icon.webp';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
@@ -49,7 +49,9 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                         <img src={wardInfoSettingsIcon} alt="" aria-hidden="true" className="h-12 w-12 object-contain" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[22px] leading-tight font-semibold text-sub-1">{t('page.register.select.createTitle')}</span>
+                        <span className="block text-[22px] leading-tight font-semibold text-sub-1">
+                            {t('page.register.select.createTitle')}
+                        </span>
                         <span className="mt-2 block text-sm leading-6 text-gray-3">{t('page.register.select.createDescription')}</span>
                     </span>
                     <ChevronRight className="h-5 w-5 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />
@@ -64,7 +66,9 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                         <img src={wardCodeEnterIcon} alt="" aria-hidden="true" className="h-10 w-10 object-contain" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] leading-tight font-semibold text-sub-1">{t('page.register.select.enterTitle')}</span>
+                        <span className="block text-[17px] leading-tight font-semibold text-sub-1">
+                            {t('page.register.select.enterTitle')}
+                        </span>
                         <span className="mt-1 block text-sm leading-6 text-gray-3">{t('page.register.select.enterDescription')}</span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />

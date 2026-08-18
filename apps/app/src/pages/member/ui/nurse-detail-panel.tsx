@@ -38,6 +38,8 @@ interface INurseDetailPanelProps {
 
 const MIN_SHIFT_RATIO_WEIGHT = 1;
 const MAX_SHIFT_RATIO_WEIGHT = 99;
+// Temporarily hide the monthly shift ratio UI. Flip this back on when the feature is used again.
+const ENABLE_MONTHLY_SHIFT_RATIO = false;
 const toShiftRatioWeight = (value: number | null | undefined) =>
     typeof value === 'number' && Number.isFinite(value)
         ? Math.min(MAX_SHIFT_RATIO_WEIGHT, Math.max(MIN_SHIFT_RATIO_WEIGHT, Math.round(value)))
@@ -823,130 +825,132 @@ function NurseDetailPanel({
                                 );
                             })}
                         </div>
-                        <div className="mt-3 border-t border-gray-7 pt-3">
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                    <p className="font-apple text-[12px] font-semibold text-[#5C667D] min-[1600px]:text-[13px]">
-                                        {t('page.member.detail.shiftRatio')}
-                                    </p>
-                                </div>
-                                <div className="flex shrink-0 items-center gap-1">
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <button
-                                                type="button"
-                                                className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
-                                                aria-label={t('page.member.detail.shiftRatioHelpAria')}
-                                            >
-                                                <InfoIcon className="size-4" />
-                                            </button>
-                                        </TooltipTrigger>
-                                        <TooltipContent side="top">{t('page.member.detail.shiftRatioHint')}</TooltipContent>
-                                    </Tooltip>
-                                    <button
-                                        type="button"
-                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
-                                        onClick={() => setIsShiftRatioOpen((current) => !current)}
-                                        aria-expanded={isShiftRatioOpen}
-                                        aria-label={t('page.member.detail.shiftRatio')}
-                                        title={t('page.member.detail.shiftRatio')}
-                                    >
-                                        <ChevronDown
-                                            className={cn('h-4 w-4 transition-transform', isShiftRatioOpen ? 'rotate-180' : undefined)}
-                                            strokeWidth={2.4}
-                                        />
-                                    </button>
-                                </div>
-                            </div>
-                            {shiftRatioDisplayOptions.length > 0 ? (
-                                <>
-                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, roundedPercent, color}) => (
-                                            <span
-                                                key={`ratio-summary-${shiftType.apiShiftTypeId}`}
-                                                className="inline-flex min-w-0 items-center gap-1.5 font-poppins text-[11px] font-semibold text-sub-2 min-[1600px]:text-[12px]"
-                                            >
-                                                <span className="text-[10px] leading-none" style={{color}} aria-hidden="true">
-                                                    ●
-                                                </span>
-                                                <span className="min-w-0 truncate">{label}</span>
-                                                <span className="shrink-0 font-apple text-[11px] font-semibold text-gray-3 min-[1600px]:text-[12px]">
-                                                    {weight}일
-                                                    <span className="ml-0.5 font-poppins text-[10px] font-semibold text-gray-4 min-[1600px]:text-[11px]">
-                                                        ({roundedPercent}%)
-                                                    </span>
-                                                </span>
-                                            </span>
-                                        ))}
+                        {ENABLE_MONTHLY_SHIFT_RATIO ? (
+                            <div className="mt-3 border-t border-gray-7 pt-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0">
+                                        <p className="font-apple text-[12px] font-semibold text-[#5C667D] min-[1600px]:text-[13px]">
+                                            {t('page.member.detail.shiftRatio')}
+                                        </p>
                                     </div>
-                                    <div className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-7">
-                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, percent, roundedPercent, color}) => (
-                                            <span
-                                                key={`ratio-bar-${shiftType.apiShiftTypeId}`}
-                                                className="h-full min-w-[2px]"
-                                                style={{width: `${percent}%`, backgroundColor: color}}
-                                                title={`${label} ${roundedPercent}% · ${weight}일`}
-                                            />
-                                        ))}
-                                    </div>
-                                </>
-                            ) : null}
-                            {isShiftRatioOpen ? (
-                                shiftRatioDisplayOptions.length > 0 ? (
-                                    <div className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2">
-                                        <div
-                                            className="grid gap-x-1.5 gap-y-1"
-                                            style={{
-                                                gridTemplateColumns: `repeat(${shiftRatioDisplayOptions.length}, minmax(0, 1fr))`,
-                                            }}
+                                    <div className="flex shrink-0 items-center gap-1">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
+                                                    aria-label={t('page.member.detail.shiftRatioHelpAria')}
+                                                >
+                                                    <InfoIcon className="size-4" />
+                                                </button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top">{t('page.member.detail.shiftRatioHint')}</TooltipContent>
+                                        </Tooltip>
+                                        <button
+                                            type="button"
+                                            className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
+                                            onClick={() => setIsShiftRatioOpen((current) => !current)}
+                                            aria-expanded={isShiftRatioOpen}
+                                            aria-label={t('page.member.detail.shiftRatio')}
+                                            title={t('page.member.detail.shiftRatio')}
                                         >
-                                            {shiftRatioDisplayOptions.map(({shiftType, label}) => (
-                                                <div
-                                                    key={`ratio-label-${shiftType.apiShiftTypeId}`}
-                                                    className="flex min-w-0 items-center justify-center"
+                                            <ChevronDown
+                                                className={cn('h-4 w-4 transition-transform', isShiftRatioOpen ? 'rotate-180' : undefined)}
+                                                strokeWidth={2.4}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                                {shiftRatioDisplayOptions.length > 0 ? (
+                                    <>
+                                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                            {shiftRatioDisplayOptions.map(({shiftType, label, weight, roundedPercent, color}) => (
+                                                <span
+                                                    key={`ratio-summary-${shiftType.apiShiftTypeId}`}
+                                                    className="inline-flex min-w-0 items-center gap-1.5 font-poppins text-[11px] font-semibold text-sub-2 min-[1600px]:text-[12px]"
                                                 >
-                                                    <span className="min-w-0 truncate font-apple text-[12px] font-semibold text-sub-2 min-[1600px]:text-[13px]">
-                                                        {label}
+                                                    <span className="text-[10px] leading-none" style={{color}} aria-hidden="true">
+                                                        ●
                                                     </span>
-                                                </div>
-                                            ))}
-                                            {shiftRatioDisplayOptions.map(({shiftType, weight}) => (
-                                                <div
-                                                    key={`ratio-input-${shiftType.apiShiftTypeId}`}
-                                                    className="grid h-7 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1"
-                                                >
-                                                    <ShiftRatioWeightField
-                                                        value={weight}
-                                                        resetKey={`${writeNurse.nurseId}:${getShiftRatioOptionKey(shiftType)}`}
-                                                        disabled={isBusy}
-                                                        ariaLabel={t('page.member.detail.shiftRatioInputAria', {
-                                                            shiftName: shiftType.name,
-                                                        })}
-                                                        onValueChange={(targetRatioWeight) =>
-                                                            updateShiftRatioWeight({
-                                                                apiShiftTypeId: shiftType.apiShiftTypeId,
-                                                                wardShiftTypeId: shiftType.wardShiftTypeId,
-                                                                name: shiftType.name,
-                                                                shortName: shiftType.shortName,
-                                                                isPossible: shiftType.isPossible,
-                                                                isPreferred: shiftType.isPreferred,
-                                                                targetRatioWeight,
-                                                                currentTargetRatioWeight: weight,
-                                                            })
-                                                        }
-                                                    />
-                                                    <span className="pr-1 font-apple text-[10px] font-semibold text-gray-3">일</span>
-                                                </div>
+                                                    <span className="min-w-0 truncate">{label}</span>
+                                                    <span className="shrink-0 font-apple text-[11px] font-semibold text-gray-3 min-[1600px]:text-[12px]">
+                                                        {weight}일
+                                                        <span className="ml-0.5 font-poppins text-[10px] font-semibold text-gray-4 min-[1600px]:text-[11px]">
+                                                            ({roundedPercent}%)
+                                                        </span>
+                                                    </span>
+                                                </span>
                                             ))}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <p className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2 font-apple text-[12px] font-medium text-gray-3">
-                                        {t('page.member.detail.shiftRatioEmpty')}
-                                    </p>
-                                )
-                            ) : null}
-                        </div>
+                                        <div className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-7">
+                                            {shiftRatioDisplayOptions.map(({shiftType, label, weight, percent, roundedPercent, color}) => (
+                                                <span
+                                                    key={`ratio-bar-${shiftType.apiShiftTypeId}`}
+                                                    className="h-full min-w-[2px]"
+                                                    style={{width: `${percent}%`, backgroundColor: color}}
+                                                    title={`${label} ${roundedPercent}% · ${weight}일`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : null}
+                                {isShiftRatioOpen ? (
+                                    shiftRatioDisplayOptions.length > 0 ? (
+                                        <div className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2">
+                                            <div
+                                                className="grid gap-x-1.5 gap-y-1"
+                                                style={{
+                                                    gridTemplateColumns: `repeat(${shiftRatioDisplayOptions.length}, minmax(0, 1fr))`,
+                                                }}
+                                            >
+                                                {shiftRatioDisplayOptions.map(({shiftType, label}) => (
+                                                    <div
+                                                        key={`ratio-label-${shiftType.apiShiftTypeId}`}
+                                                        className="flex min-w-0 items-center justify-center"
+                                                    >
+                                                        <span className="min-w-0 truncate font-apple text-[12px] font-semibold text-sub-2 min-[1600px]:text-[13px]">
+                                                            {label}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                                {shiftRatioDisplayOptions.map(({shiftType, weight}) => (
+                                                    <div
+                                                        key={`ratio-input-${shiftType.apiShiftTypeId}`}
+                                                        className="grid h-7 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1"
+                                                    >
+                                                        <ShiftRatioWeightField
+                                                            value={weight}
+                                                            resetKey={`${writeNurse.nurseId}:${getShiftRatioOptionKey(shiftType)}`}
+                                                            disabled={isBusy}
+                                                            ariaLabel={t('page.member.detail.shiftRatioInputAria', {
+                                                                shiftName: shiftType.name,
+                                                            })}
+                                                            onValueChange={(targetRatioWeight) =>
+                                                                updateShiftRatioWeight({
+                                                                    apiShiftTypeId: shiftType.apiShiftTypeId,
+                                                                    wardShiftTypeId: shiftType.wardShiftTypeId,
+                                                                    name: shiftType.name,
+                                                                    shortName: shiftType.shortName,
+                                                                    isPossible: shiftType.isPossible,
+                                                                    isPreferred: shiftType.isPreferred,
+                                                                    targetRatioWeight,
+                                                                    currentTargetRatioWeight: weight,
+                                                                })
+                                                            }
+                                                        />
+                                                        <span className="pr-1 font-apple text-[10px] font-semibold text-gray-3">일</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2 font-apple text-[12px] font-medium text-gray-3">
+                                            {t('page.member.detail.shiftRatioEmpty')}
+                                        </p>
+                                    )
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                     <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
