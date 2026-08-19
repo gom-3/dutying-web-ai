@@ -9,7 +9,7 @@ import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
-import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings.png';
+import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';

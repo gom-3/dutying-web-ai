@@ -5,7 +5,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
-import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state-visual.webp';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';

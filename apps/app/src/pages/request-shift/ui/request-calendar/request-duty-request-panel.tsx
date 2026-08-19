@@ -7,7 +7,7 @@ import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
 import i18n from '@/i18n';
-import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state-visual.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import PageState from '@/shared/ui/PageState';

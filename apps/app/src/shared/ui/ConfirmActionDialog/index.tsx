@@ -2,7 +2,7 @@ import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {X} from 'lucide-react';
 import {type ReactNode, type SyntheticEvent, useCallback, useLayoutEffect, useState} from 'react';
-import redWarnIcon from '@/shared/assets/images/red_warn.png';
+import redWarnIcon from '@/shared/assets/images/red-warn-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 

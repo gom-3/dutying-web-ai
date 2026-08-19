@@ -34,7 +34,7 @@ import {
     type TWardBoardScheduleId,
     type TUpdateWardBoardScheduleDTO,
 } from '@/shared/api/board';
-import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state.png';
+import pageEmptyStateIcon from '@/shared/assets/images/page-empty-state-visual.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';

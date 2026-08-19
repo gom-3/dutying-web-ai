@@ -188,6 +188,7 @@ function ConstraintModalPortal({children}: {children: ReactNode}) {
 
 function getCategoryLabel(t: TTypedT, category: TModalCategory, rotationMode: TWardRotationMode = 'THREE') {
     if (category === RECOMMENDED_MODAL_CATEGORY) return t('page.makeShift.constraints.category.recommended');
+
     if (category === 'MIXED_BALANCE') return '공정성';
 
     if (rotationMode !== 'MIXED' && category === 'WORK_REST') return t('page.makeShift.constraints.category.workRestStreaks');
@@ -364,6 +365,11 @@ const FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES = new Set([
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
     'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
     'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
+]);
+const FIXED_TWO_SHIFT_NIGHT_CONTINUATION_TEMPLATE_CODES = new Set([
+    'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
+    'TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF',
+    'TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF',
 ]);
 const TWO_SHIFT_NIGHT_RECOVERY_TEMPLATE_CODES = new Set([
     'TWO_SHIFT_NIGHT_THEN_CONTINUATION',
@@ -1069,6 +1075,7 @@ function getSentenceTemplateId(templateCode: string, rotationMode: TWardRotation
 
     return templateCode;
 }
+
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     target: 'target',
     targets: 'target',
@@ -2788,7 +2795,7 @@ function getOptionsForControl(
 
                 return disabledReasonKey ? {...option, disabledReasonKey} : option;
             })
-        : options;
+          : options;
 
     if (template.targetLockedToAll && control.optionsKey === 'target') {
         return resolvedOptions.filter(isAllSelectOption);
@@ -2906,19 +2913,26 @@ function getControlDisplayValue(
     return options.find((option) => doesSelectOptionMatchValue(option, value))?.label ?? value;
 }
 
-function getFixedTwoShiftNightOption(template: TSoftRuleTemplate, control: TControlDef, optionMap: Record<string, TSelectOption[]>) {
-    if (
-        !FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES.has(template.id) ||
-        control.kind !== 'select' ||
-        control.key !== 'nightShift' ||
-        control.optionsKey !== 'twoShiftNight'
-    ) {
-        return undefined;
+function getFixedTwoShiftDutyOption(template: TSoftRuleTemplate, control: TControlDef, optionMap: Record<string, TSelectOption[]>) {
+    if (control.kind !== 'select') return undefined;
+
+    if (FIXED_TWO_SHIFT_NIGHT_TEMPLATE_CODES.has(template.id) && control.key === 'nightShift' && control.optionsKey === 'twoShiftNight') {
+        const options = optionMap.twoShiftNight ?? [];
+
+        return options.find((option) => option.classification === 'NIGHT') ?? options[0];
     }
 
-    const options = optionMap.twoShiftNight ?? [];
+    if (
+        FIXED_TWO_SHIFT_NIGHT_CONTINUATION_TEMPLATE_CODES.has(template.id) &&
+        control.key === 'nightContinuationShift' &&
+        control.optionsKey === 'twoShiftNightContinuation'
+    ) {
+        const options = optionMap.twoShiftNightContinuation ?? [];
 
-    return options.find((option) => option.classification === 'NIGHT') ?? options[0];
+        return options.find((option) => option.classification === 'NIGHT_CONTINUATION') ?? options[0];
+    }
+
+    return undefined;
 }
 
 function normalizeCombinationParams(
@@ -2929,7 +2943,7 @@ function normalizeCombinationParams(
     const nextParams = {...params};
 
     template.controls.forEach((control) => {
-        const fixedNightOption = getFixedTwoShiftNightOption(template, control, optionMap);
+        const fixedNightOption = getFixedTwoShiftDutyOption(template, control, optionMap);
 
         if (fixedNightOption) nextParams[control.key] = getSelectOptionParamValue(fixedNightOption);
     });
@@ -2945,10 +2959,12 @@ function normalizeCombinationParams(
         const selectedOptions = currentValues
             .map((value) => eligibleOptions.find((option) => doesSelectOptionMatchValue(option, value)))
             .filter((option): option is TSelectOption => Boolean(option));
-
         const minimumSelectionCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
 
-        if (selectedOptions.length < Math.min(minimumSelectionCount, eligibleOptions.length) || selectedOptions.length < currentValues.length) {
+        if (
+            selectedOptions.length < Math.min(minimumSelectionCount, eligibleOptions.length) ||
+            selectedOptions.length < currentValues.length
+        ) {
             const selectedIds = new Set(selectedOptions.map((option) => option.value));
 
             eligibleOptions.forEach((option) => {
@@ -3647,7 +3663,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
 
                 const options = getOptionsForControl(control, template, params, optionMap);
                 const selected = getControlDisplayValue(control, template, displayParams, optionMap);
-                const fixedNightOption = getFixedTwoShiftNightOption(template, control, optionMap);
+                const fixedNightOption = getFixedTwoShiftDutyOption(template, control, optionMap);
 
                 if (fixedNightOption) {
                     return <DutyTypeBadge key={`${template.id}-${control.key}-${idx}`} option={fixedNightOption} />;
@@ -3819,8 +3835,7 @@ const RuleRow = memo(function RuleRow({
     const {t} = useTypedTranslation();
     const slots = template?.slots ?? [];
     const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
-    const canChangeSeverity =
-        !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
+    const canChangeSeverity = !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
 
     return (
         <div
@@ -3832,12 +3847,7 @@ const RuleRow = memo(function RuleRow({
         >
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
                 {isImportantBlocked ? (
-                    <ImportantToggle
-                        checked={isImportant}
-                        isRecommended={isRecommended}
-                        isBlocked
-                        onChange={onToggleImportant}
-                    />
+                    <ImportantToggle checked={isImportant} isRecommended={isRecommended} isBlocked onChange={onToggleImportant} />
                 ) : canChangeSeverity ? (
                     <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
                 ) : isImportant ? (
@@ -5086,12 +5096,11 @@ export function Constraints({
         const normalizedParams = clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap);
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
-        const defaultSeverity =
-            isNurseShiftPreferenceSoftOnlyRule(template.id)
-                ? 'SOFT'
-                : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
-                ? 'SOFT'
-                : (template.sourceTemplate?.severity ?? 'SOFT');
+        const defaultSeverity = isNurseShiftPreferenceSoftOnlyRule(template.id)
+            ? 'SOFT'
+            : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
+              ? 'SOFT'
+              : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
