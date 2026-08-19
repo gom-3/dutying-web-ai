@@ -1,10 +1,11 @@
 import {WARD_ADMIN_MAX_COUNT, type TWardAdminMembershipResponse, type TWardReservedAdminEmailResponse} from '@dutying/api/ward';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {Plus, Trash2, UserPlus} from 'lucide-react';
+import {Plus, Trash2} from 'lucide-react';
 import {type FormEvent, useState} from 'react';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import wardAdminIcon from '@/shared/assets/images/ward-admin-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
@@ -306,7 +307,7 @@ function WardAdminsPage() {
         <div className="mx-auto w-full">
             <section className="rounded-[24px] bg-white p-6">
                 <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
-                    <UserPlus aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                    <img src={wardAdminIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
                     <span>{t('page.wardAdmins.title')}</span>
                 </h2>
 

@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {CalendarDays, Info} from 'lucide-react';
+import {Info} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
 import {getWardDisplayCode, getWardDisplayTitle, type TWard, wardQueryKeys, wardQueryOptions} from '@/entities/ward';
@@ -9,6 +9,7 @@ import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
+import wardAdditionalFeatureIcon from '@/shared/assets/images/ward-additional-feature-icon.webp';
 import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
@@ -54,7 +55,7 @@ function WardCalendarSettingsSection({
     return (
         <Card className="rounded-[24px] border-transparent p-6">
             <h2 className="mb-5 flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
-                <CalendarDays aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                <img src={wardAdditionalFeatureIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
                 <span>{t('page.wardInfoSettings.calendar.sectionTitle')}</span>
             </h2>
             <div className="flex min-h-14 items-center justify-between gap-3 rounded-[12px] bg-gray-7 px-3.5 py-3">
