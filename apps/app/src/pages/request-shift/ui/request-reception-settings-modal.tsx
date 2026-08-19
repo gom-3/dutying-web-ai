@@ -2,12 +2,13 @@ import {type TReqShiftReceptionSettingsResponse, type TUpdateReqShiftReceptionSe
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {CalendarClock, X} from 'lucide-react';
+import {X} from 'lucide-react';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS} from '@/pages/ward-settings/model/ward-settings-hook';
 import {RequestReceptionContent, type TRequestReceptionStatus} from '@/pages/ward-settings/ui/request-reception-content';
 import {WardAPI} from '@/shared/api';
+import requestReceptionIcon from '@/shared/assets/images/request-reception-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
@@ -46,7 +47,6 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
               ? 'error'
               : 'success';
     const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
-
     const retryRequestReceptionSettings = async () => {
         await requestReceptionSettingsQuery.refetch();
     };
@@ -56,6 +56,7 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
         try {
             await WardAPI.updateReqShiftReceptionSettings(wardId, settings);
             await queryClient.invalidateQueries({queryKey: wardQueryKeys.requestReceptionSettings(wardId)});
+            onOpenChange(false);
 
             return true;
         } catch (error) {
@@ -76,9 +77,7 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
                     >
                         <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5">
                             <div className="flex min-w-0 items-start gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-main-light text-main-1">
-                                    <CalendarClock className="h-5 w-5" aria-hidden="true" />
-                                </div>
+                                <img src={requestReceptionIcon} alt="" aria-hidden="true" className="h-10 w-10 shrink-0 object-contain" />
                                 <div className="min-w-0">
                                     <Dialog.Title className="font-apple text-[24px] leading-8 font-semibold text-sub-1">
                                         {t('page.wardSettings.tabs.requestReception')}

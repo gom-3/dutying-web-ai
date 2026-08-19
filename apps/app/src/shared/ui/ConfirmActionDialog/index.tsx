@@ -152,7 +152,7 @@ function ConfirmActionDialog({
         <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
             <Dialog.Portal container={portalContainer}>
                 <ConfirmActionDialogOverlay spotlightSelector={spotlightSelector} />
-                <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]">
+                <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]">
                     <div className="flex items-start justify-between gap-4">
                         {icon ? (
                             <div className="shrink-0" aria-hidden="true">
@@ -175,7 +175,7 @@ function ConfirmActionDialog({
                     </div>
 
                     <Dialog.Title className="mt-4 font-apple text-[22px] leading-7 font-semibold text-sub-1">{title}</Dialog.Title>
-                    <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 whitespace-pre-line text-gray-3">
+                    <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 break-keep whitespace-pre-line text-gray-3">
                         {description}
                     </Dialog.Description>
 
