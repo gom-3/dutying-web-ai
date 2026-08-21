@@ -11,7 +11,7 @@
 | CI/CD | ✅ 검증 완료. 워크플로 수정 0개로 `develop → 릴리스 PR → main → Release` 작동 |
 | CF Pages 대응 코드 | ✅ `main`·`develop` 동일 반영 완료 |
 | Cloudflare 계정 | ✅ 가입·이메일 인증 완료 (`gom3.official@gmail.com`, account `53466deaa5db27ed5bbeca1377a9e721`) |
-| Cloudflare Pages 프로젝트 | ✅ 2개 — `dutying-web-ai`(main) / `dutying-web-ai-dev`(develop) |
+| Cloudflare Pages 프로젝트 | ✅ 4개 — app / app-dev / landing / docs |
 | DNS (NS) | ⬜ 아직 Namecheap ← **다음 작업**: `dev` CNAME → `dutying-web-ai.pages.dev` 로 `dev.dutying.ai` 부활 |
 | 구 `.net` 사이트 | ✅ 라이브 (`www.dutying.net` 200, Vercel, 구 `main` 빌드) |
 | 이사 안내 모달 | ⬜ 미착수 |
@@ -283,3 +283,48 @@ Pages는 기본이 "All non-Production branches"라 **두 프로젝트가 모든
 | API CORS 프리플라이트 | `→ dev.dutying.ai` 허용 | `→ pages.dev` 허용 |
 
 ⚠️ prod CORS가 `*.pages.dev`도 통과하는 건 **서버가 임의 Origin을 반사**하기 때문(`allow-credentials: true`). 상업 오픈 전 필수 수정 — `docs/dutying-ai-migration-plan.md` B3 참조.
+
+
+---
+
+## Pages 프로젝트 4개 최종 구성 (2026-08-21)
+
+| 프로젝트 | 앱 | 브랜치 | 빌드 명령 | 출력 | pages.dev |
+| --- | --- | --- | --- | --- | --- |
+| `dutying-web-ai` | app | `main` | `pnpm build:app` | `apps/app/dist` | ✅ 200 |
+| `dutying-web-ai-dev` | app | `develop` | `pnpm build:app` | `apps/app/dist` | ✅ 200 |
+| `dutying-landing` | landing | `main` | `pnpm build:landing` | `apps/landing/dist` | ✅ 200 |
+| `dutying-docs` | docs | `main` | `pnpm build:docs` | `apps/docs/.vitepress/dist` | ✅ 200 |
+
+공통: Framework preset `None` / Root directory = 레포 루트 / `NODE_VERSION=22` / **Preview branch = None**
+
+### 프로젝트별 환경변수
+
+| 프로젝트 | 변수 |
+| --- | --- |
+| `dutying-web-ai` | `VITE_SERVER_URL=https://api.dutying.net`, `VITE_GA_TRACKING_ID`, `VITE_PIXEL_ID` |
+| `dutying-web-ai-dev` | `VITE_SERVER_URL=https://dev.api.dutying.net` (GA/Pixel 미설정) |
+| `dutying-landing` | `PUBLIC_MARKETING_SITE_URL=https://www.dutying.ai`, `PUBLIC_APP_SITE_URL=https://app.dutying.ai`, `PUBLIC_DOCS_SITE_URL=https://docs.dutying.ai` |
+| `dutying-docs` | (없음) |
+
+### landing 검증
+
+CTA 링크가 환경변수대로 렌더된다:
+
+```
+https://app.dutying.ai/login
+https://app.dutying.ai/login?next=%2Fmake
+https://app.dutying.ai/make
+https://app.dutying.ai/signup
+https://www.dutying.ai
+```
+
+AASA `application/json` ✅ (`apps/landing/public/_headers`가 dist로 그대로 전달됨)
+
+### 다음: NS → Cloudflare 이전
+
+⚠️ 가장 위험한 단계. `docs/dns-snapshot-2026-08-21.md`의 전체 레코드 표로 **1:1 대조 후** NS를 변경할 것. 특히:
+- Zoho MX 3건 + `zoho-verification` TXT + SPF + `zmail._domainkey` DKIM → 누락 시 **메일 전면 중단**
+- `_dmarc` TXT
+- `api` / `dev.api` A 레코드 (EC2)
+- 미사용 Route 53 존 2개는 이 시점에 정리 (T3-2b)
