@@ -226,3 +226,38 @@ NS는 아직 Namecheap이다. Cloudflare Pages는 **외부 DNS에서도 CNAME �
 2. landing / docs Pages 프로젝트
 3. NS → Cloudflare 이전 후 `www`·`app.dutying.ai` 연결
 4. 구 `.net` 이사 안내 모달 (구 레포 `gom-3/dutying-web` `main`, Vercel 배포 유지)
+
+
+---
+
+## 환경변수 결정 (2026-08-21)
+
+`.env`에 30개 가까운 키가 있었지만 **대부분 코드에서 죽은 값**이었다. 실측:
+
+| 키 | 코드에서 |
+| --- | --- |
+| `VITE_FIREBASE_*`, `VITE_HACKLE_SDK_KEY`, `VITE_AIRBRIDGE_*`, `VITE_CHANNEL_TALK_PLUGIN_KEY`, `VITE_MAZE_KEY` | **의존성·참조 0건** — 구 앱 잔재 |
+| `VITE_SENTRY_DSN` | 안 읽음 (DSN이 `initializeApp.ts`에 하드코딩) |
+| `VITE_GA_TRACKING_ID`, `VITE_PIXEL_ID` | ✅ 사용 (`import.meta.env.PROD` 조건부) |
+| `VITE_SERVER_URL` | ✅ 사용 |
+
+→ **관리 대상은 4개면 충분하다.** 나머지는 옮기지 않았다.
+
+| 변수 | dev 프로젝트 | prod 프로젝트 |
+| --- | --- | --- |
+| `NODE_VERSION` | `22` | `22` |
+| `VITE_SERVER_URL` | `https://dev.api.dutying.net` | `https://api.dutying.net` |
+| `VITE_GA_TRACKING_ID` | **미설정** | `G-94QM502EQF` |
+| `VITE_PIXEL_ID` | **미설정** | `225085720489207` |
+
+- dev에서 GA/Pixel을 비우면 `if (gaTrackingId)` 가드에 걸려 자동으로 꺼진다 → 분기 코드 불필요, 개발 트래픽이 운영 지표에 안 섞인다.
+- GA ID·Pixel ID·서버 URL은 클라이언트 번들에 박히는 **공개 식별자라 비밀값이 아니다.**
+- prod가 `api.dutying.net`인 이유: **`api.dutying.ai`에 TLS 인증서가 없다.** (`dev.api.dutying.net`·`dev.api.dutying.ai`는 둘 다 유효) 인증서 발급 후 이 변수만 바꾸면 된다.
+
+### Sentry environment 버그 수정 (커밋 `f1278764`)
+
+Cloudflare Pages는 dev 프로젝트도 `vite build`로 빌드하므로 `import.meta.env.PROD`가 **양쪽 다 true**다. 그 결과 `environment: 'production'` 하드코딩 탓에 **dev 에러가 전부 운영 이슈로 보고되고 있었다.** 접속 도메인 기준으로 갈라도록 수정했다(기존 `isNonProductionAppDomain` 재사용, 새 환경변수 없음).
+
+### `.env` 정리 권고
+
+레포 루트 `.env` / `.env.production`은 gitignore 대상이지만 로컬에 죽은 키가 남아 있다. 실제 필요한 건 `VITE_SERVER_URL` 정도이므로 정리하면 혼동이 준다.
