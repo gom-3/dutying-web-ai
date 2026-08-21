@@ -14,7 +14,7 @@
 | Cloudflare Pages 프로젝트 | ✅ 4개 — app / app-dev / landing / docs |
 | DNS (NS) | ⬜ 아직 Namecheap ← **다음 작업**: `dev` CNAME → `dutying-web-ai.pages.dev` 로 `dev.dutying.ai` 부활 |
 | 구 `.net` 사이트 | ✅ 라이브 (`www.dutying.net` 200, Vercel, 구 `main` 빌드) |
-| 이사 안내 모달 | 🟡 구현·검증 완료, `main` 푸시(배포)만 남음 |
+| 이사 안내 모달 | 🔴 **머지 보류** — `.ai` 로그인이 깨져 있어 안내해도 가입 불가 |
 | `.ai` 호스트 | ✅ **www / app / docs / dev 전부 200 (Cloudflare)** |
 
 ## 라이브 실측 (2026-08-21)
@@ -602,3 +602,58 @@ app.dutying.ai   Allow: /     + index, follow      ✅
 `og:url`/`twitter:url`도 자기 주소(`https://www.dutying.net/`)로 정정했다. 기존 파일은 `twitter:url` 자리에 `og:url`이 중복돼 있었다.
 
 → 구 레포 `feat/service-moved-modal` 브랜치, 커밋 `4d16290`. [PR #284](https://github.com/gom-3/dutying-web/pull/284)에 포함.
+
+
+---
+
+## 🔴🔴 `app.dutying.ai` 로그인이 깨져 있다 — 모달 머지 보류
+
+`.ai`는 페이지가 뜨지만 **아무도 로그인할 수 없다.**
+
+```
+배포된 번들이 호출: /oauth2/authorization/admin/{provider}
+prod API 응답      : 404                                    ❌
+prod API에 있는 것 : /oauth2/authorization/{provider}  → 302  ✅
+```
+
+라이브 번들(`index-7f8dQt8B.js`)을 직접 받아 확인했다. `oauth2/authorization/admin/` 문자열만 있고 비-admin 경로는 없다.
+
+### 원인
+
+웹은 `develop` 기준으로 빌드됐고, **prod API는 여전히 구 `origin/main`을 돌린다.** `/admin/` 라우트는 develop의 `AdminOAuth2AuthorizationRequestResolver`가 등록하는데 구 서버엔 그 클래스가 없다.
+
+전형적인 **"레포에 있다 ≠ prod에 있다"** 사례다 (`dutying-server/docs/new-server-cutover-todo-2026-08-17.html` 제1규칙).
+
+### 웹에서 고치면 안 되는 이유
+
+`/admin/` 접두사는 단순 경로가 아니라 **관리자 계정 플로우 표식**이다:
+
+```java
+public static final String ADMIN_AUTHORIZATION_REQUEST_BASE_URI = "/oauth2/authorization/admin";
+public static final String ADMIN_OAUTH2_AUTHORIZATION_ATTRIBUTE = "adminOAuth2Authorization";
+// adminResolver 로 resolve 되면 markAdminFlow() 로 표식을 단다
+```
+
+앱에서 `/admin/`을 떼면 404는 사라지지만 **잘못된 계정 종류가 생성된다.** 이 앱은 병동 관리자용이므로 admin 플로우가 맞다. **앱이 옳고 서버가 낡았다.**
+
+### 데이터 API는 정상
+
+```
+/accounts/me   403  ← 존재, 인증 필요 (정상)
+CORS           app.dutying.ai 허용 + credentials
+```
+
+로그인 진입점만 없다.
+
+### 조치
+
+**서버 배포(`origin/develop` → prod)가 유일한 해법이다.** `origin/develop`은 CORS 화이트리스트·admin OAuth 라우트가 모두 정상이므로 그대로 올리면 된다.
+
+> ⚠️ **그 전에는 [PR #284](https://github.com/gom-3/dutying-web/pull/284)를 머지하지 말 것.** 모달은 `.net` 사용자에게 "새 주소에서 재가입하라"고 안내하는데, 지금 가면 로그인·가입이 안 된다. 안내를 안 하느니만 못하다.
+
+### 순서
+
+1. 서버 `origin/develop` → prod 배포
+2. `curl -I https://api.dutying.net/oauth2/authorization/admin/kakao` → **302** 확인
+3. `app.dutying.ai`에서 실제 로그인 1회 성공 확인
+4. **그다음** PR #284 머지
