@@ -70,6 +70,8 @@ const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
     const appSiteUrl = getConfiguredAppSiteUrl(env);
+    // 운영 도메인으로 빌드된 것만 색인 대상이다. dev/preview/pages.dev 는 제외한다.
+    const isProductionSite = appSiteUrl === defaultAppSiteUrl;
     const isWindows = process.platform === 'win32';
     const isTest = mode === 'test';
 
@@ -110,14 +112,25 @@ export default defineConfig(({mode}) => {
             {
                 name: 'app-site-url-assets',
                 transformIndexHtml(html) {
-                    return html.split('__APP_SITE_URL__').join(appSiteUrl);
+                    return html
+                        .split('__APP_SITE_URL__')
+                        .join(appSiteUrl)
+                        .split('__ROBOTS_META__')
+                        .join(isProductionSite ? 'index, follow' : 'noindex, nofollow');
                 },
                 generateBundle() {
+                    // dev/preview 배포는 운영과 같은 앱을 서빙한다. 색인을 열어두면
+                    // app.dutying.ai 와 중복 콘텐츠로 경쟁하므로 크롤러를 막는다.
                     this.emitFile({
                         type: 'asset',
                         fileName: 'robots.txt',
-                        source: `User-agent: *\nAllow: /\nSitemap: ${appSiteUrl}/sitemap.xml\n`,
+                        source: isProductionSite
+                            ? `User-agent: *\nAllow: /\nSitemap: ${appSiteUrl}/sitemap.xml\n`
+                            : 'User-agent: *\nDisallow: /\n',
                     });
+
+                    if (!isProductionSite) return;
+
                     this.emitFile({
                         type: 'asset',
                         fileName: 'sitemap.xml',
