@@ -391,3 +391,41 @@ priscilla.ns.cloudflare.com
 검증 완료: 데스크톱·모바일(375px) 렌더, "오늘 하루 보지 않기" → localStorage 24.00h 저장 → 새로고침 시 미노출, `body.overflow` 복원, `tsc && vite build` 통과.
 
 > ⚠️ **`main`에 푸시하지 않았다.** 푸시하면 Vercel이 즉시 배포하는데 `www.dutying.ai`가 아직 404다. **`.ai` 오픈 확인 후** 머지할 것.
+
+
+---
+
+## 🎉 `.ai` 오픈 — NS 이전 없이 CNAME으로 (2026-08-21)
+
+**NS 전환을 기다릴 필요가 없었다.** Cloudflare Pages는 외부 DNS에서도 CNAME 방식 커스텀 도메인을 지원한다(`dev.dutying.ai`를 살린 것과 동일 경로). NS는 Namecheap에 둔 채로 `.ai`를 오픈했다.
+
+### Namecheap DNS 변경 (dutying.ai)
+
+| Host | 변경 전 | 변경 후 |
+| --- | --- | --- |
+| `app` | e78481807e99e2ae.vercel-dns-017.com. | **dutying-web-ai.pages.dev** |
+| `www` | e78481807e99e2ae.vercel-dns-017.com. | **dutying-landing.pages.dev** |
+| `docs` | (없음) | **dutying-docs.pages.dev** ← 신규 |
+| `dev` | (이미 변경됨) | dutying-web-ai-dev.pages.dev |
+
+### 배포 매핑 최종
+
+| 호스트 | Pages 프로젝트 | 브랜치 |
+| --- | --- | --- |
+| `www.dutying.ai` | `dutying-landing` | main |
+| `app.dutying.ai` | `dutying-web-ai` | main |
+| `docs.dutying.ai` | `dutying-docs` | main |
+| `dev.dutying.ai` | `dutying-web-ai-dev` | develop |
+
+### 검증 중 배운 것 — 404를 인증서 문제로 오진하지 말 것
+
+전환 직후 `app`/`www`가 404였는데 원인이 둘로 갈렸다:
+
+- **`app`**: 응답 헤더가 `server: Vercel` + `x-vercel-error: DEPLOYMENT_NOT_FOUND`. **로컬 리졸버 캐시**가 옛 CNAME을 들고 있어서 Vercel로 간 것. `--resolve`로 pages.dev IP를 강제하니 **200**. Cloudflare 대시보드에서도 Active/SSL enabled였다.
+- **`www`**: TLS 핸드셰이크 자체 실패(`000`) + 대시보드 상태 `Inactive (Requires DNS setup)`. 이건 진짜 인증서 미발급. **Complete DNS setup → Check DNS records**로 검증을 걸어야 발급이 시작된다.
+
+> 진단 순서: ① 응답 헤더의 `server:`로 **누가 응답하는지** 먼저 본다 → Vercel이면 DNS 캐시, TLS 실패면 인증서. ② 대시보드 커스텀 도메인 status를 본다. 상태코드만 보면 오진한다.
+
+### 미완 (NS 전환 시점에 필요)
+
+Cloudflare 존(pending 상태)의 레코드를 Namecheap과 맞추는 작업 중 **`docs` CNAME 추가만 남았다**. `app`/`www`는 존에도 반영 완료. 존이 pending이라 지금은 무해하지만, **NS를 넘기기 전 반드시 추가**할 것 — 안 하면 `docs.dutying.ai`가 NS 전환 순간 죽는다.
