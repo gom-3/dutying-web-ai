@@ -14,8 +14,8 @@
 | Cloudflare Pages 프로젝트 | ✅ 4개 — app / app-dev / landing / docs |
 | DNS (NS) | ⬜ 아직 Namecheap ← **다음 작업**: `dev` CNAME → `dutying-web-ai.pages.dev` 로 `dev.dutying.ai` 부활 |
 | 구 `.net` 사이트 | ✅ 라이브 (`www.dutying.net` 200, Vercel, 구 `main` 빌드) |
-| 이사 안내 모달 | ⬜ 미착수 |
-| `.ai` 호스트 | `dev.dutying.ai` → CF Pages 연결 중 / `www`·`app` 은 아직 404 (NS 이전 후 연결) |
+| 이사 안내 모달 | 🟡 구현·검증 완료, `main` 푸시(배포)만 남음 |
+| `.ai` 호스트 | ✅ **www / app / docs / dev 전부 200 (Cloudflare)** |
 
 ## 라이브 실측 (2026-08-21)
 
@@ -429,3 +429,30 @@ priscilla.ns.cloudflare.com
 ### 미완 (NS 전환 시점에 필요)
 
 Cloudflare 존(pending 상태)의 레코드를 Namecheap과 맞추는 작업 중 **`docs` CNAME 추가만 남았다**. `app`/`www`는 존에도 반영 완료. 존이 pending이라 지금은 무해하지만, **NS를 넘기기 전 반드시 추가**할 것 — 안 하면 `docs.dutying.ai`가 NS 전환 순간 죽는다.
+
+
+---
+
+## ✅ `.ai` 오픈 완료 (2026-08-21)
+
+```
+www.dutying.ai   200  cloudflare   ← 랜딩 (Astro)
+app.dutying.ai   200  cloudflare   ← 제품 앱 (canonical=app.dutying.ai, /login 200, AASA=json)
+docs.dutying.ai  200  cloudflare   ← 문서 (VitePress)
+dev.dutying.ai   200  cloudflare   ← 개발 (develop 브랜치)
+www.dutying.net  200  Vercel       ← 구 서비스 (그대로 유지)
+```
+
+랜딩 CTA가 `https://app.dutying.ai/login` 등으로 정상 렌더되는 것까지 확인.
+
+### 남은 일
+
+| 항목 | 비고 |
+| --- | --- |
+| **이사 안내 모달 배포** | 구 레포 `feat/service-moved-modal`(`c223d2f`) → `main` 머지. **운영 배포라 자동화 차단** — 사람이 머지 |
+| Cloudflare 존에 `docs` CNAME 추가 | NS 전환 전 필수 (안 하면 전환 순간 docs 죽음) |
+| NS → Cloudflare 전환 | **선택.** CNAME으로 이미 오픈했으므로 급하지 않음. 전환 시 메일(Zoho MX/SPF/DKIM/DMARC) 검증 필수 |
+| 미사용 Route 53 존 2개 삭제 | `Z02108531MKO1Q20LUIWD`, `Z0424728YVCKZS86ATF1` — IaC state 확인 후 |
+| Vercel `.ai` 도메인 정리 | `app`/`www.dutying.ai`가 Vercel에도 남아 있음. DNS가 Cloudflare를 가리켜 무해하지만 정리 권장 |
+| `api.dutying.ai` TLS | 미발급. prod가 `api.dutying.net`을 쓰는 이유 |
+| API CORS 임의 Origin 반사 | 상업 오픈 전 필수 수정 |
