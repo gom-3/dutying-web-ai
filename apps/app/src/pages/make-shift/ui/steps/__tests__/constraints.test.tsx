@@ -525,7 +525,7 @@ describe('Constraints', () => {
         expect(minOffCard).not.toBeNull();
         expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
-        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
+        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
 
         const offCount = within(minOffCard!).getByRole('spinbutton');
 
