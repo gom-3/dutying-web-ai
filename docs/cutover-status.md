@@ -261,3 +261,25 @@ Cloudflare Pages는 dev 프로젝트도 `vite build`로 빌드하므로 `import.
 ### `.env` 정리 권고
 
 레포 루트 `.env` / `.env.production`은 gitignore 대상이지만 로컬에 죽은 키가 남아 있다. 실제 필요한 건 `VITE_SERVER_URL` 정도이므로 정리하면 혼동이 준다.
+
+
+## 브랜치별 빌드 제한 (2026-08-21)
+
+Pages는 기본이 "All non-Production branches"라 **두 프로젝트가 모든 브랜치를 빌드**했다. 푸시 한 번에 `develop`/`main`/`changeset-release/develop` × 2 프로젝트 = 6개 빌드가 큐에 쌓여, dev가 18분 전 커밋을 계속 서빙하는 일이 있었다(환경변수 미반영으로 오인하기 쉬움).
+
+두 프로젝트 모두 **Preview branch = None**으로 변경. 각자 자기 브랜치 하나만 빌드한다.
+
+피처 브랜치 프리뷰를 버린 이유: 프리뷰 URL(`<hash>.pages.dev`)은 **서버 CORS allowlist에 없어 API 호출이 막히므로** 깨진 화면만 나온다. 실익 없이 큐만 점유한다.
+
+> 배포가 반영 안 된 것처럼 보이면 **먼저 Deployments 탭에서 Queued 여부를 확인할 것.** 번들 해시만 보면 오판한다.
+
+### 최종 검증 (2026-08-21)
+
+| | dev | prod |
+| --- | --- | --- |
+| 사이트 | `dev.dutying.ai` 200 | `dutying-web-ai.pages.dev` 200 |
+| 번들 내 `VITE_SERVER_URL` | `dev.api.dutying.net` ✅ | `api.dutying.net` ✅ |
+| GA / Pixel | 0 / 0 (의도적 미설정) | 2 / 2 ✅ |
+| API CORS 프리플라이트 | `→ dev.dutying.ai` 허용 | `→ pages.dev` 허용 |
+
+⚠️ prod CORS가 `*.pages.dev`도 통과하는 건 **서버가 임의 Origin을 반사**하기 때문(`allow-credentials: true`). 상업 오픈 전 필수 수정 — `docs/dutying-ai-migration-plan.md` B3 참조.
