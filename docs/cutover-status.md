@@ -562,3 +562,43 @@ Namecheap → dutying.ai → Domain → NAMESERVERS → Custom DNS
 Cloudflare 존 14건이 Namecheap과 1:1 동기화 완료라 **전환해도 죽는 호스트가 없다.** 전환 후 Pages에서 `dutying.ai`를 landing 프로젝트 커스텀 도메인으로 추가하면 apex가 살아난다.
 
 전환 직후 검증: MX/SPF/DKIM/DMARC 응답 + 실제 메일 수·발신.
+
+
+---
+
+## SEO 정리 (2026-08-21)
+
+`.ai` 오픈 직후 품질 점검에서 중복 색인 문제 두 건을 잡았다.
+
+### 1. `dev.dutying.ai`가 운영과 중복 색인되고 있었다 — 수정 완료
+
+dev는 운영과 **같은 앱**을 서빙하는데 색인이 열려 있었다. 새 도메인 SEO를 세우는 시점에 `app.dutying.ai`와 중복 콘텐츠로 경쟁하는 상태였다.
+
+```
+변경 전  robots.txt: Allow: /      meta robots: index, follow
+변경 후  robots.txt: Disallow: /   meta robots: noindex, nofollow   (+ sitemap.xml 미생성)
+```
+
+`vite.config.ts`에서 **해석된 app site URL이 운영 도메인일 때만** 색인을 연다(`isProductionSite`). dev·preview·`*.pages.dev`가 전부 자동으로 커버되고 새 환경변수가 없다. 커밋 `404b1f81`, 라이브 반영 확인:
+
+```
+dev.dutying.ai   Disallow: /  + noindex, nofollow  ✅
+app.dutying.ai   Allow: /     + index, follow      ✅
+```
+
+> ⚠️ 로컬에서 이 동작을 테스트하려면 `VITE_APP_PUBLIC_URL`을 명시해야 한다. 루트 `.env.local`의 `VITE_APP_PUBLIC_URL=https://local.app.dutying.net:3000`이 우선해서 로컬 빌드는 항상 noindex로 나온다(CF에는 그 파일이 없어 무관).
+
+### 2. 구 `.net`의 canonical이 랭킹을 붙잡고 있었다 — 모달 PR에 포함
+
+```
+변경 전  <link rel="canonical" href="https://dutying.net" />
+변경 후  <link rel="canonical" href="https://www.dutying.ai/" />
+```
+
+두 가지를 동시에 고친다:
+- **랭킹 이전**: `.net`은 유예 후 종료되고, 리다이렉트 대신 안내 모달을 띄우는 방침이라 **cross-domain canonical이 유일한 이전 신호**다.
+- **안티패턴 제거**: 종전 값 `https://dutying.net`은 www로 308 리다이렉트된다. canonical은 최종 색인 대상 URL을 가리켜야 한다.
+
+`og:url`/`twitter:url`도 자기 주소(`https://www.dutying.net/`)로 정정했다. 기존 파일은 `twitter:url` 자리에 `og:url`이 중복돼 있었다.
+
+→ 구 레포 `feat/service-moved-modal` 브랜치, 커밋 `4d16290`. [PR #284](https://github.com/gom-3/dutying-web/pull/284)에 포함.
