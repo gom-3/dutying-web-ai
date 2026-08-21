@@ -636,24 +636,37 @@ public static final String ADMIN_OAUTH2_AUTHORIZATION_ATTRIBUTE = "adminOAuth2Au
 
 앱에서 `/admin/`을 떼면 404는 사라지지만 **잘못된 계정 종류가 생성된다.** 이 앱은 병동 관리자용이므로 admin 플로우가 맞다. **앱이 옳고 서버가 낡았다.**
 
-### 데이터 API는 정상
+### 로그인만이 아니다 — 관리자 기능 전체가 없다
 
-```
-/accounts/me   403  ← 존재, 인증 필요 (정상)
-CORS           app.dutying.ai 허용 + credentials
-```
+라이브 번들에서 호출 경로를 전수 추출해 prod API와 대조했다 (`404` = 엔드포인트 없음):
 
-로그인 진입점만 없다.
+| 엔드포인트 | prod | |
+| --- | --- | --- |
+| `/accounts/me` | 403 | ✅ 존재 |
+| `/accounts/waiting` | 403 | ✅ 존재 |
+| `/wards` | 405 | ✅ 존재 |
+| `/oauth2/authorization/admin/{provider}` | **404** | ❌ 소셜 로그인 |
+| `/auth/admin/password/login` | **404** | ❌ 이메일 로그인 |
+| `/auth/admin/password/signup` | **404** | ❌ 이메일 가입 |
+| `/auth/admin/social/signup` | **404** | ❌ 소셜 가입 |
+| `/auth/admin/email-verifications` | **404** | ❌ 이메일 인증 |
+| `/admin/accounts/me` | **404** | ❌ |
+| `/admin/wards` | **404** | ❌ 병동 관리 |
+| `/accounts/me/admin-workspace` | **404** | ❌ |
+
+**가입·로그인 경로가 전부 막혀 있다.** 구 nurse-app 계열 엔드포인트(`/accounts/*`, `/wards`)만 살아 있고, 신규 앱이 의존하는 **admin 계열이 통째로 없다.**
+
+CORS는 정상이다 (`app.dutying.ai` 허용 + credentials). 네트워크가 아니라 **서버 버전** 문제다.
 
 ### 조치
 
-**서버 배포(`origin/develop` → prod)가 유일한 해법이다.** `origin/develop`은 CORS 화이트리스트·admin OAuth 라우트가 모두 정상이므로 그대로 올리면 된다.
+**서버 배포(`origin/develop` → prod)가 유일한 해법이다.** admin 계열 엔드포인트가 전부 develop에만 있다. `origin/develop`은 CORS 화이트리스트·admin OAuth 라우트가 모두 정상이므로 그대로 올리면 된다.
 
 > ⚠️ **그 전에는 [PR #284](https://github.com/gom-3/dutying-web/pull/284)를 머지하지 말 것.** 모달은 `.net` 사용자에게 "새 주소에서 재가입하라"고 안내하는데, 지금 가면 로그인·가입이 안 된다. 안내를 안 하느니만 못하다.
 
 ### 순서
 
 1. 서버 `origin/develop` → prod 배포
-2. `curl -I https://api.dutying.net/oauth2/authorization/admin/kakao` → **302** 확인
-3. `app.dutying.ai`에서 실제 로그인 1회 성공 확인
+2. 위 표의 `404` 엔드포인트가 전부 사라졌는지 확인 (특히 `/auth/admin/password/signup`, `/oauth2/authorization/admin/kakao`)
+3. `app.dutying.ai`에서 **실제 가입 1회 + 로그인 1회** 성공 확인
 4. **그다음** PR #284 머지
