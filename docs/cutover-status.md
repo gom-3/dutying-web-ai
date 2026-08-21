@@ -691,3 +691,53 @@ CORS는 정상이다 (`app.dutying.ai` 허용 + credentials). 네트워크가 �
 3. 위 표의 `404`가 전부 사라졌는지 확인
 4. `app.dutying.ai`에서 **실제 가입 1회 + 로그인 1회** 성공 확인
 5. **그다음** PR #284 머지
+
+
+---
+
+## ✅ 웹은 옳다 — dev 환경으로 입증 (2026-08-21)
+
+`app.dutying.ai` 가입·로그인 불가가 **웹 버그가 아님**을 dev 환경으로 확인했다.
+
+### dev는 완전히 동작한다
+
+`dev.dutying.ai` → `dev.api.dutying.net`:
+
+```
+CORS 프리플라이트   access-control-allow-origin: https://dev.dutying.ai   ✅
+OAuth 진입          302 → https://kauth.kakao.com/oauth/authorize?...      ✅
+이메일 로그인        400 (존재·검증 실패 = 정상)                             ✅
+```
+
+**같은 코드, 같은 번들인데 dev는 되고 prod는 안 된다.** 차이는 API 서버 버전 하나다.
+
+### admin 엔드포인트 보유 현황
+
+| API 호스트 | admin 라우트 | 비고 |
+| --- | --- | --- |
+| `dev.api.dutying.net` (구 dev) | ✅ 있음 | 현재 `dev.dutying.ai`가 사용 |
+| `dev.api.dutying.ai` (새 서버) | ✅ 있음 | 새 서버 레포로 오늘 가동 |
+| **`api.dutying.net` (prod)** | ❌ **없음** | **유일한 문제 지점** |
+
+### 새 `.ai` 서버는 이미 만들어지고 있다
+
+`gom-3/dutying-server-ai` — 오늘 08:04 생성, 14:13 마지막 push. 다른 세션이 활발히 작업 중이다.
+
+- `AdminOAuth2AuthorizationRequestResolver.java` 보유 ✅
+- 13:09 커밋 **"feat: dev.api.dutying.ai 가동 — 구 dev 와 동등성 확인"**
+- 이후 New Relic 관측·알림 구성 진행 중
+
+즉 **`.ai` 전용 백엔드가 이미 dev 단계까지 와 있다.** 남은 것은 prod 승격이고, 그건 그 세션의 작업 범위다.
+
+### 웹 쪽에서 남은 일은 한 줄뿐
+
+새 prod API(`api.dutying.ai`)가 서면:
+
+```
+Pages dutying-web-ai → Settings → Variables
+  VITE_SERVER_URL:  https://api.dutying.net  →  https://api.dutying.ai
+```
+
+코드 변경 없음. 재배포 한 번이면 `.ai`가 완전히 살아난다.
+
+> ⚠️ `dutying-server-ai` 레포는 다른 세션이 활발히 작업 중이므로 이 세션에서 손대지 않았다.
