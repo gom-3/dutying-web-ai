@@ -11,11 +11,11 @@
 | CI/CD | ✅ 검증 완료. 워크플로 수정 0개로 `develop → 릴리스 PR → main → Release` 작동 |
 | CF Pages 대응 코드 | ✅ `main`·`develop` 동일 반영 완료 |
 | Cloudflare 계정 | ✅ 가입·이메일 인증 완료 (`gom3.official@gmail.com`, account `53466deaa5db27ed5bbeca1377a9e721`) |
-| Cloudflare Pages 프로젝트 | ✅ `dutying-web-ai` 생성·배포 성공 → https://dutying-web-ai.pages.dev |
+| Cloudflare Pages 프로젝트 | ✅ 2개 — `dutying-web-ai`(main) / `dutying-web-ai-dev`(develop) |
 | DNS (NS) | ⬜ 아직 Namecheap ← **다음 작업**: `dev` CNAME → `dutying-web-ai.pages.dev` 로 `dev.dutying.ai` 부활 |
 | 구 `.net` 사이트 | ✅ 라이브 (`www.dutying.net` 200, Vercel, 구 `main` 빌드) |
 | 이사 안내 모달 | ⬜ 미착수 |
-| `.ai` 호스트 | 🔴 전부 404 (의도됨 — CF Pages로 재구축 예정) |
+| `.ai` 호스트 | `dev.dutying.ai` → CF Pages 연결 중 / `www`·`app` 은 아직 404 (NS 이전 후 연결) |
 
 ## 라이브 실측 (2026-08-21)
 
@@ -194,3 +194,35 @@ Found invalid redirect lines:
 2. `VITE_*` 환경변수를 Pages 프로젝트에 등록 (현재 미등록이라 API 연동 안 됨 — 화면만 뜨는 상태)
 3. landing / docs Pages 프로젝트
 4. NS → Cloudflare 이전 후 `.ai` 프로덕션 도메인 연결
+
+
+---
+
+## Pages 프로젝트 2개 구성 (2026-08-21)
+
+**dev 환경은 별도 프로젝트여야 한다.** 한 프로젝트에 커스텀 도메인을 붙이면 그 도메인은 **프로덕션 브랜치**를 서빙한다. `dev.dutying.ai`를 `dutying-web-ai`(프로덕션 `main`)에 붙이면 dev 환경이 프로덕션을 보게 된다. 지금은 `main == develop`이라 증상이 없지만 develop이 앞서가는 순간 문제가 된다.
+
+| 프로젝트 | 프로덕션 브랜치 | pages.dev | 커스텀 도메인 | canonical |
+| --- | --- | --- | --- | --- |
+| `dutying-web-ai` | `main` | dutying-web-ai.pages.dev | (예정) `app.dutying.ai` | `https://app.dutying.ai` |
+| `dutying-web-ai-dev` | `develop` | dutying-web-ai-dev.pages.dev | `dev.dutying.ai` | `https://dev.dutying.ai` |
+
+빌드 설정은 두 프로젝트 동일: Framework `None` / Build `pnpm build:app` / Output `apps/app/dist` / Root = 레포 루트 / `NODE_VERSION=22`
+
+`vite.config.ts`의 `CF_PAGES_BRANCH === 'main'` 분기가 브랜치별로 canonical·OG·sitemap을 다르게 만들어내는 것을 양쪽에서 실측 확인했다.
+
+### Namecheap DNS 변경 (dutying.ai)
+
+```
+dev  CNAME  e78481807e99e2ae.vercel-dns-017.com.   (변경 전, Vercel)
+dev  CNAME  dutying-web-ai-dev.pages.dev           (변경 후, CF Pages)  TTL 5min
+```
+
+NS는 아직 Namecheap이다. Cloudflare Pages는 **외부 DNS에서도 CNAME 방식으로 커스텀 도메인을 지원**하므로 NS 이전 없이 연결했다. 서버 CORS/OAuth allowlist에 `https://dev.dutying.ai`가 이미 있어 **서버 변경 불필요**.
+
+### 남은 일
+
+1. `VITE_*` 환경변수를 두 Pages 프로젝트에 등록 — **미등록이라 현재 API 연동 안 됨** (화면만 뜸)
+2. landing / docs Pages 프로젝트
+3. NS → Cloudflare 이전 후 `www`·`app.dutying.ai` 연결
+4. 구 `.net` 이사 안내 모달 (구 레포 `gom-3/dutying-web` `main`, Vercel 배포 유지)
