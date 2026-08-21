@@ -23,6 +23,8 @@ export function isNonProductionAppDomain(hostname: string = getAppHostname() ?? 
 
     if (hostname.endsWith('.vercel.app')) return true;
 
+    if (hostname.endsWith('.pages.dev')) return true;
+
     if (hostname.endsWith('.local')) return true;
 
     if (hostname.startsWith('local.')) return true;

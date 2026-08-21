@@ -12,6 +12,7 @@ describe('isNonProductionAppDomain', () => {
         expect(isNonProductionAppDomain('dev.dutying.net')).toBe(true);
         expect(isNonProductionAppDomain('local.app.dutying.net')).toBe(true);
         expect(isNonProductionAppDomain('dutying-app-git-feat.vercel.app')).toBe(true);
+        expect(isNonProductionAppDomain('dutying-web-ai.pages.dev')).toBe(true);
         expect(isNonProductionAppDomain('localhost')).toBe(true);
     });
 });

@@ -53,14 +53,15 @@ const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
 const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
     const explicitUrl = env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL;
-    const vercelUrl =
-        process.env.VERCEL_ENV === 'production'
-            ? process.env.VERCEL_PROJECT_PRODUCTION_URL
-            : process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+    // Cloudflare Pages: CF_PAGES=1, CF_PAGES_BRANCH=배포 브랜치, CF_PAGES_URL=배포 URL.
+    // 프로덕션 브랜치(main)가 아니면 preview로 간주한다.
+    const isCloudflarePages = process.env.CF_PAGES === '1';
+    const isCloudflareProduction = isCloudflarePages && process.env.CF_PAGES_BRANCH === 'main';
+    const cloudflareUrl = isCloudflareProduction ? undefined : process.env.CF_PAGES_URL;
     const appSiteUrl =
         explicitUrl ||
-        (process.env.VERCEL_ENV === 'preview' ? defaultPreviewAppSiteUrl : undefined) ||
-        vercelUrl ||
+        (isCloudflarePages && !isCloudflareProduction ? defaultPreviewAppSiteUrl : undefined) ||
+        cloudflareUrl ||
         defaultAppSiteUrl;
 
     return stripTrailingSlash(withHttpsProtocol(appSiteUrl));
