@@ -402,6 +402,8 @@ export const ja: TLocale = {
             loginLink: 'ログイン',
             kakaoContinue: 'Kakaoで続ける',
             kakaoStart: 'Kakaoで始める',
+            lineContinue: 'LINEで続ける',
+            lineStart: 'LINEで始める',
             appleContinue: 'Appleで続ける',
             appleStart: 'Appleで始める',
             continuePrefix: '続行すると',

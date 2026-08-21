@@ -35,6 +35,11 @@ export const zh = {
     },
     page: {
         ...generatedZh.page,
+        login: {
+            ...generatedZh.page.login,
+            lineContinue: '继续使用 LINE',
+            lineStart: '开始使用 LINE',
+        },
         notifications: {
             openAria: '打开通知',
             panelAria: '通知列表',

@@ -35,6 +35,11 @@ export const vi = {
     },
     page: {
         ...generatedVi.page,
+        login: {
+            ...generatedVi.page.login,
+            lineContinue: 'Tiếp tục với LINE',
+            lineStart: 'Bắt đầu với LINE',
+        },
         notifications: {
             openAria: 'Mở thông báo',
             panelAria: 'Danh sách thông báo',

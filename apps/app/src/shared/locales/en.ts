@@ -412,6 +412,8 @@ export const en: TLocale = {
             loginLink: 'Sign in',
             kakaoContinue: 'Continue with Kakao',
             kakaoStart: 'Start with Kakao',
+            lineContinue: 'Continue with LINE',
+            lineStart: 'Start with LINE',
             appleContinue: 'Continue with Apple',
             appleStart: 'Start with Apple',
             continuePrefix: 'By continuing, you agree to the',

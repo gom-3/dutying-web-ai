@@ -35,6 +35,11 @@ export const th = {
     },
     page: {
         ...generatedTh.page,
+        login: {
+            ...generatedTh.page.login,
+            lineContinue: 'ต่อด้วย LINE',
+            lineStart: 'เริ่มต้นด้วย LINE',
+        },
         notifications: {
             openAria: 'เปิดการแจ้งเตือน',
             panelAria: 'รายการแจ้งเตือน',
