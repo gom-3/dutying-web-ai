@@ -9,10 +9,10 @@
 | --- | --- |
 | 신규 레포 | ✅ [gom-3/dutying-web-ai](https://github.com/gom-3/dutying-web-ai) (public) — `main` 프로덕션 / `develop` 개발 |
 | CI/CD | ✅ 검증 완료. 워크플로 수정 0개로 `develop → 릴리스 PR → main → Release` 작동 |
-| CF Pages 대응 코드 | ✅ 커밋 `cbdfcaa7` — **단, `develop`에만 있고 `main`엔 없음** |
+| CF Pages 대응 코드 | ✅ `main`·`develop` 동일 반영 완료 |
 | Cloudflare 계정 | ✅ 가입·이메일 인증 완료 (`gom3.official@gmail.com`, account `53466deaa5db27ed5bbeca1377a9e721`) |
-| Cloudflare Pages 프로젝트 | ⬜ 미생성 ← **다음 작업** |
-| DNS (NS) | ⬜ 아직 Namecheap (`dns1/2.registrar-servers.com`) |
+| Cloudflare Pages 프로젝트 | ✅ `dutying-web-ai` 생성·배포 성공 → https://dutying-web-ai.pages.dev |
+| DNS (NS) | ⬜ 아직 Namecheap ← **다음 작업**: `dev` CNAME → `dutying-web-ai.pages.dev` 로 `dev.dutying.ai` 부활 |
 | 구 `.net` 사이트 | ✅ 라이브 (`www.dutying.net` 200, Vercel, 구 `main` 빌드) |
 | 이사 안내 모달 | ⬜ 미착수 |
 | `.ai` 호스트 | 🔴 전부 404 (의도됨 — CF Pages로 재구축 예정) |
@@ -145,3 +145,52 @@ Auto-Renew OFF가 방침(의도됨). 그 전에 반드시:
 | **레포에 있다 ≠ prod에 있다** | 구 `.net`은 구 레포 `main` 기준. `develop` 파일 읽고 prod라 단정하면 틀림 (서버 문서에 오기 3건 이력) |
 | **nginx는 CI 배포 대상 아님** | prod 호스트 직접 수정 + `nginx -s reload`가 유일한 경로 |
 | **로컬 `.env.local`** | `VITE_APP_PUBLIC_URL=https://local.app.dutying.net:3000`이 있어 로컬 빌드 canonical이 로컬 주소로 나옴. CF에선 해당 파일이 없으니 무관 |
+
+
+---
+
+## Cloudflare Pages 배포 (2026-08-21 완료)
+
+프로젝트 `dutying-web-ai` / 계정 `53466deaa5db27ed5bbeca1377a9e721`
+
+| 설정 | 값 |
+| --- | --- |
+| Repository | `gom-3/dutying-web-ai` |
+| Production branch | `main` |
+| Framework preset | None |
+| Build command | `pnpm build:app` |
+| Build output | `apps/app/dist` |
+| Root directory | (레포 루트) |
+| 환경변수 | `NODE_VERSION=22` |
+
+### 라이브 검증 — https://dutying-web-ai.pages.dev
+
+```
+/ /login /home /make /onboarding/ward-create /zzz-nonexistent  → 전부 200 (SPA 폴백)
+/.well-known/apple-app-site-association → application/json  ✅
+/favicon.png → image/png (폴백에 안 먹힘)  ✅
+보안 헤더 5/5 (HSTS·nosniff·DENY·Referrer·Permissions)  ✅
+canonical·og:url·sitemap·robots → https://app.dutying.ai  ✅ (CF_PAGES_BRANCH 분기 정상)
+```
+
+### `_redirects` 는 쓰지 않는다 (커밋 `048c3345`)
+
+`/* /index.html 200` 을 넣었더니 Cloudflare가 거부했다:
+
+```
+Found invalid redirect lines:
+  - #1: /*  /index.html  200
+    Infinite loop detected in this rule and has been ignored.
+```
+
+**Cloudflare Pages는 SPA 폴백을 기본 제공**하므로 이 규칙이 불필요하다. 파일은 효과 없이 경고만 만들어 제거했고, 제거 후에도 딥링크가 전부 200인 것을 확인했다. `_headers` 는 정상 (`Parsed 2 valid header rules`).
+
+> ⚠️ Vercel 시절 `vercel.json` 의 SPA rewrite 감각으로 `_redirects` 를 다시 추가하지 말 것.
+
+### 남은 일
+
+1. Namecheap `dev` CNAME: `e78481807e99e2ae.vercel-dns-017.com.` → `dutying-web-ai.pages.dev`
+   → `dev.dutying.ai` 부활. 서버 CORS/OAuth allowlist에 이미 `https://dev.dutying.ai` 가 있어 서버 수정 불필요
+2. `VITE_*` 환경변수를 Pages 프로젝트에 등록 (현재 미등록이라 API 연동 안 됨 — 화면만 뜨는 상태)
+3. landing / docs Pages 프로젝트
+4. NS → Cloudflare 이전 후 `.ai` 프로덕션 도메인 연결
