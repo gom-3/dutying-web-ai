@@ -932,10 +932,6 @@ export const en: TLocale = {
                         label: 'Work-rest constraint',
                         sentence: '{target} needs at least {count} days off after an N shift',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: 'Work-rest constraint',
-                        sentence: '{target} needs at least {count} days off per month',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: 'Personal constraint',
                         sentence: '{nurse} cannot work weekends or holidays',
@@ -1047,10 +1043,6 @@ export const en: TLocale = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: 'Work/rest constraint',
                         sentence: '{target} needs at least {days} OFF day after an N shift',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: 'Work/rest constraint',
-                        sentence: '{target} needs at least {days} OFF days per month',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'Person-specific constraint',
@@ -2617,7 +2609,6 @@ export const en: TLocale = {
                 minStaffByShift: '{{shift}} staffing is {{actual}}. Minimum required: {{expected}}.',
                 maxStaffByShift: '{{shift}} staffing is {{actual}}. Maximum allowed: {{expected}}.',
                 forbidNextShift: '{{nurseName}} cannot work {{nextShift}} on the day after {{prevShift}}.',
-                minMonthlyOff: '{{nurseName}} has {{actual}} monthly OFF days. Minimum required: {{expected}}.',
                 nurseForbidWeekend: '{{nurseName}} cannot work on weekends or holidays.',
                 pairPreferSameShift: '{{nurseAName}} and {{nurseBName}} are recommended to work the same shift.',
                 pairForbidSameShift: '{{nurseAName}} and {{nurseBName}} cannot work the same shift.',

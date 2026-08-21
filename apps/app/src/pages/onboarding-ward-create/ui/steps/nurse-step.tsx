@@ -137,6 +137,7 @@ function NurseStep({
         [currentTeam?.divisions, sortedNurses],
     );
     const renderedNurseIds = useMemo(() => divisionGroups.flatMap((group) => group.items.map((nurse) => nurse.id)), [divisionGroups]);
+    const tutorialNurseId = renderedNurseIds[0];
     const hasTeams = draft.teams.length > 0;
     const hasNursesInSelectedTeam = hasTeams && currentNurses.length > 0;
     const activeShiftTypes = useMemo(
@@ -406,6 +407,11 @@ function NurseStep({
                                                                             rowRefByNurseId.current[nurse.id] = element;
                                                                         }}
                                                                         {...dragProvided.draggableProps}
+                                                                        id={
+                                                                            nurse.id === tutorialNurseId
+                                                                                ? 'onboarding_nurse_order_sample'
+                                                                                : undefined
+                                                                        }
                                                                         className={cn(
                                                                             'grid items-center rounded-[12px] bg-white py-1',
                                                                             NURSE_GRID_GAP_CLASS,
@@ -416,6 +422,11 @@ function NurseStep({
                                                                     >
                                                                         <button
                                                                             type="button"
+                                                                            id={
+                                                                                nurse.id === tutorialNurseId
+                                                                                    ? 'onboarding_nurse_order_handle'
+                                                                                    : undefined
+                                                                            }
                                                                             aria-label={t('page.onboardingWardCreate.nurse.dragAria')}
                                                                             {...dragProvided.dragHandleProps}
                                                                             className={cn(

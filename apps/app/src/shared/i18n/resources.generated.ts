@@ -308,7 +308,6 @@ export const ko = {
                 "maxConsecutiveNight": "{{nurseName}}님은 N 근무가 {{actual}}회 연속이에요. 최대 {{expected}}회까지 가능해요.",
                 "maxConsecutiveWork": "{{nurseName}}님은 근무가 {{actual}}일 연속이에요. 최대 {{expected}}일까지 가능해요.",
                 "maxStaffByShift": "{{shift}} 근무 인원이 {{actual}}명이에요. 최대 {{expected}}명까지 가능해요.",
-                "minMonthlyOff": "{{nurseName}}님은 월 OFF가 {{actual}}일이에요. 최소 {{expected}}일이 필요해요.",
                 "minNightInterval": "{{nurseName}}님은 N 근무 사이를 {{expected}}일 이상 띄워야 해요.",
                 "nightContinuationRequired": "{{nurseName}}님의 연속 {{nightShift}} 근무 후에는 {{nightContinuationShift}}가 필요해요.",
                 "minOffAfterNight": "{{nurseName}}님은 N 근무 뒤 OFF가 부족해요. 최소 {{expected}}일이 필요해요.",
@@ -1341,10 +1340,6 @@ export const ko = {
                         "label": "인원수 규칙",
                         "sentence": "{duty} 근무에는 최대 {count}명까지만 배정할 수 있어요"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "연속 근무 / 휴식 규칙",
-                        "sentence": "{target}은 한 달에 최소 {days}일 OFF가 있어야 해요"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "인원수 규칙",
                         "sentence": "{date}에는 {duty} 근무에 최소 {count}명이 필요해요"
@@ -1467,10 +1462,6 @@ export const ko = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "인원 조건",
                         "sentence": "{shift} 근무는 최대 {count}명까지만 배정할 수 있어요"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "근무·휴식 조건",
-                        "sentence": "{target}는 한 달에 최소 {count}일의 휴무가 필요해요"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "연속 근무·휴무 조건",
@@ -2222,7 +2213,13 @@ export const ko = {
                     "name": "가나다순"
                 },
                 "sortAria": "간호사 정렬",
-                "sortOptionsAria": "간호사 정렬 옵션"
+                "sortOptionsAria": "간호사 정렬 옵션",
+                "tutorial": {
+                    "order": {
+                        "info": "AI가 그룹 안의 순서를 참고해 근무조 숙련도 균형을 맞춰요.\n왼쪽 점 핸들을 끌어 순서를 바꿔 주세요.",
+                        "title": "숙련 간호사는 위쪽으로"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "병동 생성 진행률",
@@ -2735,6 +2732,7 @@ export const ko = {
                 "noTeamsLabel": "팀을 등록하면 신청 근무를 쓸 수 있어요",
                 "readonlyDescription": "필요하면 수정하기로 신청 근무를 다시 조정할 수 있어요.",
                 "readonlyTitle": "{{month}}월 신청 근무",
+                "settingsAction": "접수 설정",
                 "saveAction": "저장하기",
                 "savedDescription": "최근 변경 사항을 저장했어요.",
                 "saveError": "최근 변경 사항을 저장하지 못했어요. 다시 저장해 주세요.",
@@ -3388,7 +3386,6 @@ export const en: TLocale = {
                 "maxConsecutiveNight": "{{nurseName}} has {{actual}} consecutive N shifts. Maximum: {{expected}}.",
                 "maxConsecutiveWork": "{{nurseName}} has {{actual}} consecutive work days. Maximum: {{expected}}.",
                 "maxStaffByShift": "{{shift}} staffing is {{actual}}. Maximum allowed: {{expected}}.",
-                "minMonthlyOff": "{{nurseName}} has {{actual}} monthly OFF days. Minimum required: {{expected}}.",
                 "minNightInterval": "{{nurseName}} needs at least {{expected}} day(s) between N shifts.",
                 "nightContinuationRequired": "{{nurseName}} needs {{nightContinuationShift}} after consecutive {{nightShift}} shifts.",
                 "minOffAfterNight": "{{nurseName}} needs at least {{expected}} OFF day(s) after an N shift.",
@@ -4421,10 +4418,6 @@ export const en: TLocale = {
                         "label": "Staffing constraint",
                         "sentence": "{duty} shifts can have at most {count} people"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "Work/rest constraint",
-                        "sentence": "{target} needs at least {days} OFF days per month"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "Staffing constraint",
                         "sentence": "On {date}, {duty} shifts need at least {count} people"
@@ -4547,10 +4540,6 @@ export const en: TLocale = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "Staffing constraint",
                         "sentence": "{shift} can have up to {count} staff"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "Work-rest constraint",
-                        "sentence": "{target} needs at least {count} days off per month"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "Work and rest streak constraint",
@@ -5302,7 +5291,13 @@ export const en: TLocale = {
                     "name": "Name order"
                 },
                 "sortAria": "Sort nurses",
-                "sortOptionsAria": "Nurse sort options"
+                "sortOptionsAria": "Nurse sort options",
+                "tutorial": {
+                    "order": {
+                        "info": "AI uses the order within each group to balance skill levels across shifts.\nDrag the dotted handle on the left to reorder nurses.",
+                        "title": "Place skilled nurses higher"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "Ward creation progress",
@@ -5815,6 +5810,7 @@ export const en: TLocale = {
                 "noTeamsLabel": "No registered teams",
                 "readonlyDescription": "Press Edit to adjust the requested shifts right away.",
                 "readonlyTitle": "Confirmed requested shifts for {{month}}",
+                "settingsAction": "Intake settings",
                 "saveAction": "Save",
                 "savedDescription": "Your latest changes have been saved.",
                 "saveError": "Failed to save the latest changes. Please try saving again.",
@@ -6466,7 +6462,6 @@ export const ja: TLocale = {
                 "maxConsecutiveNight": "{{nurseName}}さんはN勤務が連続{{actual}}回です。最大{{expected}}回までです。",
                 "maxConsecutiveWork": "{{nurseName}}さんは勤務が連続{{actual}}日です。最大{{expected}}日までです。",
                 "maxStaffByShift": "{{shift}}勤務の人数は{{actual}}人です。最大{{expected}}人までです。",
-                "minMonthlyOff": "{{nurseName}}さんの月間休みは{{actual}}日です。最低{{expected}}日必要です。",
                 "minNightInterval": "{{nurseName}}さんはN勤務の間隔が短いです。最低{{expected}}日空けてください。",
                 "nightContinuationRequired": "{{nurseName}}さんは連続した{{nightShift}}後に{{nightContinuationShift}}が必要です。",
                 "minOffAfterNight": "{{nurseName}}さんはN勤務後の休みが不足しています。最低{{expected}}日必要です。",
@@ -7499,10 +7494,6 @@ export const ja: TLocale = {
                         "label": "人数条件",
                         "sentence": "{duty}勤務は最大{count}人まで割り当てできます"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "連続勤務/休息条件",
-                        "sentence": "{target}は1か月に最低{days}日の休みが必要です"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "人数条件",
                         "sentence": "{date}には{duty}勤務で最低{count}人が必要です"
@@ -7625,10 +7616,6 @@ export const ja: TLocale = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "人数条件",
                         "sentence": "{shift}勤務は最大{count}名まで割り当てられます"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "勤務・休み条件",
-                        "sentence": "{target}は月に最低{count}日の休みが必要です"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "連続勤務・休み条件",
@@ -8380,7 +8367,13 @@ export const ja: TLocale = {
                     "name": "名前順"
                 },
                 "sortAria": "看護師を並び替え",
-                "sortOptionsAria": "看護師の並び替えオプション"
+                "sortOptionsAria": "看護師の並び替えオプション",
+                "tutorial": {
+                    "order": {
+                        "info": "AIはグループ内の順序を参考に、勤務組のスキルバランスを整えます。\n左の点ハンドルをドラッグして順序を変えてください。",
+                        "title": "熟練看護師は上の方へ"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "病棟作成の進行率",
@@ -8893,6 +8886,7 @@ export const ja: TLocale = {
                 "noTeamsLabel": "チームを登録すると勤務希望を入力できます",
                 "readonlyDescription": "必要に応じて「編集する」から勤務希望を調整できます。",
                 "readonlyTitle": "{{month}}月の確定勤務希望",
+                "settingsAction": "受付設定",
                 "saveAction": "保存する",
                 "savedDescription": "最新の変更内容を保存しました。",
                 "saveError": "最新の変更内容を保存できませんでした。もう一度保存してください。",
@@ -9544,7 +9538,6 @@ export const zh: TLocale = {
                 "maxConsecutiveNight": "{{nurseName}}已连续工作N次{{actual}}。最多可能有 {{expected}} 次。",
                 "maxConsecutiveWork": "{{nurseName}} 已经连续工作了 {{actual}} 天。最多可能有 {{expected}} 天。",
                 "maxStaffByShift": "{{shift}} 有 {{actual}} 员工。最多可容纳 {{expected}} 人。",
-                "minMonthlyOff": "{{nurseName}} 的每月休息日是 {{actual}}。至少需要 {{expected}} 天。",
                 "minNightInterval": "{{nurseName}} N 个班次之间必须有至少 {{expected}} 天的间隔。",
                 "nightContinuationRequired": "{{nurseName}}连续{{nightShift}}班后需要{{nightContinuationShift}}。",
                 "minOffAfterNight": "{{nurseName}} 工作 N 后没有足够的 OFF 时间。至少需要 {{expected}} 天。",
@@ -10577,10 +10570,6 @@ export const zh: TLocale = {
                         "label": "人数规则",
                         "sentence": "{duty}班最多可安排{count}人"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "连续工作/休息规则",
-                        "sentence": "{target} 每月必须至少有 {days} 个假期"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "人数规则",
                         "sentence": "{date} 的 {duty} 至少需要 {count} 人"
@@ -10703,10 +10692,6 @@ export const zh: TLocale = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "人数条件",
                         "sentence": "{shift}班最多可安排{count}人"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "工作休息条件",
-                        "sentence": "{target}每月至少需要{count}天休息"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "连续工作与休息条件",
@@ -11458,7 +11443,13 @@ export const zh: TLocale = {
                     "name": "按字母顺序"
                 },
                 "sortAria": "护士分拣",
-                "sortOptionsAria": "护士排序选项"
+                "sortOptionsAria": "护士排序选项",
+                "tutorial": {
+                    "order": {
+                        "info": "AI 会参考组内顺序来平衡各班次的熟练度。\n拖动左侧点状把手即可调整顺序。",
+                        "title": "将熟练护士放在上方"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "病区创建进度",
@@ -11971,6 +11962,7 @@ export const zh: TLocale = {
                 "noTeamsLabel": "如果你注册了一个团队，你就可以班次申请。",
                 "readonlyDescription": "如有必要，您可以通过编辑来重新调整请求的排班表。",
                 "readonlyTitle": "{{month}} 月班次申请",
+                "settingsAction": "接收设置",
                 "saveAction": "节省",
                 "savedDescription": "您最近的更改已保存。",
                 "saveError": "无法保存您最近的更改。请再次保存。",
@@ -12622,7 +12614,6 @@ export const th: TLocale = {
                 "maxConsecutiveNight": "{{nurseName}} มี {{actual}} กะ N ติดต่อกัน สูงสุด: {{expected}}",
                 "maxConsecutiveWork": "{{nurseName}} มีวันทำงานติดต่อกัน {{actual}} สูงสุด: {{expected}}",
                 "maxStaffByShift": "{{shift}} พนักงานคือ {{actual}} สูงสุดที่อนุญาต: {{expected}}",
-                "minMonthlyOff": "{{nurseName}} มี {{actual}} วันต่อเดือน OFF ขั้นต่ำที่ต้องการ: {{expected}}",
                 "minNightInterval": "{{nurseName}} ต้องการอย่างน้อย {{expected}} วันระหว่าง N กะ",
                 "nightContinuationRequired": "{{nurseName}} ต้องมี {{nightContinuationShift}} หลังทำเวร {{nightShift}} ติดต่อกัน",
                 "minOffAfterNight": "{{nurseName}} ต้องการอย่างน้อย {{expected}} OFF วันหลังจากการเปลี่ยน N",
@@ -13655,10 +13646,6 @@ export const th: TLocale = {
                         "label": "ข้อจำกัดด้านบุคลากร",
                         "sentence": "{duty} กะสามารถมีได้สูงสุด {count} คน"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
-                        "sentence": "{target} ต้องมีวันหยุดอย่างน้อย {days} วันต่อเดือน"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "ข้อจำกัดด้านบุคลากร",
                         "sentence": "ในวันที่ {date} กะงาน {duty} ต้องมีอย่างน้อย {count} คน"
@@ -13781,10 +13768,6 @@ export const th: TLocale = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "เงื่อนไขจำนวนคน",
                         "sentence": "เวร{shift}จัดได้สูงสุด{count}คน"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "เงื่อนไขงานและพัก",
-                        "sentence": "{target}ต้องมีวันหยุดอย่างน้อย{count}วันต่อเดือน"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "เงื่อนไขการทำงานต่อเนื่องและวันหยุด",
@@ -14536,7 +14519,13 @@ export const th: TLocale = {
                     "name": "ลำดับชื่อ"
                 },
                 "sortAria": "เรียงลำดับพยาบาล",
-                "sortOptionsAria": "ตัวเลือกการเรียงลำดับพยาบาล"
+                "sortOptionsAria": "ตัวเลือกการเรียงลำดับพยาบาล",
+                "tutorial": {
+                    "order": {
+                        "info": "AI จะใช้ลำดับในแต่ละกลุ่มเพื่อปรับสมดุลทักษะในแต่ละเวร\nลากจุดจับด้านซ้ายเพื่อเปลี่ยนลำดับพยาบาล",
+                        "title": "จัดพยาบาลที่ชำนาญไว้ด้านบน"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "ความคืบหน้าการสร้างวอร์ด",
@@ -15049,6 +15038,7 @@ export const th: TLocale = {
                 "noTeamsLabel": "ไม่มีทีมที่ลงทะเบียน",
                 "readonlyDescription": "กดแก้ไขเพื่อปรับกะที่ร้องขอทันที",
                 "readonlyTitle": "ยืนยันการเปลี่ยนแปลงที่ร้องขอสำหรับ {{month}}",
+                "settingsAction": "ตั้งค่าการรับคำขอ",
                 "saveAction": "บันทึก",
                 "savedDescription": "บันทึกการเปลี่ยนแปลงล่าสุดของคุณแล้ว",
                 "saveError": "ไม่สามารถบันทึกการเปลี่ยนแปลงล่าสุด โปรดลองบันทึกอีกครั้ง",
@@ -15700,7 +15690,6 @@ export const vi: TLocale = {
                 "maxConsecutiveNight": "{{nurseName}} có {{actual}} N ca liên tiếp. Tối đa: {{expected}}.",
                 "maxConsecutiveWork": "{{nurseName}} có {{actual}} ngày làm việc liên tiếp. Tối đa: {{expected}}.",
                 "maxStaffByShift": "{{shift}} nhân sự là {{actual}}. Tối đa được phép: {{expected}}.",
-                "minMonthlyOff": "{{nurseName}} có {{actual}} ngày OFF hàng tháng. Yêu cầu tối thiểu: {{expected}}.",
                 "minNightInterval": "{{nurseName}} cần ít nhất {{expected}} ngày giữa N ca.",
                 "nightContinuationRequired": "{{nurseName}} cần {{nightContinuationShift}} sau các ca {{nightShift}} liên tiếp.",
                 "minOffAfterNight": "{{nurseName}} cần ít nhất {{expected}} ngày TẮT sau ca N.",
@@ -16733,10 +16722,6 @@ export const vi: TLocale = {
                         "label": "Hạn chế về nhân sự",
                         "sentence": "Ca {duty} được xếp tối đa {count} người"
                     },
-                    "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "Hạn chế làm việc/nghỉ ngơi",
-                        "sentence": "{target} cần ít nhất {days} ngày nghỉ mỗi tháng"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "Hạn chế về nhân sự",
                         "sentence": "Vào ca {date}, {duty} cần ít nhất {count} người"
@@ -16859,10 +16844,6 @@ export const vi: TLocale = {
                     "MAX_STAFF_BY_SHIFT": {
                         "label": "Điều kiện nhân sự",
                         "sentence": "Ca {shift} được xếp tối đa {count} người"
-                    },
-                    "MIN_MONTHLY_OFF": {
-                        "label": "Điều kiện làm việc-nghỉ",
-                        "sentence": "{target} cần ít nhất {count} ngày nghỉ mỗi tháng"
                     },
                     "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
                         "label": "Điều kiện chuỗi làm việc và nghỉ",
@@ -17614,7 +17595,13 @@ export const vi: TLocale = {
                     "name": "Thứ tự tên"
                 },
                 "sortAria": "Sắp xếp điều dưỡng",
-                "sortOptionsAria": "Tùy chọn sắp xếp điều dưỡng"
+                "sortOptionsAria": "Tùy chọn sắp xếp điều dưỡng",
+                "tutorial": {
+                    "order": {
+                        "info": "AI dùng thứ tự trong từng nhóm để cân bằng kỹ năng giữa các ca.\nKéo tay nắm chấm ở bên trái để đổi thứ tự điều dưỡng.",
+                        "title": "Đưa điều dưỡng thành thạo lên trên"
+                    }
+                }
             },
             "progress": {
                 "ariaLabel": "Tiến trình tạo khoa",
@@ -18127,6 +18114,7 @@ export const vi: TLocale = {
                 "noTeamsLabel": "Không có đội đăng ký",
                 "readonlyDescription": "Nhấn Edit để điều chỉnh ngay ca làm việc được yêu cầu.",
                 "readonlyTitle": "Đã xác nhận ca làm việc được yêu cầu cho {{month}}",
+                "settingsAction": "Cài đặt nhận đăng ký",
                 "saveAction": "Lưu",
                 "savedDescription": "Những thay đổi mới nhất của bạn đã được lưu.",
                 "saveError": "Không lưu được những thay đổi mới nhất. Vui lòng thử lưu lại.",

@@ -86,8 +86,13 @@ vi.mock('@/features/register', () => ({
 vi.mock('@/features/auth', () => ({
     default: () => ({
         state: {
+            accountId: 42,
             accountMe: {
+                accountId: 42,
                 status: 'WARD_SELECT_PENDING',
+                tutorials: {
+                    seen: [],
+                },
             },
         },
     }),
@@ -253,6 +258,7 @@ describe('OnboardingWardCreatePage', () => {
         latestSavedDraftPayload = null;
         window.localStorage.clear();
         window.sessionStorage.clear();
+        document.getElementById('tutorial')?.remove();
         mockGetOnboardingWardDraft.mockImplementation(() =>
             Promise.resolve(latestSavedDraftPayload ? {ward: {wardId: 10}, draftPayload: latestSavedDraftPayload} : null),
         );
@@ -401,6 +407,38 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
         expect(screen.getByDisplayValue('신규1')).toBeInTheDocument();
         expect(screen.getByDisplayValue('두번째')).toBeInTheDocument();
+    });
+
+    it('shows the nurse order tutorial once after the first nurse is added', async () => {
+        const user = userEvent.setup();
+        const tutorialRoot = document.createElement('div');
+
+        tutorialRoot.id = 'tutorial';
+        document.body.appendChild(tutorialRoot);
+
+        render(<OnboardingWardCreatePage />);
+        await moveToNurseStep(user);
+
+        expect(screen.queryByText('숙련 간호사는 위쪽으로')).not.toBeInTheDocument();
+
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+
+        await waitFor(() => {
+            expect(within(tutorialRoot).getByText('숙련 간호사는 위쪽으로')).toBeInTheDocument();
+        });
+        expect(document.getElementById('onboarding_nurse_order_sample')).toBeInTheDocument();
+        expect(document.getElementById('onboarding_nurse_order_handle')).toBeInTheDocument();
+
+        await user.click(within(tutorialRoot).getByRole('button', {name: '완료'}));
+
+        await waitFor(() => {
+            expect(within(tutorialRoot).queryByText('숙련 간호사는 위쪽으로')).not.toBeInTheDocument();
+        });
+        expect(window.localStorage.getItem('dutying.tutorial.dismissed.onboarding-nurse-order.v1.42')).toBe('1');
+
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+
+        expect(within(tutorialRoot).queryByText('숙련 간호사는 위쪽으로')).not.toBeInTheDocument();
     });
 
     it('keeps schedule data separated by team and saves named rows in the completion payload', async () => {

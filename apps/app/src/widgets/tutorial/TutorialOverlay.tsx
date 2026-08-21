@@ -34,6 +34,7 @@ export const TutorialOverlay = ({config, closeCallback, initialStepIndex}: ITuto
             <TutorialInfoBox
                 currentStep={currentStep}
                 infoBoxElement={infoBoxElement}
+                infoBoxWidth={config.infoBoxWidth}
                 onNext={nextStep}
                 onPrevious={previousStep}
                 stepIndex={stepIndex}

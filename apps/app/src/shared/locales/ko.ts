@@ -929,10 +929,6 @@ export const ko = {
                         label: '근무·휴식 조건',
                         sentence: '{target}는 N 근무 후 최소 {count}일의 휴무가 필요해요',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: '근무·휴식 조건',
-                        sentence: '{target}는 한 달에 최소 {count}일의 휴무가 필요해요',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: '개인 조건',
                         sentence: '{nurse}는 주말/공휴일 근무를 하면 안 돼요',
@@ -1044,10 +1040,6 @@ export const ko = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: '연속 근무 / 휴식 규칙',
                         sentence: '{target}은 N 근무 후 최소 {days}일 OFF가 필요해요',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: '연속 근무 / 휴식 규칙',
-                        sentence: '{target}은 한 달에 최소 {days}일 OFF가 있어야 해요',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '사람별 근무 제한',
@@ -2612,7 +2604,6 @@ export const ko = {
                 minStaffByShift: '{{shift}} 근무 인원이 {{actual}}명이에요. 최소 {{expected}}명이 필요해요.',
                 maxStaffByShift: '{{shift}} 근무 인원이 {{actual}}명이에요. 최대 {{expected}}명까지 가능해요.',
                 forbidNextShift: '{{nurseName}}님은 {{prevShift}} 다음 날 {{nextShift}} 근무를 할 수 없어요.',
-                minMonthlyOff: '{{nurseName}}님은 월 OFF가 {{actual}}일이에요. 최소 {{expected}}일이 필요해요.',
                 nurseForbidWeekend: '{{nurseName}}님은 주말이나 공휴일 근무를 할 수 없어요.',
                 pairPreferSameShift: '{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 권장해요.',
                 pairForbidSameShift: '{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 할 수 없어요.',
