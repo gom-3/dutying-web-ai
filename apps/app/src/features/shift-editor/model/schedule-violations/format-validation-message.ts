@@ -27,7 +27,6 @@ const MAX_CONSECUTIVE_NIGHT_MESSAGE_PATTERN =
 const MIN_STAFF_BY_SHIFT_MESSAGE_PATTERN = /^(.+?)\s+근무\s+인원이\s+(\d+)명이에요\.?\s*최소\s+(\d+)명이\s+필요해요\.?$/;
 const MAX_STAFF_BY_SHIFT_MESSAGE_PATTERN =
     /^(.+?)\s+근무\s+인원이\s+(\d+)명이에요\.?\s*최대\s+(\d+)명까지\s+가능해요\.?$/;
-const MIN_MONTHLY_OFF_MESSAGE_PATTERN = /^(.+?)님은\s+월\s+OFF가\s+(\d+)일이에요\.?\s*최소\s+(\d+)일이\s+필요해요\.?$/;
 const MIN_OFF_AFTER_NIGHT_MESSAGE_PATTERN =
     /^(.+?)님은\s+N\s+근무\s+뒤\s+OFF가\s+부족해요\.?\s*최소\s+(\d+)일이\s+필요해요\.?$/;
 const NIGHT_CONTINUATION_REQUIRED_MESSAGE_PATTERN = /^(.+?)님의\s+연속\s+(.+?)\s+근무\s+후에는\s+(.+?)가\s+필요해요\.?$/;
@@ -109,14 +108,6 @@ export function formatKnownScheduleValidationMessage(message: string): string | 
         const [, shift, actual, expected] = maxStaffMatch;
 
         return i18n.t(`${VALIDATION_I18N_KEY_PREFIX}maxStaffByShift`, {shift, actual, expected});
-    }
-
-    const minMonthlyOffMatch = normalized.match(MIN_MONTHLY_OFF_MESSAGE_PATTERN);
-
-    if (minMonthlyOffMatch) {
-        const [, nurseName, actual, expected] = minMonthlyOffMatch;
-
-        return i18n.t(`${VALIDATION_I18N_KEY_PREFIX}minMonthlyOff`, {nurseName, actual, expected});
     }
 
     const minOffAfterNightMatch = normalized.match(MIN_OFF_AFTER_NIGHT_MESSAGE_PATTERN);

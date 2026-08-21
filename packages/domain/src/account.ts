@@ -14,7 +14,8 @@ export type TTutorialKey =
     | 'board'
     | 'board-list'
     | 'board-composer'
-    | 'board-detail';
+    | 'board-detail'
+    | 'onboarding-nurse-order';
 
 export type TTutorialProgress = {
     seen?: TTutorialKey[];

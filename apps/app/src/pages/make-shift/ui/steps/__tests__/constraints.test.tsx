@@ -1288,7 +1288,7 @@ describe('Constraints', () => {
         });
     });
 
-    it('shows exactly the 20 three-shift rules without the removed skills and roles category', async () => {
+    it('shows exactly the 19 three-shift rules without the removed monthly off, skills, and roles category', async () => {
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 93,
@@ -1302,7 +1302,6 @@ describe('Constraints', () => {
             MIN_OFF_AFTER_CONSECUTIVE_WORK: 'WORK_REST',
             AVOID_ISOLATED_WORK_DAY: 'WORK_REST',
             AVOID_ISOLATED_OFF_DAY: 'WORK_REST',
-            MIN_MONTHLY_OFF: 'WORK_REST',
             CORE_MIN_NIGHT_INTERVAL: 'CORE',
             CORE_MAX_CONTINUOUS_NIGHT: 'CORE',
             CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
@@ -1394,6 +1393,7 @@ describe('Constraints', () => {
             'CORE_MAX_CONTINUOUS_WORK',
             'CORE_MIN_NIGHT_INTERVAL',
             'CORE_MAX_CONTINUOUS_NIGHT',
+            'MIN_MONTHLY_OFF',
             'MAX_MONTHLY_NIGHT_COUNT',
             'FORBID_E_THEN_N',
         ]) {
@@ -1404,6 +1404,7 @@ describe('Constraints', () => {
         expect(dialog.querySelector('[data-constraint-template-card="STAFF_COUNT_BY_SHIFT"]')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '연속 근무·휴무'}));
         expect(dialog.querySelector('[data-constraint-template-card="CORE_MAX_CONTINUOUS_WORK"]')).toBeInTheDocument();
+        expect(dialog.querySelector('[data-constraint-template-card="MIN_MONTHLY_OFF"]')).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
         for (const normalCategoryCode of [
             'CORE_MIN_NIGHT_INTERVAL',
@@ -1421,7 +1422,7 @@ describe('Constraints', () => {
             normalRuleCount += screen.queryAllByTitle('추가').length;
         }
 
-        expect(normalRuleCount).toBe(20);
+        expect(normalRuleCount).toBe(19);
         expect(screen.queryByRole('button', {name: '숙련도·역할'})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('sentinel-exact_staff_by_shift');
         expect(document.body.textContent).not.toContain('sentinel-max_day_night_transitions');

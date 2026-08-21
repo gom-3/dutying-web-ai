@@ -442,7 +442,6 @@ const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
     'MIN_OFF_AFTER_CONSECUTIVE_WORK',
     'AVOID_ISOLATED_WORK_DAY',
     'AVOID_ISOLATED_OFF_DAY',
-    'MIN_MONTHLY_OFF',
     'CORE_MIN_NIGHT_INTERVAL',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_CONTINUOUS_NIGHT',
@@ -520,7 +519,6 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     MIN_OFF_AFTER_CONSECUTIVE_WORK: 'WORK_REST',
     AVOID_ISOLATED_WORK_DAY: 'WORK_REST',
     AVOID_ISOLATED_OFF_DAY: 'WORK_REST',
-    MIN_MONTHLY_OFF: 'WORK_REST',
     CORE_MIN_NIGHT_INTERVAL: 'FORBIDDEN_PATTERN',
     CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
     CORE_MIN_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
@@ -781,14 +779,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         ],
     },
     {
-        id: 'MIN_MONTHLY_OFF',
-        category: 'WORK_REST',
-        controls: [
-            {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'count', kind: 'number', min: 1, max: 31},
-        ],
-    },
-    {
         id: 'NURSE_FORBID_WEEKEND',
         category: 'PERSONAL',
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
@@ -959,14 +949,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         ],
     },
     {
-        id: 'SOFT_MIN_MONTHLY_OFF',
-        category: 'WORK_REST',
-        controls: [
-            {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'days', kind: 'number', min: 1, max: 15},
-        ],
-    },
-    {
         id: 'SOFT_NO_WEEKEND_FOR_NURSE',
         category: 'PERSONAL',
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
@@ -1021,7 +1003,6 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     MAX_CONSECUTIVE_WORK_DAYS: {count: '3'},
     OFF_AFTER_CONSECUTIVE_WORK: {count: '2'},
     MIN_OFF_AFTER_N: {count: '1'},
-    MIN_MONTHLY_OFF: {count: '1'},
     MIN_OFF_AFTER_CONSECUTIVE_WORK: {target: ALL_CONSTRAINT_TARGET_OPTION, workCount: 5, offCount: 2},
     AVOID_ISOLATED_WORK_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
     AVOID_ISOLATED_OFF_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},

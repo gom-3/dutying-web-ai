@@ -210,6 +210,34 @@ describe('RequestDutyRequestPanel', () => {
         expect(toast.success).toHaveBeenCalledWith('Accept 2 pending');
     });
 
+    it('renders the accept-all action as icon text without the previous purple box', () => {
+        render(
+            <RequestDutyRequestPanel
+                year={2026}
+                month={6}
+                days={[{day: 1, dayType: 'workday'}]}
+                dutyRequestList={[createDutyRequest()]}
+                dutyRequestStatus="success"
+                wardShiftTypeMap={new Map()}
+                canEdit
+                updatingRequestId={null}
+                shiftNurseIdByNurseId={new Map()}
+                changeFocus={vi.fn()}
+                acceptRequest={vi.fn().mockResolvedValue(true)}
+                acceptRequests={vi.fn().mockResolvedValue(true)}
+                retry={vi.fn()}
+                onAcceptAnalytics={vi.fn()}
+            />,
+        );
+
+        const acceptAllButton = screen.getByRole('button', {name: 'Accept all'});
+
+        expect(acceptAllButton).toHaveClass('inline-flex');
+        expect(acceptAllButton).toHaveClass('bg-transparent');
+        expect(acceptAllButton).not.toHaveClass('bg-main-light');
+        expect(acceptAllButton.querySelector('svg')).toBeInTheDocument();
+    });
+
     it('does not send a request when clicking the already selected decision', async () => {
         const user = userEvent.setup();
         const acceptRequest = vi.fn().mockResolvedValue(true);
