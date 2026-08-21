@@ -1,6 +1,8 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
+import {SERVICE_REGION_STORAGE_KEY} from '@/shared/i18n/locale';
 import {act, fireEvent, render, screen, userEvent} from '@/shared/util/test-utils';
 import LoginPage from '../index';
 
@@ -60,6 +62,7 @@ describe('LoginPage', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.unstubAllEnvs();
+        window.localStorage.removeItem(SERVICE_REGION_STORAGE_KEY);
     });
 
     beforeEach(() => {
@@ -99,6 +102,28 @@ describe('LoginPage', () => {
             'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
         expect(screen.getByRole('link', {name: 'Apple로 계속하기'})).toHaveAttribute(
+            'href',
+            'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
+        );
+    });
+
+    it('renders LINE instead of Kakao for Japanese login context', async () => {
+        await i18n.changeLanguage('ja');
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('link', {name: 'LINEで続ける'})).toHaveAttribute(
+            'href',
+            'https://api.dutying.ai/oauth/line/authorize?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
+        );
+        expect(screen.queryByRole('link', {name: 'Kakaoで続ける'})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Appleで続ける'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );

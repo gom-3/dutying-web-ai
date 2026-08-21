@@ -410,6 +410,8 @@ export const ko = {
             loginLink: '로그인',
             kakaoContinue: '카카오로 계속하기',
             kakaoStart: '카카오로 시작하기',
+            lineContinue: 'LINE으로 계속하기',
+            lineStart: 'LINE으로 시작하기',
             appleContinue: 'Apple로 계속하기',
             appleStart: 'Apple로 시작하기',
             continuePrefix: '계속하면',

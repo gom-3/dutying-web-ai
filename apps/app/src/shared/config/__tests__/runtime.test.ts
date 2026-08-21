@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
-import {buildAppUrl, buildAuthAuthorizeUrl, resolveSafeRedirectTarget, sanitizeInternalPath} from '../runtime';
+import {buildAppUrl, buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, resolveSafeRedirectTarget, sanitizeInternalPath} from '../runtime';
 
 describe('sanitizeInternalPath', () => {
     it('keeps app-relative paths', () => {
@@ -113,5 +113,18 @@ describe('buildAuthAuthorizeUrl', () => {
         expect(url.origin).toBe('https://api.dutying.ai');
         expect(url.pathname).toBe('/oauth2/authorization/admin/apple');
         expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.ai/request');
+    });
+});
+
+describe('buildLineAuthAuthorizeUrl', () => {
+    it('uses the dedicated web LINE authorize endpoint', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
+
+        const url = new URL(buildLineAuthAuthorizeUrl(ROUTE.REGISTER));
+
+        expect(url.origin).toBe('https://api.dutying.ai');
+        expect(url.pathname).toBe('/oauth/line/authorize');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.ai/register');
     });
 });
