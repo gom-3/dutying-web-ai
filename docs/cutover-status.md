@@ -328,3 +328,66 @@ AASA `application/json` ✅ (`apps/landing/public/_headers`가 dist로 그대로
 - `_dmarc` TXT
 - `api` / `dev.api` A 레코드 (EC2)
 - 미사용 Route 53 존 2개는 이 시점에 정리 (T3-2b)
+
+
+---
+
+## Cloudflare 존 생성 + NS 이전 (2026-08-21, **NS 변경 대기 중**)
+
+`dutying.ai` 존을 Cloudflare에 생성했다. Zone ID `8e927a505d594219bfce819910b67157`, Free 플랜.
+
+### 🔴 스캔이 레코드를 하나 놓쳤다
+
+Cloudflare 자동 스캔 결과는 **A 2건**이었으나 실제로는 **3건**이다. `dev.api`(2단계 서브도메인)가 누락됐다. 그대로 활성화했으면 `dev.api.dutying.ai`가 죽는다. 수동 추가했다.
+
+> **교훈: 스캔 결과를 그대로 믿지 말고 반드시 스냅샷과 건수부터 대조할 것.**
+
+### 최종 13건 (스냅샷과 1:1 일치 확인)
+
+| Type | Name | Content | Proxy |
+| --- | --- | --- | --- |
+| A | api | 43.202.216.112 | DNS only |
+| A | dev.api | 3.36.210.125 | DNS only ← 수동 추가 |
+| A | @ | 216.198.79.1 | DNS only |
+| CNAME | app | e78481807e99e2ae.vercel-dns-017.com | DNS only |
+| CNAME | dev | dutying-web-ai-dev.pages.dev | DNS only |
+| CNAME | www | e78481807e99e2ae.vercel-dns-017.com | DNS only |
+| MX ×3 | @ | mx/mx2/mx3.zoho.com | DNS only |
+| TXT | _dmarc / @ zoho-verification / @ spf / zmail._domainkey | | DNS only |
+
+**전부 DNS only로 둔 이유**: NS 전환 중에는 일부 리졸버가 Namecheap을, 일부가 Cloudflare를 본다. 두 존의 동작이 **완전히 같아야** 무중단이다. 프록시는 전환·검증이 끝난 뒤 켠다.
+
+`api`/`dev.api`는 전환 후에도 DNS only 유지 — 오리진 인증서가 `CN=api.dutying.net`이라 프록시 + Full(strict)에서 깨진다.
+
+### ⏸ 남은 조작: Namecheap NS 변경
+
+`dutying.ai → Domain → NAMESERVERS`를 **Custom DNS**로:
+
+```
+kyrie.ns.cloudflare.com
+priscilla.ns.cloudflare.com
+```
+
+이 조작은 자동화가 차단되어 **사람이 직접 해야 한다**(이메일 포함 도메인 전체에 영향).
+
+전환 후 순서:
+1. `dig NS dutying.ai` 로 Cloudflare NS 확인
+2. **메일 먼저 검증** — MX/SPF/DKIM/DMARC 응답 확인, 실제 수·발신 테스트
+3. Pages 커스텀 도메인 연결: `www`·`@` → `dutying-landing`, `app` → `dutying-web-ai`, `docs` → `dutying-docs`
+4. `dev`는 이미 `dutying-web-ai-dev`에 연결됨 (자동 승계)
+5. 미사용 Route 53 존 2개 삭제 (T3-2b)
+
+---
+
+## `.net` 이사 안내 모달 (2026-08-21, **배포 대기**)
+
+구 레포 `gom-3/dutying-web` 브랜치 `feat/service-moved-modal`, 커밋 `c223d2f`.
+
+- `src/components/ServiceMovedModal/index.tsx` 신규
+- `src/App.tsx`에 마운트 (`Router` 위, `#modal-root` 포털)
+
+문구에 명시한 것 — **계정 분리(재가입 필요)**, **기존 근무표 미이전**, **구 사이트는 당분간 유지**. 세 가지 모두 안 알리면 CS로 돌아온다.
+
+검증 완료: 데스크톱·모바일(375px) 렌더, "오늘 하루 보지 않기" → localStorage 24.00h 저장 → 새로고침 시 미노출, `body.overflow` 복원, `tsc && vite build` 통과.
+
+> ⚠️ **`main`에 푸시하지 않았다.** 푸시하면 Vercel이 즉시 배포하는데 `www.dutying.ai`가 아직 404다. **`.ai` 오픈 확인 후** 머지할 것.
