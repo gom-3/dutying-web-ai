@@ -456,3 +456,38 @@ www.dutying.net  200  Vercel       ← 구 서비스 (그대로 유지)
 | Vercel `.ai` 도메인 정리 | `app`/`www.dutying.ai`가 Vercel에도 남아 있음. DNS가 Cloudflare를 가리켜 무해하지만 정리 권장 |
 | `api.dutying.ai` TLS | 미발급. prod가 `api.dutying.net`을 쓰는 이유 |
 | API CORS 임의 Origin 반사 | 상업 오픈 전 필수 수정 |
+
+
+---
+
+## 🔴 서버 설정이 `.ai`를 막고 있다 (2026-08-21 발견, 미해결)
+
+`dutying-server` 워킹트리(develop, 미커밋 29파일)에 **`.ai` → `.net` 되돌림**이 들어가 있다.
+`.ai`가 404이던 시점엔 옳은 변경이었지만, **이제 `.ai`가 라이브라 이대로 배포되면 신규 서비스가 깨진다.**
+
+`src/main/resources/application-common.yml` 현재 미커밋 diff:
+
+| 설정 | 현재 값 (미커밋) | 필요한 값 |
+| --- | --- | --- |
+| `security.cors.allowed-origins` | `.net`만 | **`https://app.dutying.ai` 추가 필수** |
+| `auth.oauth.redirect.allowed-origins` | `.net`만 | **`https://app.dutying.ai` 추가 필수** |
+| `auth.oauth.redirect.default-url` | `https://www.dutying.net/` | `.ai` 전환 시 `https://app.dutying.ai/` |
+| `app.push.web-base-url` | `https://www.dutying.net/app` | `.ai` 전환 시 재검토 |
+
+### 증상 (이대로 배포하면)
+
+- `app.dutying.ai` → API 호출이 **CORS 차단**
+- OAuth 로그인 후 `app.dutying.ai`로 **리다이렉트 거부**
+- 푸시 딥링크가 구 `.net`으로 감
+
+### 지금 왜 안 터지나
+
+prod가 도는 `origin/main`은 `setAllowedOriginPatterns(["*"])` + `allowCredentials(true)` — **임의 Origin을 반사**한다. 그래서 `app.dutying.ai`가 우연히 통과 중이다. 이건 **보안 취약점이자 지금 서비스가 붙어 있는 이유**다.
+
+즉 서버 배포는 다음 둘을 **동시에** 만족해야 한다:
+1. 취약한 `main` CORS를 develop의 화이트리스트 방식으로 교체
+2. 화이트리스트에 `.net`과 `.ai`를 **둘 다** 포함 (전환기 동안 양쪽 서비스가 다 살아있어야 함)
+
+한쪽만 하면 신규 서비스가 죽거나 취약점이 남는다.
+
+> ⚠️ 워킹트리에 다른 세션의 미커밋 변경 29개가 있어 **이 문서에서는 수정하지 않았다.** 서버 담당 세션이 처리할 것.
