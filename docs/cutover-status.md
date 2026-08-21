@@ -517,3 +517,48 @@ prod가 도는 `origin/main`은 `setAllowedOriginPatterns(["*"])` + `allowCreden
 주의할 것은 하나뿐:
 
 > ⚠️ **`dutying-server` 워킹트리의 `.net` 되돌림을 커밋하지 말 것.** 커밋하면 `app.dutying.ai`가 CORS·OAuth에서 차단된다. 서버 담당 세션이 이 미커밋 변경을 폐기하거나 `.ai`를 다시 넣어야 한다. (미커밋 파일이 29개라 이 세션에서는 손대지 않았다.)
+
+
+---
+
+## 🔴 apex `dutying.ai`는 아직 404 — NS 전환이 **필수**가 되는 유일한 이유
+
+```
+dutying.ai        404  Vercel   ← 주소창에 "dutying.ai" 치면 깨진 화면
+www.dutying.ai    200  cloudflare
+app.dutying.ai    200  cloudflare
+docs.dutying.ai   200  cloudflare
+dev.dutying.ai    200  cloudflare
+```
+
+apex A 레코드가 아직 Vercel(`216.198.79.1`)을 가리킨다.
+
+### 왜 CNAME 방식으로 못 고치나
+
+Cloudflare Pages에 `dutying.ai`를 커스텀 도메인으로 추가하려 하면 **"Transfer DNS management"만 제시하고 CNAME 옵션을 주지 않는다.**
+
+> Before adding **dutying.ai** to your Pages project, you'll need to transfer your DNS to Cloudflare.
+
+**DNS 표준상 zone apex에는 CNAME을 둘 수 없기 때문**이다. 서브도메인(`www`/`app`/`docs`/`dev`)은 CNAME으로 우회했지만 apex는 구조적으로 불가능하다.
+
+### 선택지
+
+| 방법 | 결과 |
+| --- | --- |
+| **NS → Cloudflare 전환** | ✅ 정석. Pages가 apex를 네이티브 지원. 존 14건 동기화 완료라 **지금 넘기면 바로 됨** |
+| Namecheap ALIAS 레코드 | ❌ Pages가 Host를 모르므로 404. apex가 커스텀 도메인으로 등록돼야 하는데 그게 NS 전환을 요구 |
+| Namecheap URL Redirect | 🟡 apex→www 리다이렉트. HTTPS 인증서 제공 여부 불확실 |
+
+> **결론 정정**: 앞서 "NS 전환은 선택"이라고 했으나, **apex를 살리려면 NS 전환이 필요하다.** 나머지 4개 호스트는 이미 CNAME으로 동작하므로, NS 전환의 유일한 남은 목적이 apex다.
+
+### NS 전환 시 필요한 것
+
+```
+Namecheap → dutying.ai → Domain → NAMESERVERS → Custom DNS
+  kyrie.ns.cloudflare.com
+  priscilla.ns.cloudflare.com
+```
+
+Cloudflare 존 14건이 Namecheap과 1:1 동기화 완료라 **전환해도 죽는 호스트가 없다.** 전환 후 Pages에서 `dutying.ai`를 landing 프로젝트 커스텀 도메인으로 추가하면 apex가 살아난다.
+
+전환 직후 검증: MX/SPF/DKIM/DMARC 응답 + 실제 메일 수·발신.
