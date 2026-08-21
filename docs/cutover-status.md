@@ -426,9 +426,29 @@ priscilla.ns.cloudflare.com
 
 > 진단 순서: ① 응답 헤더의 `server:`로 **누가 응답하는지** 먼저 본다 → Vercel이면 DNS 캐시, TLS 실패면 인증서. ② 대시보드 커스텀 도메인 status를 본다. 상태코드만 보면 오진한다.
 
-### 미완 (NS 전환 시점에 필요)
+### ✅ Cloudflare 존 동기화 완료 (14건)
 
-Cloudflare 존(pending 상태)의 레코드를 Namecheap과 맞추는 작업 중 **`docs` CNAME 추가만 남았다**. `app`/`www`는 존에도 반영 완료. 존이 pending이라 지금은 무해하지만, **NS를 넘기기 전 반드시 추가**할 것 — 안 하면 `docs.dutying.ai`가 NS 전환 순간 죽는다.
+존(pending)의 레코드를 Namecheap과 **1:1로 맞췄다. NS를 넘겨도 죽는 호스트가 없다.**
+
+```
+A      api      43.202.216.112                  DNS only
+A      dev.api  3.36.210.125                    DNS only
+A      @        216.198.79.1                    DNS only
+CNAME  app   →  dutying-web-ai.pages.dev        DNS only
+CNAME  dev   →  dutying-web-ai-dev.pages.dev    DNS only
+CNAME  docs  →  dutying-docs.pages.dev          DNS only
+CNAME  www   →  dutying-landing.pages.dev       DNS only
+MX ×3    mx/mx2/mx3.zoho.com
+TXT ×4   _dmarc / zoho-verification / spf / zmail._domainkey
+```
+
+**대시보드 팁**: 레코드 추가/편집 다이얼로그가 불안정해 저장이 자주 유실된다. **Import 버튼 + BIND 존 파일** 경로가 훨씬 안정적이다. 한 줄짜리 파일도 받는다:
+
+```
+docs.dutying.ai. 1 IN CNAME dutying-docs.pages.dev.
+```
+
+업로드 시 "Proxy imported DNS records" 체크는 **해제**해야 DNS only로 들어간다.
 
 
 ---
