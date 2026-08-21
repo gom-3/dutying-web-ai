@@ -658,15 +658,36 @@ public static final String ADMIN_OAUTH2_AUTHORIZATION_ATTRIBUTE = "adminOAuth2Au
 
 CORS는 정상이다 (`app.dutying.ai` 허용 + credentials). 네트워크가 아니라 **서버 버전** 문제다.
 
-### 조치
+### 조치 — ⚠️ 앞선 권고 정정
 
-**서버 배포(`origin/develop` → prod)가 유일한 해법이다.** admin 계열 엔드포인트가 전부 develop에만 있다. `origin/develop`은 CORS 화이트리스트·admin OAuth 라우트가 모두 정상이므로 그대로 올리면 된다.
+처음엔 "서버 `origin/develop`을 prod에 올리면 된다"고 썼으나 **그건 계획과 반대이고 위험하다.**
+
+`dutying-server/docs/new-server-cutover-todo-2026-08-17.html` 전략:
+
+> 기존 서버는 **`.net`에 남기고** 3개월 유예 후 종료, **새 서버·새 DB·새 레포가 `.ai`를 승계.** 데이터 이관 없음, 기존 유저도 새 서비스에 자유 재가입.
+
+현 prod는 **`.net` 구 서비스가 실제로 쓰고 있는 살아있는 서버**다. 여기에 develop을 올리면:
+- 구 `.net` 서비스가 갈아엎힌다 (Flyway 제거 후 수동 DDL 이력 있음 — 스키마 사고 위험)
+- 계획상 `.ai`는 애초에 이 서버를 쓰면 안 된다
+
+**올바른 해법은 `.ai` 전용 새 API를 세우는 것**이다(서버 컷오버 문서 §3). 그때 `api.dutying.ai`를 회수한다 — 서버 문서가 이미 확인해둔 것:
+- 라이브 웹·스토어 앱의 API base는 전부 `api.dutying.net` → **`api.dutying.ai`는 미사용, 깨끗하게 회수 가능**
+- 애플 Service ID에 `api.dutying.ai` 도메인 **등록·검증 완료**
+- 단 `api.dutying.ai`는 TLS 인증서 미발급 → certbot 신규 발급 필요
+
+### 웹 쪽에서 할 일
+
+새 API가 서면 **Pages `dutying-web-ai` 프로젝트의 `VITE_SERVER_URL`을 새 호스트로 바꾸면 끝이다** (현재 `https://api.dutying.net`). 코드 변경 없음.
+
+> 즉 **현재 `.ai` 웹은 서버보다 앞서 있다.** 웹은 다 됐고 `.ai` 전용 백엔드가 아직 없다. `origin/develop`은 CORS 화이트리스트·admin OAuth 라우트가 모두 정상이므로 그대로 올리면 된다.
 
 > ⚠️ **그 전에는 [PR #284](https://github.com/gom-3/dutying-web/pull/284)를 머지하지 말 것.** 모달은 `.net` 사용자에게 "새 주소에서 재가입하라"고 안내하는데, 지금 가면 로그인·가입이 안 된다. 안내를 안 하느니만 못하다.
 
 ### 순서
 
-1. 서버 `origin/develop` → prod 배포
-2. 위 표의 `404` 엔드포인트가 전부 사라졌는지 확인 (특히 `/auth/admin/password/signup`, `/oauth2/authorization/admin/kakao`)
-3. `app.dutying.ai`에서 **실제 가입 1회 + 로그인 1회** 성공 확인
-4. **그다음** PR #284 머지
+1. **`.ai` 전용 새 API 구축** (서버 컷오버 문서 §3) — `api.dutying.ai` 회수 + certbot 인증서 발급
+   - ⚠️ 현 prod에 develop을 올리는 것이 **아니다.** 그건 `.net` 구 서비스를 깨뜨린다
+2. Pages `dutying-web-ai`의 `VITE_SERVER_URL`을 새 API 호스트로 변경 → 재배포
+3. 위 표의 `404`가 전부 사라졌는지 확인
+4. `app.dutying.ai`에서 **실제 가입 1회 + 로그인 1회** 성공 확인
+5. **그다음** PR #284 머지
