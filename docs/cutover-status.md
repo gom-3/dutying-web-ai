@@ -460,21 +460,29 @@ www.dutying.net  200  Vercel       ← 구 서비스 (그대로 유지)
 
 ---
 
-## 🔴 서버 설정이 `.ai`를 막고 있다 (2026-08-21 발견, 미해결)
+## 🟡 서버 설정 — 커밋본은 정상, 로컬 미커밋만 위험 (2026-08-21)
 
-`dutying-server` 워킹트리(develop, 미커밋 29파일)에 **`.ai` → `.net` 되돌림**이 들어가 있다.
-`.ai`가 404이던 시점엔 옳은 변경이었지만, **이제 `.ai`가 라이브라 이대로 배포되면 신규 서비스가 깨진다.**
+**정정**: 처음엔 "서버가 `.ai`를 막는다"고 봤으나, 확인 결과 **커밋된 `origin/develop`은 정상**이다.
+CORS·OAuth 화이트리스트 모두 `.ai`·`.net` 양쪽을 포함한다:
+
+```
+https://app.dutying.ai      https://app.dutying.net
+https://dev.dutying.ai      https://dev.dutying.net
+https://dev.app.dutying.ai  https://dev.app.dutying.net
+```
+
+위험한 것은 **`dutying-server` 워킹트리의 미커밋 변경(다른 세션 작업, 29파일)** 뿐이다. `.ai`가 404이던 시점에 `.net`으로 되돌린 것으로, 그때는 옳았다. **이게 그대로 커밋·배포되면** 신규 서비스가 깨진다.
 
 `src/main/resources/application-common.yml` 현재 미커밋 diff:
 
-| 설정 | 현재 값 (미커밋) | 필요한 값 |
+| 설정 | origin/develop (커밋본) | 워킹트리 (미커밋) |
 | --- | --- | --- |
-| `security.cors.allowed-origins` | `.net`만 | **`https://app.dutying.ai` 추가 필수** |
-| `auth.oauth.redirect.allowed-origins` | `.net`만 | **`https://app.dutying.ai` 추가 필수** |
-| `auth.oauth.redirect.default-url` | `https://www.dutying.net/` | `.ai` 전환 시 `https://app.dutying.ai/` |
-| `app.push.web-base-url` | `https://www.dutying.net/app` | `.ai` 전환 시 재검토 |
+| `security.cors.allowed-origins` | ✅ `.ai`+`.net` | ⚠️ `.net`만 |
+| `auth.oauth.redirect.allowed-origins` | ✅ `.ai`+`.net` | ⚠️ `.net`만 |
+| `auth.oauth.redirect.default-url` | `https://app.dutying.ai/` | ⚠️ `https://www.dutying.net/` |
+| `app.push.web-base-url` | `https://www.dutying.ai/app` | ⚠️ `https://www.dutying.net/app` |
 
-### 증상 (이대로 배포하면)
+### 증상 (미커밋본이 그대로 배포되면)
 
 - `app.dutying.ai` → API 호출이 **CORS 차단**
 - OAuth 로그인 후 `app.dutying.ai`로 **리다이렉트 거부**
@@ -484,10 +492,8 @@ www.dutying.net  200  Vercel       ← 구 서비스 (그대로 유지)
 
 prod가 도는 `origin/main`은 `setAllowedOriginPatterns(["*"])` + `allowCredentials(true)` — **임의 Origin을 반사**한다. 그래서 `app.dutying.ai`가 우연히 통과 중이다. 이건 **보안 취약점이자 지금 서비스가 붙어 있는 이유**다.
 
-즉 서버 배포는 다음 둘을 **동시에** 만족해야 한다:
-1. 취약한 `main` CORS를 develop의 화이트리스트 방식으로 교체
-2. 화이트리스트에 `.net`과 `.ai`를 **둘 다** 포함 (전환기 동안 양쪽 서비스가 다 살아있어야 함)
+즉 서버 배포는 **`origin/develop`을 그대로 올리면 된다** — 화이트리스트가 이미 양쪽을 포함하고, 취약한 반사형 CORS도 이미 화이트리스트 방식으로 고쳐져 있다.
 
-한쪽만 하면 신규 서비스가 죽거나 취약점이 남는다.
+주의할 것은 하나뿐:
 
-> ⚠️ 워킹트리에 다른 세션의 미커밋 변경 29개가 있어 **이 문서에서는 수정하지 않았다.** 서버 담당 세션이 처리할 것.
+> ⚠️ **`dutying-server` 워킹트리의 `.net` 되돌림을 커밋하지 말 것.** 커밋하면 `app.dutying.ai`가 CORS·OAuth에서 차단된다. 서버 담당 세션이 이 미커밋 변경을 폐기하거나 `.ai`를 다시 넣어야 한다. (미커밋 파일이 29개라 이 세션에서는 손대지 않았다.)
