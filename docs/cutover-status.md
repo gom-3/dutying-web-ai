@@ -1,6 +1,6 @@
 # .ai 컷오버 현황판
 
-> 최종 갱신 2026-08-21 · 이 문서가 웹(.ai) 전환의 단일 기준이다.
+> 최종 갱신 2026-08-23 · 이 문서가 웹(.ai) 전환의 단일 기준이다.
 > 서버(API/DB) 쪽은 `dutying-server/docs/new-server-cutover-todo-2026-08-17.html` 참조.
 
 ## 한눈에
@@ -1019,3 +1019,48 @@ docs.dutying.ai/sitemap.xml  → HTML (파일 없음)   ❌
 
 1. **Google Search Console** — `dutying.ai` 속성 추가 → 사이트맵 제출 → **`.net` → `.ai` 주소 변경 도구** 신고
 2. **네이버 서치어드바이저** — `www.dutying.ai` 등록 (소유확인 메타는 이미 심어둠, 확인만 누르면 됨)
+
+### 최종 검증 (2026-08-23, 배포 반영 후 본문 확인)
+
+`content-type` + 본문 첫 바이트까지 확인한 결과다. 상태 코드만 본 게 아니다.
+
+```
+www.dutying.ai/robots.txt        200 text/plain          User-agent: * / Allow: /
+www.dutying.ai/sitemap-index.xml 200 application/xml     → sitemap-0.xml → https://www.dutying.ai/
+www.dutying.ai                   canonical https://www.dutying.ai/ · JSON-LD 3건 · naver 메타 ✅
+app.dutying.ai/robots.txt        200 text/plain          Sitemap: app.dutying.ai/sitemap.xml
+app.dutying.ai/sitemap.xml       200 application/xml     https://app.dutying.ai/
+app.dutying.ai                   <html lang="ko"> · robots "index, follow" ✅
+docs.dutying.ai/robots.txt       200 text/plain          Sitemap: docs.dutying.ai/sitemap.xml
+docs.dutying.ai/sitemap.xml      200 application/xml     lastmod 포함 전체 문서 ✅
+dev.dutying.ai/robots.txt        Disallow: /   +  <meta robots="noindex, nofollow">  ✅
+보안 헤더(www)                    HSTS preload · nosniff · frame DENY · referrer · permissions ✅
+```
+
+`sitemap.xml` ↔ `sitemap-index.xml` 이 사이트마다 다른 것은 정상이다. Astro 는 인덱스 방식,
+Vite/VitePress 는 단일 파일 방식이라 각 `robots.txt` 가 자기 사이트의 실제 파일명을 가리킨다.
+
+추가 수정 — `app` canonical 이 `https://app.dutying.ai` (슬래시 없음) 인데 사이트맵은
+`https://app.dutying.ai/` 를 싣고 있어 한 글자 어긋나 있었다. canonical 쪽에 슬래시를 붙여 맞췄다. (`9efb06c0`)
+
+### Preview branch 설정이 되돌아가 있었다
+
+`dutying-docs` 의 Preview branch 가 **None → All non-Production branches** 로 revert 되어 있었다.
+그 탓에 `develop`·`changeset-release/*` 프리뷰 빌드가 큐를 잡아먹어, 위 SEO 커밋의 프로덕션
+배포가 4시간 가까이 Queued 상태로 밀려 있었다. 재설정 후 4개 프로젝트를 전부 열어 확인했다.
+
+| 프로젝트 | 프로덕션 브랜치 | Preview branch |
+| --- | --- | --- |
+| `dutying-web-ai` | `main` | None ✅ |
+| `dutying-web-ai-dev` | `develop` | None ✅ |
+| `dutying-landing` | `main` | None ✅ |
+| `dutying-docs` | `main` | None ✅ (되돌아가 있던 것을 재설정) |
+
+> 대시보드 저장이 조용히 실패하는 경우가 있다. **저장 후 새로고침해서 값이 남아 있는지 확인할 것.**
+
+### `.net` → `.ai` 랭킹 이전은 PR #284 에 묶여 있다
+
+현재 `www.dutying.net` 은 여전히 `canonical → https://dutying.net` 이다. 크로스도메인 canonical 은
+[PR #284](https://github.com/gom-3/dutying-web/pull/284) 안에 있고, 이 PR 은 `api.dutying.ai` 안정성 관찰
+때문에 **의도적으로 머지 보류** 상태다. 즉 코드 쪽 SEO 는 `.ai` 3개 사이트 모두 끝났지만,
+**구 도메인의 검색 랭킹 이전은 이 PR 머지 + Search Console 주소 변경 도구, 두 가지가 남아 있다.**
