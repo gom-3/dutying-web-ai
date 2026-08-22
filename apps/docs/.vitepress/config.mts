@@ -47,6 +47,7 @@ export default defineConfig({
     cleanUrls: true,
     lastUpdated: true,
     srcExclude: ['README.md'],
+    sitemap: {hostname: `${docsSiteLinks.docs}/`},
     head: [['link', {rel: 'icon', href: '/favicon.ico', sizes: 'any'}]],
     transformHead: ({pageData}) => {
         const pageUrl = new URL(getDocsRoutePath(pageData.relativePath), `${docsSiteLinks.docs}/`).toString();

@@ -51,11 +51,13 @@ done
 
 hdr "API: $API"
 # 404 면 그 라우트가 없는 서버다. 인증이 필요한 라우트는 401/403/405 가 정상.
+# /admin/wards 는 제외한다 — dev·prod 모두 무인증 404 를 내는 정상 동작이라
+# 여기 넣으면 영구 오탐이 된다 (앱은 인증 후에만 호출한다).
 for p in /accounts/me /accounts/waiting /wards \
          /oauth2/authorization/admin/kakao \
          /auth/admin/password/login /auth/admin/password/signup \
          /auth/admin/social/signup /auth/admin/email-verifications \
-         /admin/accounts/me /admin/wards /accounts/me/admin-workspace; do
+         /admin/accounts/me /accounts/me/admin-workspace; do
     c=$(code "$API$p")
     [ "$c" = 404 ] && bad "$p" "$c 라우트 없음" || ok "$p" "$c"
 done

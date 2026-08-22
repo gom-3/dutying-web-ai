@@ -1,10 +1,13 @@
+import sitemap from '@astrojs/sitemap';
 import {defineConfig} from 'astro/config';
 import {loadRootEnv} from '../../packages/config/load-root-env.mjs';
 
 const env = loadRootEnv(process.cwd());
 
 export default defineConfig({
-    site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.ai',
+    // canonical 호스트는 www 다. apex 는 Cloudflare Redirect Rule 로 여기에 301 된다.
+    site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://www.dutying.ai',
+    integrations: [sitemap()],
     build: {
         format: 'directory',
     },

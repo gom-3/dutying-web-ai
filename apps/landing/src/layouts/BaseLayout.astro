@@ -14,6 +14,39 @@ const {
 
 const canonicalUrl = new URL(Astro.url.pathname, `${siteConfig.marketingOrigin}/`).toString();
 const ogImageUrl = new URL('/og-image-preview222.png', `${siteConfig.marketingOrigin}/`).toString();
+
+// 검색 결과에서 앱·조직으로 인식되도록 구조화 데이터를 심는다.
+// 이름/URL 은 사이트 설정에서 끌어와 도메인이 바뀌어도 어긋나지 않게 한다.
+const structuredData = {
+    '@context': 'https://schema.org',
+    '@graph': [
+        {
+            '@type': 'Organization',
+            '@id': `${siteConfig.marketingOrigin}/#organization`,
+            name: siteConfig.productName,
+            url: `${siteConfig.marketingOrigin}/`,
+            logo: new URL('/logo-wordmark-purple.png', `${siteConfig.marketingOrigin}/`).toString(),
+        },
+        {
+            '@type': 'WebSite',
+            '@id': `${siteConfig.marketingOrigin}/#website`,
+            name: siteConfig.productName,
+            url: `${siteConfig.marketingOrigin}/`,
+            inLanguage: 'ko-KR',
+            publisher: {'@id': `${siteConfig.marketingOrigin}/#organization`},
+        },
+        {
+            '@type': 'SoftwareApplication',
+            name: siteConfig.productName,
+            description,
+            url: siteConfig.appLinks.home,
+            applicationCategory: 'BusinessApplication',
+            operatingSystem: 'Web, iOS, Android',
+            inLanguage: 'ko-KR',
+            publisher: {'@id': `${siteConfig.marketingOrigin}/#organization`},
+        },
+    ],
+};
 ---
 
 <!doctype html>
@@ -38,6 +71,7 @@ const ogImageUrl = new URL('/og-image-preview222.png', `${siteConfig.marketingOr
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={ogImageUrl} />
+        <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
     </head>
     <body>
         <slot />
