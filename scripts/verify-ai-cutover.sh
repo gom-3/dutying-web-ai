@@ -66,6 +66,18 @@ origin=$(curl -sS -o /dev/null -D - -m 15 -X OPTIONS \
     "$API/accounts/me" 2>/dev/null | grep -i '^access-control-allow-origin' | tr -d '\r' | cut -d' ' -f2)
 [ "$origin" = "https://app.dutying.ai" ] && ok "allow-origin" "$origin" || bad "allow-origin" "${origin:-없음}"
 
+hdr ".ai 전용 API 준비 상태"
+# prod 용 api.dutying.ai 가 서기 전에는 위 admin 404 를 고칠 방법이 없다.
+aiapi=$(curl -sS -o /dev/null -m 10 -w '%{http_code}' https://api.dutying.ai/readyz 2>/dev/null); aiapi=${aiapi:-000}
+if [ "$aiapi" = 200 ]; then
+    ok "api.dutying.ai" "$aiapi — Pages VITE_SERVER_URL 을 여기로 바꿀 것"
+else
+    bad "api.dutying.ai" "미가동 ($aiapi) — TLS 미발급/서버 없음"
+fi
+devapi=$(curl -sS -o /dev/null -m 10 -w '%{http_code}' https://dev.api.dutying.ai/readyz 2>/dev/null); devapi=${devapi:-000}
+[ "$devapi" = 200 ] && ok "dev.api.dutying.ai" "$devapi (새 서버 dev 가동 중)" \
+                    || bad "dev.api.dutying.ai" "$devapi"
+
 hdr "구 서비스 (.net — 무손상이어야 함)"
 c=$(code https://www.dutying.net/)
 [ "$c" = 200 ] && ok "www.dutying.net" "$c" || bad "www.dutying.net" "$c"
