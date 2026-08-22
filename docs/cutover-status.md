@@ -932,3 +932,90 @@ dig +short NS dutying.ai          # cloudflare.com 이어야 함
 현재 **Full**. 전 레코드가 DNS only 라 Cloudflare가 오리진 연결을 하지 않으므로 지금은 무해하다.
 
 > 향후 프록시(주황 구름)를 켤 때는 **Full (strict)** 로 올려야 한다. 단 `api`/`dev.api` 는 오리진 인증서가 `CN=api.dutying.net` 이라 프록시를 켜면 깨진다 — **계속 DNS only 유지**.
+
+
+---
+
+## ✅ `.ai` prod API 전환 완료 (2026-08-23)
+
+`api.dutying.ai`가 승격되어 **가입·로그인이 살아났다.**
+
+```
+Pages dutying-web-ai → VITE_SERVER_URL
+  https://api.dutying.net  →  https://api.dutying.ai
+```
+
+### 실측
+
+```
+소셜 로그인   302 → kauth.kakao.com/oauth/authorize          ✅
+              redirect_uri=https://api.dutying.ai/login/...   ✅ (.ai 로 나감)
+이메일 가입   400 (검증 실패 = 엔드포인트 정상)                ✅
+이메일 로그인 400                                              ✅
+CORS         allow-origin: https://app.dutying.ai
+             allow-credentials: true                          ✅
+```
+
+이전에 404였던 admin 라우트 8개 전부 해소. `./scripts/verify-ai-cutover.sh` **전항목 통과**.
+
+### ⚠️ 새 API 안정성 — 502 구간 관찰됨
+
+전환 직후 `/readyz`가 **12회 연속 502** 후 복구(8/8 200). 응답 헤더가 `server: nginx/1.25.2`였다 — Cloudflare가 아니라 **EC2 nginx가 낸 502**이므로 nginx는 정상이고 뒤의 애플리케이션 컨테이너 재시작 구간으로 보인다.
+
+**PR #284(이사 안내 모달) 머지는 이 안정성이 확인된 뒤로 미뤘다.** 기능 조건은 이미 충족.
+
+---
+
+## ✅ apex `dutying.ai` 해결 (2026-08-23)
+
+NS를 Cloudflare로 넘긴 뒤 Pages 커스텀 도메인 등록이 계속 실패해서, **Redirect Rule로 처리**했다.
+
+```
+https://dutying.ai/*  →  301  →  https://www.dutying.ai/${1}
+```
+
+- 경로·쿼리스트링 보존 확인 (`/pricing?utm_source=test` → 그대로 전달)
+- **301(영구)** 이라 apex 검색 신호가 www 로 통합된다
+- `.net` 도 같은 패턴(apex → www)이라 일관적이다
+
+> apex CNAME을 `dutying-landing.pages.dev`로 두고 Proxied 까지 켰으나 **522**가 났다. Pages 가 `dutying.ai` 를 자기 커스텀 도메인으로 모르기 때문. Pages 등록 모달이 열리지 않아 Redirect Rule 로 우회했고, 결과적으로 canonical 통합 측면에서 이 편이 낫다.
+
+### NS 전환 후 메일 무손상 확인
+
+```
+MX     mx/mx2/mx3.zoho.com  (3건)   ✅
+SPF    v=spf1 include:zohomail.com   ✅
+DKIM   zmail._domainkey              ✅
+DMARC  v=DMARC1; p=none;             ✅
+```
+
+---
+
+## 🔴 SEO — 안 돼 있었다. 처리 완료 (2026-08-23)
+
+앞서 "SEO 자산 정상"이라고 기록한 것은 **오진**이었다. 상태 코드 200만 보고 판단했는데, 본문을 열어보니 파일이 아예 없고 SPA fallback HTML 이 반환되고 있었다.
+
+```
+www.dutying.ai/robots.txt    → HTML (파일 없음)   ❌ 주 진입점인데
+www.dutying.ai/sitemap.xml   → HTML (파일 없음)   ❌
+docs.dutying.ai/sitemap.xml  → HTML (파일 없음)   ❌
+```
+
+> **교훈: robots/sitemap 검증은 상태 코드가 아니라 `content-type` 과 본문 첫 바이트로 판단할 것.** `<!DOCTYPE` 로 시작하면 파일이 없는 것이다.
+
+### 고친 것 (커밋 `478fc563`, `6c977a1c`)
+
+| 대상 | 내용 |
+| --- | --- |
+| 랜딩 robots·sitemap | `@astrojs/sitemap` 설치 + `public/robots.txt` |
+| docs robots·sitemap | VitePress `sitemap.hostname` + `public/robots.txt` |
+| 랜딩 JSON-LD | **0건 → 3건** (Organization / WebSite / SoftwareApplication) |
+| astro `site` 기본값 | `dutying.ai` → `www.dutying.ai` (canonical 일치) |
+| `app.dutying.ai` `<html lang>` | 누락 → `lang="ko"` |
+| 랜딩 네이버 소유확인 | 없음 → 구 `.net` 값 이식 |
+| 검증 스크립트 | `/admin/wards` 오탐 제거 (dev·prod 동일 404 = 정상) |
+
+### 남은 SEO — 콘솔 작업 (계정 소유자만 가능)
+
+1. **Google Search Console** — `dutying.ai` 속성 추가 → 사이트맵 제출 → **`.net` → `.ai` 주소 변경 도구** 신고
+2. **네이버 서치어드바이저** — `www.dutying.ai` 등록 (소유확인 메타는 이미 심어둠, 확인만 누르면 됨)
