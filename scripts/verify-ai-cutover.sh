@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # .ai 컷오버 검증 — 새 prod API 전환 전후로 돌려 무엇이 남았는지 한눈에 본다.
 #
-#   ./scripts/verify-ai-cutover.sh                      # 현재 prod API(.net) 기준
-#   API=https://api.dutying.ai ./scripts/verify-ai-cutover.sh   # 새 API 기준
+#   ./scripts/verify-ai-cutover.sh                       # 컷오버된 prod API(.ai) 기준
+#   API=https://api.dutying.net ./scripts/verify-ai-cutover.sh   # 구 API 를 다시 보고 싶을 때
 set -uo pipefail
 
-API="${API:-https://api.dutying.net}"
+# 2026-08-23 컷오버 완료 — app.dutying.ai 번들이 실제로 이 호스트를 부른다.
+API="${API:-https://api.dutying.ai}"
 FAIL=0
 
 hdr()  { printf '\n\033[1m%s\033[0m\n' "$1"; }
@@ -68,13 +69,20 @@ origin=$(curl -sS -o /dev/null -D - -m 15 -X OPTIONS \
     "$API/accounts/me" 2>/dev/null | grep -i '^access-control-allow-origin' | tr -d '\r' | cut -d' ' -f2)
 [ "$origin" = "https://app.dutying.ai" ] && ok "allow-origin" "$origin" || bad "allow-origin" "${origin:-없음}"
 
-hdr ".ai 전용 API 준비 상태"
-# prod 용 api.dutying.ai 가 서기 전에는 위 admin 404 를 고칠 방법이 없다.
+hdr ".ai API 가동 상태"
 aiapi=$(curl -sS -o /dev/null -m 10 -w '%{http_code}' https://api.dutying.ai/readyz 2>/dev/null); aiapi=${aiapi:-000}
-if [ "$aiapi" = 200 ]; then
-    ok "api.dutying.ai" "$aiapi — Pages VITE_SERVER_URL 을 여기로 바꿀 것"
+[ "$aiapi" = 200 ] && ok "api.dutying.ai" "$aiapi" \
+                   || bad "api.dutying.ai" "미가동 ($aiapi) — 502 면 앱 컨테이너 재기동 중"
+
+# 프론트가 실제로 무엇을 부르는지 확인한다. 환경변수 설정과 배포된 번들은 어긋날 수 있다.
+entry=$(curl -sS -m 12 https://app.dutying.ai/ 2>/dev/null | grep -oE '/assets/[^"]*index[^"]*\.js' | head -1)
+if [ -n "$entry" ]; then
+    used=$(curl -sS -m 20 "https://app.dutying.ai$entry" 2>/dev/null \
+           | grep -oE 'https://[a-z.]*api\.dutying\.[a-z]+' | sort -u | tr '\n' ' ')
+    [ "${used% }" = "https://api.dutying.ai" ] && ok "배포 번들이 부르는 API" "${used% }" \
+                                               || bad "배포 번들이 부르는 API" "${used:-확인 실패}"
 else
-    bad "api.dutying.ai" "미가동 ($aiapi) — TLS 미발급/서버 없음"
+    bad "배포 번들이 부르는 API" "엔트리 스크립트를 찾지 못함"
 fi
 devapi=$(curl -sS -o /dev/null -m 10 -w '%{http_code}' https://dev.api.dutying.ai/readyz 2>/dev/null); devapi=${devapi:-000}
 [ "$devapi" = 200 ] && ok "dev.api.dutying.ai" "$devapi (새 서버 dev 가동 중)" \
