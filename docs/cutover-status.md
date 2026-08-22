@@ -741,3 +741,55 @@ Pages dutying-web-ai → Settings → Variables
 코드 변경 없음. 재배포 한 번이면 `.ai`가 완전히 살아난다.
 
 > ⚠️ `dutying-server-ai` 레포는 다른 세션이 활발히 작업 중이므로 이 세션에서 손대지 않았다.
+
+
+---
+
+## ✅ prod 승격 리허설 완료 — dev를 새 `.ai` 서버에 붙여봤다 (2026-08-21)
+
+prod 승격 전에 **웹 + 새 백엔드 조합을 dev에서 먼저 돌려봤다.** 문제가 있으면 prod가 아니라 dev에서 터지게 하려는 목적.
+
+### 사전 확인 — 새 서버는 이미 준비돼 있었다
+
+```
+dev.api.dutying.ai
+  CORS      allow-origin: https://dev.dutying.ai + credentials   ✅
+  OAuth     302 → kauth.kakao.com                                 ✅
+  /readyz   200                                                   ✅
+```
+
+### 전환
+
+Pages `dutying-web-ai-dev` → `VITE_SERVER_URL`:
+```
+https://dev.api.dutying.net   →   https://dev.api.dutying.ai
+```
+
+### 결과 — 전 항목 통과
+
+```
+번들 내 dev.api.dutying.ai : 2건   ✅ 완전 전환
+번들 내 dev.api.dutying.net: 0건   ✅ 잔재 없음
+사이트                      200
+CORS 프리플라이트            allow-origin: https://dev.dutying.ai
+OAuth 진입                  302 → kauth.kakao.com
+이메일 로그인                400 (존재·검증 실패 = 정상)
+/readyz                     200
+```
+
+> 첫 측정에서 이메일 로그인이 12s 타임아웃났으나 재시도 3회 모두 400/0.1~0.8s. 일시적 지연이었다. **새 서버 첫 요청이 느릴 수 있으니 검증 시 재시도할 것.**
+
+### 이게 의미하는 것
+
+**웹은 새 `.ai` 백엔드와 문제없이 붙는다.** prod 승격 시 웹 쪽에서 놀랄 일이 없다는 뜻이다.
+
+prod에서 할 일은 dev와 완전히 동일하다:
+```
+Pages dutying-web-ai → VITE_SERVER_URL
+  https://api.dutying.net   →   https://api.dutying.ai
+```
+되돌리기도 같은 한 줄이다.
+
+### 롤백
+
+dev를 구 서버로 되돌리려면 `VITE_SERVER_URL`을 `https://dev.api.dutying.net`으로 바꾸고 재배포하면 된다. 구 dev 서버도 admin 라우트를 갖고 있어 양쪽 다 동작한다.
