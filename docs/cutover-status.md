@@ -888,3 +888,47 @@ curl -I https://dutying.ai/      # 200
 ```
 
 ⚠️ 메일(Zoho MX 3건 + SPF/DKIM/DMARC)도 존에 그대로 있으니 전환 후 **수·발신 1회씩 테스트**할 것.
+
+
+---
+
+## 🚀 NS 전환 실행 (2026-08-21)
+
+Namecheap → `dutying.ai` → Domain → NAMESERVERS 를 **Custom DNS** 로 변경 완료:
+
+```
+kyrie.ns.cloudflare.com
+priscilla.ns.cloudflare.com
+```
+
+저장 확인 근거: REDIRECT DOMAIN / REDIRECT EMAIL 섹션 문구가
+"You can create redirects via your DNS provider... you must first change your nameservers to Namecheap default"
+로 바뀌었다 — Namecheap이 더 이상 이 존의 DNS를 관리하지 않는다는 뜻이다.
+
+### 지금 상태
+
+```
+레지스트리 NS   dns1/dns2.registrar-servers.com   ← 아직 전파 전
+apex           404 (Vercel)                       ← 전파되면 해소
+www/app/docs/dev  200                             ← CNAME 이라 영향 없음
+```
+
+전파는 보통 30분~2시간, 최대 24시간. **전파되는 순간**:
+1. Cloudflare 존이 `pending` → `active`
+2. apex 인증서 자동 발급 (apex CNAME은 이미 `dutying-landing.pages.dev` 로 사전 설정됨)
+3. `dutying.ai` 200
+
+### 전파 후 확인할 것
+
+```bash
+dig +short NS dutying.ai          # cloudflare.com 이어야 함
+./scripts/verify-ai-cutover.sh    # apex 항목이 ✓ 로
+```
+
+⚠️ **메일 검증 필수** — Zoho MX 3건 + SPF + DKIM + DMARC 가 존에 그대로 있지만, 전환 직후 **수·발신 1회씩** 실제 테스트할 것.
+
+### SSL/TLS 모드 메모
+
+현재 **Full**. 전 레코드가 DNS only 라 Cloudflare가 오리진 연결을 하지 않으므로 지금은 무해하다.
+
+> 향후 프록시(주황 구름)를 켤 때는 **Full (strict)** 로 올려야 한다. 단 `api`/`dev.api` 는 오리진 인증서가 `CN=api.dutying.net` 이라 프록시를 켜면 깨진다 — **계속 DNS only 유지**.
