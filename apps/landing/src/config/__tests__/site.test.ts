@@ -5,7 +5,7 @@ describe('createSiteConfig', () => {
     it('falls back to the production dutying domains', () => {
         const config = createSiteConfig({});
 
-        expect(config.marketingOrigin).toBe('https://dutying.ai');
+        expect(config.marketingOrigin).toBe('https://www.dutying.ai');
         expect(config.appOrigin).toBe('https://app.dutying.ai');
         expect(config.docsOrigin).toBe('https://docs.dutying.ai');
         expect(config.legal.terms).toBe('https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4');
@@ -43,7 +43,7 @@ describe('createSiteConfig', () => {
             PUBLIC_APP_SITE_URL: '',
         });
 
-        expect(config.marketingOrigin).toBe('https://dutying.ai');
+        expect(config.marketingOrigin).toBe('https://www.dutying.ai');
         expect(config.appOrigin).toBe('https://app.dutying.ai');
         expect(config.appLinks.login).toBe('https://app.dutying.ai/login');
     });
