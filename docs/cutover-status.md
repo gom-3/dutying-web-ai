@@ -829,3 +829,62 @@ PushUrlResolver              푸시 딥링크 → www.dutying.net/app
 **4번을 1~3번보다 먼저 하면 `.ai`가 죽는다.** 반대로 순서만 지키면 아무 문제 없다.
 
 > 이 순서 의존성이 `dutying-server` 쪽에 기록돼 있는지는 확인하지 못했다. 서버 세션 재개 시 공유 필요.
+
+
+---
+
+## ✅ apex 사전 준비 완료 — 이제 NS 2줄이면 끝난다 (2026-08-21)
+
+apex를 NS 전환 없이 살리는 방법은 없다는 걸 재확인했다. 하지만 **NS 전환 후 추가 작업이 없도록 Cloudflare 존을 미리 맞춰뒀다.**
+
+### 한 일
+
+Cloudflare 존의 apex 레코드를 A → CNAME 으로 교체:
+
+```
+변경 전  dutying.ai  A      216.198.79.1              (Vercel)
+변경 후  dutying.ai  CNAME  dutying-landing.pages.dev  (www 와 동일 타깃)
+```
+
+Cloudflare는 **CNAME flattening**을 지원하므로 zone apex에 CNAME을 둘 수 있다(표준 DNS로는 불가). Cloudflare NS가 이미 flatten해서 응답한다:
+
+```
+dig A dutying.ai @kyrie.ns.cloudflare.com   →  172.66.47.20, 172.66.44.236  (Pages IP)
+```
+
+### 왜 Pages 커스텀 도메인으로는 못 했나
+
+Pages → `dutying-landing` → Custom domains 에서 `dutying.ai` 추가를 재시도했으나 여전히 거부된다:
+
+> Before adding **dutying.ai** to your Pages project, you'll need to transfer your DNS to Cloudflare.
+
+존이 `pending`(NS 미전환) 상태라 Pages가 apex를 받아주지 않는다. **DNS 레코드 직접 편집은 되지만 Pages 커스텀 도메인 등록은 안 된다.**
+
+### 현재 상태
+
+| | |
+| --- | --- |
+| 라이브 apex (Namecheap NS) | 404 (Vercel) — **변경 없음, 안전** |
+| Cloudflare NS의 apex | Pages IP로 flatten 응답 ✅ |
+| apex TLS | ❌ 미발급 — 존이 pending이라 |
+
+apex로 TLS 핸드셰이크하면 실패한다. **NS를 넘겨 존이 active 되는 순간 Cloudflare가 자동 발급한다.**
+
+### 남은 조작
+
+```
+Namecheap → dutying.ai → Domain → NAMESERVERS → Custom DNS
+  kyrie.ns.cloudflare.com
+  priscilla.ns.cloudflare.com
+```
+
+이것 하나로 끝난다. 전환 후 **추가 설정 불필요** — apex CNAME이 이미 Pages를 가리키고 있어 인증서만 나오면 바로 뜬다.
+
+전환 직후 확인:
+```bash
+dig +short dutying.ai            # Pages IP 여야 함
+curl -I https://dutying.ai/      # 200
+./scripts/verify-ai-cutover.sh   # apex 항목이 ✓ 로 바뀜
+```
+
+⚠️ 메일(Zoho MX 3건 + SPF/DKIM/DMARC)도 존에 그대로 있으니 전환 후 **수·발신 1회씩 테스트**할 것.
