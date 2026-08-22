@@ -268,6 +268,8 @@ const useRegister = () => {
         name: string;
         phoneNum: string;
         profileImg: {profileImgUrl?: string; defaultProfileImgId?: number};
+        preferredLanguage?: TAccount['preferredLanguage'];
+        serviceRegion?: TAccount['serviceRegion'];
     }) => {
         if (!accountId || !accountMe) return;
 
@@ -292,6 +294,8 @@ const useRegister = () => {
                     accountId,
                     name: accountProfileDTO.name,
                     phoneNum: accountProfileDTO.phoneNum,
+                    ...(accountProfileDTO.preferredLanguage !== undefined ? {preferredLanguage: accountProfileDTO.preferredLanguage} : {}),
+                    ...(accountProfileDTO.serviceRegion !== undefined ? {serviceRegion: accountProfileDTO.serviceRegion} : {}),
                     ...accountProfileDTO.profileImg,
                 });
                 await handleGetAccountMe();
@@ -305,6 +309,8 @@ const useRegister = () => {
                     accountId,
                     name: accountProfileDTO.name,
                     phoneNum: accountProfileDTO.phoneNum,
+                    ...(accountProfileDTO.preferredLanguage !== undefined ? {preferredLanguage: accountProfileDTO.preferredLanguage} : {}),
+                    ...(accountProfileDTO.serviceRegion !== undefined ? {serviceRegion: accountProfileDTO.serviceRegion} : {}),
                     ...accountProfileDTO.profileImg,
                 });
             }

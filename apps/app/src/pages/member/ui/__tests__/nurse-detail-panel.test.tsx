@@ -174,68 +174,12 @@ describe('NurseDetailPanel', () => {
         expect(updateNurse.mock.calls[0]?.[1]).not.toHaveProperty('birthDate');
     });
 
-    it('allows the monthly shift ratio value to be cleared and replaced directly', async () => {
-        const nurse = createNurseWithMonthlyShiftRatio();
-        const {updateNurseShift} = renderPanel(nurse, [createWardShiftType()]);
-
-        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
-
-        const ratioInput = screen.getByLabelText('Day 월간 근무 일수') as HTMLInputElement;
-        const selectSpy = vi.spyOn(ratioInput, 'select');
-
-        expect(ratioInput).toHaveValue(21);
-
-        fireEvent.focus(ratioInput);
-        expect(selectSpy).toHaveBeenCalledOnce();
-
-        fireEvent.change(ratioInput, {target: {value: ''}});
-        expect(ratioInput).toHaveValue(null);
-
-        fireEvent.change(ratioInput, {target: {value: '12'}});
-        expect(ratioInput).toHaveValue(12);
-
-        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
-
-        await waitFor(() =>
-            expect(updateNurseShift).toHaveBeenCalledWith(
-                101,
-                101,
-                {isPossible: true, targetRatioWeight: 12},
-                expect.objectContaining({wardShiftTypeId: 1, targetRatioWeight: 12}),
-            ),
-        );
-    });
-
-    it('restores the saved monthly shift ratio when the field is left empty', () => {
+    it('hides monthly shift ratio controls while the feature is disabled', () => {
         const nurse = createNurseWithMonthlyShiftRatio();
 
         renderPanel(nurse, [createWardShiftType()]);
 
-        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
-
-        const ratioInput = screen.getByLabelText('Day 월간 근무 일수');
-
-        fireEvent.change(ratioInput, {target: {value: ''}});
-        fireEvent.blur(ratioInput);
-
-        expect(ratioInput).toHaveValue(21);
-        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
-    });
-
-    it('clamps an out-of-range monthly shift ratio when editing is finished', () => {
-        const nurse = createNurseWithMonthlyShiftRatio();
-
-        renderPanel(nurse, [createWardShiftType()]);
-
-        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
-
-        const ratioInput = screen.getByLabelText('Day 월간 근무 일수');
-
-        fireEvent.change(ratioInput, {target: {value: '100'}});
-        expect(ratioInput).toHaveValue(100);
-
-        fireEvent.blur(ratioInput);
-
-        expect(ratioInput).toHaveValue(99);
+        expect(screen.queryByRole('button', {name: '월간 근무 비율'})).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Day 월간 근무 일수')).not.toBeInTheDocument();
     });
 });

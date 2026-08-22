@@ -1,6 +1,7 @@
 import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {
+    DEFAULT_PREFERRED_LANGUAGE,
     getDefaultServiceRegionForLanguage,
     getLocaleForLanguage,
     getStoredServiceRegion,
@@ -27,7 +28,7 @@ const createAgreementBase = (
     serviceRegion?: string | null,
     agreedAt: string = new Date().toISOString(),
 ) => {
-    const preferredLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const preferredLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
     const resolvedServiceRegion =
         normalizeServiceRegion(serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(preferredLanguage);
 

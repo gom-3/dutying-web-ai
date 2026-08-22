@@ -1,5 +1,6 @@
 import {Suspense, lazy} from 'react';
 import {Navigate, Route, Routes} from 'react-router-dom';
+import OAuthErrorPage from '@/pages/login/oauth-error-page.tsx';
 import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
@@ -76,6 +77,7 @@ export const Router = () => {
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                 <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
+                <Route path={ROUTE.OAUTH_ERROR} element={<OAuthErrorPage />} />
                 {import.meta.env.DEV ? <Route path={ROUTE.UI_PREVIEW} element={<UiPreviewPage />} /> : null}
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<NotAuthLayout />}>

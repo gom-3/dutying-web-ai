@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
         profileImgUrl?: string | null;
         preferredLanguage?: 'ko' | 'ja' | 'en';
         serviceRegion?: 'KR' | 'JP' | 'EN';
+        resolvedLanguage?: 'ko' | 'ja' | 'en';
+        resolvedRegion?: 'KR' | 'JP' | 'EN';
     } | null,
     profileImg: {defaultProfileImgId: 1},
     registerAccountProfile: vi.fn(),
@@ -64,6 +66,8 @@ describe('RegisterNurse', () => {
                 expect.objectContaining({
                     name: '홍길동',
                     phoneNum: '01012345678',
+                    preferredLanguage: 'ko',
+                    serviceRegion: 'KR',
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );
@@ -128,6 +132,60 @@ describe('RegisterNurse', () => {
                 expect.objectContaining({
                     name: 'Alex Kim',
                     phoneNum: '+1 (415) 555-0132',
+                    profileImg: {defaultProfileImgId: 1},
+                }),
+            );
+        });
+    });
+
+    it('submits signup language and service region with the profile', async () => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {
+            preferredLanguage: 'ja',
+            serviceRegion: 'JP',
+        };
+
+        render(<RegisterNurse />);
+
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), 'Yamada');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '09012345678');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(mocks.registerAccountProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: 'Yamada',
+                    phoneNum: '09012345678',
+                    preferredLanguage: 'ja',
+                    serviceRegion: 'JP',
+                    profileImg: {defaultProfileImgId: 1},
+                }),
+            );
+        });
+    });
+
+    it('uses server-resolved signup locale before the browser language fallback', async () => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {
+            resolvedLanguage: 'ja',
+            resolvedRegion: 'JP',
+        };
+
+        render(<RegisterNurse />);
+
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), 'Yamada');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '09012345678');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(mocks.registerAccountProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: 'Yamada',
+                    phoneNum: '09012345678',
+                    preferredLanguage: 'ja',
+                    serviceRegion: 'JP',
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );

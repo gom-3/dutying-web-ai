@@ -3,6 +3,8 @@ import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 export const SUPPORTED_LANGUAGES = ['ko', 'ja', 'en', 'zh', 'th', 'vi'] as const satisfies readonly TPreferredLanguage[];
 export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TH', 'VN'] as const satisfies readonly TServiceRegion[];
 
+export const DEFAULT_PREFERRED_LANGUAGE = 'ko' as const satisfies TPreferredLanguage;
+export const DEFAULT_SERVICE_REGION = 'KR' as const satisfies TServiceRegion;
 export const SERVICE_REGION_STORAGE_KEY = 'dutying.serviceRegion';
 
 type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN';
@@ -45,15 +47,15 @@ export const normalizeServiceRegion = (value?: string | null): TServiceRegion | 
 };
 
 export const getLocaleForLanguage = (value?: string | null): TBcp47Locale => {
-    const language = normalizePreferredLanguage(value) ?? 'en';
+    const language = normalizePreferredLanguage(value) ?? DEFAULT_PREFERRED_LANGUAGE;
 
     return LANGUAGE_TO_LOCALE[language];
 };
 
 export const getDefaultServiceRegionForLanguage = (value?: string | null): TServiceRegion => {
-    const language = normalizePreferredLanguage(value) ?? 'en';
+    const language = normalizePreferredLanguage(value);
 
-    return LANGUAGE_TO_REGION[language];
+    return language ? LANGUAGE_TO_REGION[language] : DEFAULT_SERVICE_REGION;
 };
 
 export const getStoredServiceRegion = (): TServiceRegion | undefined => {
@@ -67,7 +69,7 @@ export const setStoredServiceRegion = (value: TServiceRegion) => {
 };
 
 export const buildApiLocaleHeaders = (language?: string | null, serviceRegion?: string | null): Record<string, string> => {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
     const normalizedRegion = normalizeServiceRegion(serviceRegion) ?? getDefaultServiceRegionForLanguage(normalizedLanguage);
 
     return {

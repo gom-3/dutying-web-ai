@@ -34,10 +34,12 @@ describe('locale helpers', () => {
         expect(getLocaleForLanguage('zh')).toBe('zh-CN');
         expect(getLocaleForLanguage('th')).toBe('th-TH');
         expect(getLocaleForLanguage('vi')).toBe('vi-VN');
+        expect(getLocaleForLanguage()).toBe('ko-KR');
         expect(getDefaultServiceRegionForLanguage('ja-JP')).toBe('JP');
         expect(getDefaultServiceRegionForLanguage('zh-CN')).toBe('CN');
         expect(getDefaultServiceRegionForLanguage('th-TH')).toBe('TH');
         expect(getDefaultServiceRegionForLanguage('vi-VN')).toBe('VN');
+        expect(getDefaultServiceRegionForLanguage()).toBe('KR');
     });
 
     it('builds API locale headers with explicit service region taking priority', () => {
@@ -49,6 +51,13 @@ describe('locale helpers', () => {
 
     it('falls back to language-based service region when no region is stored', () => {
         expect(buildApiLocaleHeaders('ko-KR')).toEqual({
+            'Accept-Language': 'ko-KR',
+            'X-Service-Region': 'KR',
+        });
+    });
+
+    it('defaults API locale headers to Korean when no locale signal exists', () => {
+        expect(buildApiLocaleHeaders()).toEqual({
             'Accept-Language': 'ko-KR',
             'X-Service-Region': 'KR',
         });

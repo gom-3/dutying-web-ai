@@ -30,6 +30,8 @@ export type TEditProfileRequest = {
     phoneNum?: string | null;
     profileImgUrl?: string;
     defaultProfileImgId?: number;
+    serviceRegion?: TServiceRegion | null;
+    preferredLanguage?: TPreferredLanguage | null;
 };
 
 export type TUpdateAccountPreferencesRequest = {
