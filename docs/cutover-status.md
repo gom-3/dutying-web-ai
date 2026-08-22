@@ -793,3 +793,39 @@ Pages dutying-web-ai → VITE_SERVER_URL
 ### 롤백
 
 dev를 구 서버로 되돌리려면 `VITE_SERVER_URL`을 `https://dev.api.dutying.net`으로 바꾸고 재배포하면 된다. 구 dev 서버도 admin 라우트를 갖고 있어 양쪽 다 동작한다.
+
+
+---
+
+## ⚠️ 정정 — `dutying-server` 미커밋 29파일은 "실수"가 아니라 "순서 문제"다
+
+앞서 이 변경을 "실수로 커밋되면 안 되는 되돌림"으로 적었으나, diff를 제대로 읽으니 **계획대로의 의도적 분리 작업**이다.
+
+```
+application-common.yml       CORS/OAuth allowlist → .net 전용
+nginx/conf/dutying_ssl.conf  96줄 삭제 (.ai 블록 제거)
+PushUrlResolver              푸시 딥링크 → www.dutying.net/app
++ docs/prod-nginx-apply-2026-08-21.md (적용 절차)
++ DDL·백업 SQL 4건
+```
+
+서버 컷오버 전략(**구 서버 = `.net` 전용 / 새 서버 = `.ai`**)에 정확히 부합한다.
+
+### 진짜 리스크는 배포 순서다
+
+현재 `app.dutying.ai`는 **구 서버(`api.dutying.net`)를 보고 있다.** admin 라우트가 없어 로그인은 이미 깨졌지만 **CORS는 통과**하는 상태다.
+
+이 변경을 **지금 배포하면** CORS마저 막혀 `.ai`가 완전히 차단된다.
+
+### 올바른 순서
+
+```
+1. .ai 전용 새 API 가동 (api.dutying.ai)
+2. Pages dutying-web-ai → VITE_SERVER_URL = https://api.dutying.ai
+3. .ai 가 새 API로 정상 동작 확인
+4. ★ 그다음 ★ 구 서버를 .net 전용으로 분리 (이 29파일 커밋·배포)
+```
+
+**4번을 1~3번보다 먼저 하면 `.ai`가 죽는다.** 반대로 순서만 지키면 아무 문제 없다.
+
+> 이 순서 의존성이 `dutying-server` 쪽에 기록돼 있는지는 확인하지 못했다. 서버 세션 재개 시 공유 필요.
