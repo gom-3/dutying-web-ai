@@ -1122,3 +1122,58 @@ OG/아이콘 8건 전부 200 + 실제 PNG/ICO/SVG (매직바이트 확인, 깨�
 사이트맵 완전성   docs 11개 문서 = sitemap 11 URL ✅ / 랜딩 1페이지 = 1 URL ✅
 /move 핸드오프    noindex + 사이트맵 제외 ✅ (딥링크 중계 페이지라 색인되면 안 된다)
 ```
+
+---
+
+## 🔴 콘솔 작업을 확인하다 나온 것 3가지 (2026-08-23)
+
+"콘솔 등록만 남았다"고 넘기려다 실제로 열어봤더니, 넘겼으면 조용히 실패했을 것들이 있었다.
+
+### 1. `dutying.net` 은 애초에 Search Console 에 없다
+
+브라우저에 로그인된 **Google 계정 8개를 전수 확인**했다.
+
+```
+jinsim726@gmail.com    속성 0
+gom3.official@gmail.com 속성 0        ← Cloudflare 운영 계정
+official@dutying.ai     속성 0        ← 제품 계정
+1224508@gmail.com       속성 0
+heute0320@gmail.com     속성 0
+surforku@gmail.com      ku-sugang.com 1건 (무관한 프로젝트)
+simsime@korea.ac.kr / simsim4874@gmail.com  세션 만료 (미확인)
+```
+
+`.net` HTML 에도 `google-site-verification` 메타가 없고, `dutying.net` DNS TXT 에도 없다
+(SPF 뿐). **구 사이트는 네이버만 등록돼 있었고 구글은 등록된 적이 없다**고 보는 게 맞다.
+
+의미: 주소 변경 도구는 301 문제 이전에 **구 속성 자체가 없어서** 못 쓴다.
+`.net` 도 새로 등록·소유확인해야 하고, **구/신 속성이 같은 Google 계정**이어야 한다.
+
+> **권장: `official@dutying.ai` 계정으로 `.net` 과 `.ai` 를 모두 등록할 것.**
+> 개인 계정(`jinsim726`)에 붙이면 나중에 인수인계·권한 이전이 번거로워진다.
+
+### 2. 심어둔 네이버 소유확인 메타는 작동하지 않는다 — 제거함
+
+`.ai` 랜딩·앱에 구 `.net` 의 `naver-site-verification` 값을 옮겨 심어두고
+"확인 버튼만 누르면 된다"고 적었는데, **틀렸다.**
+네이버 인증 코드는 **사이트마다 새로 발급**된다. 다른 도메인의 코드로는 통과하지 않는다.
+
+`app.dutying.ai` 쪽은 구 `.net` 코드베이스에서 그대로 딸려온 것이라 같은 문제였다.
+둘 다 제거하고, 등록 후 받은 코드를 채울 자리만 주석으로 남겼다. (`8d7a4d28`)
+
+### 3. canonical 이 301 되는 주소를 가리킬 뻔했다
+
+`marketingOrigin` 기본값이 **apex(`https://dutying.ai`)** 였다. apex 는 www 로 301 되므로
+"리다이렉트되는 URL 을 canonical 로 지정"하는 안티패턴이다. 게다가 `astro.config` 의 `site`
+기본값은 `www` 라서, **사이트맵은 www / canonical 은 apex** 로 서로 다른 호스트를 가리켰다.
+
+운영에서는 Pages 환경변수 `PUBLIC_MARKETING_SITE_URL` 이 www 를 넣어줘서 **가려져 있었다.**
+환경변수가 빠지거나 새 환경이 생기는 순간 드러났을 문제다. 기본값을 www 로 맞췄다.
+
+```
+환경변수 없이 빌드 → canonical / og:url / JSON-LD / sitemap 전부 https://www.dutying.ai/  ✅
+```
+
+> 참고: `apps/landing/src/config/__tests__/site.test.ts` 가 이 기본값을 검증하고 있었지만,
+> CI(`vitest.yml`)는 `pnpm coverage` 로 **`apps/app` 만** 돌린다. 랜딩 테스트는 실행된 적이 없다.
+> 이번 건은 그래서 테스트가 있는데도 못 걸렀다. (랜딩·docs 를 CI 에 붙이는 건 별건으로 판단)
