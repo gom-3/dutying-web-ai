@@ -3,6 +3,13 @@
     "apps": [],
     "details": [
       {
+        "appID": "Y4HPW9GX7Y.ai.dutying.app",
+        "paths": [
+          "/move",
+          "/move/*"
+        ]
+      },
+      {
         "appID": "Y4HPW9GX7Y.com.gom3.dutying",
         "paths": [
           "/app/moim/invite",
