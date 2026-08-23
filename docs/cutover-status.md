@@ -1368,3 +1368,94 @@ vitest.yml  →  pnpm coverage      (apps/app 만)
 ```
 
 > `apps/docs` 는 테스트 파일이 없어 이번에 붙이지 않았다. 생기면 같은 방식으로 한 줄 추가하면 된다.
+
+---
+
+## 🔴 호스트↔앱 매핑이 틀려 있었다 — 고침 (2026-08-23)
+
+사용자 증상: "dutying.ai 눌러보니 주소가 app.dutying.ai 로 바뀌고, 구 .net 마스터 화면이 나온다."
+
+### 진짜 원인 — 랜딩이 두 개였고, 방문자는 낡은 쪽을 봤다
+
+| | `dutying.ai` 가 서빙하던 것 | `app.dutying.ai/` 가 서빙하던 것 |
+| --- | --- | --- |
+| 정체 | `apps/landing` (Astro 별도 사이트) | `apps/app` SPA 안의 `LandingPage` |
+| 규모 | 802줄 | **1,286줄** |
+| 다국어 | 없음 (한국어만) | **6개 언어** (ko/ja/en/zh/th/vi) |
+| 로그인 연동 | 없음 | 있음 (프로필까지 표시) |
+| 마지막 작업 | **2026-06-20 에서 멈춤** | **2026-07-16 까지 계속** |
+
+`apps/landing` 은 2026-03 에 분리를 시도했다가(`DUT-863`, `DUT-876`) 멈춘 스냅샷이다.
+그 뒤 국제화를 포함한 실제 작업은 전부 앱 안쪽에 들어갔다.
+
+증상 두 개가 이걸로 설명된다.
+- **주소가 바뀐다** — 구 `.net` 은 `Router.tsx:22` 가 `ROUTE.ROOT → LandingPage` 라 루트가 곧 앱이었다.
+  `.ai` 는 소개(랜딩)와 앱이 다른 도메인으로 쪼개져 있었다.
+- **구 master 화면** — 구 코드가 섞인 게 **아니다**. 계보 감사로 확인했다(아래).
+  `dutying.ai` 가 보여주던 게 6월에 멈춘 버전이라 낡아 보였을 뿐이다.
+
+### 계보는 깨끗했다 (병렬 감사 결과)
+
+`origin/main` 은 `legacy/develop` 의 `38d8112a`(2026-08-19)에서 갈라졌고 그 위 53커밋은
+**전부 `.ai` 이전 인프라·문서**다(머지 커밋 0개). `legacy/main` 에는 `apps/` 디렉터리가
+아예 없다(모노레포 이전 평면 구조). **구 master 코드 유입은 물리적으로 불가능하다.**
+
+### 서버는 이미 www 를 앱 주소로 전제하고 있었다
+
+```
+auth.oauth.redirect.default-url: https://www.dutying.ai/
+allowed-origins(CORS·OAuth):     ...,https://www.dutying.ai,https://dutying.ai,https://app.dutying.ai,https://dev.dutying.ai,...
+application-dev.yml default-url: https://dev.dutying.ai/
+```
+
+즉 백엔드는 **www=앱(prod), dev.dutying.ai=앱(dev)** 로 만들어져 있었다. 웹 쪽 도메인 배치만 어긋나 있었다.
+
+### 한 일
+
+| | 전 | 후 |
+| --- | --- | --- |
+| `dutying.ai` / `www.dutying.ai` | Astro 랜딩 | **앱** (랜딩 포함, 6개 언어) |
+| `dev.dutying.ai` | 앱 | 앱 (동일 코드) |
+| `app.dutying.ai` | 앱 | 앱 유지 — 딥링크·구 주소 호환, canonical 은 www 로 |
+| `apps/landing` | www 서빙 | 서빙 중단, robots `Disallow` (코드는 남겨둠) |
+
+- 앱 canonical 호스트를 `www.dutying.ai` 로 (`55a92913`). Cloudflare 에 `VITE_APP_PUBLIC_URL` 이
+  없어 이 기본값이 그대로 쓰인다. `CF_PAGES=1 CF_PAGES_BRANCH=main` 으로 빌드해 확인했다.
+- `PRODUCTION_APP_HOSTS` 에 `www`/apex 명시. 없어도 fall-through 로 프로덕션 판정이 났지만 암묵적이라 취약했다.
+- Cloudflare: `www.dutying.ai` 를 `dutying-landing` → `dutying-web-ai` 로 이전
+  (Pages 는 한 호스트를 한 프로젝트에만 붙일 수 있어 잠깐 내려갔다 복구).
+- Search Console: 죽은 `sitemap-index.xml`·`sitemap-0.xml` 삭제, `www.dutying.ai/sitemap.xml` 제출.
+- 회귀 방지 검사 추가 (`ba37230e`): www/app/dev 가 앱을 서빙하는지 + canonical 이 www 로 모이는지.
+
+### 실측 (전환 후)
+
+```
+dutying.ai      301 → www.dutying.ai
+www.dutying.ai  200  앱  canonical https://www.dutying.ai/  robots Allow  sitemap XML  AASA json  헤더 5/5
+app.dutying.ai  200  앱  canonical https://www.dutying.ai/   ← www 로 consolidation
+dev.dutying.ai  200  앱  canonical https://dev.dutying.ai/   noindex
+docs.dutying.ai 200  문서
+브라우저 확인: www 에서 "근무표 만들기" 클릭 → https://www.dutying.ai/register (도메인 안 바뀜)
+verify-ai-cutover.sh 전부 통과
+```
+
+### ⚠️ 남은 것 — 구 레포 develop 의 기능 커밋 6개가 안 넘어왔다
+
+분기점(2026-08-19) 이후 `legacy/develop` 에 쌓였는데 신규 레포에 없다.
+
+```
+11822064  feat: update frontend localization flows
+af766575  Merge LINE login entrypoint into develop
+899c2c71  feat: add LINE login entrypoint
+523ac01b  test
+5f48b9af  Merge
+1a656be6  feat: update frontend onboarding and request UI
+```
+
+**LINE 로그인 진입점**이 포함돼 있다. "구 레포 develop 작업만 가져온다"는 의도 기준으로는 미이전 잔량이다.
+가져올지 말지는 제품 판단이라 이번에 손대지 않았다.
+
+### 참고 — 원래 깨져 있던 테스트 4건
+
+`make-shift/.../constraints.test.tsx`, `member/.../nurse-detail-panel.test.tsx` 의 4건은
+이번 변경 이전부터 실패한다(변경을 되돌려도 동일). PR CI 가 빨간 상태다.
