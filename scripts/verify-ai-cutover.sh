@@ -28,6 +28,17 @@ c=$(code https://dutying.ai/)
     && ok "dutying.ai (apex)" "$c" \
     || bad "dutying.ai (apex)" "$c — NS 전환 필요"
 
+# 2026-08-23 회귀 방지: apex CNAME 이 apps/landing(Astro)의 멈춘 스냅샷을 가리키고 있었다.
+# 지금은 "root -> WWW" 리다이렉트 규칙이 apex 를 먼저 가로채서 드러나지 않았지만,
+# 그 규칙을 끄거나 지우는 순간 apex 가 옛 랜딩을 서빙하게 되는 잠복 경로였다.
+# apex 를 끝까지 따라갔을 때 나오는 것이 앱이어야 한다.
+body=$(curl -sSL -m 20 https://dutying.ai/ 2>/dev/null)
+if grep -q 'id="root"' <<<"$body" && ! grep -q '_astro' <<<"$body"; then
+    ok "apex 최종 도착지가 앱" "SPA root 있음 / 옛 랜딩 번들 없음"
+else
+    bad "apex 최종 도착지가 앱" "_astro 번들이 보이면 apex CNAME 이 dutying-landing 을 가리킨다"
+fi
+
 hdr "보안 헤더 (5/5 기대)"
 for h in www.dutying.ai app.dutying.ai docs.dutying.ai dev.dutying.ai; do
     n=$(curl -sS -o /dev/null -D - -m 12 "https://$h/" 2>/dev/null \
