@@ -35,6 +35,24 @@ for h in www.dutying.ai app.dutying.ai docs.dutying.ai dev.dutying.ai; do
     [ "$n" = 5 ] && ok "$h" "$n/5" || bad "$h" "$n/5"
 done
 
+hdr "호스트 <-> 앱 매핑"
+# 2026-08-23 회귀 방지: www 가 한때 apps/landing(Astro)의 멈춘 스냅샷을 서빙했고
+# 진짜 랜딩(apps/app 안, 6개 언어)은 app 서브도메인에 숨어 있었다.
+# www 는 앱이어야 하고, 모든 호스트의 canonical 은 www 하나로 모여야 한다.
+for h in www.dutying.ai app.dutying.ai dev.dutying.ai; do
+    body=$(curl -sS -m 15 "https://$h/" 2>/dev/null)
+    if grep -q 'id="root"' <<<"$body"; then
+        ok "$h 가 앱을 서빙" "SPA root 있음"
+    else
+        bad "$h 가 앱을 서빙" "SPA root 없음 - 랜딩이 붙었을 수 있다"
+    fi
+done
+for h in www.dutying.ai app.dutying.ai; do
+    c=$(curl -sS -m 15 "https://$h/" 2>/dev/null | grep -oE 'canonical" href="[^"]*"' | head -1 | cut -d'"' -f3)
+    [ "$c" = "https://www.dutying.ai/" ] && ok "$h canonical" "$c" \
+                                         || bad "$h canonical" "${c:-없음} (www 로 모여야 한다)"
+done
+
 hdr "색인 정책"
 grep -q 'Disallow' <(curl -sS -m 12 https://dev.dutying.ai/robots.txt 2>/dev/null) \
     && ok "dev.dutying.ai noindex" "Disallow: /" \
