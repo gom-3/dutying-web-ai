@@ -1453,9 +1453,22 @@ af766575  Merge LINE login entrypoint into develop
 ```
 
 **LINE 로그인 진입점**이 포함돼 있다. "구 레포 develop 작업만 가져온다"는 의도 기준으로는 미이전 잔량이다.
-가져올지 말지는 제품 판단이라 이번에 손대지 않았다.
 
-### 참고 — 원래 깨져 있던 테스트 4건
+**→ [PR #3](https://github.com/gom-3/dutying-web-ai/pull/3) 으로 올려뒀다** (`import/legacy-develop` → `develop`).
+`git merge-tree` 로 확인한 결과 **충돌 0건**이고 GitHub 도 `MERGEABLE` 이다 (51 files, +1322 −240).
+
+직접 머지하지 않은 이유: 51개 파일의 **기능 코드**라 프로덕션에 바로 넣기보다 사람이 보고 넣는 게 맞다.
+특히 LINE 로그인은 동작 검증을 할 수 없다.
+**권장 순서: `develop` 머지 → `dev.dutying.ai` 확인 → `main` 승격.** 그러면 dev/prod 동일 코드도 유지된다.
+
+### 깨져 있던 테스트 4건 — 같은 PR 이 고친다
 
 `make-shift/.../constraints.test.tsx`, `member/.../nurse-detail-panel.test.tsx` 의 4건은
-이번 변경 이전부터 실패한다(변경을 되돌려도 동일). PR CI 가 빨간 상태다.
+호스트 매핑 변경 **이전부터** 실패했다(변경을 되돌려도 동일하게 4 failed).
+
+원인과 수정본이 위 미이전 커밋 안에 있다 — `523ac01b` 이
+`expect(...querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2)` 를 `(1)` 로 맞추는데,
+이는 실제 실패 메시지(`Expected 2 / Received 1`)와 정확히 일치한다.
+`nurse-detail-panel.test.tsx` 도 같은 범위에서 갱신된다.
+
+**즉 미이전 잔량과 빨간 CI 는 별개 문제가 아니라 하나다.** PR #3 머지로 함께 풀린다.
