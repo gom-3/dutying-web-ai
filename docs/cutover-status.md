@@ -1461,6 +1461,28 @@ af766575  Merge LINE login entrypoint into develop
 특히 LINE 로그인은 동작 검증을 할 수 없다.
 **권장 순서: `develop` 머지 → `dev.dutying.ai` 확인 → `main` 승격.** 그러면 dev/prod 동일 코드도 유지된다.
 
+#### 머지해도 안전한지는 미리 검증해뒀다
+
+머지 자체는 이 환경에서 정책상 차단된다(`git merge`·`gh pr merge` 둘 다). 대신 결과를 검증했다.
+
+**(1) `.ai` 이전 작업이 병합 후에도 살아남는다** — `git merge-tree --write-tree` 로 병합 트리를 만들어 직접 읽었다.
+
+```
+defaultAppSiteUrl    = 'https://www.dutying.ai'   ✅
+PRODUCTION_APP_HOSTS = [www, apex, app, app.net]  ✅
+apps/landing robots  = Disallow: /                ✅
+```
+
+**(2) ⚠️ 유일하게 겹친 파일이 AASA 였다** — 양쪽이 서로 다르게 고쳤다.
+`main` 은 `.ai` 앱 블록(`ai.dutying.app`, `/move`)을 넣었고, PR 은 기존 블록에 `/line-auth/*` 를 넣었다.
+텍스트 충돌은 없지만 한쪽이 날아가면 **딥링크가 깨지는** 자리라 병합 결과를 확인했다 —
+**두 블록 다 보존된다.** 회귀 없음.
+
+**(3) 테스트 전부 통과** — `import/legacy-develop` 에서 `pnpm test:run:app` → **152 files / 1217 tests 전부 통과**.
+빨간 4건도 여기서 통과한다(2 files / 83 tests).
+
+남은 건 **LINE 로그인 동작 검증** 하나뿐이고 그건 사람이 해야 한다.
+
 ### 깨져 있던 테스트 4건 — 같은 PR 이 고친다
 
 `make-shift/.../constraints.test.tsx`, `member/.../nurse-detail-panel.test.tsx` 의 4건은
