@@ -26,6 +26,7 @@
         "svgr": "pnpm --dir ./apps/app svgr",
         "test": "pnpm run test:app",
         "test:app": "pnpm --dir ./apps/app test",
+        "test:landing": "pnpm --dir ./apps/landing test",
         "test:run": "pnpm run test:run:app",
         "test:run:app": "pnpm --dir ./apps/app test:run",
         "test:ui": "pnpm run test:ui:app",

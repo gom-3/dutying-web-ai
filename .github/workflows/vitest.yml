@@ -29,6 +29,10 @@ jobs:
         run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
       - name: vitest coverage
         run: pnpm coverage
+      # 랜딩 설정 테스트는 오래 존재했지만 CI 가 apps/app 만 돌려서 실행된 적이 없었다.
+      # 그 사이 marketingOrigin 기본값이 apex 로 어긋나 canonical 이 301 되는 주소를 가리켰다.
+      - name: vitest landing
+        run: pnpm test:landing
       - name: Comment coverage on pull request
         uses: davelosert/vitest-coverage-report-action@v2
         with:
