@@ -1,7 +1,11 @@
 import {RUNTIME_CONFIG} from './runtime';
 
-/** 프로덕션 앱 도메인 — 여기서는 LINKED 계정 온보딩 미리보기 불가 */
-const PRODUCTION_APP_HOSTS = new Set(['app.dutying.ai', 'app.dutying.net']);
+/**
+ * 프로덕션 앱 도메인 — 여기서는 LINKED 계정 온보딩 미리보기 불가.
+ * 앱의 정식 주소는 www.dutying.ai 이고 apex 는 거기로 301 된다.
+ * app.dutying.ai 는 구 주소·딥링크 호환으로 같은 배포에 계속 붙여둔다.
+ */
+const PRODUCTION_APP_HOSTS = new Set(['www.dutying.ai', 'dutying.ai', 'app.dutying.ai', 'app.dutying.net']);
 const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.ai', 'api.dutying.net']);
 
 function getAppHostname(): string | null {
@@ -40,7 +44,7 @@ export function isNonProductionAppDomain(hostname: string = getAppHostname() ?? 
  * 온보딩 병동 생성 UI를 WARD_SELECT_PENDING이 아닌 계정(LINKED 등)에서도 열 수 있게 한다.
  *
  * - 로컬 dev server: `import.meta.env.DEV`
- * - 그 외: **접속 도메인**이 프로덕션(`app.dutying.ai`, `app.dutying.net`)이 아니면 허용
+ * - 그 외: **접속 도메인**이 프로덕션(`www.dutying.ai` 등 PRODUCTION_APP_HOSTS)이 아니면 허용
  * - 명시 override: `VITE_ALLOW_ONBOARDING_PREVIEW=true|false`
  */
 export function isOnboardingWardCreatePreviewAllowed(): boolean {

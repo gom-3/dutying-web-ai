@@ -47,7 +47,10 @@ const dependencies = {
     zustand: 'zustand',
 };
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
-const defaultAppSiteUrl = 'https://app.dutying.ai';
+// 앱의 정식 주소는 www 다. app.dutying.ai 는 같은 프로젝트에 함께 붙여두되
+// canonical·sitemap 은 www 하나로 모은다. 서버의 OAuth 리다이렉트 기본값
+// (auth.oauth.redirect.default-url = https://www.dutying.ai/) 과 맞춘 값이다.
+const defaultAppSiteUrl = 'https://www.dutying.ai';
 const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
