@@ -1174,9 +1174,9 @@ simsime@korea.ac.kr / simsim4874@gmail.com  세션 만료 (미확인)
 환경변수 없이 빌드 → canonical / og:url / JSON-LD / sitemap 전부 https://www.dutying.ai/  ✅
 ```
 
-> 참고: `apps/landing/src/config/__tests__/site.test.ts` 가 이 기본값을 검증하고 있었지만,
-> CI(`vitest.yml`)는 `pnpm coverage` 로 **`apps/app` 만** 돌린다. 랜딩 테스트는 실행된 적이 없다.
-> 이번 건은 그래서 테스트가 있는데도 못 걸렀다. (랜딩·docs 를 CI 에 붙이는 건 별건으로 판단)
+> `apps/landing/src/config/__tests__/site.test.ts` 가 이 기본값을 **정확히 검증하고 있었다.**
+> 그런데 CI(`vitest.yml`)는 `pnpm coverage` 로 **`apps/app` 만** 돌려서 이 테스트는
+> 한 번도 실행된 적이 없었다. 테스트가 있는데도 못 걸른 이유다. → **아래에서 CI 에 붙였다.**
 
 ---
 
@@ -1342,3 +1342,29 @@ Vercel 에서 서빙 중. **robots.txt 없음 · canonical 없음 · noindex 없
 "듀팅" 검색 결과에 방치된 2023년 프로토타입이 섞일 수 있으니, **Vercel 배포를 지금 내려서
 색인을 정리하는 쪽을 권한다** (`dev` / `app` 서브도메인은 이미 그렇게 되어 404 → 소멸 중이다).
 Vercel 접근 권한이 없어 이 세션에서는 실행하지 않았다.
+
+
+---
+
+## ✅ 랜딩 테스트를 CI 에 붙였다 (`f1fc9fcc`)
+
+위 canonical 버그를 잡았어야 할 테스트가 **한 번도 실행된 적이 없었다.** 원인을 고쳤다.
+
+```
+vitest.yml  →  pnpm coverage      (apps/app 만)
+            +  pnpm test:landing  ← 추가
+```
+
+**의존성 추가는 없다** — `vitest` 는 이미 루트 devDependency 라 `apps/landing` 에
+`"test": "vitest run"` 스크립트 한 줄만 넣으면 설정 파일 없이 그대로 돈다.
+
+검증은 실제로 되돌려서 했다. `marketingOrigin` 기본값을 apex 로 되돌리자
+**2건이 실패**하고, 원복하면 4건 모두 통과한다. 즉 이 테스트는 같은 버그를 다시 막는다.
+
+```
+기본값을 apex 로 → × falls back to the production dutying domains
+                  × falls back safely when env overrides are blank strings
+원복            → 4 passed
+```
+
+> `apps/docs` 는 테스트 파일이 없어 이번에 붙이지 않았다. 생기면 같은 방식으로 한 줄 추가하면 된다.
