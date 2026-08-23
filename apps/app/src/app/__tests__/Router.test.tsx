@@ -74,4 +74,21 @@ describe('Router', () => {
 
         expect(await screen.findByRole('heading', {name: '곧 새로운 경험이 찾아와요'})).toBeInTheDocument();
     });
+
+    it('renders oauth errors instead of falling through to not found', async () => {
+        render(
+            <MemoryRouter
+                initialEntries={[
+                    `${ROUTE.OAUTH_ERROR}?error=${encodeURIComponent('소셜 로그인 제공자를 사용할 수 없습니다.')}&errorCode=OAUTH_PROVIDER_UNAVAILABLE`,
+                ]}
+            >
+                <Router />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByRole('heading', {name: '소셜 로그인에 실패했어요'})).toBeInTheDocument();
+        expect(screen.getByText('소셜 로그인 제공자를 사용할 수 없습니다.')).toBeInTheDocument();
+        expect(screen.getByText('OAUTH_PROVIDER_UNAVAILABLE')).toBeInTheDocument();
+        expect(screen.queryByText('페이지를 찾을 수 없음')).not.toBeInTheDocument();
+    });
 });

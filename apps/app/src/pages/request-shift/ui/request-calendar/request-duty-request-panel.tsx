@@ -1,4 +1,4 @@
-import {ChevronDown} from 'lucide-react';
+import {CheckCircle2, ChevronDown} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
@@ -623,10 +623,11 @@ export default function RequestDutyRequestPanel({
                                 </span>
                                 <button
                                     type="button"
-                                    className="h-8 shrink-0 cursor-pointer rounded-[9px] bg-main-light px-3 font-apple text-[12px] font-semibold whitespace-nowrap text-main-1 transition-colors hover:bg-main-light/70 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                                    className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 bg-transparent font-apple text-[12px] font-semibold whitespace-nowrap text-main-1 transition-colors hover:text-main-1-hover active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
                                     disabled={isRequestActionLocked}
                                     onClick={() => void acceptAllPendingRequests()}
                                 >
+                                    <CheckCircle2 aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={2.4} />
                                     {t('page.request.panel.acceptAllAction')}
                                 </button>
                             </div>

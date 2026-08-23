@@ -17,6 +17,7 @@ import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
+    DEFAULT_PREFERRED_LANGUAGE,
     getDefaultServiceRegionForLanguage,
     normalizePreferredLanguage,
     setStoredServiceRegion,
@@ -217,8 +218,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         : draftPhoneNum;
     const savedPreferredLanguage =
         normalizePreferredLanguage(accountMe?.preferredLanguage) ??
+        normalizePreferredLanguage(accountMe?.resolvedLanguage) ??
         normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
-        'en';
+        DEFAULT_PREFERRED_LANGUAGE;
     const phoneValidationRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';

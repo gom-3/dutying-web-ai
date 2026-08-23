@@ -776,6 +776,50 @@ describe('useRegister', () => {
         expect(mockEditAccountStatus).toHaveBeenCalledWith(1, 'WARD_SELECT_PENDING');
     });
 
+    it('passes signup preferences through the account profile payload', async () => {
+        mockAccountMe.current = {
+            accountId: 1,
+            status: 'INITIAL',
+        };
+
+        const updatedAccount = {
+            accountId: 1,
+            nurseId: null,
+            wardId: null,
+            shiftTeamId: null,
+            email: 'nurse@example.com',
+            name: 'Yamada',
+            profileImgUrl: '',
+            isManager: false,
+            status: 'WARD_SELECT_PENDING',
+        };
+
+        mockEditAccount.mockResolvedValue(updatedAccount);
+        mockEditAccountStatus.mockResolvedValue(updatedAccount);
+        mockHandleGetAccountMe.mockImplementation(() => new Promise(() => undefined));
+
+        const {result} = renderHook(() => useRegister());
+
+        await act(async () => {
+            await result.current.actions.registerAccountProfile({
+                name: 'Yamada',
+                phoneNum: '09012345678',
+                preferredLanguage: 'ja',
+                serviceRegion: 'JP',
+                profileImg: {defaultProfileImgId: 1},
+            });
+        });
+
+        expect(mockEditAccount).toHaveBeenCalledWith({
+            accountId: 1,
+            name: 'Yamada',
+            phoneNum: '09012345678',
+            preferredLanguage: 'ja',
+            serviceRegion: 'JP',
+            defaultProfileImgId: 1,
+        });
+    });
+
     it('saves contact information for workspace setup accounts without changing legacy account status', async () => {
         mockAccountMe.current = {
             accountId: 1,

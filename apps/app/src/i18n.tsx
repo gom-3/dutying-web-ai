@@ -2,7 +2,7 @@ import {DateUtil} from '@dutying/utils/date';
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import {initReactI18next} from 'react-i18next';
-import {getLocaleForLanguage, normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {DEFAULT_PREFERRED_LANGUAGE, getLocaleForLanguage, normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import {
     en as generatedEn,
     ja as generatedJa,
@@ -134,7 +134,7 @@ const resources = {
 } as const;
 
 const syncDocumentLocale = (lng?: string) => {
-    const language = normalizePreferredLanguage(lng) ?? 'en';
+    const language = normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;
     const locale = getLocaleForLanguage(language);
 
     if (typeof document !== 'undefined') {
@@ -147,7 +147,7 @@ const syncDocumentLocale = (lng?: string) => {
 i18n.use(LanguageDetector)
     .use(initReactI18next)
     .init({
-        fallbackLng: 'en',
+        fallbackLng: DEFAULT_PREFERRED_LANGUAGE,
         supportedLngs: [...SUPPORTED_LANGUAGES],
         nonExplicitSupportedLngs: true,
         load: 'languageOnly',
@@ -156,7 +156,7 @@ i18n.use(LanguageDetector)
             lookupQuerystring: 'lng',
             lookupLocalStorage: 'i18nextLng',
             caches: ['localStorage'],
-            convertDetectedLanguage: (lng) => normalizePreferredLanguage(lng) ?? 'en',
+            convertDetectedLanguage: (lng) => normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE,
         },
         resources,
         interpolation: {

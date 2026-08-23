@@ -76,6 +76,8 @@ AASA 파일 내용:
       {
         "appID": "Y4HPW9GX7Y.com.gom3.dutying",
         "paths": [
+          "/line-auth/*",
+          "/line-auth/",
           "/app/moim/invite",
           "/app/moim/invite/*",
           "/app/friends/invite",

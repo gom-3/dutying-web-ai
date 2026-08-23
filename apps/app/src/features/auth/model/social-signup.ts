@@ -1,6 +1,6 @@
 import ROUTE from '@/shared/constant/path';
 
-export type TSocialSignupProvider = 'KAKAO' | 'APPLE';
+export type TSocialSignupProvider = 'KAKAO' | 'APPLE' | 'LINE';
 
 export type TSocialSignupProfile = {
     provider?: TSocialSignupProvider;
@@ -24,7 +24,7 @@ const normalizeValue = (value: unknown) => (typeof value === 'string' && value.t
 const normalizeProvider = (value: unknown): TSocialSignupProvider | undefined => {
     const provider = normalizeValue(value)?.toUpperCase();
 
-    return provider === 'KAKAO' || provider === 'APPLE' ? provider : undefined;
+    return provider === 'KAKAO' || provider === 'APPLE' || provider === 'LINE' ? provider : undefined;
 };
 const getStringQueryValue = (query: Record<string, unknown>, keys: string[]) => {
     for (const key of keys) {

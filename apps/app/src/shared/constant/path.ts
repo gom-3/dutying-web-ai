@@ -15,6 +15,7 @@ const ROUTE = {
     RENEWAL: '/renewal',
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
+    OAUTH_ERROR: '/oauth2/error',
     ONBOARDING: '/onboarding',
     MAKE: '/make',
     REQUEST: '/request',

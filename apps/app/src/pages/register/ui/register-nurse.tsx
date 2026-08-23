@@ -13,7 +13,12 @@ import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
 import {RandomIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getDefaultServiceRegionForLanguage, normalizePreferredLanguage, normalizeServiceRegion} from '@/shared/i18n/locale';
+import {
+    DEFAULT_PREFERRED_LANGUAGE,
+    getDefaultServiceRegionForLanguage,
+    normalizePreferredLanguage,
+    normalizeServiceRegion,
+} from '@/shared/i18n/locale';
 import {
     CONTACT_PHONE_MAX_LENGTH,
     isValidContactPhone,
@@ -91,13 +96,15 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         state: {accountMe},
         actions: {registerAccountProfile},
     } = useRegister();
+    const preferredLanguage =
+        normalizePreferredLanguage(accountMe?.preferredLanguage) ??
+        normalizePreferredLanguage(accountMe?.resolvedLanguage) ??
+        normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
+        DEFAULT_PREFERRED_LANGUAGE;
     const serviceRegion =
         normalizeServiceRegion(accountMe?.serviceRegion) ??
-        getDefaultServiceRegionForLanguage(
-            normalizePreferredLanguage(accountMe?.preferredLanguage) ??
-                normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
-                'en',
-        );
+        normalizeServiceRegion(accountMe?.resolvedRegion) ??
+        getDefaultServiceRegionForLanguage(preferredLanguage);
     const schema = useMemo(() => createSchema(serviceRegion), [serviceRegion]);
     const {
         formState: {errors},
@@ -124,7 +131,11 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         useCreateAccount({
             submit: async (accountProfileDTO) => {
                 try {
-                    await registerAccountProfile(accountProfileDTO);
+                    await registerAccountProfile({
+                        ...accountProfileDTO,
+                        preferredLanguage,
+                        serviceRegion,
+                    });
                     onCompleted?.();
                 } catch (error) {
                     if (isDuplicatePhoneNumError(error)) {

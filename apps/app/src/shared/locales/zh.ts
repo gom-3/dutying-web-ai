@@ -35,6 +35,11 @@ export const zh = {
     },
     page: {
         ...generatedZh.page,
+        login: {
+            ...generatedZh.page.login,
+            lineContinue: '继续使用 LINE',
+            lineStart: '开始使用 LINE',
+        },
         notifications: {
             openAria: '打开通知',
             panelAria: '通知列表',
@@ -187,10 +192,6 @@ export const zh = {
                         label: '工作休息条件',
                         sentence: '{target}在N班后至少需要{count}天休息',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: '工作休息条件',
-                        sentence: '{target}每月至少需要{count}天休息',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: '个人条件',
                         sentence: '{nurse}不能在周末或节假日工作',
@@ -302,10 +303,6 @@ export const zh = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: '工作休息条件',
                         sentence: '{target}在N班后至少需要{days}天OFF',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: '工作休息条件',
-                        sentence: '{target}每月至少需要{days}天OFF',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '个人条件',

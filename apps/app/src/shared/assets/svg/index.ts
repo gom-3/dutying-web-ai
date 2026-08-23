@@ -29,6 +29,7 @@ export {default as InfoIcon} from './InfoIcon';
 export {default as InjectorIcon} from './InjectorIcon';
 export {default as InjectorIconSelected} from './InjectorIconSelected';
 export {default as KakaoIcon} from './KakaoIcon';
+export {default as LineIcon} from './LineIcon';
 export {default as LinkedIcon} from './LinkedIcon';
 export {default as Logo} from './Logo';
 export {default as LogoGray} from './LogoGray';

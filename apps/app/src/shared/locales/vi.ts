@@ -35,6 +35,11 @@ export const vi = {
     },
     page: {
         ...generatedVi.page,
+        login: {
+            ...generatedVi.page.login,
+            lineContinue: 'Tiếp tục với LINE',
+            lineStart: 'Bắt đầu với LINE',
+        },
         notifications: {
             openAria: 'Mở thông báo',
             panelAria: 'Danh sách thông báo',
@@ -187,10 +192,6 @@ export const vi = {
                         label: 'Điều kiện làm việc-nghỉ',
                         sentence: '{target} cần ít nhất {count} ngày nghỉ sau ca N',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: 'Điều kiện làm việc-nghỉ',
-                        sentence: '{target} cần ít nhất {count} ngày nghỉ mỗi tháng',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: 'Điều kiện cá nhân',
                         sentence: '{nurse} không được làm việc cuối tuần hoặc ngày lễ',
@@ -302,10 +303,6 @@ export const vi = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: 'Điều kiện làm việc-nghỉ',
                         sentence: '{target} cần ít nhất {days} ngày OFF sau ca N',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: 'Điều kiện làm việc-nghỉ',
-                        sentence: '{target} cần ít nhất {days} ngày OFF mỗi tháng',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'Điều kiện cá nhân',
