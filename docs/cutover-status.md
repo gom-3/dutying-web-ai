@@ -1177,3 +1177,43 @@ simsime@korea.ac.kr / simsim4874@gmail.com  세션 만료 (미확인)
 > 참고: `apps/landing/src/config/__tests__/site.test.ts` 가 이 기본값을 검증하고 있었지만,
 > CI(`vitest.yml`)는 `pnpm coverage` 로 **`apps/app` 만** 돌린다. 랜딩 테스트는 실행된 적이 없다.
 > 이번 건은 그래서 테스트가 있는데도 못 걸렀다. (랜딩·docs 를 CI 에 붙이는 건 별건으로 판단)
+
+---
+
+## ✅ Google Search Console 등록 완료 (2026-08-23)
+
+`gom3.official@gmail.com` 계정에 **도메인 속성** `sc-domain:dutying.ai` 로 등록했다.
+도메인 속성이라 `www` / `app` / `docs` / `dev` 등 **모든 하위 도메인을 한 속성이 커버**한다.
+
+### 소유확인 — Cloudflare OAuth 대신 수동 TXT 를 썼다
+
+Google 이 "Cloudflare 계정에 접근 권한을 주면 자동 인증" 을 먼저 제안하는데,
+그건 **Google 에 DNS 계정 접근 권한을 넘기는 것**이다. 최소 권한 원칙에 어긋나서
+`안내 대상: 모든 DNS 제공업체` 로 바꿔 **수동 TXT** 경로를 택했다.
+
+```
+TXT  dutying.ai  google-site-verification=C6O_7j8jTJVLY7kD6Ojn5rffOFB57hl4Sr-gvJ7Th1c
+```
+
+> **이 TXT 레코드를 지우면 소유확인이 풀린다.** DNS 정리할 때 건드리지 말 것.
+> 기존 SPF·Zoho 검증 TXT 는 그대로 유지됨을 확인했다 (TXT 3건 공존).
+
+### 제출한 사이트맵 4건 — 전부 "성공"
+
+| 사이트맵 | 유형 | 발견 페이지 |
+| --- | --- | --- |
+| `www.dutying.ai/sitemap-index.xml` | 인덱스 | 0 (자식을 가리킴) |
+| `www.dutying.ai/sitemap-0.xml` | 사이트맵 | 1 |
+| `app.dutying.ai/sitemap.xml` | 사이트맵 | 1 |
+| `docs.dutying.ai/sitemap.xml` | 사이트맵 | 11 |
+
+인덱스가 발견 0 으로 잡혀서 자식(`sitemap-0.xml`)도 직접 제출해 확실히 했다.
+Cloudflare DNS 레코드는 14 → 15건.
+
+### 아직 남은 것
+
+- **네이버 서치어드바이저** — `www.dutying.ai` 등록 후 **새로 발급되는** 코드를
+  `apps/landing/src/layouts/BaseLayout.astro` 의 주석 자리에 넣고 배포 → 소유확인.
+  (구 `.net` 코드는 통하지 않는다. 위 절 참조)
+- **`.net` 속성** — 2027-01-13 주소 변경 도구 데드라인 대비로 **같은 계정
+  (`gom3.official@gmail.com`)** 에 등록해둘 것. 계정이 다르면 그때 도구를 못 쓴다.
