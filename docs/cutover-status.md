@@ -1217,3 +1217,44 @@ Cloudflare DNS 레코드는 14 → 15건.
   (구 `.net` 코드는 통하지 않는다. 위 절 참조)
 - **`.net` 속성** — 2027-01-13 주소 변경 도구 데드라인 대비로 **같은 계정
   (`gom3.official@gmail.com`)** 에 등록해둘 것. 계정이 다르면 그때 도구를 못 쓴다.
+
+---
+
+## DNS 경고 2건 해석 (2026-08-23) — 하나는 오탐, 하나는 진짜
+
+Cloudflare DNS 화면에 경고가 떠 있어 실제로 무엇을 가리키는지 확인했다.
+
+### 오탐 — `www.dutying.ai` 의 ⚠
+
+> "This record exposes the IP address used in the CNAME record on dutying.ai.
+> Enable the proxy status to protect your origin server."
+
+apex 는 Proxied, `www` 는 DNS-only 라서 뜬 경고인데, **노출되는 IP 가 Cloudflare 자기 것**이다.
+
+```
+www  → dutying-landing.pages.dev  → 172.66.47.20 / 172.66.44.236   (Cloudflare 애니캐스트)
+app  → dutying-web-ai.pages.dev   → 172.66.47.133 / 172.66.44.123
+docs → dutying-docs.pages.dev     → 172.66.44.253 / 172.66.47.3
+```
+
+Pages 가 곧 오리진이므로 숨길 오리진이 없다. **조치 불필요.**
+
+### 진짜 — `api.dutying.ai` 는 EC2 IP 를 그대로 드러낸다
+
+```
+api.dutying.ai      A  43.202.216.112   DNS only   ← 실제 EC2 오리진
+dev.api.dutying.ai  A  3.36.210.125     DNS only
+```
+
+프록시를 켜면 가려지지만 TLS 종료·업로드 크기 제한·WebSocket 동작이 달라진다.
+**지금 건드리지 않았다.** 새 API 가 막 안정된 참이라 변수를 늘릴 때가 아니다.
+
+### 같이 알아둘 것 — 회색 구름이면 존 규칙이 안 걸린다
+
+`www` / `app` / `docs` / `dev` 는 전부 DNS-only(회색 구름)다. 요청은 Cloudflare 망을 타지만
+**존 레벨 기능(WAF 커스텀 룰, 레이트 리밋, 캐시 규칙, 봇 관리)은 이 호스트들에 적용되지 않는다.**
+Pages 자체 DDoS 보호와 우리가 배포한 `_headers` 는 그대로 작동한다.
+
+apex 를 Proxied 로 둔 것이 바로 이 때문이다 — **Redirect Rule 은 프록시된 호스트에서만 돈다.**
+나중에 `app.dutying.ai` 에 WAF 나 레이트 리밋을 걸고 싶어지면 그때 프록시로 전환해야 하고,
+전환 시 Pages 라우팅·인증서를 다시 확인해야 한다.
