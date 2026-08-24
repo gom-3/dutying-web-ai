@@ -94,4 +94,26 @@ describe('Router', () => {
             'https://app.dutying.ai/app/friends/invite?code=UVWB2T',
         );
     });
+
+    it('keeps moim invite fallback available for phone visitors', async () => {
+        setPhoneDevice(true);
+
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.MOIM_INVITE}?code=PXZ7XE`]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.MOIM_INVITE));
+
+        expect(await screen.findByRole('heading', {name: '듀팅 앱에서 초대를 열어주세요'})).toBeInTheDocument();
+        expect(screen.getByText('모임 초대')).toBeInTheDocument();
+        expect(screen.getByText('모임 코드')).toBeInTheDocument();
+        expect(screen.getByText('PXZ7XE')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '듀팅 앱에서 초대 열기'})).toHaveAttribute(
+            'href',
+            'https://app.dutying.ai/app/moim/invite?code=PXZ7XE',
+        );
+    });
 });

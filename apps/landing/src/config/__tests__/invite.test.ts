@@ -1,5 +1,11 @@
 import {describe, expect, it} from 'vitest';
-import {buildFriendInviteAppUrl, buildFriendInviteSchemeUrl, normalizeInviteSearch} from '../invite';
+import {
+    buildFriendInviteAppUrl,
+    buildFriendInviteSchemeUrl,
+    buildMoimInviteAppUrl,
+    buildMoimInviteSchemeUrl,
+    normalizeInviteSearch,
+} from '../invite';
 
 describe('invite link builders', () => {
     it('preserves the friend invite code query when building app links', () => {
@@ -10,6 +16,16 @@ describe('invite link builders', () => {
 
     it('builds the custom scheme backup with the same query', () => {
         expect(buildFriendInviteSchemeUrl('code=9BECT3')).toBe('dutying://friends/invite?code=9BECT3');
+    });
+
+    it('preserves the moim invite code query when building app links', () => {
+        expect(buildMoimInviteAppUrl('https://app.dutying.ai/', '?code=PXZ7XE')).toBe(
+            'https://app.dutying.ai/app/moim/invite?code=PXZ7XE',
+        );
+    });
+
+    it('builds the moim custom scheme backup with the same query', () => {
+        expect(buildMoimInviteSchemeUrl('code=PXZ7XE')).toBe('dutying://moim/invite?code=PXZ7XE');
     });
 
     it('ignores blank search values', () => {

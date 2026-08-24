@@ -16,6 +16,7 @@ const ROUTE = {
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
     FRIEND_INVITE: '/app/friends/invite',
+    MOIM_INVITE: '/app/moim/invite',
     ONBOARDING: '/onboarding',
     MAKE: '/make',
     REQUEST: '/request',

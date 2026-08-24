@@ -9,7 +9,8 @@ export default defineConfig({
     site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://www.dutying.ai',
     integrations: [
         sitemap({
-            filter: (page) => !new URL(page).pathname.startsWith('/app/friends/invite'),
+            filter: (page) =>
+                !['/app/friends/invite', '/app/moim/invite'].some((path) => new URL(page).pathname.startsWith(path)),
         }),
     ],
     build: {
