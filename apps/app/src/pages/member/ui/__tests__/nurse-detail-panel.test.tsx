@@ -174,7 +174,9 @@ describe('NurseDetailPanel', () => {
         expect(updateNurse.mock.calls[0]?.[1]).not.toHaveProperty('birthDate');
     });
 
-    it('allows the monthly shift ratio value to be cleared and replaced directly', async () => {
+    // nurse-detail-panel.tsx 의 ENABLE_MONTHLY_SHIFT_RATIO 가 false 라 월간 근무 비율 UI 자체가
+    // 렌더되지 않는다. 기능을 다시 켜면 그대로 되살릴 수 있도록 지우지 않고 skip 한다.
+    it.skip('allows the monthly shift ratio value to be cleared and replaced directly', async () => {
         const nurse = createNurseWithMonthlyShiftRatio();
         const {updateNurseShift} = renderPanel(nurse, [createWardShiftType()]);
 
@@ -206,7 +208,7 @@ describe('NurseDetailPanel', () => {
         );
     });
 
-    it('restores the saved monthly shift ratio when the field is left empty', () => {
+    it.skip('restores the saved monthly shift ratio when the field is left empty', () => {
         const nurse = createNurseWithMonthlyShiftRatio();
 
         renderPanel(nurse, [createWardShiftType()]);
@@ -222,7 +224,7 @@ describe('NurseDetailPanel', () => {
         expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
     });
 
-    it('clamps an out-of-range monthly shift ratio when editing is finished', () => {
+    it.skip('clamps an out-of-range monthly shift ratio when editing is finished', () => {
         const nurse = createNurseWithMonthlyShiftRatio();
 
         renderPanel(nurse, [createWardShiftType()]);

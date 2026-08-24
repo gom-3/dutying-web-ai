@@ -596,13 +596,21 @@ describe('WardChatWidget', () => {
         expect(screen.getByText('Operator announcement')).toBeInTheDocument();
     });
 
-    it('does not call ward chat APIs on production API while the routes are unavailable', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+    it('does not call ward chat APIs on the legacy .net API which has no chat routes', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
 
         renderWithQueryClient(<WardChatWidget />);
 
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         expect(wardApiMock.getWardChatUnreadCount).not.toHaveBeenCalled();
         expect(wardApiMock.getShiftTeams).not.toHaveBeenCalled();
+    });
+
+    it('renders ward chat on the .ai production API which serves chat routes', async () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        expect(await findOpenWardChatButton()).toBeInTheDocument();
     });
 });
