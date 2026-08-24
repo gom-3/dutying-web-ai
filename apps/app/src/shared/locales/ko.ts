@@ -290,15 +290,15 @@ export const ko = {
             mobileBenefits: {
                 schedule: {
                     title: '근무 일정 확인',
-                    description: '내 근무표와 개인 일정을 앱에서 바로 확인해요.',
+                    description: '근무표·개인 일정을 바로 확인',
                 },
                 ward: {
                     title: '병동 연동',
-                    description: '병동과 연결해 신청근무와 휴일 요청을 간편하게 보내요.',
+                    description: '신청근무·휴일 요청을 간편하게',
                 },
                 community: {
                     title: '널톡 커뮤니티',
-                    description: '간호사끼리 필요한 정보와 이야기를 가볍게 나눠요.',
+                    description: '간호사 정보와 이야기를 가볍게',
                 },
             },
             webSection: {

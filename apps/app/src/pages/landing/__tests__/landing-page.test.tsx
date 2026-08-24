@@ -75,12 +75,12 @@ describe('LandingPage', () => {
     });
 
     it.each([
-        ['ko', '/img/landing-hero-kr.png'],
-        ['ja', '/img/landing-hero-jp.png'],
-        ['en', '/img/landing-hero-en.png'],
-        ['zh', '/img/landing-hero-cn.png'],
-        ['th', '/img/landing-hero-en.png'],
-        ['vi', '/img/landing-hero-en.png'],
+        ['ko', '/img/landing-hero-kr.webp'],
+        ['ja', '/img/landing-hero-jp.webp'],
+        ['en', '/img/landing-hero-en.webp'],
+        ['zh', '/img/landing-hero-cn.webp'],
+        ['th', '/img/landing-hero-en.webp'],
+        ['vi', '/img/landing-hero-en.webp'],
     ])('uses the localized desktop hero image for %s', async (language, expectedSrc) => {
         await i18n.changeLanguage(language);
 
@@ -94,12 +94,12 @@ describe('LandingPage', () => {
     });
 
     it.each([
-        ['ko', '/img/landing-work-schedule-2.png'],
-        ['ja', '/img/landing-work-schedule-jp.png'],
-        ['en', '/img/landing-work-schedule-en.png'],
-        ['zh', '/img/landing-work-schedule-cn.png'],
-        ['th', '/img/landing-work-schedule-th.png'],
-        ['vi', '/img/landing-work-schedule-vn.png'],
+        ['ko', '/img/landing-work-schedule-2.webp'],
+        ['ja', '/img/landing-work-schedule-jp.webp'],
+        ['en', '/img/landing-work-schedule-en.webp'],
+        ['zh', '/img/landing-work-schedule-cn.webp'],
+        ['th', '/img/landing-work-schedule-th.webp'],
+        ['vi', '/img/landing-work-schedule-vn.webp'],
     ])('uses the localized work schedule image for %s', async (language, expectedSrc) => {
         await i18n.changeLanguage(language);
 

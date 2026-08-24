@@ -1,6 +1,6 @@
 import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
-import {CalendarDays, ChevronDown, Globe, MessageCircle, UsersRound, X} from 'lucide-react';
+import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
@@ -22,25 +22,28 @@ const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';
 const appCtaIconSrc = '/img/app.png';
+const mobileScheduleBenefitIconSrc = '/img/mobile-schedule-benefit-icon.webp';
+const mobileWardBenefitIconSrc = '/img/mobile-ward-benefit-icon.webp';
+const mobileCommunityBenefitIconSrc = '/img/mobile-community-benefit-icon.webp';
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const landingViewPreferenceKey = 'dutying:landing-view-preference';
 const desktopViewportMetaContent = 'width=1180';
 const languageOptions = SUPPORTED_LANGUAGES;
 const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
-    ko: '/img/landing-hero-kr.png',
-    ja: '/img/landing-hero-jp.png',
-    en: '/img/landing-hero-en.png',
-    zh: '/img/landing-hero-cn.png',
-    th: '/img/landing-hero-en.png',
-    vi: '/img/landing-hero-en.png',
+    ko: '/img/landing-hero-kr.webp',
+    ja: '/img/landing-hero-jp.webp',
+    en: '/img/landing-hero-en.webp',
+    zh: '/img/landing-hero-cn.webp',
+    th: '/img/landing-hero-en.webp',
+    vi: '/img/landing-hero-en.webp',
 };
 const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
-    ko: '/img/landing-work-schedule-2.png',
-    ja: '/img/landing-work-schedule-jp.png',
-    en: '/img/landing-work-schedule-en.png',
-    zh: '/img/landing-work-schedule-cn.png',
-    th: '/img/landing-work-schedule-th.png',
-    vi: '/img/landing-work-schedule-vn.png',
+    ko: '/img/landing-work-schedule-2.webp',
+    ja: '/img/landing-work-schedule-jp.webp',
+    en: '/img/landing-work-schedule-en.webp',
+    zh: '/img/landing-work-schedule-cn.webp',
+    th: '/img/landing-work-schedule-th.webp',
+    vi: '/img/landing-work-schedule-vn.webp',
 };
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
@@ -67,7 +70,7 @@ const featureSectionSpecs = [
         labelKey: 'page.landing.feature.ai.label',
         titleKey: 'page.landing.feature.ai.title',
         descriptionKey: 'page.landing.feature.ai.description',
-        image: '/img/124.png',
+        image: '/img/124.webp',
         align: 'right',
         background: 'bg-white',
     },
@@ -86,7 +89,7 @@ const featureSectionSpecs = [
         titleKey: 'page.landing.feature.integration.title',
         titleHighlightKeys: ['page.landing.feature.integration.highlight'],
         descriptionKey: 'page.landing.feature.integration.description',
-        image: '/img/landing-work-schedule-2.png',
+        image: '/img/landing-work-schedule-2.webp',
         align: 'left',
         background: 'bg-white',
     },
@@ -96,7 +99,7 @@ const featureSectionSpecs = [
         titleKey: 'page.landing.feature.ward.title',
         titleHighlightKeys: ['page.landing.feature.ward.highlightNurse', 'page.landing.feature.ward.highlightShare'],
         descriptionKey: 'page.landing.feature.ward.description',
-        image: '/img/image-1002.png',
+        image: '/img/image-1002.webp',
         align: 'left',
         background: 'bg-white',
     },
@@ -117,7 +120,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.home.title',
         titleHighlightKeys: ['page.landing.appFeature.home.highlightSchedule', 'page.landing.appFeature.home.highlightPersonal'],
         descriptionKey: 'page.landing.appFeature.home.description',
-        image: '/img/213213123123.png',
+        image: '/img/213213123123.webp',
         reverse: false,
         background: 'bg-white',
     },
@@ -127,7 +130,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.ward.title',
         titleHighlightKeys: ['page.landing.appFeature.ward.highlight'],
         descriptionKey: 'page.landing.appFeature.ward.description',
-        image: '/img/ward-schedule.png',
+        image: '/img/ward-schedule.webp',
         reverse: true,
         background: softPurpleBackground,
     },
@@ -137,7 +140,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.community.title',
         titleHighlightKeys: ['page.landing.appFeature.community.highlight'],
         descriptionKey: 'page.landing.appFeature.community.description',
-        image: '/img/12223.png',
+        image: '/img/12223.webp',
         reverse: false,
         background: 'bg-white',
     },
@@ -151,23 +154,29 @@ const appFeatureSectionSpecs = [
     reverse: boolean;
     background: string;
 }[];
+type TMobileBenefitIcon = {type: 'image'; src: string} | {type: 'lucide'; component: LucideIcon};
+
 const mobileAppBenefitSpecs = [
     {
         titleKey: 'page.landing.mobileBenefits.schedule.title',
         descriptionKey: 'page.landing.mobileBenefits.schedule.description',
-        icon: CalendarDays,
+        icon: {type: 'image', src: mobileScheduleBenefitIconSrc},
     },
     {
         titleKey: 'page.landing.mobileBenefits.ward.title',
         descriptionKey: 'page.landing.mobileBenefits.ward.description',
-        icon: UsersRound,
+        icon: {type: 'image', src: mobileWardBenefitIconSrc},
     },
     {
         titleKey: 'page.landing.mobileBenefits.community.title',
         descriptionKey: 'page.landing.mobileBenefits.community.description',
-        icon: MessageCircle,
+        icon: {type: 'image', src: mobileCommunityBenefitIconSrc},
     },
-] as const satisfies readonly {titleKey: TI18nKey; descriptionKey: TI18nKey; icon: typeof CalendarDays}[];
+] as const satisfies readonly {
+    titleKey: TI18nKey;
+    descriptionKey: TI18nKey;
+    icon: TMobileBenefitIcon;
+}[];
 
 type TLandingViewPreference = 'auto' | 'desktop';
 
@@ -516,6 +525,16 @@ function CtaIcon({src, className = 'size-5'}: {src: string; className?: string})
     return <img src={src} alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
 }
 
+function MobileBenefitIcon({icon}: {icon: TMobileBenefitIcon}) {
+    if (icon.type === 'image') {
+        return <img src={icon.src} alt="" aria-hidden="true" className="size-10 object-contain" />;
+    }
+
+    const Icon = icon.component;
+
+    return <Icon className="size-5" aria-hidden="true" />;
+}
+
 function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => void}) {
     const {t} = useTypedTranslation();
     const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
@@ -826,7 +845,13 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
             <section id={section.id} className={section.background}>
                 <div className="landing-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
                     <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
-                        <img src={section.image} alt="" className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]" />
+                        <img
+                            src={section.image}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]"
+                        />
                     </picture>
 
                     <div className="mr-auto w-full max-w-[470px] md:mx-0 lg:translate-x-10">{copy}</div>
@@ -845,6 +870,8 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
                         <img
                             src={section.image}
                             alt={t('page.landing.imageAlt.integration')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-[93%] object-contain object-center"
                         />
                     </picture>
@@ -863,6 +890,8 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
                         <img
                             src={section.image}
                             alt={t('page.landing.imageAlt.wardBoard')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full object-contain object-center md:w-[120%] md:max-w-[984px] md:translate-x-20 lg:translate-x-24"
                         />
                     </picture>
@@ -899,7 +928,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                 className={`landing-app-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
                 <picture className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${imageMaxWidthClass}`}>
-                    <img src={section.image} alt="" className={imageClassName} />
+                    <img src={section.image} alt="" loading="lazy" decoding="async" className={imageClassName} />
                 </picture>
 
                 <article
@@ -913,8 +942,20 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                     </h2>
                     {isHomeSection && (
                         <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
-                            <img src="/img/image-992.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
-                            <img src="/img/image-991.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
+                            <img
+                                src="/img/image-992.webp"
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                            />
+                            <img
+                                src="/img/image-991.webp"
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                            />
                         </div>
                     )}
                     <p className={`${isHomeSection ? 'mt-12' : 'mt-10'} text-lg leading-8 font-medium whitespace-pre-line text-[#777487]`}>
@@ -971,8 +1012,9 @@ function MobileAppLanding() {
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none mt-auto flex min-h-[310px] items-end justify-center pt-8">
                         <img
-                            src="/img/iPhone 15_1.png"
+                            src="/img/iPhone 15_1.webp"
                             alt={t('page.landing.imageAlt.mobileHero')}
+                            decoding="async"
                             className="w-[118%] max-w-[500px] -translate-x-3 object-contain"
                         />
                     </picture>
@@ -990,19 +1032,23 @@ function MobileAppLanding() {
 
                     <div className="mt-8 grid gap-3">
                         {mobileAppBenefits.map((benefit) => {
-                            const Icon = benefit.icon;
-
                             return (
                                 <article
                                     key={benefit.title}
-                                    className="reveal-on-scroll flex gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
+                                    className="reveal-on-scroll flex items-center gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
                                 >
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-main-light text-main-1">
-                                        <Icon className="size-5" aria-hidden="true" />
+                                    <span
+                                        className={`flex size-10 shrink-0 items-center justify-center text-main-1 ${
+                                            benefit.icon.type === 'image' ? '' : 'rounded-[8px] bg-main-light'
+                                        }`}
+                                    >
+                                        <MobileBenefitIcon icon={benefit.icon} />
                                     </span>
-                                    <div>
+                                    <div className="min-w-0">
                                         <h3 className="text-base font-extrabold text-[#11131A]">{benefit.title}</h3>
-                                        <p className="mt-2 text-sm leading-6 font-medium text-[#777487]">{benefit.description}</p>
+                                        <p className="mt-2 truncate text-[12px] leading-5 font-medium whitespace-nowrap text-[#777487]">
+                                            {benefit.description}
+                                        </p>
                                     </div>
                                 </article>
                             );
@@ -1125,6 +1171,7 @@ function LandingPage() {
                         <img
                             src={heroImageSrc}
                             alt=""
+                            decoding="async"
                             className="w-[92vw] max-w-[520px] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
                         />
                     </picture>
@@ -1141,8 +1188,10 @@ function LandingPage() {
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
-                            src="/img/image-987.png"
+                            src="/img/image-987.webp"
                             alt={t('page.landing.imageAlt.webSchedule')}
+                            loading="lazy"
+                            decoding="async"
                             className="absolute right-0 bottom-0 left-0 z-10 mx-auto w-[94%] object-contain"
                         />
                     </div>
@@ -1208,8 +1257,10 @@ function LandingPage() {
                     </article>
 
                     <img
-                        src="/img/temp.png"
+                        src="/img/temp.webp"
                         alt={t('page.landing.imageAlt.appScreen')}
+                        loading="lazy"
+                        decoding="async"
                         className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14"
                     />
                 </div>
@@ -1241,8 +1292,10 @@ function LandingPage() {
 
                     <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
                         <img
-                            src="/img/temp24222.png"
+                            src="/img/temp24222.webp"
                             alt={t('page.landing.imageAlt.appLogo')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-[min(765px,127.5vw)] max-w-none rounded-[12px] object-contain md:w-[646px] lg:w-[765px] xl:translate-x-12"
                         />
                     </div>
