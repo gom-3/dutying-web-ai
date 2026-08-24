@@ -74,4 +74,24 @@ describe('Router', () => {
 
         expect(await screen.findByRole('heading', {name: '곧 새로운 경험이 찾아와요'})).toBeInTheDocument();
     });
+
+    it('keeps friend invite fallback available for phone visitors', async () => {
+        setPhoneDevice(true);
+
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.FRIEND_INVITE}?code=UVWB2T`]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.FRIEND_INVITE));
+
+        expect(await screen.findByRole('heading', {name: '듀팅 앱에서 초대를 열어주세요'})).toBeInTheDocument();
+        expect(screen.getByText('UVWB2T')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '듀팅 앱에서 초대 열기'})).toHaveAttribute(
+            'href',
+            'https://app.dutying.ai/app/friends/invite?code=UVWB2T',
+        );
+    });
 });

@@ -1,0 +1,20 @@
+export const FRIEND_INVITE_PATH = '/app/friends/invite';
+export const FRIEND_INVITE_APP_ORIGIN = 'https://app.dutying.ai';
+export const FRIEND_INVITE_SCHEME_BASE = 'dutying://friends/invite';
+export const IOS_APP_STORE_URL = 'https://apps.apple.com/kr/app/id6804144827';
+
+const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+
+export const normalizeInviteSearch = (search: string | undefined) => {
+    if (!search) return '';
+
+    const trimmedSearch = search.trim();
+    if (!trimmedSearch) return '';
+
+    return trimmedSearch.startsWith('?') ? trimmedSearch : `?${trimmedSearch}`;
+};
+
+export const buildFriendInviteAppUrl = (search?: string) =>
+    `${stripTrailingSlash(FRIEND_INVITE_APP_ORIGIN)}${FRIEND_INVITE_PATH}${normalizeInviteSearch(search)}`;
+
+export const buildFriendInviteSchemeUrl = (search?: string) => `${FRIEND_INVITE_SCHEME_BASE}${normalizeInviteSearch(search)}`;

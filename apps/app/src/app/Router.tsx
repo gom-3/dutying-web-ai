@@ -8,6 +8,7 @@ import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/landing'));
+const FriendInvitePage = lazy(() => import('@/pages/friend-invite'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
 const MaintenancePage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.MaintenancePage})));
 const RenewalPage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.RenewalPage})));
@@ -51,6 +52,7 @@ export const Router = () => {
             >
                 <Routes>
                     <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                     <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                     <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                     <Route path="*" element={<Navigate to={ROUTE.ROOT} replace />} />
@@ -72,6 +74,7 @@ export const Router = () => {
         >
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />

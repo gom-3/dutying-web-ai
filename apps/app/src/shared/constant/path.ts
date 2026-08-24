@@ -15,6 +15,7 @@ const ROUTE = {
     RENEWAL: '/renewal',
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
+    FRIEND_INVITE: '/app/friends/invite',
     ONBOARDING: '/onboarding',
     MAKE: '/make',
     REQUEST: '/request',
