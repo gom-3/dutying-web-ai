@@ -5,11 +5,13 @@ import {siteConfig} from '../config/site';
 interface Props {
     title?: string;
     description?: string;
+    robots?: string;
 }
 
 const {
     title = '듀팅 | 간호사 근무표를 위한 운영 플랫폼',
     description = '간호사 근무표 작성과 일정 관리를 더 편리하게. 듀팅과 함께 효율적인 근무 관리를 시작해요.',
+    robots,
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, `${siteConfig.marketingOrigin}/`).toString();
@@ -58,6 +60,7 @@ const structuredData = {
         <link rel="icon" type="image/png" href="/favicon.png" />
         <meta name="description" content={description} />
         <meta name="title" content={title} />
+        {robots ? <meta name="robots" content={robots} /> : null}
         <!--
           네이버 서치어드바이저 소유확인 메타 자리.
           인증 코드는 사이트마다 새로 발급되므로 구 .net 의 코드를 옮겨 심어도 확인되지 않는다.

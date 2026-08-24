@@ -14,7 +14,7 @@ import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-transl
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
 
-const appStoreLink = 'https://abr.ge/bv13wa';
+const appStoreLink = 'https://apps.apple.com/kr/app/id6804144827';
 const inquiryLink = 'https://ye620.channel.io';
 const termsOfServiceLink = 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link';
 const privacyPolicyLink = 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
@@ -498,10 +498,7 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
     );
 }
 
-function StoreButton({store}: {store: 'google' | 'apple'}) {
-    const label = store === 'google' ? 'Google Play' : 'App Store';
-    const logoSrc = store === 'google' ? '/img/play.png' : '/img/apple.png';
-
+function StoreButton() {
     return (
         <a
             href={appStoreLink}
@@ -509,8 +506,8 @@ function StoreButton({store}: {store: 'google' | 'apple'}) {
             rel="noreferrer"
             className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
         >
-            <img src={logoSrc} alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
-            <span className="whitespace-nowrap">{label}</span>
+            <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+            <span className="whitespace-nowrap">App Store</span>
         </a>
     );
 }
@@ -967,9 +964,8 @@ function MobileAppLanding() {
                             {t('page.landing.mobileHero.description')}
                         </p>
 
-                        <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid grid-cols-2 gap-3">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                        <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid gap-3">
+                            <StoreButton />
                         </div>
                     </div>
 
@@ -1023,9 +1019,8 @@ function MobileAppLanding() {
                         <br />
                         {t('page.landing.mobileHero.downloadTitleLine2')}
                     </h2>
-                    <div className="mt-8 grid grid-cols-2 gap-3">
-                        <StoreButton store="google" />
-                        <StoreButton store="apple" />
+                    <div className="mt-8 grid gap-3">
+                        <StoreButton />
                     </div>
                 </div>
             </section>
@@ -1208,8 +1203,7 @@ function LandingPage() {
                             {t('page.landing.appSection.titleLine2')}
                         </h2>
                         <div className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                            <StoreButton />
                         </div>
                     </article>
 
@@ -1241,8 +1235,7 @@ function LandingPage() {
                         </h2>
                         <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
                         <div className="landing-cta-row mt-5 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                            <StoreButton />
                         </div>
                     </article>
 

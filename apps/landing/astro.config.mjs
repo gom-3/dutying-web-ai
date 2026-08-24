@@ -7,7 +7,11 @@ const env = loadRootEnv(process.cwd());
 export default defineConfig({
     // canonical 호스트는 www 다. apex 는 Cloudflare Redirect Rule 로 여기에 301 된다.
     site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://www.dutying.ai',
-    integrations: [sitemap()],
+    integrations: [
+        sitemap({
+            filter: (page) => !new URL(page).pathname.startsWith('/app/friends/invite'),
+        }),
+    ],
     build: {
         format: 'directory',
     },
