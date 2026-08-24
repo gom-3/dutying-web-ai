@@ -70,10 +70,16 @@ describe('isWardChatEnabled', () => {
         vi.unstubAllEnvs();
     });
 
-    it('disables ward chat against production API while it lacks chat routes', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+    it('disables ward chat against the legacy .net API which lacks chat routes', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
 
         expect(isWardChatEnabled()).toBe(false);
+    });
+
+    it('allows ward chat against the .ai production API which serves chat routes', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+
+        expect(isWardChatEnabled()).toBe(true);
     });
 
     it('allows ward chat against dev API', () => {
@@ -83,7 +89,7 @@ describe('isWardChatEnabled', () => {
     });
 
     it('respects explicit override', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', 'true');
 
         expect(isWardChatEnabled()).toBe(true);

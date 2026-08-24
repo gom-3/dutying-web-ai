@@ -6,7 +6,12 @@ import {RUNTIME_CONFIG} from './runtime';
  * app.dutying.ai 는 구 주소·딥링크 호환으로 같은 배포에 계속 붙여둔다.
  */
 const PRODUCTION_APP_HOSTS = new Set(['www.dutying.ai', 'dutying.ai', 'app.dutying.ai', 'app.dutying.net']);
-const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.ai', 'api.dutying.net']);
+/**
+ * 병동톡 라우트가 없는 프로덕션 API 호스트.
+ * `.ai` 운영 서버는 `/wards/{id}/chat/**` 를 제공하므로 여기 들어가면 안 된다.
+ * 구 `.net` 서버에만 없다.
+ */
+const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.net']);
 
 function getAppHostname(): string | null {
     if (typeof window === 'undefined') return null;
