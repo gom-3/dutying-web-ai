@@ -114,6 +114,60 @@ describe('LandingPage', () => {
         expect(imageSources).toContain(expectedSrc);
     });
 
+    it.each([
+        ['ko', '/img/124.webp'],
+        ['ja', '/img/124-ja.webp'],
+        ['en', '/img/124-en.webp'],
+    ])('uses the localized AI feature image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
+    it.each([
+        ['ko', '/img/image-1002.webp'],
+        ['ja', '/img/image-1002-ja.webp'],
+        ['en', '/img/image-1002-en.webp'],
+    ])('uses the localized ward feature image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
+    it.each([
+        ['ko', '/img/image-987.webp'],
+        ['ja', '/img/image-987-ja.webp'],
+        ['en', '/img/image-987-en.webp'],
+    ])('uses the localized web schedule image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
     it('shows profile menu actions instead of my page text when already authenticated', async () => {
         mockUseAuthState(true, {
             accountId: 1,

@@ -45,6 +45,18 @@ const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
     th: '/img/landing-work-schedule-th.webp',
     vi: '/img/landing-work-schedule-vn.webp',
 };
+const landingWebScheduleImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-987-ja.webp',
+    en: '/img/image-987-en.webp',
+};
+const landingAiFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/124-ja.webp',
+    en: '/img/124-en.webp',
+};
+const landingWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-1002-ja.webp',
+    en: '/img/image-1002-en.webp',
+};
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
     {
@@ -251,6 +263,36 @@ function getLandingWorkScheduleImageSrc(language?: string | null) {
     return landingWorkScheduleImageByLanguage[normalizedLanguage];
 }
 
+function getLandingWebScheduleImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-987.webp';
+    }
+
+    return landingWebScheduleImageByLanguage[normalizedLanguage] ?? '/img/image-987.webp';
+}
+
+function getLandingAiFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/124.webp';
+    }
+
+    return landingAiFeatureImageByLanguage[normalizedLanguage] ?? '/img/124.webp';
+}
+
+function getLandingWardFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-1002.webp';
+    }
+
+    return landingWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/image-1002.webp';
+}
+
 function useLandingViewportMode() {
     const [viewPreference, setViewPreference] = useState<TLandingViewPreference>(getInitialLandingViewPreference);
     const isPhoneDevice = usePhoneDevice();
@@ -396,7 +438,14 @@ type TAppFeatureSection = {
 function buildFeatureSections(t: TLandingTranslator, language?: string | null): TFeatureSection[] {
     return featureSectionSpecs.map((section) => ({
         ...section,
-        image: section.id === 'integration' ? getLandingWorkScheduleImageSrc(language) : section.image,
+        image:
+            section.id === 'integration'
+                ? getLandingWorkScheduleImageSrc(language)
+                : section.id === 'ai'
+                  ? getLandingAiFeatureImageSrc(language)
+                  : section.id === 'ward'
+                    ? getLandingWardFeatureImageSrc(language)
+                  : section.image,
         label: t(section.labelKey),
         title: t(section.titleKey),
         titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
@@ -1100,6 +1149,7 @@ function LandingPage() {
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
+    const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
     const featureSections = buildFeatureSections(t, currentLanguage);
     const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
     const appFeatureSections = buildAppFeatureSections(t);
@@ -1188,7 +1238,7 @@ function LandingPage() {
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
-                            src="/img/image-987.webp"
+                            src={webScheduleImageSrc}
                             alt={t('page.landing.imageAlt.webSchedule')}
                             loading="lazy"
                             decoding="async"
