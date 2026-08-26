@@ -525,7 +525,11 @@ describe('Constraints', () => {
         expect(minOffCard).not.toBeNull();
         expect(within(minOffCard!).getByText('야간 후반부')).toBeInTheDocument();
         expect(within(minOffCard!).getByText('휴무')).toBeInTheDocument();
-        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(2);
+        // 야간 후반부 슬롯은 고를 수 있는 값이 아니다. TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF 는
+        // FIXED_TWO_SHIFT_NIGHT_CONTINUATION_TEMPLATE_CODES 라, getFixedTwoShiftDutyOption 이 근무를
+        // 확정하고 InlineDropdown 대신 DutyTypeBadge 를 그린다. 그래서 드롭다운은 휴무 하나뿐이다.
+        expect(minOffCard!.querySelectorAll('button[aria-haspopup="listbox"]')).toHaveLength(1);
+        expect(within(minOffCard!).getByText('야간 후반부').closest('button')).toBeNull();
 
         const offCount = within(minOffCard!).getByRole('spinbutton');
 
