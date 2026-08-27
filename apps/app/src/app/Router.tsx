@@ -13,6 +13,8 @@ const MoimInvitePage = lazy(() => import('@/pages/moim-invite'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
 const MaintenancePage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.MaintenancePage})));
 const RenewalPage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.RenewalPage})));
+const PrivacyPolicyPage = lazy(() => import('@/pages/legal').then((module) => ({default: module.PrivacyPolicyPage})));
+const TermsOfServicePage = lazy(() => import('@/pages/legal').then((module) => ({default: module.TermsOfServicePage})));
 const UiPreviewPage = lazy(() => import('@/pages/ui-preview'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
@@ -53,6 +55,8 @@ export const Router = () => {
             >
                 <Routes>
                     <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
+                    <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                     <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
                     <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
@@ -76,6 +80,8 @@ export const Router = () => {
         >
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
+                <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                 <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                 <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />

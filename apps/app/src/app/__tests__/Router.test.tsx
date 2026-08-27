@@ -60,6 +60,35 @@ describe('Router', () => {
         expect(screen.getByText('mobile landing route')).toBeInTheDocument();
     });
 
+    it('keeps legal routes public for desktop visitors', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.PRIVACY]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.PRIVACY));
+
+        expect(await screen.findByRole('heading', {name: '개인정보 처리방침'})).toBeInTheDocument();
+        expect(screen.getByText('3. Google 사용자 데이터 처리')).toBeInTheDocument();
+    });
+
+    it('keeps legal routes public for phone visitors', async () => {
+        setPhoneDevice(true);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.TERMS]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.TERMS));
+
+        expect(await screen.findByRole('heading', {name: '이용약관'})).toBeInTheDocument();
+    });
+
     it('keeps service status routes available for phone visitors', async () => {
         setPhoneDevice(true);
 

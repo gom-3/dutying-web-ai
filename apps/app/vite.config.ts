@@ -54,17 +54,18 @@ const defaultAppSiteUrl = 'https://www.dutying.ai';
 const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
+const getEnvValue = (value: string | undefined) => (value === undefined || value === '' ? undefined : value);
 const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
-    const explicitUrl = env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL;
+    const explicitUrl = getEnvValue(env.VITE_APP_PUBLIC_URL) ?? getEnvValue(env.VITE_APP_SITE_URL);
     // Cloudflare Pages: CF_PAGES=1, CF_PAGES_BRANCH=배포 브랜치, CF_PAGES_URL=배포 URL.
     // 프로덕션 브랜치(main)가 아니면 preview로 간주한다.
     const isCloudflarePages = process.env.CF_PAGES === '1';
     const isCloudflareProduction = isCloudflarePages && process.env.CF_PAGES_BRANCH === 'main';
-    const cloudflareUrl = isCloudflareProduction ? undefined : process.env.CF_PAGES_URL;
+    const cloudflareUrl = isCloudflareProduction ? undefined : getEnvValue(process.env.CF_PAGES_URL);
     const appSiteUrl =
-        explicitUrl ||
-        (isCloudflarePages && !isCloudflareProduction ? defaultPreviewAppSiteUrl : undefined) ||
-        cloudflareUrl ||
+        explicitUrl ??
+        (isCloudflarePages && !isCloudflareProduction ? defaultPreviewAppSiteUrl : undefined) ??
+        cloudflareUrl ??
         defaultAppSiteUrl;
 
     return stripTrailingSlash(withHttpsProtocol(appSiteUrl));
@@ -137,7 +138,7 @@ export default defineConfig(({mode}) => {
                     this.emitFile({
                         type: 'asset',
                         fileName: 'sitemap.xml',
-                        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${appSiteUrl}/</loc>\n  </url>\n</urlset>\n`,
+                        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${appSiteUrl}/</loc>\n  </url>\n  <url>\n    <loc>${appSiteUrl}/privacy</loc>\n  </url>\n  <url>\n    <loc>${appSiteUrl}/terms</loc>\n  </url>\n</urlset>\n`,
                     });
                 },
             },
