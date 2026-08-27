@@ -8,6 +8,7 @@ import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -16,8 +17,8 @@ import './landing-page.css';
 
 const appStoreLink = 'https://apps.apple.com/kr/app/id6804144827';
 const inquiryLink = 'https://ye620.channel.io';
-const termsOfServiceLink = 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link';
-const privacyPolicyLink = 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
+const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
+const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
 const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';
@@ -56,6 +57,30 @@ const landingAiFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string
 const landingWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
     ja: '/img/image-1002-ja.webp',
     en: '/img/image-1002-en.webp',
+};
+const landingAppSectionImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/temp-ja.webp',
+    en: '/img/temp-en.webp',
+};
+const landingAppHomeFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/213213123123-ja.webp',
+    en: '/img/213213123123-en.webp',
+};
+const landingAppHomeWideImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-992-ja.webp',
+    en: '/img/image-992-en.webp',
+};
+const landingAppHomeSquareImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-991-ja.webp',
+    en: '/img/image-991-en.webp',
+};
+const landingAppWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/ward-schedule-ja.webp',
+    en: '/img/ward-schedule-en.webp',
+};
+const landingAppCommunityFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/12223-ja.webp',
+    en: '/img/12223-en.webp',
 };
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
@@ -293,6 +318,66 @@ function getLandingWardFeatureImageSrc(language?: string | null) {
     return landingWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/image-1002.webp';
 }
 
+function getLandingAppSectionImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/temp.webp';
+    }
+
+    return landingAppSectionImageByLanguage[normalizedLanguage] ?? '/img/temp.webp';
+}
+
+function getLandingAppHomeFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/213213123123.webp';
+    }
+
+    return landingAppHomeFeatureImageByLanguage[normalizedLanguage] ?? '/img/213213123123.webp';
+}
+
+function getLandingAppHomeWideImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-992.webp';
+    }
+
+    return landingAppHomeWideImageByLanguage[normalizedLanguage] ?? '/img/image-992.webp';
+}
+
+function getLandingAppHomeSquareImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-991.webp';
+    }
+
+    return landingAppHomeSquareImageByLanguage[normalizedLanguage] ?? '/img/image-991.webp';
+}
+
+function getLandingAppWardFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/ward-schedule.webp';
+    }
+
+    return landingAppWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/ward-schedule.webp';
+}
+
+function getLandingAppCommunityFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/12223.webp';
+    }
+
+    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage] ?? '/img/12223.webp';
+}
+
 function useLandingViewportMode() {
     const [viewPreference, setViewPreference] = useState<TLandingViewPreference>(getInitialLandingViewPreference);
     const isPhoneDevice = usePhoneDevice();
@@ -431,6 +516,10 @@ type TAppFeatureSection = {
     titleHighlights?: readonly string[];
     description: string;
     image: string;
+    secondaryImages?: {
+        wide: string;
+        square: string;
+    };
     reverse: boolean;
     background: string;
 };
@@ -453,9 +542,28 @@ function buildFeatureSections(t: TLandingTranslator, language?: string | null): 
     }));
 }
 
-function buildAppFeatureSections(t: TLandingTranslator): TAppFeatureSection[] {
+function getLandingAppFeatureSectionImageSrc(section: (typeof appFeatureSectionSpecs)[number], language?: string | null): string {
+    switch (section.id) {
+        case 'app-home':
+            return getLandingAppHomeFeatureImageSrc(language);
+        case 'app-ward':
+            return getLandingAppWardFeatureImageSrc(language);
+        case 'app-community':
+            return getLandingAppCommunityFeatureImageSrc(language);
+    }
+}
+
+function buildAppFeatureSections(t: TLandingTranslator, language?: string | null): TAppFeatureSection[] {
     return appFeatureSectionSpecs.map((section) => ({
         ...section,
+        image: getLandingAppFeatureSectionImageSrc(section, language),
+        secondaryImages:
+            section.id === 'app-home'
+                ? {
+                      wide: getLandingAppHomeWideImageSrc(language),
+                      square: getLandingAppHomeSquareImageSrc(language),
+                  }
+                : undefined,
         label: t(section.labelKey),
         title: t(section.titleKey),
         titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
@@ -855,7 +963,7 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
         : t('page.landing.common.appSchedule');
     const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : appStoreLink;
     const className =
-        'inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5';
+        'landing-dark-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-5 py-3 text-[15px] leading-none font-bold whitespace-nowrap text-white transition-transform hover:-translate-y-0.5';
 
     if (isWeb) {
         return (
@@ -962,13 +1070,14 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     const isHomeSection = section.id === 'app-home';
     const isWardSection = section.id === 'app-ward';
     const isCommunitySection = section.id === 'app-community';
+    const shouldCompactWardImage = isWardSection && section.image !== '/img/ward-schedule.webp';
     const imageMaxWidthClass = isHomeSection ? 'max-w-[566px]' : isCommunitySection ? 'max-w-[748px]' : 'max-w-[560px]';
     const imageClassName = isCommunitySection
         ? 'h-[506px] w-full object-contain object-center md:h-[792px]'
         : isHomeSection
           ? 'w-full object-contain object-center'
           : isWardSection
-            ? 'w-full object-contain object-center'
+            ? `${shouldCompactWardImage ? 'w-[80%]' : 'w-full'} object-contain object-center`
             : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]';
 
     return (
@@ -992,14 +1101,14 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                     {isHomeSection && (
                         <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
                             <img
-                                src="/img/image-992.webp"
+                                src={section.secondaryImages?.wide ?? '/img/image-992.webp'}
                                 alt=""
                                 loading="lazy"
                                 decoding="async"
                                 className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
                             />
                             <img
-                                src="/img/image-991.webp"
+                                src={section.secondaryImages?.square ?? '/img/image-991.webp'}
                                 alt=""
                                 loading="lazy"
                                 decoding="async"
@@ -1150,9 +1259,12 @@ function LandingPage() {
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
     const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
+    const appSectionImageSrc = getLandingAppSectionImageSrc(currentLanguage);
+    const normalizedCurrentLanguage = normalizePreferredLanguage(currentLanguage) ?? 'en';
+    const shouldCompactAppSectionImage = normalizedCurrentLanguage === 'en' || normalizedCurrentLanguage === 'ja';
     const featureSections = buildFeatureSections(t, currentLanguage);
     const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
-    const appFeatureSections = buildAppFeatureSections(t);
+    const appFeatureSections = buildAppFeatureSections(t, currentLanguage);
 
     useRevealOnScroll(showMobileAppLanding ? 'mobile-app' : 'full-landing');
 
@@ -1208,7 +1320,7 @@ function LandingPage() {
                             <TextLines>{t('page.landing.hero.description')}</TextLines>
                         </p>
 
-                        <div className="landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[560px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
+                        <div className="landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[680px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
                             <DarkActionButton type="web" isAuth={isAuth} />
                             <DarkActionButton type="app" />
                         </div>
@@ -1307,11 +1419,13 @@ function LandingPage() {
                     </article>
 
                     <img
-                        src="/img/temp.webp"
+                        src={appSectionImageSrc}
                         alt={t('page.landing.imageAlt.appScreen')}
                         loading="lazy"
                         decoding="async"
-                        className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14"
+                        className={`landing-app-section__image reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14 ${
+                            shouldCompactAppSectionImage ? 'landing-app-section__image--compact' : ''
+                        }`}
                     />
                 </div>
 

@@ -151,6 +151,105 @@ describe('LandingPage', () => {
     });
 
     it.each([
+        ['ko', '/img/temp.webp', false],
+        ['ja', '/img/temp-ja.webp', true],
+        ['en', '/img/temp-en.webp', true],
+    ])('uses the localized app section image for %s', async (language, expectedSrc, shouldCompact) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+        const appSectionImage = document.querySelector(`img[src="${expectedSrc}"]`);
+
+        expect(imageSources).toContain(expectedSrc);
+        expect(appSectionImage).toHaveClass(shouldCompact ? 'landing-app-section__image--compact' : 'landing-app-section__image');
+
+        if (!shouldCompact) {
+            expect(appSectionImage).not.toHaveClass('landing-app-section__image--compact');
+        }
+    });
+
+    it.each([
+        ['ko', '/img/213213123123.webp'],
+        ['ja', '/img/213213123123-ja.webp'],
+        ['en', '/img/213213123123-en.webp'],
+    ])('uses the localized app home feature image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
+    it.each([
+        ['ko', '/img/image-991.webp', '/img/image-992.webp'],
+        ['ja', '/img/image-991-ja.webp', '/img/image-992-ja.webp'],
+        ['en', '/img/image-991-en.webp', '/img/image-992-en.webp'],
+    ])('uses the localized app home secondary images for %s', async (language, expectedSquareSrc, expectedWideSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSquareSrc);
+        expect(imageSources).toContain(expectedWideSrc);
+    });
+
+    it.each([
+        ['ko', '/img/ward-schedule.webp', false],
+        ['ja', '/img/ward-schedule-ja.webp', true],
+        ['en', '/img/ward-schedule-en.webp', true],
+    ])('uses the localized app ward feature image for %s', async (language, expectedSrc, shouldCompact) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+        const wardImage = document.querySelector(`img[src="${expectedSrc}"]`);
+
+        expect(imageSources).toContain(expectedSrc);
+        expect(wardImage).toHaveClass(shouldCompact ? 'w-[80%]' : 'w-full');
+    });
+
+    it.each([
+        ['ko', '/img/12223.webp'],
+        ['ja', '/img/12223-ja.webp'],
+        ['en', '/img/12223-en.webp'],
+    ])('uses the localized app community feature image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
+    it.each([
         ['ko', '/img/image-987.webp'],
         ['ja', '/img/image-987-ja.webp'],
         ['en', '/img/image-987-en.webp'],

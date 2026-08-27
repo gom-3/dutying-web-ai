@@ -1,5 +1,6 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
 import {act, fireEvent, render, screen, userEvent} from '@/shared/util/test-utils';
 import LoginPage from '../index';
@@ -86,9 +87,10 @@ describe('LoginPage', () => {
         expect(visualImages[0]).toHaveAttribute('loading', 'eager');
         expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
         expect(visualImages[1]).not.toHaveAttribute('src');
+        expect(visualImages[0]).toHaveAttribute('src', '/img/login_1.webp');
         expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
             'srcset',
-            '/img/login-slide-1.webp',
+            '/img/login_1.webp',
         );
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
@@ -102,6 +104,33 @@ describe('LoginPage', () => {
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
+    });
+
+    it.each([
+        ['ko', '/img/login_1.webp', '/img/login-slide-2.webp', '/img/login-slide-3.webp'],
+        ['ja', '/img/login-ja.webp', '/img/login-slide-2-ja.webp', '/img/login-slide-3-ja.webp'],
+        ['en', '/img/login-default.webp', '/img/login-slide-2-default.webp', '/img/login-slide-3-default.webp'],
+    ])('uses the localized login visual for %s', async (language, expectedFirstSrc, expectedSecondSrc, expectedThirdSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(document.querySelector('.login-visual-slide-active')).toHaveAttribute('src', expectedFirstSrc);
+        expect(document.querySelector('source[srcset]')).toHaveAttribute('srcset', expectedFirstSrc);
+
+        fireEvent.click(document.querySelector('.login-visual-arrow-next') as HTMLButtonElement);
+
+        expect(document.querySelector('source[srcset]')).toHaveAttribute('srcset', expectedSecondSrc);
+
+        fireEvent.click(document.querySelector('.login-visual-arrow-next') as HTMLButtonElement);
+
+        expect(document.querySelector('source[srcset]')).toHaveAttribute('srcset', expectedThirdSrc);
     });
 
     it('resumes visual auto rotation 3 seconds after manual navigation', () => {
@@ -218,7 +247,7 @@ describe('LoginPage', () => {
                 expect.objectContaining({
                     documentType: 'TERMS_OF_SERVICE',
                     documentVersion: '2026-06-20',
-                    documentUrl: 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link',
+                    documentUrl: 'https://www.dutying.ai/terms',
                     agreed: true,
                     agreedAt: expect.any(String),
                     preferredLanguage: 'ko',

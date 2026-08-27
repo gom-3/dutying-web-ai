@@ -30,11 +30,11 @@ export const RUNTIME_CONFIG = {
     docs: {
         termsOfService: getRuntimeUrl(
             import.meta.env.VITE_TERMS_OF_SERVICE_URL,
-            'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link',
+            'https://www.dutying.ai/terms',
         ),
         privacyPolicy: getRuntimeUrl(
             import.meta.env.VITE_PRIVACY_POLICY_URL,
-            'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link',
+            'https://www.dutying.ai/privacy',
         ),
         memberTutorial: import.meta.env.VITE_MEMBER_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
         requestTutorial: import.meta.env.VITE_REQUEST_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
