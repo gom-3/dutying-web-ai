@@ -3,6 +3,7 @@ export const MOIM_INVITE_PATH = '/app/moim/invite';
 export const FRIEND_INVITE_SCHEME_BASE = 'dutying://friends/invite';
 export const MOIM_INVITE_SCHEME_BASE = 'dutying://moim/invite';
 export const IOS_APP_STORE_URL = 'https://apps.apple.com/kr/app/id6804144827';
+export const ANDROID_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ai.dutying.app';
 
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 

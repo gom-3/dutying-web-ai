@@ -1,8 +1,9 @@
 ---
-import {IOS_APP_STORE_URL} from '../../config/invite';
+import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '../../config/invite';
 import {landingPrimaryCtas, siteConfig} from '../../config/site';
 
 const appStoreLink = IOS_APP_STORE_URL;
+const playStoreLink = ANDROID_PLAY_STORE_URL;
 const inquiryLink = 'https://ye620.channel.io';
 
 const featureSections = [
@@ -121,6 +122,10 @@ const formattedFeatureSections = featureSections.map((section) => ({
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
                         </a>
+                        <a class="button button--store" href={playStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
+                        </a>
                     </div>
                 </div>
 
@@ -156,6 +161,10 @@ const formattedFeatureSections = featureSections.map((section) => ({
                     <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
                         <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                         App Store
+                    </a>
+                    <a class="button button--store button--mobile" href={playStoreLink} target="_blank" rel="noreferrer">
+                        <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                        Google Play
                     </a>
                 </div>
             </div>
@@ -208,6 +217,10 @@ const formattedFeatureSections = featureSections.map((section) => ({
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
                         </a>
+                        <a class="button button--footer" href={playStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
+                        </a>
                     </div>
                 </div>
 
@@ -246,6 +259,10 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
+                        </a>
+                        <a class="button button--footer button--mobile" href={playStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
                         </a>
                     </div>
                 </div>

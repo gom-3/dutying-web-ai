@@ -1,6 +1,6 @@
 import {Helmet} from 'react-helmet';
 import {useLocation} from 'react-router-dom';
-import {buildInviteAppUrl, IOS_APP_STORE_URL, type TInviteKind} from '@/shared/config/invite';
+import {ANDROID_PLAY_STORE_URL, buildInviteAppUrl, IOS_APP_STORE_URL, type TInviteKind} from '@/shared/config/invite';
 
 const INVITE_COPY_BY_KIND: Record<
     TInviteKind,
@@ -77,17 +77,28 @@ function InviteFallbackPage({kind}: {kind: TInviteKind}) {
                             <strong className="mx-auto mb-[5px] block text-[clamp(18px,4.8vw,20px)] leading-[1.25] font-black tracking-normal text-[#6C5CE7]">
                                 앱이 아직 없다면?
                             </strong>
-                            <span className="block whitespace-nowrap">App Store에서 먼저 설치해주세요.</span>
+                            <span className="block whitespace-nowrap">스토어에서 먼저 설치해주세요.</span>
                         </p>
-                        <a
-                            className="mt-3 inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#191F28] px-[18px] py-3.5 text-[clamp(14px,4vw,16px)] leading-[1.35] font-bold whitespace-nowrap text-white no-underline max-[340px]:px-3 max-[340px]:text-[13px]"
-                            href={IOS_APP_STORE_URL}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            <img src="/img/apple.png" alt="" aria-hidden="true" className="size-[18px] object-contain brightness-0 invert" />
-                            App Store에서 듀팅 받기
-                        </a>
+                        <div className="mt-3 grid gap-2.5">
+                            <a
+                                className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#191F28] px-[18px] py-3.5 text-[clamp(14px,4vw,16px)] leading-[1.35] font-bold whitespace-nowrap text-white no-underline max-[340px]:px-3 max-[340px]:text-[13px]"
+                                href={IOS_APP_STORE_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <img src="/img/apple.png" alt="" aria-hidden="true" className="size-[18px] object-contain brightness-0 invert" />
+                                App Store에서 받기
+                            </a>
+                            <a
+                                className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#191F28] px-[18px] py-3.5 text-[clamp(14px,4vw,16px)] leading-[1.35] font-bold whitespace-nowrap text-white no-underline max-[340px]:px-3 max-[340px]:text-[13px]"
+                                href={ANDROID_PLAY_STORE_URL}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <img src="/img/play.png" alt="" aria-hidden="true" className="size-[18px] object-contain brightness-0 invert" />
+                                Google Play에서 받기
+                            </a>
+                        </div>
                     </div>
                 </div>
             </section>

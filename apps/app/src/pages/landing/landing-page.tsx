@@ -8,6 +8,7 @@ import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
+import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '@/shared/config/invite';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
@@ -15,7 +16,8 @@ import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-transl
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
 
-const appStoreLink = 'https://apps.apple.com/kr/app/id6804144827';
+const appStoreLink = IOS_APP_STORE_URL;
+const playStoreLink = ANDROID_PLAY_STORE_URL;
 const inquiryLink = 'https://ye620.channel.io';
 const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
 const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
@@ -666,15 +668,26 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
 
 function StoreButton() {
     return (
-        <a
-            href={appStoreLink}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
-        >
-            <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
-            <span className="whitespace-nowrap">App Store</span>
-        </a>
+        <>
+            <a
+                href={appStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
+            >
+                <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span className="whitespace-nowrap">App Store</span>
+            </a>
+            <a
+                href={playStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
+            >
+                <img src="/img/play.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span className="whitespace-nowrap">Google Play</span>
+            </a>
+        </>
     );
 }
 
@@ -961,7 +974,7 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
             ? t('page.landing.common.makeSchedule')
             : t('page.landing.common.webMakeSchedule')
         : t('page.landing.common.appSchedule');
-    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : appStoreLink;
+    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : '#app';
     const className =
         'landing-dark-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-5 py-3 text-[15px] leading-none font-bold whitespace-nowrap text-white transition-transform hover:-translate-y-0.5';
 
@@ -975,7 +988,7 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
     }
 
     return (
-        <a href={href} target="_blank" rel="noreferrer" className={className}>
+        <a href={href} className={className}>
             <CtaIcon src={iconSrc} />
             {label}
         </a>
@@ -1143,9 +1156,7 @@ function MobileAppLanding() {
                     </Link>
 
                     <a
-                        href={appStoreLink}
-                        target="_blank"
-                        rel="noreferrer"
+                        href="#mobile-app-download"
                         className="inline-flex h-9 items-center justify-center rounded-[8px] bg-main-1 px-4 text-sm font-bold text-white"
                     >
                         {t('page.landing.common.appDownload')}
@@ -1215,7 +1226,7 @@ function MobileAppLanding() {
                 </div>
             </section>
 
-            <section className="bg-[#070D18] px-5 py-14 text-white">
+            <section id="mobile-app-download" className="bg-[#070D18] px-5 py-14 text-white">
                 <div className="mx-auto max-w-[520px]">
                     <p className="text-sm font-extrabold text-[#D9CCFF]">{t('page.landing.mobileHero.downloadEyebrow')}</p>
                     <h2 className="mt-3 text-[26px] leading-[1.36] font-extrabold">

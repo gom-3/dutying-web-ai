@@ -1,5 +1,5 @@
 ---
-import {buildFriendInviteAppUrl, IOS_APP_STORE_URL} from '../../../config/invite';
+import {ANDROID_PLAY_STORE_URL, buildFriendInviteAppUrl, IOS_APP_STORE_URL} from '../../../config/invite';
 import {siteConfig} from '../../../config/site';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 
@@ -44,12 +44,18 @@ const fallbackAppUrl = buildFriendInviteAppUrl(siteConfig.appOrigin);
                 <div class="store-guide" aria-label="앱 설치 안내">
                     <p>
                         <strong class="store-title">앱이 아직 없다면?</strong>
-                        <span>App Store에서 먼저 설치해주세요.</span>
+                        <span>스토어에서 먼저 설치해주세요.</span>
                     </p>
-                    <a class="button button--secondary" href={IOS_APP_STORE_URL} target="_blank" rel="noreferrer">
-                        <img src="/img/apple.png" alt="" aria-hidden="true" />
-                        App Store에서 듀팅 받기
-                    </a>
+                    <div class="store-buttons">
+                        <a class="button button--secondary" href={IOS_APP_STORE_URL} target="_blank" rel="noreferrer">
+                            <img src="/img/apple.png" alt="" aria-hidden="true" />
+                            App Store에서 받기
+                        </a>
+                        <a class="button button--secondary" href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noreferrer">
+                            <img src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play에서 받기
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>
@@ -216,7 +222,6 @@ const fallbackAppUrl = buildFriendInviteAppUrl(siteConfig.appOrigin);
     .button--secondary {
         width: 100%;
         min-height: 56px;
-        margin-top: 12px;
         background: #191f28;
         color: #fff;
     }
@@ -234,6 +239,12 @@ const fallbackAppUrl = buildFriendInviteAppUrl(siteConfig.appOrigin);
         background: #f8f6ff;
         word-break: keep-all;
         overflow-wrap: normal;
+    }
+
+    .store-buttons {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
     }
 
     .store-guide p {
