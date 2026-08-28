@@ -1,11 +1,16 @@
 ---
 import LandingPage from '../components/landing/LandingPage.astro';
+import {createHomeStructuredData} from '../config/structured-data';
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const description = '간호사 근무표 작성과 일정 관리를 더 편리하게. 듀팅으로 근무표를 쉽고 빠르게 작성하고 동료와 일정을 공유해요.';
 ---
 
 <BaseLayout
     title="듀팅 | 간호사 근무표를 더 간편하게"
-    description="간호사 근무표 작성과 일정 관리를 더 편리하게. 듀팅으로 근무표를 쉽고 빠르게 작성하고 동료와 일정을 공유해요."
+    description={description}
+    structuredData={createHomeStructuredData(description)}
+    preloadHero
 >
     <LandingPage />
 </BaseLayout>

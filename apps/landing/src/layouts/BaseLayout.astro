@@ -6,49 +6,26 @@ interface Props {
     title?: string;
     description?: string;
     robots?: string;
+    canonicalPath?: string;
+    structuredData?: Record<string, unknown>;
+    preloadHero?: boolean;
 }
 
 const {
     title = '듀팅 | 간호사 근무표를 위한 운영 플랫폼',
     description = '간호사 근무표 작성과 일정 관리를 더 편리하게. 듀팅과 함께 효율적인 근무 관리를 시작해요.',
     robots,
+    canonicalPath,
+    structuredData,
+    preloadHero = false,
 } = Astro.props;
 
-const canonicalUrl = new URL(Astro.url.pathname, `${siteConfig.marketingOrigin}/`).toString();
+const requestedPath = canonicalPath ?? Astro.url.pathname;
+const extensionlessPath = requestedPath === '/index.html' ? '/' : requestedPath.replace(/\.html$/, '');
+const normalizedCanonicalPath = extensionlessPath === '/' ? '/' : extensionlessPath.replace(/\/+$/, '');
+const canonicalUrl = new URL(normalizedCanonicalPath, `${siteConfig.marketingOrigin}/`).toString();
 const ogImageUrl = new URL('/og-image-preview222.png', `${siteConfig.marketingOrigin}/`).toString();
 
-// 검색 결과에서 앱·조직으로 인식되도록 구조화 데이터를 심는다.
-// 이름/URL 은 사이트 설정에서 끌어와 도메인이 바뀌어도 어긋나지 않게 한다.
-const structuredData = {
-    '@context': 'https://schema.org',
-    '@graph': [
-        {
-            '@type': 'Organization',
-            '@id': `${siteConfig.marketingOrigin}/#organization`,
-            name: siteConfig.productName,
-            url: `${siteConfig.marketingOrigin}/`,
-            logo: new URL('/logo-wordmark-purple.png', `${siteConfig.marketingOrigin}/`).toString(),
-        },
-        {
-            '@type': 'WebSite',
-            '@id': `${siteConfig.marketingOrigin}/#website`,
-            name: siteConfig.productName,
-            url: `${siteConfig.marketingOrigin}/`,
-            inLanguage: 'ko-KR',
-            publisher: {'@id': `${siteConfig.marketingOrigin}/#organization`},
-        },
-        {
-            '@type': 'SoftwareApplication',
-            name: siteConfig.productName,
-            description,
-            url: siteConfig.appLinks.home,
-            applicationCategory: 'BusinessApplication',
-            operatingSystem: 'Web, iOS, Android',
-            inLanguage: 'ko-KR',
-            publisher: {'@id': `${siteConfig.marketingOrigin}/#organization`},
-        },
-    ],
-};
 ---
 
 <!doctype html>
@@ -58,6 +35,8 @@ const structuredData = {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title}</title>
         <link rel="icon" type="image/png" href="/favicon.png" />
+        {preloadHero ? <link rel="preload" as="image" href="/img/landing_mobile_1.webp" media="(max-width: 900px)" fetchpriority="high" /> : null}
+        {preloadHero ? <link rel="preload" as="image" href="/img/landing_1.webp" media="(min-width: 901px)" fetchpriority="high" /> : null}
         <meta name="description" content={description} />
         <meta name="title" content={title} />
         {robots ? <meta name="robots" content={robots} /> : null}
@@ -79,7 +58,7 @@ const structuredData = {
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={ogImageUrl} />
-        <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
+        {structuredData ? <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline /> : null}
     </head>
     <body>
         <slot />

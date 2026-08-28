@@ -1,15 +1,15 @@
 import {Suspense, lazy} from 'react';
 import {Navigate, Route, Routes} from 'react-router-dom';
-import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
-const LandingPage = lazy(() => import('@/pages/landing'));
+const marketingSiteUrl = import.meta.env.VITE_MARKETING_SITE_URL?.trim().replace(/\/+$/, '') || 'https://www.dutying.ai';
+const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const FriendInvitePage = lazy(() => import('@/pages/friend-invite'));
 const MoimInvitePage = lazy(() => import('@/pages/moim-invite'));
+const DeepLinkFallbackPage = lazy(() => import('@/pages/invite-fallback'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
 const MaintenancePage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.MaintenancePage})));
 const RenewalPage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.RenewalPage})));
@@ -36,6 +36,21 @@ const DutyingPage = lazy(() => import('@/pages/dutying'));
 const DutyingNoticesPage = lazy(() => import('@/pages/dutying/notices'));
 const DutyingNoticeDetailPage = lazy(() => import('@/pages/dutying/notice-detail'));
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
+const AuthLayout = lazy(() => import('@/widgets/layouts/auth-layout').then((module) => ({default: module.AuthLayout})));
+const MainLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.MainLayout})));
+const NotAuthLayout = lazy(() => import('@/widgets/layouts/not-auth-layout').then((module) => ({default: module.NotAuthLayout})));
+
+const MarketingSiteRedirect = () => (
+    <main className="flex min-h-screen items-center justify-center bg-main-bg px-5 text-center font-apple">
+        <meta httpEquiv="refresh" content={`0;url=${marketingSiteUrl}`} />
+        <p className="text-base text-gray-3">
+            공개 홈페이지로 이동하고 있어요.{' '}
+            <a className="font-semibold text-main-1 underline underline-offset-4" href={marketingSiteUrl}>
+                듀팅 홈페이지로 이동
+            </a>
+        </p>
+    </main>
+);
 
 export const Router = () => {
     const {t} = useTypedTranslation();
@@ -54,11 +69,14 @@ export const Router = () => {
                 }
             >
                 <Routes>
-                    <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path={ROUTE.ROOT} element={<MarketingSiteRedirect />} />
                     <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                     <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
+                    <Route path={ROUTE.NULTALK_POST_LINK} element={<DeepLinkFallbackPage kind="nultalk" />} />
+                    <Route path={ROUTE.WARD_BOARD_POST_LINK} element={<DeepLinkFallbackPage kind="ward" />} />
+                    <Route path={ROUTE.NOTICE_LINK} element={<DeepLinkFallbackPage kind="notice" />} />
                     <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                     <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                     <Route path="*" element={<Navigate to={ROUTE.ROOT} replace />} />
@@ -79,11 +97,14 @@ export const Router = () => {
             }
         >
             <Routes>
-                <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                <Route path={ROUTE.ROOT} element={<MarketingSiteRedirect />} />
                 <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                 <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                 <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
                 <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
+                <Route path={ROUTE.NULTALK_POST_LINK} element={<DeepLinkFallbackPage kind="nultalk" />} />
+                <Route path={ROUTE.WARD_BOARD_POST_LINK} element={<DeepLinkFallbackPage kind="ward" />} />
+                <Route path={ROUTE.NOTICE_LINK} element={<DeepLinkFallbackPage kind="notice" />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />

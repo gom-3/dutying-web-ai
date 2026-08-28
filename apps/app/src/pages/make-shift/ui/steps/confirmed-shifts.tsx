@@ -60,6 +60,16 @@ export function ConfirmedShifts() {
     });
     const teamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.confirmedShifts.fallbackTeamName');
+    const divisionLabelByNum = useMemo(
+        () =>
+            new Map(
+                (shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.divisions ?? []).map((division) => [
+                    division.divisionNum,
+                    division.name,
+                ]),
+            ),
+        [currentShiftTeamId, shiftTeams],
+    );
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
     const currentTeamNurses = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.nurses ?? [];
     const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(shift, currentTeamNurses), [currentTeamNurses, shift]);
@@ -224,6 +234,8 @@ export function ConfirmedShifts() {
                                 readonly
                                 disableInitialSelection
                                 restCheckByShiftNurseId={restCheckByShiftNurseId}
+                                showDivisionHeaders
+                                divisionLabelByNum={divisionLabelByNum}
                                 stickyHeader
                             />
                         </ConfirmedCalendarBoundary>

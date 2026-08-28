@@ -42,6 +42,7 @@ export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
         legal: {
             terms: termsUrl,
             privacyPolicy: privacyPolicyUrl,
+            accountDeletion: `${marketingOrigin}/account-deletion`,
         },
         appLinks: {
             home: appOrigin,
@@ -50,6 +51,13 @@ export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
             makeEntry: `${appOrigin}/login?next=%2Fmake`,
             make: `${appOrigin}/make`,
             register: `${appOrigin}/register`,
+            profile: `${appOrigin}/profile`,
+        },
+        marketingLinks: {
+            home: marketingOrigin,
+            features: `${marketingOrigin}/features`,
+            faq: `${marketingOrigin}/faq`,
+            guide: `${marketingOrigin}/guide`,
         },
         docsLinks: {
             home: docsOrigin,

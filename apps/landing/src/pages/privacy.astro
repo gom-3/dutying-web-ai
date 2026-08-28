@@ -6,11 +6,12 @@ const title = '개인정보 처리방침 | 듀팅';
 const description = '듀팅 개인정보 처리방침입니다. 수집하는 개인정보, Google 계정 정보 사용 목적, 보관 기간과 삭제 요청 방법을 안내합니다.';
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} canonicalPath="/privacy">
     <main class="legal-page">
         <nav class="legal-nav" aria-label="법적 문서">
             <a href="/">듀팅 홈</a>
             <a href={siteConfig.legal.terms}>이용약관</a>
+            <a href={siteConfig.legal.accountDeletion}>계정삭제 안내</a>
         </nav>
 
         <article class="legal-document">
@@ -76,6 +77,7 @@ const description = '듀팅 개인정보 처리방침입니다. 수집하는 개
                 <p>
                     이용자는 자신의 개인정보에 대한 열람, 정정, 삭제, 처리 정지를 요청할 수 있습니다.
                     개인정보 삭제나 계정 탈퇴는 앱 내 기능 또는 고객지원 채널을 통해 요청할 수 있습니다.
+                    자세한 절차는 <a href={siteConfig.legal.accountDeletion}>계정삭제 안내</a>에서 확인할 수 있습니다.
                 </p>
             </section>
 

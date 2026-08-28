@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+    title="페이지를 찾을 수 없습니다 | 듀팅"
+    description="요청한 듀팅 페이지를 찾을 수 없습니다. 주소를 확인하거나 듀팅 홈페이지에서 다시 시작해주세요."
+    robots="noindex, follow"
+    canonicalPath="/404"
+>
+    <main class="not-found-page">
+        <section aria-labelledby="not-found-title">
+            <p class="not-found-code">404</p>
+            <h1 id="not-found-title">페이지를 찾을 수 없습니다</h1>
+            <p>주소가 잘못 입력되었거나 페이지가 이동되었습니다.</p>
+            <a href="/">듀팅 홈으로 이동</a>
+        </section>
+    </main>
+</BaseLayout>
+
+<style>
+    .not-found-page {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: 32px 20px;
+        color: #241b35;
+        background: #faf8fb;
+        text-align: center;
+    }
+
+    .not-found-code {
+        margin: 0 0 10px;
+        color: #6c4fe0;
+        font-size: 1rem;
+        font-weight: 850;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(2rem, 6vw, 3rem);
+        line-height: 1.25;
+        word-break: keep-all;
+    }
+
+    section > p:not(.not-found-code) {
+        margin: 18px 0 28px;
+        color: #5d566b;
+        line-height: 1.7;
+    }
+
+    a {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 20px;
+        border-radius: 10px;
+        color: #fff;
+        background: #6c4fe0;
+        font-weight: 800;
+        text-decoration: none;
+    }
+</style>

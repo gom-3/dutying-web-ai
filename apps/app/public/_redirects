@@ -1,0 +1,9 @@
+# 유효한 동적 SPA 경로만 index.html로 연결한다.
+# 최상위 404.html이 있으므로 이 규칙에 맞지 않는 URL은 실제 404를 반환한다.
+/ https://www.dutying.ai 301
+/dutying/notices/:noticeId /index.html 200
+/app/friends/invite /index.html 200
+/app/moim/invite /index.html 200
+/app/nultalk/posts/:postId /index.html 200
+/app/wards/:wardId/board/posts/:postId /index.html 200
+/app/notice/:noticeId /index.html 200

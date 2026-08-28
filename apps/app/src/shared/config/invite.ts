@@ -8,10 +8,11 @@ export const INVITE_SCHEME_BASE_BY_KIND = {
 } as const;
 export const FRIEND_INVITE_PATH = INVITE_PATH_BY_KIND.friend;
 export const MOIM_INVITE_PATH = INVITE_PATH_BY_KIND.moim;
-export const FRIEND_INVITE_APP_ORIGIN = 'https://app.dutying.ai';
+export const DEEP_LINK_APP_ORIGIN = 'https://app.dutying.ai';
+export const FRIEND_INVITE_APP_ORIGIN = DEEP_LINK_APP_ORIGIN;
 export const FRIEND_INVITE_SCHEME_BASE = INVITE_SCHEME_BASE_BY_KIND.friend;
 export const MOIM_INVITE_SCHEME_BASE = INVITE_SCHEME_BASE_BY_KIND.moim;
-export const IOS_APP_STORE_URL = 'https://apps.apple.com/kr/app/id6804144827';
+export const IOS_APP_STORE_URL = 'https://apps.apple.com/kr/app/id6466558189';
 export const ANDROID_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ai.dutying.app';
 
 export type TInviteKind = keyof typeof INVITE_PATH_BY_KIND;

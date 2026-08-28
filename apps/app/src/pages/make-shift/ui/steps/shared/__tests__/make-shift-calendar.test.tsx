@@ -150,6 +150,7 @@ describe('MakeShiftCalendar', () => {
         expect(header).toHaveTextContent('나이트킵');
         expect(header).toHaveTextContent('1');
         expect(header?.querySelector('svg')).toBeInTheDocument();
+        expect(header?.querySelector('.bg-gray-6')).toBeInTheDocument();
     });
 
     it('shares one summary width across the header, rows, and daily footer', () => {

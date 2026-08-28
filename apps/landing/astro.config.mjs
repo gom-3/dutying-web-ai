@@ -9,12 +9,13 @@ export default defineConfig({
     site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://www.dutying.ai',
     integrations: [
         sitemap({
-            filter: (page) =>
-                !['/app/friends/invite', '/app/moim/invite'].some((path) => new URL(page).pathname.startsWith(path)),
+            filter: (page) => !new URL(page).pathname.startsWith('/app/'),
         }),
     ],
     build: {
-        format: 'directory',
+        // Cloudflare Pages가 `/privacy.html`을 `/privacy`로 제공하므로 canonical과
+        // 실제 응답 URL을 슬래시 없이 일치시킨다.
+        format: 'file',
     },
     server: {
         host: 'local.dutying.net',

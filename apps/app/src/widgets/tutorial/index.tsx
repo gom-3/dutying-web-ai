@@ -1,7 +1,9 @@
+import {Suspense, lazy} from 'react';
 import {useLocation} from 'react-router';
 import ROUTE from '@/shared/constant/path';
-import MemberTutorial from './MemberTutorial';
-import RequestTutorial from './RequestTutorial';
+
+const MemberTutorial = lazy(() => import('./MemberTutorial'));
+const RequestTutorial = lazy(() => import('./RequestTutorial'));
 
 const TUTORIAL_BY_ROUTE = {
     [ROUTE.REQUEST]: RequestTutorial,
@@ -11,7 +13,11 @@ const Tutorial = () => {
     const {pathname} = useLocation();
     const TutorialComponent = TUTORIAL_BY_ROUTE[pathname as keyof typeof TUTORIAL_BY_ROUTE];
 
-    return TutorialComponent ? <TutorialComponent /> : null;
+    return TutorialComponent ? (
+        <Suspense fallback={null}>
+            <TutorialComponent />
+        </Suspense>
+    ) : null;
 };
 
 export default Tutorial;

@@ -21,10 +21,6 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
-vi.mock('@/pages/landing', () => ({
-    default: () => <div>mobile landing route</div>,
-}));
-
 const LocationProbe = () => {
     const location = useLocation();
 
@@ -45,7 +41,7 @@ describe('Router', () => {
         setPhoneDevice(false);
     });
 
-    it('redirects phone visitors away from auth routes to the landing page', async () => {
+    it('redirects phone visitors away from auth routes to the public marketing site', async () => {
         setPhoneDevice(true);
 
         render(
@@ -57,7 +53,7 @@ describe('Router', () => {
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
 
-        expect(screen.getByText('mobile landing route')).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '듀팅 홈페이지로 이동'})).toHaveAttribute('href', 'https://www.dutying.ai');
     });
 
     it('keeps legal routes public for desktop visitors', async () => {
@@ -122,6 +118,14 @@ describe('Router', () => {
             'href',
             'https://app.dutying.ai/app/friends/invite?code=UVWB2T',
         );
+        expect(screen.getByRole('link', {name: 'App Store에서 받기'})).toHaveAttribute(
+            'href',
+            'https://apps.apple.com/kr/app/id6466558189',
+        );
+        expect(screen.getByRole('link', {name: 'Google Play에서 받기'})).toHaveAttribute(
+            'href',
+            'https://play.google.com/store/apps/details?id=ai.dutying.app',
+        );
     });
 
     it('keeps moim invite fallback available for phone visitors', async () => {
@@ -144,5 +148,38 @@ describe('Router', () => {
             'href',
             'https://app.dutying.ai/app/moim/invite?code=PXZ7XE',
         );
+    });
+
+    it.each([
+        {
+            name: '널톡 게시글',
+            path: '/app/nultalk/posts/123',
+            heading: '듀팅 앱에서 게시글을 확인해주세요',
+        },
+        {
+            name: '병동 게시글',
+            path: '/app/wards/7/board/posts/12',
+            heading: '듀팅 앱에서 게시글을 확인해주세요',
+        },
+        {
+            name: '듀팅 공지',
+            path: '/app/notice/5',
+            heading: '듀팅 앱에서 공지를 확인해주세요',
+        },
+    ])('keeps the $name fallback available for phone visitors', async ({path, heading}) => {
+        setPhoneDevice(true);
+
+        render(
+            <MemoryRouter initialEntries={[path]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(path));
+
+        expect(await screen.findByRole('heading', {name: heading})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '듀팅 앱에서 열기'})).toHaveAttribute('href', `https://app.dutying.ai${path}`);
+        await waitFor(() => expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow'));
     });
 });

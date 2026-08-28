@@ -10,6 +10,7 @@ describe('createSiteConfig', () => {
         expect(config.docsOrigin).toBe('https://docs.dutying.ai');
         expect(config.legal.terms).toBe('https://www.dutying.ai/terms');
         expect(config.legal.privacyPolicy).toBe('https://www.dutying.ai/privacy');
+        expect(config.legal.accountDeletion).toBe('https://www.dutying.ai/account-deletion');
         expect(config.appLinks).toEqual({
             home: 'https://app.dutying.ai',
             login: 'https://app.dutying.ai/login',
@@ -17,6 +18,13 @@ describe('createSiteConfig', () => {
             makeEntry: 'https://app.dutying.ai/login?next=%2Fmake',
             make: 'https://app.dutying.ai/make',
             register: 'https://app.dutying.ai/register',
+            profile: 'https://app.dutying.ai/profile',
+        });
+        expect(config.marketingLinks).toEqual({
+            home: 'https://www.dutying.ai',
+            features: 'https://www.dutying.ai/features',
+            faq: 'https://www.dutying.ai/faq',
+            guide: 'https://www.dutying.ai/guide',
         });
     });
 

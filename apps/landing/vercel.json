@@ -1,13 +1,45 @@
 {
-  "headers": [
-    {
-      "source": "/.well-known/apple-app-site-association",
-      "headers": [
+    "headers": [
         {
-          "key": "Content-Type",
-          "value": "application/json"
+            "source": "/.well-known/apple-app-site-association",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "source": "/.well-known/assetlinks.json",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "source": "/app/(.*)",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, nofollow"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ],
+    "rewrites": [
+        {
+      "source": "/app/nultalk/posts/:postId",
+      "destination": "/app/content.html"
+        },
+        {
+      "source": "/app/wards/:wardId/board/posts/:postId",
+      "destination": "/app/content.html"
+        },
+        {
+      "source": "/app/notice/:noticeId",
+      "destination": "/app/content.html"
+        }
+    ]
 }

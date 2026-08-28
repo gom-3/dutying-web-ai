@@ -6,11 +6,12 @@ const title = '이용약관 | 듀팅';
 const description = '듀팅 이용약관입니다. 서비스 이용 조건, 계정 관리, 이용자의 의무와 서비스 운영 기준을 안내합니다.';
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} canonicalPath="/terms">
     <main class="legal-page">
         <nav class="legal-nav" aria-label="법적 문서">
             <a href="/">듀팅 홈</a>
             <a href={siteConfig.legal.privacyPolicy}>개인정보 처리방침</a>
+            <a href={siteConfig.legal.accountDeletion}>계정삭제 안내</a>
         </nav>
 
         <article class="legal-document">

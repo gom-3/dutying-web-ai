@@ -4,6 +4,13 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Robots-Tag: noindex, follow
 
 /.well-known/apple-app-site-association
   Content-Type: application/json
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+
+/app/*
+  X-Robots-Tag: noindex, nofollow

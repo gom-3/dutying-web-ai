@@ -1,5 +1,4 @@
-# 이 Astro 랜딩은 더 이상 www.dutying.ai 를 서빙하지 않는다.
-# 앱(apps/app) 안의 랜딩이 정식 랜딩이고 www.dutying.ai 가 그것을 서빙한다.
-# 남은 배포처는 *.pages.dev 뿐이므로 색인되면 중복이 된다.
 User-agent: *
-Disallow: /
+Allow: /
+
+Sitemap: https://www.dutying.ai/sitemap-index.xml
