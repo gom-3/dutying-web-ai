@@ -1494,3 +1494,24 @@ apps/landing robots  = Disallow: /                ✅
 `nurse-detail-panel.test.tsx` 도 같은 범위에서 갱신된다.
 
 **즉 미이전 잔량과 빨간 CI 는 별개 문제가 아니라 하나다.** PR #3 머지로 함께 풀린다.
+
+---
+
+## ✅ 네이버 서치어드바이저 소유확인 통과 (2026-08-29)
+
+`www.dutying.ai` 등록 → 코드 `673cfb860f4086f8f626299d8e2c8f223a2f807a` 를
+`apps/app/index.html` 에 심어 소유확인 통과. (재발급 코드다 — 첫 코드 `b36072ee…` 는 폐기.)
+
+### 이번에 배운 것 두 가지
+
+1. **www 는 이제 앱을 서빙한다.** 처음 `apps/landing` 에 심었더니 빌드·배포가 다 성공하고도
+   www 에 안 떴다. 랜딩은 은퇴했고 www = `dutying-web-ai`(앱) 이기 때문. 소유확인·메타 계열
+   작업은 전부 `apps/app/index.html` 이 맞는 자리다.
+2. **배포는 develop → dev.dutying.ai 검증 → main 승격 순서.** main 직접 push 금지
+   (2026-08-29 사용자 지적). develop 전체 승격은 미검증 기능(LINE 로그인 등)이 딸려가므로,
+   급한 단일 수정은 dev 검증 후 해당 커밋만 main 에 cherry-pick 한다.
+
+### 남은 것
+
+- 네이버 콘솔 **요청 → 사이트맵 제출**: `https://www.dutying.ai/sitemap.xml` (사용자 확인 필요)
+- 은퇴한 `apps/landing` 에도 구 코드(`b36072ee…`)가 남아 있다 — 무해하지만 랜딩 부활 시 갱신할 것
