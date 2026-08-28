@@ -40,11 +40,8 @@ const ogImageUrl = new URL('/og-image-preview222.png', `${siteConfig.marketingOr
         <meta name="description" content={description} />
         <meta name="title" content={title} />
         {robots ? <meta name="robots" content={robots} /> : null}
-        <!--
-          네이버 서치어드바이저 소유확인 메타 자리.
-          인증 코드는 사이트마다 새로 발급되므로 구 .net 의 코드를 옮겨 심어도 확인되지 않는다.
-          www.dutying.ai 를 등록하고 받은 코드로 naver-site-verification 메타를 여기에 넣을 것.
-        -->
+        <!-- 네이버 서치어드바이저 소유확인. www.dutying.ai 등록 시 발급받은 코드 (2026-08-23). -->
+        <meta name="naver-site-verification" content="b36072ee7cbeca0c21c8b390bd7ebf77b0e64990" />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:type" content="website" />
         <meta property="og:title" content={title} />
