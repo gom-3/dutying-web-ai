@@ -2,7 +2,7 @@ import {MemoryRouter, useLocation} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
-import {Router} from '../Router';
+import {isMarketingSiteHost, Router} from '../Router';
 
 vi.mock('@/features/auth', () => ({
     default: () => ({
@@ -39,6 +39,11 @@ const setPhoneDevice = (isPhone: boolean) => {
 describe('Router', () => {
     beforeEach(() => {
         setPhoneDevice(false);
+    });
+
+    it('renders the embedded landing instead of redirecting the marketing host to itself', () => {
+        expect(isMarketingSiteHost('www.dutying.ai')).toBe(true);
+        expect(isMarketingSiteHost('app.dutying.ai')).toBe(false);
     });
 
     it('redirects phone visitors away from auth routes to the public marketing site', async () => {

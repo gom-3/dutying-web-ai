@@ -88,6 +88,14 @@ const appRedirects = read('apps/app/dist/_redirects');
 
 assertContains(appRedirects, '/dutying/notices/:noticeId /index.html 200', 'apps/app/dist/_redirects');
 assert(!appRedirects.includes('/* /index.html 200'), '전체 SPA fallback 규칙이 남아 있음');
+assert(!appRedirects.includes('/ https://www.dutying.ai'), '앱 루트가 www에서 자기 자신으로 리디렉션될 수 있음');
+
+const appVercelConfig = JSON.parse(read('apps/app/vercel.json'));
+
+assert(
+    !(appVercelConfig.redirects ?? []).some(({source}) => source === '/'),
+    'apps/app/vercel.json: 호스트 구분 없는 루트 리디렉션이 남아 있음',
+);
 
 const sitemap = read('apps/landing/dist/sitemap-0.xml');
 

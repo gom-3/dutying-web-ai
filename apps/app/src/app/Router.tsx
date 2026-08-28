@@ -6,6 +6,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 
 const marketingSiteUrl = import.meta.env.VITE_MARKETING_SITE_URL?.trim().replace(/\/+$/, '') || 'https://www.dutying.ai';
+const LandingPage = lazy(() => import('@/pages/landing'));
 const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const FriendInvitePage = lazy(() => import('@/pages/friend-invite'));
 const MoimInvitePage = lazy(() => import('@/pages/moim-invite'));
@@ -52,6 +53,18 @@ const MarketingSiteRedirect = () => (
     </main>
 );
 
+export const isMarketingSiteHost = (hostname: string) => {
+    try {
+        return new URL(marketingSiteUrl).hostname === hostname;
+    } catch {
+        return false;
+    }
+};
+
+// www가 아직 제품 앱 프로젝트를 가리키는 배포 전환 구간에도 자기 자신으로
+// 리디렉션하지 않고 기존 랜딩을 보여준다.
+const MarketingRootPage = () => (isMarketingSiteHost(window.location.hostname) ? <LandingPage /> : <MarketingSiteRedirect />);
+
 export const Router = () => {
     const {t} = useTypedTranslation();
     const isPhoneDevice = usePhoneDevice();
@@ -69,7 +82,7 @@ export const Router = () => {
                 }
             >
                 <Routes>
-                    <Route path={ROUTE.ROOT} element={<MarketingSiteRedirect />} />
+                    <Route path={ROUTE.ROOT} element={<MarketingRootPage />} />
                     <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
@@ -97,7 +110,7 @@ export const Router = () => {
             }
         >
             <Routes>
-                <Route path={ROUTE.ROOT} element={<MarketingSiteRedirect />} />
+                <Route path={ROUTE.ROOT} element={<MarketingRootPage />} />
                 <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                 <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                 <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />

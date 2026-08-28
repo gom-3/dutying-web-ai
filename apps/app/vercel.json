@@ -54,13 +54,6 @@
         }
     ],
     "cleanUrls": true,
-    "redirects": [
-        {
-            "source": "/",
-            "destination": "https://www.dutying.ai",
-            "permanent": true
-        }
-    ],
     "rewrites": [
         {
             "source": "/dutying/notices/:noticeId",
