@@ -8,9 +8,9 @@ import mkcert from 'vite-plugin-mkcert';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
-// 공개 검색 문서는 www.dutying.ai의 Astro 앱이 담당하고, 이 앱은
-// app.dutying.ai에서 로그인 및 사용자 데이터 화면만 제공한다.
-const defaultAppSiteUrl = 'https://app.dutying.ai';
+// www가 리뉴얼 랜딩과 제품 앱을 함께 제공하는 운영 정식 호스트다.
+// app.dutying.ai는 기존 링크와 딥링크 호환을 위해 같은 앱을 제공한다.
+const defaultAppSiteUrl = 'https://www.dutying.ai';
 const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 const appStaticRoutes = [
     '/privacy',
@@ -63,6 +63,8 @@ const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
     const appSiteUrl = getConfiguredAppSiteUrl(env);
+    // 운영 www 빌드만 검색 색인을 허용하고 dev/preview는 차단한다.
+    const isProductionSite = appSiteUrl === defaultAppSiteUrl;
     const isWindows = process.platform === 'win32';
     const isTest = mode === 'test';
     let resolvedOutDir = resolve(process.cwd(), 'dist');
@@ -101,15 +103,28 @@ export default defineConfig(({mode}) => {
                     shouldEmitStaticRoutes = config.command === 'build';
                 },
                 transformIndexHtml(html) {
-                    return html.split('__APP_SITE_URL__').join(appSiteUrl).split('__ROBOTS_META__').join('noindex, follow');
+                    return html
+                        .split('__APP_SITE_URL__')
+                        .join(appSiteUrl)
+                        .split('__ROBOTS_META__')
+                        .join(isProductionSite ? 'index, follow' : 'noindex, nofollow');
                 },
                 generateBundle() {
-                    // robots.txt에서 크롤링을 차단하면 검색봇이 HTML의 noindex를 읽지 못한다.
-                    // 앱 화면은 크롤링을 허용하되 모든 원본 HTML에서 색인만 제외한다.
+                    // www의 리뉴얼 랜딩은 색인하고 dev/preview 배포는 중복 색인을 막는다.
                     this.emitFile({
                         type: 'asset',
                         fileName: 'robots.txt',
-                        source: 'User-agent: *\nAllow: /\n',
+                        source: isProductionSite
+                            ? `User-agent: *\nAllow: /\nSitemap: ${appSiteUrl}/sitemap.xml\n`
+                            : 'User-agent: *\nDisallow: /\n',
+                    });
+
+                    if (!isProductionSite) return;
+
+                    this.emitFile({
+                        type: 'asset',
+                        fileName: 'sitemap.xml',
+                        source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>${appSiteUrl}/</loc>\n  </url>\n  <url>\n    <loc>${appSiteUrl}/privacy</loc>\n  </url>\n  <url>\n    <loc>${appSiteUrl}/terms</loc>\n  </url>\n</urlset>\n`,
                     });
                 },
                 closeBundle() {

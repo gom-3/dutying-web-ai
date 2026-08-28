@@ -8,62 +8,6 @@ const assert = (condition, message) => {
 };
 const assertContains = (html, value, file) => assert(html.includes(value), `${file}: ${value} 누락`);
 
-const publicPages = [
-    {
-        file: 'apps/landing/dist/index.html',
-        title: '듀팅 | 간호사 근무표를 더 간편하게',
-        canonical: 'https://www.dutying.ai/',
-        h1: '듀팅,',
-    },
-    {
-        file: 'apps/landing/dist/features.html',
-        title: '기능 소개 | 간호사 근무표·일정 관리 듀팅',
-        canonical: 'https://www.dutying.ai/features',
-        h1: '간호사 근무표 작성부터 일정 공유까지',
-    },
-    {
-        file: 'apps/landing/dist/faq.html',
-        title: '자주 묻는 질문(FAQ) | 듀팅',
-        canonical: 'https://www.dutying.ai/faq',
-        h1: '자주 묻는 질문',
-    },
-    {
-        file: 'apps/landing/dist/privacy.html',
-        title: '개인정보 처리방침 | 듀팅',
-        canonical: 'https://www.dutying.ai/privacy',
-        h1: '개인정보 처리방침',
-    },
-    {
-        file: 'apps/landing/dist/terms.html',
-        title: '이용약관 | 듀팅',
-        canonical: 'https://www.dutying.ai/terms',
-        h1: '이용약관',
-    },
-    {
-        file: 'apps/landing/dist/account-deletion.html',
-        title: '계정삭제 및 회원 탈퇴 안내 | 듀팅',
-        canonical: 'https://www.dutying.ai/account-deletion',
-        h1: '듀팅 계정삭제 안내',
-    },
-    {
-        file: 'apps/landing/dist/guide.html',
-        title: '듀팅 사용 가이드 | 간호사 근무표 시작하기',
-        canonical: 'https://www.dutying.ai/guide',
-        h1: '듀팅 사용 가이드',
-    },
-];
-
-for (const page of publicPages) {
-    const html = read(page.file);
-
-    assertContains(html, `<title>${page.title}</title>`, page.file);
-    assertContains(html, '<meta name="description" content="', page.file);
-    assertContains(html, `<link rel="canonical" href="${page.canonical}">`, page.file);
-    assertContains(html, '<h1', page.file);
-    assertContains(html, page.h1, page.file);
-    assertContains(html, '<main', page.file);
-}
-
 const collectHtmlFiles = (directory) =>
     readdirSync(resolve(root, directory), {withFileTypes: true}).flatMap((entry) => {
         const relativePath = `${directory}/${entry.name}`;
@@ -73,16 +17,26 @@ const collectHtmlFiles = (directory) =>
         return entry.name.endsWith('.html') ? [relativePath] : [];
     });
 
-const appNoindexFiles = collectHtmlFiles('apps/app/dist');
+const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html'));
 
-for (const file of appNoindexFiles) {
-    assertContains(read(file), '<meta name="robots" content="noindex, follow"', file);
+for (const file of appHtmlFiles) {
+    const html = read(file);
+
+    assertContains(html, '<meta name="robots" content="index, follow"', file);
+    assertContains(html, '<link rel="canonical" href="https://www.dutying.ai/"', file);
 }
 
-assert(existsSync(resolve(root, 'apps/landing/dist/404.html')), '랜딩 404.html 누락');
 assert(existsSync(resolve(root, 'apps/app/dist/404.html')), '앱 404.html 누락');
-assert(!existsSync(resolve(root, 'apps/app/dist/sitemap.xml')), 'noindex 앱에 sitemap.xml이 생성됨');
+assertContains(read('apps/app/dist/404.html'), '<meta name="robots" content="noindex, follow"', 'apps/app/dist/404.html');
+assert(existsSync(resolve(root, 'apps/app/dist/sitemap.xml')), 'www 앱 sitemap.xml 누락');
 assertContains(read('apps/app/dist/robots.txt'), 'Allow: /', 'apps/app/dist/robots.txt');
+assertContains(read('apps/app/dist/robots.txt'), 'Sitemap: https://www.dutying.ai/sitemap.xml', 'apps/app/dist/robots.txt');
+
+const appSitemap = read('apps/app/dist/sitemap.xml');
+
+for (const url of ['https://www.dutying.ai/', 'https://www.dutying.ai/privacy', 'https://www.dutying.ai/terms']) {
+    assertContains(appSitemap, `<loc>${url}</loc>`, 'apps/app/dist/sitemap.xml');
+}
 
 const appRedirects = read('apps/app/dist/_redirects');
 
@@ -96,13 +50,6 @@ assert(
     !(appVercelConfig.redirects ?? []).some(({source}) => source === '/'),
     'apps/app/vercel.json: 호스트 구분 없는 루트 리디렉션이 남아 있음',
 );
-
-const sitemap = read('apps/landing/dist/sitemap-0.xml');
-
-for (const page of publicPages.slice(1)) {
-    assertContains(sitemap, `<loc>${page.canonical}</loc>`, 'apps/landing/dist/sitemap-0.xml');
-}
-assert(!sitemap.includes('/404'), '404 URL이 랜딩 sitemap에 포함됨');
 
 const docsPages = [
     'apps/docs/.vitepress/dist/index.html',
@@ -120,6 +67,4 @@ for (const file of docsPages) {
     assertContains(html, '<body', file);
 }
 
-console.log(
-    `SEO build verification passed: ${publicPages.length} public pages, ${appNoindexFiles.length} noindex app routes, ${docsPages.length} docs pages.`,
-);
+console.log(`SEO build verification passed: ${appHtmlFiles.length} indexed www app routes, ${docsPages.length} docs pages.`);

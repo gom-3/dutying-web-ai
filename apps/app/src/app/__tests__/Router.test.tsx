@@ -2,7 +2,7 @@ import {MemoryRouter, useLocation} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
-import {isMarketingSiteHost, Router} from '../Router';
+import {Router} from '../Router';
 
 vi.mock('@/features/auth', () => ({
     default: () => ({
@@ -19,6 +19,10 @@ vi.mock('@/features/auth', () => ({
             handleLogout: () => undefined,
         },
     }),
+}));
+
+vi.mock('@/pages/landing', () => ({
+    default: () => <div>renewed landing route</div>,
 }));
 
 const LocationProbe = () => {
@@ -41,12 +45,17 @@ describe('Router', () => {
         setPhoneDevice(false);
     });
 
-    it('renders the embedded landing instead of redirecting the marketing host to itself', () => {
-        expect(isMarketingSiteHost('www.dutying.ai')).toBe(true);
-        expect(isMarketingSiteHost('app.dutying.ai')).toBe(false);
+    it('renders the renewed landing directly at the www root', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <Router />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
     });
 
-    it('redirects phone visitors away from auth routes to the public marketing site', async () => {
+    it('redirects phone visitors away from auth routes to the landing page', async () => {
         setPhoneDevice(true);
 
         render(
@@ -58,7 +67,7 @@ describe('Router', () => {
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
 
-        expect(screen.getByRole('link', {name: '듀팅 홈페이지로 이동'})).toHaveAttribute('href', 'https://www.dutying.ai');
+        expect(screen.getByText('renewed landing route')).toBeInTheDocument();
     });
 
     it('keeps legal routes public for desktop visitors', async () => {
