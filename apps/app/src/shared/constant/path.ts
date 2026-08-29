@@ -2,6 +2,8 @@ import {type TValues} from '@dutying/utils';
 
 const ROUTE = {
     ROOT: '/',
+    PRIVACY: '/privacy',
+    TERMS: '/terms',
     HOME: '/home',
     REGISTER: '/register',
     ENTER_WARD: '/enter-ward',
@@ -16,6 +18,11 @@ const ROUTE = {
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
     OAUTH_ERROR: '/oauth2/error',
+    FRIEND_INVITE: '/app/friends/invite',
+    MOIM_INVITE: '/app/moim/invite',
+    NULTALK_POST_LINK: '/app/nultalk/posts/:postId',
+    WARD_BOARD_POST_LINK: '/app/wards/:wardId/board/posts/:postId',
+    NOTICE_LINK: '/app/notice/:noticeId',
     ONBOARDING: '/onboarding',
     MAKE: '/make',
     REQUEST: '/request',

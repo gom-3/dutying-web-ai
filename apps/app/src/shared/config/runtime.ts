@@ -21,16 +21,20 @@ export const DEFAULT_SERVER_URL = 'https://api.dutying.ai';
 export const RUNTIME_CONFIG = {
     publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.ai'),
     serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, DEFAULT_SERVER_URL),
+    // 기본 프로필 이미지(`{base}/profile_img/default/profileN.png`)만 이 값을 쓴다.
+    // 업로드 이미지는 서버가 전체 URL 로 내려준다.
+    // `.ai` 전용 버킷으로 객체를 sync 해뒀다 — 구 `dutying-prod` 를 계속 가리키면
+    // `.net` 을 닫는 순간 기본 프로필이 전부 깨진다.
     profileImageBaseUrl: () =>
-        getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com'),
+        getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-ai-prod.s3.ap-northeast-2.amazonaws.com'),
     docs: {
         termsOfService: getRuntimeUrl(
             import.meta.env.VITE_TERMS_OF_SERVICE_URL,
-            'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link',
+            'https://www.dutying.ai/terms',
         ),
         privacyPolicy: getRuntimeUrl(
             import.meta.env.VITE_PRIVACY_POLICY_URL,
-            'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link',
+            'https://www.dutying.ai/privacy',
         ),
         memberTutorial: import.meta.env.VITE_MEMBER_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
         requestTutorial: import.meta.env.VITE_REQUEST_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',

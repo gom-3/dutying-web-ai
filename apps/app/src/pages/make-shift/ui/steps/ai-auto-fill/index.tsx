@@ -1464,6 +1464,7 @@ export function AiAutofill() {
                 )}
                 onClose={() => setPublishConfirmOpen(false)}
                 onConfirm={handlePublishConfirm}
+                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
             />
             <ConfirmActionDialog
                 open={lastShiftBlankWarningIntent !== null}

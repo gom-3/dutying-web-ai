@@ -45,6 +45,7 @@
         "release:changelog:preview": "node ./scripts/release/preview-root-changelog.mjs",
         "release:status": "pnpm run changeset:status",
         "release:version": "pnpm run changeset:version",
+        "verify:seo": "node ./scripts/verify-seo-build.mjs",
         "type-check": "pnpm run type-check:app",
         "type-check:app": "pnpm --dir ./apps/app type-check",
         "type-check:docs": "pnpm --dir ./apps/docs type-check",

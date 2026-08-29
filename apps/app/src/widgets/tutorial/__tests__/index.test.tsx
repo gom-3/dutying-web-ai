@@ -13,24 +13,28 @@ vi.mock('../RequestTutorial', () => ({
 }));
 
 describe('Tutorial', () => {
-    it('renders member tutorial on member route', () => {
+    it('renders member tutorial on member route', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MEMBER]}>
                 <Tutorial />
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('member tutorial')).toBeInTheDocument();
+        // Tutorial 은 하위 컴포넌트를 lazy 로 싣는다. 첫 렌더에는 Suspense fallback(null)만
+        // 있으므로 getByText 로는 못 잡는다.
+        expect(await screen.findByText('member tutorial')).toBeInTheDocument();
     });
 
-    it('renders request tutorial on request route', () => {
+    it('renders request tutorial on request route', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.REQUEST]}>
                 <Tutorial />
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('request tutorial')).toBeInTheDocument();
+        // Tutorial 은 하위 컴포넌트를 lazy 로 싣는다. 첫 렌더에는 Suspense fallback(null)만
+        // 있으므로 getByText 로는 못 잡는다.
+        expect(await screen.findByText('request tutorial')).toBeInTheDocument();
     });
 
     it('renders nothing on unsupported route', () => {

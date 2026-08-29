@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     requestAiSchedule: vi.fn(),
     setStepNavigationBusy: vi.fn(),
     moveScheduleRow: vi.fn(),
+    currentTeamNurses: [] as Array<{isConnected: boolean}>,
     shift: {
         days: [],
         wardShiftTypes: [],
@@ -73,7 +74,7 @@ vi.mock('../../../../model/make-shift-use-case', () => ({
 
 vi.mock('../../../../model/use-make-shift-nurse-order', () => ({
     useMakeShiftNurseOrder: () => ({
-        currentTeamNurses: [],
+        currentTeamNurses: mocks.currentTeamNurses,
         isReorderingRows: false,
         moveScheduleRow: mocks.moveScheduleRow,
     }),
@@ -240,6 +241,7 @@ describe('AiAutofill blank preview', () => {
         mocks.requestAiSchedule.mockReset();
         mocks.setStepNavigationBusy.mockReset();
         mocks.moveScheduleRow.mockReset();
+        mocks.currentTeamNurses = [];
         seedEditor();
     });
 
@@ -290,6 +292,20 @@ describe('AiAutofill blank preview', () => {
         await waitFor(() =>
             expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'})).not.toBeInTheDocument(),
         );
+    });
+
+    it('uses the purple previous-shift warning image in the publish confirmation', async () => {
+        const user = userEvent.setup();
+
+        mocks.currentTeamNurses = [{isConnected: true}];
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'confirm'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'});
+
+        expect(dialog.querySelector('img')).toHaveAttribute('src', expect.stringContaining('purple-warn-icon'));
     });
 
     it('shows every shift cell in the decision dialog before autofill starts', async () => {

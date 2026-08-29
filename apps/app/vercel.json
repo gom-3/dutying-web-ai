@@ -10,6 +10,24 @@
             ]
         },
         {
+            "source": "/.well-known/assetlinks.json",
+            "headers": [
+                {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                }
+            ]
+        },
+        {
+            "source": "/app/(.*)",
+            "headers": [
+                {
+                    "key": "X-Robots-Tag",
+                    "value": "noindex, nofollow"
+                }
+            ]
+        },
+        {
             "source": "/(.*)",
             "headers": [
                 {
@@ -35,9 +53,30 @@
             ]
         }
     ],
+    "cleanUrls": true,
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/dutying/notices/:noticeId",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/app/friends/invite",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/app/moim/invite",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/app/nultalk/posts/:postId",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/app/wards/:wardId/board/posts/:postId",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/app/notice/:noticeId",
             "destination": "/index.html"
         }
     ]

@@ -8,8 +8,9 @@ describe('createSiteConfig', () => {
         expect(config.marketingOrigin).toBe('https://www.dutying.ai');
         expect(config.appOrigin).toBe('https://app.dutying.ai');
         expect(config.docsOrigin).toBe('https://docs.dutying.ai');
-        expect(config.legal.terms).toBe('https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4');
-        expect(config.legal.privacyPolicy).toBe('https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link');
+        expect(config.legal.terms).toBe('https://www.dutying.ai/terms');
+        expect(config.legal.privacyPolicy).toBe('https://www.dutying.ai/privacy');
+        expect(config.legal.accountDeletion).toBe('https://www.dutying.ai/account-deletion');
         expect(config.appLinks).toEqual({
             home: 'https://app.dutying.ai',
             login: 'https://app.dutying.ai/login',
@@ -17,6 +18,13 @@ describe('createSiteConfig', () => {
             makeEntry: 'https://app.dutying.ai/login?next=%2Fmake',
             make: 'https://app.dutying.ai/make',
             register: 'https://app.dutying.ai/register',
+            profile: 'https://app.dutying.ai/profile',
+        });
+        expect(config.marketingLinks).toEqual({
+            home: 'https://www.dutying.ai',
+            features: 'https://www.dutying.ai/features',
+            faq: 'https://www.dutying.ai/faq',
+            guide: 'https://www.dutying.ai/guide',
         });
     });
 

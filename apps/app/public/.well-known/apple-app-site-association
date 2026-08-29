@@ -6,7 +6,14 @@
         "appID": "Y4HPW9GX7Y.ai.dutying.app",
         "paths": [
           "/move",
-          "/move/*"
+          "/move/*",
+          "/app/moim/invite",
+          "/app/moim/invite/*",
+          "/app/friends/invite",
+          "/app/friends/invite/*",
+          "/app/nultalk/posts/*",
+          "/app/wards/*/board/posts/*",
+          "/app/notice/*"
         ]
       },
       {
@@ -14,6 +21,8 @@
         "paths": [
           "/line-auth/*",
           "/line-auth/",
+          "/move",
+          "/move/*",
           "/app/moim/invite",
           "/app/moim/invite/*",
           "/app/friends/invite",

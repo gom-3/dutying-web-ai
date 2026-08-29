@@ -1,0 +1,46 @@
+---
+import {siteConfig} from '../config/site';
+import PublicPageLayout from '../layouts/PublicPageLayout.astro';
+---
+
+<PublicPageLayout
+    title="듀팅 사용 가이드 | 간호사 근무표 시작하기"
+    description="듀팅 로그인, 병동 시작, 구성원 관리, 신청근무 확인, 간호사 근무표 작성 순서를 안내합니다."
+    canonicalPath="/guide"
+    eyebrow="Dutying Guide"
+    heading="듀팅 사용 가이드"
+    intro="처음 로그인한 순간부터 병동을 준비하고 근무표를 완성하기까지의 기본 흐름입니다."
+>
+    <section>
+        <h2>1. 계정으로 시작하기</h2>
+        <p>듀팅 웹에서 로그인하거나 새 계정을 만드세요. 로그인 전에는 계정 정보를 입력하지 않아도 공개 기능 소개와 도움말을 확인할 수 있습니다.</p>
+        <div class="public-actions">
+            <a class="public-button" href={siteConfig.appLinks.login}>로그인</a>
+            <a class="public-button public-button--secondary" href={siteConfig.appLinks.signup}>회원가입</a>
+        </div>
+    </section>
+
+    <section>
+        <h2>2. 병동을 만들거나 입장하기</h2>
+        <p>병동 관리자는 새 병동을 만들고 운영 정보를 설정할 수 있습니다. 초대를 받은 구성원은 병동 입장 절차를 따라 기존 병동에 연결합니다.</p>
+    </section>
+
+    <section>
+        <h2>3. 근무자와 근무 유형 준비하기</h2>
+        <p>근무표에 포함될 간호사와 팀을 확인하고, 병동에서 사용하는 근무 유형과 표시 방식을 설정합니다. 빠진 구성원이나 잘못된 정보는 근무표 작성 전에 수정하는 것이 좋습니다.</p>
+    </section>
+
+    <section>
+        <h2>4. 신청근무와 제약조건 확인하기</h2>
+        <p>구성원이 보낸 신청근무를 수락하거나 조정하고, 연속 근무와 휴무 등 병동 운영에 필요한 조건을 설정합니다.</p>
+    </section>
+
+    <section>
+        <h2>5. 근무표 만들고 검토하기</h2>
+        <p>고정 근무를 입력한 뒤 근무표를 만들고, 결과를 달력에서 검토하세요. 필요한 근무는 직접 편집하고 조건 위반 안내를 확인할 수 있습니다.</p>
+        <div class="public-actions">
+            <a class="public-button" href={siteConfig.docsLinks.home}>상세 사용자 문서 보기</a>
+            <a class="public-button public-button--secondary" href={siteConfig.appLinks.makeEntry}>근무표 작성 시작하기</a>
+        </div>
+    </section>
+</PublicPageLayout>

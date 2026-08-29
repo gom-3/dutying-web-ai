@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ai.dutying.app",
+      "sha256_cert_fingerprints": [
+        "1D:98:CD:EE:AC:87:28:21:B6:1A:6B:C9:17:78:99:0D:C0:BB:83:22:D1:47:95:DA:63:A4:7B:7F:E7:47:FF:97",
+        "63:BC:60:EB:4A:6D:14:34:16:81:2E:76:0D:8E:4F:69:50:2C:BE:3E:69:5F:3F:93:D9:AC:93:36:A5:22:D1:2E"
+      ]
+    }
+  }
+]

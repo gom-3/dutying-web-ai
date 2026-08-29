@@ -1,0 +1,12 @@
+---
+import DeepLinkFallback from '../../../components/deep-link/DeepLinkFallback.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+    title="듀팅 초대 열기"
+    description="듀팅 앱에서 모임 초대를 이어서 확인하세요."
+    robots="noindex, nofollow"
+>
+    <DeepLinkFallback kind="moim" appPath="/app/moim/invite" />
+</BaseLayout>

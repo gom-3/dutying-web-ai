@@ -1,0 +1,304 @@
+---
+import {siteConfig} from '../config/site';
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+    title: string;
+    description: string;
+    canonicalPath: string;
+    eyebrow: string;
+    heading: string;
+    intro: string;
+}
+
+const {title, description, canonicalPath, eyebrow, heading, intro} = Astro.props;
+---
+
+<BaseLayout title={title} description={description} canonicalPath={canonicalPath}>
+    <header class="public-header">
+        <div class="public-header__inner">
+            <a class="public-brand" href="/" aria-label="듀팅 홈">
+                <img src="/logo-wordmark-purple.png" alt="Dutying" width="119" height="33" />
+            </a>
+            <nav class="public-nav" aria-label="주요 메뉴">
+                <a href="/features">기능 소개</a>
+                <a href="/faq">FAQ</a>
+                <a href="/guide">가이드</a>
+                <a class="public-nav__cta" href={siteConfig.appLinks.login}>로그인</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="public-page">
+        <article class="public-article">
+            <header class="public-hero">
+                <p class="public-eyebrow">{eyebrow}</p>
+                <h1>{heading}</h1>
+                <p class="public-intro">{intro}</p>
+            </header>
+            <div class="public-content">
+                <slot />
+            </div>
+        </article>
+    </main>
+
+    <footer class="public-footer">
+        <div class="public-footer__inner">
+            <nav aria-label="사이트 안내">
+                <a href="/privacy">개인정보처리방침</a>
+                <a href="/terms">이용약관</a>
+                <a href="/account-deletion">계정삭제 안내</a>
+                <a href={siteConfig.docsLinks.home}>사용자 문서</a>
+            </nav>
+            <p>Copyright © Dutying</p>
+        </div>
+    </footer>
+</BaseLayout>
+
+<style>
+    .public-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #fff;
+    }
+
+    .public-header__inner,
+    .public-article,
+    .public-footer__inner {
+        width: min(100% - 40px, 920px);
+        margin: 0 auto;
+    }
+
+    .public-header__inner {
+        display: flex;
+        min-height: 72px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    .public-brand {
+        display: inline-flex;
+        flex: none;
+    }
+
+    .public-nav,
+    .public-footer nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .public-nav a,
+    .public-footer a {
+        color: #4d465c;
+        font-size: 0.9rem;
+        font-weight: 750;
+        text-decoration: none;
+    }
+
+    .public-nav .public-nav__cta {
+        min-height: 42px;
+        padding: 11px 18px;
+        border-radius: 10px;
+        color: #fff;
+        background: #6c4fe0;
+    }
+
+    .public-page {
+        min-height: calc(100vh - 190px);
+        padding: 76px 0 96px;
+        color: #241b35;
+        background: #faf8fb;
+    }
+
+    .public-hero {
+        max-width: 760px;
+        margin-bottom: 56px;
+    }
+
+    .public-eyebrow {
+        margin: 0 0 12px;
+        color: #6c4fe0;
+        font-size: 0.9rem;
+        font-weight: 850;
+        letter-spacing: 0.02em;
+    }
+
+    h1 {
+        margin: 0;
+        font-size: clamp(2.25rem, 6vw, 3.75rem);
+        line-height: 1.15;
+        letter-spacing: -0.035em;
+        word-break: keep-all;
+    }
+
+    .public-intro {
+        margin: 24px 0 0;
+        color: #5d566b;
+        font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+        line-height: 1.75;
+        word-break: keep-all;
+    }
+
+    .public-content {
+        display: grid;
+        gap: 44px;
+    }
+
+    .public-content :global(section) {
+        max-width: 800px;
+    }
+
+    .public-content :global(h2) {
+        margin: 0 0 14px;
+        color: #241b35;
+        font-size: clamp(1.35rem, 3vw, 1.75rem);
+        line-height: 1.4;
+        letter-spacing: -0.015em;
+        word-break: keep-all;
+    }
+
+    .public-content :global(h3) {
+        margin: 24px 0 8px;
+        color: #332a43;
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+
+    .public-content :global(p),
+    .public-content :global(li),
+    .public-content :global(dd) {
+        color: #5d566b;
+        font-size: 1rem;
+        line-height: 1.8;
+        word-break: keep-all;
+    }
+
+    .public-content :global(p) {
+        margin: 0;
+    }
+
+    .public-content :global(ul),
+    .public-content :global(ol) {
+        margin: 0;
+        padding-left: 24px;
+    }
+
+    .public-content :global(li + li) {
+        margin-top: 8px;
+    }
+
+    .public-content :global(a) {
+        color: #5f37d1;
+        font-weight: 800;
+        text-underline-offset: 3px;
+    }
+
+    .public-content :global(.public-actions) {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .public-content :global(.public-button) {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 18px;
+        border-radius: 10px;
+        color: #fff;
+        background: #6c4fe0;
+        text-decoration: none;
+    }
+
+    .public-content :global(.public-button--secondary) {
+        color: #5337b7;
+        background: #eee9ff;
+    }
+
+    .public-content :global(dl) {
+        display: grid;
+        gap: 32px;
+        margin: 0;
+    }
+
+    .public-content :global(dt) {
+        margin: 0 0 8px;
+        color: #241b35;
+        font-size: 1.2rem;
+        font-weight: 850;
+        line-height: 1.5;
+        word-break: keep-all;
+    }
+
+    .public-content :global(dd) {
+        margin: 0;
+    }
+
+    .public-footer {
+        padding: 30px 0;
+        background: #f0edf4;
+    }
+
+    .public-footer__inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+    }
+
+    .public-footer p {
+        margin: 0;
+        color: #756d82;
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 720px) {
+        .public-header__inner,
+        .public-article,
+        .public-footer__inner {
+            width: min(100% - 32px, 920px);
+        }
+
+        .public-header__inner {
+            min-height: 64px;
+        }
+
+        .public-brand img {
+            width: 101px;
+            height: auto;
+        }
+
+        .public-nav a:not(.public-nav__cta) {
+            display: none;
+        }
+
+        .public-page {
+            padding: 52px 0 72px;
+        }
+
+        .public-hero {
+            margin-bottom: 44px;
+        }
+
+        .public-content {
+            gap: 36px;
+        }
+
+        .public-footer__inner {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .public-footer nav {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 12px;
+        }
+    }
+</style>

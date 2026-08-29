@@ -1,12 +1,13 @@
 import {Bell, ChevronRight, ExternalLink, FileText, MessageCircle, ShieldCheck, type LucideIcon} from 'lucide-react';
 import {Link} from 'react-router-dom';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 
 const INQUIRY_LINK = 'https://ye620.channel.io';
-const TERMS_OF_SERVICE_LINK = 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link';
-const PRIVACY_POLICY_LINK = 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
+const TERMS_OF_SERVICE_LINK = RUNTIME_CONFIG.docs.termsOfService;
+const PRIVACY_POLICY_LINK = RUNTIME_CONFIG.docs.privacyPolicy;
 
 type TDutyingLinkItem = {
     titleKey: TI18nKey;

@@ -18,19 +18,45 @@ import './index.css';
 
 type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm' | 'terms', string>>;
 type TPasswordResetErrors = Partial<Record<'email' | 'resetToken' | 'newPassword' | 'newPasswordConfirm', string>>;
+type TLoginVisualSlide = {fallback: string; webp: string};
 
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const PASSWORD_MIN_LENGTH = 8;
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOGIN_VISUAL_SLIDES = [
-    {fallback: '/img/login-slide-1.png', webp: '/img/login-slide-1.webp'},
-    {fallback: '/img/login-slide-2.png', webp: '/img/login-slide-2.webp'},
-    {fallback: '/img/login-slide-3.png', webp: '/img/login-slide-3.webp'},
-] as const;
+const LOGIN_VISUAL_SLIDES_BY_LANGUAGE = {
+    ko: [
+        {fallback: '/img/login_1.webp', webp: '/img/login_1.webp'},
+        {fallback: '/img/login-slide-2.png', webp: '/img/login-slide-2.webp'},
+        {fallback: '/img/login-slide-3.png', webp: '/img/login-slide-3.webp'},
+    ],
+    ja: [
+        {fallback: '/img/login-ja.webp', webp: '/img/login-ja.webp'},
+        {fallback: '/img/login-slide-2-ja.webp', webp: '/img/login-slide-2-ja.webp'},
+        {fallback: '/img/login-slide-3-ja.webp', webp: '/img/login-slide-3-ja.webp'},
+    ],
+    default: [
+        {fallback: '/img/login-default.webp', webp: '/img/login-default.webp'},
+        {fallback: '/img/login-slide-2-default.webp', webp: '/img/login-slide-2-default.webp'},
+        {fallback: '/img/login-slide-3-default.webp', webp: '/img/login-slide-3-default.webp'},
+    ],
+} as const satisfies Record<'ko' | 'ja' | 'default', readonly TLoginVisualSlide[]>;
 const LOGIN_VISUAL_AUTO_ROTATE_MS = 4000;
 const LOGIN_VISUAL_MANUAL_RESUME_MS = 3000;
+const getLoginVisualSlides = (language?: string | null): readonly TLoginVisualSlide[] => {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (normalizedLanguage === 'ko') {
+        return LOGIN_VISUAL_SLIDES_BY_LANGUAGE.ko;
+    }
+
+    if (normalizedLanguage === 'ja') {
+        return LOGIN_VISUAL_SLIDES_BY_LANGUAGE.ja;
+    }
+
+    return LOGIN_VISUAL_SLIDES_BY_LANGUAGE.default;
+};
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({
     visible,
@@ -189,20 +215,25 @@ function LoginPage() {
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const lineAuthorizeUrl = buildLineAuthAuthorizeUrl(socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
-    const currentLoginVisualPage = loginVisualSlideIndex + 1;
-    const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
-    const currentLoginVisualSlide = LOGIN_VISUAL_SLIDES[loginVisualSlideIndex];
-    const nextLoginVisualSlide = LOGIN_VISUAL_SLIDES[(loginVisualSlideIndex + 1) % totalLoginVisualPages];
+    const loginVisualSlides = getLoginVisualSlides(currentLanguage);
+    const totalLoginVisualPages = loginVisualSlides.length;
+    const safeLoginVisualSlideIndex = Math.min(loginVisualSlideIndex, totalLoginVisualPages - 1);
+    const hasMultipleLoginVisualSlides = totalLoginVisualPages > 1;
+    const currentLoginVisualPage = safeLoginVisualSlideIndex + 1;
+    const currentLoginVisualSlide = loginVisualSlides[safeLoginVisualSlideIndex];
+    const nextLoginVisualSlide = loginVisualSlides[(safeLoginVisualSlideIndex + 1) % totalLoginVisualPages];
     preload(currentLoginVisualSlide.webp, {
         as: 'image',
         fetchPriority: 'high',
         type: 'image/webp',
     });
-    preload(nextLoginVisualSlide.webp, {
-        as: 'image',
-        fetchPriority: 'low',
-        type: 'image/webp',
-    });
+    if (hasMultipleLoginVisualSlides) {
+        preload(nextLoginVisualSlide.webp, {
+            as: 'image',
+            fetchPriority: 'low',
+            type: 'image/webp',
+        });
+    }
     const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
     const legacyInvalidLoginCredentialsServerText = t('page.login.feedback.legacyInvalidCredentialsServerText');
     const title = isSignupPage
@@ -221,8 +252,12 @@ function LoginPage() {
 
     scheduleLoginVisualAutoRotateRef.current = (delay: number) => {
         clearLoginVisualAutoRotateTimer();
+        if (!hasMultipleLoginVisualSlides) {
+            return;
+        }
+
         loginVisualAutoRotateTimerRef.current = window.setTimeout(() => {
-            setLoginVisualSlideIndex((current) => (current + 1) % LOGIN_VISUAL_SLIDES.length);
+            setLoginVisualSlideIndex((current) => (current + 1) % totalLoginVisualPages);
             scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_AUTO_ROTATE_MS);
         }, delay);
     };
@@ -230,19 +265,31 @@ function LoginPage() {
     const shouldShowPasswordResetFromLoginError =
         loginError === invalidLoginCredentialsMessage || loginError === legacyInvalidLoginCredentialsServerText;
     const showPreviousLoginVisualSlide = () => {
+        if (!hasMultipleLoginVisualSlides) {
+            return;
+        }
+
         setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
     };
     const showNextLoginVisualSlide = () => {
+        if (!hasMultipleLoginVisualSlides) {
+            return;
+        }
+
         setLoginVisualSlideIndex((current) => (current + 1) % totalLoginVisualPages);
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
     };
 
     useEffect(() => {
+        setLoginVisualSlideIndex(0);
+    }, [currentLanguage]);
+
+    useEffect(() => {
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_AUTO_ROTATE_MS);
 
         return clearLoginVisualAutoRotateTimer;
-    }, [clearLoginVisualAutoRotateTimer]);
+    }, [clearLoginVisualAutoRotateTimer, hasMultipleLoginVisualSlides]);
 
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
@@ -649,8 +696,8 @@ function LoginPage() {
     return (
         <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
             <aside className="login-visual-panel" aria-label={t('page.login.loginVisualAria')}>
-                {LOGIN_VISUAL_SLIDES.map(({fallback, webp}, index) => {
-                    const isActive = index === loginVisualSlideIndex;
+                {loginVisualSlides.map(({fallback, webp}, index) => {
+                    const isActive = index === safeLoginVisualSlideIndex;
 
                     return (
                         <picture key={webp} className="login-visual-picture">
@@ -667,27 +714,31 @@ function LoginPage() {
                         </picture>
                     );
                 })}
-                <button
-                    type="button"
-                    className="login-visual-arrow login-visual-arrow-prev"
-                    onClick={showPreviousLoginVisualSlide}
-                    aria-label={t('page.login.previousImage')}
-                    title={t('page.login.previousImage')}
-                >
-                    <ChevronLeft className="h-6 w-6" aria-hidden="true" />
-                </button>
-                <button
-                    type="button"
-                    className="login-visual-arrow login-visual-arrow-next"
-                    onClick={showNextLoginVisualSlide}
-                    aria-label={t('page.login.nextImage')}
-                    title={t('page.login.nextImage')}
-                >
-                    <ChevronRight className="h-6 w-6" aria-hidden="true" />
-                </button>
-                <div className="login-visual-page" aria-live="polite">
-                    {currentLoginVisualPage}/{totalLoginVisualPages}
-                </div>
+                {hasMultipleLoginVisualSlides ? (
+                    <>
+                        <button
+                            type="button"
+                            className="login-visual-arrow login-visual-arrow-prev"
+                            onClick={showPreviousLoginVisualSlide}
+                            aria-label={t('page.login.previousImage')}
+                            title={t('page.login.previousImage')}
+                        >
+                            <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+                        </button>
+                        <button
+                            type="button"
+                            className="login-visual-arrow login-visual-arrow-next"
+                            onClick={showNextLoginVisualSlide}
+                            aria-label={t('page.login.nextImage')}
+                            title={t('page.login.nextImage')}
+                        >
+                            <ChevronRight className="h-6 w-6" aria-hidden="true" />
+                        </button>
+                        <div className="login-visual-page" aria-live="polite">
+                            {currentLoginVisualPage}/{totalLoginVisualPages}
+                        </div>
+                    </>
+                ) : null}
             </aside>
 
             <div

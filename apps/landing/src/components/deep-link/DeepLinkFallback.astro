@@ -1,0 +1,357 @@
+---
+import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '../../config/invite';
+import {siteConfig} from '../../config/site';
+
+export type DeepLinkKind = 'friend' | 'moim' | 'nultalk' | 'ward' | 'notice' | 'content';
+
+interface Props {
+    kind: DeepLinkKind;
+    appPath: string;
+}
+
+const COPY_BY_KIND: Record<
+    DeepLinkKind,
+    {
+        eyebrow: string;
+        title: string;
+        description: string;
+        codeLabel?: string;
+    }
+> = {
+    friend: {
+        eyebrow: '친구 초대',
+        title: '듀팅 앱에서 초대를 열어주세요',
+        description: '아래 버튼으로 초대를 이어서 확인하세요.',
+        codeLabel: '친구 코드',
+    },
+    moim: {
+        eyebrow: '모임 초대',
+        title: '듀팅 앱에서 초대를 열어주세요',
+        description: '아래 버튼으로 초대를 이어서 확인하세요.',
+        codeLabel: '모임 코드',
+    },
+    nultalk: {
+        eyebrow: '널톡 게시글',
+        title: '듀팅 앱에서 게시글을 확인해주세요',
+        description: '공유받은 게시글은 듀팅 앱에서 안전하게 확인할 수 있어요.',
+    },
+    ward: {
+        eyebrow: '병동 게시글',
+        title: '듀팅 앱에서 게시글을 확인해주세요',
+        description: '병동 구성원만 볼 수 있는 내용이에요. 앱에서 접근 권한을 확인해주세요.',
+    },
+    notice: {
+        eyebrow: '듀팅 공지',
+        title: '듀팅 앱에서 공지를 확인해주세요',
+        description: '최신 공지와 안내 내용을 듀팅 앱에서 확인할 수 있어요.',
+    },
+    content: {
+        eyebrow: '듀팅 공유 링크',
+        title: '듀팅 앱에서 내용을 확인해주세요',
+        description: '공유받은 내용을 듀팅 앱에서 이어서 확인할 수 있어요.',
+    },
+};
+
+const {kind, appPath} = Astro.props;
+const copy = COPY_BY_KIND[kind];
+const fallbackAppUrl = `${siteConfig.appOrigin}${appPath}`;
+const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서 초대 열기' : '듀팅 앱에서 열기';
+---
+
+<main class="deep-link-page" data-deep-link-page data-initial-kind={kind} data-app-origin={siteConfig.appOrigin} data-app-path={appPath}>
+    <section class="deep-link-panel" aria-labelledby="deep-link-title">
+        <a class="brand" href={siteConfig.marketingOrigin} aria-label="듀팅 홈">
+            <img src="/logo-wordmark-purple.png" alt="dutying" width="118" height="33" />
+        </a>
+
+        <div class="deep-link-copy">
+            <p class="eyebrow" data-eyebrow>{copy.eyebrow}</p>
+            <h1 id="deep-link-title" data-title>{copy.title}</h1>
+            <p class="description" data-description>{copy.description}</p>
+        </div>
+
+        <div class="invite-code" data-invite-code-wrap hidden aria-live="polite">
+            <span data-code-label>{copy.codeLabel}</span>
+            <strong data-invite-code></strong>
+        </div>
+
+        <div class="action-stack">
+            <a class="button button--primary" href={fallbackAppUrl} data-app-open-link>
+                {openButtonLabel}
+            </a>
+
+            <div class="store-guide" aria-label="앱 설치 안내">
+                <p>
+                    <strong class="store-title">앱이 아직 없다면?</strong>
+                    <span>스토어에서 먼저 설치해주세요.</span>
+                </p>
+                <div class="store-buttons">
+                    <a class="button button--secondary" href={IOS_APP_STORE_URL} target="_blank" rel="noreferrer">
+                        <img src="/img/apple.png" alt="" aria-hidden="true" />
+                        App Store에서 받기
+                    </a>
+                    <a class="button button--secondary" href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noreferrer">
+                        <img src="/img/play.png" alt="" aria-hidden="true" />
+                        Google Play에서 받기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    const COPY_BY_PATH = {
+        nultalk: {
+            eyebrow: '널톡 게시글',
+            title: '듀팅 앱에서 게시글을 확인해주세요',
+            description: '공유받은 게시글은 듀팅 앱에서 안전하게 확인할 수 있어요.',
+        },
+        ward: {
+            eyebrow: '병동 게시글',
+            title: '듀팅 앱에서 게시글을 확인해주세요',
+            description: '병동 구성원만 볼 수 있는 내용이에요. 앱에서 접근 권한을 확인해주세요.',
+        },
+        notice: {
+            eyebrow: '듀팅 공지',
+            title: '듀팅 앱에서 공지를 확인해주세요',
+            description: '최신 공지와 안내 내용을 듀팅 앱에서 확인할 수 있어요.',
+        },
+    } as const;
+
+    const resolveContentKind = (pathname: string) => {
+        if (/^\/app\/nultalk\/posts\/[^/]+\/?$/.test(pathname)) return 'nultalk';
+        if (/^\/app\/wards\/[^/]+\/board\/posts\/[^/]+\/?$/.test(pathname)) return 'ward';
+        if (/^\/app\/notice\/[^/]+\/?$/.test(pathname)) return 'notice';
+        return null;
+    };
+
+    const page = document.querySelector('[data-deep-link-page]');
+
+    if (page instanceof HTMLElement) {
+        const resolvedKind = resolveContentKind(window.location.pathname);
+        const eyebrow = page.querySelector('[data-eyebrow]');
+        const title = page.querySelector('[data-title]');
+        const description = page.querySelector('[data-description]');
+        const openButton = page.querySelector('[data-app-open-link]');
+        const inviteCodeWrap = page.querySelector('[data-invite-code-wrap]');
+        const inviteCodeText = page.querySelector('[data-invite-code]');
+        const codeLabel = page.querySelector('[data-code-label]');
+        const inviteCode = new URLSearchParams(window.location.search).get('code')?.trim();
+
+        if (resolvedKind) {
+            const copy = COPY_BY_PATH[resolvedKind];
+            if (eyebrow) eyebrow.textContent = copy.eyebrow;
+            if (title) title.textContent = copy.title;
+            if (description) description.textContent = copy.description;
+            document.title = `${copy.eyebrow} 열기 | 듀팅`;
+        }
+
+        if (openButton instanceof HTMLAnchorElement) {
+            const appOrigin = page.dataset.appOrigin?.replace(/\/+$/, '') || 'https://app.dutying.ai';
+            const currentPath = resolvedKind ? window.location.pathname : page.dataset.appPath || '/';
+            openButton.href = `${appOrigin}${currentPath}${window.location.search}${window.location.hash}`;
+        }
+
+        if (
+            inviteCode &&
+            page.dataset.initialKind !== 'content' &&
+            inviteCodeWrap instanceof HTMLElement &&
+            inviteCodeText instanceof HTMLElement
+        ) {
+            inviteCodeText.textContent = inviteCode;
+            inviteCodeWrap.hidden = false;
+            if (codeLabel && !codeLabel.textContent?.trim()) codeLabel.textContent = '초대 코드';
+        }
+    }
+</script>
+
+<style>
+    .deep-link-page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 32px 20px 28px;
+        background: #f7f8fa;
+        color: #191f28;
+    }
+
+    .deep-link-panel {
+        width: min(100%, 400px);
+        padding: 36px 24px 24px;
+        border-radius: 8px;
+        background: #fff;
+        text-align: center;
+    }
+
+    .brand {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 32px;
+    }
+
+    .brand img {
+        display: block;
+        width: 118px;
+        height: auto;
+    }
+
+    .deep-link-copy {
+        display: grid;
+        gap: 12px;
+        word-break: keep-all;
+    }
+
+    .eyebrow {
+        margin: 0;
+        color: #6c5ce7;
+        font-size: 13px;
+        font-weight: 800;
+        line-height: 1.25;
+    }
+
+    h1 {
+        margin: 0;
+        color: #191f28;
+        font-size: 26px;
+        line-height: 1.32;
+    }
+
+    .description,
+    .store-guide p {
+        margin: 0;
+        color: #6b7684;
+        font-size: clamp(14px, 3.6vw, 15px);
+        line-height: 1.6;
+    }
+
+    .action-stack {
+        display: grid;
+        gap: 12px;
+        margin-top: 26px;
+    }
+
+    .invite-code {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        width: 100%;
+        margin-top: 20px;
+        padding: 16px 18px;
+        border-radius: 8px;
+        background: #f3f0ff;
+        color: #6c5ce7;
+        text-align: left;
+    }
+
+    .invite-code[hidden] {
+        display: none;
+    }
+
+    .invite-code span {
+        font-size: 13px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .invite-code strong {
+        color: #191f28;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+        font-size: clamp(24px, 7.2vw, 30px);
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+    }
+
+    .button {
+        display: inline-flex;
+        min-height: 52px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 8px;
+        padding: 14px 18px;
+        font-size: clamp(14px, 4vw, 16px);
+        font-weight: 700;
+        line-height: 1.35;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .button--primary {
+        background: #6c5ce7;
+        color: #fff;
+    }
+
+    .button--secondary {
+        width: 100%;
+        min-height: 56px;
+        background: #191f28;
+        color: #fff;
+    }
+
+    .button--secondary img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        filter: brightness(0) invert(1);
+    }
+
+    .store-guide {
+        padding: 18px 16px 16px;
+        border-radius: 8px;
+        background: #f8f6ff;
+        word-break: keep-all;
+    }
+
+    .store-buttons {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .store-title {
+        display: block;
+        margin: 0 auto 5px;
+        color: #6c5ce7;
+        font-size: clamp(18px, 4.8vw, 20px);
+        font-weight: 900;
+        line-height: 1.25;
+    }
+
+    @media (max-width: 420px) {
+        .deep-link-page {
+            padding: 18px;
+            place-items: stretch;
+        }
+
+        .deep-link-panel {
+            align-self: center;
+            padding: 32px 20px 22px;
+        }
+
+        h1 {
+            font-size: 23px;
+        }
+    }
+
+    @media (max-width: 340px) {
+        .deep-link-panel {
+            padding-inline: 16px;
+        }
+
+        .invite-code {
+            display: grid;
+            justify-items: center;
+            text-align: center;
+        }
+
+        .button {
+            padding-inline: 12px;
+            font-size: 13px;
+        }
+    }
+</style>

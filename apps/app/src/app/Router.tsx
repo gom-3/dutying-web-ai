@@ -1,17 +1,21 @@
 import {Suspense, lazy} from 'react';
 import {Navigate, Route, Routes} from 'react-router-dom';
-import OAuthErrorPage from '@/pages/login/oauth-error-page.tsx';
-import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/landing'));
+const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
+const OAuthErrorPage = lazy(() => import('@/pages/login/oauth-error-page.tsx'));
+const FriendInvitePage = lazy(() => import('@/pages/friend-invite'));
+const MoimInvitePage = lazy(() => import('@/pages/moim-invite'));
+const DeepLinkFallbackPage = lazy(() => import('@/pages/invite-fallback'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
 const MaintenancePage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.MaintenancePage})));
 const RenewalPage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.RenewalPage})));
+const PrivacyPolicyPage = lazy(() => import('@/pages/legal').then((module) => ({default: module.PrivacyPolicyPage})));
+const TermsOfServicePage = lazy(() => import('@/pages/legal').then((module) => ({default: module.TermsOfServicePage})));
 const UiPreviewPage = lazy(() => import('@/pages/ui-preview'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
@@ -33,6 +37,9 @@ const DutyingPage = lazy(() => import('@/pages/dutying'));
 const DutyingNoticesPage = lazy(() => import('@/pages/dutying/notices'));
 const DutyingNoticeDetailPage = lazy(() => import('@/pages/dutying/notice-detail'));
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
+const AuthLayout = lazy(() => import('@/widgets/layouts/auth-layout').then((module) => ({default: module.AuthLayout})));
+const MainLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.MainLayout})));
+const NotAuthLayout = lazy(() => import('@/widgets/layouts/not-auth-layout').then((module) => ({default: module.NotAuthLayout})));
 
 export const Router = () => {
     const {t} = useTypedTranslation();
@@ -52,6 +59,13 @@ export const Router = () => {
             >
                 <Routes>
                     <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
+                    <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
+                    <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
+                    <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
+                    <Route path={ROUTE.NULTALK_POST_LINK} element={<DeepLinkFallbackPage kind="nultalk" />} />
+                    <Route path={ROUTE.WARD_BOARD_POST_LINK} element={<DeepLinkFallbackPage kind="ward" />} />
+                    <Route path={ROUTE.NOTICE_LINK} element={<DeepLinkFallbackPage kind="notice" />} />
                     <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                     <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                     <Route path="*" element={<Navigate to={ROUTE.ROOT} replace />} />
@@ -73,6 +87,13 @@ export const Router = () => {
         >
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
+                <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
+                <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
+                <Route path={ROUTE.MOIM_INVITE} element={<MoimInvitePage />} />
+                <Route path={ROUTE.NULTALK_POST_LINK} element={<DeepLinkFallbackPage kind="nultalk" />} />
+                <Route path={ROUTE.WARD_BOARD_POST_LINK} element={<DeepLinkFallbackPage kind="ward" />} />
+                <Route path={ROUTE.NOTICE_LINK} element={<DeepLinkFallbackPage kind="notice" />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />

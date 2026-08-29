@@ -1,6 +1,6 @@
 import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
-import {CalendarDays, ChevronDown, Globe, MessageCircle, UsersRound, X} from 'lucide-react';
+import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
@@ -8,39 +8,81 @@ import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
+import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '@/shared/config/invite';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
 
-const appStoreLink = 'https://abr.ge/bv13wa';
+const appStoreLink = IOS_APP_STORE_URL;
+const playStoreLink = ANDROID_PLAY_STORE_URL;
 const inquiryLink = 'https://ye620.channel.io';
-const termsOfServiceLink = 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link';
-const privacyPolicyLink = 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
+const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
+const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
 const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';
 const appCtaIconSrc = '/img/app.png';
+const mobileScheduleBenefitIconSrc = '/img/mobile-schedule-benefit-icon.webp';
+const mobileWardBenefitIconSrc = '/img/mobile-ward-benefit-icon.webp';
+const mobileCommunityBenefitIconSrc = '/img/mobile-community-benefit-icon.webp';
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const landingViewPreferenceKey = 'dutying:landing-view-preference';
 const desktopViewportMetaContent = 'width=1180';
 const languageOptions = SUPPORTED_LANGUAGES;
 const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
-    ko: '/img/landing-hero-kr.png',
-    ja: '/img/landing-hero-jp.png',
-    en: '/img/landing-hero-en.png',
-    zh: '/img/landing-hero-cn.png',
-    th: '/img/landing-hero-en.png',
-    vi: '/img/landing-hero-en.png',
+    ko: '/img/landing-hero-kr.webp',
+    ja: '/img/landing-hero-jp.webp',
+    en: '/img/landing-hero-en.webp',
+    zh: '/img/landing-hero-cn.webp',
+    th: '/img/landing-hero-en.webp',
+    vi: '/img/landing-hero-en.webp',
 };
 const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
-    ko: '/img/landing-work-schedule-2.png',
-    ja: '/img/landing-work-schedule-jp.png',
-    en: '/img/landing-work-schedule-en.png',
-    zh: '/img/landing-work-schedule-cn.png',
-    th: '/img/landing-work-schedule-th.png',
-    vi: '/img/landing-work-schedule-vn.png',
+    ko: '/img/landing-work-schedule-2.webp',
+    ja: '/img/landing-work-schedule-jp.webp',
+    en: '/img/landing-work-schedule-en.webp',
+    zh: '/img/landing-work-schedule-cn.webp',
+    th: '/img/landing-work-schedule-th.webp',
+    vi: '/img/landing-work-schedule-vn.webp',
+};
+const landingWebScheduleImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-987-ja.webp',
+    en: '/img/image-987-en.webp',
+};
+const landingAiFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/124-ja.webp',
+    en: '/img/124-en.webp',
+};
+const landingWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-1002-ja.webp',
+    en: '/img/image-1002-en.webp',
+};
+const landingAppSectionImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/temp-ja.webp',
+    en: '/img/temp-en.webp',
+};
+const landingAppHomeFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/213213123123-ja.webp',
+    en: '/img/213213123123-en.webp',
+};
+const landingAppHomeWideImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-992-ja.webp',
+    en: '/img/image-992-en.webp',
+};
+const landingAppHomeSquareImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/image-991-ja.webp',
+    en: '/img/image-991-en.webp',
+};
+const landingAppWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/ward-schedule-ja.webp',
+    en: '/img/ward-schedule-en.webp',
+};
+const landingAppCommunityFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+    ja: '/img/12223-ja.webp',
+    en: '/img/12223-en.webp',
 };
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
@@ -67,7 +109,7 @@ const featureSectionSpecs = [
         labelKey: 'page.landing.feature.ai.label',
         titleKey: 'page.landing.feature.ai.title',
         descriptionKey: 'page.landing.feature.ai.description',
-        image: '/img/124.png',
+        image: '/img/124.webp',
         align: 'right',
         background: 'bg-white',
     },
@@ -86,7 +128,7 @@ const featureSectionSpecs = [
         titleKey: 'page.landing.feature.integration.title',
         titleHighlightKeys: ['page.landing.feature.integration.highlight'],
         descriptionKey: 'page.landing.feature.integration.description',
-        image: '/img/landing-work-schedule-2.png',
+        image: '/img/landing-work-schedule-2.webp',
         align: 'left',
         background: 'bg-white',
     },
@@ -96,7 +138,7 @@ const featureSectionSpecs = [
         titleKey: 'page.landing.feature.ward.title',
         titleHighlightKeys: ['page.landing.feature.ward.highlightNurse', 'page.landing.feature.ward.highlightShare'],
         descriptionKey: 'page.landing.feature.ward.description',
-        image: '/img/image-1002.png',
+        image: '/img/image-1002.webp',
         align: 'left',
         background: 'bg-white',
     },
@@ -117,7 +159,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.home.title',
         titleHighlightKeys: ['page.landing.appFeature.home.highlightSchedule', 'page.landing.appFeature.home.highlightPersonal'],
         descriptionKey: 'page.landing.appFeature.home.description',
-        image: '/img/213213123123.png',
+        image: '/img/213213123123.webp',
         reverse: false,
         background: 'bg-white',
     },
@@ -127,7 +169,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.ward.title',
         titleHighlightKeys: ['page.landing.appFeature.ward.highlight'],
         descriptionKey: 'page.landing.appFeature.ward.description',
-        image: '/img/ward-schedule.png',
+        image: '/img/ward-schedule.webp',
         reverse: true,
         background: softPurpleBackground,
     },
@@ -137,7 +179,7 @@ const appFeatureSectionSpecs = [
         titleKey: 'page.landing.appFeature.community.title',
         titleHighlightKeys: ['page.landing.appFeature.community.highlight'],
         descriptionKey: 'page.landing.appFeature.community.description',
-        image: '/img/12223.png',
+        image: '/img/12223.webp',
         reverse: false,
         background: 'bg-white',
     },
@@ -151,23 +193,29 @@ const appFeatureSectionSpecs = [
     reverse: boolean;
     background: string;
 }[];
+type TMobileBenefitIcon = {type: 'image'; src: string} | {type: 'lucide'; component: LucideIcon};
+
 const mobileAppBenefitSpecs = [
     {
         titleKey: 'page.landing.mobileBenefits.schedule.title',
         descriptionKey: 'page.landing.mobileBenefits.schedule.description',
-        icon: CalendarDays,
+        icon: {type: 'image', src: mobileScheduleBenefitIconSrc},
     },
     {
         titleKey: 'page.landing.mobileBenefits.ward.title',
         descriptionKey: 'page.landing.mobileBenefits.ward.description',
-        icon: UsersRound,
+        icon: {type: 'image', src: mobileWardBenefitIconSrc},
     },
     {
         titleKey: 'page.landing.mobileBenefits.community.title',
         descriptionKey: 'page.landing.mobileBenefits.community.description',
-        icon: MessageCircle,
+        icon: {type: 'image', src: mobileCommunityBenefitIconSrc},
     },
-] as const satisfies readonly {titleKey: TI18nKey; descriptionKey: TI18nKey; icon: typeof CalendarDays}[];
+] as const satisfies readonly {
+    titleKey: TI18nKey;
+    descriptionKey: TI18nKey;
+    icon: TMobileBenefitIcon;
+}[];
 
 type TLandingViewPreference = 'auto' | 'desktop';
 
@@ -240,6 +288,96 @@ function getLandingWorkScheduleImageSrc(language?: string | null) {
     const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
 
     return landingWorkScheduleImageByLanguage[normalizedLanguage];
+}
+
+function getLandingWebScheduleImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-987.webp';
+    }
+
+    return landingWebScheduleImageByLanguage[normalizedLanguage] ?? '/img/image-987.webp';
+}
+
+function getLandingAiFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/124.webp';
+    }
+
+    return landingAiFeatureImageByLanguage[normalizedLanguage] ?? '/img/124.webp';
+}
+
+function getLandingWardFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-1002.webp';
+    }
+
+    return landingWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/image-1002.webp';
+}
+
+function getLandingAppSectionImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/temp.webp';
+    }
+
+    return landingAppSectionImageByLanguage[normalizedLanguage] ?? '/img/temp.webp';
+}
+
+function getLandingAppHomeFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/213213123123.webp';
+    }
+
+    return landingAppHomeFeatureImageByLanguage[normalizedLanguage] ?? '/img/213213123123.webp';
+}
+
+function getLandingAppHomeWideImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-992.webp';
+    }
+
+    return landingAppHomeWideImageByLanguage[normalizedLanguage] ?? '/img/image-992.webp';
+}
+
+function getLandingAppHomeSquareImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/image-991.webp';
+    }
+
+    return landingAppHomeSquareImageByLanguage[normalizedLanguage] ?? '/img/image-991.webp';
+}
+
+function getLandingAppWardFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/ward-schedule.webp';
+    }
+
+    return landingAppWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/ward-schedule.webp';
+}
+
+function getLandingAppCommunityFeatureImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language);
+
+    if (!normalizedLanguage) {
+        return '/img/12223.webp';
+    }
+
+    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage] ?? '/img/12223.webp';
 }
 
 function useLandingViewportMode() {
@@ -380,6 +518,10 @@ type TAppFeatureSection = {
     titleHighlights?: readonly string[];
     description: string;
     image: string;
+    secondaryImages?: {
+        wide: string;
+        square: string;
+    };
     reverse: boolean;
     background: string;
 };
@@ -387,7 +529,14 @@ type TAppFeatureSection = {
 function buildFeatureSections(t: TLandingTranslator, language?: string | null): TFeatureSection[] {
     return featureSectionSpecs.map((section) => ({
         ...section,
-        image: section.id === 'integration' ? getLandingWorkScheduleImageSrc(language) : section.image,
+        image:
+            section.id === 'integration'
+                ? getLandingWorkScheduleImageSrc(language)
+                : section.id === 'ai'
+                  ? getLandingAiFeatureImageSrc(language)
+                  : section.id === 'ward'
+                    ? getLandingWardFeatureImageSrc(language)
+                  : section.image,
         label: t(section.labelKey),
         title: t(section.titleKey),
         titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
@@ -395,9 +544,28 @@ function buildFeatureSections(t: TLandingTranslator, language?: string | null): 
     }));
 }
 
-function buildAppFeatureSections(t: TLandingTranslator): TAppFeatureSection[] {
+function getLandingAppFeatureSectionImageSrc(section: (typeof appFeatureSectionSpecs)[number], language?: string | null): string {
+    switch (section.id) {
+        case 'app-home':
+            return getLandingAppHomeFeatureImageSrc(language);
+        case 'app-ward':
+            return getLandingAppWardFeatureImageSrc(language);
+        case 'app-community':
+            return getLandingAppCommunityFeatureImageSrc(language);
+    }
+}
+
+function buildAppFeatureSections(t: TLandingTranslator, language?: string | null): TAppFeatureSection[] {
     return appFeatureSectionSpecs.map((section) => ({
         ...section,
+        image: getLandingAppFeatureSectionImageSrc(section, language),
+        secondaryImages:
+            section.id === 'app-home'
+                ? {
+                      wide: getLandingAppHomeWideImageSrc(language),
+                      square: getLandingAppHomeSquareImageSrc(language),
+                  }
+                : undefined,
         label: t(section.labelKey),
         title: t(section.titleKey),
         titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
@@ -498,25 +666,43 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
     );
 }
 
-function StoreButton({store}: {store: 'google' | 'apple'}) {
-    const label = store === 'google' ? 'Google Play' : 'App Store';
-    const logoSrc = store === 'google' ? '/img/play.png' : '/img/apple.png';
-
+function StoreButton() {
     return (
-        <a
-            href={appStoreLink}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
-        >
-            <img src={logoSrc} alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
-            <span className="whitespace-nowrap">{label}</span>
-        </a>
+        <>
+            <a
+                href={appStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
+            >
+                <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span className="whitespace-nowrap">App Store</span>
+            </a>
+            <a
+                href={playStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
+            >
+                <img src="/img/play.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span className="whitespace-nowrap">Google Play</span>
+            </a>
+        </>
     );
 }
 
 function CtaIcon({src, className = 'size-5'}: {src: string; className?: string}) {
     return <img src={src} alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
+}
+
+function MobileBenefitIcon({icon}: {icon: TMobileBenefitIcon}) {
+    if (icon.type === 'image') {
+        return <img src={icon.src} alt="" aria-hidden="true" className="size-10 object-contain" />;
+    }
+
+    const Icon = icon.component;
+
+    return <Icon className="size-5" aria-hidden="true" />;
 }
 
 function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => void}) {
@@ -788,9 +974,9 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
             ? t('page.landing.common.makeSchedule')
             : t('page.landing.common.webMakeSchedule')
         : t('page.landing.common.appSchedule');
-    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : appStoreLink;
+    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : '#app';
     const className =
-        'inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5';
+        'landing-dark-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-5 py-3 text-[15px] leading-none font-bold whitespace-nowrap text-white transition-transform hover:-translate-y-0.5';
 
     if (isWeb) {
         return (
@@ -802,7 +988,7 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
     }
 
     return (
-        <a href={href} target="_blank" rel="noreferrer" className={className}>
+        <a href={href} className={className}>
             <CtaIcon src={iconSrc} />
             {label}
         </a>
@@ -829,7 +1015,13 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
             <section id={section.id} className={section.background}>
                 <div className="landing-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
                     <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
-                        <img src={section.image} alt="" className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]" />
+                        <img
+                            src={section.image}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]"
+                        />
                     </picture>
 
                     <div className="mr-auto w-full max-w-[470px] md:mx-0 lg:translate-x-10">{copy}</div>
@@ -848,6 +1040,8 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
                         <img
                             src={section.image}
                             alt={t('page.landing.imageAlt.integration')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-[93%] object-contain object-center"
                         />
                     </picture>
@@ -866,6 +1060,8 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
                         <img
                             src={section.image}
                             alt={t('page.landing.imageAlt.wardBoard')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full object-contain object-center md:w-[120%] md:max-w-[984px] md:translate-x-20 lg:translate-x-24"
                         />
                     </picture>
@@ -887,13 +1083,14 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     const isHomeSection = section.id === 'app-home';
     const isWardSection = section.id === 'app-ward';
     const isCommunitySection = section.id === 'app-community';
+    const shouldCompactWardImage = isWardSection && section.image !== '/img/ward-schedule.webp';
     const imageMaxWidthClass = isHomeSection ? 'max-w-[566px]' : isCommunitySection ? 'max-w-[748px]' : 'max-w-[560px]';
     const imageClassName = isCommunitySection
         ? 'h-[506px] w-full object-contain object-center md:h-[792px]'
         : isHomeSection
           ? 'w-full object-contain object-center'
           : isWardSection
-            ? 'w-full object-contain object-center'
+            ? `${shouldCompactWardImage ? 'w-[80%]' : 'w-full'} object-contain object-center`
             : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]';
 
     return (
@@ -902,7 +1099,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                 className={`landing-app-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
                 <picture className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${imageMaxWidthClass}`}>
-                    <img src={section.image} alt="" className={imageClassName} />
+                    <img src={section.image} alt="" loading="lazy" decoding="async" className={imageClassName} />
                 </picture>
 
                 <article
@@ -916,8 +1113,20 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                     </h2>
                     {isHomeSection && (
                         <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
-                            <img src="/img/image-992.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
-                            <img src="/img/image-991.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
+                            <img
+                                src={section.secondaryImages?.wide ?? '/img/image-992.webp'}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                            />
+                            <img
+                                src={section.secondaryImages?.square ?? '/img/image-991.webp'}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                            />
                         </div>
                     )}
                     <p className={`${isHomeSection ? 'mt-12' : 'mt-10'} text-lg leading-8 font-medium whitespace-pre-line text-[#777487]`}>
@@ -947,9 +1156,7 @@ function MobileAppLanding() {
                     </Link>
 
                     <a
-                        href={appStoreLink}
-                        target="_blank"
-                        rel="noreferrer"
+                        href="#mobile-app-download"
                         className="inline-flex h-9 items-center justify-center rounded-[8px] bg-main-1 px-4 text-sm font-bold text-white"
                     >
                         {t('page.landing.common.appDownload')}
@@ -967,16 +1174,16 @@ function MobileAppLanding() {
                             {t('page.landing.mobileHero.description')}
                         </p>
 
-                        <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid grid-cols-2 gap-3">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                        <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid gap-3">
+                            <StoreButton />
                         </div>
                     </div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none mt-auto flex min-h-[310px] items-end justify-center pt-8">
                         <img
-                            src="/img/iPhone 15_1.png"
+                            src="/img/iPhone 15_1.webp"
                             alt={t('page.landing.imageAlt.mobileHero')}
+                            decoding="async"
                             className="w-[118%] max-w-[500px] -translate-x-3 object-contain"
                         />
                     </picture>
@@ -994,19 +1201,23 @@ function MobileAppLanding() {
 
                     <div className="mt-8 grid gap-3">
                         {mobileAppBenefits.map((benefit) => {
-                            const Icon = benefit.icon;
-
                             return (
                                 <article
                                     key={benefit.title}
-                                    className="reveal-on-scroll flex gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
+                                    className="reveal-on-scroll flex items-center gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
                                 >
-                                    <span className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-main-light text-main-1">
-                                        <Icon className="size-5" aria-hidden="true" />
+                                    <span
+                                        className={`flex size-10 shrink-0 items-center justify-center text-main-1 ${
+                                            benefit.icon.type === 'image' ? '' : 'rounded-[8px] bg-main-light'
+                                        }`}
+                                    >
+                                        <MobileBenefitIcon icon={benefit.icon} />
                                     </span>
-                                    <div>
+                                    <div className="min-w-0">
                                         <h3 className="text-base font-extrabold text-[#11131A]">{benefit.title}</h3>
-                                        <p className="mt-2 text-sm leading-6 font-medium text-[#777487]">{benefit.description}</p>
+                                        <p className="mt-2 truncate text-[12px] leading-5 font-medium whitespace-nowrap text-[#777487]">
+                                            {benefit.description}
+                                        </p>
                                     </div>
                                 </article>
                             );
@@ -1015,7 +1226,7 @@ function MobileAppLanding() {
                 </div>
             </section>
 
-            <section className="bg-[#070D18] px-5 py-14 text-white">
+            <section id="mobile-app-download" className="bg-[#070D18] px-5 py-14 text-white">
                 <div className="mx-auto max-w-[520px]">
                     <p className="text-sm font-extrabold text-[#D9CCFF]">{t('page.landing.mobileHero.downloadEyebrow')}</p>
                     <h2 className="mt-3 text-[26px] leading-[1.36] font-extrabold">
@@ -1023,9 +1234,8 @@ function MobileAppLanding() {
                         <br />
                         {t('page.landing.mobileHero.downloadTitleLine2')}
                     </h2>
-                    <div className="mt-8 grid grid-cols-2 gap-3">
-                        <StoreButton store="google" />
-                        <StoreButton store="apple" />
+                    <div className="mt-8 grid gap-3">
+                        <StoreButton />
                     </div>
                 </div>
             </section>
@@ -1059,9 +1269,13 @@ function LandingPage() {
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
+    const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
+    const appSectionImageSrc = getLandingAppSectionImageSrc(currentLanguage);
+    const normalizedCurrentLanguage = normalizePreferredLanguage(currentLanguage) ?? 'en';
+    const shouldCompactAppSectionImage = normalizedCurrentLanguage === 'en' || normalizedCurrentLanguage === 'ja';
     const featureSections = buildFeatureSections(t, currentLanguage);
     const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
-    const appFeatureSections = buildAppFeatureSections(t);
+    const appFeatureSections = buildAppFeatureSections(t, currentLanguage);
 
     useRevealOnScroll(showMobileAppLanding ? 'mobile-app' : 'full-landing');
 
@@ -1117,7 +1331,7 @@ function LandingPage() {
                             <TextLines>{t('page.landing.hero.description')}</TextLines>
                         </p>
 
-                        <div className="landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[560px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
+                        <div className="landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[680px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
                             <DarkActionButton type="web" isAuth={isAuth} />
                             <DarkActionButton type="app" />
                         </div>
@@ -1130,6 +1344,7 @@ function LandingPage() {
                         <img
                             src={heroImageSrc}
                             alt=""
+                            decoding="async"
                             className="w-[92vw] max-w-[520px] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
                         />
                     </picture>
@@ -1146,8 +1361,10 @@ function LandingPage() {
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
-                            src="/img/image-987.png"
+                            src={webScheduleImageSrc}
                             alt={t('page.landing.imageAlt.webSchedule')}
+                            loading="lazy"
+                            decoding="async"
                             className="absolute right-0 bottom-0 left-0 z-10 mx-auto w-[94%] object-contain"
                         />
                     </div>
@@ -1208,15 +1425,18 @@ function LandingPage() {
                             {t('page.landing.appSection.titleLine2')}
                         </h2>
                         <div className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                            <StoreButton />
                         </div>
                     </article>
 
                     <img
-                        src="/img/temp.png"
+                        src={appSectionImageSrc}
                         alt={t('page.landing.imageAlt.appScreen')}
-                        className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14"
+                        loading="lazy"
+                        decoding="async"
+                        className={`landing-app-section__image reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14 ${
+                            shouldCompactAppSectionImage ? 'landing-app-section__image--compact' : ''
+                        }`}
                     />
                 </div>
 
@@ -1241,15 +1461,16 @@ function LandingPage() {
                         </h2>
                         <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
                         <div className="landing-cta-row mt-5 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton store="google" />
-                            <StoreButton store="apple" />
+                            <StoreButton />
                         </div>
                     </article>
 
                     <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
                         <img
-                            src="/img/temp24222.png"
+                            src="/img/temp24222.webp"
                             alt={t('page.landing.imageAlt.appLogo')}
+                            loading="lazy"
+                            decoding="async"
                             className="w-[min(765px,127.5vw)] max-w-none rounded-[12px] object-contain md:w-[646px] lg:w-[765px] xl:translate-x-12"
                         />
                     </div>

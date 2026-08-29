@@ -174,6 +174,73 @@ describe('NurseDetailPanel', () => {
         expect(updateNurse.mock.calls[0]?.[1]).not.toHaveProperty('birthDate');
     });
 
+    // nurse-detail-panel.tsx 의 ENABLE_MONTHLY_SHIFT_RATIO 가 false 라 월간 근무 비율 UI 자체가
+    // 렌더되지 않는다. 기능을 다시 켜면 그대로 되살릴 수 있도록 지우지 않고 skip 한다.
+    it.skip('allows the monthly shift ratio value to be cleared and replaced directly', async () => {
+        const nurse = createNurseWithMonthlyShiftRatio();
+        const {updateNurseShift} = renderPanel(nurse, [createWardShiftType()]);
+
+        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
+
+        const ratioInput = screen.getByLabelText('Day 월간 근무 일수') as HTMLInputElement;
+        const selectSpy = vi.spyOn(ratioInput, 'select');
+
+        expect(ratioInput).toHaveValue(21);
+
+        fireEvent.focus(ratioInput);
+        expect(selectSpy).toHaveBeenCalledOnce();
+
+        fireEvent.change(ratioInput, {target: {value: ''}});
+        expect(ratioInput).toHaveValue(null);
+
+        fireEvent.change(ratioInput, {target: {value: '12'}});
+        expect(ratioInput).toHaveValue(12);
+
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() =>
+            expect(updateNurseShift).toHaveBeenCalledWith(
+                101,
+                101,
+                {isPossible: true, targetRatioWeight: 12},
+                expect.objectContaining({wardShiftTypeId: 1, targetRatioWeight: 12}),
+            ),
+        );
+    });
+
+    it.skip('restores the saved monthly shift ratio when the field is left empty', () => {
+        const nurse = createNurseWithMonthlyShiftRatio();
+
+        renderPanel(nurse, [createWardShiftType()]);
+
+        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
+
+        const ratioInput = screen.getByLabelText('Day 월간 근무 일수');
+
+        fireEvent.change(ratioInput, {target: {value: ''}});
+        fireEvent.blur(ratioInput);
+
+        expect(ratioInput).toHaveValue(21);
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+    });
+
+    it.skip('clamps an out-of-range monthly shift ratio when editing is finished', () => {
+        const nurse = createNurseWithMonthlyShiftRatio();
+
+        renderPanel(nurse, [createWardShiftType()]);
+
+        fireEvent.click(screen.getByRole('button', {name: '월간 근무 비율'}));
+
+        const ratioInput = screen.getByLabelText('Day 월간 근무 일수');
+
+        fireEvent.change(ratioInput, {target: {value: '100'}});
+        expect(ratioInput).toHaveValue(100);
+
+        fireEvent.blur(ratioInput);
+
+        expect(ratioInput).toHaveValue(99);
+    });
+
     it('hides monthly shift ratio controls while the feature is disabled', () => {
         const nurse = createNurseWithMonthlyShiftRatio();
 
