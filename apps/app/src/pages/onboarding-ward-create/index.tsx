@@ -18,6 +18,7 @@ import {
     useOnboardingWardWizard,
 } from './model';
 import HeaderLogo from './ui/header-logo';
+import OnboardingNurseOrderTutorial from './ui/onboarding-nurse-order-tutorial';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
 import NightRecoveryStep from './ui/steps/night-recovery-step';
@@ -498,6 +499,9 @@ function OnboardingWardCreatePage() {
                   )
                 : null}
             {isSubmitting || isSuccess ? createPortal(<WardCreationProgressOverlay isComplete={isSuccess} />, modalRoot) : null}
+            <OnboardingNurseOrderTutorial
+                canStart={isNurseRegistrationStep && draft.nurses.length > 0 && !showDeleteTeamModal && !isSubmitting && !isSuccess}
+            />
             <div
                 className={cn(
                     'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',

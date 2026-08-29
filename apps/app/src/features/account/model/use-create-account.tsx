@@ -1,4 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
+import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
@@ -10,6 +11,8 @@ export type TCreateAccountProfileDTO = {
         profileImgUrl?: string;
         defaultProfileImgId?: number;
     };
+    preferredLanguage?: TPreferredLanguage;
+    serviceRegion?: TServiceRegion;
 };
 
 type TCreateAccountFeedback = {

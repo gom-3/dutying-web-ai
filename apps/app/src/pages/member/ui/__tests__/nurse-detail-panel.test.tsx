@@ -240,4 +240,13 @@ describe('NurseDetailPanel', () => {
 
         expect(ratioInput).toHaveValue(99);
     });
+
+    it('hides monthly shift ratio controls while the feature is disabled', () => {
+        const nurse = createNurseWithMonthlyShiftRatio();
+
+        renderPanel(nurse, [createWardShiftType()]);
+
+        expect(screen.queryByRole('button', {name: '월간 근무 비율'})).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Day 월간 근무 일수')).not.toBeInTheDocument();
+    });
 });

@@ -8,11 +8,11 @@ import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
 import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
-import {AppleIcon, KakaoIcon} from '@/shared/assets/svg';
-import {buildAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
+import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
+import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
 import {createMarketingAgreementRecord, createTermsAgreementRecord} from '@/shared/legal/agreements';
 import './index.css';
 
@@ -210,9 +210,11 @@ function LoginPage() {
     const isPasswordResetBusy = isSendingPasswordReset || isConfirmingPasswordReset || isResettingPassword;
     const isPasswordResetDisabled = isPasswordResetBusy;
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
-    const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
-    const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
     const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const isJapaneseLoginContext = getStoredServiceRegion() === 'JP' || currentLanguage === 'ja';
+    const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
+    const lineAuthorizeUrl = buildLineAuthAuthorizeUrl(socialAuthorizeNextPath);
+    const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
     const loginVisualSlides = getLoginVisualSlides(currentLanguage);
     const totalLoginVisualPages = loginVisualSlides.length;
     const safeLoginVisualSlideIndex = Math.min(loginVisualSlideIndex, totalLoginVisualPages - 1);
@@ -1139,13 +1141,23 @@ function LoginPage() {
                     {!isPasswordResetMode ? (
                         <div className="mx-auto mt-7 w-full max-w-[334px] border-t border-gray-6 pt-6">
                             <div className="grid grid-cols-1 gap-3">
-                                <a
-                                    href={kakaoAuthorizeUrl}
-                                    className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
-                                >
-                                    <KakaoIcon className="mr-3 h-5 w-5" />
-                                    {isSignupPage ? t('page.login.kakaoStart') : t('page.login.kakaoContinue')}
-                                </a>
+                                {isJapaneseLoginContext ? (
+                                    <a
+                                        href={lineAuthorizeUrl}
+                                        className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#06C755] bg-[#06C755] px-[12px] text-sm font-semibold text-white shadow-banner transition-colors hover:bg-[#05B94F]"
+                                    >
+                                        <LineIcon className="mr-3 h-5 w-5" />
+                                        {isSignupPage ? t('page.login.lineStart') : t('page.login.lineContinue')}
+                                    </a>
+                                ) : (
+                                    <a
+                                        href={kakaoAuthorizeUrl}
+                                        className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
+                                    >
+                                        <KakaoIcon className="mr-3 h-5 w-5" />
+                                        {isSignupPage ? t('page.login.kakaoStart') : t('page.login.kakaoContinue')}
+                                    </a>
+                                )}
                                 <a
                                     href={appleAuthorizeUrl}
                                     className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"

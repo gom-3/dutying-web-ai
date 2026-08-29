@@ -6,6 +6,7 @@ import {type ITutorialStepConfig} from './tutorial.types';
 type TTutorialInfoBoxProps = {
     currentStep?: ITutorialStepConfig;
     infoBoxElement: RefObject<HTMLDivElement | null>;
+    infoBoxWidth?: number;
     onNext: () => void;
     onPrevious: () => void;
     stepIndex: number;
@@ -17,7 +18,15 @@ const secondaryButtonClassName =
 const primaryButtonClassName =
     'inline-flex h-10 min-w-16 items-center justify-center rounded-xl bg-[#3182F6] px-4 text-[.9375rem] font-semibold text-white transition-colors hover:bg-[#1B64DA]';
 
-export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious, stepIndex, totalSteps}: TTutorialInfoBoxProps) {
+export function TutorialInfoBox({
+    currentStep,
+    infoBoxElement,
+    infoBoxWidth,
+    onNext,
+    onPrevious,
+    stepIndex,
+    totalSteps,
+}: TTutorialInfoBoxProps) {
     const {t} = useTypedTranslation();
     const isLastStep = stepIndex === totalSteps - 1;
 
@@ -26,6 +35,7 @@ export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious
             id="InfoBox"
             className="group/infobox fixed top-25 z-[1004] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-visible rounded-[1.25rem] bg-white px-5 py-4 font-apple shadow-[0_18px_48px_rgba(0,0,0,0.2)]"
             ref={infoBoxElement}
+            style={infoBoxWidth ? {width: `${infoBoxWidth}px`} : undefined}
         >
             <span
                 aria-hidden="true"

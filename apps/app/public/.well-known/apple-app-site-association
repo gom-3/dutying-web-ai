@@ -19,6 +19,8 @@
       {
         "appID": "Y4HPW9GX7Y.com.gom3.dutying",
         "paths": [
+          "/line-auth/*",
+          "/line-auth/",
           "/move",
           "/move/*",
           "/app/moim/invite",

@@ -15,6 +15,7 @@ export interface ITutorialConfig {
     steps: ITutorialStepConfig[];
     highLightPadding?: number;
     infoBoxHeight?: number;
+    infoBoxWidth?: number;
     infoBoxMargin?: number;
     scrollLock?: boolean;
 }

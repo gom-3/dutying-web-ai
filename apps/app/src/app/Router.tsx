@@ -7,6 +7,7 @@ import PageState from '@/shared/ui/PageState';
 
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
+const OAuthErrorPage = lazy(() => import('@/pages/login/oauth-error-page.tsx'));
 const FriendInvitePage = lazy(() => import('@/pages/friend-invite'));
 const MoimInvitePage = lazy(() => import('@/pages/moim-invite'));
 const DeepLinkFallbackPage = lazy(() => import('@/pages/invite-fallback'));
@@ -97,6 +98,7 @@ export const Router = () => {
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                 <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
+                <Route path={ROUTE.OAUTH_ERROR} element={<OAuthErrorPage />} />
                 {import.meta.env.DEV ? <Route path={ROUTE.UI_PREVIEW} element={<UiPreviewPage />} /> : null}
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<NotAuthLayout />}>

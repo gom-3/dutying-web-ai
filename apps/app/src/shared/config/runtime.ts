@@ -75,3 +75,11 @@ export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: str
 
     return url.toString();
 };
+
+export const buildLineAuthAuthorizeUrl = (nextPath: string = ROUTE.HOME) => {
+    const url = new URL('/oauth/line/authorize', `${RUNTIME_CONFIG.serverUrl()}/`);
+
+    url.searchParams.set('nextPageUrl', buildAppUrl(sanitizeInternalPath(nextPath)));
+
+    return url.toString();
+};

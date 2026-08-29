@@ -402,6 +402,8 @@ export const ja: TLocale = {
             loginLink: 'ログイン',
             kakaoContinue: 'Kakaoで続ける',
             kakaoStart: 'Kakaoで始める',
+            lineContinue: 'LINEで続ける',
+            lineStart: 'LINEで始める',
             appleContinue: 'Appleで続ける',
             appleStart: 'Appleで始める',
             continuePrefix: '続行すると',
@@ -1526,10 +1528,6 @@ export const ja: TLocale = {
                         label: '勤務・休み条件',
                         sentence: '{target}はN勤務後に最低{count}日の休みが必要です',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: '勤務・休み条件',
-                        sentence: '{target}は月に最低{count}日の休みが必要です',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: '個人条件',
                         sentence: '{nurse}は週末・祝日勤務をしてはいけません',
@@ -1641,10 +1639,6 @@ export const ja: TLocale = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: '連続勤務/休息条件',
                         sentence: '{target}はN勤務後、最低{days}日のOFFが必要です',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: '連続勤務/休息条件',
-                        sentence: '{target}は1か月に最低{days}日のOFFが必要です',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '個人別勤務制限',
@@ -2273,7 +2267,6 @@ export const ja: TLocale = {
                 minStaffByShift: '{{shift}}勤務の人数は{{actual}}人です。最低{{expected}}人必要です。',
                 maxStaffByShift: '{{shift}}勤務の人数は{{actual}}人です。最大{{expected}}人までです。',
                 forbidNextShift: '{{nurseName}}さんは{{prevShift}}の翌日に{{nextShift}}勤務はできません。',
-                minMonthlyOff: '{{nurseName}}さんの月間OFFは{{actual}}日です。最低{{expected}}日必要です。',
                 nurseForbidWeekend: '{{nurseName}}さんは週末または祝日に勤務できません。',
                 pairPreferSameShift: '{{nurseAName}}さんと{{nurseBName}}さんは同じ勤務が推奨されます。',
                 pairForbidSameShift: '{{nurseAName}}さんと{{nurseBName}}さんは同じ勤務にできません。',

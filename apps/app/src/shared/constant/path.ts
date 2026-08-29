@@ -17,6 +17,7 @@ const ROUTE = {
     RENEWAL: '/renewal',
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
+    OAUTH_ERROR: '/oauth2/error',
     FRIEND_INVITE: '/app/friends/invite',
     MOIM_INVITE: '/app/moim/invite',
     NULTALK_POST_LINK: '/app/nultalk/posts/:postId',

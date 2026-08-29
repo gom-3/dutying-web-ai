@@ -35,6 +35,11 @@ export const th = {
     },
     page: {
         ...generatedTh.page,
+        login: {
+            ...generatedTh.page.login,
+            lineContinue: 'ต่อด้วย LINE',
+            lineStart: 'เริ่มต้นด้วย LINE',
+        },
         notifications: {
             openAria: 'เปิดการแจ้งเตือน',
             panelAria: 'รายการแจ้งเตือน',
@@ -187,10 +192,6 @@ export const th = {
                         label: 'เงื่อนไขงานและพัก',
                         sentence: '{target}ต้องมีวันหยุดอย่างน้อย{count}วันหลังเวร N',
                     },
-                    MIN_MONTHLY_OFF: {
-                        label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ต้องมีวันหยุดอย่างน้อย{count}วันต่อเดือน',
-                    },
                     NURSE_FORBID_WEEKEND: {
                         label: 'เงื่อนไขรายบุคคล',
                         sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด',
@@ -302,10 +303,6 @@ export const th = {
                     SOFT_NEED_OFF_AFTER_N: {
                         label: 'เงื่อนไขงานและพัก',
                         sentence: '{target}ต้องมี OFF อย่างน้อย{days}วันหลังเวร N',
-                    },
-                    SOFT_MIN_MONTHLY_OFF: {
-                        label: 'เงื่อนไขงานและพัก',
-                        sentence: '{target}ต้องมี OFF อย่างน้อย{days}วันต่อเดือน',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'เงื่อนไขรายบุคคล',
