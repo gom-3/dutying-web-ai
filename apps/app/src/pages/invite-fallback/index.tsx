@@ -1,6 +1,12 @@
 import {Helmet} from 'react-helmet';
 import {useLocation} from 'react-router-dom';
-import {ANDROID_PLAY_STORE_URL, DEEP_LINK_APP_ORIGIN, IOS_APP_STORE_URL, type TInviteKind} from '@/shared/config/invite';
+import {
+    ANDROID_PLAY_STORE_URL,
+    buildInviteSchemeUrl,
+    DEEP_LINK_APP_ORIGIN,
+    IOS_APP_STORE_URL,
+    type TInviteKind,
+} from '@/shared/config/invite';
 
 export type TDeepLinkFallbackKind = TInviteKind | 'nultalk' | 'ward' | 'notice';
 
@@ -44,8 +50,11 @@ const COPY_BY_KIND: Record<
 
 function DeepLinkFallbackPage({kind}: {kind: TDeepLinkFallbackKind}) {
     const location = useLocation();
-    const inviteCode = kind === 'friend' || kind === 'moim' ? new URLSearchParams(location.search).get('code')?.trim() : null;
-    const appUrl = `${DEEP_LINK_APP_ORIGIN}${location.pathname}${location.search}${location.hash}`;
+    const isInvite = kind === 'friend' || kind === 'moim';
+    const inviteCode = isInvite ? new URLSearchParams(location.search).get('code')?.trim() : null;
+    const appUrl = isInvite
+        ? `${buildInviteSchemeUrl(kind, location.search)}${location.hash}`
+        : `${DEEP_LINK_APP_ORIGIN}${location.pathname}${location.search}${location.hash}`;
     const copy = COPY_BY_KIND[kind];
     const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서 초대 열기' : '듀팅 앱에서 열기';
 

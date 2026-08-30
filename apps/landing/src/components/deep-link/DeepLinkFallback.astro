@@ -1,5 +1,10 @@
 ---
-import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '../../config/invite';
+import {
+    ANDROID_PLAY_STORE_URL,
+    buildFriendInviteSchemeUrl,
+    buildMoimInviteSchemeUrl,
+    IOS_APP_STORE_URL,
+} from '../../config/invite';
 import {siteConfig} from '../../config/site';
 
 export type DeepLinkKind = 'friend' | 'moim' | 'nultalk' | 'ward' | 'notice' | 'content';
@@ -54,7 +59,12 @@ const COPY_BY_KIND: Record<
 
 const {kind, appPath} = Astro.props;
 const copy = COPY_BY_KIND[kind];
-const fallbackAppUrl = `${siteConfig.appOrigin}${appPath}`;
+const fallbackAppUrl =
+    kind === 'friend'
+        ? buildFriendInviteSchemeUrl(Astro.url.search)
+        : kind === 'moim'
+          ? buildMoimInviteSchemeUrl(Astro.url.search)
+          : `${siteConfig.appOrigin}${appPath}`;
 const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서 초대 열기' : '듀팅 앱에서 열기';
 ---
 
@@ -148,9 +158,15 @@ const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서
         }
 
         if (openButton instanceof HTMLAnchorElement) {
-            const appOrigin = page.dataset.appOrigin?.replace(/\/+$/, '') || 'https://app.dutying.ai';
-            const currentPath = resolvedKind ? window.location.pathname : page.dataset.appPath || '/';
-            openButton.href = `${appOrigin}${currentPath}${window.location.search}${window.location.hash}`;
+            const initialKind = page.dataset.initialKind;
+            if (initialKind === 'friend' || initialKind === 'moim') {
+                const schemeBase = initialKind === 'friend' ? 'dutying://friends/invite' : 'dutying://moim/invite';
+                openButton.href = `${schemeBase}${window.location.search}${window.location.hash}`;
+            } else {
+                const appOrigin = page.dataset.appOrigin?.replace(/\/+$/, '') || 'https://app.dutying.ai';
+                const currentPath = resolvedKind ? window.location.pathname : page.dataset.appPath || '/';
+                openButton.href = `${appOrigin}${currentPath}${window.location.search}${window.location.hash}`;
+            }
         }
 
         if (
