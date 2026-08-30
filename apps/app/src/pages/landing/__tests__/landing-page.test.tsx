@@ -74,6 +74,34 @@ describe('LandingPage', () => {
         expect(await screen.findByRole('button', {name: 'Select language'})).toHaveAttribute('aria-expanded', 'false');
     });
 
+    it('opens the iOS launch notice without linking to the App Store', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const appStoreButtons = screen.getAllByRole('button', {name: 'App Store'});
+
+        expect(appStoreButtons.length).toBeGreaterThan(0);
+        expect(screen.queryByRole('link', {name: 'App Store'})).not.toBeInTheDocument();
+        expect(screen.getAllByRole('link', {name: 'Google Play'})[0]).toHaveAttribute(
+            'href',
+            'https://play.google.com/store/apps/details?id=ai.dutying.app',
+        );
+
+        await user.click(appStoreButtons[0]);
+
+        expect(screen.getByRole('dialog', {name: 'iOS 앱은 9월에 출시해요!'})).toBeInTheDocument();
+        expect(screen.getByText('조금만 기다려 주세요. 더 좋은 모습으로 곧 만나요.')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '확인'}));
+
+        expect(screen.queryByRole('dialog', {name: 'iOS 앱은 9월에 출시해요!'})).not.toBeInTheDocument();
+    });
+
     it.each([
         ['ko', '/img/landing-hero-kr.webp'],
         ['ja', '/img/landing-hero-jp.webp'],

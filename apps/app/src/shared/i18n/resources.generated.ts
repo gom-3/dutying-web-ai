@@ -782,6 +782,13 @@ export const ko = {
                 "wardBoard": "병동 게시판 화면",
                 "webSchedule": "듀팅 웹 근무표 작성 화면"
             },
+            "iosComingSoon": {
+                "close": "iOS 출시 안내 닫기",
+                "confirm": "확인",
+                "description": "조금만 기다려 주세요. 더 좋은 모습으로 곧 만나요.",
+                "eyebrow": "COMING SOON",
+                "title": "iOS 앱은 9월에 출시해요!"
+            },
             "mobileBenefits": {
                 "community": {
                     "description": "간호사끼리 필요한 정보와 이야기를 가볍게 나눠요.",
@@ -3860,6 +3867,13 @@ export const en: TLocale = {
                 "wardBoard": "Ward board screen",
                 "webSchedule": "Dutying web schedule editor screen"
             },
+            "iosComingSoon": {
+                "close": "Close iOS launch notice",
+                "confirm": "Got it",
+                "description": "Thanks for your patience. The iOS app is coming soon.",
+                "eyebrow": "COMING SOON",
+                "title": "The iOS app launches in September!"
+            },
             "mobileBenefits": {
                 "community": {
                     "description": "Share useful information and everyday stories with nurses.",
@@ -6935,6 +6949,13 @@ export const ja: TLocale = {
                 "mobileHero": "Dutyingアプリの勤務予定画面",
                 "wardBoard": "病棟掲示板画面",
                 "webSchedule": "Dutying Web勤務表作成画面"
+            },
+            "iosComingSoon": {
+                "close": "iOSリリースのお知らせを閉じる",
+                "confirm": "確認",
+                "description": "もうしばらくお待ちください。より良いかたちでまもなくお届けします。",
+                "eyebrow": "COMING SOON",
+                "title": "iOSアプリは9月にリリース予定です！"
             },
             "mobileBenefits": {
                 "community": {
@@ -10012,6 +10033,13 @@ export const zh: TLocale = {
                 "wardBoard": "病区公告栏屏幕",
                 "webSchedule": "Dutying Web 排班表编辑画面"
             },
+            "iosComingSoon": {
+                "close": "关闭 iOS 上线通知",
+                "confirm": "知道了",
+                "description": "请再稍等一下。我们很快会以更好的体验与您见面。",
+                "eyebrow": "COMING SOON",
+                "title": "iOS 应用将于 9 月上线！"
+            },
             "mobileBenefits": {
                 "community": {
                     "description": "护士之间轻松分享必要信息和日常话题。",
@@ -13088,6 +13116,13 @@ export const th: TLocale = {
                 "wardBoard": "หน้าจอบอร์ดประกาศของหอผู้ป่วย",
                 "webSchedule": "หน้าจอแก้ไขตารางเวรบน Dutying Web"
             },
+            "iosComingSoon": {
+                "close": "ปิดประกาศเปิดตัว iOS",
+                "confirm": "รับทราบ",
+                "description": "โปรดรออีกสักนิด แล้วพบกับแอป iOS ที่ดียิ่งขึ้นเร็วๆ นี้",
+                "eyebrow": "COMING SOON",
+                "title": "แอป iOS จะเปิดตัวในเดือนกันยายน!"
+            },
             "mobileBenefits": {
                 "community": {
                     "description": "แชร์ข้อมูลที่จำเป็นและเรื่องราวประจำวันระหว่างพยาบาลได้ง่ายๆ",
@@ -16163,6 +16198,13 @@ export const vi: TLocale = {
                 "mobileHero": "Màn hình lịch ca làm việc của ứng dụng trực",
                 "wardBoard": "Màn hình bảng khoa",
                 "webSchedule": "Màn hình soạn lịch web Dutying"
+            },
+            "iosComingSoon": {
+                "close": "Đóng thông báo ra mắt iOS",
+                "confirm": "Đã hiểu",
+                "description": "Vui lòng chờ thêm một chút. Hẹn sớm gặp bạn với phiên bản iOS hoàn thiện hơn.",
+                "eyebrow": "COMING SOON",
+                "title": "Ứng dụng iOS sẽ ra mắt vào tháng 9!"
             },
             "mobileBenefits": {
                 "community": {

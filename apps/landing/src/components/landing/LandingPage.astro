@@ -1,8 +1,7 @@
 ---
-import {ANDROID_PLAY_STORE_URL, IOS_APP_STORE_URL} from '../../config/invite';
+import {ANDROID_PLAY_STORE_URL} from '../../config/invite';
 import {landingPrimaryCtas, siteConfig} from '../../config/site';
 
-const appStoreLink = IOS_APP_STORE_URL;
 const playStoreLink = ANDROID_PLAY_STORE_URL;
 const inquiryLink = 'https://ye620.channel.io';
 
@@ -92,7 +91,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
             </nav>
 
             <div class="landing-header__actions">
-                <a href={appStoreLink} target="_blank" rel="noreferrer" data-ios-download-trigger aria-haspopup="dialog">다운로드</a>
+                <button class="landing-header__download" type="button" data-ios-download-trigger aria-haspopup="dialog">다운로드</button>
                 <a href={inquiryLink} target="_blank" rel="noreferrer">문의하기</a>
                 <nav class="auth-text-links" aria-label="계정">
                     <a href={siteConfig.appLinks.login}>로그인</a>
@@ -109,16 +108,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <img src="/logo-wordmark-purple.png" alt="듀팅" width="101" height="28" />
             </a>
 
-            <a
+            <button
                 class="button button--primary button--compact"
-                href={appStoreLink}
-                target="_blank"
-                rel="noreferrer"
+                type="button"
                 data-ios-download-trigger
                 aria-haspopup="dialog"
             >
                 다운로드
-            </a>
+            </button>
         </div>
     </section>
 
@@ -161,17 +158,15 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <p>근무 일정 관리 (일반 간호사 용)</p>
                     </div>
                     <div class="cta-row">
-                        <a
+                        <button
                             class="button button--store"
-                            href={appStoreLink}
-                            target="_blank"
-                            rel="noreferrer"
+                            type="button"
                             data-ios-download-trigger
                             aria-haspopup="dialog"
                         >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
-                        </a>
+                        </button>
                         <a class="button button--store" href={playStoreLink} target="_blank" rel="noreferrer">
                             <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
                             Google Play
@@ -206,17 +201,15 @@ const formattedFeatureSections = featureSections.map((section) => ({
                     <p>근무 일정 관리 (일반 간호사 용)</p>
                 </div>
                 <div class="cta-row cta-row--mobile">
-                    <a
+                    <button
                         class="button button--store button--mobile"
-                        href={appStoreLink}
-                        target="_blank"
-                        rel="noreferrer"
+                        type="button"
                         data-ios-download-trigger
                         aria-haspopup="dialog"
                     >
                         <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                         App Store
-                    </a>
+                    </button>
                     <a class="button button--store button--mobile" href={playStoreLink} target="_blank" rel="noreferrer">
                         <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
                         Google Play
@@ -269,17 +262,15 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-row">
                     <span>모바일 앱</span>
                     <div class="cta-row">
-                        <a
+                        <button
                             class="button button--footer"
-                            href={appStoreLink}
-                            target="_blank"
-                            rel="noreferrer"
+                            type="button"
                             data-ios-download-trigger
                             aria-haspopup="dialog"
                         >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
-                        </a>
+                        </button>
                         <a class="button button--footer" href={playStoreLink} target="_blank" rel="noreferrer">
                             <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
                             Google Play
@@ -322,17 +313,15 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-column">
                     <span>모바일 앱</span>
                     <div class="cta-row cta-row--mobile">
-                        <a
+                        <button
                             class="button button--footer button--mobile"
-                            href={appStoreLink}
-                            target="_blank"
-                            rel="noreferrer"
+                            type="button"
                             data-ios-download-trigger
                             aria-haspopup="dialog"
                         >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
-                        </a>
+                        </button>
                         <a class="button button--footer button--mobile" href={playStoreLink} target="_blank" rel="noreferrer">
                             <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
                             Google Play
@@ -379,9 +368,9 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <span aria-hidden="true">×</span>
             </button>
 
-            <p class="download-modal__eyebrow">준비중</p>
-            <h2 id="ios-download-modal-title">iOS 앱은 준비중이에요</h2>
-            <p id="ios-download-modal-description">9월 말 오픈 예정입니다.</p>
+            <p class="download-modal__eyebrow">COMING SOON</p>
+            <h2 id="ios-download-modal-title">iOS 앱은 9월에 출시해요!</h2>
+            <p id="ios-download-modal-description">조금만 기다려 주세요. 더 좋은 모습으로 곧 만나요.</p>
 
             <button class="button button--primary download-modal__confirm" type="button" data-ios-download-close>
                 확인
@@ -541,9 +530,20 @@ const formattedFeatureSections = featureSections.map((section) => ({
     }
 
     .landing-header__nav a,
-    .landing-header__actions a {
+    .landing-header__actions a,
+    .landing-header__download {
         font-size: 1.125rem;
         font-weight: 500;
+    }
+
+    .landing-header__download {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #595961;
+        font-family: inherit;
+        cursor: pointer;
     }
 
     .landing-header__nav a {
@@ -591,6 +591,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
         min-width: 0;
         border: 0;
         border-radius: 15px;
+        font-family: inherit;
         font-size: 1.5rem;
         font-weight: 600;
         line-height: 1.15;
