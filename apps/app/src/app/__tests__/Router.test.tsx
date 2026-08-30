@@ -143,14 +143,14 @@ describe('Router', () => {
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.FRIEND_INVITE));
 
-        expect(await screen.findByRole('heading', {name: '듀팅 앱에서 초대를 열어주세요'})).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: /친구와 근무 일정을\s+함께 확인해요/})).toBeInTheDocument();
         expect(screen.getByText('UVWB2T')).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '듀팅 앱에서 초대 열기'})).toHaveAttribute('href', 'dutying://friends/invite?code=UVWB2T');
-        expect(screen.getByRole('link', {name: 'App Store에서 받기'})).toHaveAttribute(
+        expect(screen.getByRole('link', {name: '듀팅 앱에서 친구 추가하기'})).toHaveAttribute(
             'href',
-            'https://apps.apple.com/kr/app/id6466558189',
+            'dutying://friends/invite?code=UVWB2T',
         );
-        expect(screen.getByRole('link', {name: 'Google Play에서 받기'})).toHaveAttribute(
+        expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute('href', 'https://apps.apple.com/kr/app/id6466558189');
+        expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute(
             'href',
             'https://play.google.com/store/apps/details?id=ai.dutying.app',
         );
@@ -168,11 +168,13 @@ describe('Router', () => {
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.MOIM_INVITE));
 
-        expect(await screen.findByRole('heading', {name: '듀팅 앱에서 초대를 열어주세요'})).toBeInTheDocument();
-        expect(screen.getByText('모임 초대')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: /모임 멤버와 일정을\s+함께 확인해요/})).toBeInTheDocument();
         expect(screen.getByText('모임 코드')).toBeInTheDocument();
         expect(screen.getByText('PXZ7XE')).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '듀팅 앱에서 초대 열기'})).toHaveAttribute('href', 'dutying://moim/invite?code=PXZ7XE');
+        expect(screen.getByRole('link', {name: '듀팅 앱에서 모임 초대 확인하기'})).toHaveAttribute(
+            'href',
+            'dutying://moim/invite?code=PXZ7XE',
+        );
     });
 
     it.each([
