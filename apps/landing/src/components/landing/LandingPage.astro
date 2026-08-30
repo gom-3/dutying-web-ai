@@ -92,7 +92,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
             </nav>
 
             <div class="landing-header__actions">
-                <a href={appStoreLink} target="_blank" rel="noreferrer">다운로드</a>
+                <a href={appStoreLink} target="_blank" rel="noreferrer" data-ios-download-trigger aria-haspopup="dialog">다운로드</a>
                 <a href={inquiryLink} target="_blank" rel="noreferrer">문의하기</a>
                 <nav class="auth-text-links" aria-label="계정">
                     <a href={siteConfig.appLinks.login}>로그인</a>
@@ -109,7 +109,16 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <img src="/logo-wordmark-purple.png" alt="듀팅" width="101" height="28" />
             </a>
 
-            <a class="button button--primary button--compact" href={appStoreLink} target="_blank" rel="noreferrer">다운로드</a>
+            <a
+                class="button button--primary button--compact"
+                href={appStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                data-ios-download-trigger
+                aria-haspopup="dialog"
+            >
+                다운로드
+            </a>
         </div>
     </section>
 
@@ -152,7 +161,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <p>근무 일정 관리 (일반 간호사 용)</p>
                     </div>
                     <div class="cta-row">
-                        <a class="button button--store" href={appStoreLink} target="_blank" rel="noreferrer">
+                        <a
+                            class="button button--store"
+                            href={appStoreLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            data-ios-download-trigger
+                            aria-haspopup="dialog"
+                        >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
                         </a>
@@ -190,7 +206,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                     <p>근무 일정 관리 (일반 간호사 용)</p>
                 </div>
                 <div class="cta-row cta-row--mobile">
-                    <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                    <a
+                        class="button button--store button--mobile"
+                        href={appStoreLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        data-ios-download-trigger
+                        aria-haspopup="dialog"
+                    >
                         <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                         App Store
                     </a>
@@ -246,7 +269,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-row">
                     <span>모바일 앱</span>
                     <div class="cta-row">
-                        <a class="button button--footer" href={appStoreLink} target="_blank" rel="noreferrer">
+                        <a
+                            class="button button--footer"
+                            href={appStoreLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            data-ios-download-trigger
+                            aria-haspopup="dialog"
+                        >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
                         </a>
@@ -292,7 +322,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-column">
                     <span>모바일 앱</span>
                     <div class="cta-row cta-row--mobile">
-                        <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                        <a
+                            class="button button--footer button--mobile"
+                            href={appStoreLink}
+                            target="_blank"
+                            rel="noreferrer"
+                            data-ios-download-trigger
+                            aria-haspopup="dialog"
+                        >
                             <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
                             App Store
                         </a>
@@ -327,7 +364,117 @@ const formattedFeatureSections = featureSections.map((section) => ({
             <a href="/guide">가이드</a>
         </div>
     </footer>
+
+    <div
+        class="download-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ios-download-modal-title"
+        aria-describedby="ios-download-modal-description"
+        data-ios-download-modal
+        hidden
+    >
+        <div class="download-modal__panel" data-ios-download-panel tabindex="-1">
+            <button class="download-modal__close" type="button" data-ios-download-close aria-label="닫기">
+                <span aria-hidden="true">×</span>
+            </button>
+
+            <p class="download-modal__eyebrow">준비중</p>
+            <h2 id="ios-download-modal-title">iOS 앱은 준비중이에요</h2>
+            <p id="ios-download-modal-description">9월 말 오픈 예정입니다.</p>
+
+            <button class="button button--primary download-modal__confirm" type="button" data-ios-download-close>
+                확인
+            </button>
+        </div>
+    </div>
 </main>
+
+<script>
+    const iosDownloadModal = document.querySelector('[data-ios-download-modal]');
+    const iosDownloadTriggers = document.querySelectorAll('[data-ios-download-trigger]');
+    const iosDownloadCloseButtons = document.querySelectorAll('[data-ios-download-close]');
+    let lastFocusedElement: Element | null = null;
+
+    const getModalFocusableElements = () => {
+        if (!(iosDownloadModal instanceof HTMLElement)) return [];
+
+        return Array.from(
+            iosDownloadModal.querySelectorAll<HTMLElement>(
+                'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+        );
+    };
+
+    const openIosDownloadModal = (event: Event) => {
+        event.preventDefault();
+
+        if (!(iosDownloadModal instanceof HTMLElement)) return;
+
+        lastFocusedElement = document.activeElement;
+        iosDownloadModal.hidden = false;
+        document.documentElement.classList.add('ios-download-modal-open');
+        document.body.classList.add('ios-download-modal-open');
+
+        const panel = iosDownloadModal.querySelector('[data-ios-download-panel]');
+        if (panel instanceof HTMLElement) {
+            panel.focus();
+        }
+    };
+
+    const closeIosDownloadModal = () => {
+        if (!(iosDownloadModal instanceof HTMLElement) || iosDownloadModal.hidden) return;
+
+        iosDownloadModal.hidden = true;
+        document.documentElement.classList.remove('ios-download-modal-open');
+        document.body.classList.remove('ios-download-modal-open');
+
+        if (lastFocusedElement instanceof HTMLElement) {
+            lastFocusedElement.focus();
+        }
+    };
+
+    iosDownloadTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', openIosDownloadModal);
+    });
+
+    iosDownloadCloseButtons.forEach((button) => {
+        button.addEventListener('click', closeIosDownloadModal);
+    });
+
+    if (iosDownloadModal instanceof HTMLElement) {
+        iosDownloadModal.addEventListener('click', (event) => {
+            if (event.target === iosDownloadModal) {
+                closeIosDownloadModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (!(iosDownloadModal instanceof HTMLElement) || iosDownloadModal.hidden) return;
+
+        if (event.key === 'Escape') {
+            closeIosDownloadModal();
+            return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const focusableElements = getModalFocusableElements();
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (!firstElement || !lastElement) return;
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+            event.preventDefault();
+            lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+            event.preventDefault();
+            firstElement.focus();
+        }
+    });
+</script>
 
 <style>
     .landing-page {
@@ -756,6 +903,92 @@ const formattedFeatureSections = featureSections.map((section) => ({
         font-weight: 700;
     }
 
+    :global(html.ios-download-modal-open),
+    :global(body.ios-download-modal-open) {
+        overflow: hidden;
+    }
+
+    .download-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgba(21, 11, 60, 0.42);
+    }
+
+    .download-modal[hidden] {
+        display: none;
+    }
+
+    .download-modal__panel {
+        position: relative;
+        width: min(420px, 100%);
+        padding: 36px 28px 28px;
+        border-radius: 18px;
+        background: #fff;
+        color: #150b3c;
+        text-align: center;
+        box-shadow: 0 24px 70px rgba(18, 20, 31, 0.2);
+        outline: none;
+    }
+
+    .download-modal__close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 50%;
+        background: #f5f5f7;
+        color: #71698d;
+        font-size: 1.5rem;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .download-modal__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 30px;
+        margin: 0;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: #efe7ff;
+        color: #663dfa;
+        font-size: 0.875rem;
+        font-weight: 700;
+    }
+
+    .download-modal h2 {
+        margin: 16px 0 0;
+        font-size: 1.5rem;
+        line-height: 1.35;
+        letter-spacing: 0;
+    }
+
+    .download-modal h2 + p {
+        margin: 10px 0 0;
+        color: #6b6780;
+        font-size: 1rem;
+        font-weight: 500;
+        line-height: 1.6;
+    }
+
+    .download-modal__confirm {
+        width: 100%;
+        min-height: 46px;
+        margin-top: 28px;
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+
     @media (max-width: 900px) {
         .desktop-only {
             display: none;
@@ -883,6 +1116,19 @@ const formattedFeatureSections = featureSections.map((section) => ({
 
         .landing-footer__bottom--mobile a {
             font-size: 0.875rem;
+        }
+
+        .download-modal {
+            padding: 20px;
+        }
+
+        .download-modal__panel {
+            padding: 34px 22px 24px;
+            border-radius: 16px;
+        }
+
+        .download-modal h2 {
+            font-size: 1.25rem;
         }
     }
 </style>
