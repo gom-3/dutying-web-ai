@@ -95,6 +95,7 @@ const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'FORBID_E_THEN_D',
 ]);
 const DEFAULT_CONSTRAINT_SEVERITY: TShiftConstraintSeverity = 'SOFT';
+const HARD_AFTER_CONFIRM = 'HARD_AFTER_CONFIRM';
 const CORE_SHIFT_SHORT_NAMES = ['D', 'E', 'N', 'O'] as const;
 const SHIFT_CODE_LABELS: Record<string, string> = {
     D: '\uB370\uC774',
@@ -1034,6 +1035,11 @@ const normalizeConstraintSeverity = (severityRecommendation: string | null | und
 
     if (!normalized) return undefined;
 
+    // 'HARD_AFTER_CONFIRM'은 "확인하면 HARD"라는 계약이지 HARD 가 아니다. 문자열에 HARD 가
+    // 들어 있다는 이유로 눌러 보내면, 관측값이 사용자 확인 없이 병동 HARD 정책이 된다.
+    // 확인 전에는 SOFT 로 두고, 승격은 서버가 confirmed 를 보고 판단한다.
+    if (normalized === HARD_AFTER_CONFIRM) return 'SOFT';
+
     if (normalized.includes('HARD')) return 'HARD';
 
     if (normalized.includes('SOFT')) return 'SOFT';
@@ -1090,6 +1096,11 @@ const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
         .map((constraint) => ({
             templateCode: constraint.templateCode,
             severity: constraint.severity,
+            // 원본 권고와 신뢰도를 그대로 넘긴다 — 서버의 확인 게이트와 저신뢰 차단이 이 값으로 판단한다.
+            severityRecommendation: constraint.severityRecommendation,
+            confidence: constraint.confidence,
+            // 후보 확인 UI 가 복원되기 전까지 프리필은 '확인'이 아니다.
+            confirmed: false,
             selected: constraint.selected,
             params: constraint.params,
         }));

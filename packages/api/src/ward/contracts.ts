@@ -742,6 +742,12 @@ export type TCreateWardSeedNurseDTO = {
 export type TCreateWardConstraintRuleDTO = {
     templateCode: string;
     severity?: TShiftConstraintSeverity;
+    /** 추출기 원본 권고. 'HARD_AFTER_CONFIRM'은 강도가 아니라 "확인하면 HARD"라는 계약이라 그대로 보낸다. */
+    severityRecommendation?: string | null;
+    /** 사용자가 후보를 화면에서 실제로 확인했는지. HARD_AFTER_CONFIRM 승격의 유일한 근거다. */
+    confirmed?: boolean;
+    /** 추출기 신뢰도(0~1). 서버가 저신뢰 후보로 병동 기본 안전값을 덮어쓰지 않게 하는 게이트에 쓴다. */
+    confidence?: number | null;
     selected?: boolean;
     params: Record<string, unknown>;
 };

@@ -710,7 +710,9 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.constraintCandidates).toHaveLength(1);
         expect(result.current.draft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',
-            severity: 'HARD',
+            // HARD_AFTER_CONFIRM 은 확인 전까지 SOFT 다.
+            severity: 'SOFT',
+            severityRecommendation: 'HARD_AFTER_CONFIRM',
             selected: true,
         });
         expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
