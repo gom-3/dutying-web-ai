@@ -96,7 +96,7 @@ const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서
                     <span>스토어에서 먼저 설치해주세요.</span>
                 </p>
                 <div class="store-buttons">
-                    <a class="button button--secondary" href={IOS_APP_STORE_URL} target="_blank" rel="noreferrer">
+                    <a class="button button--secondary" href={IOS_APP_STORE_URL} target="_blank" rel="noreferrer" data-ios-store-link>
                         <img src="/img/apple.png" alt="" aria-hidden="true" />
                         App Store에서 받기
                     </a>
@@ -111,6 +111,26 @@ const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서
 </main>
 
 <script>
+    const IOS_APP_STORE_LINKS = {
+        ja: 'https://apps.apple.com/jp/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
+        ko: 'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
+        default: 'https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827',
+    } as const;
+
+    const resolveIosAppStoreLink = () => {
+        const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
+        const normalizedLanguages = languages.map((language) => language.toLowerCase());
+
+        if (normalizedLanguages.some((language) => language.startsWith('ja'))) return IOS_APP_STORE_LINKS.ja;
+        if (normalizedLanguages.some((language) => language.startsWith('ko'))) return IOS_APP_STORE_LINKS.ko;
+
+        return IOS_APP_STORE_LINKS.default;
+    };
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-ios-store-link]').forEach((link) => {
+        link.href = resolveIosAppStoreLink();
+    });
+
     const COPY_BY_PATH = {
         nultalk: {
             eyebrow: '널톡 게시글',
