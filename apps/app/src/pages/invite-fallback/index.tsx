@@ -5,6 +5,7 @@ import {
     buildInviteSchemeUrl,
     DEEP_LINK_APP_ORIGIN,
     IOS_APP_STORE_URL,
+    resolveIosAppStoreUrl,
     type TInviteKind,
 } from '@/shared/config/invite';
 
@@ -62,6 +63,13 @@ const CONTENT_COPY_BY_KIND: Record<
     },
 };
 const isInviteKind = (kind: TDeepLinkFallbackKind): kind is TInviteKind => kind === 'friend' || kind === 'moim';
+const getBrowserIosAppStoreUrl = () => {
+    if (typeof navigator === 'undefined') return IOS_APP_STORE_URL;
+
+    const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
+
+    return resolveIosAppStoreUrl(languages);
+};
 
 function InviteActionIcon({kind}: {kind: TInviteKind}) {
     if (kind === 'friend') {
@@ -87,6 +95,7 @@ function InviteActionIcon({kind}: {kind: TInviteKind}) {
 
 function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteCode: string | null; kind: TInviteKind}) {
     const copy = INVITE_COPY_BY_KIND[kind];
+    const appStoreLink = getBrowserIosAppStoreUrl();
 
     return (
         <main className="min-h-dvh overflow-x-hidden bg-[#F7F9FB] font-apple text-[#191F28]">
@@ -181,7 +190,7 @@ function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteC
                         <div className="mt-6 grid grid-cols-2 gap-2" aria-label="앱 설치 안내">
                             <a
                                 className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[16px] bg-[#151A20] px-3 py-3 text-[14px] leading-[1.3] font-bold whitespace-nowrap text-white no-underline transition-colors duration-150 hover:bg-[#2D333B] focus-visible:bg-[#663DFA] focus-visible:text-[#FFF0A6] active:bg-black motion-reduce:transition-none"
-                                href={IOS_APP_STORE_URL}
+                                href={appStoreLink}
                                 target="_blank"
                                 rel="noreferrer"
                             >
@@ -219,6 +228,7 @@ function ContentFallbackPage({kind}: {kind: TContentFallbackKind}) {
     const location = useLocation();
     const appUrl = `${DEEP_LINK_APP_ORIGIN}${location.pathname}${location.search}${location.hash}`;
     const copy = CONTENT_COPY_BY_KIND[kind];
+    const appStoreLink = getBrowserIosAppStoreUrl();
 
     return (
         <main className="grid min-h-dvh place-items-center bg-[#F7F8FA] px-5 py-8 font-apple text-[#191F28] max-[420px]:place-items-stretch max-[420px]:px-[18px] max-[420px]:py-[18px]">
@@ -265,7 +275,7 @@ function ContentFallbackPage({kind}: {kind: TContentFallbackKind}) {
                         <div className="mt-3 grid gap-2.5">
                             <a
                                 className="inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#191F28] px-[18px] py-3.5 text-[clamp(14px,4vw,16px)] leading-[1.35] font-bold whitespace-nowrap text-white no-underline max-[340px]:px-3 max-[340px]:text-[13px]"
-                                href={IOS_APP_STORE_URL}
+                                href={appStoreLink}
                                 target="_blank"
                                 rel="noreferrer"
                             >

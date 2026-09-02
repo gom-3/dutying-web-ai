@@ -5,8 +5,12 @@ import {
     buildFriendInviteSchemeUrl,
     buildMoimInviteAppUrl,
     buildMoimInviteSchemeUrl,
+    IOS_APP_STORE_URL_DEFAULT,
+    IOS_APP_STORE_URL_JA,
+    IOS_APP_STORE_URL_KO,
     IOS_APP_STORE_URL,
     normalizeInviteSearch,
+    resolveIosAppStoreUrl,
 } from '../invite';
 
 describe('invite link builders', () => {
@@ -32,7 +36,20 @@ describe('invite link builders', () => {
     });
 
     it('uses the published iOS and Android store listings', () => {
-        expect(IOS_APP_STORE_URL).toBe('https://apps.apple.com/kr/app/id6466558189');
+        expect(IOS_APP_STORE_URL).toBe('https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827');
+        expect(IOS_APP_STORE_URL_DEFAULT).toBe('https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827');
+        expect(IOS_APP_STORE_URL_JA).toBe(
+            'https://apps.apple.com/jp/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
+        );
+        expect(IOS_APP_STORE_URL_KO).toBe(
+            'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
+        );
         expect(ANDROID_PLAY_STORE_URL).toBe('https://play.google.com/store/apps/details?id=ai.dutying.app');
+    });
+
+    it('resolves the iOS store listing by language', () => {
+        expect(resolveIosAppStoreUrl(['ja-JP', 'en-US'])).toBe(IOS_APP_STORE_URL_JA);
+        expect(resolveIosAppStoreUrl(['ko-KR', 'en-US'])).toBe(IOS_APP_STORE_URL_KO);
+        expect(resolveIosAppStoreUrl(['en-US'])).toBe(IOS_APP_STORE_URL_DEFAULT);
     });
 });

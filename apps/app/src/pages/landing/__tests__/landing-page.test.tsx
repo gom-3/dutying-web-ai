@@ -74,32 +74,25 @@ describe('LandingPage', () => {
         expect(await screen.findByRole('button', {name: 'Select language'})).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('opens the iOS launch notice without linking to the App Store', async () => {
-        const user = userEvent.setup();
-
+    it('links the App Store button to the localized iOS listing', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.ROOT]}>
                 <LandingPage />
             </MemoryRouter>,
         );
 
-        const appStoreButtons = screen.getAllByRole('button', {name: 'App Store'});
+        const appStoreLinks = screen.getAllByRole('link', {name: 'App Store'});
 
-        expect(appStoreButtons.length).toBeGreaterThan(0);
-        expect(screen.queryByRole('link', {name: 'App Store'})).not.toBeInTheDocument();
+        expect(appStoreLinks.length).toBeGreaterThan(0);
+        expect(appStoreLinks[0]).toHaveAttribute(
+            'href',
+            'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
+        );
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getAllByRole('link', {name: 'Google Play'})[0]).toHaveAttribute(
             'href',
             'https://play.google.com/store/apps/details?id=ai.dutying.app',
         );
-
-        await user.click(appStoreButtons[0]);
-
-        expect(screen.getByRole('dialog', {name: 'iOS 앱은 9월에 출시해요!'})).toBeInTheDocument();
-        expect(screen.getByText('조금만 기다려 주세요. 더 좋은 모습으로 곧 만나요.')).toBeInTheDocument();
-
-        await user.click(screen.getByRole('button', {name: '확인'}));
-
-        expect(screen.queryByRole('dialog', {name: 'iOS 앱은 9월에 출시해요!'})).not.toBeInTheDocument();
     });
 
     it.each([

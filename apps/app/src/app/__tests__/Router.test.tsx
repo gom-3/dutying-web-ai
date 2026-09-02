@@ -149,7 +149,10 @@ describe('Router', () => {
             'href',
             'dutying://friends/invite?code=UVWB2T',
         );
-        expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute('href', 'https://apps.apple.com/kr/app/id6466558189');
+        expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute(
+            'href',
+            'https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827',
+        );
         expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute(
             'href',
             'https://play.google.com/store/apps/details?id=ai.dutying.app',

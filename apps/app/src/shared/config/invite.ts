@@ -12,7 +12,12 @@ export const DEEP_LINK_APP_ORIGIN = 'https://app.dutying.ai';
 export const FRIEND_INVITE_APP_ORIGIN = DEEP_LINK_APP_ORIGIN;
 export const FRIEND_INVITE_SCHEME_BASE = INVITE_SCHEME_BASE_BY_KIND.friend;
 export const MOIM_INVITE_SCHEME_BASE = INVITE_SCHEME_BASE_BY_KIND.moim;
-export const IOS_APP_STORE_URL = 'https://apps.apple.com/kr/app/id6466558189';
+export const IOS_APP_STORE_URL_JA =
+    'https://apps.apple.com/jp/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827';
+export const IOS_APP_STORE_URL_KO =
+    'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827';
+export const IOS_APP_STORE_URL_DEFAULT = 'https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827';
+export const IOS_APP_STORE_URL = IOS_APP_STORE_URL_DEFAULT;
 export const ANDROID_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ai.dutying.app';
 
 export type TInviteKind = keyof typeof INVITE_PATH_BY_KIND;
@@ -41,3 +46,12 @@ export const buildMoimInviteAppUrl = (search?: string) => buildInviteAppUrl('moi
 export const buildFriendInviteSchemeUrl = (search?: string) => buildInviteSchemeUrl('friend', search);
 
 export const buildMoimInviteSchemeUrl = (search?: string) => buildInviteSchemeUrl('moim', search);
+
+export const resolveIosAppStoreUrl = (languages: readonly string[]) => {
+    const normalizedLanguages = languages.map((language) => language.toLowerCase());
+
+    if (normalizedLanguages.some((language) => language.startsWith('ja'))) return IOS_APP_STORE_URL_JA;
+    if (normalizedLanguages.some((language) => language.startsWith('ko'))) return IOS_APP_STORE_URL_KO;
+
+    return IOS_APP_STORE_URL_DEFAULT;
+};

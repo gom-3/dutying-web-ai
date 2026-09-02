@@ -8,7 +8,7 @@ import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
-import {ANDROID_PLAY_STORE_URL} from '@/shared/config/invite';
+import {ANDROID_PLAY_STORE_URL, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
@@ -667,56 +667,20 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
 }
 
 function StoreButton() {
-    const {t} = useTypedTranslation();
-    const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
+    const {i18n} = useTranslation();
+    const appStoreLink = resolveIosAppStoreUrl([i18n.resolvedLanguage ?? i18n.language]);
 
     return (
         <>
-            <Dialog.Root>
-                <Dialog.Trigger asChild>
-                    <button
-                        type="button"
-                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 sm:w-[180px]"
-                    >
-                        <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
-                        <span className="whitespace-nowrap">App Store</span>
-                    </button>
-                </Dialog.Trigger>
-
-                <Dialog.Portal container={portalContainer}>
-                    <Dialog.Overlay className="fixed inset-0 z-[1000] bg-[#150B3C]/45" />
-                    <Dialog.Content className="fixed top-1/2 left-1/2 z-[1001] w-[calc(100vw-40px)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white px-6 pt-10 pb-6 text-center text-[#150B3C] shadow-[0_24px_70px_rgba(18,20,31,0.2)] focus-visible:outline-none sm:px-7 sm:pt-11 sm:pb-7">
-                        <Dialog.Close asChild>
-                            <button
-                                type="button"
-                                aria-label={t('page.landing.iosComingSoon.close')}
-                                className="absolute top-3.5 right-3.5 inline-flex size-9 items-center justify-center rounded-full bg-[#F5F5F7] text-[#71698D] transition-colors hover:bg-[#ECEAF1] hover:text-[#150B3C] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
-                            >
-                                <X className="size-4" strokeWidth={2.2} aria-hidden="true" />
-                            </button>
-                        </Dialog.Close>
-
-                        <p className="mx-auto inline-flex min-h-7 items-center justify-center rounded-full bg-[#EFE7FF] px-3 text-xs font-extrabold tracking-[0.08em] text-main-1">
-                            {t('page.landing.iosComingSoon.eyebrow')}
-                        </p>
-                        <Dialog.Title className="mt-4 text-[22px] leading-[1.4] font-extrabold tracking-[-0.02em] sm:text-2xl">
-                            {t('page.landing.iosComingSoon.title')}
-                        </Dialog.Title>
-                        <Dialog.Description className="mt-2.5 text-[15px] leading-6 font-medium text-[#6B6780]">
-                            {t('page.landing.iosComingSoon.description')}
-                        </Dialog.Description>
-
-                        <Dialog.Close asChild>
-                            <button
-                                type="button"
-                                className="mt-7 inline-flex h-12 w-full items-center justify-center rounded-[10px] bg-main-1 px-5 text-base font-bold text-white transition-colors hover:bg-main-1-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
-                            >
-                                {t('page.landing.iosComingSoon.confirm')}
-                            </button>
-                        </Dialog.Close>
-                    </Dialog.Content>
-                </Dialog.Portal>
-            </Dialog.Root>
+            <a
+                href={appStoreLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 sm:w-[180px]"
+            >
+                <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span className="whitespace-nowrap">App Store</span>
+            </a>
             <a
                 href={playStoreLink}
                 target="_blank"
