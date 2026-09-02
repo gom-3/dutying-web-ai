@@ -215,6 +215,7 @@ function LoginPage() {
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const lineAuthorizeUrl = buildLineAuthAuthorizeUrl(socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
+    const googleAuthorizeUrl = buildAuthAuthorizeUrl('google', socialAuthorizeNextPath);
     const loginVisualSlides = getLoginVisualSlides(currentLanguage);
     const totalLoginVisualPages = loginVisualSlides.length;
     const safeLoginVisualSlideIndex = Math.min(loginVisualSlideIndex, totalLoginVisualPages - 1);
@@ -1158,6 +1159,19 @@ function LoginPage() {
                                         {isSignupPage ? t('page.login.kakaoStart') : t('page.login.kakaoContinue')}
                                     </a>
                                 )}
+                                <a
+                                    href={googleAuthorizeUrl}
+                                    className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[#747775] bg-white px-[12px] text-sm font-medium text-[#1F1F1F] transition-colors hover:bg-gray-7"
+                                >
+                                    <img
+                                        src="/img/google-logo.png"
+                                        alt=""
+                                        className="mr-3 h-5 w-5 shrink-0 object-contain"
+                                        width={20}
+                                        height={20}
+                                    />
+                                    {isSignupPage ? t('page.login.googleStart') : t('page.login.googleContinue')}
+                                </a>
                                 <a
                                     href={appleAuthorizeUrl}
                                     className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
