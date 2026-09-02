@@ -1,7 +1,10 @@
 ﻿import type {ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
+import {getOnboardingTutorialVideo} from '../model/tutorial-video';
+import ScheduleVideoGuide from './schedule-video-guide';
 
 type TStepLabel = {
     titleKey: TI18nKey;
@@ -88,6 +91,8 @@ function TitleLines({children, highlights}: {children: string; highlights?: read
 
 function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const tutorialVideo = step === 3 ? getOnboardingTutorialVideo(i18n.language || i18n.resolvedLanguage) : undefined;
     const label = nightRecovery ? NIGHT_RECOVERY_LABEL : STEP_LABELS[step];
     const isIdentityStep = step === 1;
     const title = t(label.titleKey);
@@ -98,7 +103,9 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
         : isIdentityStep || step === 2
           ? 'mb-6 max-w-[480px] space-y-2'
           : step === 3
-            ? 'mb-10 max-w-[720px]'
+            ? tutorialVideo
+                ? 'min-w-0 max-w-[720px] flex-1'
+                : 'mb-10 max-w-[720px]'
             : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
@@ -108,17 +115,30 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
             </span>
         </>
     );
-
-    return (
+    const header = (
         <BaseSectionHeader
             className={headerClassName}
             title={renderedTitle}
-            titleClassName={nightRecovery ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap' : undefined}
+            titleClassName={
+                nightRecovery
+                    ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap'
+                    : tutorialVideo
+                      ? 'text-[20px] sm:text-[32px]'
+                      : undefined
+            }
             description={description}
             descriptionClassName={
                 isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'
             }
         />
+    );
+
+    return tutorialVideo ? (
+        <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo}>
+            {header}
+        </ScheduleVideoGuide>
+    ) : (
+        header
     );
 }
 
