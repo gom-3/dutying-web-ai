@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import type * as I18nResourcesModule from '@/shared/i18n/resources.generated';
 import {render, userEvent} from '@/shared/util/test-utils';
+import OnboardingWardCreatePage from '../index';
 import {
     createInitialDraft,
     goToStep,
@@ -11,7 +12,6 @@ import {
     updateRotationModeDraft,
     updateTwoShiftNightRecoveryDisplayDraft,
 } from '../model/draft';
-import OnboardingWardCreatePage from '../index';
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
@@ -967,8 +967,6 @@ describe('OnboardingWardCreatePage', () => {
     });
 
     it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', async () => {
-        const user = userEvent.setup();
-
         await renderShiftTypeStepFromRestoredDraft('MIXED');
 
         expect(screen.getByText('교대제')).toBeInTheDocument();

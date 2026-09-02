@@ -14,9 +14,9 @@ import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import './landing-page.css';
 
-const inquiryLink = 'https://ye620.channel.io';
 const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
 const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
 const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
@@ -1309,9 +1309,9 @@ function LandingPage() {
                         <a href="#app" className="transition-colors hover:text-main-1">
                             {t('page.landing.header.app')}
                         </a>
-                        <a href={inquiryLink} target="_blank" rel="noreferrer" className="transition-colors hover:text-main-1">
+                        <ChannelTalkLink className="transition-colors hover:text-main-1">
                             {t('page.landing.header.inquiry')}
-                        </a>
+                        </ChannelTalkLink>
                     </nav>
 
                     <div className="flex items-center gap-2 sm:gap-3">
