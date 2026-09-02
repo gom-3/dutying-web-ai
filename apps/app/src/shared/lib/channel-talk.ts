@@ -31,6 +31,7 @@ const getChannelWindow = () => window as Window & {ChannelIO?: TChannelIO};
 
 let sdkPromise: Promise<void> | undefined;
 let syncPromise: Promise<TChannelIO> | undefined;
+let isBooted = false;
 let desiredLanguage: TPreferredLanguage = DEFAULT_PREFERRED_LANGUAGE;
 let appliedLanguage: TPreferredLanguage | undefined;
 
@@ -104,6 +105,28 @@ function syncLanguage(): Promise<TChannelIO> {
     syncPromise = (async () => {
         await loadSdk();
 
+        if (!isBooted) {
+            await waitForCallback((callback) => {
+                const channelIO = getChannelWindow().ChannelIO;
+
+                if (!channelIO) throw new Error('Channel Talk SDK is unavailable.');
+
+                channelIO(
+                    'boot',
+                    {
+                        pluginKey,
+                        language: desiredLanguage,
+                        hideChannelButtonOnBoot: true,
+                        hidePopup: true,
+                        trackDefaultEvent: false,
+                    },
+                    callback,
+                );
+            });
+            isBooted = true;
+        }
+
+        // Boot can restore a visitor's saved language. Explicitly update it before opening.
         // Keep the latest selection if the visitor switches languages during loading.
         while (appliedLanguage !== desiredLanguage) {
             const language = desiredLanguage;
@@ -114,21 +137,7 @@ function syncLanguage(): Promise<TChannelIO> {
 
                 if (!channelIO) throw new Error('Channel Talk SDK is unavailable.');
 
-                if (appliedLanguage) {
-                    channelIO('updateUser', {language}, callback);
-                } else {
-                    channelIO(
-                        'boot',
-                        {
-                            pluginKey,
-                            language,
-                            hideChannelButtonOnBoot: true,
-                            hidePopup: true,
-                            trackDefaultEvent: false,
-                        },
-                        callback,
-                    );
-                }
+                channelIO('updateUser', {language}, callback);
             });
             appliedLanguage = language;
         }
@@ -149,7 +158,7 @@ export async function setChannelTalkLanguage(language?: string | null): Promise<
     desiredLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
 
     // Merely visiting the landing page should not load or boot the chat SDK.
-    if (appliedLanguage || syncPromise) await syncLanguage();
+    if (isBooted || syncPromise) await syncLanguage();
 }
 
 export async function openChannelTalk(language?: string | null): Promise<void> {

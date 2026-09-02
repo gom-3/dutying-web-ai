@@ -76,6 +76,46 @@ describe('Channel Talk integration', () => {
         ]);
     });
 
+    it('overrides a returning visitor language before showing the messenger', async () => {
+        const chat = await import('../channel-talk');
+        const opening = chat.openChannelTalk('en');
+        const {boot, liveSdk} = await finishSdkLoad();
+
+        let updateCallback: ((error?: unknown) => void) | undefined;
+
+        liveSdk.mockImplementation((command, _options, callback) => {
+            if (command === 'updateUser') updateCallback = callback;
+        });
+
+        // A successful boot may retain Korean from an earlier visit despite language: 'en'.
+        boot[2]();
+        await vi.waitFor(() => expect(updateCallback).toBeDefined());
+        expect(liveSdk).toHaveBeenCalledExactlyOnceWith('updateUser', {language: 'en'}, expect.any(Function));
+
+        updateCallback?.();
+        await opening;
+        expect(liveSdk).toHaveBeenLastCalledWith('showMessenger');
+    });
+
+    it('retries a failed initial language update without rebooting', async () => {
+        const chat = await import('../channel-talk');
+        const opening = chat.openChannelTalk('ja');
+        const failure = expect(opening).rejects.toThrow('Language update failed');
+        const {boot, liveSdk} = await finishSdkLoad();
+
+        liveSdk.mockImplementationOnce((_command, _options, callback) => callback?.(new Error('Language update failed')));
+        boot[2]();
+        await failure;
+        expect(liveSdk).not.toHaveBeenCalledWith('showMessenger');
+
+        liveSdk.mockClear();
+        await chat.openChannelTalk('ja');
+        expect(liveSdk.mock.calls.map(([command, options]) => [command, options])).toEqual([
+            ['updateUser', {language: 'ja'}],
+            ['showMessenger', undefined],
+        ]);
+    });
+
     it('cleans up a stalled download and allows a subsequent attempt', async () => {
         vi.useFakeTimers();
 
