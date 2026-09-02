@@ -91,7 +91,7 @@ describe('LandingPage', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getAllByRole('link', {name: 'Google Play'})[0]).toHaveAttribute(
             'href',
-            'https://play.google.com/store/apps/details?id=ai.dutying.app',
+            'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ko&gl=KR',
         );
     });
 

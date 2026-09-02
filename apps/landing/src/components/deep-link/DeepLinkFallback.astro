@@ -100,7 +100,7 @@ const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서
                         <img src="/img/apple.png" alt="" aria-hidden="true" />
                         App Store에서 받기
                     </a>
-                    <a class="button button--secondary" href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noreferrer">
+                    <a class="button button--secondary" href={ANDROID_PLAY_STORE_URL} target="_blank" rel="noreferrer" data-play-store-link>
                         <img src="/img/play.png" alt="" aria-hidden="true" />
                         Google Play에서 받기
                     </a>
@@ -116,19 +116,33 @@ const openButtonLabel = kind === 'friend' || kind === 'moim' ? '듀팅 앱에서
         ko: 'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
         default: 'https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827',
     } as const;
+    const ANDROID_PLAY_STORE_LINKS = {
+        ja: 'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ja&gl=JP',
+        ko: 'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ko&gl=KR',
+        default: 'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=en&gl=US',
+    } as const;
 
-    const resolveIosAppStoreLink = () => {
+    const getNormalizedLanguages = () => {
         const languages = navigator.languages?.length ? navigator.languages : [navigator.language];
-        const normalizedLanguages = languages.map((language) => language.toLowerCase());
 
-        if (normalizedLanguages.some((language) => language.startsWith('ja'))) return IOS_APP_STORE_LINKS.ja;
-        if (normalizedLanguages.some((language) => language.startsWith('ko'))) return IOS_APP_STORE_LINKS.ko;
+        return languages.map((language) => language.toLowerCase());
+    };
 
-        return IOS_APP_STORE_LINKS.default;
+    const resolveLocalizedStoreLink = <T extends {ja: string; ko: string; default: string}>(links: T) => {
+        const normalizedLanguages = getNormalizedLanguages();
+
+        if (normalizedLanguages.some((language) => language.startsWith('ja'))) return links.ja;
+        if (normalizedLanguages.some((language) => language.startsWith('ko'))) return links.ko;
+
+        return links.default;
     };
 
     document.querySelectorAll<HTMLAnchorElement>('[data-ios-store-link]').forEach((link) => {
-        link.href = resolveIosAppStoreLink();
+        link.href = resolveLocalizedStoreLink(IOS_APP_STORE_LINKS);
+    });
+
+    document.querySelectorAll<HTMLAnchorElement>('[data-play-store-link]').forEach((link) => {
+        link.href = resolveLocalizedStoreLink(ANDROID_PLAY_STORE_LINKS);
     });
 
     const COPY_BY_PATH = {

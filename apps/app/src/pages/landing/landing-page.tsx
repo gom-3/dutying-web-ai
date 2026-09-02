@@ -8,7 +8,7 @@ import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
-import {ANDROID_PLAY_STORE_URL, resolveIosAppStoreUrl} from '@/shared/config/invite';
+import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
@@ -16,7 +16,6 @@ import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-transl
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
 
-const playStoreLink = ANDROID_PLAY_STORE_URL;
 const inquiryLink = 'https://ye620.channel.io';
 const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
 const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
@@ -668,7 +667,9 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
 
 function StoreButton() {
     const {i18n} = useTranslation();
-    const appStoreLink = resolveIosAppStoreUrl([i18n.resolvedLanguage ?? i18n.language]);
+    const languages = [i18n.resolvedLanguage ?? i18n.language];
+    const appStoreLink = resolveIosAppStoreUrl(languages);
+    const playStoreLink = resolveAndroidPlayStoreUrl(languages);
 
     return (
         <>

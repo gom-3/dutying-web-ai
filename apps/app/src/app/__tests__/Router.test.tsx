@@ -155,7 +155,7 @@ describe('Router', () => {
         );
         expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute(
             'href',
-            'https://play.google.com/store/apps/details?id=ai.dutying.app',
+            'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=en&gl=US',
         );
     });
 
