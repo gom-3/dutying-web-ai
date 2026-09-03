@@ -75,14 +75,30 @@ function HighlightedText({text, highlights = []}: {text: string; highlights?: re
         );
 }
 
-function TitleLines({children, highlights}: {children: string; highlights?: readonly string[]}) {
+function TitleLines({
+    children,
+    highlights,
+    trailingAction,
+}: {
+    children: string;
+    highlights?: readonly string[];
+    trailingAction?: ReactNode;
+}) {
     const lines = children.split('\n');
 
     return (
         <>
             {lines.map((line, index) => (
-                <span key={`${line}-${index}`} className="block break-keep">
-                    <HighlightedText text={line} highlights={highlights} />
+                <span
+                    key={`${line}-${index}`}
+                    className={trailingAction && index === lines.length - 1 ? 'block text-balance break-keep' : 'block break-keep'}
+                >
+                    <span aria-hidden="true">
+                        <HighlightedText text={line} highlights={highlights} />
+                    </span>
+                    {index === lines.length - 1 && trailingAction ? (
+                        <span className="ml-3 inline-flex align-middle">{trailingAction}</span>
+                    ) : null}
                 </span>
             ))}
         </>
@@ -104,15 +120,18 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
           ? 'mb-6 max-w-[480px] space-y-2'
           : step === 3
             ? tutorialVideo
-                ? 'min-w-0 max-w-[720px] flex-1'
+                ? 'mb-10'
                 : 'mb-10 max-w-[720px]'
             : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title.replace(/\n/g, ' ')}</span>
-            <span aria-hidden="true">
-                <TitleLines highlights={titleHighlights}>{title}</TitleLines>
-            </span>
+            <TitleLines
+                highlights={titleHighlights}
+                trailingAction={tutorialVideo ? <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo} /> : undefined}
+            >
+                {title}
+            </TitleLines>
         </>
     );
     const header = (
@@ -133,13 +152,7 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
         />
     );
 
-    return tutorialVideo ? (
-        <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo}>
-            {header}
-        </ScheduleVideoGuide>
-    ) : (
-        header
-    );
+    return header;
 }
 
 export default SectionHeader;

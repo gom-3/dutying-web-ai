@@ -15,7 +15,7 @@ const TUTORIAL_VIDEOS: Partial<Record<TPreferredLanguage, TOnboardingTutorialVid
     ko: {
         src: `${CDN_BASE_URL}/onboarding/ko/ward-onboarding-ko-20260902-v1.mp4`,
         poster: `${CDN_BASE_URL}/onboarding/ko/ward-onboarding-ko-20260902-v1.webp`,
-        durationLabel: '1:53',
+        durationLabel: '1분',
     },
 };
 

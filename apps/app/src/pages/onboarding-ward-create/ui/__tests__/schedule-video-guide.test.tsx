@@ -21,7 +21,7 @@ describe('onboarding schedule video guide', () => {
         const {baseElement} = render(<SectionHeader step={3} />);
         const button = screen.getByRole('button', {name: /설명 영상/});
 
-        expect(button).toHaveTextContent('1:53');
+        expect(button).toHaveTextContent('1분');
         expect(button).toHaveAttribute('aria-haspopup', 'dialog');
         expect(button).toHaveAttribute('aria-expanded', 'false');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

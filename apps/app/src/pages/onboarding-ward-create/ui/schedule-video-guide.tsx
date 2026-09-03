@@ -1,10 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TOnboardingTutorialVideo} from '../model/tutorial-video';
 
 const GUIDE_BUTTON_CLASS =
-    'inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#EEE8FA] px-3 font-apple text-sm font-semibold text-[#6241A5] transition-colors hover:bg-[#E3D8F7] focus-visible:bg-[#6241A5] focus-visible:text-white motion-reduce:transition-none sm:px-4';
+    'inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full bg-black px-4 font-apple text-sm font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#262626] focus-visible:bg-[#EEE8FA] focus-visible:text-black motion-reduce:transition-none';
 const PLAYER_CONTROL_CLASS =
     'inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-[#302B3A] px-3 font-apple text-sm font-semibold text-white transition-colors hover:bg-[#45404F] focus-visible:bg-white focus-visible:text-[#19151F] motion-reduce:transition-none';
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -93,7 +93,7 @@ function VideoPlayer({
     );
 }
 
-function ScheduleVideoGuide({video, children}: {video: TOnboardingTutorialVideo; children: ReactNode}) {
+function ScheduleVideoGuide({video}: {video: TOnboardingTutorialVideo}) {
     const {t} = useTypedTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [playbackAttempt, setPlaybackAttempt] = useState(0);
@@ -102,18 +102,15 @@ function ScheduleVideoGuide({video, children}: {video: TOnboardingTutorialVideo;
 
     return (
         <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
-            <div className="mb-10 flex items-start justify-between gap-3 sm:items-center sm:gap-6">
-                {children}
-                <Dialog.Trigger asChild>
-                    <button type="button" className={GUIDE_BUTTON_CLASS}>
-                        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0" fill="currentColor">
-                            <path d="M6 3.8a1 1 0 0 1 1.5-.86l9.3 5.35a1.98 1.98 0 0 1 0 3.42l-9.3 5.35A1 1 0 0 1 6 16.2V3.8Z" />
-                        </svg>
-                        <span>{t('page.onboardingWardCreate.video.action')}</span>
-                        <span className="hidden tabular-nums sm:inline">· {video.durationLabel}</span>
-                    </button>
-                </Dialog.Trigger>
-            </div>
+            <Dialog.Trigger asChild>
+                <button type="button" className={GUIDE_BUTTON_CLASS}>
+                    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 shrink-0" fill="currentColor">
+                        <path d="M6 3.8a1 1 0 0 1 1.5-.86l9.3 5.35a1.98 1.98 0 0 1 0 3.42l-9.3 5.35A1 1 0 0 1 6 16.2V3.8Z" />
+                    </svg>
+                    <span>{t('page.onboardingWardCreate.video.action')}</span>
+                    <span>· {video.durationLabel}</span>
+                </button>
+            </Dialog.Trigger>
             <Dialog.Portal container={portalContainer}>
                 <Dialog.Overlay className="fixed inset-0 z-[1100] bg-[#111019]/70 backdrop-blur-[8px]" />
                 <Dialog.Content
