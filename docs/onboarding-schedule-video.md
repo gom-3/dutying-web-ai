@@ -32,7 +32,7 @@ https://d2p65uxyq3mfp8.cloudfront.net/onboarding/ko/ward-onboarding-ko-20260902-
 https://d2p65uxyq3mfp8.cloudfront.net/onboarding/ko/ward-onboarding-ko-20260902-v1.webp
 ```
 
-기존 CloudFront가 새 객체를 읽을 수 있는지 확인한다. 정상 조회(200), 영상 Range 요청(206), 브라우저 재생을 확인한 뒤 프론트를 배포한다. 운영 S3 접근 권한이 없어 이번 작업에서는 업로드와 CDN 검증을 수행하지 않았다. 파일은 프론트 저장소 밖 `../onboarding-video-assets/`에 보관하며 앱 번들에 포함하지 않는다.
+S3 담당자 업로드 후 2026-09-03에 위 두 주소의 정상 조회(200), 영상 Range 요청(206), Content-Type과 Cache-Control을 확인했다. CDN 파일 2개의 SHA-256은 로컬에서 브라우저 재생을 검증한 최적화 파일과 일치한다. 파일은 프론트 저장소 밖 `../onboarding-video-assets/`에 보관하며 앱 번들에 포함하지 않는다.
 
 ## 영어·일본어 추가
 
