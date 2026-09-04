@@ -32,6 +32,39 @@
             "imageAlt": "看護師の勤務表作成とシフト管理を支援するDutying",
             "iosStoreUrl": "https://apps.apple.com/jp/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827",
             "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ja&gl=JP"
+        },
+        {
+            "language": "zh",
+            "path": "/zh",
+            "title": "护士排班表制作，AI 1分钟自动生成 | Dutying",
+            "description": "手动创建护士排班表，或使用AI在1分钟内自动生成。支持病区排班规则、期望班次和轮班日程管理。",
+            "schemaLanguage": "zh-CN",
+            "ogLocale": "zh_CN",
+            "imageAlt": "Dutying AI护士排班表制作和轮班管理界面",
+            "iosStoreUrl": "https://apps.apple.com/cn/app/dutying-nurse-shift-calendar/id6804144827",
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=zh-CN&gl=CN"
+        },
+        {
+            "language": "th",
+            "path": "/th",
+            "title": "สร้างตารางเวรพยาบาลด้วย AI ใน 1 นาที | Dutying",
+            "description": "สร้างตารางเวรพยาบาลด้วยตนเอง หรือให้ AI สร้างอัตโนมัติภายใน 1 นาที รองรับเงื่อนไขของหอผู้ป่วย คำขอเวร และการจัดการตารางกะ",
+            "schemaLanguage": "th-TH",
+            "ogLocale": "th_TH",
+            "imageAlt": "หน้าจอสร้างตารางเวรพยาบาลและจัดการกะด้วย AI ของ Dutying",
+            "iosStoreUrl": "https://apps.apple.com/th/app/dutying-nurse-shift-calendar/id6804144827",
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=th&gl=TH"
+        },
+        {
+            "language": "vi",
+            "path": "/vi",
+            "title": "Tạo lịch trực điều dưỡng bằng AI trong 1 phút | Dutying",
+            "description": "Tạo lịch trực điều dưỡng thủ công hoặc để AI tự động tạo trong 1 phút. Hỗ trợ quy tắc của khoa, nguyện vọng ca trực và quản lý lịch làm việc theo ca.",
+            "schemaLanguage": "vi-VN",
+            "ogLocale": "vi_VN",
+            "imageAlt": "Giao diện tạo lịch trực điều dưỡng và quản lý ca bằng AI của Dutying",
+            "iosStoreUrl": "https://apps.apple.com/vn/app/dutying-nurse-shift-calendar/id6804144827",
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=vi&gl=VN"
         }
     ]
 }

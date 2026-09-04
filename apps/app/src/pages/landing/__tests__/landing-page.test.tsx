@@ -69,6 +69,9 @@ describe('LandingPage', () => {
         await user.click(screen.getByRole('button', {name: '언어 선택'}));
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('href', ROUTE.LANDING_EN);
         expect(screen.getByRole('option', {name: /日本語/})).toHaveAttribute('href', ROUTE.LANDING_JA);
+        expect(screen.getByRole('option', {name: /简体中文/})).toHaveAttribute('href', ROUTE.LANDING_ZH);
+        expect(screen.getByRole('option', {name: /ภาษาไทย/})).toHaveAttribute('href', ROUTE.LANDING_TH);
+        expect(screen.getByRole('option', {name: /Tiếng Việt/})).toHaveAttribute('href', ROUTE.LANDING_VI);
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('aria-selected', 'false');
 
         await user.click(screen.getByRole('option', {name: 'English'}));

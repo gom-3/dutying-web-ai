@@ -1,7 +1,7 @@
 import type {TPreferredLanguage} from '@dutying/domain';
 import marketingPages from './marketing-pages.json';
 
-export type TIndexedMarketingLanguage = 'ko' | 'en' | 'ja';
+export type TIndexedMarketingLanguage = TPreferredLanguage;
 
 const indexedMarketingPathByLanguage = Object.fromEntries(marketingPages.pages.map((page) => [page.language, page.path])) as Record<
     TIndexedMarketingLanguage,
