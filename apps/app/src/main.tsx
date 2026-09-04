@@ -5,11 +5,19 @@ import {BrowserRouter} from 'react-router-dom';
 import App from '@/app/App';
 import {captureOAuthRedirectPayload} from '@/features/auth/model/oauth-redirect-payload';
 import {initializeProfileImageStore} from '@/features/file';
+import {getIndexedMarketingLanguageFromPath} from '@/shared/seo/marketing-locale';
 import Loading from '@/widgets/loading';
 import Tutorial from '@/widgets/tutorial';
-import initializeApp from './initializeApp';
 import './index.css';
-import './i18n';
+import i18n from './i18n';
+import initializeApp from './initializeApp';
+
+const indexedMarketingLanguage = getIndexedMarketingLanguageFromPath(window.location.pathname);
+const rootQuerySelectsLanguage = window.location.pathname === '/' && new URLSearchParams(window.location.search).has('lng');
+
+if (indexedMarketingLanguage && !rootQuerySelectsLanguage) {
+    void i18n.changeLanguage(indexedMarketingLanguage);
+}
 
 const queryClient = new QueryClient({
     defaultOptions: {

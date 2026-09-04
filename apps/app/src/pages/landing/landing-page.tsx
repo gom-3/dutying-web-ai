@@ -14,6 +14,7 @@ import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
 import './landing-page.css';
 
 const inquiryLink = 'https://ye620.channel.io';
@@ -820,9 +821,9 @@ function HeaderLanguageMenu() {
                         const isSelected = language === currentLanguage;
 
                         return (
-                            <button
+                            <Link
                                 key={language}
-                                type="button"
+                                to={getMarketingLanguageHref(language)}
                                 role="option"
                                 aria-selected={isSelected}
                                 onClick={() => handleLanguageChange(language)}
@@ -831,7 +832,7 @@ function HeaderLanguageMenu() {
                                 }`}
                             >
                                 {getLanguageLabel(language)}
-                            </button>
+                            </Link>
                         );
                     })}
                 </div>
