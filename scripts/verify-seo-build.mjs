@@ -7,6 +7,7 @@ const assert = (condition, message) => {
     if (!condition) throw new Error(message);
 };
 const assertContains = (html, value, file) => assert(html.includes(value), `${file}: ${value} 누락`);
+const countMatches = (value, pattern) => value.match(pattern)?.length ?? 0;
 
 const collectHtmlFiles = (directory) =>
     readdirSync(resolve(root, directory), {withFileTypes: true}).flatMap((entry) => {
@@ -35,9 +36,14 @@ for (const file of appHtmlFiles) {
     assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
 
     if (marketingPage) {
+        const marketingHeading = marketingPage.title.split(' | ')[0] ?? marketingPage.title;
+
         assertContains(html, `<html lang="${marketingPage.language}"`, file);
         assertContains(html, `<title>${marketingPage.title}</title>`, file);
         assertContains(html, `<meta name="description" content="${marketingPage.description}"`, file);
+        assertContains(html, 'data-marketing-fallback', file);
+        assertContains(html, marketingHeading, file);
+        assert(countMatches(html, /<h1(?:\s|>)/g) === 1, `${file}: 최초 HTML의 H1은 정확히 하나여야 함`);
         assert(!marketingTitles.has(marketingPage.title), `${file}: 검색 제목 중복`);
         assert(!marketingDescriptions.has(marketingPage.description), `${file}: 검색 설명 중복`);
 
@@ -51,6 +57,8 @@ for (const file of appHtmlFiles) {
         assertContains(html, `"inLanguage":"${marketingPage.schemaLanguage}"`, file);
         marketingTitles.add(marketingPage.title);
         marketingDescriptions.add(marketingPage.description);
+    } else {
+        assert(!html.includes('data-marketing-fallback'), `${file}: 앱 내부 경로에 검색용 랜딩 fallback이 남아 있음`);
     }
 }
 

@@ -53,7 +53,34 @@
         <!-- MARKETING_SEO_END -->
     </head>
     <body>
-        <div id="root"></div>
+        <div id="root">
+            <!-- MARKETING_FALLBACK_START -->
+            <main
+                data-marketing-fallback
+                style="
+                    box-sizing: border-box;
+                    display: flex;
+                    min-height: 100vh;
+                    align-items: center;
+                    justify-content: center;
+                    background: #f8f6fc;
+                    padding: 48px 24px;
+                    color: #150b3c;
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                "
+            >
+                <section style="max-width: 760px">
+                    <p style="margin: 0 0 16px; color: #7047eb; font-size: 18px; font-weight: 700">Dutying</p>
+                    <h1 style="margin: 0; font-size: clamp(32px, 6vw, 56px); line-height: 1.2">간호사 근무표 만들기, AI로 1분 만에</h1>
+                    <p style="margin: 24px auto 0; color: #5f557f; font-size: 18px; line-height: 1.7">
+                        간호사 근무표를 AI로 1분 만에 만들어 보세요. 병동 규칙에 맞춰 교대근무 일정을 관리하고 듀팅 간호사 앱과 간편하게
+                        연동하세요.
+                    </p>
+                </section>
+            </main>
+            <!-- MARKETING_FALLBACK_END -->
+        </div>
         <div id="modal-root"></div>
         <div id="edit-modal-root"></div>
         <div id="info-modal-root"></div>
