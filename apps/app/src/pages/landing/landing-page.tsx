@@ -14,6 +14,7 @@ import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import './landing-page.css';
 
