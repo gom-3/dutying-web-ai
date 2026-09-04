@@ -67,9 +67,11 @@ type TAiAutofillLoadingOverlayProps = {
     isFinishing?: boolean;
     onFinish?: () => void;
     startedAt: number | null;
+    /** 조절이면 "채우는 중"이 아니라 "방향을 조절하는 중"이다. 빈칸을 채우는 게 아니기 때문이다. */
+    isAdjusting?: boolean;
 };
 
-export function AiAutofillLoadingOverlay({isFinishing = false, onFinish, startedAt}: TAiAutofillLoadingOverlayProps) {
+export function AiAutofillLoadingOverlay({isFinishing = false, onFinish, startedAt, isAdjusting = false}: TAiAutofillLoadingOverlayProps) {
     const {t} = useTypedTranslation();
     const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(startedAt)));
     const progressRef = useRef(progress);
@@ -148,7 +150,7 @@ export function AiAutofillLoadingOverlay({isFinishing = false, onFinish, started
                     <LoaderCircle className="h-[22px] w-[22px] animate-spin" aria-hidden />
                 </div>
                 <p id="ai-autofill-loading-title" className="mt-5 font-apple text-[24px] leading-[1.35] font-bold text-sub-1">
-                    {t('page.makeShift.aiRefill.loadingOverlay.title')}
+                    {isAdjusting ? t('page.makeShift.aiRefill.adjusting') : t('page.makeShift.aiRefill.loadingOverlay.title')}
                 </p>
                 <p className="mx-auto mt-3 max-w-[300px] font-apple text-[15px] leading-[1.6] font-medium whitespace-pre-line text-gray-3">
                     {t('page.makeShift.aiRefill.loadingOverlay.description')}

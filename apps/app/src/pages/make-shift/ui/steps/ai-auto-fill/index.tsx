@@ -1,4 +1,5 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
+import type {TAutofillAdjustDto, TAutofillAdjustKnob} from '@dutying/api/ward';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -16,6 +17,8 @@ import {
     type TCellPos,
     type TDutyDoc,
 } from '@/features/shift-editor';
+import {getDocCellKey, getEditedFilledCellsSinceBaseline} from '@/features/shift-editor/model/doc-diff';
+import {adjustLockedCellKeys} from '@/features/shift-editor/model/schedule-authoring';
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
@@ -49,6 +52,7 @@ import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
+import AiAdjustChipBar, {type TAdjustKnobs} from './ai-adjust-chip-bar';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
@@ -73,17 +77,6 @@ type TSelectionFixedStats = {
 
 function hasScheduleScopeShape(shift: NonNullable<Parameters<typeof isDutyDocInScheduleScope>[1]>) {
     return shift.days.length > 0 && shift.divisionShiftNurses.some((division) => division.some((row) => row.shiftNurse.isWorker));
-}
-
-function getDocCellKey(doc: TDutyDoc, row: number, col: number): string | null {
-    if (col < 0) return null;
-
-    const workerId = doc.rows[row]?.workerId;
-    const date = doc.columns[col];
-
-    if (!workerId || !date) return null;
-
-    return `${workerId}|${date}`;
 }
 
 function getUnprotectedFilledCells(doc: TDutyDoc): TCellPos[] {
@@ -133,48 +126,6 @@ function getSelectionFixedStats(doc: TDutyDoc, selectionCells: TCellPos[]): TSel
     }
 
     return {fixableFilledCount, fixedCount};
-}
-
-function getEditedFilledCellsSinceBaseline(currentDoc: TDutyDoc, baselineDoc: TDutyDoc | null): TCellPos[] {
-    if (!baselineDoc) return [];
-
-    const baselineValueByKey = new Map<string, string | null>();
-
-    for (const row of baselineDoc.rows) {
-        for (let col = 0; col < baselineDoc.columns.length; col += 1) {
-            const date = baselineDoc.columns[col];
-
-            if (!date) continue;
-
-            baselineValueByKey.set(`${row.workerId}|${date}`, row.cells[col] ?? null);
-        }
-    }
-
-    const cells: TCellPos[] = [];
-
-    for (let row = 0; row < currentDoc.rows.length; row += 1) {
-        const dutyRow = currentDoc.rows[row];
-
-        if (!dutyRow) continue;
-
-        for (let col = 0; col < currentDoc.columns.length; col += 1) {
-            const key = getDocCellKey(currentDoc, row, col);
-
-            if (key === null) continue;
-
-            if (currentDoc.fixedCells[key] === true || currentDoc.requestCells[key] === true) continue;
-
-            const currentValue = dutyRow.cells[col] ?? null;
-
-            if (currentValue === null) continue;
-
-            if (baselineValueByKey.get(key) === currentValue) continue;
-
-            cells.push({row, col});
-        }
-    }
-
-    return cells;
 }
 
 function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
@@ -240,6 +191,12 @@ function resolveSnapshotDisplayTitle(params: {
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
+/**
+ * 조절 기능 노출 여부. 엔진 -> 서버 -> 프론트 순으로 켜야 한다. 프론트만 먼저 켜면 사용자가
+ * 칩을 누르고 거절 응답을 받는다.
+ */
+const isAdjustEnabled = import.meta.env.VITE_AI_ADJUST_ENABLED === 'true';
+
 export function AiAutofill() {
     const {t} = useTypedTranslation();
     const queryClient = useQueryClient();
@@ -286,6 +243,10 @@ export function AiAutofill() {
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+    const [adjustKnobs, setAdjustKnobs] = useState<TAdjustKnobs>({});
+    const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
+    // 로딩 문구를 가른다. 조절은 "채우는 중"이 아니라 "방향을 조절하는 중"이다.
+    const [isAdjusting, setIsAdjusting] = useState(false);
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
     const [loadingSnapshotId, setLoadingSnapshotId] = useState<number | null>(null);
     const [deletingSnapshotId, setDeletingSnapshotId] = useState<number | null>(null);
@@ -964,7 +925,7 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext()) => {
+    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -983,12 +944,21 @@ export function AiAutofill() {
         clearAiEffectDismissTimer();
         setAiStartedAt(Date.now());
         setIsAiEffectVisible(true);
+        setIsAdjusting(Boolean(adjust));
         setAiStatus('loading');
 
         let shouldKeepAiEffectVisible = false;
 
         try {
             const stateBeforeRequest = useShiftEditorStore.getState();
+            // 조절은 고정·신청 셀에 더해 **마지막 자동완성 이후 사용자가 고친 칸**도 잠근다.
+            // 손으로 맞춰 놓은 칸을 칩 하나가 다시 옮기면, 사용자는 방금 한 일이 사라지는 것을 본다.
+            const adjustLocked = adjust
+                ? adjustLockedCellKeys(
+                      stateBeforeRequest.doc,
+                      getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
+                  )
+                : undefined;
             const result = await requestAiSchedule({
                 wardId: requestContext.wardId,
                 shiftTeamId: requestContext.shiftTeamId,
@@ -998,6 +968,8 @@ export function AiAutofill() {
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
+                adjust,
+                lockedCellKeys: adjustLocked,
                 signal: abortController.signal,
             });
 
@@ -1024,26 +996,53 @@ export function AiAutofill() {
 
             if (!result.ok) {
                 setAiStatus('error');
-                toast.error(result.message || t('page.makeShift.aiRefill.requestFailed'));
+                toast.error(
+                    result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
+                );
 
                 return;
             }
 
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
+            const docBeforeApply = useShiftEditorStore.getState().doc;
+
             commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
-            markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
+
+            const docAfterApply = useShiftEditorStore.getState().doc;
+
+            markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(result.response.changedCells.length > 0);
             commands.setScheduleValidationFromApi(result.validation);
+
+            if (adjust) {
+                // changedCells 길이가 아니라 실제 적용된 칸을 센다. 고정·신청 셀로 스킵된 칸이
+                // changedCells 에는 남아 있어 화면에 보이는 변화와 어긋날 수 있다.
+                const movedCount = getEditedFilledCellsSinceBaseline(docAfterApply, docBeforeApply).length;
+
+                setLastAdjustChangedCount(movedCount);
+
+                if (movedCount === 0) {
+                    toast(t('page.makeShift.aiRefill.adjust.noChange'));
+                }
+            }
 
             shouldKeepAiEffectVisible = true;
             scheduleAiEffectDismiss();
             setAiStatus('success');
             setHasCompletedAiFill(true);
+
+            if (!adjust) {
+                // 새로 생성하면 조절은 초기화된다. 생성 결과에는 팀 스타일이 이미 반영돼 있어,
+                // 이전 칩 상태를 남겨 두면 무엇이 반영된 상태인지 화면이 거짓말을 한다.
+                setAdjustKnobs({});
+                setLastAdjustChangedCount(null);
+            }
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
                 setIsAiGenerating(false);
+                setIsAdjusting(false);
                 setIsAiLoadingOverlayFinishing(shouldKeepAiEffectVisible);
 
                 if (!shouldKeepAiEffectVisible) {
@@ -1098,6 +1097,33 @@ export function AiAutofill() {
         setHasCompletedAiFill(false);
         resetAiStatus();
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
+    };
+    /**
+     * 칩 토글. 같은 값이 이미 켜져 있으면 끄고, 켜면 그 상태로 바로 다시 푼다.
+     *
+     * "적용" 버튼을 따로 두지 않는 이유: 버튼이 있으면 칩 상태와 화면의 근무표가 어긋나는
+     * 순간이 생기고, 사용자는 지금 보이는 표가 어느 설정의 결과인지 알 수 없게 된다.
+     */
+    const handleToggleAdjustKnob = (knob: TAutofillAdjustKnob, value: number) => {
+        const nextKnobs: TAdjustKnobs = {...adjustKnobs};
+
+        if (nextKnobs[knob] === value) {
+            delete nextKnobs[knob];
+        } else {
+            nextKnobs[knob] = value;
+        }
+
+        setAdjustKnobs(nextKnobs);
+        setLastAdjustChangedCount(null);
+
+        const readyContext = getAiFillReadyContext();
+
+        if (!readyContext) return;
+
+        // 축을 다 끄면 되돌릴 기준이 없으므로 요청하지 않는다. 되돌리기는 Undo 로 한다.
+        if (Object.keys(nextKnobs).length === 0) return;
+
+        void runAiFill(readyContext, {knobs: nextKnobs, strength: 'NORMAL'});
     };
     const openAiFillDecision = (context: TAiFillDecisionContext) => {
         aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
@@ -1356,6 +1382,16 @@ export function AiAutofill() {
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
+                {isAdjustEnabled && hasCompletedAiFill && (
+                    <AiAdjustChipBar
+                        knobs={adjustKnobs}
+                        strength="NORMAL"
+                        disabled={isAiGenerating}
+                        lastChangedCount={lastAdjustChangedCount}
+                        onToggle={handleToggleAdjustKnob}
+                    />
+                )}
+
                 {(dutyQuery.isLoading || isHydratingEditor) && (
                     <MakeShiftCalendarSkeleton ariaLabel={t('page.makeShift.aiRefill.loading')} />
                 )}
@@ -1519,6 +1555,7 @@ export function AiAutofill() {
             />
             {isAiGenerating || isAiLoadingOverlayFinishing ? (
                 <AiAutofillLoadingOverlay
+                    isAdjusting={isAdjusting}
                     isFinishing={isAiLoadingOverlayFinishing}
                     startedAt={aiStartedAt}
                     onFinish={handleAiLoadingOverlayFinish}
