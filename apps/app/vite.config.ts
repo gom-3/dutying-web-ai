@@ -50,6 +50,7 @@ const appStaticRoutes = [
     '/dutying/notices',
 ] as const;
 const marketingSeoBlockPattern = /<!-- MARKETING_SEO_START -->[\s\S]*?<!-- MARKETING_SEO_END -->/;
+const marketingFallbackPattern = /<!-- MARKETING_FALLBACK_START -->[\s\S]*?<!-- MARKETING_FALLBACK_END -->/;
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
 const getEnvValue = (value: string | undefined) => (value === undefined || value === '' ? undefined : value);
@@ -63,6 +64,7 @@ const normalizeMarketingPath = (value: string) => {
 };
 const getMarketingPage = (path: string) => marketingPages.find((page) => page.path === normalizeMarketingPath(path)) ?? koreanMarketingPage;
 const getCanonicalUrl = (appSiteUrl: string, path: string) => (path === '/' ? `${appSiteUrl}/` : `${appSiteUrl}${path}`);
+const getMarketingHeading = (page: TMarketingPage) => page.title.split(' | ')[0] ?? page.title;
 const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
     const canonicalUrl = getCanonicalUrl(appSiteUrl, page.path);
 
@@ -139,10 +141,23 @@ ${alternatePages.map((alternatePage) => `        <meta property="og:locale:alter
         <script type="application/ld+json">${structuredData}</script>
         <!-- MARKETING_SEO_END -->`;
 };
+const createMarketingFallback = (page: TMarketingPage) => `<!-- MARKETING_FALLBACK_START -->
+            <main
+                data-marketing-fallback
+                style="box-sizing: border-box; display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #f8f6fc; padding: 48px 24px; color: #150b3c; font-family: Arial, sans-serif; text-align: center;"
+            >
+                <section style="max-width: 760px;">
+                    <p style="margin: 0 0 16px; color: #7047eb; font-size: 18px; font-weight: 700;">Dutying</p>
+                    <h1 style="margin: 0; font-size: clamp(32px, 6vw, 56px); line-height: 1.2;">${escapeHtml(getMarketingHeading(page))}</h1>
+                    <p style="margin: 24px auto 0; color: #5f557f; font-size: 18px; line-height: 1.7;">${escapeHtml(page.description)}</p>
+                </section>
+            </main>
+            <!-- MARKETING_FALLBACK_END -->`;
 const renderMarketingSeoHtml = (html: string, page: TMarketingPage, appSiteUrl: string, robots: string) =>
     html
         .replace(/<html lang="[^"]*">/, `<html lang="${page.language}">`)
-        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots));
+        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots))
+        .replace(marketingFallbackPattern, createMarketingFallback(page));
 const createSitemap = (appSiteUrl: string) => {
     const localizedUrls = marketingPages
         .map((page) => {
@@ -261,7 +276,7 @@ export default defineConfig(({mode}) => {
                                   appSiteUrl,
                                   isProductionSite ? 'index, follow' : 'noindex, nofollow',
                               )
-                            : indexHtml;
+                            : indexHtml.replace(marketingFallbackPattern, '');
 
                         mkdirSync(dirname(routeFile), {recursive: true});
                         writeFileSync(routeFile, routeHtml);
