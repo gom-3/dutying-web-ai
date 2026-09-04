@@ -47,7 +47,7 @@ for (const file of appHtmlFiles) {
             assertContains(html, `<link rel="alternate" hreflang="${alternatePage.language}" href="${alternateUrl}"`, file);
         }
 
-        assertContains(html, '<link rel="alternate" hreflang="x-default" href="https://www.dutying.ai/"', file);
+        assertContains(html, '<link rel="alternate" hreflang="x-default" href="https://www.dutying.ai/en"', file);
         assertContains(html, `"inLanguage":"${marketingPage.schemaLanguage}"`, file);
         marketingTitles.add(marketingPage.title);
         marketingDescriptions.add(marketingPage.description);
@@ -71,6 +71,22 @@ for (const url of [
 ]) {
     assertContains(appSitemap, `<loc>${url}</loc>`, 'apps/app/dist/sitemap.xml');
 }
+
+for (const page of marketingPages) {
+    const alternateUrl = page.path === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${page.path}`;
+
+    assertContains(
+        appSitemap,
+        `<xhtml:link rel="alternate" hreflang="${page.language}" href="${alternateUrl}" />`,
+        'apps/app/dist/sitemap.xml',
+    );
+}
+
+assertContains(
+    appSitemap,
+    '<xhtml:link rel="alternate" hreflang="x-default" href="https://www.dutying.ai/en" />',
+    'apps/app/dist/sitemap.xml',
+);
 
 const appRedirects = read('apps/app/dist/_redirects');
 

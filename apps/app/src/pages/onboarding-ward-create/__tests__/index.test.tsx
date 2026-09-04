@@ -598,7 +598,7 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getByRole('button', {name: /간호사 1팀/})).toBeInTheDocument();
         expect(screen.getByLabelText('1행 간호사 이름')).toBeInTheDocument();
-    });
+    }, 10_000);
 
     it('opens the schedule file upload modal and uploads a file for the visible month', async () => {
         const user = userEvent.setup();

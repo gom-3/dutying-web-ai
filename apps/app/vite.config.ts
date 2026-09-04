@@ -18,6 +18,7 @@ type TMarketingPage = (typeof marketingPageData.pages)[number];
 
 const marketingPages = marketingPageData.pages;
 const koreanMarketingPage = marketingPages.find((page) => page.language === 'ko') as TMarketingPage;
+const englishMarketingPage = marketingPages.find((page) => page.language === 'en') as TMarketingPage;
 const appStaticRoutes = [
     ...marketingPages.filter((page) => page.path !== '/').map((page) => page.path),
     '/privacy',
@@ -117,7 +118,7 @@ ${marketingPages
             `        <link rel="alternate" hreflang="${alternatePage.language}" href="${getCanonicalUrl(appSiteUrl, alternatePage.path)}" />`,
     )
     .join('\n')}
-        <link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, '/')}" />
+        <link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, englishMarketingPage.path)}" />
 
         <meta property="og:type" content="website" />
         <meta property="og:url" content="${canonicalUrl}" />
@@ -152,7 +153,7 @@ const createSitemap = (appSiteUrl: string) => {
                 )
                 .join('\n');
 
-            return `  <url>\n    <loc>${getCanonicalUrl(appSiteUrl, page.path)}</loc>\n${alternates}\n    <xhtml:link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, '/')}" />\n  </url>`;
+            return `  <url>\n    <loc>${getCanonicalUrl(appSiteUrl, page.path)}</loc>\n${alternates}\n    <xhtml:link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, englishMarketingPage.path)}" />\n  </url>`;
         })
         .join('\n');
 
@@ -219,7 +220,7 @@ export default defineConfig(({mode}) => {
                 },
                 transformIndexHtml(html, context) {
                     // 개발 서버의 SPA fallback은 context.path를 /index.html로 바꾼다.
-                    // 원래 요청 주소를 우선해야 /en, /ja에서도 올바른 언어 메타데이터가 나온다.
+                    // 원래 요청 주소를 우선해야 언어별 랜딩에서도 올바른 메타데이터가 나온다.
                     const page = getMarketingPage(context.originalUrl ?? context.path);
 
                     return renderMarketingSeoHtml(html, page, appSiteUrl, isProductionSite ? 'index, follow' : 'noindex, nofollow');

@@ -55,17 +55,20 @@ describe('Router', () => {
         expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
     });
 
-    it.each([ROUTE.LANDING_EN, ROUTE.LANDING_JA])('renders the current production landing at %s', async (path) => {
-        render(
-            <MemoryRouter initialEntries={[path]}>
-                <Router />
-                <LocationProbe />
-            </MemoryRouter>,
-        );
+    it.each([ROUTE.LANDING_EN, ROUTE.LANDING_JA, ROUTE.LANDING_ZH, ROUTE.LANDING_TH, ROUTE.LANDING_VI])(
+        'renders the current production landing at %s',
+        async (path) => {
+            render(
+                <MemoryRouter initialEntries={[path]}>
+                    <Router />
+                    <LocationProbe />
+                </MemoryRouter>,
+            );
 
-        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(path));
-        expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
-    });
+            await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(path));
+            expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
+        },
+    );
 
     it('redirects phone visitors away from auth routes to the landing page', async () => {
         setPhoneDevice(true);

@@ -61,6 +61,9 @@ export const Router = () => {
                     <Route path={ROUTE.ROOT} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
+                    <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                    <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
+                    <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
                     <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
@@ -91,6 +94,9 @@ export const Router = () => {
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
+                <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
+                <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
                 <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                 <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                 <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
