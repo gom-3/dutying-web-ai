@@ -2,6 +2,8 @@ import {type TValues} from '@dutying/utils';
 
 const ROUTE = {
     ROOT: '/',
+    LANDING_EN: '/en',
+    LANDING_JA: '/ja',
     PRIVACY: '/privacy',
     TERMS: '/terms',
     HOME: '/home',

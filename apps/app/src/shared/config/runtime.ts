@@ -68,7 +68,7 @@ export const resolveSafeRedirectTarget = (target: string | null | undefined, fal
     }
 };
 
-export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: string = ROUTE.HOME) => {
+export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple' | 'google', nextPath: string = ROUTE.HOME) => {
     const url = new URL(`/oauth2/authorization/admin/${provider}`, `${RUNTIME_CONFIG.serverUrl()}/`);
 
     url.searchParams.set('nextPageUrl', buildAppUrl(sanitizeInternalPath(nextPath)));

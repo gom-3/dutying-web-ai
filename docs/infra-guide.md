@@ -40,7 +40,7 @@
 **규칙들:**
 
 - **앱의 정식 주소는 `www`다.** apex는 Redirect Rule로 301, `app.`은 딥링크·구 주소 호환으로 유지하되 canonical은 www로 모은다. 서버(`dutying-server-ai`)의 OAuth `default-url`도 `https://www.dutying.ai/`로 이 구조를 전제한다.
-- **`apps/landing`(Astro)은 은퇴했다.** 2026-03 분리 시도가 06-20에 멈춘 스냅샷. 도메인 안 붙어 있고 robots `Disallow`. 랜딩은 앱 안(`apps/app/src/pages/landing/`, 6개 언어)이 정식이다.
+- **별도 Astro 랜딩은 제거했다.** 2026-03 분리 시도가 06-20에 멈춘 스냅샷이 혼동을 일으켜 저장소에서 삭제했다. 랜딩은 앱 안(`apps/app/src/pages/landing/`, 6개 언어)이 유일한 정식 소스다.
 - **한 호스트는 한 Pages 프로젝트에만 붙는다.** 옮기려면 떼었다 붙여야 하고 그 사이 사이트가 내려간다 (수 분).
 
 ## 3. DNS (Cloudflare zone)

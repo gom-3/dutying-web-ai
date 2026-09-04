@@ -810,6 +810,8 @@ page.login.feedback.verificationSent,web,page.login.feedback.verificationSent,pa
 page.login.forgotPassword,web,page.login.forgotPassword,page.login,login,text,imported,,,,,,,,,비밀번호 찾기,Forgot password,パスワードをお忘れですか？,查找密码,ลืมรหัสผ่าน,Quên mật khẩu,,2026-06-10
 page.login.hasAccountPrompt,web,page.login.hasAccountPrompt,page.login,login,text,imported,,,,,,,,,이미 계정이 있나요?,Already have an account?,すでにアカウントをお持ちですか？,已经有帐户？,มีบัญชีอยู่แล้ว?,Đã có tài khoản?,,2026-06-10
 page.login.hidePassword,web,page.login.hidePassword,page.login,login,text,imported,,,,,,,,,비밀번호 숨기기,Hide password,パスワードを非表示,隐藏您的密码,ซ่อนรหัสผ่าน,Ẩn mật khẩu,,2026-06-10
+page.login.googleContinue,web,page.login.googleContinue,page.login,login,text,reviewed,,,,,,,,,Google로 계속하기,Continue with Google,Googleで続ける,使用 Google 继续,ต่อด้วย Google,Tiếp tục với Google,,2026-09-02
+page.login.googleStart,web,page.login.googleStart,page.login,login,text,reviewed,,,,,,,,,Google로 시작하기,Sign up with Google,Googleで始める,使用 Google 注册,สมัครด้วย Google,Đăng ký với Google,,2026-09-02
 page.login.kakaoContinue,web,page.login.kakaoContinue,page.login,login,text,imported,,,,,,,,,카카오로 계속하기,Continue with Kakao,Kakaoで続ける,继续卡考,ต่อด้วย Kakao,Tiếp tục với Kakao,,2026-06-10
 page.login.kakaoCta,web,page.login.kakaoCta,page.login,login,text,imported,,,,,,,,,카카오 계정으로 시작하기,Continue with Kakao,Kakaoアカウントで始める,开始使用 Kakao 帐户,ต่อด้วย Kakao,Tiếp tục với Kakao,,2026-06-10
 page.login.kakaoStart,web,page.login.kakaoStart,page.login,login,text,imported,,,,,,,,,카카오로 시작하기,Start with Kakao,Kakaoで始める,从卡考开始,เริ่มต้นด้วย Kakao,Bắt đầu với Kakao,,2026-06-10

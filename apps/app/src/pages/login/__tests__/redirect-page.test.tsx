@@ -120,11 +120,11 @@ describe('RedirectPage', () => {
         });
     });
 
-    it('routes new social accounts to register and keeps the provider profile for prefill', async () => {
+    it.each(['KAKAO', 'google'])('routes new %s accounts to register and keeps the provider profile for prefill', async (provider) => {
         window.history.replaceState(
             {},
             '',
-            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=%2Fmake&socialSignupRequired=true&provider=KAKAO&socialName=Kim&socialEmail=kim%40dutying.net&socialProfileImgUrl=https%3A%2F%2Fcdn.example.com%2Fkim.png`,
+            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=%2Fmake&socialSignupRequired=true&provider=${provider}&socialName=Kim&socialEmail=kim%40dutying.net&socialProfileImgUrl=https%3A%2F%2Fcdn.example.com%2Fkim.png`,
         );
 
         render(<RedirectPage />);
@@ -134,7 +134,7 @@ describe('RedirectPage', () => {
         });
 
         expect(readSocialSignupProfile()).toMatchObject({
-            provider: 'KAKAO',
+            provider: provider.toUpperCase(),
             name: 'Kim',
             email: 'kim@dutying.net',
             profileImgUrl: 'https://cdn.example.com/kim.png',

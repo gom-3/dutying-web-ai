@@ -67,6 +67,8 @@ describe('LandingPage', () => {
         expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '#app');
 
         await user.click(screen.getByRole('button', {name: '언어 선택'}));
+        expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('href', ROUTE.LANDING_EN);
+        expect(screen.getByRole('option', {name: /日本語/})).toHaveAttribute('href', ROUTE.LANDING_JA);
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('aria-selected', 'false');
 
         await user.click(screen.getByRole('option', {name: 'English'}));

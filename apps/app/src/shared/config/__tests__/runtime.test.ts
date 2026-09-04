@@ -93,6 +93,28 @@ describe('buildAppUrl', () => {
 });
 
 describe('buildAuthAuthorizeUrl', () => {
+    it('preserves the Google login destination and query in the configured environment', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://dev.dutying.ai');
+
+        const url = new URL(buildAuthAuthorizeUrl('google', '/request?wardId=123'));
+
+        expect(url.origin).toBe('https://dev.api.dutying.ai');
+        expect(url.pathname).toBe('/oauth2/authorization/admin/google');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://dev.dutying.ai/request?wardId=123');
+    });
+
+    it.each(['https://evil.example/phish', '//evil.example/phish', '/\\evil.example/phish'])(
+        'rejects an external Google login destination: %s',
+        (nextPath) => {
+            vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
+
+            const url = new URL(buildAuthAuthorizeUrl('google', nextPath));
+
+            expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.ai/home');
+        },
+    );
+
     it('sanitizes invalid nextPath before building auth url', () => {
         vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
         vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');

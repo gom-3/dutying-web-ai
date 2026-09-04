@@ -8,10 +8,9 @@
   <a href='https://github.com/gom-3/dutying-web/blob/main/LICENSE'><img src='https://img.shields.io/github/license/gom-3/dutying-web'></a>
 </p>
 
-듀팅 웹 서비스의 앱, 랜딩, 문서 사이트를 함께 관리하는 `pnpm workspace` 모노레포입니다.
+듀팅 웹 서비스의 앱과 문서 사이트를 함께 관리하는 `pnpm workspace` 모노레포입니다.
 
-- 웹 앱: 수간호사/관리자용 근무표 운영 제품
-- 랜딩: 서비스 소개용 공개 사이트
+- 웹 앱: 공개 랜딩과 수간호사/관리자용 근무표 운영 제품
 - 문서 앱: 사용자 가이드와 FAQ
 - 공통 패키지: API 계약, 도메인 타입, 유틸, 설정
 
@@ -21,8 +20,7 @@
 .
 ├── apps
 │   ├── app        # 메인 웹 앱 (Vite + React)
-│   ├── docs       # 사용자 문서 사이트 (VitePress)
-│   └── landing    # 공개 랜딩 사이트 (Astro)
+│   └── docs       # 사용자 문서 사이트 (VitePress)
 ├── packages
 │   ├── api        # 앱 간 재사용 가능한 API 계약 / adapter factory
 │   ├── config     # workspace 공통 ESLint / TypeScript 설정
@@ -44,14 +42,11 @@
 - `pnpm test`
 - `pnpm type-check`
 
-문서 앱과 랜딩 앱은 suffix 스크립트로 실행합니다.
+문서 앱은 suffix 스크립트로 실행합니다. 운영 랜딩은 `apps/app`의 루트 라우트에 포함됩니다.
 
 - `pnpm dev:docs`
 - `pnpm build:docs`
 - `pnpm type-check:docs`
-- `pnpm dev:landing`
-- `pnpm build:landing`
-- `pnpm type-check:landing`
 
 ## 앱 구조 규칙 요약
 
@@ -114,9 +109,8 @@ pnpm workspace:list
 
 ## 기술 스택
 
-- 메인 앱: React 19, TypeScript, Vite
+- 메인 앱 및 공개 랜딩: React 19, TypeScript, Vite
 - 문서 앱: VitePress
-- 랜딩 앱: Astro
 - 상태 관리: TanStack Query, Zustand
 - 스타일링: Tailwind CSS
 - 테스트: Vitest, Cypress

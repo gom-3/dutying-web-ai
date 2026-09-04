@@ -106,6 +106,10 @@ describe('LoginPage', () => {
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
+        expect(screen.getByRole('link', {name: 'Google로 계속하기'})).toHaveAttribute(
+            'href',
+            'https://api.dutying.ai/oauth2/authorization/admin/google?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
+        );
     });
 
     it.each([
@@ -151,6 +155,10 @@ describe('LoginPage', () => {
             'https://api.dutying.ai/oauth/line/authorize?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
         expect(screen.queryByRole('link', {name: 'Kakaoで続ける'})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: 'Googleで続ける'})).toHaveAttribute(
+            'href',
+            'https://api.dutying.ai/oauth2/authorization/admin/google?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
+        );
         expect(screen.getByRole('link', {name: 'Appleで続ける'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
@@ -230,6 +238,10 @@ describe('LoginPage', () => {
         expect(screen.getByRole('link', {name: '카카오로 시작하기'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fregister%3FsocialSignup%3D1',
+        );
+        expect(screen.getByRole('link', {name: 'Google로 시작하기'})).toHaveAttribute(
+            'href',
+            'https://api.dutying.ai/oauth2/authorization/admin/google?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fregister%3FsocialSignup%3D1',
         );
     });
 

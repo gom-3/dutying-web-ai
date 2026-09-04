@@ -18,13 +18,43 @@ const collectHtmlFiles = (directory) =>
     });
 
 const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html'));
+const marketingPages = JSON.parse(read('apps/app/src/shared/seo/marketing-pages.json')).pages;
+const marketingPageByFile = new Map(
+    marketingPages.map((page) => [page.path === '/' ? 'apps/app/dist/index.html' : `apps/app/dist${page.path}.html`, page]),
+);
+const marketingTitles = new Set();
+const marketingDescriptions = new Set();
 
 for (const file of appHtmlFiles) {
     const html = read(file);
+    const marketingPage = marketingPageByFile.get(file);
+    const canonicalPath = marketingPage?.path ?? '/';
+    const canonicalUrl = canonicalPath === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${canonicalPath}`;
 
     assertContains(html, '<meta name="robots" content="index, follow"', file);
-    assertContains(html, '<link rel="canonical" href="https://www.dutying.ai/"', file);
+    assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
+
+    if (marketingPage) {
+        assertContains(html, `<html lang="${marketingPage.language}"`, file);
+        assertContains(html, `<title>${marketingPage.title}</title>`, file);
+        assertContains(html, `<meta name="description" content="${marketingPage.description}"`, file);
+        assert(!marketingTitles.has(marketingPage.title), `${file}: 검색 제목 중복`);
+        assert(!marketingDescriptions.has(marketingPage.description), `${file}: 검색 설명 중복`);
+
+        for (const alternatePage of marketingPages) {
+            const alternateUrl = alternatePage.path === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${alternatePage.path}`;
+
+            assertContains(html, `<link rel="alternate" hreflang="${alternatePage.language}" href="${alternateUrl}"`, file);
+        }
+
+        assertContains(html, '<link rel="alternate" hreflang="x-default" href="https://www.dutying.ai/"', file);
+        assertContains(html, `"inLanguage":"${marketingPage.schemaLanguage}"`, file);
+        marketingTitles.add(marketingPage.title);
+        marketingDescriptions.add(marketingPage.description);
+    }
 }
+
+assert(!existsSync(resolve(root, 'apps/landing')), '은퇴한 apps/landing 디렉터리가 남아 있음');
 
 assert(existsSync(resolve(root, 'apps/app/dist/404.html')), '앱 404.html 누락');
 assertContains(read('apps/app/dist/404.html'), '<meta name="robots" content="noindex, follow"', 'apps/app/dist/404.html');
@@ -34,13 +64,17 @@ assertContains(read('apps/app/dist/robots.txt'), 'Sitemap: https://www.dutying.a
 
 const appSitemap = read('apps/app/dist/sitemap.xml');
 
-for (const url of ['https://www.dutying.ai/', 'https://www.dutying.ai/privacy', 'https://www.dutying.ai/terms']) {
+for (const url of [
+    ...marketingPages.map((page) => (page.path === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${page.path}`)),
+    'https://www.dutying.ai/privacy',
+    'https://www.dutying.ai/terms',
+]) {
     assertContains(appSitemap, `<loc>${url}</loc>`, 'apps/app/dist/sitemap.xml');
 }
 
 const appRedirects = read('apps/app/dist/_redirects');
 
-assertContains(appRedirects, '/dutying/notices/:noticeId /index.html 200', 'apps/app/dist/_redirects');
+assertContains(appRedirects, '/dutying/notices/:noticeId / 200', 'apps/app/dist/_redirects');
 assert(!appRedirects.includes('/* /index.html 200'), '전체 SPA fallback 규칙이 남아 있음');
 assert(!appRedirects.includes('/ https://www.dutying.ai'), '앱 루트가 www에서 자기 자신으로 리디렉션될 수 있음');
 
