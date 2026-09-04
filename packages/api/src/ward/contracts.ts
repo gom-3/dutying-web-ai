@@ -505,6 +505,17 @@ export type TAutofillTargetDto = {
     affectedCellKeys: string[];
 };
 
+/** 조절 축과 값. 가중치가 아니라 축이다 — 숫자의 의미는 엔진만 안다. */
+export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX';
+
+/** 얼마나 바꿔도 되는지. 전체 셀의 10/20/40%가 하드 상한이다. */
+export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
+
+export type TAutofillAdjustDto = {
+    knobs: Partial<Record<TAutofillAdjustKnob, number>>;
+    strength: TAutofillAdjustStrength;
+};
+
 export type TAutofillDTO = {
     year: number;
     month: number;
@@ -517,18 +528,35 @@ export type TAutofillDTO = {
     /** 전달 근무(직전 달 마지막 근무). 월 경계 제약 계산·프롬프트에만 쓰이며 서버에 저장되지 않는다. date는 직전 달. */
     carryOverCells?: TSnapshotCellDTO[];
     target?: TAutofillTargetDto;
+    /**
+     * 값이 있으면 조절(ADJUST)로 처리된다. cells 에는 직전 자동완성 결과 전체가 실려야 하며,
+     * 그것이 곧 시드다. target 과 동시에 보낼 수 없다.
+     */
+    adjust?: TAutofillAdjustDto;
     lockedCellKeys?: string[];
     returnMode?: 'PATCH';
 };
 
 export type TAutofillResponse = {
-    operationType: 'GENERATE' | 'REPAIR';
+    operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     draftRevision: number;
     resultType: 'PATCH';
     changedCells: TSnapshotCellDTO[];
     validation: TValidationRes;
     unmetInstructions: string[];
     sameAsPrevious: boolean;
+    /** 엔진 판정. 조절이 "이미 그 방향으로 최적"인지 구분하는 데 쓴다. */
+    engineResult?: {
+        status?: string;
+        solver?: {
+            /** 바뀐 칸이 없을 때 'ADJUST_NO_CHANGE'. 실패가 아니다. */
+            reason?: string;
+            metadata?: {
+                changedCellCount?: number;
+                changeBudget?: number;
+            };
+        };
+    };
 };
 
 export type TSaveSnapshotDTO = {
