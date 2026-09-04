@@ -2419,6 +2419,15 @@ export const ko = {
                 "exampleLabel": "예시",
                 "exampleSecondDate": "8월 13일",
                 "exampleThirdDate": "8월 14일"
+            },
+            "video": {
+                "action": "설명 영상",
+                "title": "근무표 입력 방법",
+                "close": "영상 닫기",
+                "error": "영상을 불러오지 못했어요. 다시 시도해 주세요.",
+                "retry": "다시 재생",
+                "loading": "영상을 불러오고 있어요.",
+                "playbackSpeed": "재생 속도"
             }
         },
         "profile": {
@@ -5499,6 +5508,15 @@ export const en: TLocale = {
                 "exampleLabel": "Example",
                 "exampleSecondDate": "Aug 13",
                 "exampleThirdDate": "Aug 14"
+            },
+            "video": {
+                "action": "Video guide",
+                "title": "How to enter your schedule",
+                "close": "Close video",
+                "error": "The video could not be loaded. Please try again.",
+                "retry": "Try again",
+                "loading": "Loading video…",
+                "playbackSpeed": "Playback speed"
             }
         },
         "profile": {
@@ -8577,6 +8595,15 @@ export const ja: TLocale = {
                 "exampleLabel": "例",
                 "exampleSecondDate": "8月13日",
                 "exampleThirdDate": "8月14日"
+            },
+            "video": {
+                "action": "説明動画",
+                "title": "勤務表の入力方法",
+                "close": "動画を閉じる",
+                "error": "動画を読み込めませんでした。もう一度お試しください。",
+                "retry": "もう一度再生",
+                "loading": "動画を読み込んでいます。",
+                "playbackSpeed": "再生速度"
             }
         },
         "profile": {
@@ -11655,6 +11682,15 @@ export const zh: TLocale = {
                 "exampleLabel": "示例",
                 "exampleSecondDate": "8月13日",
                 "exampleThirdDate": "8月14日"
+            },
+            "video": {
+                "action": "说明视频",
+                "title": "如何输入排班表",
+                "close": "关闭视频",
+                "error": "无法加载视频，请重试。",
+                "retry": "重新播放",
+                "loading": "正在加载视频…",
+                "playbackSpeed": "播放速度"
             }
         },
         "profile": {
@@ -14733,6 +14769,15 @@ export const th: TLocale = {
                 "exampleLabel": "ตัวอย่าง",
                 "exampleSecondDate": "13 ส.ค.",
                 "exampleThirdDate": "14 ส.ค."
+            },
+            "video": {
+                "action": "วิดีโอแนะนำ",
+                "title": "วิธีกรอกตารางเวร",
+                "close": "ปิดวิดีโอ",
+                "error": "โหลดวิดีโอไม่สำเร็จ โปรดลองอีกครั้ง",
+                "retry": "เล่นอีกครั้ง",
+                "loading": "กำลังโหลดวิดีโอ…",
+                "playbackSpeed": "ความเร็วในการเล่น"
             }
         },
         "profile": {
@@ -17811,6 +17856,15 @@ export const vi: TLocale = {
                 "exampleLabel": "Ví dụ",
                 "exampleSecondDate": "13 thg 8",
                 "exampleThirdDate": "14 thg 8"
+            },
+            "video": {
+                "action": "Video hướng dẫn",
+                "title": "Cách nhập lịch trực",
+                "close": "Đóng video",
+                "error": "Không thể tải video. Vui lòng thử lại.",
+                "retry": "Phát lại",
+                "loading": "Đang tải video…",
+                "playbackSpeed": "Tốc độ phát"
             }
         },
         "profile": {

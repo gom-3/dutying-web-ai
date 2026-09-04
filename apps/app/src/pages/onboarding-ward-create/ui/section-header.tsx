@@ -1,7 +1,10 @@
 ﻿import type {ReactNode} from 'react';
+import {useTranslation} from 'react-i18next';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
+import {getOnboardingTutorialVideo} from '../model/tutorial-video';
+import ScheduleVideoGuide from './schedule-video-guide';
 
 type TStepLabel = {
     titleKey: TI18nKey;
@@ -72,14 +75,30 @@ function HighlightedText({text, highlights = []}: {text: string; highlights?: re
         );
 }
 
-function TitleLines({children, highlights}: {children: string; highlights?: readonly string[]}) {
+function TitleLines({
+    children,
+    highlights,
+    trailingAction,
+}: {
+    children: string;
+    highlights?: readonly string[];
+    trailingAction?: ReactNode;
+}) {
     const lines = children.split('\n');
 
     return (
         <>
             {lines.map((line, index) => (
-                <span key={`${line}-${index}`} className="block break-keep">
-                    <HighlightedText text={line} highlights={highlights} />
+                <span
+                    key={`${line}-${index}`}
+                    className={trailingAction && index === lines.length - 1 ? 'block text-balance break-keep' : 'block break-keep'}
+                >
+                    <span aria-hidden="true">
+                        <HighlightedText text={line} highlights={highlights} />
+                    </span>
+                    {index === lines.length - 1 && trailingAction ? (
+                        <span className="ml-3 inline-flex align-middle">{trailingAction}</span>
+                    ) : null}
                 </span>
             ))}
         </>
@@ -88,6 +107,8 @@ function TitleLines({children, highlights}: {children: string; highlights?: read
 
 function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const tutorialVideo = step === 3 ? getOnboardingTutorialVideo(i18n.language || i18n.resolvedLanguage) : undefined;
     const label = nightRecovery ? NIGHT_RECOVERY_LABEL : STEP_LABELS[step];
     const isIdentityStep = step === 1;
     const title = t(label.titleKey);
@@ -98,28 +119,40 @@ function SectionHeader({step, nightRecovery = false}: ISectionHeaderProps) {
         : isIdentityStep || step === 2
           ? 'mb-6 max-w-[480px] space-y-2'
           : step === 3
-            ? 'mb-10 max-w-[720px]'
+            ? tutorialVideo
+                ? 'mb-10'
+                : 'mb-10 max-w-[720px]'
             : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title.replace(/\n/g, ' ')}</span>
-            <span aria-hidden="true">
-                <TitleLines highlights={titleHighlights}>{title}</TitleLines>
-            </span>
+            <TitleLines
+                highlights={titleHighlights}
+                trailingAction={tutorialVideo ? <ScheduleVideoGuide key={tutorialVideo.src} video={tutorialVideo} /> : undefined}
+            >
+                {title}
+            </TitleLines>
         </>
     );
-
-    return (
+    const header = (
         <BaseSectionHeader
             className={headerClassName}
             title={renderedTitle}
-            titleClassName={nightRecovery ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap' : undefined}
+            titleClassName={
+                nightRecovery
+                    ? 'text-[clamp(12px,4.7vw,30px)] leading-[1.18] tracking-[-0.04em] whitespace-nowrap'
+                    : tutorialVideo
+                      ? 'text-[20px] sm:text-[32px]'
+                      : undefined
+            }
             description={description}
             descriptionClassName={
                 isIdentityStep || nightRecovery ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'
             }
         />
     );
+
+    return header;
 }
 
 export default SectionHeader;

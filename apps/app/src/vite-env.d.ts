@@ -6,6 +6,7 @@ interface ImportMetaEnv {
     readonly VITE_APP_PUBLIC_URL?: string;
     readonly VITE_APP_SITE_URL?: string;
     readonly VITE_PUBLIC_S3_BASE_URL?: string;
+    readonly VITE_ONBOARDING_VIDEO_BASE_URL?: string;
     readonly VITE_TERMS_URL?: string;
     readonly VITE_TERMS_OF_SERVICE_URL?: string;
     readonly VITE_PRIVACY_POLICY_URL?: string;
