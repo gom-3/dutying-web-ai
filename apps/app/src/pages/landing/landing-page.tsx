@@ -680,7 +680,11 @@ function StoreButton() {
                 rel="noreferrer"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 sm:w-[180px]"
             >
-                <img src="/img/apple.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span
+                    aria-hidden="true"
+                    className="size-6 shrink-0 bg-contain bg-center bg-no-repeat"
+                    style={{backgroundImage: 'url("/img/apple.png")'}}
+                />
                 <span className="whitespace-nowrap">App Store</span>
             </a>
             <a
@@ -689,7 +693,11 @@ function StoreButton() {
                 rel="noreferrer"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
             >
-                <img src="/img/play.png" alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+                <span
+                    aria-hidden="true"
+                    className="size-6 shrink-0 bg-contain bg-center bg-no-repeat"
+                    style={{backgroundImage: 'url("/img/play.png")'}}
+                />
                 <span className="whitespace-nowrap">Google Play</span>
             </a>
         </>
@@ -697,12 +705,24 @@ function StoreButton() {
 }
 
 function CtaIcon({src, className = 'size-5'}: {src: string; className?: string}) {
-    return <img src={src} alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
+    return (
+        <span
+            aria-hidden="true"
+            className={`${className} shrink-0 bg-contain bg-center bg-no-repeat`}
+            style={{backgroundImage: `url("${src}")`}}
+        />
+    );
 }
 
 function MobileBenefitIcon({icon}: {icon: TMobileBenefitIcon}) {
     if (icon.type === 'image') {
-        return <img src={icon.src} alt="" aria-hidden="true" className="size-10 object-contain" />;
+        return (
+            <span
+                aria-hidden="true"
+                className="size-10 bg-contain bg-center bg-no-repeat"
+                style={{backgroundImage: `url("${icon.src}")`}}
+            />
+        );
     }
 
     const Icon = icon.component;
@@ -1022,7 +1042,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
                     <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
                         <img
                             src={section.image}
-                            alt=""
+                            alt={t('page.landing.imageAlt.aiSchedule')}
                             loading="lazy"
                             decoding="async"
                             className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]"
@@ -1085,6 +1105,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
 }
 
 function AppFeatureSection({section}: {section: TAppFeatureSection}) {
+    const {t} = useTypedTranslation();
     const isHomeSection = section.id === 'app-home';
     const isWardSection = section.id === 'app-ward';
     const isCommunitySection = section.id === 'app-community';
@@ -1097,6 +1118,11 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
           : isWardSection
             ? `${shouldCompactWardImage ? 'w-[80%]' : 'w-full'} object-contain object-center`
             : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]';
+    const imageAlt = isHomeSection
+        ? t('page.landing.imageAlt.appHome')
+        : isWardSection
+          ? t('page.landing.imageAlt.appWard')
+          : t('page.landing.imageAlt.appCommunity');
 
     return (
         <section id={section.id} className={section.background}>
@@ -1104,7 +1130,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                 className={`landing-app-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
                 <picture className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${imageMaxWidthClass}`}>
-                    <img src={section.image} alt="" loading="lazy" decoding="async" className={imageClassName} />
+                    <img src={section.image} alt={imageAlt} loading="lazy" decoding="async" className={imageClassName} />
                 </picture>
 
                 <article
@@ -1120,14 +1146,14 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                         <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
                             <img
                                 src={section.secondaryImages?.wide ?? '/img/image-992.webp'}
-                                alt=""
+                                alt={t('page.landing.imageAlt.appHomeWidget')}
                                 loading="lazy"
                                 decoding="async"
                                 className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
                             />
                             <img
                                 src={section.secondaryImages?.square ?? '/img/image-991.webp'}
-                                alt=""
+                                alt={t('page.landing.imageAlt.appHomeCalendar')}
                                 loading="lazy"
                                 decoding="async"
                                 className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
@@ -1342,13 +1368,10 @@ function LandingPage() {
                         </div>
                     </div>
 
-                    <picture
-                        className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end"
-                        aria-hidden="true"
-                    >
+                    <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end">
                         <img
                             src={heroImageSrc}
-                            alt=""
+                            alt={t('page.landing.imageAlt.webSchedule')}
                             decoding="async"
                             className="w-[92vw] max-w-[520px] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
                         />

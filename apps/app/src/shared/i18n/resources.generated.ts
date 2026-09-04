@@ -775,8 +775,14 @@ export const ko = {
                 "suffix": "듀팅으로 더 간편하게"
             },
             "imageAlt": {
+                "aiSchedule": "AI가 자동으로 생성한 간호사 근무표 화면",
+                "appCommunity": "듀팅 앱 간호사 커뮤니티 화면",
+                "appHome": "듀팅 앱 홈의 근무 일정 화면",
+                "appHomeCalendar": "듀팅 개인 일정 캘린더",
+                "appHomeWidget": "듀팅 근무 일정 위젯",
                 "appLogo": "듀팅 앱 로고 이미지",
                 "appScreen": "앱 화면",
+                "appWard": "듀팅 앱 병동 동료 일정 화면",
                 "integration": "간호사가 앱으로 근무 신청을 확인하는 모습",
                 "mobileHero": "듀팅 앱 근무 일정 화면",
                 "wardBoard": "병동 게시판 화면",
@@ -3864,8 +3870,14 @@ export const en: TLocale = {
                 "suffix": "made easier with Dutying"
             },
             "imageAlt": {
+                "aiSchedule": "AI-generated nurse shift schedule",
+                "appCommunity": "Dutying app nurse community screen",
+                "appHome": "Dutying app home shift schedule screen",
+                "appHomeCalendar": "Dutying personal schedule calendar",
+                "appHomeWidget": "Dutying shift schedule widget",
                 "appLogo": "Dutying app logo image",
                 "appScreen": "App screen",
+                "appWard": "Dutying app ward team schedule screen",
                 "integration": "A nurse reviewing shift requests in the app",
                 "mobileHero": "Dutying app shift schedule screen",
                 "wardBoard": "Ward board screen",
@@ -6951,8 +6963,14 @@ export const ja: TLocale = {
                 "suffix": "Dutyingでもっと簡単に"
             },
             "imageAlt": {
+                "aiSchedule": "AIが自動生成した看護師の勤務表画面",
+                "appCommunity": "Dutyingアプリの看護師コミュニティ画面",
+                "appHome": "Dutyingアプリホームの勤務予定画面",
+                "appHomeCalendar": "Dutying個人予定カレンダー",
+                "appHomeWidget": "Dutying勤務予定ウィジェット",
                 "appLogo": "Dutyingアプリロゴ画像",
                 "appScreen": "アプリ画面",
+                "appWard": "Dutyingアプリの病棟メンバー勤務予定画面",
                 "integration": "看護師がアプリで勤務希望を確認している画面",
                 "mobileHero": "Dutyingアプリの勤務予定画面",
                 "wardBoard": "病棟掲示板画面",
@@ -10038,8 +10056,14 @@ export const zh: TLocale = {
                 "suffix": "用 Dutying 更轻松"
             },
             "imageAlt": {
+                "aiSchedule": "AI 自动生成的护士排班表界面",
+                "appCommunity": "Dutying App 护士社区界面",
+                "appHome": "Dutying App 首页排班日程界面",
+                "appHomeCalendar": "Dutying 个人日程日历",
+                "appHomeWidget": "Dutying 排班日程小组件",
                 "appLogo": "Dutying App 标志图片",
                 "appScreen": "App 画面",
+                "appWard": "Dutying App 病区同事排班界面",
                 "integration": "护士在 App 中查看班次申请的画面",
                 "mobileHero": "Dutying App 排班日程画面",
                 "wardBoard": "病区公告栏屏幕",
@@ -13125,8 +13149,14 @@ export const th: TLocale = {
                 "suffix": "ง่ายขึ้นด้วย Dutying"
             },
             "imageAlt": {
+                "aiSchedule": "หน้าจอตารางเวรพยาบาลที่ AI สร้างอัตโนมัติ",
+                "appCommunity": "หน้าจอชุมชนพยาบาลในแอป Dutying",
+                "appHome": "หน้าจอตารางเวรในหน้าแรกของแอป Dutying",
+                "appHomeCalendar": "ปฏิทินตารางส่วนตัวของ Dutying",
+                "appHomeWidget": "วิดเจ็ตตารางเวร Dutying",
                 "appLogo": "ภาพโลโก้แอป Dutying",
                 "appScreen": "หน้าจอแอป",
+                "appWard": "หน้าจอตารางเวรของทีมในหอผู้ป่วยบนแอป Dutying",
                 "integration": "หน้าจอที่พยาบาลตรวจคำขอเวรในแอป",
                 "mobileHero": "หน้าจอตารางเวรในแอป Dutying",
                 "wardBoard": "หน้าจอบอร์ดประกาศของหอผู้ป่วย",
@@ -16212,8 +16242,14 @@ export const vi: TLocale = {
                 "suffix": "trở nên dễ dàng hơn với Dutying"
             },
             "imageAlt": {
+                "aiSchedule": "Màn hình lịch trực điều dưỡng do AI tự động tạo",
+                "appCommunity": "Màn hình cộng đồng điều dưỡng trên ứng dụng Dutying",
+                "appHome": "Màn hình lịch trực trên trang chủ ứng dụng Dutying",
+                "appHomeCalendar": "Lịch cá nhân Dutying",
+                "appHomeWidget": "Tiện ích lịch trực Dutying",
                 "appLogo": "Hình ảnh logo ứng dụng nghĩa vụ",
                 "appScreen": "Màn hình ứng dụng",
+                "appWard": "Màn hình lịch trực đồng nghiệp trong khoa trên ứng dụng Dutying",
                 "integration": "Một điều dưỡng đang xem xét các Yêu cầu ca trực trong ứng dụng",
                 "mobileHero": "Màn hình lịch ca làm việc của ứng dụng trực",
                 "wardBoard": "Màn hình bảng khoa",
