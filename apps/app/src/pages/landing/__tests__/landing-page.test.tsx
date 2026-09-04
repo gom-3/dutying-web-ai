@@ -60,6 +60,9 @@ describe('LandingPage', () => {
 
         expect(screen.getByRole('heading', {name: /교대 근무표,.*듀팅으로 더 간편하게/})).toBeInTheDocument();
         expect(screen.getAllByRole('heading', {level: 1})).toHaveLength(1);
+        expect(Array.from(document.querySelectorAll('img')).every((image) => (image.getAttribute('alt') ?? '').trim().length > 0)).toBe(
+            true,
+        );
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.LOGIN);
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
         expect(screen.getByRole('button', {name: '언어 선택'})).toBeInTheDocument();
@@ -117,7 +120,7 @@ describe('LandingPage', () => {
             </MemoryRouter>,
         );
 
-        expect(document.querySelector('picture[aria-hidden="true"] img')).toHaveAttribute('src', expectedSrc);
+        expect(document.querySelector(`img[src="${expectedSrc}"]`)).toHaveAttribute('alt');
     });
 
     it.each([
