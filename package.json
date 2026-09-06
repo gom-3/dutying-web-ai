@@ -14,6 +14,7 @@
         "build": "pnpm run build:app",
         "build:app": "pnpm --dir ./apps/app build",
         "build:docs": "pnpm --dir ./apps/docs build",
+        "build:landing": "pnpm --dir ./apps/app exec tsc && pnpm --dir ./apps/app exec vite build --outDir ../landing/dist --emptyOutDir",
         "preview": "pnpm run preview:app",
         "preview:app": "pnpm --dir ./apps/app preview",
         "preview:docs": "pnpm --dir ./apps/docs preview",
