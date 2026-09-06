@@ -171,6 +171,30 @@ describe('MemberPage', () => {
         });
     });
 
+    it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full inline nurse name %s', async (name) => {
+        mockDirtySelectedNurseState();
+
+        const state = mockUseEditShiftTeam();
+
+        state.state.isNurseDraftDirty = false;
+        state.actions.updateNurse.mockResolvedValue(true);
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        const nameInput = screen.getByDisplayValue('Nurse One');
+
+        expect(nameInput).toHaveAttribute('maxlength', '50');
+        await userEvent.clear(nameInput);
+        await userEvent.type(nameInput, name);
+        await userEvent.tab();
+
+        await waitFor(() => expect(state.actions.updateNurse).toHaveBeenCalledWith(101, expect.objectContaining({name})));
+    });
+
     it('상단 요약은 병원명과 병동명 없이 전체 인원부터 보여준다', () => {
         render(
             <MemoryRouter>

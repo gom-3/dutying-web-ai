@@ -1,4 +1,4 @@
-export const NURSE_NAME_MAX_LENGTH = 20;
+export const NURSE_NAME_MAX_LENGTH = 50;
 
 const ASCII_SPACE_EDGE_REGEX = /^ +| +$/g;
 const KOREAN_SYLLABLE_REGEX = /[\uAC00-\uD7A3]/g;
