@@ -5,9 +5,19 @@ describe('nurse name helpers', () => {
     it('accepts Korean, English, digits, ASCII spaces, and Japanese names', () => {
         expect(isValidNurseName('신규 간호사 1')).toBe(true);
         expect(isValidNurseName('Nurse 1')).toBe(true);
+        expect(isValidNurseName('emily sheparded')).toBe(true);
+        expect(isValidNurseName('Alexandria Elizabeth Montgomery')).toBe(true);
         expect(isValidNurseName('山田 花子')).toBe(true);
         expect(isValidNurseName('佐藤・美咲')).toBe(true);
         expect(isValidNurseName('ジョン・スミス')).toBe(true);
+    });
+
+    it('accepts up to fifty characters without removing spaces inside names', () => {
+        expect(isValidNurseName('A'.repeat(50))).toBe(true);
+        expect(isValidNurseName('A'.repeat(51))).toBe(false);
+        expect(sanitizeNurseNameInput('A'.repeat(51))).toBe('A'.repeat(50));
+        expect(sanitizeNurseNameInput('emily sheparded')).toBe('emily sheparded');
+        expect(normalizeNurseNameForRequest('  emily sheparded  ')).toBe('emily sheparded');
     });
 
     it('rejects unsupported whitespace, emoji, special characters, and symbol-only values', () => {

@@ -2,8 +2,8 @@ import {type ReactNode} from 'react';
 import {Helmet} from 'react-helmet';
 import {Link} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path';
+import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 
-const SUPPORT_URL = 'https://ye620.channel.io';
 const EFFECTIVE_DATE = '2026년 8월 27일';
 
 function LegalShell({title, description, children}: {title: string; description: string; children: ReactNode}) {
@@ -128,14 +128,9 @@ export function PrivacyPolicyPage() {
             <LegalSection title="8. 문의">
                 <p>
                     개인정보 처리와 관련한 문의는 듀팅 고객지원 채널을 통해 접수할 수 있습니다.{' '}
-                    <a
-                        className="font-extrabold text-main-1 underline-offset-4 hover:underline"
-                        href={SUPPORT_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
+                    <ChannelTalkLink className="font-extrabold text-main-1 underline-offset-4 hover:underline">
                         고객지원 문의하기
-                    </a>
+                    </ChannelTalkLink>
                 </p>
             </LegalSection>
         </LegalShell>
@@ -207,14 +202,9 @@ export function TermsOfServicePage() {
             <LegalSection title="9. 문의">
                 <p>
                     서비스 이용과 약관에 관한 문의는 듀팅 고객지원 채널을 통해 접수할 수 있습니다.{' '}
-                    <a
-                        className="font-extrabold text-main-1 underline-offset-4 hover:underline"
-                        href={SUPPORT_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
+                    <ChannelTalkLink className="font-extrabold text-main-1 underline-offset-4 hover:underline">
                         고객지원 문의하기
-                    </a>
+                    </ChannelTalkLink>
                 </p>
             </LegalSection>
         </LegalShell>

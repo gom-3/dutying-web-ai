@@ -3,6 +3,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import type * as I18nResourcesModule from '@/shared/i18n/resources.generated';
 import {render, userEvent} from '@/shared/util/test-utils';
+import OnboardingWardCreatePage from '../index';
 import {
     createInitialDraft,
     goToStep,
@@ -11,7 +12,6 @@ import {
     updateRotationModeDraft,
     updateTwoShiftNightRecoveryDisplayDraft,
 } from '../model/draft';
-import OnboardingWardCreatePage from '../index';
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
@@ -356,13 +356,13 @@ describe('OnboardingWardCreatePage', () => {
 
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
             clipboardData: {
-                getData: () => '신규1\tD\tE\n두번째\tN\tOFF',
+                getData: () => 'emily sheparded\tD\tE\nAlexandria Elizabeth Montgomery\tN\tOFF',
             },
         });
 
-        expect(screen.getByDisplayValue('신규1')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('emily sheparded')).toBeInTheDocument();
         expect(screen.getByDisplayValue('D')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('두번째')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Alexandria Elizabeth Montgomery')).toBeInTheDocument();
         expect(screen.getByDisplayValue('O')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
@@ -372,8 +372,17 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
-        expect(screen.getByDisplayValue('신규1')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('두번째')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('emily sheparded')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('Alexandria Elizabeth Montgomery')).toBeInTheDocument();
+        expect(mockPreviewOnboardingScheduleInput).toHaveBeenCalledWith(
+            expect.objectContaining({nurseNameBlock: 'emily sheparded\nAlexandria Elizabeth Montgomery'}),
+        );
+
+        await user.click(screen.getByRole('button', {name: '이전'}));
+        await user.click(screen.getByRole('button', {name: '이전'}));
+
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('emily sheparded');
+        expect(screen.getByLabelText('2행 간호사 이름')).toHaveValue('Alexandria Elizabeth Montgomery');
     });
 
     it('shows the nurse order tutorial once after the first nurse is added', async () => {
@@ -665,20 +674,48 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByDisplayValue('O')).toBeInTheDocument();
     });
 
-    it('limits schedule names and shift cells to five characters', async () => {
+    it('limits pasted nurse names to fifty characters and shift cells to five characters', async () => {
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(userEvent.setup());
 
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
             clipboardData: {
-                getData: () => '가나다라마바\tABCDEFG',
+                getData: () => `${'A'.repeat(51)}\tABCDEFG`,
             },
         });
 
-        expect(screen.getByDisplayValue('가나다라마')).toBeInTheDocument();
-        expect(screen.queryByDisplayValue('가나다라마바')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('A'.repeat(50));
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveAttribute('maxlength', '50');
         expect(screen.getByDisplayValue('ABCDE')).toBeInTheDocument();
         expect(screen.queryByDisplayValue('ABCDEFG')).not.toBeInTheDocument();
+    });
+
+    it('preserves full English names when typing, filling down, and undoing', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        const firstName = screen.getByLabelText('1행 간호사 이름');
+        const secondName = screen.getByLabelText('2행 간호사 이름');
+
+        await user.type(firstName, 'emily sheparded');
+        expect(firstName).toHaveValue('emily sheparded');
+
+        const fillHandle = firstName.closest('[data-schedule-cell]')?.querySelector('[data-fill-handle]');
+
+        expect(fillHandle).toBeTruthy();
+        fireEvent.mouseDown(fillHandle!, {button: 0});
+        fireEvent.mouseEnter(secondName.closest('[data-schedule-cell]')!);
+        fireEvent.mouseUp(document);
+
+        expect(firstName).toHaveValue('emily sheparded');
+        expect(secondName).toHaveValue('emily sheparded');
+
+        fireEvent.keyDown(firstName, {key: 'z', ctrlKey: true});
+
+        expect(firstName).toHaveValue('emily sheparded');
+        expect(secondName).toHaveValue('');
     });
 
     it('clears the dragged schedule cell range with Backspace', async () => {
@@ -967,8 +1004,6 @@ describe('OnboardingWardCreatePage', () => {
     });
 
     it('3교대와 2교대를 함께 운영하는 병동은 근무유형의 교대제 칼럼을 표시한다', async () => {
-        const user = userEvent.setup();
-
         await renderShiftTypeStepFromRestoredDraft('MIXED');
 
         expect(screen.getByText('교대제')).toBeInTheDocument();

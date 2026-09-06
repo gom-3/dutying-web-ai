@@ -11,6 +11,7 @@ import useEditShiftTeam from '@/features/edit-shift-team';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
+import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -636,7 +637,8 @@ function NurseDetailPanel({
                             autoFocus
                             disabled={isBusy}
                             name="nurseName"
-                            maxLength={30}
+                            maxLength={NURSE_NAME_MAX_LENGTH}
+                            title={writeNurse.name}
                             placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
                             className={cn(
                                 'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',

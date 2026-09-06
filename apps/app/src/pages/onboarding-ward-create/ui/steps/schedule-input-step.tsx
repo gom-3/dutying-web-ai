@@ -15,6 +15,7 @@ import {
 import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import {
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
@@ -92,9 +93,9 @@ type TUndoSnapshot = {
 
 const MIN_VISIBLE_ROWS = 10;
 const MAX_UNDO_HISTORY = 10;
-const MAX_CELL_LENGTH = 5;
+const MAX_SHIFT_CELL_LENGTH = 5;
 const NAME_COLUMN_INDEX = 0;
-const NAME_COL = 'clamp(86px,6.8cqw,116px)';
+const NAME_COL = 'clamp(160px,13cqw,220px)';
 const ROW_ACTION_COL = 'clamp(34px,3cqw,46px)';
 const LEFT_GRID_TEMPLATE_COLUMNS = `${NAME_COL} minmax(0,1fr) ${ROW_ACTION_COL}`;
 const ROW_GAP_X = 'clamp(8px,0.78cqw,14px)';
@@ -207,7 +208,9 @@ const getDayType = (year: number, month: number, day: number) => {
 
     return 'weekday';
 };
-const limitCellValue = (value: string) => Array.from(value).slice(0, MAX_CELL_LENGTH).join('');
+const limitShiftCellValue = (value: string) => Array.from(value).slice(0, MAX_SHIFT_CELL_LENGTH).join('');
+const limitCellValue = (value: string, colIndex: number) =>
+    colIndex === NAME_COLUMN_INDEX ? value.slice(0, NURSE_NAME_MAX_LENGTH) : limitShiftCellValue(value);
 const getLatestSchedule = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'][string]) =>
     Object.values(scheduleInputs ?? {})
         .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
@@ -387,11 +390,13 @@ function ScheduleInputStep({
             const nurseById = new Map(draft.nurses.map((nurse) => [nurse.id, nurse]));
             const scheduleRows = currentSchedule.rows.map((row) => {
                 const nurse = row.nurseId ? nurseById.get(row.nurseId) : undefined;
+                // Synced nurse names are trimmed; keep spaces while the row name is being typed.
+                const name = nurse && nurse.name.trim() !== row.name.trim() ? nurse.name : row.name;
 
                 return {
                     ...row,
-                    name: limitCellValue(nurse?.name ?? row.name),
-                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitCellValue(value)])),
+                    name: limitCellValue(name, NAME_COLUMN_INDEX),
+                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitShiftCellValue(value)])),
                 };
             });
 
@@ -512,8 +517,8 @@ function ScheduleInputStep({
             const normalizedRows = ensureMinimumRows(
                 nextRows.map((row) => ({
                     ...row,
-                    name: limitCellValue(row.name),
-                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitCellValue(value)])),
+                    name: limitCellValue(row.name, NAME_COLUMN_INDEX),
+                    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, limitShiftCellValue(value)])),
                 })),
             );
             const previousRows = options.previousRows ?? rows;
@@ -586,7 +591,7 @@ function ScheduleInputStep({
     const updateCellValue = useCallback(
         (rowIndex: number, colIndex: number, value: string) => {
             const nextRows = ensureMinimumRows(rows, rowIndex + 1);
-            const nextValue = limitCellValue(value);
+            const nextValue = limitCellValue(value, colIndex);
 
             if (colIndex === NAME_COLUMN_INDEX) {
                 nextRows[rowIndex] = {
@@ -701,7 +706,7 @@ function ScheduleInputStep({
 
                 pastedRow.forEach((value, colOffset) => {
                     const colIndex = start.col + colOffset;
-                    const nextValue = limitCellValue(value);
+                    const nextValue = limitCellValue(value, colIndex);
 
                     if (colIndex > dayCount) {
                         return;
@@ -751,7 +756,7 @@ function ScheduleInputStep({
                 for (let colIndex = targetRange.minCol; colIndex <= targetRange.maxCol; colIndex += 1) {
                     const sourceRow = sourceRange.minRow + positiveModulo(rowIndex - sourceRange.minRow, sourceHeight);
                     const sourceCol = sourceRange.minCol + positiveModulo(colIndex - sourceRange.minCol, sourceWidth);
-                    const value = limitCellValue(getCellValue(rows, sourceRow, sourceCol));
+                    const value = limitCellValue(getCellValue(rows, sourceRow, sourceCol), colIndex);
 
                     if (!nextRows[rowIndex]) {
                         nextRows[rowIndex] = createRow({divisionNum: nextRows[rowIndex - 1]?.divisionNum ?? 1});
@@ -1313,7 +1318,7 @@ function NameCell({
                 value={row.name}
                 aria-label={t('page.onboardingWardCreate.schedule.nurseNameAria', {rowNumber: rowIndex + 1})}
                 placeholder={t('page.member.table.name')}
-                maxLength={MAX_CELL_LENGTH}
+                maxLength={NURSE_NAME_MAX_LENGTH}
                 className={cn(
                     'h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-center font-apple text-sub-1 outline-none placeholder:text-gray-4',
                     NAME_TEXT_CLASS,
@@ -1468,7 +1473,7 @@ function ShiftCell({
                     value={value}
                     aria-label={t('page.onboardingWardCreate.schedule.shiftCellAria', {rowNumber: rowIndex + 1, day})}
                     placeholder="-"
-                    maxLength={MAX_CELL_LENGTH}
+                    maxLength={MAX_SHIFT_CELL_LENGTH}
                     className={cn(SHIFT_INPUT_CLASS, isActive && 'outline outline-2 outline-main-1')}
                     style={{backgroundColor, color: textColor}}
                     onFocus={() => {

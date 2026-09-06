@@ -24,6 +24,7 @@ import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME
 import {MEMBER_CONNECTION_MANAGE_SEARCH_PARAM, MEMBER_CONNECTION_MANAGE_SEARCH_VALUE} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -87,7 +88,7 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-3 min-[1600px]:px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-1.5 min-[1600px]:gap-x-2';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
+    'grid-cols-[24px_minmax(160px,1.35fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; labelKey: Parameters<ReturnType<typeof useTypedTranslation>['t']>[0]}[] = [
     {value: 'manual', labelKey: 'page.member.sort.manual'},
     {value: 'name', labelKey: 'page.member.sort.name'},
@@ -1542,11 +1543,11 @@ function MemberPage() {
                         </div>
                     ) : null}
 
-                    <div className="mt-2 rounded-[15px]">
+                    <div className="mt-2 overflow-x-auto rounded-[15px]">
                         {hasActiveTeamNurses ? (
                             <div
                                 className={cn(
-                                    'grid items-center py-2 font-apple text-[14px] text-gray-3 min-[1600px]:text-[16px]',
+                                    'grid min-w-[800px] items-center py-2 font-apple text-[14px] text-gray-3 min-[1600px]:min-w-[840px] min-[1600px]:text-[16px]',
                                     MEMBER_GRID_GAP_CLASS,
                                     MEMBER_GRID_PADDING_X,
                                     MEMBER_GRID_COLS_WITHOUT_SKILL,
@@ -1575,7 +1576,7 @@ function MemberPage() {
                             </div>
                         ) : null}
 
-                        <div className="space-y-1.5 pb-4">
+                        <div className={cn('space-y-1.5 pb-4', hasActiveTeamNurses && 'min-w-[800px] min-[1600px]:min-w-[840px]')}>
                             {hasActiveTeamNurses ? (
                                 <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                                     <div className="space-y-1.5">
@@ -2011,6 +2012,7 @@ function MemberNurseRow({
                 </button>
                 <Input
                     value={nameDraft}
+                    title={nameDraft}
                     disabled={isBusy}
                     onClick={(event) => {
                         event.stopPropagation();
@@ -2036,7 +2038,7 @@ function MemberNurseRow({
                     fieldSize="default"
                     className={cn('h-8 min-w-0 text-center text-[16px] font-medium text-sub-1', fadedClass)}
                     placeholder="-"
-                    maxLength={30}
+                    maxLength={NURSE_NAME_MAX_LENGTH}
                 />
                 <div className={cn('flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-0.5 overflow-hidden', fadedClass)}>
                     {shiftTypeOptions.length > 0 ? (

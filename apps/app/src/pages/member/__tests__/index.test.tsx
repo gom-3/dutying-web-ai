@@ -1,5 +1,6 @@
 import {MemoryRouter, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import MemberPage from '..';
 
@@ -16,7 +17,7 @@ vi.mock('@/analytics', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+    const {default: i18n} = await vi.importActual<typeof I18nModule>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -38,7 +39,11 @@ vi.mock('../ui/connection-manage', () => ({
 }));
 
 vi.mock('../ui/nurse-detail-panel', () => ({
-    default: ({onRegisterDraftActions}: {onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void}) => void}) => {
+    default: ({
+        onRegisterDraftActions,
+    }: {
+        onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void}) => void;
+    }) => {
         onRegisterDraftActions?.({
             save: mockNurseDetailSave,
             discard: mockNurseDetailDiscard,
@@ -157,6 +162,30 @@ describe('MemberPage', () => {
                 disconnectNurse: vi.fn(),
             },
         });
+    });
+
+    it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full inline nurse name %s', async (name) => {
+        mockDirtySelectedNurseState();
+
+        const state = mockUseEditShiftTeam();
+
+        state.state.isNurseDraftDirty = false;
+        state.actions.updateNurse.mockResolvedValue(true);
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        const nameInput = screen.getByDisplayValue('Nurse One');
+
+        expect(nameInput).toHaveAttribute('maxlength', '50');
+        await userEvent.clear(nameInput);
+        await userEvent.type(nameInput, name);
+        await userEvent.tab();
+
+        await waitFor(() => expect(state.actions.updateNurse).toHaveBeenCalledWith(101, expect.objectContaining({name})));
     });
 
     it('상단 요약은 병원명과 병동명 없이 전체 인원부터 보여준다', () => {

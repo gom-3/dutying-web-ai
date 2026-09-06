@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TNurse, type TWardShiftType} from '@/entities';
-import {fireEvent, render, screen, waitFor} from '@/shared/util/test-utils';
+import {fireEvent, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import NurseDetailPanel from '../nurse-detail-panel';
 
 const mockUseEditShiftTeam = vi.fn();
@@ -105,6 +105,18 @@ const renderPanel = (selectedNurse: TNurse, wardShiftTypes: TWardShiftType[] = [
 describe('NurseDetailPanel', () => {
     beforeEach(() => {
         mockUseEditShiftTeam.mockReset();
+    });
+
+    it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full English name %s', async (name) => {
+        const {updateNurse} = renderPanel(createNurse());
+        const nameInput = screen.getByDisplayValue('김듀티');
+
+        expect(nameInput).toHaveAttribute('maxlength', '50');
+        await userEvent.clear(nameInput);
+        await userEvent.type(nameInput, name);
+        await userEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => expect(updateNurse).toHaveBeenCalledWith(101, expect.objectContaining({name})));
     });
 
     it('lets a connected nurse birthDate be edited and sends it in the nurse patch payload', async () => {

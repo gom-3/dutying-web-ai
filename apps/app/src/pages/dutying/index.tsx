@@ -4,8 +4,8 @@ import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
+import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 
-const INQUIRY_LINK = 'https://ye620.channel.io';
 const TERMS_OF_SERVICE_LINK = RUNTIME_CONFIG.docs.termsOfService;
 const PRIVACY_POLICY_LINK = RUNTIME_CONFIG.docs.privacyPolicy;
 
@@ -14,6 +14,7 @@ type TDutyingLinkItem = {
     descriptionKey: TI18nKey;
     href?: string;
     to?: string;
+    isInquiry?: boolean;
     Icon: LucideIcon;
 };
 
@@ -29,7 +30,9 @@ function DutyingLinkItem({item}: {item: TDutyingLinkItem}) {
                 <span className="block font-apple text-[15px] font-semibold text-sub-1">{t(item.titleKey)}</span>
                 <span className="mt-0.5 block font-apple text-[13px] leading-5 text-gray-3">{t(item.descriptionKey)}</span>
             </span>
-            {item.href ? (
+            {item.isInquiry ? (
+                <ChevronRight className="size-4 shrink-0 text-gray-4" aria-hidden="true" />
+            ) : item.href ? (
                 <ExternalLink className="size-4 shrink-0 text-gray-4" aria-hidden="true" />
             ) : item.to ? (
                 <ChevronRight className="size-4 shrink-0 text-gray-4" aria-hidden="true" />
@@ -42,6 +45,10 @@ function DutyingLinkItem({item}: {item: TDutyingLinkItem}) {
     );
     const className =
         'flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none';
+
+    if (item.isInquiry) {
+        return <ChannelTalkLink className={`${className} hover:bg-gray-7`}>{content}</ChannelTalkLink>;
+    }
 
     if (item.to) {
         return (
@@ -78,7 +85,7 @@ function DutyingPage() {
         {
             titleKey: 'page.dutying.items.contact.title',
             descriptionKey: 'page.dutying.items.contact.description',
-            href: INQUIRY_LINK,
+            isInquiry: true,
             Icon: MessageCircle,
         },
         {
