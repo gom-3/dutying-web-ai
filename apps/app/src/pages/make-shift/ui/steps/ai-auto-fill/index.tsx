@@ -925,7 +925,7 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto) => {
+    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto, knobsBeforeAdjust?: TAdjustKnobs) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -996,6 +996,16 @@ export function AiAutofill() {
 
             if (!result.ok) {
                 setAiStatus('error');
+
+                // 실패했는데 칩이 켜진 채로 남으면, 사용자는 그 방향이 반영된 표를 보고 있다고
+                // 믿는다. 실제로는 아무것도 안 바뀌었으므로 화면이 거짓말을 하게 된다.
+                // 취소(canceled)는 위에서 먼저 빠져나가므로 여기 오지 않는다 — 사용자가 되돌린
+                // 것이 아니라 요청만 무른 것이라 칩을 유지하는 게 맞다.
+                if (knobsBeforeAdjust !== undefined) {
+                    setAdjustKnobs(knobsBeforeAdjust);
+                    setLastAdjustChangedCount(null);
+                }
+
                 toast.error(
                     result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
                 );
@@ -1105,6 +1115,7 @@ export function AiAutofill() {
      * 순간이 생기고, 사용자는 지금 보이는 표가 어느 설정의 결과인지 알 수 없게 된다.
      */
     const handleToggleAdjustKnob = (knob: TAutofillAdjustKnob, value: number) => {
+        const previousKnobs = adjustKnobs;
         const nextKnobs: TAdjustKnobs = {...adjustKnobs};
 
         if (nextKnobs[knob] === value) {
@@ -1123,7 +1134,7 @@ export function AiAutofill() {
         // 축을 다 끄면 되돌릴 기준이 없으므로 요청하지 않는다. 되돌리기는 Undo 로 한다.
         if (Object.keys(nextKnobs).length === 0) return;
 
-        void runAiFill(readyContext, {knobs: nextKnobs, strength: 'NORMAL'});
+        void runAiFill(readyContext, {knobs: nextKnobs, strength: 'NORMAL'}, previousKnobs);
     };
     const openAiFillDecision = (context: TAiFillDecisionContext) => {
         aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
