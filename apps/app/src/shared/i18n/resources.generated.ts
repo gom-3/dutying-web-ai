@@ -2503,7 +2503,7 @@ export const ko = {
             "unsavedDescription": "변경사항이 저장되지 않았어요.",
             "uploadPhoto": "사진 업로드",
             "validation": {
-                "nameInvalid": "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
                 "nameRequired": "이름을 입력해 주세요.",
                 "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.",
                 "phoneRequired": "전화번호를 입력해 주세요."
@@ -2552,7 +2552,7 @@ export const ko = {
                 "title": "계정 정보를 입력해 주세요",
                 "uploadPhoto": "사진 업로드",
                 "validation": {
-                    "nameInvalid": "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                    "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
                     "nameRequired": "이름을 입력해 주세요.",
                     "phoneDuplicate": "이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.",
                     "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 연락처를 입력해 주세요.",
@@ -5614,7 +5614,7 @@ export const en: TLocale = {
             "unsavedDescription": "You have unsaved changes.",
             "uploadPhoto": "Upload photo",
             "validation": {
-                "nameInvalid": "Use up to 20 Korean, English, or Japanese characters, spaces, '-', or '·'.",
+                "nameInvalid": "Use up to 50 Korean, English, or Japanese characters, spaces, '-', or '·'.",
                 "nameRequired": "Enter your name.",
                 "phoneInvalid": "Enter a valid phone number for the selected language or region.",
                 "phoneRequired": "Enter your phone number."
@@ -5663,7 +5663,7 @@ export const en: TLocale = {
                 "title": "Enter account information",
                 "uploadPhoto": "Upload photo",
                 "validation": {
-                    "nameInvalid": "Use up to 20 characters: Korean, English, Japanese, spaces, '-', and '·'.",
+                    "nameInvalid": "Use up to 50 characters: Korean, English, Japanese, spaces, '-', and '·'.",
                     "nameRequired": "Enter a name.",
                     "phoneDuplicate": "This phone number is already in use. Enter another number.",
                     "phoneInvalid": "Enter a valid phone number for the selected language or region.",
@@ -8723,7 +8723,7 @@ export const ja: TLocale = {
             "unsavedDescription": "保存されていない変更があります。",
             "uploadPhoto": "写真をアップロード",
             "validation": {
-                "nameInvalid": "名前は20文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
                 "nameRequired": "名前を入力してください。",
                 "phoneInvalid": "選択した言語または地域に合う電話番号を入力してください。",
                 "phoneRequired": "電話番号を入力してください。"
@@ -8772,7 +8772,7 @@ export const ja: TLocale = {
                 "title": "アカウント情報を入力してください",
                 "uploadPhoto": "写真をアップロード",
                 "validation": {
-                    "nameInvalid": "名前は20文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                    "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
                     "nameRequired": "名前を入力してください。",
                     "phoneDuplicate": "すでに使用中の連絡先です。別の番号を入力してください。",
                     "phoneInvalid": "選択した言語または地域に合う連絡先を入力してください。",
@@ -11832,7 +11832,7 @@ export const zh: TLocale = {
             "unsavedDescription": "更改未保存。",
             "uploadPhoto": "上传照片",
             "validation": {
-                "nameInvalid": "名称不得超过 20 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
                 "nameRequired": "请输入您的姓名。",
                 "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入电话号码。",
                 "phoneRequired": "请输入您的电话号码。"
@@ -11881,7 +11881,7 @@ export const zh: TLocale = {
                 "title": "请输入您的账户信息",
                 "uploadPhoto": "上传照片",
                 "validation": {
-                    "nameInvalid": "名称不得超过 20 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                    "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
                     "nameRequired": "请输入您的姓名。",
                     "phoneDuplicate": "该联系电话已被使用。请输入另一个号码。",
                     "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入联系信息。",
@@ -14941,7 +14941,7 @@ export const th: TLocale = {
             "unsavedDescription": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
             "uploadPhoto": "อัพโหลดรูปภาพ",
             "validation": {
-                "nameInvalid": "ใช้อักขระเกาหลี อังกฤษ หรือญี่ปุ่น ช่องว่าง '-' หรือ '·' ได้สูงสุด 20 ตัว",
+                "nameInvalid": "ใช้อักขระเกาหลี อังกฤษ หรือญี่ปุ่น ช่องว่าง '-' หรือ '·' ได้สูงสุด 50 ตัว",
                 "nameRequired": "ใส่ชื่อของคุณ",
                 "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
                 "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ"
@@ -14990,7 +14990,7 @@ export const th: TLocale = {
                 "title": "ป้อนข้อมูลบัญชี",
                 "uploadPhoto": "อัพโหลดรูปภาพ",
                 "validation": {
-                    "nameInvalid": "ใช้อักขระได้สูงสุด 20 ตัว: เกาหลี อังกฤษ ญี่ปุ่น ช่องว่าง '-' และ '·'",
+                    "nameInvalid": "ใช้อักขระได้สูงสุด 50 ตัว: เกาหลี อังกฤษ ญี่ปุ่น ช่องว่าง '-' และ '·'",
                     "nameRequired": "ป้อนชื่อ",
                     "phoneDuplicate": "หมายเลขโทรศัพท์นี้มีการใช้งานแล้ว ป้อนหมายเลขอื่น",
                     "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
@@ -18050,7 +18050,7 @@ export const vi: TLocale = {
             "unsavedDescription": "Bạn có những thay đổi chưa được lưu.",
             "uploadPhoto": "Tải ảnh lên",
             "validation": {
-                "nameInvalid": "Sử dụng tối đa 20 ký tự tiếng Hàn, tiếng Anh hoặc tiếng Nhật, dấu cách, '-' hoặc '·'.",
+                "nameInvalid": "Sử dụng tối đa 50 ký tự tiếng Hàn, tiếng Anh hoặc tiếng Nhật, dấu cách, '-' hoặc '·'.",
                 "nameRequired": "Nhập tên của bạn.",
                 "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
                 "phoneRequired": "Nhập số điện thoại của bạn."
@@ -18099,7 +18099,7 @@ export const vi: TLocale = {
                 "title": "Nhập thông tin tài khoản",
                 "uploadPhoto": "Tải ảnh lên",
                 "validation": {
-                    "nameInvalid": "Sử dụng tối đa 20 ký tự: tiếng Hàn, tiếng Anh, tiếng Nhật, dấu cách, '-' và '·'.",
+                    "nameInvalid": "Sử dụng tối đa 50 ký tự: tiếng Hàn, tiếng Anh, tiếng Nhật, dấu cách, '-' và '·'.",
                     "nameRequired": "Nhập tên.",
                     "phoneDuplicate": "Số điện thoại này đã được sử dụng. Nhập số khác.",
                     "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",

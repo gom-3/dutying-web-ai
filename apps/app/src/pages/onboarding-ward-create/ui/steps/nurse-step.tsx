@@ -439,6 +439,7 @@ function NurseStep({
 
                                                                         <Input
                                                                             value={nurse.name}
+                                                                            title={nurse.name}
                                                                             onChange={(event) =>
                                                                                 onNurseChange(nurse.id, {
                                                                                     name: limitNurseNameInput(event.target.value),
