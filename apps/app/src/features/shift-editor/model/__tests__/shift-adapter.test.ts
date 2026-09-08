@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
+import {pruneEmptyFixedCells} from '../prune-empty-fixed-cells';
+import {docToLockedCellKeys} from '../schedule-authoring';
 import {
     buildWorkKeyMap,
     docToCarryOverCellsDTO,
@@ -220,6 +222,29 @@ describe('shift-adapter', () => {
 
         expect(doc.rows[0]?.cells).toEqual(['-', null]);
         expect(doc.shiftTypeRefs?.find((shiftType) => shiftType.wardShiftTypeId === 20)?.shortName).toBe('-');
+    });
+
+    it('옛 버전을 불러와 값이 사라진 칸은 잠금이 떨어져 요청에 실리지 않는다', () => {
+        // 화면에서 고정해 둔 칸이, 그 칸이 비어 있던 옛 버전을 불러오면 "고정인데 빈 칸" 이 된다.
+        // 그대로 자동완성에 실리면 엔진이 immutable_empty_cell 로 그 달 전체를 반려한다.
+        const shift = createShift();
+        const merged = snapshotDetailToDoc(
+            {
+                rowOrder: [{shiftNurseId: 1, nurseId: 100, displayOrder: 1, priority: 0, divisionNum: 1}],
+                cells: [{shiftNurseId: 1, nurseId: 100, date: '2026-03-01', wardShiftTypeId: null}],
+            },
+            shift,
+            2026,
+            3,
+            {fixedCells: {'1|2026-03-01': true}, requestCells: {}},
+        );
+
+        expect(merged.rows[0]?.cells[0]).toBeNull();
+
+        const pruned = pruneEmptyFixedCells(merged);
+
+        expect(pruned.fixedCells).toEqual({});
+        expect(docToLockedCellKeys(pruned)).toEqual([]);
     });
 
     it('converts editor doc back to ward shifts dto', () => {

@@ -9,6 +9,7 @@ import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByK
 import {getDutyCellLockKey, getDutyDocMinColumn, isDutyCellPositionInBounds, readDutyCell} from './duty-doc-cells';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
+import {pruneEmptyFixedCells} from './prune-empty-fixed-cells';
 import {
     createScheduleValidationSnapshot,
     migratePersistedViolations,
@@ -313,13 +314,15 @@ export function useShiftEditorCommands() {
 
             const {history} = getState();
             const nextHistory: THistoryState = {...history, past: [], future: [], maxDepth: opts?.maxHistoryDepth ?? history.maxDepth};
+            // 값과 잠금이 서로 다른 길로 들어오므로 여기서 한 번 맞춘다. 이유는 pruneEmptyFixedCells 참고.
+            const nextDoc = pruneEmptyFixedCells(doc);
 
-            setDoc(doc);
+            setDoc(nextDoc);
             setSelection(null);
             setHistory(nextHistory);
             setScheduleValidationSnapshot(null);
             setLegacyDisplayViolations([]);
-            persistDoc(doc, nextHistory, {validationSnapshot: null});
+            persistDoc(nextDoc, nextHistory, {validationSnapshot: null});
         },
         getPersisted: (): TPersisted | null => persistence.load(),
         hydrate: (persisted: TPersisted) => {
@@ -335,7 +338,7 @@ export function useShiftEditorCommands() {
 
             const appliedHistory = nextHistory ?? currentHistory;
 
-            setDoc(persisted.doc);
+            setDoc(pruneEmptyFixedCells(persisted.doc));
             setSelection(null);
             setHistory(appliedHistory);
 

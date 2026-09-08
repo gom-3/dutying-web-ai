@@ -4,6 +4,7 @@ export * from './store';
 export * from './shift-adapter';
 export * from './schedule-authoring';
 export * from './snapshot-to-doc';
+export * from './prune-empty-fixed-cells';
 export * from './shift-to-excel';
 export * from './shift-to-image';
 export * from './use-shift-editor-commands';

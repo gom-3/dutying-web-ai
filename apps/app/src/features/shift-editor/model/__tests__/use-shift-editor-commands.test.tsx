@@ -268,6 +268,30 @@ describe('useShiftEditorCommands', () => {
         expect(state.history.past).toHaveLength(0);
     });
 
+    it('init·hydrate 는 근무가 없는 칸의 고정 표시를 떼어 낸다', () => {
+        // 옛 스냅샷 버전을 불러오면 값은 그 버전, 잠금은 지금 화면 것이 되어 "고정인데 빈 칸" 이 생긴다.
+        // 그 상태로 자동완성을 돌리면 엔진이 그 달 전체를 반려한다(immutable_empty_cell).
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const staleLocks: TDutyDoc['fixedCells'] = {'2|2026-03-01': true, '2|2026-03-02': true, '1|2026-03-02': true};
+
+        act(() => {
+            result.current.init({...createDoc(), fixedCells: {...staleLocks}});
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'2|2026-03-01': true, '1|2026-03-02': true});
+
+        act(() => {
+            result.current.hydrate({
+                doc: {...createDoc(), fixedCells: {...staleLocks}},
+                history: JSON.stringify(useShiftEditorStore.getState().history),
+                scheduleViolations: {validationSnapshot: null},
+                savedAt: Date.now(),
+            });
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'2|2026-03-01': true, '1|2026-03-02': true});
+    });
+
     it('reorders rows by worker name, clears selection, and supports undo', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
 

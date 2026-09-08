@@ -19,6 +19,9 @@ function cellValueFromSnapshotCell(
 /**
  * 저장된 스냅샷 상세를 편집기 draft로 복원한다.
  * 고정·신청근무 잠금은 현재 화면 값을 유지한다.
+ *
+ * 그래서 값이 이 버전의 것이고 잠금이 지금 화면의 것인, 서로 어긋난 doc 이 나올 수 있다.
+ * 그 어긋남(고정인데 빈 칸)은 store 로 들어가는 길목에서 `pruneEmptyFixedCells` 가 정리한다.
  */
 export function snapshotDetailToDoc(
     detail: Pick<TSnapshotDetailRes, 'cells' | 'rowOrder'>,
