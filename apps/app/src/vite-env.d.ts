@@ -19,6 +19,8 @@ interface ImportMetaEnv {
     readonly VITE_ENABLE_WARD_CHAT?: string;
     /** LINKED 계정 온보딩 미리보기 강제 on/off (미설정 시 접속 도메인으로 판별) */
     readonly VITE_ALLOW_ONBOARDING_PREVIEW?: string;
+    /** 자동완성 조절 칩 강제 on/off (미설정 시 붙어 있는 API 호스트로 판별) */
+    readonly VITE_AI_ADJUST_ENABLED?: string;
 }
 
 interface ImportMeta {

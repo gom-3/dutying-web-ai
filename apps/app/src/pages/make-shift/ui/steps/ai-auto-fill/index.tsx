@@ -23,6 +23,7 @@ import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
+import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -193,9 +194,9 @@ function resolveSnapshotDisplayTitle(params: {
  */
 /**
  * 조절 기능 노출 여부. 엔진 -> 서버 -> 프론트 순으로 켜야 한다. 프론트만 먼저 켜면 사용자가
- * 칩을 누르고 거절 응답을 받는다.
+ * 칩을 누르고 거절 응답을 받는다. 판정은 붙어 있는 API 호스트 기준이다 — `isAiAdjustEnabled` 참고.
  */
-const isAdjustEnabled = import.meta.env.VITE_AI_ADJUST_ENABLED === 'true';
+const isAdjustEnabled = isAiAdjustEnabled();
 
 export function AiAutofill() {
     const {t} = useTypedTranslation();

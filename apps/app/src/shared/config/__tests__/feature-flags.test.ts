@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {isNonProductionAppDomain, isOnboardingWardCreatePreviewAllowed, isWardChatEnabled} from '../feature-flags';
+import {isAiAdjustEnabled, isNonProductionAppDomain, isOnboardingWardCreatePreviewAllowed, isWardChatEnabled} from '../feature-flags';
 
 describe('isNonProductionAppDomain', () => {
     it('treats production app host as production', () => {
@@ -93,5 +93,40 @@ describe('isWardChatEnabled', () => {
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', 'true');
 
         expect(isWardChatEnabled()).toBe(true);
+    });
+});
+
+describe('isAiAdjustEnabled', () => {
+    beforeEach(() => {
+        vi.stubEnv('VITE_AI_ADJUST_ENABLED', '');
+        vi.stubEnv('VITE_SERVER_URL', '');
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    it('운영 API 뒤에서는 끈다 — 엔진의 조절 솔버가 운영에서 꺼져 있다', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+
+        expect(isAiAdjustEnabled()).toBe(false);
+    });
+
+    it('dev API 뒤에서는 켠다', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
+
+        expect(isAiAdjustEnabled()).toBe(true);
+    });
+
+    it('override 로 강제할 수 있다', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+        vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
+
+        expect(isAiAdjustEnabled()).toBe(true);
+
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
+        vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'false');
+
+        expect(isAiAdjustEnabled()).toBe(false);
     });
 });
