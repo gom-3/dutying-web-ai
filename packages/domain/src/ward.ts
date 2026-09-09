@@ -16,6 +16,8 @@ export type TWard = {
     wardId: number;
     name: string;
     code: string;
+    /** 병원 카탈로그에서 고른 병원. 직접 입력했거나 카탈로그 도입 이전 병동은 없다. */
+    hospitalId?: number | null;
     hospitalName: string;
     nurseCnt: number;
     setupStatus?: 'SETUP_IN_PROGRESS' | 'ACTIVE' | 'CANCELLED';

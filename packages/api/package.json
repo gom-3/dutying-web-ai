@@ -27,6 +27,10 @@
         "./ward": {
             "types": "./src/ward/index.ts",
             "import": "./src/ward/index.ts"
+        },
+        "./hospital": {
+            "types": "./src/hospital/index.ts",
+            "import": "./src/hospital/index.ts"
         }
     },
     "dependencies": {

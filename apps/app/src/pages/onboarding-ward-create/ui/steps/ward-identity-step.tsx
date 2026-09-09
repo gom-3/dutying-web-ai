@@ -1,12 +1,14 @@
 import type {KeyboardEvent} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import HospitalSearchField, {type THospitalSelection} from './hospital-search-field';
 
 interface IWardIdentityStepProps {
     hospitalName: string;
+    hospitalId?: number;
     wardName: string;
     hasHospitalNameError?: boolean;
     hasWardNameError?: boolean;
-    onHospitalNameChange: (hospitalName: string) => void;
+    onHospitalChange: (selection: THospitalSelection) => void;
     onWardNameChange: (wardName: string) => void;
     onIdentityNameEnter: () => void;
 }
@@ -18,10 +20,11 @@ const FIELD_LABEL_CLASS = 'font-apple text-[15px] font-semibold text-sub-2';
 
 function WardIdentityStep({
     hospitalName,
+    hospitalId,
     wardName,
     hasHospitalNameError = false,
     hasWardNameError = false,
-    onHospitalNameChange,
+    onHospitalChange,
     onWardNameChange,
     onIdentityNameEnter,
 }: IWardIdentityStepProps) {
@@ -51,16 +54,12 @@ function WardIdentityStep({
                             {t('page.onboardingWardCreate.identity.hospitalName')}
                             <span aria-hidden="true" className="absolute top-0 -right-2 size-[5px] rounded-full bg-[#E55C6E]" />
                         </span>
-                        <input
-                            id="onboarding-hospital-name"
-                            aria-label={t('page.onboardingWardCreate.identity.hospitalName')}
-                            aria-invalid={hasHospitalNameError}
-                            value={hospitalName}
-                            placeholder={t('page.onboardingWardCreate.identity.hospitalNamePlaceholder')}
-                            maxLength={NAME_FIELD_MAX_LENGTH}
-                            className={getInputClassName(hasHospitalNameError)}
-                            onChange={(event) => onHospitalNameChange(event.target.value)}
-                            onKeyDown={handleKeyDown}
+                        <HospitalSearchField
+                            hospitalName={hospitalName}
+                            hospitalId={hospitalId}
+                            hasError={hasHospitalNameError}
+                            fieldClassName={getInputClassName(hasHospitalNameError)}
+                            onChange={onHospitalChange}
                         />
                     </label>
                     <label className="group block space-y-2" htmlFor="onboarding-ward-name">

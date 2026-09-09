@@ -297,7 +297,8 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('병원명')).toBeInTheDocument();
         expect(screen.getByLabelText('병동명')).toBeInTheDocument();
         expect(screen.getByText('(선택) 병동명')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('병원명을 입력해 주세요')).toBeInTheDocument();
+        // 병원은 자유 입력이 아니라 카탈로그 검색으로 바뀌었다.
+        expect(screen.getByPlaceholderText('병원명을 검색해 주세요')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('병동명을 입력해 주세요')).toBeInTheDocument();
     });
 

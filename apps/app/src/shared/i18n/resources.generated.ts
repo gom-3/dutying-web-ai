@@ -2200,7 +2200,14 @@ export const ko = {
                 "hospitalNamePlaceholder": "병원명을 입력해 주세요",
                 "wardName": "병동명",
                 "wardNameOptional": "(선택) 병동명",
-                "wardNamePlaceholder": "병동명을 입력해 주세요"
+                "wardNamePlaceholder": "병동명을 입력해 주세요",
+                "hospitalSearchPlaceholder": "병원명을 검색해 주세요",
+                "hospitalSearchEmpty": "검색 결과가 없어요",
+                "hospitalSearchError": "병원을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                "hospitalSearchLoading": "검색 중이에요",
+                "hospitalUseTypedName": "목록에 없어요. '{{keyword}}'(으)로 직접 입력할게요",
+                "hospitalSelected": "선택한 병원",
+                "hospitalChange": "다시 검색"
             },
             "modal": {
                 "deleteTeamDescription": "을 삭제할까요?",
@@ -5295,7 +5302,14 @@ export const en: TLocale = {
                 "hospitalNamePlaceholder": "Enter hospital name",
                 "wardName": "Ward name",
                 "wardNameOptional": "(Optional) Ward name",
-                "wardNamePlaceholder": "Enter ward name"
+                "wardNamePlaceholder": "Enter ward name",
+                "hospitalSearchPlaceholder": "Search for your hospital",
+                "hospitalSearchEmpty": "No matching hospital",
+                "hospitalSearchError": "Could not load hospitals. Please try again shortly.",
+                "hospitalSearchLoading": "Searching",
+                "hospitalUseTypedName": "Not listed. Use \"{{keyword}}\" as typed",
+                "hospitalSelected": "Selected hospital",
+                "hospitalChange": "Search again"
             },
             "modal": {
                 "deleteTeamDescription": " will be deleted.",
@@ -8388,7 +8402,14 @@ export const ja: TLocale = {
                 "hospitalNamePlaceholder": "病院名を入力してください",
                 "wardName": "病棟名",
                 "wardNameOptional": "（任意）病棟名",
-                "wardNamePlaceholder": "病棟名を入力してください"
+                "wardNamePlaceholder": "病棟名を入力してください",
+                "hospitalSearchPlaceholder": "病院名を検索してください",
+                "hospitalSearchEmpty": "検索結果がありません",
+                "hospitalSearchError": "病院を読み込めませんでした。しばらくしてからもう一度お試しください。",
+                "hospitalSearchLoading": "検索中です",
+                "hospitalUseTypedName": "一覧にありません。「{{keyword}}」をそのまま使用します",
+                "hospitalSelected": "選択した病院",
+                "hospitalChange": "再検索"
             },
             "modal": {
                 "deleteTeamDescription": "を削除しますか？",
@@ -11481,7 +11502,14 @@ export const zh: TLocale = {
                 "hospitalNamePlaceholder": "请输入医院名称",
                 "wardName": "病区名称",
                 "wardNameOptional": "（选填）病区名称",
-                "wardNamePlaceholder": "请输入病区名称"
+                "wardNamePlaceholder": "请输入病区名称",
+                "hospitalSearchPlaceholder": "搜索医院名称",
+                "hospitalSearchEmpty": "没有搜索结果",
+                "hospitalSearchError": "无法加载医院，请稍后重试。",
+                "hospitalSearchLoading": "搜索中",
+                "hospitalUseTypedName": "不在列表中。直接使用“{{keyword}}”",
+                "hospitalSelected": "已选医院",
+                "hospitalChange": "重新搜索"
             },
             "modal": {
                 "deleteTeamDescription": "要删除它吗？",
@@ -14574,7 +14602,14 @@ export const th: TLocale = {
                 "hospitalNamePlaceholder": "กรอกชื่อโรงพยาบาล",
                 "wardName": "ชื่อวอร์ด",
                 "wardNameOptional": "(ไม่บังคับ) ชื่อวอร์ด",
-                "wardNamePlaceholder": "กรอกชื่อวอร์ด"
+                "wardNamePlaceholder": "กรอกชื่อวอร์ด",
+                "hospitalSearchPlaceholder": "ค้นหาชื่อโรงพยาบาล",
+                "hospitalSearchEmpty": "ไม่พบผลลัพธ์",
+                "hospitalSearchError": "ไม่สามารถโหลดโรงพยาบาลได้ กรุณาลองใหม่ภายหลัง",
+                "hospitalSearchLoading": "กำลังค้นหา",
+                "hospitalUseTypedName": "ไม่มีในรายการ ใช้ \"{{keyword}}\" ตามที่พิมพ์",
+                "hospitalSelected": "โรงพยาบาลที่เลือก",
+                "hospitalChange": "ค้นหาอีกครั้ง"
             },
             "modal": {
                 "deleteTeamDescription": "จะถูกลบ",
@@ -17667,7 +17702,14 @@ export const vi: TLocale = {
                 "hospitalNamePlaceholder": "Nhập tên bệnh viện",
                 "wardName": "Tên khoa",
                 "wardNameOptional": "(Tùy chọn) Tên khoa",
-                "wardNamePlaceholder": "Nhập tên khoa"
+                "wardNamePlaceholder": "Nhập tên khoa",
+                "hospitalSearchPlaceholder": "Tìm tên bệnh viện",
+                "hospitalSearchEmpty": "Không có kết quả",
+                "hospitalSearchError": "Không tải được danh sách bệnh viện. Vui lòng thử lại sau.",
+                "hospitalSearchLoading": "Đang tìm kiếm",
+                "hospitalUseTypedName": "Không có trong danh sách. Dùng \"{{keyword}}\" như đã nhập",
+                "hospitalSelected": "Bệnh viện đã chọn",
+                "hospitalChange": "Tìm lại"
             },
             "modal": {
                 "deleteTeamDescription": "sẽ bị xóa.",

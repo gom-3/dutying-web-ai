@@ -367,18 +367,20 @@ function OnboardingWardCreatePage() {
                 return (
                     <WardIdentityStep
                         hospitalName={draft.hospitalName}
+                        hospitalId={draft.hospitalId}
                         wardName={draft.wardName}
                         hasHospitalNameError={
                             showIdentityNameError &&
                             (stepOneIssueCodes.has('missing-hospital-name') || stepOneIssueCodes.has('invalid-hospital-name'))
                         }
                         hasWardNameError={showIdentityNameError && stepOneIssueCodes.has('invalid-ward-name')}
-                        onHospitalNameChange={(hospitalName) => {
+                        onHospitalChange={({hospitalId, hospitalName}) => {
                             if (showIdentityNameError) {
                                 setShowIdentityNameError(false);
                             }
 
                             updateWardIdentity({
+                                hospitalId,
                                 hospitalName,
                             });
                         }}

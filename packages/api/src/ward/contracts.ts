@@ -787,6 +787,11 @@ export type TCreateWardShiftTeamDTO = {
 
 export type TCreateWardDTO = {
     name: string;
+    /**
+     * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.
+     * 목록에 없는 병원은 이 값 없이 hospitalName 만 보낸다.
+     */
+    hospitalId?: number;
     hospitalName: string;
     rotationMode?: TWardRotationMode;
     wardShiftTypes: TCreateWardShiftTypeDTO[];
@@ -799,6 +804,11 @@ export type TUpdateShiftTeamDivisionDTO = {
 
 export type TCreateOnboardingWardDraftDTO = {
     name: string;
+    /**
+     * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.
+     * 목록에 없는 병원은 이 값 없이 hospitalName 만 보낸다.
+     */
+    hospitalId?: number;
     hospitalName: string;
     rotationMode?: TWardRotationMode;
     draftPayload?: Record<string, unknown>;
@@ -806,6 +816,11 @@ export type TCreateOnboardingWardDraftDTO = {
 
 export type TUpdateOnboardingWardDraftDTO = {
     name?: string;
+    /**
+     * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.
+     * 목록에 없는 병원은 이 값 없이 hospitalName 만 보낸다.
+     */
+    hospitalId?: number;
     hospitalName?: string;
     rotationMode?: TWardRotationMode;
     draftPayload: Record<string, unknown>;
@@ -848,6 +863,11 @@ export type TOnboardingScheduleInputPreviewResponse = {
 
 export type TEditWardDTO = {
     name?: string;
+    /**
+     * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.
+     * 목록에 없는 병원은 이 값 없이 hospitalName 만 보낸다.
+     */
+    hospitalId?: number;
     hospitalName?: string;
     showMemberBirthdaysInCalendar?: boolean;
 };

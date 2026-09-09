@@ -145,6 +145,7 @@ const toCreateWardShiftTypeRequest = (shiftType: TCreateWardShiftTypeDTO): TCrea
 
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
     name: createWardDTO.name,
+    ...(typeof createWardDTO.hospitalId === 'number' ? {hospitalId: createWardDTO.hospitalId} : {}),
     hospitalName: createWardDTO.hospitalName,
     ...(createWardDTO.rotationMode ? {rotationMode: createWardDTO.rotationMode} : {}),
     wardShiftTypes: createWardDTO.wardShiftTypes.map(toCreateWardShiftTypeRequest),

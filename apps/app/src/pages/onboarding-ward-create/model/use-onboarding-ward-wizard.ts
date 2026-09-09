@@ -259,6 +259,7 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDr
     uploadedFileName: draft.uploadedFileName,
     wardName: draft.wardName,
     hospitalName: draft.hospitalName,
+    hospitalId: draft.hospitalId,
     rotationMode: draft.rotationMode ?? 'THREE',
     twoShiftNightRecoveryDisplay:
         draft.rotationMode === 'TWO'
@@ -739,6 +740,9 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWard
 
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
+        // 카탈로그에서 고른 경우 서버가 카탈로그 이름을 정본으로 쓴다. 이름도 함께 보내
+        // 구버전 서버나 목록에 없는 병원에서도 그대로 동작하게 둔다.
+        ...(typeof draft.hospitalId === 'number' ? {hospitalId: draft.hospitalId} : {}),
         hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
         rotationMode: draft.rotationMode,
     };
@@ -851,6 +855,7 @@ function useOnboardingWardWizard() {
                         setDraft((prev) => ({
                             ...prev,
                             hospitalName: serverDraft.ward.hospitalName ?? prev.hospitalName,
+                            hospitalId: serverDraft.ward.hospitalId ?? prev.hospitalId,
                             wardName: serverDraft.ward.name ?? prev.wardName,
                         }));
                     }
@@ -1205,7 +1210,7 @@ function useOnboardingWardWizard() {
             return previousDraft;
         });
     };
-    const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName'>>) => {
+    const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName' | 'hospitalId'>>) => {
         markDraftTouched();
         setDraft((prev) => ({...prev, ...updater}));
     };

@@ -131,6 +131,8 @@ export type TOnboardingWardDraft = {
     uploadedFileName: string | null;
     wardName: string;
     hospitalName: string;
+    /** 병원 카탈로그에서 고른 병원. 목록에 없어 직접 입력한 경우 없다. */
+    hospitalId?: number;
     rotationMode: TOnboardingRotationMode;
     twoShiftNightRecoveryDisplay: TTwoShiftNightRecoveryDisplay | null;
     shiftTypes: TOnboardingWardShiftType[];
@@ -668,6 +670,7 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
         uploadedFileName: null,
         wardName: '',
         hospitalName: '',
+        hospitalId: undefined,
         rotationMode: 'THREE',
         twoShiftNightRecoveryDisplay: null,
         shiftTypes,
@@ -705,6 +708,7 @@ export const resolveOnboardingRotationSystem = (
         ? 'THREE'
         : 'NONE';
 };
+
 const getTwoShiftNightDefaultTimeRange = (display: TTwoShiftNightRecoveryDisplay) => ({
     startTime: '19:00',
     endTime: display === 'NIGHT_CONTINUATION' ? '00:00' : '07:00',
@@ -727,7 +731,6 @@ const syncTwoShiftNightDefaultTimeRange = (
             ...getTwoShiftNightDefaultTimeRange(display),
         };
     });
-
 const getOnboardingShiftTypeSettingsOrder = (shiftType: TOnboardingWardShiftType) => {
     const rotationSystem = resolveOnboardingRotationSystem(shiftType);
 
