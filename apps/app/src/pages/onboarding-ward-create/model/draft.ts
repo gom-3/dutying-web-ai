@@ -85,6 +85,9 @@ export type TOnboardingTeamScheduleInputDraft = Record<string, TOnboardingTeamSc
 export type TOnboardingUploadedScheduleRow = {
     name: string;
     shifts: Record<string, string>;
+    // 근무표에 조가 적혀 있으면 그 조를 그대로 살린다. 서식 업로드는 조가 없어 비어 온다.
+    divisionNum?: number;
+    divisionName?: string;
 };
 
 export type TOnboardingUploadedTeamSchedule = {
@@ -252,8 +255,9 @@ export const DEFAULT_ONBOARDING_DRAFT_LABELS: TOnboardingDraftLabels = {
     shiftNames: DEFAULT_SHIFT_NAMES,
 };
 
-const getDefaultTeamName = (teamNumber: number, labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS) =>
+export const getDefaultTeamName = (teamNumber: number, labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS) =>
     labels.teamName(teamNumber);
+
 const normalizeColor = (color: string) => color.trim().toUpperCase();
 
 export const normalizeOnboardingShiftCode = (value: string) =>
@@ -1684,10 +1688,27 @@ export const applyUploadedScheduleTemplateDraft = (
     const scheduleInputs: TOnboardingWardDraft['scheduleInputs'] = {};
 
     normalizedTeamSchedules.forEach((teamSchedule, teamIndex) => {
+        const divisionNameByNum = new Map<number, string>();
+
+        teamSchedule.rows.forEach((row) => {
+            const divisionNum = normalizeDivisionNum(row.divisionNum);
+
+            if (!divisionNameByNum.has(divisionNum)) {
+                const divisionName = row.divisionName?.trim();
+
+                divisionNameByNum.set(divisionNum, divisionName?.length ? divisionName : getDivisionFallbackLabel(divisionNum));
+            }
+        });
+
         const team = {
             id: createId('team'),
             name: createUniqueUploadedTeamName(teamSchedule.teamName, teamIndex, usedTeamNames, labels),
-            divisions: [createTeamDivision()],
+            divisions:
+                divisionNameByNum.size > 0
+                    ? Array.from(divisionNameByNum.entries())
+                          .sort(([left], [right]) => left - right)
+                          .map(([divisionNum, name]) => createTeamDivision(divisionNum, name))
+                    : [createTeamDivision()],
         };
         const nurseIdByName = new Map<string, string>();
 
@@ -1699,6 +1720,7 @@ export const applyUploadedScheduleTemplateDraft = (
                 month,
                 rows: teamSchedule.rows.map((row) => {
                     const trimmedName = row.name.trim();
+                    const rowDivisionNum = normalizeDivisionNum(row.divisionNum);
                     const shifts = Object.fromEntries(
                         Object.entries(row.shifts)
                             .map(([day, shift]) => [day, shift.trim()])
@@ -1713,7 +1735,7 @@ export const applyUploadedScheduleTemplateDraft = (
                         if (!nurseId) {
                             const nurse = createNurse({
                                 teamId: team.id,
-                                divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
+                                divisionNum: rowDivisionNum,
                                 name: trimmedName,
                                 memo: '',
                                 isWorker: true,
@@ -1729,7 +1751,7 @@ export const applyUploadedScheduleTemplateDraft = (
 
                     return createScheduleRow({
                         nurseId,
-                        divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
+                        divisionNum: rowDivisionNum,
                         name: trimmedName,
                         shifts,
                     });

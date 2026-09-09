@@ -5,6 +5,8 @@ import {getDefaultTimeRangeForRotation} from '@/shared/lib/shift-rotation-select
 import {
     createEmptyShiftType,
     DEFAULT_OFF_SHIFT_TYPE_COLOR,
+    getDefaultTeamName,
+    getDivisionFallbackLabel,
     DEFAULT_ONBOARDING_DIVISION_NUM,
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
@@ -43,8 +45,14 @@ export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftT
     shortNameAliases?: string[];
 };
 
+export type TOnboardingParsedTeamDivision = {
+    divisionNum: number;
+    name: string;
+};
+
 export type TOnboardingParsedTeam = {
     name: string;
+    divisions?: TOnboardingParsedTeamDivision[];
 };
 
 export type TOnboardingParsedInitialShift = {
@@ -649,7 +657,23 @@ const remapTeamIds = (
         divisionNum: nurse.divisionNum ?? 1,
     }));
 };
-const buildParsedTeams = (parsed: TOnboardingParsedWardData): TOnboardingTeamDraft[] | null => {
+const buildParsedTeams = (parsed: TOnboardingParsedWardData, currentTeams: TOnboardingTeamDraft[]): TOnboardingTeamDraft[] | null => {
+    // 근무표 한 장은 근무팀 하나다. 분석이 조를 주면 팀을 쪼개지 않고 그룹으로 담는다.
+    const teamWithDivisions = parsed.teams?.find((team) => (team.divisions?.length ?? 0) > 0);
+
+    if (teamWithDivisions?.divisions) {
+        return [
+            {
+                id: createLocalId('team-1'),
+                name: teamWithDivisions.name.trim() || currentTeams[0]?.name.trim() || getDefaultTeamName(1),
+                divisions: teamWithDivisions.divisions.map((division) => ({
+                    divisionNum: division.divisionNum,
+                    name: division.name.trim() || getDivisionFallbackLabel(division.divisionNum),
+                })),
+            },
+        ];
+    }
+
     const teamNames = new Set<string>();
 
     parsed.teams?.forEach((team) => {
@@ -985,7 +1009,20 @@ const normalizeParsedTeams = (response: TOnboardingWardParseApiResponse): TOnboa
         return undefined;
     }
 
-    return rawTeams.map((team) => ({name: trimToUndefined(team.name) ?? ''})).filter((team) => Boolean(team.name));
+    return (
+        rawTeams
+            .map((team) => ({
+                name: trimToUndefined(team.name) ?? '',
+                divisions: (team.divisions ?? [])
+                    .map((division) => ({
+                        divisionNum: division.divisionNum ?? 0,
+                        name: trimToUndefined(division.name) ?? '',
+                    }))
+                    .filter((division) => division.divisionNum > 0),
+            }))
+            // 근무표가 조로만 갈린 경우 팀 이름이 비어 온다. 조가 있으면 살려 둔다.
+            .filter((team) => Boolean(team.name) || team.divisions.length > 0)
+    );
 };
 const normalizeParsedNurses = (
     response: TOnboardingWardParseApiResponse,
@@ -1003,6 +1040,7 @@ const normalizeParsedNurses = (
                     isWorker: nurse.isWorker ?? undefined,
                     employmentDate: trimToUndefined(nurse.employmentDate),
                     teamName: trimToUndefined(nurse.teamName),
+                    divisionNum: nurse.divisionNum ?? undefined,
                     possibleShiftShortNames:
                         nurse.possibleShiftShortNames
                             ?.map((shortName) => normalizeShiftShortName(shortName))
@@ -1143,10 +1181,14 @@ export const buildOnboardingParseDraftInjection = (
 // 분석 결과에는 일자별 근무가 그대로 있으므로, '근무표 입력' 칸도 여기서 채운다.
 // 안 채우면 사용자가 방금 올린 한 달치를 손으로 다시 입력해야 한다.
 export const buildUploadedTeamSchedulesFromParsedWardData = (parsed: TOnboardingParsedWardData): TOnboardingUploadedTeamSchedule[] => {
+    const nurses = parsed.nurses ?? [];
+    const divisionNameByNum = new Map(
+        (parsed.teams?.[0]?.divisions ?? []).map((division) => [division.divisionNum, division.name] as const),
+    );
     const teamOrder: string[] = [];
     const rowsByTeamName = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
 
-    (parsed.nurses ?? []).forEach((nurse) => {
+    nurses.forEach((nurse) => {
         const name = nurse.name?.trim() ?? '';
         const shifts = Object.fromEntries(
             (nurse.initialShifts ?? [])
@@ -1159,13 +1201,19 @@ export const buildUploadedTeamSchedulesFromParsedWardData = (parsed: TOnboarding
         }
 
         const teamName = nurse.teamName?.trim() ?? '';
+        const divisionNum = nurse.divisionNum ?? 1;
 
         if (!rowsByTeamName.has(teamName)) {
             teamOrder.push(teamName);
             rowsByTeamName.set(teamName, []);
         }
 
-        rowsByTeamName.get(teamName)?.push({name, shifts});
+        rowsByTeamName.get(teamName)?.push({
+            name,
+            shifts,
+            divisionNum,
+            divisionName: divisionNameByNum.get(divisionNum) ?? '',
+        });
     });
 
     const teamSchedules = teamOrder.map((teamName) => ({teamName, rows: rowsByTeamName.get(teamName) ?? []}));
@@ -1225,7 +1273,7 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
     const nextShiftTypes = parsed.shiftTypes
         ? ensureCoreShiftTypes(draft.shiftTypes, parsed.shiftTypes, draft.rotationMode)
         : normalizeUploadedShiftTypes(draft.shiftTypes);
-    const nextTeams = buildParsedTeams(parsed) ?? draft.teams;
+    const nextTeams = buildParsedTeams(parsed, draft.teams) ?? draft.teams;
     const nextNurses = parsed.nurses
         ? buildParsedNurses(parsed.nurses, nextTeams, nextShiftTypes)
         : remapTeamIds(remapPossibleShiftTypeIds(draft.nurses, draft.shiftTypes, nextShiftTypes), draft.teams, nextTeams);

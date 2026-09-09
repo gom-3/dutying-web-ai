@@ -793,7 +793,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(toastError).not.toHaveBeenCalled();
     });
 
-    it('fills teams and schedule cells from the server analysis for a hospital roster file', async () => {
+    it('keeps one team and turns file groups into divisions for a hospital roster file', async () => {
         // 병원 원본 근무표는 서식 좌표(A=이름, B=팀)와 어긋나 클라이언트 파서가 읽지 못한다.
         // 그때 서버 분석 결과로 팀·간호사·근무표 칸을 모두 채워야 한다.
         const Excel = await import('exceljs');
@@ -809,10 +809,18 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
 
         mockParseOnboardingWardExcel.mockResolvedValue({
-            teams: [{name: 'RN'}, {name: 'N-RN'}],
+            teams: [
+                {
+                    name: '',
+                    divisions: [
+                        {divisionNum: 1, name: 'RN'},
+                        {divisionNum: 2, name: 'N-RN'},
+                    ],
+                },
+            ],
             nurses: [
-                {name: '김간호', teamName: 'RN', possibleShiftShortNames: ['D', 'E'], assignments: {'1': 'D', '2': 'E', '3': 'N'}},
-                {name: '박간호', teamName: 'N-RN', possibleShiftShortNames: ['N'], assignments: {'1': 'N', '2': 'O'}},
+                {name: '김간호', divisionNum: 1, possibleShiftShortNames: ['D', 'E'], assignments: {'1': 'D', '2': 'E', '3': 'N'}},
+                {name: '박간호', divisionNum: 2, possibleShiftShortNames: ['N'], assignments: {'1': 'N', '2': 'O'}},
             ],
         });
 
@@ -822,10 +830,17 @@ describe('useOnboardingWardWizard upload flow', () => {
         await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
 
         expect(mockParseOnboardingWardExcel).toHaveBeenCalled();
-        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['RN', 'N-RN']);
-        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['김간호', '박간호']);
+        // 근무표 한 장은 근무팀 하나다. 조는 팀을 쪼개지 않고 그룹 구분선으로 들어간다.
+        expect(result.current.draft.teams).toHaveLength(1);
+        expect(result.current.draft.teams[0]?.divisions?.map((division) => division.name)).toEqual(['RN', 'N-RN']);
+        expect(result.current.draft.nurses.map((nurse) => [nurse.name, nurse.divisionNum])).toEqual([
+            ['김간호', 1],
+            ['박간호', 2],
+        ]);
+        expect(new Set(result.current.draft.nurses.map((nurse) => nurse.teamId)).size).toBe(1);
         expect(result.current.draft.scheduleInputs[result.current.draft.teams[0]!.id]?.[monthKey]?.rows[0]).toMatchObject({
             name: '김간호',
+            divisionNum: 1,
             shifts: {'1': 'D', '2': 'E', '3': 'N'},
         });
 

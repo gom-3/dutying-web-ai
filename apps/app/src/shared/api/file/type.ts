@@ -20,8 +20,14 @@ export type TOnboardingWardParseApiShiftType = {
     paidMinutes?: number | null;
 };
 
+export type TOnboardingWardParseApiTeamDivision = {
+    divisionNum?: number | null;
+    name?: string | null;
+};
+
 export type TOnboardingWardParseApiTeam = {
     name?: string | null;
+    divisions?: TOnboardingWardParseApiTeamDivision[] | null;
 };
 
 export type TOnboardingWardParseApiNurse = {
@@ -32,6 +38,8 @@ export type TOnboardingWardParseApiNurse = {
     isWorker?: boolean | null;
     employmentDate?: string | null;
     teamName?: string | null;
+    divisionNum?: number | null;
+    groupName?: string | null;
     possibleShiftShortNames?: Array<string | null> | null;
     assignments?: Record<string, string | null> | null;
 };

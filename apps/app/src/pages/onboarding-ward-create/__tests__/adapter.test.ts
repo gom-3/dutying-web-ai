@@ -670,7 +670,7 @@ describe('OnboardingWardCreatePage adapter', () => {
             hospitalName: '듀팅병원',
         });
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
-        expect(parsedWardData.teams).toEqual([{name: 'A팀'}]);
+        expect(parsedWardData.teams).toEqual([{name: 'A팀', divisions: []}]);
         expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D']);
         expect(warnings).toEqual(['근속 연수가 없는 간호사는 오늘 날짜로 반영되었어요.']);
     });
