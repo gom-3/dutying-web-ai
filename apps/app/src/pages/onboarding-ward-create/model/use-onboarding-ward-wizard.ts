@@ -13,6 +13,8 @@ import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     applyParsedWardData,
+    buildUploadedTeamSchedulesFromParsedWardData,
+    restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
@@ -1569,8 +1571,11 @@ function useOnboardingWardWizard() {
 
             setDraft((prev) => {
                 const parsedDraft = applyParsedWardData(prev, parsedWardData);
+                // 서식 파일이 아니면 서버 분석 결과에서 근무표 칸을 만든다.
+                const teamSchedules =
+                    scheduleTemplate.length > 0 ? scheduleTemplate : buildUploadedTeamSchedulesFromParsedWardData(parsedWardData);
 
-                if (!options?.targetYear || !options.targetMonth || scheduleTemplate.length === 0) {
+                if (!options?.targetYear || !options.targetMonth || teamSchedules.length === 0) {
                     return parsedDraft;
                 }
 
@@ -1580,14 +1585,14 @@ function useOnboardingWardWizard() {
                         fileName: file.name,
                         year: options.targetYear,
                         month: options.targetMonth,
-                        teamSchedules: scheduleTemplate,
+                        teamSchedules,
                     },
                     onboardingDraftLabels,
                 );
 
                 nextActiveTeamId = result.activeTeamId;
 
-                return result.draft;
+                return restoreParsedNursePossibleShiftTypes(result.draft, parsedWardData);
             });
 
             if (nextActiveTeamId) {

@@ -134,6 +134,31 @@ const loadWorkbook = async (Excel: typeof ExcelJSImport, data: ArrayBuffer) => {
         return normalizedWorkbook;
     }
 };
+const TEMPLATE_HEADER_MIN_DAY_COLUMNS = 3;
+// 다운로드한 서식은 1행이 [이름, 팀, 1, 2, 3 ...] 이다. 병원이 쓰던 원본 근무표는
+// 1행이 제목이고 이름/근무 열 위치도 제각각이라, 서식 좌표로 읽으면 구분 열이 팀으로,
+// 이름 열이 1일 근무로 들어간다. 서식이 아닌 파일은 여기서 비우고 서버 분석으로 넘긴다.
+const isOnboardingScheduleTemplateSheet = (worksheet: ExcelJSImport.Worksheet, dayCount: number) => {
+    const headerRow = worksheet.getRow(1);
+
+    let dayColumnCount = 0;
+
+    while (dayColumnCount < dayCount) {
+        const headerText = getCellText(headerRow.getCell(FIRST_DAY_COLUMN_INDEX + dayColumnCount)).trim();
+
+        if (!headerText) {
+            break;
+        }
+
+        if (headerText !== String(dayColumnCount + 1)) {
+            return false;
+        }
+
+        dayColumnCount += 1;
+    }
+
+    return dayColumnCount >= TEMPLATE_HEADER_MIN_DAY_COLUMNS;
+};
 
 export const parseOnboardingScheduleTemplate = async (
     file: File,
@@ -148,6 +173,11 @@ export const parseOnboardingScheduleTemplate = async (
     }
 
     const dayCount = getDaysInMonth(targetYear, targetMonth);
+
+    if (!isOnboardingScheduleTemplateSheet(worksheet, dayCount)) {
+        return [];
+    }
+
     const teamOrder: string[] = [];
     const rowsByTeamName = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
 

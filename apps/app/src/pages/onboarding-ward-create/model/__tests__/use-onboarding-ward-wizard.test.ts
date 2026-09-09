@@ -793,6 +793,49 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(toastError).not.toHaveBeenCalled();
     });
 
+    it('fills teams and schedule cells from the server analysis for a hospital roster file', async () => {
+        // 병원 원본 근무표는 서식 좌표(A=이름, B=팀)와 어긋나 클라이언트 파서가 읽지 못한다.
+        // 그때 서버 분석 결과로 팀·간호사·근무표 칸을 모두 채워야 한다.
+        const Excel = await import('exceljs');
+        const workbook = new Excel.Workbook();
+        const worksheet = workbook.addWorksheet('간호팀');
+
+        worksheet.addRow(['', '2026년 06월 근무 일정표-3병동']);
+        worksheet.addRow(['', '구분', '일자', 1, 2, 3]);
+        worksheet.addRow(['', 'RN', '김간호', 'D', 'E', 'N']);
+
+        const file = new File([(await workbook.xlsx.writeBuffer()) as BlobPart], '3병동 근무표.xlsx', {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            teams: [{name: 'RN'}, {name: 'N-RN'}],
+            nurses: [
+                {name: '김간호', teamName: 'RN', possibleShiftShortNames: ['D', 'E'], assignments: {'1': 'D', '2': 'E', '3': 'N'}},
+                {name: '박간호', teamName: 'N-RN', possibleShiftShortNames: ['N'], assignments: {'1': 'N', '2': 'O'}},
+            ],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const monthKey = getScheduleMonthKey(2026, 6);
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalled();
+        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['RN', 'N-RN']);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['김간호', '박간호']);
+        expect(result.current.draft.scheduleInputs[result.current.draft.teams[0]!.id]?.[monthKey]?.rows[0]).toMatchObject({
+            name: '김간호',
+            shifts: {'1': 'D', '2': 'E', '3': 'N'},
+        });
+
+        const shortNameById = new Map(result.current.draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType.shortName]));
+        const nightNurse = result.current.draft.nurses.find((nurse) => nurse.name === '박간호');
+
+        // 나이트 전담에게 D/E 까지 열어두면 첫 자동생성부터 병동 운영과 어긋난다.
+        expect(nightNurse?.possibleShiftTypeIds.map((id) => shortNameById.get(id))).toEqual(['N']);
+    });
+
     it('keeps a cleared uploaded schedule nurse out of the next registration step', async () => {
         let savedDraftPayload: unknown = null;
 

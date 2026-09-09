@@ -17,6 +17,7 @@ import {
     type TOnboardingNurseDraft,
     type TOnboardingRotationMode,
     type TOnboardingTeamDraft,
+    type TOnboardingUploadedTeamSchedule,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
 } from './draft';
@@ -1135,6 +1136,88 @@ export const buildOnboardingParseDraftInjection = (
             constraintCandidates: normalizeParsedConstraintCandidates(response),
         },
         warnings: collectWarnings(response, copy),
+    };
+};
+
+// 병원이 쓰던 원본 근무표는 서식 좌표로 읽을 수 없어 서버 분석 결과로만 들어온다.
+// 분석 결과에는 일자별 근무가 그대로 있으므로, '근무표 입력' 칸도 여기서 채운다.
+// 안 채우면 사용자가 방금 올린 한 달치를 손으로 다시 입력해야 한다.
+export const buildUploadedTeamSchedulesFromParsedWardData = (parsed: TOnboardingParsedWardData): TOnboardingUploadedTeamSchedule[] => {
+    const teamOrder: string[] = [];
+    const rowsByTeamName = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
+
+    (parsed.nurses ?? []).forEach((nurse) => {
+        const name = nurse.name?.trim() ?? '';
+        const shifts = Object.fromEntries(
+            (nurse.initialShifts ?? [])
+                .map((shift) => [String(Number(shift.date.slice(8, 10))), shift.shiftShortName] as const)
+                .filter(([day, shiftShortName]) => day !== 'NaN' && Boolean(shiftShortName)),
+        );
+
+        if (!name && Object.keys(shifts).length === 0) {
+            return;
+        }
+
+        const teamName = nurse.teamName?.trim() ?? '';
+
+        if (!rowsByTeamName.has(teamName)) {
+            teamOrder.push(teamName);
+            rowsByTeamName.set(teamName, []);
+        }
+
+        rowsByTeamName.get(teamName)?.push({name, shifts});
+    });
+
+    const teamSchedules = teamOrder.map((teamName) => ({teamName, rows: rowsByTeamName.get(teamName) ?? []}));
+    const hasAnyShift = teamSchedules.some((teamSchedule) => teamSchedule.rows.some((row) => Object.keys(row.shifts).length > 0));
+
+    return hasAnyShift ? teamSchedules : [];
+};
+
+// 근무표 칸을 채우는 경로는 간호사를 새로 만들면서 가능 근무유형을 전체로 되돌린다.
+// 나이트 전담에게 D/E 까지 열어두면 첫 자동생성부터 병동 운영과 어긋나므로,
+// 분석이 사람별로 관찰한 근무유형을 다시 씌운다.
+export const restoreParsedNursePossibleShiftTypes = (
+    draft: TOnboardingWardDraft,
+    parsed: TOnboardingParsedWardData,
+): TOnboardingWardDraft => {
+    const parsedShortNamesByName = new Map<string, string[]>();
+
+    (parsed.nurses ?? []).forEach((nurse) => {
+        const name = nurse.name?.trim();
+
+        if (!name || parsedShortNamesByName.has(name) || !nurse.possibleShiftShortNames?.length) {
+            return;
+        }
+
+        parsedShortNamesByName.set(name, nurse.possibleShiftShortNames);
+    });
+
+    if (parsedShortNamesByName.size === 0) {
+        return draft;
+    }
+
+    const activeShiftTypeIdsByShortName = new Map(
+        draft.shiftTypes
+            .filter(isOnboardingShiftTypeActive)
+            .map((shiftType) => [normalizeOnboardingShiftCode(shiftType.shortName), shiftType.id] as const),
+    );
+
+    return {
+        ...draft,
+        nurses: draft.nurses.map((nurse) => {
+            const shortNames = parsedShortNamesByName.get(nurse.name.trim());
+
+            if (!shortNames) {
+                return nurse;
+            }
+
+            const possibleShiftTypeIds = shortNames
+                .map((shortName) => activeShiftTypeIdsByShortName.get(normalizeOnboardingShiftCode(shortName)))
+                .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
+
+            return possibleShiftTypeIds.length > 0 ? {...nurse, possibleShiftTypeIds} : nurse;
+        }),
     };
 };
 

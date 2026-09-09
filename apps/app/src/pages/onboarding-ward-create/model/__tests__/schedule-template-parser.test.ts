@@ -53,4 +53,21 @@ describe('parseOnboardingScheduleTemplate', () => {
             },
         ]);
     });
+    it('ignores a hospital roster that is not the downloaded template', async () => {
+        const Excel = await import('exceljs');
+        const workbook = new Excel.Workbook();
+        const worksheet = workbook.addWorksheet('간호팀');
+
+        worksheet.addRow(['', '2026년 07월 근무 일정표-3병동 간호팀']);
+        worksheet.addRow(['', '구분', '일자', 1, 2, 3, 4, 5]);
+        worksheet.addRow(['', '', '요일', '수', '목', '금', '토', '일']);
+        worksheet.addRow(['', 'HN', '김지인', 'V', 'D', 'D', '/', '/']);
+        worksheet.addRow(['', 'RN', '이승미', 'D', '/', 'D', 'D', '/']);
+
+        const file = new File([await workbook.xlsx.writeBuffer()], '3병동 근무표.xlsx', {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+
+        await expect(parseOnboardingScheduleTemplate(file, {targetYear: 2026, targetMonth: 7})).resolves.toEqual([]);
+    });
 });
