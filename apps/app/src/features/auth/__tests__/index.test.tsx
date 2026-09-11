@@ -209,6 +209,58 @@ describe('useAuth', () => {
         });
     });
 
+    it('retries account bootstrap with backoff while the API is restarting instead of failing the session', async () => {
+        vi.useFakeTimers();
+
+        try {
+            vi.mocked(AdminAPI.getMe)
+                .mockRejectedValueOnce(Object.assign(new Error('bad gateway'), {code: 502}))
+                .mockRejectedValueOnce(Object.assign(new Error('network'), {code: -1}))
+                .mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
+
+            const {result} = renderHook(() => useAuth());
+
+            let bootstrap: Promise<void> = Promise.resolve();
+
+            act(() => {
+                bootstrap = result.current.actions.handleGetAccountMe();
+            });
+
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(2000);
+                await vi.advanceTimersByTimeAsync(5000);
+                await bootstrap;
+            });
+
+            expect(AdminAPI.getMe).toHaveBeenCalledTimes(3);
+            expect(useAuthStore.getState()).toMatchObject({
+                isAuth: true,
+                accountMeStatus: 'success',
+                accountMe: {accountId: 9, wardId: 99, nurseId: 19},
+            });
+            expect(mockResetRequestShiftState).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not retry account bootstrap on a definitive 4xx rejection', async () => {
+        vi.mocked(AdminAPI.getMe).mockRejectedValueOnce(Object.assign(new Error('forbidden'), {code: 403}));
+
+        const {result} = renderHook(() => useAuth());
+
+        await expect(
+            act(async () => {
+                await result.current.actions.handleGetAccountMe();
+            }),
+        ).rejects.toThrow('forbidden');
+
+        expect(AdminAPI.getMe).toHaveBeenCalledTimes(1);
+        await vi.waitFor(() => {
+            expect(useAuthStore.getState()).toMatchObject({isAuth: true, accountMeStatus: 'error'});
+        });
+    });
+
     it('normalizes setup-pending admin accounts with a ward membership as linked during bootstrap', async () => {
         vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
             accountId: 9,

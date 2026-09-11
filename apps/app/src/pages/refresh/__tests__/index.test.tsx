@@ -1,13 +1,14 @@
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import useRefresh, {REFRESH_DEMO_EXPIRED_REDIRECT_ERROR} from '@/features/refresh';
+import useRefresh, {REFRESH_DEMO_EXPIRED_REDIRECT_ERROR, REFRESH_UNAVAILABLE_ERROR} from '@/features/refresh';
 import ROUTE from '@/shared/constant/path';
-import {render, waitFor} from '@/shared/util/test-utils';
+import {fireEvent, render, screen, waitFor} from '@/shared/util/test-utils';
 import RefreshPage from '../index';
 
 vi.mock('@/features/refresh', () => ({
     default: vi.fn(),
     REFRESH_DEMO_EXPIRED_REDIRECT_ERROR: 'refresh_demo_expired_redirect',
+    REFRESH_UNAVAILABLE_ERROR: 'refresh_unavailable',
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
@@ -20,14 +21,17 @@ const mockedUseRefresh = vi.mocked(useRefresh);
 
 describe('RefreshPage', () => {
     const refreshSpy = vi.fn();
+    const logoutSpy = vi.fn();
     const replaceSpy = vi.fn();
 
     beforeEach(() => {
         refreshSpy.mockReset();
+        logoutSpy.mockReset();
         replaceSpy.mockReset();
         mockedUseRefresh.mockReset();
         mockedUseRefresh.mockReturnValue({
             refresh: refreshSpy,
+            logout: logoutSpy,
         } as never);
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -123,9 +127,11 @@ describe('RefreshPage', () => {
         mockedUseRefresh.mockReset();
         mockedUseRefresh.mockReturnValueOnce({
             refresh: firstRefreshSpy,
+            logout: logoutSpy,
         } as never);
         mockedUseRefresh.mockReturnValue({
             refresh: recreatedRefreshSpy,
+            logout: logoutSpy,
         } as never);
 
         const {rerender} = render(refreshRoute);
@@ -158,6 +164,72 @@ describe('RefreshPage', () => {
             expect(refreshSpy).toHaveBeenCalled();
         });
 
+        expect(replaceSpy).not.toHaveBeenCalled();
+    });
+
+    it('shows a retryable error state and keeps the session when the refresh endpoint is unreachable', async () => {
+        refreshSpy.mockRejectedValue(new Error(REFRESH_UNAVAILABLE_ERROR));
+
+        render(
+            <MemoryRouter initialEntries={['/refresh?next=%2Fmake']}>
+                <Routes>
+                    <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('feature.auth.state.errorTitle')).toBeInTheDocument();
+        });
+
+        expect(replaceSpy).not.toHaveBeenCalled();
+        expect(logoutSpy).not.toHaveBeenCalled();
+        expect(refreshSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('retries the refresh from the error state and redirects once it succeeds', async () => {
+        refreshSpy.mockRejectedValueOnce(new Error(REFRESH_UNAVAILABLE_ERROR)).mockResolvedValueOnce(undefined);
+
+        render(
+            <MemoryRouter initialEntries={['/refresh?next=%2Fmake']}>
+                <Routes>
+                    <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('feature.auth.state.retry')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('feature.auth.state.retry'));
+
+        await waitFor(() => {
+            expect(replaceSpy).toHaveBeenCalledWith('/make');
+        });
+        expect(refreshSpy).toHaveBeenCalledTimes(2);
+        expect(logoutSpy).not.toHaveBeenCalled();
+    });
+
+    it('lets the user log out explicitly from the unreachable error state', async () => {
+        refreshSpy.mockRejectedValue(new Error(REFRESH_UNAVAILABLE_ERROR));
+        logoutSpy.mockResolvedValue(undefined);
+
+        render(
+            <MemoryRouter initialEntries={['/refresh?next=%2Fmake']}>
+                <Routes>
+                    <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('feature.auth.state.logout')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('feature.auth.state.logout'));
+
+        expect(logoutSpy).toHaveBeenCalledTimes(1);
         expect(replaceSpy).not.toHaveBeenCalled();
     });
 });

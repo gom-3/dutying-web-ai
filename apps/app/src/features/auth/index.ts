@@ -15,6 +15,7 @@ import {toAccountCompatibleAdminMe} from './model/admin-account';
 import {isWardAdminAccessToken} from './model/admin-token';
 import {buildDemoSignupLoginPath, isDemoSessionExpired} from './model/demo-session';
 import {executeLoginRedirect, getLoginRedirectDecision} from './model/login-redirect';
+import {retryOnTransientFailure} from './model/session-failure';
 import useAuthStore from './model/store';
 
 type THandleLoginOptions = {
@@ -176,8 +177,12 @@ const useAuth = (activeEffect = false) => {
             setAccountMeLoading();
 
             try {
+                // A restarting API server (network error / gateway 5xx / timeout) is retried with backoff;
+                // it must never look like an invalid session. Definitive 4xx rejections are not retried.
                 const account = toAccountCompatibleAdminMe(
-                    await withTimeout(AdminAPI.getMe(), ACCOUNT_BOOTSTRAP_TIMEOUT_MS, 'account_bootstrap_timeout'),
+                    await retryOnTransientFailure(() =>
+                        withTimeout(AdminAPI.getMe(), ACCOUNT_BOOTSTRAP_TIMEOUT_MS, 'account_bootstrap_timeout'),
+                    ),
                 );
 
                 if (canceledAccountMeRequestIds.has(requestId) || useAuthStore.getState().accessToken !== requestAccessToken) {
