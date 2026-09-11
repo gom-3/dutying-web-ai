@@ -189,8 +189,8 @@ vi.mock('../last-shift-warning', () => ({
 }));
 
 const ADJUST_TITLE = 'page.makeShift.aiRefill.adjust.title';
-const OFF_BALANCE_CHIP = 'page.makeShift.aiRefill.adjust.offBalance';
 const CLUSTER_ON_CHIP = 'page.makeShift.aiRefill.adjust.clusterOn';
+const CLUSTER_OFF_CHIP = 'page.makeShift.aiRefill.adjust.clusterOff';
 const DECISION_TITLE = 'page.makeShift.aiRefill.prefillDecision.title';
 const DECISION_CONFIRM = 'page.makeShift.aiRefill.prefillDecision.confirm';
 
@@ -344,7 +344,7 @@ describe('AiAutofill adjust chips', () => {
         await completeFirstFill(user);
 
         expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('keeps the chips hidden when the server has not opened adjust for this account', async () => {
@@ -402,7 +402,7 @@ describe('AiAutofill adjust chips', () => {
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([]));
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
 
@@ -411,11 +411,11 @@ describe('AiAutofill adjust chips', () => {
         // 칩은 이번 달 요청 한 건이 된다. 서버가 저장한 뒤 ACTIVE 전부를 합산한다.
         expect(payload.adjust).toEqual({
             strength: 'NORMAL',
-            requests: [{kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, lifetime: 'MONTH', origin: 'CHIP', displayLabel: OFF_BALANCE_CHIP}],
+            requests: [{kind: 'KNOB', knob: 'CLUSTERING', value: 1, lifetime: 'MONTH', origin: 'CHIP', displayLabel: CLUSTER_ON_CHIP}],
         });
         // 낙관적 상태가 걷힌 뒤에도 서버 목록이 칩을 켜 둔다.
         await waitFor(() => expect(mocks.getScheduleMonthRequests).toHaveBeenCalled());
-        expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true');
         expect(payload.lockedCellKeys).toEqual(expect.arrayContaining(['10:2026-07-01', '10:2026-07-02', '11:2026-07-04']));
         expect(payload.lockedCellKeys).not.toContain('11:2026-07-03');
     });
@@ -434,7 +434,7 @@ describe('AiAutofill adjust chips', () => {
             adjustResultSavingRequests([cell(10, '2026-07-01', 'N'), cell(11, '2026-07-01', 'D'), cell(11, '2026-07-02', 'E')]),
         );
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
 
         expect(await screen.findByText(`page.makeShift.aiRefill.adjust.applied {"count":3}`)).toBeInTheDocument();
         expect(rowCells('10')).toEqual(['D', 'E', 'D', 'E']);
@@ -452,7 +452,7 @@ describe('AiAutofill adjust chips', () => {
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D'), cell(11, '2026-07-02', 'E')]));
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
 
         await waitFor(() => expect(rowCells('11')).toEqual(['D', 'E', 'E', 'E']));
 
@@ -493,7 +493,7 @@ describe('AiAutofill adjust chips', () => {
                 }),
         );
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
 
         mocks.month = 8;
@@ -515,9 +515,9 @@ describe('AiAutofill adjust chips', () => {
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D')]));
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
 
-        await waitFor(() => expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'true'));
+        await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
         expect(screen.getByText(`page.makeShift.aiRefill.adjust.applied {"count":1}`)).toBeInTheDocument();
 
         // 조절 직후에는 손으로 고친 칸이 없으므로 재생성은 확인 다이얼로그 없이 바로 돈다.
@@ -527,7 +527,7 @@ describe('AiAutofill adjust chips', () => {
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(3));
         // 요청은 서버 상태라 재생성해도 남는다. 바뀐 칸 수만 지난 조절의 것이라 지운다.
-        expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.queryByText(/aiRefill\.adjust\.applied/)).not.toBeInTheDocument();
     });
 
@@ -540,13 +540,13 @@ describe('AiAutofill adjust chips', () => {
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D')]));
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
-        await waitFor(() => expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'true'));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
+        await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(1));
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'N')]));
 
-        await user.click(screen.getByRole('button', {name: OFF_BALANCE_CHIP}));
+        await user.click(screen.getByRole('button', {name: CLUSTER_ON_CHIP}));
 
         await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledWith(1, 10, 1, {status: 'DISABLED'}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(3));
@@ -555,7 +555,7 @@ describe('AiAutofill adjust chips', () => {
         const payload = mocks.requestAiSchedule.mock.calls[2]?.[0];
 
         expect(payload.adjust).toEqual({strength: 'NORMAL'});
-        await waitFor(() => expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'false'));
+        await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'false'));
     });
 
     it('restores chip state from the server list on entry', async () => {
@@ -568,7 +568,25 @@ describe('AiAutofill adjust chips', () => {
         await completeFirstFill(user);
 
         await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
-        expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: CLUSTER_OFF_CHIP})).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('lists a stored OFF_BALANCE text request in the month list even though it has no chip', async () => {
+        // OFF_BALANCE 칩은 계측 결과 빠졌지만(ai-adjust-chip-bar.tsx 참고) 축 자체는 서버 카탈로그에 남아 있다.
+        // 문장으로 들어온 요청은 칩 없이도 이번 달 요청 목록에서 보이고 지울 수 있어야 한다.
+        storeRequest({kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, origin: 'TEXT', displayLabel: 'fair off', requestText: 'x'});
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        await user.click(await screen.findByRole('button', {name: /adjust\.requests\.title \{"count":1\}/}));
+
+        expect(screen.getByText('fair off')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'page.makeShift.aiRefill.adjust.offBalance'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('removes a request from the month list and re-adjusts', async () => {
@@ -603,7 +621,7 @@ describe('AiAutofill adjust chips', () => {
 
         mocks.interpretScheduleAdjust.mockResolvedValue({
             items: [
-                {kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, displayLabel: 'fair off', lifetimeHint: 'TEAM'},
+                {kind: 'KNOB', knob: 'CLUSTERING', value: 1, displayLabel: 'fair off', lifetimeHint: 'TEAM'},
                 {kind: 'RULE', nurseId: 5, displayLabel: 'Kim no nights'},
             ],
             unmapped: [{text: 'weekends please', hint: 'no weekend axis'}],
@@ -641,7 +659,7 @@ describe('AiAutofill adjust chips', () => {
             requests: [
                 {
                     kind: 'KNOB',
-                    knob: 'OFF_BALANCE',
+                    knob: 'CLUSTERING',
                     value: 1,
                     displayLabel: 'fair off',
                     lifetime: 'TEAM',
@@ -650,7 +668,7 @@ describe('AiAutofill adjust chips', () => {
                 },
             ],
         });
-        await waitFor(() => expect(screen.getByRole('button', {name: OFF_BALANCE_CHIP})).toHaveAttribute('aria-pressed', 'true'));
+        await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
         expect(screen.queryByText('page.makeShift.aiRefill.adjust.card.title')).not.toBeInTheDocument();
     });
 

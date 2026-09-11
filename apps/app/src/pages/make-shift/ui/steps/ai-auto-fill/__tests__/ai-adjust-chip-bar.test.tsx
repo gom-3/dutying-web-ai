@@ -51,7 +51,7 @@ describe('AiAdjustChipBar', () => {
         const onToggle = vi.fn();
 
         render(<AiAdjustChipBar {...baseProps} disabled onToggle={onToggle} />);
-        await userEvent.click(screen.getByText('page.makeShift.aiRefill.adjust.offBalance'));
+        await userEvent.click(screen.getByText('page.makeShift.aiRefill.adjust.clusterOn'));
 
         expect(onToggle).not.toHaveBeenCalled();
     });

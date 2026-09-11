@@ -16,12 +16,14 @@ type TChip = {
 /**
  * 뭉치기와 흩기는 한 축의 양 끝이라 상호배타다. 둘을 동시에 켜는 상태는 의미가 없고,
  * 사용자가 그렇게 눌렀을 때 무엇이 이겼는지 화면으로 설명할 방법도 없다.
+ *
+ * OFF_BALANCE · SENIORITY_MIX 칩은 두지 않는다 — dev 계측(서버 레포
+ * docs/autofill-adjust-step3-result-2026-09-11.md §해석)에서 잘 생성된 달에는 항상 0칸 변경이라
+ * 눌러도 "바뀐 게 없어요"만 반복된다. 두 축은 서버 카탈로그에 그대로 있어 문장 요청으로는 여전히 쓸 수 있다.
  */
 const CHIPS: TChip[] = [
-    {key: 'offBalance', knob: 'OFF_BALANCE', value: 1, labelKey: 'offBalance'},
     {key: 'clusterOn', knob: 'CLUSTERING', value: 1, labelKey: 'clusterOn'},
     {key: 'clusterOff', knob: 'CLUSTERING', value: -1, labelKey: 'clusterOff'},
-    {key: 'seniorityMix', knob: 'SENIORITY_MIX', value: 1, labelKey: 'seniorityMix'},
 ];
 
 type TProps = {
