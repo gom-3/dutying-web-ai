@@ -30,6 +30,21 @@ function isMetaOrCtrl(e: KeyboardEvent): boolean {
     return e.metaKey || e.ctrlKey;
 }
 
+/**
+ * 키 입력이 텍스트 편집 요소(input/textarea/select/contenteditable)에서 났는지.
+ * 에디터 루트 컨테이너가 onKeyDown 을 받으므로, 그 안에 놓인 문장 입력창의 Backspace·방향키·근무키가
+ * 셀 편집으로 새지 않도록 여기서 걸러낸다.
+ */
+export function isEditableEventTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+
+    if (target.isContentEditable) return true;
+
+    const tag = target.tagName;
+
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+}
+
 function normalizeKey(key: string): string {
     // 한글 IME 입력도 영문 키로 normalize (예: 'ㅇ' -> 'd')
     const normalized = key.length === 1 ? koToEn(key) : key;
@@ -69,6 +84,7 @@ function tsvToPayload(text: string): TClipboardPayload {
 
         for (let i = 0; i < width; i++) {
             const raw = r[i];
+
             row.push(raw !== undefined && raw !== '' ? raw : null);
         }
 
@@ -96,6 +112,11 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
     const onKeyDown = useCallback(
         async (e: React.KeyboardEvent) => {
             if (disabled) {
+                return;
+            }
+
+            // 텍스트 입력 요소 안의 키 입력은 에디터 바인딩 대상이 아니다.
+            if (isEditableEventTarget(e.target)) {
                 return;
             }
 
@@ -158,6 +179,7 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
             // delete -> 선택 지우기, backspace -> 지우고 이전 셀로 이동
             if (key === 'Backspace' || key === 'Delete') {
                 e.preventDefault();
+
                 const selBefore = useShiftEditorStore.getState().selection;
 
                 commands.clearSelectionCells();
@@ -226,6 +248,7 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
 
                 if (value !== undefined) {
                     e.preventDefault();
+
                     const selBefore = useShiftEditorStore.getState().selection;
 
                     commands.setSelectionValue(value);
@@ -244,6 +267,10 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
     );
     const onPaste = useCallback(
         (e: React.ClipboardEvent) => {
+            if (isEditableEventTarget(e.target)) {
+                return;
+            }
+
             if (disabled) {
                 e.preventDefault();
 
@@ -259,7 +286,6 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
         },
         [commands, disabled],
     );
-
     /** 포커스가 에디터 자식(일자 셀 버튼 등)에 있어도 먼저 가로채기 위해 컨테이너에 연결한다. */
     const onPasteCapture = onPaste;
 

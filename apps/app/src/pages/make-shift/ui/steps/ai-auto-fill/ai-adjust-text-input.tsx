@@ -74,11 +74,15 @@ export default function AiAdjustTextInput({disabled, interpret, onApply}: TProps
                     value={text}
                     onChange={(event) => setText(event.target.value.slice(0, MAX_TEXT_LENGTH))}
                     onKeyDown={(event) => {
+                        // 에디터 루트의 셀 키 바인딩(Backspace·방향키·근무키)으로 새지 않게 막는다.
+                        event.stopPropagation();
+
                         if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                             event.preventDefault();
                             void handleSubmit();
                         }
                     }}
+                    onPaste={(event) => event.stopPropagation()}
                     disabled={disabled || isInterpreting || card !== null}
                     rows={1}
                     maxLength={MAX_TEXT_LENGTH}

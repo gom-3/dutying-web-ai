@@ -132,19 +132,29 @@ vi.mock('../../rest-leave-policy-summary-card', () => ({
     RestLeavePolicySummaryButton: () => null,
 }));
 
-vi.mock('../../shared/use-duty-editor-step', () => ({
-    useDutyEditorStep: () => ({
-        dutyQuery: {data: mocks.shift, isLoading: false, isError: false, refetch: vi.fn()},
-        editorRef: {current: null},
-        editorDoc: mocks.dutyDoc,
-        onKeyDown: vi.fn(),
-        onPasteCapture: vi.fn(),
-        violationMap: new Map(),
-        teamViolations: [],
-        focusEditor: vi.fn(),
-        isHydratingEditor: false,
-    }),
-}));
+// 에디터 루트(onKeyDown) 는 실제 키 바인딩을 쓴다 — 그 안에 놓인 문장 입력창의 Backspace·방향키·근무키가
+// 셀 편집으로 새는 회귀를 이 파일에서 잡기 위해서다.
+vi.mock('../../shared/use-duty-editor-step', async () => {
+    const {useShiftEditorKeyBindings} = await vi.importActual<typeof ShiftEditorModule>('@/features/shift-editor');
+
+    return {
+        useDutyEditorStep: () => {
+            const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings();
+
+            return {
+                dutyQuery: {data: mocks.shift, isLoading: false, isError: false, refetch: vi.fn()},
+                editorRef: {current: null},
+                editorDoc: mocks.dutyDoc,
+                onKeyDown,
+                onPasteCapture,
+                violationMap: new Map(),
+                teamViolations: [],
+                focusEditor: vi.fn(),
+                isHydratingEditor: false,
+            };
+        },
+    };
+});
 
 vi.mock('../../shared/make-shift-calendar-skeleton', () => ({
     MakeShiftCalendarSkeleton: () => <div data-testid="calendar-skeleton" />,
@@ -670,6 +680,30 @@ describe('AiAutofill adjust chips', () => {
         });
         await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
         expect(screen.queryByText('page.makeShift.aiRefill.adjust.card.title')).not.toBeInTheDocument();
+    });
+
+    it('lets the sentence box be edited without the editor key bindings eating Backspace, arrows or shift keys', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        const textarea = screen.getByRole('textbox', {name: 'page.makeShift.aiRefill.adjust.textInput.label'});
+
+        // 문장 입력창은 에디터 루트(onKeyDown) 안에 놓여 있다. Backspace 는 셀 지우기가 아니라 글자 지우기,
+        // 방향키는 셀 이동이 아니라 캐럿 이동, d 는 근무 D 입력이 아니라 글자여야 한다.
+        await user.type(textarea, 'day off');
+        expect(textarea).toHaveValue('day off');
+
+        await user.keyboard('{Backspace}');
+        expect(textarea).toHaveValue('day of');
+
+        await user.keyboard('{ArrowLeft}d');
+        expect(textarea).toHaveValue('day odf');
+
+        await user.keyboard('{Delete}');
+        expect(textarea).toHaveValue('day od');
     });
 
     it('shows the empty hint when nothing could be interpreted and does not allow applying', async () => {
