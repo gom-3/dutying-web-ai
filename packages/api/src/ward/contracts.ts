@@ -429,6 +429,11 @@ export type TWorkspaceScheduleResponse = {
     confirmedSnapshot?: TSnapshotSummaryDto | null;
     workflowStatus?: TShiftWorkflowStatus | null;
     workflowStep?: number | null;
+    /**
+     * 이 사용자에게 조절(ADJUST) 칩을 열어 줄지. 서버가 사람 단위로 판정한다.
+     * 없으면(구 서버) 꺼진 것으로 본다.
+     */
+    autofillAdjustEnabled?: boolean;
 };
 
 export type TUpdateShiftWorkflowDTO = {
@@ -511,9 +516,92 @@ export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX'
 /** 얼마나 바꿔도 되는지. 전체 셀의 10/20/40%가 하드 상한이다. */
 export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
 
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE';
+/** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
+export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
+export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
+export type TScheduleMonthRequestOrigin = 'CHIP' | 'TEXT' | 'CARRIED_OVER';
+
+/** 조절 요청 한 건. 칩 클릭과 문장 해석 결과가 같은 모양으로 서버에 들어간다(서버 `ScheduleMonthRequestDto.Item`). */
+export type TScheduleMonthRequestItem = {
+    kind: TScheduleMonthRequestKind;
+    knob?: TAutofillAdjustKnob;
+    value?: number;
+    /** RULE 일 때 지목된 간호사(nurseId). 이 단계에서는 저장만 되고 실행되지 않는다. */
+    nurseId?: number;
+    displayLabel?: string;
+    lifetime?: TScheduleMonthRequestLifetime;
+    /** 해석이 추측한 수명. 카드의 배지 기본값이 아니라 보조 표시. */
+    lifetimeHint?: TScheduleMonthRequestLifetime;
+    origin?: TScheduleMonthRequestOrigin;
+    requestText?: string;
+};
+
+/** 저장된 이번 달 요청 한 건. */
+export type TScheduleMonthRequestRes = {
+    id: number;
+    kind: TScheduleMonthRequestKind;
+    lifetime: TScheduleMonthRequestLifetime;
+    status: TScheduleMonthRequestStatus;
+    origin: TScheduleMonthRequestOrigin;
+    displayLabel: string;
+    knob?: TAutofillAdjustKnob | null;
+    value?: number | null;
+    nurseId?: number | null;
+    requestText?: string | null;
+    carriedFromRequestId?: number | null;
+    createdAt?: string | null;
+};
+
+export type TScheduleMonthRequestListRes = {
+    year: number;
+    month: number;
+    requests: TScheduleMonthRequestRes[];
+};
+
+export type TUpdateScheduleMonthRequestDTO = {
+    status?: TScheduleMonthRequestStatus;
+    lifetime?: TScheduleMonthRequestLifetime;
+};
+
+export type TScheduleCarryOverCandidatesRes = {
+    sourceYear: number;
+    sourceMonth: number;
+    requests: TScheduleMonthRequestRes[];
+};
+
+export type TScheduleCarryOverDTO = {
+    year: number;
+    month: number;
+    requestIds: number[];
+};
+
+export type TScheduleAdjustInterpretDTO = {
+    text: string;
+    language?: string;
+    year?: number;
+    month?: number;
+};
+
+export type TScheduleAdjustInterpretUnmapped = {
+    text: string;
+    hint?: string | null;
+};
+
+/** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
+export type TScheduleAdjustInterpretRes = {
+    items: TScheduleMonthRequestItem[];
+    unmapped: TScheduleAdjustInterpretUnmapped[];
+    strength?: TAutofillAdjustStrength | null;
+    promptVersion?: string | null;
+};
+
 export type TAutofillAdjustDto = {
-    knobs: Partial<Record<TAutofillAdjustKnob, number>>;
+    /** 옛 모양. requests 와 함께 오면 서버는 requests 를 우선한다. */
+    knobs?: Partial<Record<TAutofillAdjustKnob, number>>;
     strength: TAutofillAdjustStrength;
+    /** 이번에 새로 거는 요청. 서버가 저장한 뒤 이 달의 ACTIVE 요청 전부를 합산해 적용한다. */
+    requests?: TScheduleMonthRequestItem[];
 };
 
 export type TAutofillDTO = {
@@ -715,6 +803,30 @@ export interface IWardAPI {
         autofillDTO: TAutofillDTO,
         options?: {signal?: AbortSignal},
     ) => Promise<TAutofillResponse>;
+    getScheduleMonthRequests: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TScheduleMonthRequestListRes>;
+    updateScheduleMonthRequest: (
+        wardId: number,
+        shiftTeamId: number,
+        requestId: number,
+        updateDTO: TUpdateScheduleMonthRequestDTO,
+    ) => Promise<TScheduleMonthRequestRes>;
+    getScheduleCarryOverCandidates: (
+        wardId: number,
+        shiftTeamId: number,
+        year: number,
+        month: number,
+    ) => Promise<TScheduleCarryOverCandidatesRes>;
+    carryOverScheduleMonthRequests: (
+        wardId: number,
+        shiftTeamId: number,
+        carryOverDTO: TScheduleCarryOverDTO,
+    ) => Promise<TScheduleMonthRequestRes[]>;
+    interpretScheduleAdjust: (
+        wardId: number,
+        shiftTeamId: number,
+        interpretDTO: TScheduleAdjustInterpretDTO,
+        options?: {signal?: AbortSignal},
+    ) => Promise<TScheduleAdjustInterpretRes>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;

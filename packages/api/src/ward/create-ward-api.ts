@@ -2,6 +2,10 @@ import type {IApiClient} from '../client';
 import type {
     IWardAPI,
     TAutofillResponse,
+    TScheduleAdjustInterpretRes,
+    TScheduleCarryOverCandidatesRes,
+    TScheduleMonthRequestListRes,
+    TScheduleMonthRequestRes,
     TAddShiftTeamNurseDTO,
     TCreateWardChatMessageDTO,
     TCreateShiftTypeDTO,
@@ -474,6 +478,40 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                 await client.post<TAutofillResponse>(
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`),
                     autofillDTO,
+                    options,
+                )
+            ).data,
+        getScheduleMonthRequests: async (wardId, shiftTeamId, year, month) =>
+            (
+                await client.get<TScheduleMonthRequestListRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/month-requests?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        updateScheduleMonthRequest: async (wardId, shiftTeamId, requestId, updateDTO) =>
+            (
+                await client.patch<TScheduleMonthRequestRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/month-requests/${requestId}`),
+                    updateDTO,
+                )
+            ).data,
+        getScheduleCarryOverCandidates: async (wardId, shiftTeamId, year, month) =>
+            (
+                await client.get<TScheduleCarryOverCandidatesRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/month-requests/carry-over?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        carryOverScheduleMonthRequests: async (wardId, shiftTeamId, carryOverDTO) =>
+            (
+                await client.post<TScheduleMonthRequestRes[]>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/month-requests/carry-over`),
+                    carryOverDTO,
+                )
+            ).data,
+        interpretScheduleAdjust: async (wardId, shiftTeamId, interpretDTO, options) =>
+            (
+                await client.post<TScheduleAdjustInterpretRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/adjust/interpret`),
+                    interpretDTO,
                     options,
                 )
             ).data,

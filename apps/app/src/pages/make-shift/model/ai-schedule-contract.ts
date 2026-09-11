@@ -35,4 +35,6 @@ export type TAiScheduleResult =
           ok: false;
           message: string;
           canceled?: boolean;
+          /** 서버가 이 계정에 조절을 열어 주지 않았다. 사용자 잘못이 아니므로 문구를 가른다. */
+          notAllowed?: boolean;
       };

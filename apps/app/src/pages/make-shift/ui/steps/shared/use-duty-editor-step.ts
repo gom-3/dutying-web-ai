@@ -302,6 +302,7 @@ export function useDutyEditorStep({
             ? previousDutyQuery.data
             : null;
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
+    const setAutofillAdjustEnabled = useShiftEditorStore((s) => s.setAutofillAdjustEnabled);
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
@@ -326,6 +327,13 @@ export function useDutyEditorStep({
             setRulesHash(workspaceQuery.data.rulesHash);
         }
     }, [workspaceQuery.data?.rulesHash, setRulesHash]);
+
+    // 조절 칩 노출 여부는 서버 판정이다. 응답에 없으면(구 서버) 꺼진 것으로 본다.
+    useEffect(() => {
+        if (workspaceQuery.data === undefined) return;
+
+        setAutofillAdjustEnabled(workspaceQuery.data.autofillAdjustEnabled === true);
+    }, [workspaceQuery.data, setAutofillAdjustEnabled]);
 
     useEffect(() => {
         if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isWaitingForEditorSources) return;

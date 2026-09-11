@@ -23,7 +23,8 @@ describe('AiAdjustChipBar', () => {
         render(<AiAdjustChipBar {...baseProps} onToggle={onToggle} />);
         await userEvent.click(screen.getByText('page.makeShift.aiRefill.adjust.clusterOn'));
 
-        expect(onToggle).toHaveBeenCalledWith('CLUSTERING', 1);
+        // 세 번째 인자는 서버에 displayLabel 로 저장되는 칩 문구다.
+        expect(onToggle).toHaveBeenCalledWith('CLUSTERING', 1, 'page.makeShift.aiRefill.adjust.clusterOn');
     });
 
     it('marks the active chip so the current direction is visible', () => {

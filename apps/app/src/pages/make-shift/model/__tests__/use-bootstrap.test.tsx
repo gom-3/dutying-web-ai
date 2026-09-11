@@ -2,6 +2,7 @@ import {type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
+import {useShiftEditorStore} from '@/features/shift-editor';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {act, renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
@@ -125,6 +126,34 @@ describe('useMakeShiftBootstrap', () => {
             confirmedShiftSnapshot: null,
             reloadToken: 0,
         });
+    });
+
+    it('publishes the server adjust flag from the workspace so the editor store sees it before the step loads', async () => {
+        useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue({autofillAdjustEnabled: true});
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState().shiftStatus).toBe('success');
+        });
+        expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(true);
+    });
+
+    it('turns the adjust flag off when the workspace does not grant it', async () => {
+        useShiftEditorStore.getState().setAutofillAdjustEnabled(true);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue({});
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState().shiftStatus).toBe('success');
+        });
+        expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(false);
     });
 
     it('clears stale confirmed progress when the backend reports the schedule is in progress', async () => {

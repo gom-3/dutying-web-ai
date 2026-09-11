@@ -99,34 +99,26 @@ describe('isWardChatEnabled', () => {
 describe('isAiAdjustEnabled', () => {
     beforeEach(() => {
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', '');
-        vi.stubEnv('VITE_SERVER_URL', '');
     });
 
     afterEach(() => {
         vi.unstubAllEnvs();
     });
 
-    it('운영 API 뒤에서는 끈다 — 엔진의 조절 솔버가 운영에서 꺼져 있다', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
-
-        expect(isAiAdjustEnabled()).toBe(false);
+    it('서버가 열어 준 계정에서만 켠다', () => {
+        expect(isAiAdjustEnabled(true)).toBe(true);
+        expect(isAiAdjustEnabled(false)).toBe(false);
     });
 
-    it('dev API 뒤에서는 켠다', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
-
-        expect(isAiAdjustEnabled()).toBe(true);
+    it('서버 응답에 값이 없으면(구 서버) 끈다', () => {
+        expect(isAiAdjustEnabled(undefined)).toBe(false);
     });
 
-    it('override 로 강제할 수 있다', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+    it('로컬 override 로 강제할 수 있다', () => {
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
+        expect(isAiAdjustEnabled(false)).toBe(true);
 
-        expect(isAiAdjustEnabled()).toBe(true);
-
-        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'false');
-
-        expect(isAiAdjustEnabled()).toBe(false);
+        expect(isAiAdjustEnabled(true)).toBe(false);
     });
 });

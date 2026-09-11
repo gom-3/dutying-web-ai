@@ -13,6 +13,18 @@ function getAiScheduleProvider(): TAiScheduleProvider {
     return getProviderName() === 'api' ? apiAiScheduleProvider : mockAiScheduleProvider;
 }
 
+/**
+ * 서버가 사람 단위 게이트로 막은 경우. 잠시 후 다시 시도해도 달라지지 않으므로
+ * "실패했어요"가 아니라 "아직 열리지 않았어요"로 말해야 한다.
+ */
+function isAdjustNotAllowed(error: unknown): boolean {
+    const apiError = error as {code?: number; serverCode?: string} | null;
+
+    if (!apiError) return false;
+
+    return apiError.serverCode === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED';
+}
+
 function toErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message) return error.message;
 
@@ -50,6 +62,8 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
         return {ok: true, response, validation: response.validation};
     } catch (error) {
         if (request.signal?.aborted) return {ok: false, message: '', canceled: true};
+
+        if (isAdjustNotAllowed(error)) return {ok: false, message: '', notAllowed: true};
 
         return {ok: false, message: toErrorMessage(error)};
     }

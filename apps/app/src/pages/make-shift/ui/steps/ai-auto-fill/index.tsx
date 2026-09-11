@@ -1,5 +1,5 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
-import type {TAutofillAdjustDto, TAutofillAdjustKnob} from '@dutying/api/ward';
+import type {TAutofillAdjustDto, TAutofillAdjustKnob, TScheduleMonthRequestItem, TScheduleMonthRequestRes} from '@dutying/api/ward';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -20,6 +20,7 @@ import {
 import {getDocCellKey, getEditedFilledCellsSinceBaseline} from '@/features/shift-editor/model/doc-diff';
 import {adjustLockedCellKeys} from '@/features/shift-editor/model/schedule-authoring';
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
+import i18n from '@/i18n';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
@@ -37,7 +38,17 @@ import {sortScheduleByTeamNurseOrder} from '../../../model/nurse-order-sync';
 import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
+import {
+    deriveAdjustKnobs,
+    findActiveKnobRequests,
+    markCarryOverAnswered,
+    toChipRequestItem,
+    toTextRequestItems,
+    type TAdjustKnobs,
+    type TInterpretCardItem,
+} from '../../../model/schedule-month-requests';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
+import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
     MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
@@ -53,10 +64,13 @@ import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
-import AiAdjustChipBar, {type TAdjustKnobs} from './ai-adjust-chip-bar';
+import AiAdjustChipBar from './ai-adjust-chip-bar';
+import AiAdjustTextInput from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
+import AiCarryOverCard from './ai-carry-over-card';
 import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
+import AiMonthRequestList from './ai-month-request-list';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
 
@@ -192,12 +206,6 @@ function resolveSnapshotDisplayTitle(params: {
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
-/**
- * 조절 기능 노출 여부. 엔진 -> 서버 -> 프론트 순으로 켜야 한다. 프론트만 먼저 켜면 사용자가
- * 칩을 누르고 거절 응답을 받는다. 판정은 붙어 있는 API 호스트 기준이다 — `isAiAdjustEnabled` 참고.
- */
-const isAdjustEnabled = isAiAdjustEnabled();
-
 export function AiAutofill() {
     const {t} = useTypedTranslation();
     const queryClient = useQueryClient();
@@ -220,6 +228,10 @@ export function AiAutofill() {
     const selection = useShiftEditorStore((s) => s.selection);
     const history = useShiftEditorStore((s) => s.history);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
+    // 조절 칩 노출 여부. 서버가 사람 단위로 판정해 workspace 응답에 실어 준다 —
+    // 프론트는 그것을 그대로 따른다(`isAiAdjustEnabled` 참고).
+    const autofillAdjustEnabled = useShiftEditorStore((s) => s.autofillAdjustEnabled);
+    const isAdjustEnabled = isAiAdjustEnabled(autofillAdjustEnabled);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const divisionLabelByNum = useMemo(
@@ -244,7 +256,11 @@ export function AiAutofill() {
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
-    const [adjustKnobs, setAdjustKnobs] = useState<TAdjustKnobs>({});
+    // 칩 상태는 서버의 이번 달 요청 목록에서 유도한다. 누른 직후에는 목록을 다시 읽기 전이라
+    // 잠깐 낙관적으로 덮어 두고(knobOverride), 목록이 돌아오면 그것을 따른다.
+    const [knobOverride, setKnobOverride] = useState<TAdjustKnobs | null>(null);
+    const [disablingRequestId, setDisablingRequestId] = useState<number | null>(null);
+    const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
     // 로딩 문구를 가른다. 조절은 "채우는 중"이 아니라 "방향을 조절하는 중"이다.
     const [isAdjusting, setIsAdjusting] = useState(false);
@@ -269,6 +285,25 @@ export function AiAutofill() {
         month,
         enabled: isSnapshotSidebarOpen && isCurrentShiftTeamReady,
     });
+    const {requests: monthRequests, refetch: refetchMonthRequests} = useScheduleMonthRequests({
+        wardId,
+        shiftTeamId: currentShiftTeamId,
+        year,
+        month,
+        enabled: isAdjustEnabled && isCurrentShiftTeamReady && hasCompletedAiFill,
+    });
+    const carryOver = useScheduleCarryOverCandidates({
+        wardId,
+        shiftTeamId: currentShiftTeamId,
+        year,
+        month,
+        enabled: isAdjustEnabled && isCurrentShiftTeamReady,
+    });
+    const adjustKnobs = useMemo(() => knobOverride ?? deriveAdjustKnobs(monthRequests), [knobOverride, monthRequests]);
+    const syncMonthRequests = useCallback(async () => {
+        await refetchMonthRequests();
+        setKnobOverride(null);
+    }, [refetchMonthRequests]);
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
     const showCellAttention = useCallback((target: 'fixed' | 'request') => {
         setCellAttention((current) => (current?.target === target ? current : {target, nonce: Date.now()}));
@@ -926,7 +961,7 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto, knobsBeforeAdjust?: TAdjustKnobs) => {
+    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -999,24 +1034,28 @@ export function AiAutofill() {
                 setAiStatus('error');
 
                 // 실패했는데 칩이 켜진 채로 남으면, 사용자는 그 방향이 반영된 표를 보고 있다고
-                // 믿는다. 실제로는 아무것도 안 바뀌었으므로 화면이 거짓말을 하게 된다.
-                // 취소(canceled)는 위에서 먼저 빠져나가므로 여기 오지 않는다 — 사용자가 되돌린
-                // 것이 아니라 요청만 무른 것이라 칩을 유지하는 게 맞다.
-                if (knobsBeforeAdjust !== undefined) {
-                    setAdjustKnobs(knobsBeforeAdjust);
+                // 믿는다. 낙관적 덮어쓰기를 걷고 서버 목록을 다시 읽는다 — 쿼터에 걸린 조절도
+                // 요청 행은 남으므로(다음 실행에 적용된다) 목록이 진실이다.
+                // 취소(canceled)는 위에서 먼저 빠져나가므로 여기 오지 않는다.
+                if (adjust) {
+                    setKnobOverride(null);
                     setLastAdjustChangedCount(null);
+                    void refetchMonthRequests();
                 }
 
-                toast.error(
-                    result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
-                );
+                if (result.notAllowed) {
+                    // 게이트에 막힌 것은 장애가 아니다. 빨간 토스트로 말하면 사용자는 다시 눌러 본다.
+                    toast(t('page.makeShift.aiRefill.adjust.notAllowed'));
+                } else {
+                    toast.error(
+                        result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
+                    );
+                }
 
                 return;
             }
 
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
-
-            const docBeforeApply = useShiftEditorStore.getState().doc;
 
             commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
 
@@ -1027,15 +1066,18 @@ export function AiAutofill() {
             commands.setScheduleValidationFromApi(result.validation);
 
             if (adjust) {
-                // changedCells 길이가 아니라 실제 적용된 칸을 센다. 고정·신청 셀로 스킵된 칸이
-                // changedCells 에는 남아 있어 화면에 보이는 변화와 어긋날 수 있다.
-                const movedCount = getEditedFilledCellsSinceBaseline(docAfterApply, docBeforeApply).length;
+                // 응답의 changedCells 를 그대로 센다. 서버가 고정·신청 칸을 이미 걸러 낸 "적용된
+                // 칸"이고, 어드민 이력의 변경 칸 수도 같은 값이다 — 토스트와 지표가 어긋나면
+                // "몇 칸 바뀌었나"를 두 숫자로 이야기하게 된다.
+                const movedCount = result.response.changedCells.length;
 
                 setLastAdjustChangedCount(movedCount);
 
                 if (movedCount === 0) {
                     toast(t('page.makeShift.aiRefill.adjust.noChange'));
                 }
+
+                void syncMonthRequests();
             }
 
             shouldKeepAiEffectVisible = true;
@@ -1044,9 +1086,8 @@ export function AiAutofill() {
             setHasCompletedAiFill(true);
 
             if (!adjust) {
-                // 새로 생성하면 조절은 초기화된다. 생성 결과에는 팀 스타일이 이미 반영돼 있어,
-                // 이전 칩 상태를 남겨 두면 무엇이 반영된 상태인지 화면이 거짓말을 한다.
-                setAdjustKnobs({});
+                // 요청은 서버 상태라 새로 생성해도 남는다(목록 문구로 그렇게 안내한다).
+                // 바뀐 칸 수만 지난 조절의 것이므로 지운다.
                 setLastAdjustChangedCount(null);
             }
         } finally {
@@ -1110,32 +1151,139 @@ export function AiAutofill() {
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
     };
     /**
-     * 칩 토글. 같은 값이 이미 켜져 있으면 끄고, 켜면 그 상태로 바로 다시 푼다.
+     * 요청을 끄고(PATCH DISABLED) 곧바로 다시 조절한다. 새 요청은 없으므로 서버는 남은
+     * ACTIVE 요청만 합산한다 — 마지막 칩을 껐을 때 표가 조절된 채로 남는 문제를 이렇게 푼다.
+     */
+    const disableRequestsAndReadjust = async (
+        targets: TScheduleMonthRequestRes[],
+        readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>,
+    ) => {
+        setLastAdjustChangedCount(null);
+
+        if (targets.length > 0) {
+            setDisablingRequestId(targets[0]!.id);
+
+            try {
+                for (const target of targets) {
+                    await WardAPI.updateScheduleMonthRequest(readyContext.wardId, readyContext.shiftTeamId, target.id, {
+                        status: 'DISABLED',
+                    });
+                }
+            } catch {
+                setKnobOverride(null);
+                toast.error(t('page.makeShift.aiRefill.adjust.failed'));
+
+                return;
+            } finally {
+                setDisablingRequestId(null);
+            }
+        }
+
+        await runAiFill(readyContext, {strength: 'NORMAL'});
+    };
+    /**
+     * 칩 토글. 켜면 그 축의 요청을 만들어 바로 다시 풀고, 끄면 그 요청을 끄고 다시 푼다.
      *
      * "적용" 버튼을 따로 두지 않는 이유: 버튼이 있으면 칩 상태와 화면의 근무표가 어긋나는
      * 순간이 생기고, 사용자는 지금 보이는 표가 어느 설정의 결과인지 알 수 없게 된다.
      */
-    const handleToggleAdjustKnob = (knob: TAutofillAdjustKnob, value: number) => {
-        const previousKnobs = adjustKnobs;
-        const nextKnobs: TAdjustKnobs = {...adjustKnobs};
+    const handleToggleAdjustKnob = (knob: TAutofillAdjustKnob, value: number, label: string) => {
+        const readyContext = getAiFillReadyContext();
 
-        if (nextKnobs[knob] === value) {
-            delete nextKnobs[knob];
-        } else {
-            nextKnobs[knob] = value;
+        if (!readyContext) return;
+
+        // 같은 축의 살아 있는 요청. 끌 때는 이것을 끄고, 반대 값으로 켤 때(뭉치기↔흩기)도 먼저 끈다 —
+        // 두 값이 같이 살아 있으면 서버가 합산해 0 이 되고, 화면은 그것을 설명할 수 없다.
+        const sameKnobRequests = findActiveKnobRequests(monthRequests, knob);
+        const remaining = monthRequests.filter((request) => !sameKnobRequests.some((target) => target.id === request.id));
+        const nextKnobs = deriveAdjustKnobs(remaining);
+
+        if (adjustKnobs[knob] === value) {
+            setKnobOverride(nextKnobs);
+            void disableRequestsAndReadjust(sameKnobRequests, readyContext);
+
+            return;
         }
 
-        setAdjustKnobs(nextKnobs);
+        setKnobOverride({...nextKnobs, [knob]: value});
         setLastAdjustChangedCount(null);
+
+        void (async () => {
+            if (sameKnobRequests.length > 0) {
+                setDisablingRequestId(sameKnobRequests[0]!.id);
+
+                try {
+                    for (const target of sameKnobRequests) {
+                        await WardAPI.updateScheduleMonthRequest(readyContext.wardId, readyContext.shiftTeamId, target.id, {
+                            status: 'DISABLED',
+                        });
+                    }
+                } catch {
+                    setKnobOverride(null);
+                    toast.error(t('page.makeShift.aiRefill.adjust.failed'));
+
+                    return;
+                } finally {
+                    setDisablingRequestId(null);
+                }
+            }
+
+            await runAiFill(readyContext, {strength: 'NORMAL', requests: [toChipRequestItem(knob, value, label)]});
+        })();
+    };
+    const handleDisableMonthRequest = (request: TScheduleMonthRequestRes) => {
+        const readyContext = getAiFillReadyContext();
+
+        if (!readyContext) return;
+
+        setKnobOverride(deriveAdjustKnobs(monthRequests.filter((entry) => entry.id !== request.id)));
+        void disableRequestsAndReadjust([request], readyContext);
+    };
+    const interpretAdjustText = async (text: string) => {
+        if (wardId == null || currentShiftTeamId == null) throw new Error('not ready');
+
+        return WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
+            text,
+            language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
+            year,
+            month,
+        });
+    };
+    const handleApplyTextRequests = (items: TInterpretCardItem[], requestText: string) => {
+        const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
+
+        if (requests.length === 0) return;
 
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
 
-        // 축을 다 끄면 되돌릴 기준이 없으므로 요청하지 않는다. 되돌리기는 Undo 로 한다.
-        if (Object.keys(nextKnobs).length === 0) return;
+        setLastAdjustChangedCount(null);
+        void runAiFill(readyContext, {strength: 'NORMAL', requests});
+    };
+    const handleCarryOverApply = async (requestIds: number[]) => {
+        if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;
 
-        void runAiFill(readyContext, {knobs: nextKnobs, strength: 'NORMAL'}, previousKnobs);
+        setIsCarryingOver(true);
+
+        try {
+            await WardAPI.carryOverScheduleMonthRequests(wardId, currentShiftTeamId, {year, month, requestIds});
+            markCarryOverAnswered({wardId, shiftTeamId: currentShiftTeamId, year, month});
+            carryOver.dismiss();
+            toast.success(t('page.makeShift.aiRefill.adjust.carryOver.applied', {count: requestIds.length}));
+            void refetchMonthRequests();
+        } catch {
+            toast.error(t('page.makeShift.aiRefill.adjust.carryOver.failed'));
+        } finally {
+            setIsCarryingOver(false);
+        }
+    };
+    const handleCarryOverSkip = () => {
+        if (wardId != null && currentShiftTeamId != null) {
+            markCarryOverAnswered({wardId, shiftTeamId: currentShiftTeamId, year, month});
+        }
+
+        carryOver.dismiss();
     };
     const openAiFillDecision = (context: TAiFillDecisionContext) => {
         aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
@@ -1394,14 +1542,36 @@ export function AiAutofill() {
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
-                {isAdjustEnabled && hasCompletedAiFill && (
-                    <AiAdjustChipBar
-                        knobs={adjustKnobs}
-                        strength="NORMAL"
-                        disabled={isAiGenerating}
-                        lastChangedCount={lastAdjustChangedCount}
-                        onToggle={handleToggleAdjustKnob}
+                {isAdjustEnabled && carryOver.isVisible && (
+                    <AiCarryOverCard
+                        candidates={carryOver.candidates}
+                        isApplying={isCarryingOver}
+                        onApply={(requestIds) => void handleCarryOverApply(requestIds)}
+                        onSkip={handleCarryOverSkip}
                     />
+                )}
+
+                {isAdjustEnabled && hasCompletedAiFill && (
+                    <>
+                        <AiAdjustChipBar
+                            knobs={adjustKnobs}
+                            strength="NORMAL"
+                            disabled={isAiGenerating || disablingRequestId !== null}
+                            lastChangedCount={lastAdjustChangedCount}
+                            onToggle={handleToggleAdjustKnob}
+                        />
+                        <AiAdjustTextInput
+                            disabled={isAiGenerating || disablingRequestId !== null}
+                            interpret={interpretAdjustText}
+                            onApply={handleApplyTextRequests}
+                        />
+                        <AiMonthRequestList
+                            requests={monthRequests}
+                            disabled={isAiGenerating}
+                            disablingRequestId={disablingRequestId}
+                            onDisable={handleDisableMonthRequest}
+                        />
+                    </>
                 )}
 
                 {(dutyQuery.isLoading || isHydratingEditor) && (

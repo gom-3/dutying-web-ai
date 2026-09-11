@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useRef} from 'react';
 import {useSearchParams} from 'react-router';
-import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
+import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
@@ -74,6 +74,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     editorRef.current = editor;
 
     const setShiftStatus = useMakeShiftStore((s) => s.setShiftStatus);
+    const setAutofillAdjustEnabled = useShiftEditorStore((s) => s.setAutofillAdjustEnabled);
     const setShiftExists = useMakeShiftStore((s) => s.setShiftExists);
     const setShiftFullyAssigned = useMakeShiftStore((s) => s.setShiftFullyAssigned);
     const setShiftTeams = useMakeShiftStore((s) => s.setShiftTeams);
@@ -194,6 +195,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         };
     }, [
         reloadToken,
+        setAutofillAdjustEnabled,
         setCurrentShiftTeamId,
         setShiftExists,
         setShiftFullyAssigned,
@@ -239,6 +241,9 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 ]);
 
                 if (cancelled) return;
+
+                // 조절 칩 노출 여부는 서버 판정이다. 에디터 스텝의 workspace 쿼리와 같은 규칙으로 스토어에 싣는다.
+                setAutofillAdjustEnabled(workspace?.autofillAdjustEnabled === true);
 
                 const workspaceWorkflowStep = getShiftWorkflowStep(workspace);
                 const shiftWorkflowStep = getShiftWorkflowStep(shift);

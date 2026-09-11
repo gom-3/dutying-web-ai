@@ -148,6 +148,18 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         expect(result.ok && result.noChange).toBe(true);
     });
 
+    it('서버가 사람 단위 게이트로 막은 조절은 실패가 아니라 notAllowed 로 돌려준다', async () => {
+        // 잠시 후 다시 시도해도 달라지지 않으므로 "실패했어요" 토스트 대신 "아직 열리지 않았어요"로 말해야 한다.
+        apiGenerate.mockRejectedValue({code: 403, serverCode: 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED', message: 'forbidden'});
+
+        const result = await requestAiSchedule({
+            ...request,
+            adjust: {knobs: {OFF_BALANCE: 1}, strength: 'NORMAL'},
+        });
+
+        expect(result).toEqual({ok: false, message: '', notAllowed: true});
+    });
+
     it('조절이 아닌 요청에서는 빈 결과가 여전히 실패다', async () => {
         apiGenerate.mockResolvedValue({
             operationType: 'GENERATE',

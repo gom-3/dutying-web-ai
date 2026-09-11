@@ -1,8 +1,9 @@
 import type {TAutofillAdjustKnob, TAutofillAdjustStrength} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import type {TAdjustKnobs} from '../../../model/schedule-month-requests';
 
-export type TAdjustKnobs = Partial<Record<TAutofillAdjustKnob, number>>;
+export type {TAdjustKnobs};
 
 type TChip = {
     key: string;
@@ -28,7 +29,8 @@ type TProps = {
     strength: TAutofillAdjustStrength;
     disabled: boolean;
     lastChangedCount: number | null;
-    onToggle: (knob: TAutofillAdjustKnob, value: number) => void;
+    /** label 은 서버에 저장되는 displayLabel — 목록과 되묻기 카드에 이 문구가 그대로 보인다. */
+    onToggle: (knob: TAutofillAdjustKnob, value: number, label: string) => void;
 };
 
 /**
@@ -46,6 +48,7 @@ export default function AiAdjustChipBar({knobs, strength, disabled, lastChangedC
 
             {CHIPS.map((chip) => {
                 const active = knobs[chip.knob] === chip.value;
+                const label = t(`page.makeShift.aiRefill.adjust.${chip.labelKey}`);
 
                 return (
                     <button
@@ -53,14 +56,14 @@ export default function AiAdjustChipBar({knobs, strength, disabled, lastChangedC
                         type="button"
                         disabled={disabled}
                         aria-pressed={active}
-                        onClick={() => onToggle(chip.knob, chip.value)}
+                        onClick={() => onToggle(chip.knob, chip.value, label)}
                         className={cn(
                             'text-13 rounded-full border px-3 py-1 transition-colors',
                             active ? 'border-primary bg-primary/10 font-semibold text-primary' : 'border-line text-sub hover:bg-sub-bg',
                             disabled && 'cursor-not-allowed opacity-50',
                         )}
                     >
-                        {t(`page.makeShift.aiRefill.adjust.${chip.labelKey}`)}
+                        {label}
                     </button>
                 );
             })}

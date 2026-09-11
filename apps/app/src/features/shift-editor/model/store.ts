@@ -12,6 +12,12 @@ export type TShiftEditorStore = {
     draftRevision: number;
     /** workspace에서 받은 제약조건 버전 hash */
     rulesHash: string | null;
+    /**
+     * 이 사용자에게 조절(ADJUST) 칩을 열어 줄지. 서버(workspace 응답)가 정하고 화면은 따르기만 한다.
+     * 사람 단위 값이라 근무팀/월을 바꿔도 달라지지 않으므로 `reset` 에서 되돌리지 않는다 —
+     * 되돌리면 workspace 를 다시 받을 때까지 칩이 깜빡인다.
+     */
+    autofillAdjustEnabled: boolean;
     selection: TSelection | null;
     /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
     scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
@@ -32,6 +38,7 @@ export type TShiftEditorStore = {
     setDutyRuleBoard: (board: TDutyRuleBoard | null) => void;
     setEditorMode: (mode: TEditorMode) => void;
     setRulesHash: (rulesHash: string | null) => void;
+    setAutofillAdjustEnabled: (autofillAdjustEnabled: boolean) => void;
 
     reset: (opts?: {maxHistoryDepth?: number}) => void;
 };
@@ -44,6 +51,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         doc: emptyDoc,
         draftRevision: 0,
         rulesHash: null,
+        autofillAdjustEnabled: false,
         selection: null,
         scheduleValidationSnapshot: null,
         legacyDisplayViolations: [],
@@ -61,6 +69,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         setDutyRuleBoard: (dutyRuleBoard) => set(() => ({dutyRuleBoard})),
         setEditorMode: (editorMode) => set(() => ({editorMode})),
         setRulesHash: (rulesHash) => set(() => ({rulesHash})),
+        setAutofillAdjustEnabled: (autofillAdjustEnabled) => set(() => ({autofillAdjustEnabled})),
 
         reset: (opts) => {
             const maxDepth = opts?.maxHistoryDepth ?? initialHistory.maxDepth;
