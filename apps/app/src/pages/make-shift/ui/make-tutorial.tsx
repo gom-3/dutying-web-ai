@@ -134,9 +134,13 @@ const MakeTutorial = () => {
 
         if (markedSeenKeysRef.current.has(currentTutorialKey)) return;
 
+        // 서버 기록은 앱 계정에만 있다. 웹 관리자 계정의 me 응답에는 tutorials 가 없고,
+        // 같은 엔드포인트를 부르면 403 이 나 경보만 만든다 — 로컬 기록으로 충분하다.
+        if (accountMe?.tutorials == null) return;
+
         markedSeenKeysRef.current.add(currentTutorialKey);
         void AccountAPI.markTutorialSeen(currentTutorialKey).catch(() => undefined);
-    }, [accountId, currentTutorialKey, open]);
+    }, [accountId, accountMe?.tutorials, currentTutorialKey, open]);
 
     useEffect(() => {
         setTargetsReady(false);
