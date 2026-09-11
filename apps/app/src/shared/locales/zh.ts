@@ -110,7 +110,7 @@ export const zh = {
                     requests: {
                         title: '本月请求 {{count}} 条',
                         empty: '还没有请求。',
-                        persistNote: '重新生成后这些请求仍会保留，并在每次调整时一起应用。',
+                        persistNote: '重新生成后这些请求仍会保留，并在每次自动填充和调整时一起应用。',
                         remove: '关闭 {{label}}',
                         carriedOver: '来自上月',
                     },

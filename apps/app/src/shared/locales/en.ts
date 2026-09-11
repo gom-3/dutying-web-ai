@@ -1150,7 +1150,7 @@ export const en: TLocale = {
                     requests: {
                         title: '{{count}} requests this month',
                         empty: 'No requests yet.',
-                        persistNote: 'These requests stay after regenerating and are applied with every adjustment.',
+                        persistNote: 'These requests stay after regenerating and are applied on every autofill and adjustment.',
                         remove: 'Turn off {{label}}',
                         carriedOver: 'from last month',
                     },

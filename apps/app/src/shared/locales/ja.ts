@@ -1374,7 +1374,7 @@ export const ja: TLocale = {
                     requests: {
                         title: '今月のリクエスト {{count}}件',
                         empty: 'まだリクエストはありません。',
-                        persistNote: '再生成してもこのリクエストは残り、調整のたびに適用されます。',
+                        persistNote: '再生成してもこのリクエストは残り、自動入力と調整のたびに適用されます。',
                         remove: '{{label}} をオフにする',
                         carriedOver: '先月から',
                     },

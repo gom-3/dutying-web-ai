@@ -110,7 +110,7 @@ export const vi = {
                     requests: {
                         title: '{{count}} yêu cầu tháng này',
                         empty: 'Chưa có yêu cầu nào.',
-                        persistNote: 'Tạo lại vẫn giữ các yêu cầu này và áp dụng mỗi lần điều chỉnh.',
+                        persistNote: 'Tạo lại vẫn giữ các yêu cầu này và áp dụng mỗi lần tự động điền hoặc điều chỉnh.',
                         remove: 'Tắt {{label}}',
                         carriedOver: 'từ tháng trước',
                     },

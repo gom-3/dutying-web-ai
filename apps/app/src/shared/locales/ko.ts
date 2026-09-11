@@ -1147,7 +1147,7 @@ export const ko = {
                     requests: {
                         title: '이번 달 요청 {{count}}건',
                         empty: '아직 걸린 요청이 없어요.',
-                        persistNote: '다시 생성해도 이 요청들은 남아 있고, 조절할 때마다 함께 적용돼요.',
+                        persistNote: '다시 생성해도 이 요청들은 남아 있고, 자동 채우기와 조절 때마다 함께 적용돼요.',
                         remove: '{{label}} 요청 끄기',
                         carriedOver: '지난달에서',
                     },
