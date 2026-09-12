@@ -34,6 +34,11 @@ describe('여러 달 시트를 담은 근무표 파일', () => {
         expect(monthlySchedules.map(({year, month}) => `${year}-${month}`)).toEqual(['2026-7', '2026-8', '2026-9']);
         expect(monthlySchedules[0]?.teamSchedules[0]?.rows.map((row) => row.shifts)).toEqual([{'1': 'D'}, {'2': 'E'}]);
         expect(monthlySchedules[2]?.teamSchedules[0]?.rows.map((row) => row.shifts)).toEqual([{'1': 'N'}, {'2': 'D'}]);
+        // 그 달에 근무가 없는 사람도 행은 남는다. 빼면 간호사로 등록되지 않는다.
+        expect(monthlySchedules[1]?.teamSchedules[0]?.rows.map((row) => [row.name, row.shifts])).toEqual([
+            ['김은주', {'1': 'E'}],
+            ['이승미', {}],
+        ]);
     });
 
     it('팀과 명단은 한 벌만 만들고 나머지 달은 근무표 칸만 채운다', () => {

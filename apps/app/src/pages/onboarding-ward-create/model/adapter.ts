@@ -1234,11 +1234,7 @@ export const buildUploadedMonthlySchedulesFromParsedWardData = (
         (parsed.teams?.[0]?.divisions ?? []).map((division) => [division.divisionNum, division.name] as const),
     );
     const monthKeys: string[] = [];
-    const rowsByMonthKey = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
-
-    nurses.forEach((nurse) => {
-        const name = nurse.name?.trim() ?? '';
-        const divisionNum = nurse.divisionNum ?? 1;
+    const shiftsByNurseAndMonthKey = nurses.map((nurse) => {
         const shiftsByMonthKey = new Map<string, Record<string, string>>();
 
         (nurse.initialShifts ?? []).forEach((shift) => {
@@ -1249,25 +1245,18 @@ export const buildUploadedMonthlySchedulesFromParsedWardData = (
                 return;
             }
 
-            const shifts = shiftsByMonthKey.get(monthKey) ?? {};
+            if (!shiftsByMonthKey.has(monthKey)) {
+                shiftsByMonthKey.set(monthKey, {});
 
-            shifts[day] = shift.shiftShortName;
-            shiftsByMonthKey.set(monthKey, shifts);
-        });
-
-        shiftsByMonthKey.forEach((shifts, monthKey) => {
-            if (!rowsByMonthKey.has(monthKey)) {
-                monthKeys.push(monthKey);
-                rowsByMonthKey.set(monthKey, []);
+                if (!monthKeys.includes(monthKey)) {
+                    monthKeys.push(monthKey);
+                }
             }
 
-            rowsByMonthKey.get(monthKey)?.push({
-                name,
-                shifts,
-                divisionNum,
-                divisionName: divisionNameByNum.get(divisionNum) ?? '',
-            });
+            shiftsByMonthKey.get(monthKey)![day] = shift.shiftShortName;
         });
+
+        return shiftsByMonthKey;
     });
 
     return monthKeys
@@ -1275,7 +1264,19 @@ export const buildUploadedMonthlySchedulesFromParsedWardData = (
         .map((monthKey) => ({
             year: Number(monthKey.slice(0, 4)),
             month: Number(monthKey.slice(5, 7)),
-            teamSchedules: [{teamName: '', rows: rowsByMonthKey.get(monthKey) ?? []}],
+            // 달마다 인원이 달라지면 안 된다. 그 달에 근무가 하나도 없는 사람(휴직·신규)을
+            // 빼면 그 사람은 간호사로 등록되지 않고 다른 달 행만 주인 없이 남는다.
+            teamSchedules: [
+                {
+                    teamName: '',
+                    rows: nurses.map((nurse, nurseIndex) => ({
+                        name: nurse.name?.trim() ?? '',
+                        shifts: shiftsByNurseAndMonthKey[nurseIndex]?.get(monthKey) ?? {},
+                        divisionNum: nurse.divisionNum ?? 1,
+                        divisionName: divisionNameByNum.get(nurse.divisionNum ?? 1) ?? '',
+                    })),
+                },
+            ],
         }))
         .filter(({year, month}) => Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12);
 };
