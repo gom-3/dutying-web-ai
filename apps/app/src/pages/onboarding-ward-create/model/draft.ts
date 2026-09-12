@@ -95,6 +95,13 @@ export type TOnboardingUploadedTeamSchedule = {
     rows: TOnboardingUploadedScheduleRow[];
 };
 
+// 근무표 파일 한 개에 월별 시트가 여러 장 들어 있을 때, 달마다의 근무표 칸.
+export type TOnboardingUploadedMonthlySchedule = {
+    year: number;
+    month: number;
+    teamSchedules: TOnboardingUploadedTeamSchedule[];
+};
+
 export type TOnboardingConstraintDraft = {
     id: string;
     key: string;
@@ -1663,11 +1670,15 @@ export const applyUploadedScheduleTemplateDraft = (
         year,
         month,
         teamSchedules,
+        monthlySchedules,
     }: {
         fileName: string;
         year: number;
         month: number;
         teamSchedules: TOnboardingUploadedTeamSchedule[];
+        // 같은 파일에서 함께 읽은 다른 달들. 팀과 간호사 명단은 위 {year, month} 가 정하고,
+        // 여기 담긴 달은 근무표 칸만 채운다.
+        monthlySchedules?: TOnboardingUploadedMonthlySchedule[];
     },
     labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
 ): {draft: TOnboardingWardDraft; activeTeamId: string | null} => {
@@ -1761,6 +1772,51 @@ export const applyUploadedScheduleTemplateDraft = (
                 }),
             },
         };
+    });
+
+    // 월별 탭을 여러 장 읽었으면 나머지 달도 같은 팀·간호사에 이어 붙인다.
+    // 달마다 팀을 새로 만들면 같은 사람이 달 수만큼 복제된다.
+    (monthlySchedules ?? []).forEach((monthlySchedule) => {
+        const otherMonthKey = getScheduleMonthKey(monthlySchedule.year, monthlySchedule.month);
+
+        if (otherMonthKey === monthKey) {
+            return;
+        }
+
+        monthlySchedule.teamSchedules.forEach((teamSchedule, teamIndex) => {
+            const team = teams[teamIndex] ?? teams[0];
+
+            if (!team) {
+                return;
+            }
+
+            const nurseIdByName = new Map(nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => [nurse.name, nurse.id]));
+            const rows = teamSchedule.rows
+                .filter((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim()))
+                .map((row) => {
+                    const trimmedName = row.name.trim();
+
+                    return createScheduleRow({
+                        nurseId: trimmedName ? (nurseIdByName.get(trimmedName) ?? null) : null,
+                        divisionNum: normalizeDivisionNum(row.divisionNum),
+                        name: trimmedName,
+                        shifts: Object.fromEntries(
+                            Object.entries(row.shifts)
+                                .map(([day, shift]) => [day, shift.trim()])
+                                .filter(([, shift]) => shift),
+                        ),
+                    });
+                });
+
+            if (rows.length === 0) {
+                return;
+            }
+
+            scheduleInputs[team.id] = {
+                ...scheduleInputs[team.id],
+                [otherMonthKey]: {year: monthlySchedule.year, month: monthlySchedule.month, rows},
+            };
+        });
     });
 
     const nextShiftTypes = syncScheduleInputShiftTypes(draft.shiftTypes, scheduleInputs, draft.rotationMode);

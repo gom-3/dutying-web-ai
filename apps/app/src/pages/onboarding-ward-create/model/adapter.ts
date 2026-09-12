@@ -19,6 +19,7 @@ import {
     type TOnboardingNurseDraft,
     type TOnboardingRotationMode,
     type TOnboardingTeamDraft,
+    type TOnboardingUploadedMonthlySchedule,
     type TOnboardingUploadedTeamSchedule,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
@@ -1220,6 +1221,63 @@ export const buildUploadedTeamSchedulesFromParsedWardData = (parsed: TOnboarding
     const hasAnyShift = teamSchedules.some((teamSchedule) => teamSchedule.rows.some((row) => Object.keys(row.shifts).length > 0));
 
     return hasAnyShift ? teamSchedules : [];
+};
+
+// 월별 탭(7월·8월·9월)을 한 파일에 쌓아 쓰는 병동이 흔하다. 분석은 달마다의 근무를
+// 'YYYY-MM-DD' 로 돌려주는데, 일자만 떼어 한 달에 몰아 넣으면 7월 3일이 9월 3일을 덮는다.
+// 달별로 갈라 두고 각 달의 근무표 칸에 따로 채운다. 최신 달이 마지막에 온다.
+export const buildUploadedMonthlySchedulesFromParsedWardData = (
+    parsed: TOnboardingParsedWardData,
+): TOnboardingUploadedMonthlySchedule[] => {
+    const nurses = parsed.nurses ?? [];
+    const divisionNameByNum = new Map(
+        (parsed.teams?.[0]?.divisions ?? []).map((division) => [division.divisionNum, division.name] as const),
+    );
+    const monthKeys: string[] = [];
+    const rowsByMonthKey = new Map<string, TOnboardingUploadedTeamSchedule['rows']>();
+
+    nurses.forEach((nurse) => {
+        const name = nurse.name?.trim() ?? '';
+        const divisionNum = nurse.divisionNum ?? 1;
+        const shiftsByMonthKey = new Map<string, Record<string, string>>();
+
+        (nurse.initialShifts ?? []).forEach((shift) => {
+            const monthKey = shift.date.slice(0, 7);
+            const day = String(Number(shift.date.slice(8, 10)));
+
+            if (day === 'NaN' || !shift.shiftShortName) {
+                return;
+            }
+
+            const shifts = shiftsByMonthKey.get(monthKey) ?? {};
+
+            shifts[day] = shift.shiftShortName;
+            shiftsByMonthKey.set(monthKey, shifts);
+        });
+
+        shiftsByMonthKey.forEach((shifts, monthKey) => {
+            if (!rowsByMonthKey.has(monthKey)) {
+                monthKeys.push(monthKey);
+                rowsByMonthKey.set(monthKey, []);
+            }
+
+            rowsByMonthKey.get(monthKey)?.push({
+                name,
+                shifts,
+                divisionNum,
+                divisionName: divisionNameByNum.get(divisionNum) ?? '',
+            });
+        });
+    });
+
+    return monthKeys
+        .sort()
+        .map((monthKey) => ({
+            year: Number(monthKey.slice(0, 4)),
+            month: Number(monthKey.slice(5, 7)),
+            teamSchedules: [{teamName: '', rows: rowsByMonthKey.get(monthKey) ?? []}],
+        }))
+        .filter(({year, month}) => Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12);
 };
 
 // 근무표 칸을 채우는 경로는 간호사를 새로 만들면서 가능 근무유형을 전체로 되돌린다.

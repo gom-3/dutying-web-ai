@@ -297,8 +297,9 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('병원명')).toBeInTheDocument();
         expect(screen.getByLabelText('병동명')).toBeInTheDocument();
         expect(screen.getByText('(선택) 병동명')).toBeInTheDocument();
-        // 병원은 자유 입력이 아니라 카탈로그 검색으로 바뀌었다.
-        expect(screen.getByPlaceholderText('병원명을 검색해 주세요')).toBeInTheDocument();
+        // 병원은 카탈로그 추천이 붙었을 뿐 여전히 자유 입력이다.
+        expect(screen.getByPlaceholderText('병원명을 입력해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('목록에 없으면 적은 그대로 두셔도 돼요')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('병동명을 입력해 주세요')).toBeInTheDocument();
     });
 
@@ -618,31 +619,16 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(within(dialog).getByText('근무표 파일 업로드')).toBeInTheDocument();
         expect(within(dialog).getByText('엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.')).toBeInTheDocument();
+        // 양식을 받지 않아도 바로 올릴 수 있어야 한다. 서식은 선택지일 뿐 관문이 아니다.
         expect(within(dialog).getByRole('button', {name: /양식 다운로드/})).toBeInTheDocument();
-        expect(within(dialog).queryByTestId('schedule-file-upload-input')).not.toBeInTheDocument();
-
-        await user.click(within(dialog).getByRole('button', {name: /양식 다운로드/}));
-        await waitFor(() => {
-            expect(within(dialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
-        });
-
-        await user.click(within(dialog).getByRole('button', {name: '취소'}));
-        await waitFor(() => {
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
-
-        await user.click(screen.getByRole('button', {name: '근무표 파일 업로드'}));
-
-        const reopenedDialog = screen.getByRole('dialog');
-
-        expect(within(reopenedDialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
+        expect(within(dialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
 
         const file = await createScheduleTemplateFile();
 
-        fireEvent.change(within(reopenedDialog).getByTestId('schedule-file-upload-input'), {
+        fireEvent.change(within(dialog).getByTestId('schedule-file-upload-input'), {
             target: {files: [file]},
         });
-        await user.click(within(reopenedDialog).getByRole('button', {name: '파일 적용'}));
+        await user.click(within(dialog).getByRole('button', {name: '파일 적용'}));
 
         await waitFor(() => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

@@ -13,6 +13,7 @@ import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     applyParsedWardData,
+    buildUploadedMonthlySchedulesFromParsedWardData,
     buildUploadedTeamSchedulesFromParsedWardData,
     restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
@@ -1576,11 +1577,18 @@ function useOnboardingWardWizard() {
 
             setDraft((prev) => {
                 const parsedDraft = applyParsedWardData(prev, parsedWardData);
+                // 월별 탭이 여러 장인 파일은 달마다 근무표 칸을 따로 채운다. 명단은 최신 달이 정한다.
+                const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
+                const primaryMonth = monthlySchedules.length > 1 ? monthlySchedules[monthlySchedules.length - 1] : null;
                 // 서식 파일이 아니면 서버 분석 결과에서 근무표 칸을 만든다.
                 const teamSchedules =
-                    scheduleTemplate.length > 0 ? scheduleTemplate : buildUploadedTeamSchedulesFromParsedWardData(parsedWardData);
+                    scheduleTemplate.length > 0
+                        ? scheduleTemplate
+                        : (primaryMonth?.teamSchedules ?? buildUploadedTeamSchedulesFromParsedWardData(parsedWardData));
+                const targetYear = primaryMonth?.year ?? options?.targetYear;
+                const targetMonth = primaryMonth?.month ?? options?.targetMonth;
 
-                if (!options?.targetYear || !options.targetMonth || teamSchedules.length === 0) {
+                if (!targetYear || !targetMonth || teamSchedules.length === 0) {
                     return parsedDraft;
                 }
 
@@ -1588,9 +1596,10 @@ function useOnboardingWardWizard() {
                     parsedDraft,
                     {
                         fileName: file.name,
-                        year: options.targetYear,
-                        month: options.targetMonth,
+                        year: targetYear,
+                        month: targetMonth,
                         teamSchedules,
+                        monthlySchedules: primaryMonth ? monthlySchedules : undefined,
                     },
                     onboardingDraftLabels,
                 );
