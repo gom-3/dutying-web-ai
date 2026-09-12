@@ -1146,6 +1146,15 @@ export const ko = {
                         HARD: '꼭',
                         label: '{{label}} 강도',
                     },
+                    promote: {
+                        title: '이 규칙, 다음 달에도 쓸까요?',
+                        description:
+                            '이번 달에 문장으로 건 규칙이에요. 남기기를 고른 것만 병동 제약조건이 되고, 나머지는 이번 달로 끝나요.',
+                        keep: '남기기',
+                        discard: '이번 달만',
+                        confirm: '확정하기',
+                        cancel: '취소',
+                    },
                     monthRuleBadge: '이번 달 규칙',
                     remaining: "'{{label}}'이 {{count}}곳 남았어요.",
                     remainingAction: '더 세게 조절하기',

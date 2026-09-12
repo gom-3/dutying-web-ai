@@ -55,6 +55,21 @@ export function activeRequests(requests: TScheduleMonthRequestRes[]): TScheduleM
     return requests.filter((request) => request.status === 'ACTIVE');
 }
 
+/**
+ * 확정 시 병동 제약조건으로 남길 수 있는 요청.
+ *
+ * 축(KNOB)은 대상이 아니다 — 그쪽은 팀 스타일 프로필로 가는 별도 경로가 있고, 수명 배지로
+ * 이미 사용자가 정한다. 여기서 묻는 것은 문장으로 건 **규칙**뿐이다.
+ *
+ * 이미 승격된 행(promotedRuleId)은 뺀다. 다시 고르면 같은 제약조건이 두 벌이 된다.
+ * 템플릿이 없는 행도 뺀다 — 5단계 이전의 RULE 행이라 실행된 적도, 승격할 것도 없다.
+ */
+export function promotableRuleRequests(requests: TScheduleMonthRequestRes[]): TScheduleMonthRequestRes[] {
+    return requests.filter(
+        (request) => request.status === 'ACTIVE' && request.kind === 'RULE' && Boolean(request.templateCode) && !request.promotedRuleId,
+    );
+}
+
 export function toChipRequestItem(knob: TAutofillAdjustKnob, value: number, displayLabel: string): TScheduleMonthRequestItem {
     return {kind: 'KNOB', knob, value, lifetime: 'MONTH', origin: 'CHIP', displayLabel};
 }

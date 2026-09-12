@@ -106,6 +106,15 @@ export const vi = {
                         HARD: 'Bắt buộc',
                         label: 'Mức độ của {{label}}',
                     },
+                    promote: {
+                        title: 'Giữ các quy tắc này cho tháng sau?',
+                        description:
+                            'Đây là quy tắc bạn đặt bằng câu trong tháng này. Chỉ những mục bạn chọn giữ mới thành điều kiện của khoa, phần còn lại kết thúc trong tháng này.',
+                        keep: 'Giữ lại',
+                        discard: 'Chỉ tháng này',
+                        confirm: 'Xác nhận',
+                        cancel: 'Hủy',
+                    },
                     monthRuleBadge: 'Quy tắc tháng này',
                     remaining: '"{{label}}" còn {{count}} chỗ chưa đạt.',
                     remainingAction: 'Điều chỉnh mạnh hơn',

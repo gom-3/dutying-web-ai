@@ -291,6 +291,9 @@ function storeRequest(item: TScheduleMonthRequestItem): TScheduleMonthRequestRes
         displayLabel: item.displayLabel ?? '',
         knob: item.knob,
         value: item.value,
+        templateCode: item.templateCode,
+        params: item.params,
+        severity: item.severity,
         requestText: item.requestText,
     };
 

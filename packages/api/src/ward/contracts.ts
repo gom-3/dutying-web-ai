@@ -708,6 +708,12 @@ export type TSnapshotDetailRes = {
 export type TPublishSnapshotDTO = {
     overwriteWardShift?: boolean;
     applyRowOrder?: boolean;
+    /**
+     * 이번 달 문장 요청(RULE) 중 병동 제약조건으로 남길 것들의 id.
+     *
+     * 기본은 빈 목록이다 — 확정 화면에서 사용자가 직접 고른 것만 남는다. 자동 승격은 없다.
+     */
+    promoteRequestIds?: number[];
 };
 
 export type TPublishSnapshotRes = {

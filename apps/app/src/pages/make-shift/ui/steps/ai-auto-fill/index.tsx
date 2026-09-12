@@ -44,7 +44,12 @@ import {sortScheduleByTeamNurseOrder} from '../../../model/nurse-order-sync';
 import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
-import {markCarryOverAnswered, toTextRequestItems, type TInterpretCardItem} from '../../../model/schedule-month-requests';
+import {
+    markCarryOverAnswered,
+    promotableRuleRequests,
+    toTextRequestItems,
+    type TInterpretCardItem,
+} from '../../../model/schedule-month-requests';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
@@ -70,6 +75,7 @@ import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
 import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
 import AiMonthRequestList from './ai-month-request-list';
+import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
 
@@ -292,6 +298,10 @@ export function AiAutofill() {
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
     const [clearUnlockedCellsConfirmOpen, setClearUnlockedCellsConfirmOpen] = useState(false);
     const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+    const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
+    // 확정 직전에 고른 승격 대상. ref 인 이유는 확정 경로가 여럿이기 때문이다(스냅샷 한도에
+    // 걸려 한 번 더 도는 경로 포함). 상태로 두면 그중 하나가 갱신 전 값을 읽는다.
+    const promoteRequestIdsRef = useRef<number[]>([]);
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
@@ -353,6 +363,7 @@ export function AiAutofill() {
     const connectedNurseCount = useMemo(() => currentTeamNurses.filter((nurse) => nurse.isConnected).length, [currentTeamNurses]);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
+    const promotableRules = useMemo(() => promotableRuleRequests(monthRequests), [monthRequests]);
     const aiRequestSeqRef = useRef(0);
     // 예시 문장과 unmapped 의 대안 문장이 같은 입력창을 채운다. 되묻기 경로가 그 하나뿐이다.
     const adjustTextInputRef = useRef<TAdjustTextInputHandle>(null);
@@ -666,6 +677,9 @@ export function AiAutofill() {
         await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
             overwriteWardShift: true,
             applyRowOrder: true,
+            // 고른 것이 없으면 키를 넣지 않는다. 승격은 기본 미선택이고, 안 고른 확정의
+            // 본문은 이 기능 도입 전과 같아야 한다.
+            ...(promoteRequestIdsRef.current.length > 0 ? {promoteRequestIds: promoteRequestIdsRef.current} : {}),
         });
 
         const nextShift = {
@@ -852,11 +866,8 @@ export function AiAutofill() {
             setIsWorking(false);
         }
     };
-    const handleConfirm = () => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || !canConfirm) return;
-
-        if (requestLastShiftBlankWarning('confirm')) return;
-
+    /** 승격 질문을 지난 뒤의 확정. 수신자가 있으면 한 번 더 묻고, 없으면 바로 확정한다. */
+    const continueConfirmAfterPromote = () => {
         if (connectedNurseCount === 0) {
             void confirmCurrentSchedule();
 
@@ -864,6 +875,28 @@ export function AiAutofill() {
         }
 
         setPublishConfirmOpen(true);
+    };
+    const handleConfirm = () => {
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || !canConfirm) return;
+
+        if (requestLastShiftBlankWarning('confirm')) return;
+
+        // 이번 달에 문장으로 건 규칙이 있으면 확정 전에 한 번 묻는다. 안 물으면 그 규칙은
+        // 이번 달로 끝나고, 사용자는 다음 달에 같은 문장을 다시 써야 한다는 사실을 모른다.
+        promoteRequestIdsRef.current = [];
+
+        if (promotableRules.length > 0) {
+            setPromoteDialogOpen(true);
+
+            return;
+        }
+
+        continueConfirmAfterPromote();
+    };
+    const handlePromoteConfirm = (requestIds: number[]) => {
+        promoteRequestIdsRef.current = requestIds;
+        setPromoteDialogOpen(false);
+        continueConfirmAfterPromote();
     };
     const handleRenameSnapshot = async (snapshotId: number, title: string) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId) return;
@@ -1417,13 +1450,15 @@ export function AiAutofill() {
         }
 
         if (warningIntent === 'confirm') {
-            if (connectedNurseCount === 0) {
-                void confirmCurrentSchedule();
+            promoteRequestIdsRef.current = [];
+
+            if (promotableRules.length > 0) {
+                setPromoteDialogOpen(true);
 
                 return;
             }
 
-            setPublishConfirmOpen(true);
+            continueConfirmAfterPromote();
         }
     };
     const handlePublishConfirm = () => {
@@ -1654,6 +1689,12 @@ export function AiAutofill() {
                 tone="danger"
                 onClose={() => setClearUnlockedCellsConfirmOpen(false)}
                 onConfirm={handleConfirmClearUnlockedCells}
+            />
+            <AiPromoteRulesDialog
+                open={promoteDialogOpen}
+                candidates={promotableRules}
+                onClose={() => setPromoteDialogOpen(false)}
+                onConfirm={handlePromoteConfirm}
             />
             <ConfirmActionDialog
                 open={publishConfirmOpen}

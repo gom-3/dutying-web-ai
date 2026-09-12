@@ -5,6 +5,7 @@ import {
     findActiveKnobRequests,
     isCarryOverAnswered,
     markCarryOverAnswered,
+    promotableRuleRequests,
     toChipRequestItem,
     toTextRequestItems,
 } from '../schedule-month-requests';
@@ -56,6 +57,42 @@ describe('findActiveKnobRequests', () => {
         ];
 
         expect(findActiveKnobRequests(rows, 'CLUSTERING').map((row) => row.id)).toEqual([1]);
+    });
+});
+
+describe('promotableRuleRequests', () => {
+    function row(over: Partial<TScheduleMonthRequestRes>): TScheduleMonthRequestRes {
+        return {
+            id: 1,
+            kind: 'RULE',
+            lifetime: 'MONTH',
+            status: 'ACTIVE',
+            origin: 'TEXT',
+            displayLabel: '데이는 4일 연속까지만',
+            templateCode: 'MAX_CONSECUTIVE_SHIFT',
+            ...over,
+        };
+    }
+
+    it('살아 있는 문장 규칙만 승격 후보다', () => {
+        expect(promotableRuleRequests([row({id: 1})]).map((request) => request.id)).toEqual([1]);
+    });
+
+    it('축은 후보가 아니다', () => {
+        // 축은 팀 스타일 프로필로 가는 별도 경로가 있고, 수명 배지로 이미 사용자가 정한다.
+        expect(promotableRuleRequests([row({id: 2, kind: 'KNOB', templateCode: undefined})])).toEqual([]);
+    });
+
+    it('꺼 둔 요청과 이미 승격된 요청은 빠진다', () => {
+        // 이미 승격된 것을 또 고르면 같은 제약조건이 두 벌이 된다.
+        const rows = [row({id: 3, status: 'DISABLED'}), row({id: 4, promotedRuleId: 99})];
+
+        expect(promotableRuleRequests(rows)).toEqual([]);
+    });
+
+    it('템플릿이 없는 옛 RULE 행은 빠진다', () => {
+        // 5단계 이전의 행이라 실행된 적도, 승격할 것도 없다.
+        expect(promotableRuleRequests([row({id: 5, templateCode: undefined})])).toEqual([]);
     });
 });
 

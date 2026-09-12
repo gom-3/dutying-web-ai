@@ -1146,6 +1146,15 @@ export const en: TLocale = {
                         HARD: 'Required',
                         label: '{{label}} strength',
                     },
+                    promote: {
+                        title: 'Keep these rules next month?',
+                        description:
+                            'You set these by typing a sentence this month. Only the ones you keep become ward constraints; the rest end with this month.',
+                        keep: 'Keep',
+                        discard: 'This month only',
+                        confirm: 'Confirm',
+                        cancel: 'Cancel',
+                    },
                     monthRuleBadge: "This month's rule",
                     remaining: "'{{label}}' is still unmet in {{count}} place(s).",
                     remainingAction: 'Adjust harder',
