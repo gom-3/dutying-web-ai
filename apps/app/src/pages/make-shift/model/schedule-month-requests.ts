@@ -3,6 +3,7 @@ import type {
     TScheduleMonthRequestItem,
     TScheduleMonthRequestLifetime,
     TScheduleMonthRequestRes,
+    TScheduleMonthRequestSeverity,
 } from '@dutying/api/ward';
 
 export type TAdjustKnobs = Partial<Record<TAutofillAdjustKnob, number>>;
@@ -61,26 +62,40 @@ export function toChipRequestItem(knob: TAutofillAdjustKnob, value: number, disp
 export type TInterpretCardItem = {
     item: TScheduleMonthRequestItem;
     lifetime: TScheduleMonthRequestLifetime;
+    /** RULE 일 때 카드의 "권장 / 꼭" 토글 값. KNOB 에는 의미가 없다. */
+    severity: TScheduleMonthRequestSeverity;
 };
 
 /**
  * 카드에서 수락한 항목을 autofill 의 `adjust.requests` 로 바꾼다.
  *
- * RULE 은 보내지 않는다. 서버가 저장만 하고 엔진에는 내보내지 않으므로, 보내면 목록에는
- * 남는데 표는 그대로인 항목이 생긴다 — 카드에서 "규칙으로 만들 수 있어요"로만 안내한다.
+ * RULE 도 보낸다(5단계). 이번 달에만 걸리는 제약조건으로 저장되고 엔진 호출 때 저장 규칙
+ * 뒤에 이어 붙는다 — 병동 제약조건 목록은 건드리지 않으며, 남기는 것은 확정 시 사용자가 고른다.
+ * 수명은 RULE 에서 언제나 MONTH 다: "계속"은 확정 승격으로만 간다.
  */
 export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText: string): TScheduleMonthRequestItem[] {
-    return cardItems
-        .filter(({item}) => item.kind === 'KNOB')
-        .map(({item, lifetime}) => ({
-            kind: 'KNOB' as const,
-            knob: item.knob,
-            value: item.value,
-            displayLabel: item.displayLabel,
-            lifetime,
-            origin: 'TEXT' as const,
-            requestText,
-        }));
+    return cardItems.map(({item, lifetime, severity}) =>
+        item.kind === 'RULE'
+            ? {
+                  kind: 'RULE' as const,
+                  templateCode: item.templateCode,
+                  params: item.params,
+                  severity,
+                  displayLabel: item.displayLabel,
+                  lifetime: 'MONTH' as const,
+                  origin: 'TEXT' as const,
+                  requestText,
+              }
+            : {
+                  kind: 'KNOB' as const,
+                  knob: item.knob,
+                  value: item.value,
+                  displayLabel: item.displayLabel,
+                  lifetime,
+                  origin: 'TEXT' as const,
+                  requestText,
+              },
+    );
 }
 
 type TCarryOverKey = {wardId: number; shiftTeamId: number; year: number; month: number};

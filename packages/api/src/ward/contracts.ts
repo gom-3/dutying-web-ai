@@ -521,14 +521,20 @@ export type TScheduleMonthRequestKind = 'KNOB' | 'RULE';
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
 export type TScheduleMonthRequestOrigin = 'CHIP' | 'TEXT' | 'CARRIED_OVER';
+/** SOFT: 권장(최대한 지킴). HARD: 꼭(못 지키면 위반으로 표시). */
+export type TScheduleMonthRequestSeverity = 'SOFT' | 'HARD';
 
 /** 조절 요청 한 건. 칩 클릭과 문장 해석 결과가 같은 모양으로 서버에 들어간다(서버 `ScheduleMonthRequestDto.Item`). */
 export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
     knob?: TAutofillAdjustKnob;
     value?: number;
-    /** RULE 일 때 지목된 간호사(nurseId). 이 단계에서는 저장만 되고 실행되지 않는다. */
-    nurseId?: number;
+    /** RULE 일 때 제약조건 템플릿 코드. 이번 달에만 걸리고 병동 제약조건 목록은 건드리지 않는다. */
+    templateCode?: string;
+    /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
+    params?: Record<string, unknown>;
+    /** RULE 일 때 SOFT(권장) 또는 HARD(꼭). 카드의 토글이 정한다. */
+    severity?: TScheduleMonthRequestSeverity;
     displayLabel?: string;
     lifetime?: TScheduleMonthRequestLifetime;
     /** 해석이 추측한 수명. 카드의 배지 기본값이 아니라 보조 표시. */
@@ -547,10 +553,24 @@ export type TScheduleMonthRequestRes = {
     displayLabel: string;
     knob?: TAutofillAdjustKnob | null;
     value?: number | null;
-    nurseId?: number | null;
+    templateCode?: string | null;
+    params?: Record<string, unknown> | null;
+    severity?: TScheduleMonthRequestSeverity | null;
     requestText?: string | null;
     carriedFromRequestId?: number | null;
+    /** 확정 시 병동 제약조건으로 승격됐으면 그 규칙 id. */
+    promotedRuleId?: number | null;
     createdAt?: string | null;
+};
+
+/** 조절 결과에 남은 이번 달 규칙 위반. "2곳 남았어요" 문구가 이 값을 쓴다. */
+export type TScheduleRequestRuleResult = {
+    requestId: number;
+    displayLabel?: string | null;
+    /** 지켜지지 못한 자리의 수. 0 이면 전부 지켜졌다. */
+    violationCount: number;
+    /** "꼭"으로 걸었지만 이번 표에서는 권장으로 내려 푼 경우 true. */
+    downgraded?: boolean | null;
 };
 
 export type TScheduleMonthRequestListRes = {
@@ -645,6 +665,8 @@ export type TAutofillResponse = {
             };
         };
     };
+    /** 이번 달 문장 요청(RULE)이 얼마나 지켜졌는지. 요청이 없으면 비어 있다. */
+    requestRuleResults?: TScheduleRequestRuleResult[];
 };
 
 export type TSaveSnapshotDTO = {

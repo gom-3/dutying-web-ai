@@ -71,11 +71,26 @@ describe('request item builders', () => {
         });
     });
 
-    it('keeps the chosen lifetime and drops RULE items from the text requests', () => {
+    it('keeps the chosen lifetime for a knob and pins a rule to this month', () => {
+        // RULE 의 수명은 언제나 MONTH 다. "계속"은 확정 시 승격으로만 가고, 요청이 스스로
+        // 다음 달로 넘어가면 사용자가 만든 적 없는 제약조건이 돌아온다.
         const items = toTextRequestItems(
             [
-                {item: {kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, displayLabel: 'fair', lifetimeHint: 'TEAM'}, lifetime: 'TEAM'},
-                {item: {kind: 'RULE', nurseId: 5, displayLabel: 'Kim'}, lifetime: 'MONTH'},
+                {
+                    item: {kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, displayLabel: 'fair', lifetimeHint: 'TEAM'},
+                    lifetime: 'TEAM',
+                    severity: 'SOFT',
+                },
+                {
+                    item: {
+                        kind: 'RULE',
+                        templateCode: 'MAX_CONSECUTIVE_SHIFT',
+                        params: {target: 'ALL', shift: 'D', count: 4},
+                        displayLabel: 'day max 4',
+                    },
+                    lifetime: 'TEAM',
+                    severity: 'HARD',
+                },
             ],
             'fair please',
         );
@@ -87,6 +102,16 @@ describe('request item builders', () => {
                 value: 1,
                 displayLabel: 'fair',
                 lifetime: 'TEAM',
+                origin: 'TEXT',
+                requestText: 'fair please',
+            },
+            {
+                kind: 'RULE',
+                templateCode: 'MAX_CONSECUTIVE_SHIFT',
+                params: {target: 'ALL', shift: 'D', count: 4},
+                severity: 'HARD',
+                displayLabel: 'day max 4',
+                lifetime: 'MONTH',
                 origin: 'TEXT',
                 requestText: 'fair please',
             },
