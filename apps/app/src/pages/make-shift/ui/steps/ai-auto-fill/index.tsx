@@ -118,6 +118,28 @@ function getUnprotectedFilledCells(doc: TDutyDoc): TCellPos[] {
     return cells;
 }
 
+// 표에 이미 채워진 칸이 있는지. 사전 신청 칸은 표가 아니라 입력이므로 세지 않는다.
+// 채워진 표가 있으면 이번 세션에서 자동 채우기를 돌렸는지와 무관하게 조절할 대상이 있는 것이다.
+function hasFilledScheduleCells(doc: TDutyDoc): boolean {
+    for (let row = 0; row < doc.rows.length; row += 1) {
+        const dutyRow = doc.rows[row];
+
+        if (!dutyRow) continue;
+
+        for (let col = 0; col < doc.columns.length; col += 1) {
+            const key = getDocCellKey(doc, row, col);
+
+            if (key === null) continue;
+
+            if (doc.requestCells[key] === true) continue;
+
+            if (dutyRow.cells[col] != null) return true;
+        }
+    }
+
+    return false;
+}
+
 function getSelectionFixedStats(doc: TDutyDoc, selectionCells: TCellPos[]): TSelectionFixedStats {
     let fixableFilledCount = 0;
     let fixedCount = 0;
@@ -290,7 +312,7 @@ export function AiAutofill() {
         shiftTeamId: currentShiftTeamId,
         year,
         month,
-        enabled: isAdjustEnabled && isCurrentShiftTeamReady && hasCompletedAiFill,
+        enabled: isAdjustEnabled && isCurrentShiftTeamReady,
     });
     const carryOver = useScheduleCarryOverCandidates({
         wardId,
@@ -498,6 +520,12 @@ export function AiAutofill() {
     const selectedCells = useMemo(() => (selection ? getCellsInSelection(selection) : []), [selection]);
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
+    const hasFilledCells = useMemo(() => hasFilledScheduleCells(editorDoc), [editorDoc]);
+    // 조절 패널(칩·문장 입력·이번 달 요청 목록)은 "조절할 것이 있는지"로 연다. 예전에는 이번 세션에서
+    // 자동 채우기를 돌렸는지(hasCompletedAiFill)만 봤고, 그 값은 화면을 나갔다 들어오면 초기화된다.
+    // 그래서 재진입하면 이미 걸어 둔 요청이 화면에서 사라졌는데, 서버는 자동 채우기(GENERATE)에도
+    // 이 달의 요청을 그대로 싣는다 — 보이지 않는 채로 적용되는 상태가 됐다.
+    const isAdjustPanelVisible = isAdjustEnabled && (hasCompletedAiFill || hasFilledCells || monthRequests.length > 0);
     const clearableUnlockedCellCount = unprotectedFilledCells.length;
     const editedFilledCellsSinceLastAi = useMemo(
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
@@ -1551,7 +1579,7 @@ export function AiAutofill() {
                     />
                 )}
 
-                {isAdjustEnabled && hasCompletedAiFill && (
+                {isAdjustPanelVisible && (
                     <>
                         <AiAdjustChipBar
                             knobs={adjustKnobs}

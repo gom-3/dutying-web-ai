@@ -217,6 +217,20 @@ function makeDoc(): TDutyDoc {
     };
 }
 
+/** 아직 아무것도 채우지 않은 표. 조절 패널이 닫혀 있어야 하는 유일한 상태다. */
+function makeEmptyDoc(): TDutyDoc {
+    return {
+        columns: ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04'],
+        rows: [
+            {workerId: '10', cells: [null, null, null, null]},
+            {workerId: '11', cells: [null, null, null, null]},
+        ],
+        workerMeta: {'10': {name: 'Kim'}, '11': {name: 'Lee'}},
+        fixedCells: {},
+        requestCells: {},
+    };
+}
+
 function seedEditor(doc = makeDoc()) {
     act(() => {
         useShiftEditorStore.getState().reset();
@@ -344,17 +358,33 @@ describe('AiAutofill adjust chips', () => {
         useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
     });
 
-    it('hides the adjust chips until the first autofill succeeds', async () => {
+    it('hides the adjust chips while the table is empty and nothing is requested', async () => {
+        seedEditor(makeEmptyDoc());
+
         const user = userEvent.setup();
 
         render(<AiAutofill />);
 
         expect(screen.queryByText(ADJUST_TITLE)).not.toBeInTheDocument();
 
-        await completeFirstFill(user);
+        // 빈 표에서는 덮어쓸 것이 없어 확인 대화상자 없이 바로 채운다.
+        mocks.requestAiSchedule.mockImplementation(async () => okResult(FIRST_FILL_CELLS, 'GENERATE'));
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        await screen.findByText(ADJUST_TITLE);
+        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('keeps the adjust panel open when the user comes back to a filled table', async () => {
+        // 회귀: 패널이 "이번 세션에서 자동 채우기를 했는지"에만 걸려 있어, 나갔다 들어오면 이미 걸어 둔
+        // 요청이 화면에서 사라졌다. 서버는 그 요청을 다음 자동 채우기에 그대로 싣는데도.
+        storeRequest({kind: 'KNOB', knob: 'CLUSTERING', value: 1, origin: 'CHIP', displayLabel: 'cluster'});
+
+        render(<AiAutofill />);
 
         expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'false');
+        await waitFor(() => expect(screen.getByRole('button', {name: CLUSTER_ON_CHIP})).toHaveAttribute('aria-pressed', 'true'));
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
     it('keeps the chips hidden when the server has not opened adjust for this account', async () => {
@@ -796,7 +826,8 @@ describe('AiAutofill adjust chips', () => {
             mocks.getScheduleCarryOverCandidates.mockClear();
             render(<AiAutofill />);
 
-            await waitFor(() => expect(mocks.getScheduleMonthRequests).not.toHaveBeenCalled());
+            // 이번 달 요청 목록은 진입할 때마다 읽는다. 그 조회가 끝난 뒤에도 되묻기는 다시 묻지 않는다.
+            await waitFor(() => expect(mocks.getScheduleMonthRequests).toHaveBeenCalled());
             expect(mocks.getScheduleCarryOverCandidates).not.toHaveBeenCalled();
             expect(screen.queryByRole('region', {name: CARRY_OVER_TITLE})).not.toBeInTheDocument();
         });
