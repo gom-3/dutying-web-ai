@@ -334,6 +334,7 @@ function ScheduleInputStep({
     const [shiftTermOrderBySchedule, setShiftTermOrderBySchedule] = useState<Record<string, string[]>>({});
     const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
     const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
+    const pendingUploadMonthJumpRef = useRef(false);
     const [editingDivisionNum, setEditingDivisionNum] = useState<number | null>(null);
     const [editingDivisionName, setEditingDivisionName] = useState('');
     const maxMonthOption = useMemo(() => getCurrentMonthOption(), []);
@@ -346,6 +347,37 @@ function ScheduleInputStep({
     const activeScheduleKey = `${selectedTeamId}:${activeMonthOption.key}`;
     const dayCount = getDaysInMonth(activeMonthOption.year, activeMonthOption.month);
     const days = useMemo(() => Array.from({length: dayCount}, (_, index) => index + 1), [dayCount]);
+
+    // 올린 근무표는 화면에 띄워 둔 달이 아니라 파일이 스스로 말하는 달로 들어간다.
+    // 지난 달 근무표를 올리면 보고 있던 달은 빈 채라, 아무 일도 없던 것처럼 보인다.
+    // 근무가 들어간 달 중 가장 최근 달로 옮겨 준다.
+    useEffect(() => {
+        if (!pendingUploadMonthJumpRef.current) {
+            return;
+        }
+
+        const filledSchedules = Object.values(draft.scheduleInputs?.[selectedTeamId] ?? {}).filter(
+            (schedule): schedule is TOnboardingTeamScheduleDraft =>
+                Boolean(schedule?.rows.some((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim()))),
+        );
+
+        if (filledSchedules.length === 0) {
+            return;
+        }
+
+        pendingUploadMonthJumpRef.current = false;
+
+        const latest = filledSchedules.reduce((left, right) =>
+            left.year * 12 + left.month >= right.year * 12 + right.month ? left : right,
+        );
+
+        setSelectedMonthOption((prev) =>
+            prev.year === latest.year && prev.month === latest.month
+                ? prev
+                : {key: getMonthKey(latest.year, latest.month), label: RECENT_SCHEDULE_LABEL, year: latest.year, month: latest.month},
+        );
+    }, [draft.scheduleInputs, selectedTeamId]);
+
     const goPreviousMonth = () => setSelectedMonthOption((prev) => moveMonthOption(prev, -1));
     const goNextMonth = () =>
         setSelectedMonthOption((prev) => {
@@ -1149,7 +1181,10 @@ function ScheduleInputStep({
                 uploadStatus={uploadStatus}
                 uploadError={uploadError}
                 onClose={() => setIsScheduleFileUploadModalOpen(false)}
-                onUpload={onUploadFile}
+                onUpload={async (file, options) => {
+                    pendingUploadMonthJumpRef.current = true;
+                    await onUploadFile(file, options);
+                }}
             />
         </div>
     );
