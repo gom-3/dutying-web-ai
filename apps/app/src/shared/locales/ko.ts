@@ -1116,6 +1116,13 @@ export const ko = {
                 adjusting: '방향을 조절하는 중...',
                 adjust: {
                     title: '이렇게 말해 보세요',
+                    dialog: {
+                        title: '어떻게 다시 만들까요?',
+                        description:
+                            '그냥 다시 만들어도 되고, 바꾸고 싶은 방향을 문장으로 말해도 돼요.\n말한 요청은 이번 달 내내 남아 다음 생성에도 함께 적용돼요.',
+                        regenerate: '다시 생성',
+                        close: '닫기',
+                    },
                     examplesMore: '예시 더 보기',
                     examplesLess: '접기',
                     inputHint: '제약조건에 있는 말이면 다 알아들어요. 사람 이름, 근무(D/E/N/O), 숫자를 넣으면 더 정확해요.',

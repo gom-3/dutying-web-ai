@@ -79,6 +79,13 @@ export const vi = {
                 ...generatedVi.page.makeShift.aiRefill,
                 adjust: {
                     title: 'Bạn có thể nói như thế này',
+                    dialog: {
+                        title: 'Tạo lại như thế nào?',
+                        description:
+                            'Bạn có thể tạo lại luôn, hoặc nói bằng một câu điều muốn thay đổi.\nYêu cầu đã nói sẽ giữ suốt tháng này và cũng áp dụng cho lần tạo sau.',
+                        regenerate: 'Tạo lại',
+                        close: 'Đóng',
+                    },
                     examplesMore: 'Xem thêm ví dụ',
                     examplesLess: 'Thu gọn',
                     inputHint: 'Nói được trong điều kiện ràng buộc thì nói ở đây cũng được. Thêm tên, ca (D/E/N/O) và số sẽ chính xác hơn.',

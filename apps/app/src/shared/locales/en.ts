@@ -1119,6 +1119,13 @@ export const en: TLocale = {
                 adjusting: 'Adjusting the direction...',
                 adjust: {
                     title: 'Try saying it like this',
+                    dialog: {
+                        title: 'How should we build it again?',
+                        description:
+                            'Just run it again, or say in a sentence what you want changed.\nWhat you say stays for the month and applies to the next run too.',
+                        regenerate: 'Generate again',
+                        close: 'Close',
+                    },
                     examplesMore: 'More examples',
                     examplesLess: 'Show less',
                     inputHint: 'If a constraint can say it, so can you. Names, shifts (D/E/N/O) and numbers make it more precise.',

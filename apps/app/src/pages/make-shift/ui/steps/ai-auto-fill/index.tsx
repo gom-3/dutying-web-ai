@@ -67,14 +67,13 @@ import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
-import AiAdjustExamples from './ai-adjust-examples';
+import AiAdjustDialog from './ai-adjust-dialog';
 import AiAdjustResultNote from './ai-adjust-result-note';
-import AiAdjustTextInput, {type TAdjustTextInputHandle} from './ai-adjust-text-input';
+import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
 import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
-import AiMonthRequestList from './ai-month-request-list';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
@@ -305,6 +304,7 @@ export function AiAutofill() {
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
+    const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
     const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
@@ -530,11 +530,20 @@ export function AiAutofill() {
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
     const hasFilledCells = useMemo(() => hasFilledScheduleCells(editorDoc), [editorDoc]);
-    // 조절 패널(칩·문장 입력·이번 달 요청 목록)은 "조절할 것이 있는지"로 연다. 예전에는 이번 세션에서
+    // 조절(예시·문장 입력·이번 달 요청 목록)은 "조절할 것이 있는지"로 연다. 예전에는 이번 세션에서
     // 자동 채우기를 돌렸는지(hasCompletedAiFill)만 봤고, 그 값은 화면을 나갔다 들어오면 초기화된다.
     // 그래서 재진입하면 이미 걸어 둔 요청이 화면에서 사라졌는데, 서버는 자동 채우기(GENERATE)에도
     // 이 달의 요청을 그대로 싣는다 — 보이지 않는 채로 적용되는 상태가 됐다.
-    const isAdjustPanelVisible = isAdjustEnabled && (hasCompletedAiFill || hasFilledCells || monthRequests.length > 0);
+    //
+    // 이제 이것은 상시 노출이 아니라 조절 결과 한 줄을 표 옆에 남길지를 정한다.
+    const isAdjustAvailable = isAdjustEnabled && (hasCompletedAiFill || hasFilledCells || monthRequests.length > 0);
+    /**
+     * 첫 자동 채우기는 조절을 묻지 않는다 — 아직 조절할 표가 없고, 신청 근무만 들어 있는 새 달도
+     * "칸이 차 있는 표"로 보이기 때문에 hasFilledCells 로는 첫 채우기와 다시 생성을 구분할 수 없다.
+     * 대신 이번 세션에서 한 번 채웠거나(=버튼이 "다시 생성"·"다시 시도"), 이미 걸어 둔 요청이 있어
+     * 재진입해도 보여 줘야 할 때 연다.
+     */
+    const shouldOpenAdjustDialog = isAdjustEnabled && (hasCompletedAiFill || monthRequests.length > 0);
     const clearableUnlockedCellCount = unprotectedFilledCells.length;
     const editedFilledCellsSinceLastAi = useMemo(
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
@@ -1243,6 +1252,7 @@ export function AiAutofill() {
 
         if (!readyContext) return;
 
+        setIsAdjustDialogOpen(false);
         void disableRequestsAndReadjust([request], readyContext);
     };
     const interpretAdjustText = async (text: string) => {
@@ -1264,6 +1274,7 @@ export function AiAutofill() {
 
         if (!readyContext) return;
 
+        setIsAdjustDialogOpen(false);
         setLastAdjustChangedCount(null);
         void runAiFill(readyContext, {strength: 'NORMAL', requests});
     };
@@ -1353,16 +1364,38 @@ export function AiAutofill() {
         commands.resetAutofilled('user');
         void runAiFill(readyContext);
     };
-    const handleAiFill = () => {
-        const readyContext = getAiFillReadyContext();
-
-        if (!readyContext) return;
-
+    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>) => {
         setIsAiBlankPreviewVisible(true);
 
         if (requestLastShiftBlankWarning('aiFill')) return;
 
         runAiFillWithDecision(readyContext);
+    };
+    /**
+     * 빈 표의 첫 채우기는 곧장 돌린다. 조절할 것이 생긴 뒤부터는 대화상자를 먼저 연다 —
+     * 같은 조건으로 한 번 더 돌리는 것만이 답인 경우는 드물고, 그때 사용자가 하고 싶은
+     * 말("오프를 더 공평하게")을 받을 자리가 여기다. 대화상자의 "다시 생성"이 예전 동작 그대로다.
+     */
+    const handleAiFill = () => {
+        const readyContext = getAiFillReadyContext();
+
+        if (!readyContext) return;
+
+        if (shouldOpenAdjustDialog) {
+            setIsAdjustDialogOpen(true);
+
+            return;
+        }
+
+        startAiFill(readyContext);
+    };
+    const handleAdjustDialogRegenerate = () => {
+        const readyContext = getAiFillReadyContext();
+
+        if (!readyContext) return;
+
+        setIsAdjustDialogOpen(false);
+        startAiFill(readyContext);
     };
     const handleConfirmAiFillDecision = () => {
         const decisionContext = aiFillDecisionContext;
@@ -1559,38 +1592,22 @@ export function AiAutofill() {
                     />
                 )}
 
-                {isAdjustPanelVisible && (
-                    <>
-                        <AiAdjustExamples
-                            disabled={isAiGenerating || disablingRequestId !== null}
-                            onPick={(sentence) => adjustTextInputRef.current?.fill(sentence)}
-                        />
-                        <AiAdjustResultNote
-                            changedCount={lastAdjustChangedCount}
-                            ruleResults={lastRuleResults}
-                            isStrongest={lastAdjustStrength === 'STRONG'}
-                            disabled={isAiGenerating || disablingRequestId !== null}
-                            onAdjustHarder={() => {
-                                const readyContext = getAiFillReadyContext();
+                {/* 조절 도구는 대화상자로 옮겼지만 결과 한 줄은 표 옆에 남긴다 — 무엇이 바뀌었는지는
+                    표를 보는 동안 읽어야 하고, 대화상자는 조절이 실행되는 순간 닫히기 때문이다. */}
+                {isAdjustAvailable && (
+                    <AiAdjustResultNote
+                        changedCount={lastAdjustChangedCount}
+                        ruleResults={lastRuleResults}
+                        isStrongest={lastAdjustStrength === 'STRONG'}
+                        disabled={isAiGenerating || disablingRequestId !== null}
+                        onAdjustHarder={() => {
+                            const readyContext = getAiFillReadyContext();
 
-                                if (!readyContext) return;
+                            if (!readyContext) return;
 
-                                void runAiFill(readyContext, {strength: 'STRONG'});
-                            }}
-                        />
-                        <AiAdjustTextInput
-                            ref={adjustTextInputRef}
-                            disabled={isAiGenerating || disablingRequestId !== null}
-                            interpret={interpretAdjustText}
-                            onApply={handleApplyTextRequests}
-                        />
-                        <AiMonthRequestList
-                            requests={monthRequests}
-                            disabled={isAiGenerating}
-                            disablingRequestId={disablingRequestId}
-                            onDisable={handleDisableMonthRequest}
-                        />
-                    </>
+                            void runAiFill(readyContext, {strength: 'STRONG'});
+                        }}
+                    />
                 )}
 
                 {(dutyQuery.isLoading || isHydratingEditor) && (
@@ -1645,6 +1662,19 @@ export function AiAutofill() {
                 )}
             </div>
 
+            <AiAdjustDialog
+                open={isAdjustDialogOpen}
+                onClose={() => setIsAdjustDialogOpen(false)}
+                onRegenerate={handleAdjustDialogRegenerate}
+                disabled={isAiGenerating || disablingRequestId !== null}
+                textInputRef={adjustTextInputRef}
+                onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
+                interpret={interpretAdjustText}
+                onApply={handleApplyTextRequests}
+                requests={monthRequests}
+                disablingRequestId={disablingRequestId}
+                onDisableRequest={handleDisableMonthRequest}
+            />
             <AiSnapshotSidebar
                 open={isSnapshotSidebarOpen}
                 onClose={() => setIsSnapshotSidebarOpen(false)}

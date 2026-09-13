@@ -199,6 +199,8 @@ vi.mock('../last-shift-warning', () => ({
 }));
 
 const ADJUST_TITLE = 'page.makeShift.aiRefill.adjust.title';
+const ADJUST_DIALOG_TITLE = 'page.makeShift.aiRefill.adjust.dialog.title';
+const ADJUST_DIALOG_REGENERATE = 'page.makeShift.aiRefill.adjust.dialog.regenerate';
 const CLUSTER_ON_EXAMPLE = 'page.makeShift.aiRefill.adjust.examples.clusterOn';
 const TEXT_INPUT_LABEL = 'page.makeShift.aiRefill.adjust.textInput.label';
 const TEXT_SUBMIT = 'page.makeShift.aiRefill.adjust.textInput.submit';
@@ -342,7 +344,17 @@ async function completeFirstFill(user: ReturnType<typeof userEvent.setup>) {
     await screen.findByRole('dialog', {name: DECISION_TITLE});
     await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
 
-    await screen.findByText(ADJUST_TITLE);
+    await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
+}
+
+/**
+ * 조절 도구(예시·문장 입력·요청 목록)는 표 위에 상시 노출되지 않는다. 조절할 것이 생긴 뒤로
+ * "다시 생성"은 먼저 이 대화상자를 열고, 실제로 다시 푸는 것은 그 안의 "다시 생성"이다.
+ */
+async function openAdjustDialog(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', {name: 'auto fill'}));
+
+    await screen.findByRole('dialog', {name: ADJUST_DIALOG_TITLE});
 }
 
 /**
@@ -352,6 +364,7 @@ async function completeFirstFill(user: ReturnType<typeof userEvent.setup>) {
 async function adjustBySentence(user: ReturnType<typeof userEvent.setup>, items: TScheduleMonthRequestItem[], sentence = '근무를 몰아서') {
     mocks.interpretScheduleAdjust.mockResolvedValue({items, unmapped: [], strength: 'NORMAL'});
 
+    await openAdjustDialog(user);
     await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), sentence);
     await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
     await screen.findByText('page.makeShift.aiRefill.adjust.card.title');
@@ -390,13 +403,17 @@ describe('AiAutofill adjust panel', () => {
 
         render(<AiAutofill />);
 
-        expect(screen.queryByText(ADJUST_TITLE)).not.toBeInTheDocument();
-
-        // 빈 표에서는 덮어쓸 것이 없어 확인 대화상자 없이 바로 채운다.
+        // 빈 표에서는 조절할 것이 없다 — 덮어쓸 것도 없어 확인 대화상자 없이 바로 채운다.
         mocks.requestAiSchedule.mockImplementation(async () => okResult(FIRST_FILL_CELLS, 'GENERATE'));
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
 
-        await screen.findByText(ADJUST_TITLE);
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
+        expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
+
+        // 채우고 나면 그다음 "다시 생성"부터 조절 대화상자가 먼저 열린다.
+        await openAdjustDialog(user);
+
+        expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
         expect(screen.getByRole('button', {name: CLUSTER_ON_EXAMPLE})).toBeInTheDocument();
     });
 
@@ -405,7 +422,11 @@ describe('AiAutofill adjust panel', () => {
         // 요청이 화면에서 사라졌다. 서버는 그 요청을 다음 자동 채우기에 그대로 싣는데도.
         storeRequest({kind: 'KNOB', knob: 'CLUSTERING', value: 1, origin: 'CHIP', displayLabel: 'cluster'});
 
+        const user = userEvent.setup();
+
         render(<AiAutofill />);
+
+        await openAdjustDialog(user);
 
         expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
         await waitFor(() => expect(screen.getByRole('button', {name: /adjust\.requests\.title \{"count":1\}/})).toBeInTheDocument());
@@ -430,6 +451,11 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
 
+        // 조절이 닫힌 계정에서는 두 번째 "다시 생성"도 대화상자 없이 그대로 다시 푼다.
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
         expect(screen.queryByText(ADJUST_TITLE)).not.toBeInTheDocument();
     });
 
@@ -444,6 +470,7 @@ describe('AiAutofill adjust panel', () => {
         render(<AiAutofill />);
 
         await completeFirstFill(user);
+        await openAdjustDialog(user);
 
         expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
     });
@@ -567,6 +594,7 @@ describe('AiAutofill adjust panel', () => {
         );
 
         mocks.interpretScheduleAdjust.mockResolvedValue({items: [CLUSTER_ITEM], unmapped: [], strength: 'NORMAL'});
+        await openAdjustDialog(user);
         await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), '근무를 몰아서');
         await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
         await screen.findByText('page.makeShift.aiRefill.adjust.card.title');
@@ -600,7 +628,8 @@ describe('AiAutofill adjust panel', () => {
         // 조절 직후에는 손으로 고친 칸이 없으므로 재생성은 확인 다이얼로그 없이 바로 돈다.
         mocks.requestAiSchedule.mockImplementation(async () => okResult(FIRST_FILL_CELLS, 'GENERATE'));
 
-        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await openAdjustDialog(user);
+        await user.click(screen.getByRole('button', {name: ADJUST_DIALOG_REGENERATE}));
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(3));
         // 요청은 서버 상태라 재생성해도 남는다. 바뀐 칸 수만 지난 조절의 것이라 지운다.
@@ -617,11 +646,13 @@ describe('AiAutofill adjust panel', () => {
 
         render(<AiAutofill />);
 
-        await completeFirstFill(user);
+        // 채우기 전이라도 이미 걸린 요청이 있으면 "자동 채우기"가 조절 대화상자부터 연다.
+        await openAdjustDialog(user);
 
         await user.click(await screen.findByRole('button', {name: /adjust\.requests\.title \{"count":1\}/}));
 
         expect(screen.getByText('fair off')).toBeInTheDocument();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
     it('removes a request from the month list and re-adjusts', async () => {
@@ -631,7 +662,7 @@ describe('AiAutofill adjust panel', () => {
 
         render(<AiAutofill />);
 
-        await completeFirstFill(user);
+        await openAdjustDialog(user);
 
         await user.click(await screen.findByRole('button', {name: /adjust\.requests\.title \{"count":1\}/}));
         expect(screen.getByText('page.makeShift.aiRefill.adjust.requests.persistNote')).toBeInTheDocument();
@@ -642,8 +673,8 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.requests.remove {"label":"fair off"}'}));
 
         await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledWith(1, 10, 1, {status: 'DISABLED'}));
-        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
-        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toEqual({strength: 'NORMAL'});
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
+        expect(mocks.requestAiSchedule.mock.calls[0]?.[0].adjust).toEqual({strength: 'NORMAL'});
         await waitFor(() => expect(screen.queryByText('fair off')).not.toBeInTheDocument());
     });
 
@@ -669,6 +700,7 @@ describe('AiAutofill adjust panel', () => {
             strength: 'NORMAL',
         });
 
+        await openAdjustDialog(user);
         await user.type(screen.getByRole('textbox', {name: 'page.makeShift.aiRefill.adjust.textInput.label'}), 'fair off please');
         await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.textInput.submit'}));
 
@@ -731,6 +763,7 @@ describe('AiAutofill adjust panel', () => {
         render(<AiAutofill />);
 
         await completeFirstFill(user);
+        await openAdjustDialog(user);
 
         const textarea = screen.getByRole('textbox', {name: 'page.makeShift.aiRefill.adjust.textInput.label'});
 
@@ -761,6 +794,7 @@ describe('AiAutofill adjust panel', () => {
             unmapped: [{text: 'hmm', hint: '숫자를 넣어 써 보세요: 데이는 4일 연속까지만'}],
         });
 
+        await openAdjustDialog(user);
         await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), 'hmm');
         await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
 
@@ -783,6 +817,7 @@ describe('AiAutofill adjust panel', () => {
         render(<AiAutofill />);
 
         await completeFirstFill(user);
+        await openAdjustDialog(user);
 
         await user.click(screen.getByRole('button', {name: CLUSTER_ON_EXAMPLE}));
 

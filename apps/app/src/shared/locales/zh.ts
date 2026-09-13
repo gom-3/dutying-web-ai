@@ -79,6 +79,13 @@ export const zh = {
                 ...generatedZh.page.makeShift.aiRefill,
                 adjust: {
                     title: '可以这样说',
+                    dialog: {
+                        title: '要怎么重新生成？',
+                        description:
+                            '可以直接重新生成，也可以用一句话说出想调整的方向。\n说过的要求会保留到本月结束，下次生成时也会一起应用。',
+                        regenerate: '重新生成',
+                        close: '关闭',
+                    },
                     examplesMore: '更多示例',
                     examplesLess: '收起',
                     inputHint: '约束条件里能写的，这里都能说。加上姓名、班次(D/E/N/O)和数字会更准确。',

@@ -1342,6 +1342,13 @@ export const ja: TLocale = {
                 requestFailed: 'AI自動入力を完了できませんでした。',
                 adjust: {
                     title: 'こう言ってみてください',
+                    dialog: {
+                        title: 'どう作り直しますか？',
+                        description:
+                            'そのまま作り直しても、変えたい方向を文章で伝えてもかまいません。\n伝えた要望は今月の間残り、次の生成にも一緒に反映されます。',
+                        regenerate: 'もう一度生成',
+                        close: '閉じる',
+                    },
                     examplesMore: '例をもっと見る',
                     examplesLess: '閉じる',
                     inputHint: '制約条件にある言い方ならそのまま通じます。名前・勤務(D/E/N/O)・数字を入れるとより正確です。',
