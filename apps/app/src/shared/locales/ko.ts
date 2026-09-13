@@ -1195,13 +1195,14 @@ export const ko = {
                     },
                     card: {
                         title: '이렇게 이해했어요',
+                        empty: '조절 요청으로 바꾸지 못했어요. 휴무, 근무 묶기, 숙련도 배치처럼 다시 적어 보세요.',
                         lifetimeLabel: '{{label}} 수명',
                         teamHint: '계속 쓰실 것 같아요',
                         assumedBadge: '기본값',
                         assumedTooltip: '말씀하신 숫자가 없어 저희가 골랐어요. 다르면 다시 말씀해 주세요.',
                         cellApplied: '{{count}}칸을 표에 반영하고 고정했어요',
                         cellNotApplied: '표에서 그 칸을 찾지 못했어요',
-
+                        ruleNote: '규칙으로 만들 수 있어요 — 이번 조절에는 적용되지 않아요.',
                         apply: '적용하기',
                         cancel: '취소',
                     },
