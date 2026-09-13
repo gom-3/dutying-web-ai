@@ -103,6 +103,7 @@ describe('isAiAdjustEnabled', () => {
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
     });
 
     it('서버가 열어 준 계정에서만 켠다', () => {
@@ -119,6 +120,23 @@ describe('isAiAdjustEnabled', () => {
         expect(isAiAdjustEnabled(false)).toBe(true);
 
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'false');
+        expect(isAiAdjustEnabled(true)).toBe(false);
+    });
+
+    it('운영 도메인에서는 override 로 켤 수 없다 — 어드민이 막은 계정에 열리면 안 된다', () => {
+        vi.stubGlobal('window', {location: {hostname: 'www.dutying.ai'}});
+        vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
+
+        expect(isAiAdjustEnabled(undefined)).toBe(false);
+        expect(isAiAdjustEnabled(false)).toBe(false);
+        // 서버가 열어 준 계정은 그대로 열린다.
+        expect(isAiAdjustEnabled(true)).toBe(true);
+    });
+
+    it('운영 도메인에서도 끄는 override 는 듣는다', () => {
+        vi.stubGlobal('window', {location: {hostname: 'www.dutying.ai'}});
+        vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'false');
+
         expect(isAiAdjustEnabled(true)).toBe(false);
     });
 });

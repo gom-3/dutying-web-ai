@@ -67,23 +67,26 @@ export function isOnboardingWardCreatePreviewAllowed(): boolean {
 }
 
 /**
- * 자동완성 결과를 조절하는 칩을 보여줄지.
+ * 근무표 조절을 보여줄지.
  *
  * 판정은 **서버가 한다**. 근무표 작성 진입 시 이미 부르는 `GET .../schedule/workspace` 응답의
  * `autofillAdjustEnabled` 를 그대로 받아 쓴다. 전에는 붙어 있는 API 호스트로 짐작했는데,
  * 클라이언트 판단이라 우회할 수 있었고 사람 단위로 열 수도 없었다.
  *
- * - 명시 override: `VITE_AI_ADJUST_ENABLED=true|false` — 로컬 개발 전용
- * - 그 외: 서버가 준 값. 없으면 꺼짐
+ * - 그 값이 `true` 인 계정만 켜진다. `false` 도 값이 아예 없는 구 서버도 모두 꺼짐 —
+ *   서버가 먼저 나가고 웹이 따라가는 순서에서 웹이 앞서 열어 버리는 일이 없어야 한다.
+ * - `VITE_AI_ADJUST_ENABLED=true` 강제 켜기는 **비프로덕션 도메인에서만** 듣는다.
+ *   빌드 환경변수는 사람이 CI 설정에서 켜고 잊는 물건이라, 운영에서까지 서버 판정을
+ *   덮게 두면 어드민에서 막은 계정에 조절이 열린다. 끄는 쪽(`false`)은 어디서나 듣는다.
  *
- * 서버가 막은 계정이 칩을 눌러도 403 이 오고 기존 실패 처리가 칩을 되돌린다.
+ * 서버가 막은 계정이 조절을 요청해도 403 이 오고 기존 실패 처리가 되돌린다.
  */
 export function isAiAdjustEnabled(serverEnabled: boolean | undefined): boolean {
     const override = import.meta.env.VITE_AI_ADJUST_ENABLED;
 
-    if (override === 'true') return true;
-
     if (override === 'false') return false;
+
+    if (override === 'true' && isNonProductionAppDomain()) return true;
 
     return serverEnabled === true;
 }
