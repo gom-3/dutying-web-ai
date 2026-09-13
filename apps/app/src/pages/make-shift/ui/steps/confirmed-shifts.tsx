@@ -6,6 +6,7 @@ import {type TShift} from '@/entities';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {shiftToDoc, type TViolation, useShiftImageExport} from '@/features/shift-editor';
+import i18n from '@/i18n';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
@@ -35,6 +36,7 @@ function toConfirmedDoc(shift: TShift | null | undefined, year: number, month: n
 
 export function ConfirmedShifts() {
     const {t} = useTypedTranslation();
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const calendarExportRef = useRef<HTMLDivElement>(null);
     const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
     const {
@@ -86,9 +88,10 @@ export function ConfirmedShifts() {
                       year,
                       month,
                       adjustmentDays,
+                      language,
                   })
                 : undefined,
-        [adjustmentDays, doc, month, orderedShift, policy, year],
+        [adjustmentDays, doc, language, month, orderedShift, policy, year],
     );
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,

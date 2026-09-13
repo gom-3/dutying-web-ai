@@ -26,6 +26,17 @@ export type TUpdateNurseShiftMeta = {
     targetRatioWeight?: number;
 };
 
+export type TSaveNurseShiftChange = {
+    nurseShiftTypeId: number;
+    change: TUpdateNurseShiftTypeRequest;
+    shiftTypeMeta?: TUpdateNurseShiftMeta;
+};
+
+export type TSaveNurseDetails = {
+    nurse?: TUpdateNurseDTO;
+    shiftTypes?: TSaveNurseShiftChange[];
+};
+
 const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
 const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').replace(/\D/g, '');
 const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
@@ -42,6 +53,7 @@ const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clear
 };
 const toOptionalBirthDate = (birthDate: string | null | undefined) => {
     if (birthDate === undefined) return undefined;
+
     if (birthDate === null) return null;
 
     const trimmedBirthDate = birthDate.trim();
@@ -71,6 +83,56 @@ const canCreateNurse = (nurse: TUpdateNurseDTO) => (nurse.name ?? '').trim().len
 
 type TShiftTeamNurse = TWard['shiftTeams'][number]['nurses'][number];
 
+const updateNurseInShiftTeams = (
+    shiftTeams: TWard['shiftTeams'],
+    nurseId: number,
+    update: (nurse: TShiftTeamNurse) => void,
+): TWard['shiftTeams'] =>
+    produce(shiftTeams, (draft) => {
+        draft.forEach((shiftTeam) => {
+            shiftTeam.nurses.forEach((nurse) => {
+                if (nurse.nurseId === nurseId) update(nurse);
+            });
+        });
+    });
+const applyNurseShiftChange = (nurse: TShiftTeamNurse, shiftChange: TSaveNurseShiftChange) => {
+    const {nurseShiftTypeId, change, shiftTypeMeta} = shiftChange;
+
+    let targetShiftType = nurse.nurseShiftTypes.find(
+        (shiftType) =>
+            shiftType.nurseShiftTypeId === nurseShiftTypeId ||
+            (typeof shiftTypeMeta?.wardShiftTypeId === 'number' && shiftType.wardShiftTypeId === shiftTypeMeta.wardShiftTypeId),
+    );
+
+    if (!targetShiftType && shiftTypeMeta) {
+        nurse.nurseShiftTypes.push({
+            nurseShiftTypeId,
+            wardShiftTypeId: shiftTypeMeta.wardShiftTypeId,
+            name: shiftTypeMeta.name,
+            shortName: shiftTypeMeta.shortName,
+            isPossible: change.isPossible ?? true,
+            isPreferred: change.isPreferred ?? change.isPrefer ?? false,
+            targetRatioWeight: change.targetRatioWeight ?? shiftTypeMeta.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
+        });
+        targetShiftType = nurse.nurseShiftTypes[nurse.nurseShiftTypes.length - 1];
+    }
+
+    if (!targetShiftType) return;
+
+    if (typeof change.isPossible === 'boolean') targetShiftType.isPossible = change.isPossible;
+
+    const nextIsPreferred = change.isPreferred ?? change.isPrefer;
+
+    if (typeof nextIsPreferred === 'boolean') targetShiftType.isPreferred = nextIsPreferred;
+
+    if (typeof change.targetRatioWeight === 'number') targetShiftType.targetRatioWeight = change.targetRatioWeight;
+};
+const applyNurseDetailChanges = (shiftTeams: TWard['shiftTeams'], nurseId: number, details: TSaveNurseDetails) =>
+    updateNurseInShiftTeams(shiftTeams, nurseId, (nurse) => {
+        if (details.nurse) Object.assign(nurse, details.nurse);
+
+        details.shiftTypes?.forEach((shiftChange) => applyNurseShiftChange(nurse, shiftChange));
+    });
 const getShiftTeamNurseCount = (shiftTeams: TWard['shiftTeams'] | undefined) =>
     Array.isArray(shiftTeams) ? shiftTeams.reduce((sum, shiftTeam) => sum + (shiftTeam.nurseCnt ?? shiftTeam.nurses.length), 0) : 0;
 const appendNurseToShiftTeams = (shiftTeams: TWard['shiftTeams'], shiftTeamId: number, nurse: TShiftTeamNurse) =>
@@ -168,20 +230,23 @@ const useEditShiftTeam = () => {
     const shiftTeams = resolveShiftTeams(ward?.shiftTeams, queriedShiftTeams);
     const effectiveWard = mergeWardShiftTeams(ward, shiftTeams);
     const invalidateWard = useCallback(async () => {
-        await queryClient.invalidateQueries({queryKey: wardQueryKey});
-        void queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
+        await Promise.all([
+            queryClient.invalidateQueries({queryKey: wardQueryKey}),
+            queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey}),
+        ]);
     }, [queryClient, shiftTeamsQueryKey, wardQueryKey]);
     const invalidateWardShiftAndRequest = useCallback(async () => {
-        await queryClient.invalidateQueries({queryKey: wardQueryKey});
-        await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
-        await queryClient.invalidateQueries({queryKey: shiftQueryKey});
-        await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+        const relatedQueryKeys = [wardQueryKey, shiftTeamsQueryKey, shiftQueryKey, requestShiftQueryKey];
 
         if (wardId) {
-            await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'shiftTeamNurses', wardId]});
-            await queryClient.invalidateQueries({queryKey: ['ward-board', 'schedules', wardId]});
-            await queryClient.invalidateQueries({queryKey: ['home', 'board-schedules']});
+            relatedQueryKeys.push(
+                [...wardQueryKeys.all(), 'shiftTeamNurses', wardId],
+                ['ward-board', 'schedules', wardId],
+                ['home', 'board-schedules'],
+            );
         }
+
+        await Promise.all(relatedQueryKeys.map((queryKey) => queryClient.invalidateQueries({queryKey})));
     }, [queryClient, requestShiftQueryKey, shiftQueryKey, shiftTeamsQueryKey, wardId, wardQueryKey]);
     const addNurse = useCallback(
         async (shiftTeamId: number) => {
@@ -535,6 +600,80 @@ const useEditShiftTeam = () => {
         },
         [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, t, wardQueryKey],
     );
+    const saveNurseDetails = useCallback(
+        async (nurseId: number, details: TSaveNurseDetails) => {
+            const shiftTypeChanges = details.shiftTypes ?? [];
+
+            if (!details.nurse && shiftTypeChanges.length === 0) return true;
+
+            if (isTempNurseId(nurseId)) {
+                return details.nurse ? updateNurse(nurseId, details.nurse) : false;
+            }
+
+            beginSavingNurse();
+
+            await Promise.allSettled([
+                queryClient.cancelQueries({queryKey: wardQueryKey}),
+                queryClient.cancelQueries({queryKey: shiftTeamsQueryKey}),
+            ]);
+
+            const oldWard = queryClient.getQueryData<TWard>(wardQueryKey);
+            const oldShiftTeams = queryClient.getQueryData<TWard['shiftTeams']>(shiftTeamsQueryKey);
+
+            queryClient.setQueryData<TWard>(wardQueryKey, (currentWard) =>
+                currentWard
+                    ? {
+                          ...currentWard,
+                          shiftTeams: applyNurseDetailChanges(currentWard.shiftTeams, nurseId, details),
+                      }
+                    : currentWard,
+            );
+            queryClient.setQueryData<TWard['shiftTeams']>(shiftTeamsQueryKey, (currentShiftTeams) =>
+                currentShiftTeams ? applyNurseDetailChanges(currentShiftTeams, nurseId, details) : currentShiftTeams,
+            );
+
+            const saveRequests: Promise<unknown>[] = [];
+
+            if (details.nurse) {
+                saveRequests.push(NurseAPI.updateNurse(nurseId, toNursePayload(details.nurse, {clearBlankPhoneNum: true})));
+            }
+
+            shiftTypeChanges.forEach(({nurseShiftTypeId, change}) => {
+                saveRequests.push(NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change));
+            });
+
+            const results = await Promise.allSettled(saveRequests);
+            const failedResult = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+
+            if (failedResult) {
+                if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
+
+                if (oldShiftTeams) queryClient.setQueryData(shiftTeamsQueryKey, oldShiftTeams);
+
+                failSavingNurse();
+                void invalidateWardShiftAndRequest().catch(() => undefined);
+                showActionErrorFeedback(failedResult.reason, t('feature.editShiftTeam.updateNurseFailed'));
+
+                return false;
+            }
+
+            completeSavingNurse();
+            void invalidateWardShiftAndRequest().catch(() => undefined);
+
+            return true;
+        },
+        [
+            beginSavingNurse,
+            completeSavingNurse,
+            failSavingNurse,
+            invalidateWardShiftAndRequest,
+            queryClient,
+            shiftTeamsQueryKey,
+            t,
+            updateNurse,
+            wardQueryKey,
+        ],
+    );
     const createShiftTeam = useCallback(async () => {
         if (!wardId) return;
 
@@ -779,6 +918,7 @@ const useEditShiftTeam = () => {
             selectNurse,
             updateNurse,
             updateNurseShift,
+            saveNurseDetails,
             disconnectNurse,
             createShiftTeam,
             deleteShiftTeam,

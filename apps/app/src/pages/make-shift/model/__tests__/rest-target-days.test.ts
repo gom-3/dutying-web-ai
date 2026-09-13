@@ -56,7 +56,7 @@ function createDoc(days: TShift['days']): TDutyDoc {
 }
 
 describe('rest target days', () => {
-    it('adds weekday public holidays when the policy includes holidays', () => {
+    it('adds public holidays for the selected language country', () => {
         const days: TShift['days'] = [
             {day: 1, dayType: 'workday'},
             {day: 2, dayType: 'holiday'},
@@ -73,6 +73,7 @@ describe('rest target days', () => {
             year: 2026,
             month: 6,
             adjustmentDays: 0,
+            language: 'en',
         });
 
         expect(result?.[shiftNurse.shiftNurseId]).toMatchObject({
@@ -99,6 +100,7 @@ describe('rest target days', () => {
             year: 2026,
             month: 6,
             adjustmentDays: 1,
+            language: 'en',
         });
 
         expect(result?.[shiftNurse.shiftNurseId]).toMatchObject({

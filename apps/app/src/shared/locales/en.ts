@@ -597,7 +597,7 @@ export const en: TLocale = {
                     label: 'Workers',
                     caption: 'Review who will be placed and in what order',
                     introTitle: 'Review included workers',
-                    introDescription: 'Check that no one is missing\nMake changes from Worker Management if needed',
+                    introDescription: 'Check that no one is missing\nSelect a worker to edit their details',
                 },
                 constraints: {
                     label: 'Rules',
@@ -1097,6 +1097,17 @@ export const en: TLocale = {
                 noNurseDescription: 'Add nurses before creating a schedule. You can start from member management.',
                 goMemberManagement: 'Go to member management',
                 dragHandleAria: 'Drag to reorder',
+                editExit: {
+                    title: 'Leave without saving your changes?',
+                    description: 'Your current edits will be lost.',
+                    continueEditing: 'Keep editing',
+                    discardAndClose: 'Leave without saving',
+                },
+                editModal: {
+                    title: 'Worker details',
+                    description: 'Edit the information used for this schedule.',
+                    basicInfo: 'Basic information',
+                },
             },
             fixedShifts: {
                 title: 'Select fixed shifts',
@@ -1509,6 +1520,12 @@ export const en: TLocale = {
                 emptyTitle: 'There is no request shift schedule for this month yet',
                 emptyDescription: 'Open next month request shift schedule first and start editing there.',
                 createNextMonth: 'Create next month request shifts',
+            },
+            emptyGuide: {
+                title: 'Collect requested shifts with the Dutying app',
+                description: 'Nurses can submit their preferred shifts in the app, and you can review them all here.',
+                directEntry: 'To assign shifts yourself, enter them in the next step.',
+                close: 'Close guide',
             },
             toolbar: {
                 readonlyTitle: 'Confirmed requested shifts for {{month}}',
@@ -1962,7 +1979,7 @@ export const en: TLocale = {
                 deleteTeamTitle: 'Delete this team?',
                 deleteTeamDescriptionSuffix: ' team and its {{count}} nurses will be deleted.',
                 unsavedExitTitle: 'Leave without saving?',
-                unsavedExitDescription: 'Your changes may not be saved.',
+                unsavedExitDescription: "If you don't save, your changes will be lost.",
                 deleteNurseTitle: 'Delete this nurse?',
                 deleteNurseDescriptionSuffix: ' will be deleted permanently.',
                 disconnectTitle: 'Disconnect this account?',

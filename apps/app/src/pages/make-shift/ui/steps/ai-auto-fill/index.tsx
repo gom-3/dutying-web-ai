@@ -236,6 +236,7 @@ function resolveSnapshotDisplayTitle(params: {
  */
 export function AiAutofill() {
     const {t} = useTypedTranslation();
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const queryClient = useQueryClient();
     const {
         state: {wardId},
@@ -513,9 +514,10 @@ export function AiAutofill() {
                       year,
                       month,
                       adjustmentDays,
+                      language,
                   })
                 : undefined,
-        [adjustmentDays, hydratedDoc, month, orderedShift, policy, year],
+        [adjustmentDays, hydratedDoc, language, month, orderedShift, policy, year],
     );
     const canConfirm =
         !isWorking &&
@@ -705,6 +707,7 @@ export function AiAutofill() {
             year,
             month,
             adjustmentDays,
+            language,
         });
         const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
 
@@ -1705,13 +1708,7 @@ export function AiAutofill() {
                         divisionLabelByNum={divisionLabelByNum}
                         stickyHeader
                         restPolicyControl={
-                            <RestLeavePolicySummaryButton
-                                wardId={wardId}
-                                shiftTeamId={currentShiftTeamId}
-                                year={year}
-                                month={month}
-                                days={orderedShift.days}
-                            />
+                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
                         }
                     />
                 )}

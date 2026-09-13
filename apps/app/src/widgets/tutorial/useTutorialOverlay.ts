@@ -44,6 +44,7 @@ export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TU
     const stepIndexRef = useRef(normalizedInitialStepIndex);
     const infoBoxElement = useRef<HTMLDivElement>(null);
     const currentElements = useRef<THighlightedElement[]>([]);
+    const highlightedElementResizeObserverRef = useRef<ResizeObserver | null>(null);
     const resizeTimeoutRef = useRef<number | null>(null);
     const currentStep = getCurrentStep(config, stepIndex);
     const totalSteps = config.steps.length;
@@ -56,6 +57,7 @@ export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TU
     }, [config, initialStepIndex]);
 
     const resetHighlightedElements = useCallback(() => {
+        highlightedElementResizeObserverRef.current?.disconnect();
         currentElements.current.forEach(
             ({element, originalInert, originalIsolation, originalPointerEvents, originalPosition, originalZIndex}) => {
                 element.classList.remove('foreground');
@@ -259,6 +261,8 @@ export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TU
 
         if (!alreadyCalculated) {
             currentElements.current = highlightedElements;
+            highlightedElementResizeObserverRef.current?.disconnect();
+            highlightedElements.forEach(({element}) => highlightedElementResizeObserverRef.current?.observe(element));
         }
 
         setRectStyles(positions);
@@ -286,6 +290,25 @@ export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TU
         stepIndexRef.current = stepIndex;
         setHighlightedElementPositions();
     }, [setHighlightedElementPositions, stepIndex]);
+
+    useEffect(() => {
+        if (typeof ResizeObserver === 'undefined') return;
+
+        const observer = new ResizeObserver(() => {
+            setHighlightedElementPositions();
+        });
+
+        highlightedElementResizeObserverRef.current = observer;
+        currentElements.current.forEach(({element}) => observer.observe(element));
+
+        return () => {
+            observer.disconnect();
+
+            if (highlightedElementResizeObserverRef.current === observer) {
+                highlightedElementResizeObserverRef.current = null;
+            }
+        };
+    }, [setHighlightedElementPositions]);
 
     useEffect(() => {
         const previousBodyOverflow = document.body.style.overflow;

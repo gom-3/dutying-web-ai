@@ -594,7 +594,7 @@ export const ko = {
                     label: '근무자 확인',
                     caption: '근무에 투입될 간호사를 확인해요',
                     introTitle: '근무투입 인원을 확인해 주세요',
-                    introDescription: '빠진 인원이 없는지 확인해 주세요\n수정이 필요하면 근무자 관리에서 변경할 수 있어요',
+                    introDescription: '빠진 인원이 없는지 확인해 주세요\n근무자를 누르면 상세 정보를 수정할 수 있어요',
                 },
                 constraints: {
                     label: '제약조건',
@@ -1094,6 +1094,17 @@ export const ko = {
                 noNurseDescription: '근무표를 만들려면 먼저 간호사를 추가해 주세요. 근무자 관리에서 바로 시작할 수 있어요',
                 goMemberManagement: '근무자 관리로 이동',
                 dragHandleAria: '드래그하여 순서 변경',
+                editExit: {
+                    title: '변경사항을 저장하지 않고 나갈까요?',
+                    description: '나가면 지금 수정한 내용은 사라져요.',
+                    continueEditing: '계속 수정하기',
+                    discardAndClose: '저장하지 않고 나가기',
+                },
+                editModal: {
+                    title: '근무자 정보',
+                    description: '근무표에 반영할 정보를 수정해 주세요.',
+                    basicInfo: '기본 정보',
+                },
             },
             fixedShifts: {
                 title: '고정 근무를 선택해 주세요',
@@ -1508,6 +1519,12 @@ export const ko = {
                 emptyTitle: '이번 달 신청 근무표가 아직 없어요',
                 emptyDescription: '다음 달 신청 근무표를 먼저 열어 작성할 수 있어요.',
                 createNextMonth: '다음 달 신청 근무 작성하기',
+            },
+            emptyGuide: {
+                title: '간호사에게 듀팅 앱으로 신청근무를 받아보세요',
+                description: '간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.',
+                directEntry: '직접 정하려면 다음 단계에서 입력할 수 있어요.',
+                close: '안내 닫기',
             },
             toolbar: {
                 readonlyTitle: '{{month}}월 신청 근무',
@@ -1961,7 +1978,7 @@ export const ko = {
                 deleteTeamTitle: '팀을 삭제할까요?',
                 deleteTeamDescriptionSuffix: ' 팀을 삭제하면 소속 간호사 {{count}}명도 함께 삭제돼요.',
                 unsavedExitTitle: '저장하지 않고 나갈까요?',
-                unsavedExitDescription: '변경사항이 저장되지 않을 수 있어요.',
+                unsavedExitDescription: '저장하지 않으면 수정한 내용이 사라져요.',
                 deleteNurseTitle: '간호사를 삭제할까요?',
                 deleteNurseDescriptionSuffix: ' 삭제 후에는 되돌릴 수 없어요.',
                 disconnectTitle: '연동을 끊을까요?',

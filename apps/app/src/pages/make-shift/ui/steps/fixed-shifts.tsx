@@ -6,6 +6,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {docToFixedWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
 import {type TViolation} from '@/features/shift-editor/model';
+import i18n from '@/i18n';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -39,6 +40,7 @@ const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
 export function FixedShifts() {
     const {t} = useTypedTranslation();
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const queryClient = useQueryClient();
     const {
         state: {wardId},
@@ -146,9 +148,10 @@ export function FixedShifts() {
                       year,
                       month,
                       adjustmentDays,
+                      language,
                   })
                 : undefined,
-        [adjustmentDays, fixedOnlyDoc, month, orderedShift, policy, year],
+        [adjustmentDays, fixedOnlyDoc, language, month, orderedShift, policy, year],
     );
 
     return (
@@ -224,13 +227,7 @@ export function FixedShifts() {
                             void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
                         }}
                         restPolicyControl={
-                            <RestLeavePolicySummaryButton
-                                wardId={wardId}
-                                shiftTeamId={currentShiftTeamId}
-                                year={year}
-                                month={month}
-                                days={orderedShift.days}
-                            />
+                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
                         }
                     />
                 </div>

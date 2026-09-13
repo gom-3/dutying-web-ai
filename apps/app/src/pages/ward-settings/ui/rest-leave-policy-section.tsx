@@ -3,11 +3,15 @@ import {Check, Minus, Plus} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
+import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {
     calculateBaseRestTarget,
-    getApproximateWeekCount,
+    calculateRestTargetFromDays,
+    countPublicHolidaysForRestTarget,
+    DEFAULT_REST_LEAVE_POLICY,
+    getPublicHolidayDaysForLanguage,
     getRestShiftTypes,
     resolveCountedRestShiftTypeIds,
     type TRestLeavePolicy,
@@ -200,7 +204,7 @@ function FeatureToggle({
                     </div>
                     {enabled ? (
                         <div className="mt-4 inline-flex max-w-full items-center gap-3 rounded-[14px] bg-[#F6F7F9] px-3.5 py-2.5">
-                            <div className="min-w-0 max-w-[220px]">
+                            <div className="max-w-[220px] min-w-0">
                                 <p className="font-apple text-[12px] leading-[16px] font-semibold text-gray-3">{preview.label}</p>
                                 {preview.summary ? (
                                     <p className="mt-1 font-apple text-[13px] leading-[19px] font-semibold [word-break:keep-all] text-sub-2">
@@ -225,8 +229,16 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     const {policy, setPolicy} = useRestLeavePolicy(wardId);
     const [draft, setDraft] = useState<TRestLeavePolicy>(policy);
     const {year, month} = useMemo(getCurrentYearMonth, []);
-    const weekCount = getApproximateWeekCount(year, month);
+    const language = i18n.resolvedLanguage ?? i18n.language;
+    const publicHolidayDays = useMemo(() => getPublicHolidayDaysForLanguage(year, month, language), [language, month, year]);
     const baseTarget = calculateBaseRestTarget(draft, year, month);
+    const previewTarget = calculateRestTargetFromDays(draft, year, month, publicHolidayDays);
+    const holidayCount = countPublicHolidaysForRestTarget(
+        year,
+        month,
+        publicHolidayDays,
+        draft.targetMode === 'weekly' ? draft.weeklyOffDays : DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
+    );
     const restShiftTypes = useMemo(() => getRestShiftTypes(shiftTypes), [shiftTypes]);
     const countedRestShiftTypeIds = useMemo(() => resolveCountedRestShiftTypeIds(draft, shiftTypes), [draft, shiftTypes]);
     const countedRestShiftTypeIdSet = useMemo(() => new Set(countedRestShiftTypeIds), [countedRestShiftTypeIds]);
@@ -235,11 +247,16 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
         draft.targetMode === 'weekly'
             ? t('page.makeShift.workers.restPolicy.weeklyTarget', {
                   days: draft.weeklyOffDays,
-                  weeks: weekCount,
-                  count: weekCount * draft.weeklyOffDays,
+                  count: baseTarget,
               })
             : t('page.makeShift.workers.restPolicy.fixedTarget', {count: draft.fixedMonthlyOffDays});
-    const previewSummary = draft.targetMode === 'weekly' ? targetSummary : undefined;
+    const holidaySummary =
+        draft.includeHolidays && holidayCount > 0
+            ? `${t('page.wardSettings.restLeavePolicy.holiday.include.title')} +${holidayCount}${t(
+                  'page.makeShift.workers.restPolicy.dayUnit',
+              )}`
+            : null;
+    const previewSummary = [targetSummary, holidaySummary].filter(Boolean).join(' · ');
 
     useEffect(() => {
         setDraft(policy);
@@ -286,7 +303,7 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                     description={t('page.wardSettings.restLeavePolicy.simpleSubtitle')}
                     preview={{
                         label: t('page.wardSettings.restLeavePolicy.previewLabel', {month}),
-                        value: baseTarget,
+                        value: previewTarget,
                         unit: t('page.wardSettings.restLeavePolicy.unit.day'),
                         summary: previewSummary,
                     }}
@@ -309,9 +326,7 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                                             min={1}
                                             max={7}
                                             unit={t('page.wardSettings.restLeavePolicy.unit.day')}
-                                            ariaLabel={t('page.wardSettings.restLeavePolicy.target.weekly.stepperLabel', {
-                                                count: weekCount,
-                                            })}
+                                            ariaLabel={t('page.wardSettings.restLeavePolicy.target.weekly.stepperLabel')}
                                             onChange={(nextValue) => patchDraft({weeklyOffDays: nextValue})}
                                         />
                                     </ChoiceCard>

@@ -2,6 +2,7 @@ import {waitFor} from '@testing-library/react';
 import toast from 'react-hot-toast';
 import type * as ReactRouterModule from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
@@ -263,7 +264,8 @@ function mixedShiftTypes() {
 }
 
 describe('WardSettingsPage', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         mockUseWardSettings.mockReset();
         mockNavigate.mockClear();
         mockAuthState.accessToken = null;
@@ -857,6 +859,47 @@ describe('WardSettingsPage', () => {
                 countedRestShiftTypeIds: [2],
             });
         });
+    });
+
+    it('휴무일 계산 미리보기에 실제 주말과 겹치지 않는 공휴일을 합산한다', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 8, 13));
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                },
+            }),
+        );
+
+        try {
+            render(<WardSettingsPage />);
+
+            expect(screen.getByText('주 2일 기준 · 실제 달력 8일 · 공휴일 포함 +2일')).toBeInTheDocument();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('현재 언어에 맞는 국가 공휴일로 미리보기를 다시 계산한다', async () => {
+        await i18n.changeLanguage('ja');
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 8, 13));
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                },
+            }),
+        );
+
+        try {
+            render(<WardSettingsPage />);
+
+            expect(screen.getByText('週2日基準・暦上8日 · 祝日を含める +3日')).toBeInTheDocument();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('휴무일 계산 탭에서 기본 휴무만 있어도 포함 항목에 표시한다', () => {

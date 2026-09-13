@@ -21,6 +21,7 @@ const {
     mockGetQueryData,
     mockSetQueryData,
     mockUpdateNurse,
+    mockUpdateNurseShiftType,
     mockAddNurseIntoShiftTeam,
     mockRemoveNurseFromShiftTeam,
     mockToastSuccess,
@@ -31,6 +32,7 @@ const {
     mockGetQueryData: vi.fn(),
     mockSetQueryData: vi.fn(),
     mockUpdateNurse: vi.fn(),
+    mockUpdateNurseShiftType: vi.fn(),
     mockAddNurseIntoShiftTeam: vi.fn(),
     mockRemoveNurseFromShiftTeam: vi.fn(),
     mockToastSuccess: vi.fn(),
@@ -71,6 +73,7 @@ vi.mock('@/features/request-shift', () => ({
 vi.mock('@/shared/api', () => ({
     NurseAPI: {
         updateNurse: mockUpdateNurse,
+        updateNurseShiftType: mockUpdateNurseShiftType,
     },
     WardAPI: {
         addNurseIntoShiftTeam: mockAddNurseIntoShiftTeam,
@@ -94,6 +97,7 @@ describe('useEditShiftTeam', () => {
         mockGetQueryData.mockReset();
         mockSetQueryData.mockReset();
         mockUpdateNurse.mockReset();
+        mockUpdateNurseShiftType.mockReset();
         mockAddNurseIntoShiftTeam.mockReset();
         mockRemoveNurseFromShiftTeam.mockReset();
         mockToastSuccess.mockReset();
@@ -159,6 +163,81 @@ describe('useEditShiftTeam', () => {
             name: '김하나',
             phoneNum: null,
         });
+    });
+
+    it('saves profile and shift-type edits in parallel and revalidates related data only once', async () => {
+        let resolveProfileSave: (() => void) | undefined;
+        let resolveShiftSave: (() => void) | undefined;
+
+        useEditNurseStore.getState().selectNurse(11);
+        useEditNurseStore.getState().setNurseDraftDirty(true);
+        mockUpdateNurse.mockReturnValue(
+            new Promise((resolve) => {
+                resolveProfileSave = () => resolve({nurseId: 11});
+            }),
+        );
+        mockUpdateNurseShiftType.mockReturnValue(
+            new Promise((resolve) => {
+                resolveShiftSave = () => resolve(undefined);
+            }),
+        );
+
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        let savePromise: Promise<boolean> | undefined;
+
+        await act(async () => {
+            savePromise = result.current.actions.saveNurseDetails(11, {
+                nurse: {name: '김수정'},
+                shiftTypes: [{nurseShiftTypeId: 101, change: {isPossible: false}}],
+            });
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {name: '김수정'});
+        expect(mockUpdateNurseShiftType).toHaveBeenCalledWith(11, 101, {isPossible: false});
+        expect(result.current.state.nurseSaveStatus).toBe('saving');
+
+        await act(async () => {
+            resolveProfileSave?.();
+            resolveShiftSave?.();
+            await savePromise;
+        });
+
+        expect(result.current.state.nurseSaveStatus).toBe('success');
+        expect(result.current.state.isNurseDraftDirty).toBe(false);
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(7);
+    });
+
+    it('keeps the draft and rolls back both member caches when a combined save partially fails', async () => {
+        const oldShiftTeams = ward.shiftTeams;
+
+        useEditNurseStore.getState().selectNurse(11);
+        useEditNurseStore.getState().setNurseDraftDirty(true);
+        mockGetQueryData.mockImplementation((queryKey: readonly unknown[]) =>
+            queryKey.includes('shiftTeams') ? oldShiftTeams : queryKey.includes('id') ? ward : undefined,
+        );
+        mockUpdateNurse.mockResolvedValue({nurseId: 11});
+        mockUpdateNurseShiftType.mockRejectedValue({response: {status: 500}});
+
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        let saved: boolean | undefined;
+
+        await act(async () => {
+            saved = await result.current.actions.saveNurseDetails(11, {
+                nurse: {name: '김수정'},
+                shiftTypes: [{nurseShiftTypeId: 101, change: {isPossible: false}}],
+            });
+        });
+
+        expect(saved).toBe(false);
+        expect(result.current.state.nurseSaveStatus).toBe('error');
+        expect(result.current.state.isNurseDraftDirty).toBe(true);
+        expect(mockSetQueryData).toHaveBeenCalledWith(['ward', 'id', 1], ward);
+        expect(mockSetQueryData).toHaveBeenCalledWith(['ward', 'shiftTeams', 1], oldShiftTeams);
+        expect(mockToastError).toHaveBeenCalledTimes(1);
     });
 
     it('creates a nurse immediately with the nurse create request contract', async () => {
@@ -269,14 +348,14 @@ describe('useEditShiftTeam', () => {
     });
 
     it('keeps the deleting flag on until ward invalidation finishes after deleteNurse succeeds', async () => {
-        let resolveInvalidate: (() => void) | undefined;
+        const resolveInvalidations: Array<() => void> = [];
 
         useEditNurseStore.getState().selectNurse(11);
         mockRemoveNurseFromShiftTeam.mockResolvedValue(undefined);
         mockInvalidateQueries.mockImplementation(
             () =>
                 new Promise<void>((resolve) => {
-                    resolveInvalidate = resolve;
+                    resolveInvalidations.push(resolve);
                 }),
         );
 
@@ -293,7 +372,7 @@ describe('useEditShiftTeam', () => {
         expect(result.current.state.selectedNurse).toBeUndefined();
 
         await act(async () => {
-            resolveInvalidate?.();
+            resolveInvalidations.forEach((resolve) => resolve());
             await actionPromise;
         });
 

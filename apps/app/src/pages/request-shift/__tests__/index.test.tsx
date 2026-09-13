@@ -1,7 +1,8 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {getNextRequestShiftDate} from '@/features/request-shift/model/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
-import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {ANDROID_PLAY_STORE_URL_KO, IOS_APP_STORE_URL_KO} from '@/shared/config/invite';
+import {act, fireEvent, render, screen, userEvent} from '@/shared/util/test-utils';
 import RequestShiftPage from '../index';
 
 const mockUseRequestShift = vi.fn();
@@ -13,6 +14,10 @@ const translations: Record<string, string> = {
     'page.request.overview.shiftErrorTitle': '신청 근무표를 불러오지 못했어요',
     'page.request.overview.emptyTitle': '이번 달 신청 근무표가 아직 없어요',
     'page.request.overview.createNextMonth': '다음 달 신청 근무 작성하기',
+    'page.request.emptyGuide.title': '간호사에게 듀팅 앱으로 신청근무를 받아보세요',
+    'page.request.emptyGuide.description': '간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.',
+    'page.request.emptyGuide.directEntry': '직접 정하려면 다음 단계에서 입력할 수 있어요.',
+    'page.request.emptyGuide.close': '안내 닫기',
     'page.state.retry': '다시 시도',
     'page.state.errorDescription': '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
 };
@@ -47,10 +52,15 @@ type TMockUseRequestShiftValue = {
             periodLabel: string;
             description: string;
         };
+        year: number;
+        month: number;
         requestShift: {shiftId: number} | null;
         shiftStatus: 'pending' | 'error' | 'success';
         shiftTeams: Array<{shiftTeamId: number; name: string}>;
         shiftTeamsStatus: 'pending' | 'error' | 'success';
+        dutyRequestList: Array<{wardReqShiftId: number}>;
+        dutyRequestStatus: 'pending' | 'error' | 'success';
+        currentShiftTeam: {shiftTeamId: number} | null;
     };
     actions: {
         retry: ReturnType<typeof vi.fn>;
@@ -91,10 +101,15 @@ function baseUseRequestShiftValue(): TMockUseRequestShiftValue {
                 periodLabel: '수정 가능 범위: 지난달부터 다음 달까지',
                 description: '현재 달력 범위에서는 신청 근무를 수정할 수 있어요.',
             },
+            year: 2026,
+            month: 7,
             requestShift: {shiftId: 1},
             shiftStatus: 'success' as const,
             shiftTeams: [{shiftTeamId: 1, name: '중환자실 A팀'}],
             shiftTeamsStatus: 'success' as const,
+            dutyRequestList: [{wardReqShiftId: 1}],
+            dutyRequestStatus: 'success' as const,
+            currentShiftTeam: {shiftTeamId: 1},
         },
         actions: {
             retry: vi.fn(),
@@ -108,6 +123,10 @@ describe('RequestShiftPage', () => {
         localStorage.removeItem('useRequestShiftStore');
         useRequestShiftStore.getState().resetState();
         mockUseRequestShift.mockReset();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('페이지 진입 시 저장된 연월 대신 다음 달을 선택한다', () => {
@@ -212,5 +231,33 @@ describe('RequestShiftPage', () => {
 
         expect(screen.getByText('toolbar')).toBeInTheDocument();
         expect(screen.getByText('request-calendar')).toBeInTheDocument();
+    });
+
+    it('신청근무가 없으면 2초 뒤 캘린더 위에 앱 신청 안내를 보여준다', () => {
+        vi.useFakeTimers();
+        mockUseRequestShift.mockReturnValue(
+            createUseRequestShiftValue({
+                state: {
+                    dutyRequestList: [],
+                },
+            }),
+        );
+
+        render(<RequestShiftPage />);
+
+        act(() => vi.advanceTimersByTime(1_999));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        act(() => vi.advanceTimersByTime(1));
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('간호사에게 듀팅 앱으로 신청근무를 받아보세요')).toBeInTheDocument();
+        expect(screen.getByTestId('request-calendar-content')).toHaveClass('blur-[3px]', 'opacity-65');
+        expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute('href', IOS_APP_STORE_URL_KO);
+        expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute('href', ANDROID_PLAY_STORE_URL_KO);
+
+        fireEvent.click(screen.getByRole('button', {name: '안내 닫기'}));
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 });

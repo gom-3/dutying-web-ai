@@ -89,10 +89,10 @@ describe('LoginPage', () => {
         expect(visualImages[0]).toHaveAttribute('loading', 'eager');
         expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
         expect(visualImages[1]).not.toHaveAttribute('src');
-        expect(visualImages[0]).toHaveAttribute('src', '/img/login_1.webp');
+        expect(visualImages[0]).toHaveAttribute('src', '/img/login-slide-1.webp');
         expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
             'srcset',
-            '/img/login_1.webp',
+            '/img/login-slide-1.webp',
         );
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
@@ -113,7 +113,7 @@ describe('LoginPage', () => {
     });
 
     it.each([
-        ['ko', '/img/login_1.webp', '/img/login-slide-2.webp', '/img/login-slide-3.webp'],
+        ['ko', '/img/login-slide-1.webp', '/img/login-slide-2.webp', '/img/login-slide-3.webp'],
         ['ja', '/img/login-ja.webp', '/img/login-slide-2-ja.webp', '/img/login-slide-3-ja.webp'],
         ['en', '/img/login-default.webp', '/img/login-slide-2-default.webp', '/img/login-slide-3-default.webp'],
     ])('uses the localized login visual for %s', async (language, expectedFirstSrc, expectedSecondSrc, expectedThirdSrc) => {

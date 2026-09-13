@@ -1800,7 +1800,7 @@ export const ko = {
                     "fixedTarget": "월 {{count}}일",
                     "increaseTarget": "목표 휴무일 늘리기",
                     "targetLabel": "목표 휴무일",
-                    "weeklyTarget": "주 {{days}}일 × {{weeks}}주 = {{count}}일"
+                    "weeklyTarget": "주 {{days}}일 기준 · 실제 달력 {{count}}일"
                 },
                 "emptyDescription": "근무 투입이 설정된 인원을 먼저 확인해 주세요.",
                 "emptyTitle": "근무자를 확정하면 시작할 수 있어요.",
@@ -1956,7 +1956,7 @@ export const ko = {
                 "deleteTeamTitle": "팀을 삭제할까요?",
                 "disconnectDescriptionSuffix": " 의 앱 연동을 끊어요.",
                 "disconnectTitle": "연동을 끊을까요?",
-                "unsavedExitDescription": "변경사항이 저장되지 않을 수 있어요.",
+                "unsavedExitDescription": "저장하지 않으면 수정한 내용이 사라져요.",
                 "unsavedExitTitle": "저장하지 않고 나갈까요?"
             },
             "nurseDrawerFeedback": {
@@ -2984,8 +2984,8 @@ export const ko = {
                     "title": "목표 휴무일",
                     "weekly": {
                         "title": "주 단위로 계산",
-                        "description": "한 주에 필요한 휴무일 수를 기준으로 월 목표를 자동 계산해요.",
-                        "stepperLabel": "{{count}}주 기준 주간 휴무일 수"
+                        "description": "한 주의 휴무일 수를 실제 달력에 맞춰 계산해요.",
+                        "stepperLabel": "주간 휴무일 수"
                     },
                     "fixed": {
                         "title": "월 고정으로 계산",
@@ -4902,7 +4902,7 @@ export const en: TLocale = {
                     "fixedTarget": "Monthly {{count}} days",
                     "increaseTarget": "Increase target days off",
                     "targetLabel": "Target days off",
-                    "weeklyTarget": "{{days}} days/week × {{weeks}} weeks = {{count}} days"
+                    "weeklyTarget": "{{days}} days/week · {{count}} calendar days"
                 },
                 "emptyDescription": "Check the staff marked for duty first.",
                 "emptyTitle": "No confirmed workers yet.",
@@ -5058,7 +5058,7 @@ export const en: TLocale = {
                 "deleteTeamTitle": "Delete this team?",
                 "disconnectDescriptionSuffix": " will be disconnected from the app.",
                 "disconnectTitle": "Disconnect this account?",
-                "unsavedExitDescription": "Your changes may not be saved.",
+                "unsavedExitDescription": "If you don't save, your changes will be lost.",
                 "unsavedExitTitle": "Leave without saving?"
             },
             "nurseDrawerFeedback": {
@@ -6086,8 +6086,8 @@ export const en: TLocale = {
                     "title": "Target rest days",
                     "weekly": {
                         "title": "Calculate by week",
-                        "description": "Calculate the monthly target from required rest days per week.",
-                        "stepperLabel": "Rest days per week across {{count}} weeks"
+                        "description": "Apply weekly rest days to the actual calendar.",
+                        "stepperLabel": "Rest days per week"
                     },
                     "fixed": {
                         "title": "Use fixed monthly target",
@@ -8002,7 +8002,7 @@ export const ja: TLocale = {
                     "fixedTarget": "月 {{count}}日",
                     "increaseTarget": "目標休日数を増やす",
                     "targetLabel": "目標休日数",
-                    "weeklyTarget": "週{{days}}日 × {{weeks}}週 = {{count}}日"
+                    "weeklyTarget": "週{{days}}日基準・暦上{{count}}日"
                 },
                 "emptyDescription": "勤務投入に設定された人数を先に確認してください。",
                 "emptyTitle": "看護師を確定すると開始できます。",
@@ -8158,7 +8158,7 @@ export const ja: TLocale = {
                 "deleteTeamTitle": "チームを削除しますか？",
                 "disconnectDescriptionSuffix": " のアプリ連携を解除します。",
                 "disconnectTitle": "連携を解除しますか？",
-                "unsavedExitDescription": "変更内容が保存されない可能性があります。",
+                "unsavedExitDescription": "保存しない場合、変更内容は失われます。",
                 "unsavedExitTitle": "保存せずに移動しますか？"
             },
             "nurseDrawerFeedback": {
@@ -9186,8 +9186,8 @@ export const ja: TLocale = {
                     "title": "目標休日日数",
                     "weekly": {
                         "title": "週単位で計算",
-                        "description": "1週間に必要な休日日数から月間目標を計算します。",
-                        "stepperLabel": "{{count}}週間基準の週あたり休日日数"
+                        "description": "週間の休日日数を実際のカレンダーに合わせて計算します。",
+                        "stepperLabel": "週あたりの休日日数"
                     },
                     "fixed": {
                         "title": "月固定で計算",
@@ -11102,7 +11102,7 @@ export const zh: TLocale = {
                     "fixedTarget": "每月 {{count}} 天",
                     "increaseTarget": "增加目标休息天数",
                     "targetLabel": "目标休息天数",
-                    "weeklyTarget": "每周 {{days}} 天 × {{weeks}} 周 = {{count}} 天"
+                    "weeklyTarget": "每周 {{days}} 天 · 按实际日历共 {{count}} 天"
                 },
                 "emptyDescription": "请首先检查分配工作的人数。",
                 "emptyTitle": "确认好人员后，就可以开始了。",
@@ -11258,7 +11258,7 @@ export const zh: TLocale = {
                 "deleteTeamTitle": "要删除团队吗？",
                 "disconnectDescriptionSuffix": "断开与App的连接。",
                 "disconnectTitle": "要断开连接吗？",
-                "unsavedExitDescription": "更改可能无法保存。",
+                "unsavedExitDescription": "如果不保存，修改内容将会丢失。",
                 "unsavedExitTitle": "要退出而不保存吗？"
             },
             "nurseDrawerFeedback": {
@@ -12286,8 +12286,8 @@ export const zh: TLocale = {
                     "title": "目标休息天数",
                     "weekly": {
                         "title": "按周计算",
-                        "description": "根据每周所需休息天数计算月目标。",
-                        "stepperLabel": "按{{count}}周计算的每周休息天数"
+                        "description": "按实际日历计算每周休息日。",
+                        "stepperLabel": "每周休息天数"
                     },
                     "fixed": {
                         "title": "按每月固定值计算",
@@ -14202,7 +14202,7 @@ export const th: TLocale = {
                     "fixedTarget": "รายเดือน {{count}} วัน",
                     "increaseTarget": "เพิ่มจำนวนวันหยุดเป้าหมาย",
                     "targetLabel": "วันหยุดเป้าหมาย",
-                    "weeklyTarget": "{{days}} วัน/สัปดาห์ × {{weeks}} สัปดาห์ = {{count}} วัน"
+                    "weeklyTarget": "{{days}} วัน/สัปดาห์ · ตามปฏิทิน {{count}} วัน"
                 },
                 "emptyDescription": "ตรวจสอบเจ้าหน้าที่ที่ทำเครื่องหมายไว้ปฏิบัติหน้าที่ก่อน",
                 "emptyTitle": "ยังไม่มีคนงานยืนยัน",
@@ -14358,7 +14358,7 @@ export const th: TLocale = {
                 "deleteTeamTitle": "ลบทีมนี้ใช่ไหม",
                 "disconnectDescriptionSuffix": "จะถูกตัดการเชื่อมต่อจากแอพ",
                 "disconnectTitle": "ยกเลิกการเชื่อมต่อบัญชีนี้ใช่ไหม",
-                "unsavedExitDescription": "การเปลี่ยนแปลงของคุณอาจไม่ได้รับการบันทึก",
+                "unsavedExitDescription": "หากไม่บันทึก การแก้ไขของคุณจะหายไป",
                 "unsavedExitTitle": "ออกโดยไม่บันทึกใช่ไหม"
             },
             "nurseDrawerFeedback": {
@@ -15386,8 +15386,8 @@ export const th: TLocale = {
                     "title": "วันหยุดเป้าหมาย",
                     "weekly": {
                         "title": "คำนวณรายสัปดาห์",
-                        "description": "คำนวณเป้าหมายรายเดือนจากวันหยุดที่ต้องมีต่อสัปดาห์",
-                        "stepperLabel": "วันหยุดต่อสัปดาห์จากทั้งหมด {{count}} สัปดาห์"
+                        "description": "คำนวณวันหยุดรายสัปดาห์ตามปฏิทินจริง",
+                        "stepperLabel": "วันหยุดต่อสัปดาห์"
                     },
                     "fixed": {
                         "title": "ใช้เป้าหมายรายเดือนคงที่",
@@ -17302,7 +17302,7 @@ export const vi: TLocale = {
                     "fixedTarget": "Hằng tháng {{count}} ngày",
                     "increaseTarget": "Tăng số ngày nghỉ mục tiêu",
                     "targetLabel": "Số ngày nghỉ mục tiêu",
-                    "weeklyTarget": "{{days}} ngày/tuần × {{weeks}} tuần = {{count}} ngày"
+                    "weeklyTarget": "{{days}} ngày/tuần · {{count}} ngày theo lịch thực tế"
                 },
                 "emptyDescription": "Trước tiên hãy kiểm tra nhân sự được đánh dấu tham gia trực.",
                 "emptyTitle": "Chưa có công nhân nào được xác nhận.",
@@ -17458,7 +17458,7 @@ export const vi: TLocale = {
                 "deleteTeamTitle": "Xóa nhóm này?",
                 "disconnectDescriptionSuffix": "sẽ bị ngắt kết nối khỏi ứng dụng.",
                 "disconnectTitle": "Ngắt kết nối tài khoản này?",
-                "unsavedExitDescription": "Những thay đổi của bạn có thể không được lưu.",
+                "unsavedExitDescription": "Nếu không lưu, các thay đổi của bạn sẽ bị mất.",
                 "unsavedExitTitle": "Rời đi mà không lưu?"
             },
             "nurseDrawerFeedback": {
@@ -18486,8 +18486,8 @@ export const vi: TLocale = {
                     "title": "Số ngày nghỉ mục tiêu",
                     "weekly": {
                         "title": "Tính theo tuần",
-                        "description": "Tính mục tiêu tháng từ số ngày nghỉ cần mỗi tuần.",
-                        "stepperLabel": "Số ngày nghỉ mỗi tuần theo {{count}} tuần"
+                        "description": "Tính ngày nghỉ hàng tuần theo lịch thực tế.",
+                        "stepperLabel": "Số ngày nghỉ mỗi tuần"
                     },
                     "fixed": {
                         "title": "Dùng mục tiêu cố định theo tháng",

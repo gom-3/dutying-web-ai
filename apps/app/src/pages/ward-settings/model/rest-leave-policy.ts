@@ -1,6 +1,7 @@
+import Holidays from 'date-holidays';
 import {useCallback, useEffect, useState} from 'react';
 import type {TDay, TWardShiftType} from '@/entities';
-import {normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {DEFAULT_PREFERRED_LANGUAGE, normalizePreferredLanguage} from '@/shared/i18n/locale';
 
 export type TRestTargetMode = 'weekly' | 'fixed';
 export type TLeaveCountMode = 'allLeaves' | 'offOnly';
@@ -18,6 +19,10 @@ export type TRestLeavePolicy = {
 };
 
 export const REST_LEAVE_POLICY_UPDATED_EVENT = 'dutying:rest-leave-policy-updated';
+
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
+const HOLIDAY_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
+const publicHolidayDaysCache = new Map<string, TDay[]>();
 
 export const DEFAULT_REST_LEAVE_POLICY: TRestLeavePolicy = {
     enabled: true,
@@ -151,12 +156,29 @@ export function getDaysInMonth(year: number, month: number) {
     return new Date(year, month, 0).getDate();
 }
 
-export function getApproximateWeekCount(year: number, month: number) {
-    return Math.ceil(getDaysInMonth(year, month) / 7);
+function isWeeklyRestDate(year: number, month: number, day: number, weeklyOffDays: number) {
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+    const mondayBasedDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+    // 1일은 일요일, 2일은 토·일요일처럼 주말에서 거꾸로 주간 휴무일을 적용한다.
+    return mondayBasedDayOfWeek > 7 - weeklyOffDays;
+}
+
+export function countWeeklyRestDaysInMonth(year: number, month: number, weeklyOffDays: number) {
+    const normalizedWeeklyOffDays = clampDayCount(weeklyOffDays, DEFAULT_REST_LEAVE_POLICY.weeklyOffDays, 1, 7);
+    const daysInMonth = getDaysInMonth(year, month);
+
+    let count = 0;
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+        if (isWeeklyRestDate(year, month, day, normalizedWeeklyOffDays)) count += 1;
+    }
+
+    return count;
 }
 
 export function getHolidayCountryForLanguage(language?: string | null): THolidayCountry {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
 
     return (
         {
@@ -170,12 +192,58 @@ export function getHolidayCountryForLanguage(language?: string | null): THoliday
     )[normalizedLanguage];
 }
 
+export function getPublicHolidayDaysForLanguage(year: number, month: number, language?: string | null): TDay[] {
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
+    const country = getHolidayCountryForLanguage(normalizedLanguage);
+    const cacheKey = `${country}:${year}:${month}`;
+    const cachedDays = publicHolidayDaysCache.get(cacheKey);
+
+    if (cachedDays) return cachedDays;
+
+    const holidayCalendar = new Holidays(country, {
+        languages: [normalizedLanguage],
+        types: ['public'],
+    });
+    const holidayDates = new Set<number>();
+    const yearsToLoad = month === 1 ? [year - 1, year] : [year];
+
+    yearsToLoad.forEach((holidayYear) => {
+        holidayCalendar.getHolidays(holidayYear).forEach((holiday) => {
+            if (holiday.type !== 'public') return;
+
+            const dateParts = HOLIDAY_DATE_PATTERN.exec(holiday.date);
+
+            if (!dateParts) return;
+
+            const [, startYearText, startMonthText, startDayText] = dateParts;
+            const startYear = Number(startYearText);
+            const startMonth = Number(startMonthText);
+            const startDay = Number(startDayText);
+            const durationDays = Math.max(1, Math.round((holiday.end.getTime() - holiday.start.getTime()) / MILLISECONDS_PER_DAY));
+
+            for (let offset = 0; offset < durationDays; offset += 1) {
+                const date = new Date(Date.UTC(startYear, startMonth - 1, startDay + offset));
+
+                if (date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month) {
+                    holidayDates.add(date.getUTCDate());
+                }
+            }
+        });
+    });
+
+    const days = [...holidayDates].sort((left, right) => left - right).map((day): TDay => ({day, dayType: 'holiday'}));
+
+    publicHolidayDaysCache.set(cacheKey, days);
+
+    return days;
+}
+
 export function calculateBaseRestTarget(policy: TRestLeavePolicy, year: number, month: number) {
     if (!policy.enabled) return 0;
 
     if (policy.targetMode === 'fixed') return policy.fixedMonthlyOffDays;
 
-    return getApproximateWeekCount(year, month) * policy.weeklyOffDays;
+    return countWeeklyRestDaysInMonth(year, month, policy.weeklyOffDays);
 }
 
 export function calculateRestTarget(policy: TRestLeavePolicy, year: number, month: number, holidayCount = 0) {
@@ -191,18 +259,36 @@ function normalizeDayType(dayType: TDay['dayType'] | string) {
         .toLowerCase();
 }
 
-function isWeekendDate(year: number, month: number, day: number) {
-    const dayOfWeek = new Date(year, month - 1, day).getDay();
+export function countPublicHolidaysForRestTarget(
+    year: number,
+    month: number,
+    days: Array<TDay | {day: number; dayType: string}> = [],
+    weeklyOffDays = DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
+) {
+    const normalizedWeeklyOffDays = clampDayCount(weeklyOffDays, DEFAULT_REST_LEAVE_POLICY.weeklyOffDays, 1, 7);
 
-    return dayOfWeek === 0 || dayOfWeek === 6;
-}
-
-export function countPublicHolidaysForRestTarget(year: number, month: number, days: Array<TDay | {day: number; dayType: string}> = []) {
-    return days.filter((day) => normalizeDayType(day.dayType).includes('holiday') && !isWeekendDate(year, month, day.day)).length;
+    return days.filter(
+        (day) => normalizeDayType(day.dayType).includes('holiday') && !isWeeklyRestDate(year, month, day.day, normalizedWeeklyOffDays),
+    ).length;
 }
 
 export function calculateRestTargetFromDays(policy: TRestLeavePolicy, year: number, month: number, days: TDay[] = []) {
-    return calculateRestTarget(policy, year, month, countPublicHolidaysForRestTarget(year, month, days));
+    const weeklyOffDays = policy.targetMode === 'weekly' ? policy.weeklyOffDays : DEFAULT_REST_LEAVE_POLICY.weeklyOffDays;
+
+    return calculateRestTarget(policy, year, month, countPublicHolidaysForRestTarget(year, month, days, weeklyOffDays));
+}
+
+export function countPublicHolidaysForLanguage(
+    year: number,
+    month: number,
+    language?: string | null,
+    weeklyOffDays = DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
+) {
+    return countPublicHolidaysForRestTarget(year, month, getPublicHolidayDaysForLanguage(year, month, language), weeklyOffDays);
+}
+
+export function calculateRestTargetForLanguage(policy: TRestLeavePolicy, year: number, month: number, language?: string | null) {
+    return calculateRestTargetFromDays(policy, year, month, getPublicHolidayDaysForLanguage(year, month, language));
 }
 
 export function getRestShiftTypes(shiftTypes: TWardShiftType[]) {

@@ -27,7 +27,7 @@ const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGIN_VISUAL_SLIDES_BY_LANGUAGE = {
     ko: [
-        {fallback: '/img/login_1.webp', webp: '/img/login_1.webp'},
+        {fallback: '/img/login-slide-1.webp', webp: '/img/login-slide-1.webp'},
         {fallback: '/img/login-slide-2.png', webp: '/img/login-slide-2.webp'},
         {fallback: '/img/login-slide-3.png', webp: '/img/login-slide-3.webp'},
     ],

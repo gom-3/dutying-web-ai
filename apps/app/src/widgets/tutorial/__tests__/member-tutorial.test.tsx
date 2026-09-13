@@ -101,13 +101,9 @@ describe('MemberTutorial', () => {
         expect(config.steps.map((step) => step.highlightIds)).toEqual([
             ['shift_team_list'],
             ['member_add_nurse_button'],
-            ['nurse_sample', 'nurse_edit_drawer'],
+            ['nurse_edit_drawer'],
         ]);
-        expect(config.steps.map((step) => step.title)).toEqual([
-            '팀별 간호사 보기',
-            '간호사 추가하기',
-            '간호사 정보 수정하기',
-        ]);
+        expect(config.steps.map((step) => step.title)).toEqual(['팀별 간호사 보기', '간호사 추가하기', '간호사 정보 수정하기']);
         expect(config.steps[0]?.info).toContain('팀명을 두 번 클릭');
         expect(config.steps[2]?.info).toContain('역할·권한');
     });
@@ -146,10 +142,7 @@ describe('MemberTutorial', () => {
         const config = getLastTutorialConfig();
 
         expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '2');
-        expect(config.steps.map((step) => step.highlightIds)).toEqual([
-            ['shift_team_list'],
-            ['member_add_nurse_button'],
-        ]);
+        expect(config.steps.map((step) => step.highlightIds)).toEqual([['shift_team_list'], ['member_add_nurse_button']]);
     });
 
     it('waits until shift teams are loaded before opening', () => {

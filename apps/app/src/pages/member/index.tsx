@@ -37,11 +37,10 @@ import {
 import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
 import {createMoveNurseOrderPayload, createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
-import NurseDetailPanel from './ui/nurse-detail-panel';
+import NurseDetailPanel, {type TNurseDetailDraftActions} from './ui/nurse-detail-panel';
 
 type TMemberNurseSortMode = 'manual' | 'name';
 type TManualOrderByTeamId = Record<number, number[]>;
-type TNurseDraftActions = {save: () => Promise<boolean>; discard: () => void};
 type TMemberDivisionGroup = {
     divisionNum: number;
     divisionName?: string | null;
@@ -323,7 +322,7 @@ function MemberPage() {
     const teamNameInputRef = useRef<HTMLInputElement | null>(null);
     const tabButtonRefByTeamId = useRef<Record<number, HTMLButtonElement | null>>({});
     const pendingUnsavedActionRef = useRef<null | (() => void | Promise<void>)>(null);
-    const selectedNurseDraftActionsRef = useRef<TNurseDraftActions | null>(null);
+    const selectedNurseDraftActionsRef = useRef<TNurseDetailDraftActions | null>(null);
     const isRunningPendingUnsavedActionRef = useRef(false);
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
@@ -353,6 +352,18 @@ function MemberPage() {
 
         localStorage.setItem(getMemberManualOrderStorageKey(wardId), JSON.stringify(manualOrderByTeamId));
     }, [manualOrderByTeamId, wardId]);
+    useEffect(() => {
+        if (!isNurseDraftDirty) return;
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isNurseDraftDirty]);
     useEffect(() => {
         if (hasInitializedSelectionRef.current) {
             return;
@@ -662,10 +673,8 @@ function MemberPage() {
 
     const handleDismissDetailPanel = () => {
         selectNurse(null);
-
-        return true;
     };
-    const handleRegisterNurseDraftActions = useCallback((actions: TNurseDraftActions | null) => {
+    const handleRegisterNurseDraftActions = useCallback((actions: TNurseDetailDraftActions | null) => {
         selectedNurseDraftActionsRef.current = actions;
     }, []);
     const cancelPendingUnsavedAction = () => {
@@ -693,32 +702,13 @@ function MemberPage() {
         setNurseDraftDirty(false);
         await runPendingUnsavedAction();
     };
-    const saveDraftAndRunPendingAction = async () => {
-        const saveDraft = selectedNurseDraftActionsRef.current?.save;
-
-        if (!saveDraft) {
-            pendingUnsavedActionRef.current = null;
-
-            return;
-        }
-
-        setShowUnsavedGuardModal(false);
-
-        const saved = await saveDraft();
-
-        if (!saved) {
-            pendingUnsavedActionRef.current = null;
-
-            return;
-        }
-
-        setNurseDraftDirty(false);
-        await runPendingUnsavedAction();
-    };
-    const shouldBlockForUnsavedChanges = (nextAction: () => void | Promise<void>) => {
+    const shouldBlockForUnsavedChanges = (nextAction: () => void | Promise<void>, hasUnsavedChanges?: boolean) => {
         if (isRunningPendingUnsavedActionRef.current) return false;
 
-        if (!isNurseDraftDirty) return false;
+        const registeredDraftHasChanges = selectedNurseDraftActionsRef.current?.hasChanges?.();
+        const shouldBlock = hasUnsavedChanges ?? registeredDraftHasChanges ?? isNurseDraftDirty;
+
+        if (!shouldBlock) return false;
 
         pendingUnsavedActionRef.current = nextAction;
         setShowUnsavedGuardModal(true);
@@ -738,6 +728,8 @@ function MemberPage() {
     };
     const handleSelectTeam = (shiftTeamId: number) => {
         if (!shiftTeams) return;
+
+        if (activeShiftTeam?.shiftTeamId === shiftTeamId) return;
 
         if (
             shouldBlockForUnsavedChanges(() => {
@@ -835,13 +827,6 @@ function MemberPage() {
         }
     };
     const handleAddDivisionAfter = async (nurse: TNurse) => {
-        if (
-            shouldBlockForUnsavedChanges(async () => {
-                await handleAddDivisionAfter(nurse);
-            })
-        )
-            return;
-
         if (!activeShiftTeam) return;
 
         try {
@@ -852,13 +837,6 @@ function MemberPage() {
         }
     };
     const handleDeleteDivision = async (groupIndex: number) => {
-        if (
-            shouldBlockForUnsavedChanges(async () => {
-                await handleDeleteDivision(groupIndex);
-            })
-        )
-            return;
-
         if (!activeShiftTeam || groupIndex <= 0) return;
 
         const previousGroup = divisionGroups[groupIndex - 1];
@@ -883,16 +861,6 @@ function MemberPage() {
 
         const teamId = activeShiftTeam?.shiftTeamId;
         const {source, destination, draggableId} = result;
-
-        if (
-            shouldBlockForUnsavedChanges(async () => {
-                await handleDragEnd(result);
-            })
-        ) {
-            finishDragMotion();
-
-            return;
-        }
 
         if (
             !teamId ||
@@ -1114,13 +1082,6 @@ function MemberPage() {
         await addNurse(activeShiftTeam.shiftTeamId);
     };
     const handleMoveSelectedNurseToTeam = async (nextShiftTeamId: number) => {
-        if (
-            shouldBlockForUnsavedChanges(async () => {
-                await handleMoveSelectedNurseToTeam(nextShiftTeamId);
-            })
-        )
-            return false;
-
         if (!selectedNurse || !shiftTeams) return false;
 
         const payload = createMoveNurseToTeamPayload({
@@ -1231,38 +1192,37 @@ function MemberPage() {
             {showUnsavedGuardModal
                 ? createPortal(
                       <div
-                          className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]"
+                          className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4"
                           onClick={cancelPendingUnsavedAction}
                       >
                           <div
                               role="dialog"
                               aria-modal="true"
+                              aria-labelledby="member-unsaved-title"
+                              aria-describedby="member-unsaved-description"
                               className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                               onClick={(event) => event.stopPropagation()}
                           >
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.unsavedExitTitle')}</p>
-                              <p className="mt-2 font-apple text-[15px] text-gray-3">{t('page.member.modal.unsavedExitDescription')}</p>
-                              <div className="mt-6 grid grid-cols-3 gap-2">
+                              <p id="member-unsaved-title" className="font-apple text-[20px] font-semibold text-sub-1">
+                                  {t('page.member.modal.unsavedExitTitle')}
+                              </p>
+                              <p id="member-unsaved-description" className="mt-2 font-apple text-[15px] text-gray-3">
+                                  {t('page.member.modal.unsavedExitDescription')}
+                              </p>
+                              <div className="mt-6 grid grid-cols-2 gap-3 max-[380px]:grid-cols-1">
                                   <button
                                       type="button"
-                                      className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                      className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] focus-visible:bg-[#E1DBFF] focus-visible:text-main-1 focus-visible:outline-none"
                                       onClick={cancelPendingUnsavedAction}
                                   >
                                       {t('page.member.common.cancel')}
                                   </button>
                                   <button
                                       type="button"
-                                      className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
+                                      className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] focus-visible:bg-[#FFDCDC] focus-visible:text-[#A52F2F] focus-visible:outline-none"
                                       onClick={() => void discardDraftAndRunPendingAction()}
                                   >
                                       {t('page.member.common.discard')}
-                                  </button>
-                                  <button
-                                      type="button"
-                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-1-hover"
-                                      onClick={() => void saveDraftAndRunPendingAction()}
-                                  >
-                                      {t('page.member.common.saveAndLeave')}
                                   </button>
                               </div>
                           </div>
@@ -1655,6 +1615,10 @@ function MemberPage() {
                                                                                     }}
                                                                                     onUpdateNurseShift={updateNurseShift}
                                                                                     onSelect={() => {
+                                                                                        if (selectedNurse?.nurseId === nurse.nurseId) {
+                                                                                            return;
+                                                                                        }
+
                                                                                         if (
                                                                                             shouldBlockForUnsavedChanges(() => {
                                                                                                 selectNurse(nurse.nurseId);
@@ -1766,6 +1730,11 @@ function MemberPage() {
                         {selectedNurse ? (
                             <NurseDetailPanel
                                 onClose={handleDismissDetailPanel}
+                                onRequestClose={(hasUnsavedChanges) => {
+                                    if (shouldBlockForUnsavedChanges(handleDismissDetailPanel, hasUnsavedChanges)) return;
+
+                                    handleDismissDetailPanel();
+                                }}
                                 onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
                                 onRegisterDraftActions={handleRegisterNurseDraftActions}
                                 shiftTeams={shiftTeams}

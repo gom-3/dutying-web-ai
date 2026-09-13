@@ -43,6 +43,9 @@ for (const file of appHtmlFiles) {
         assertContains(html, `<meta name="description" content="${marketingPage.description}"`, file);
         assertContains(html, 'data-marketing-fallback', file);
         assertContains(html, marketingHeading, file);
+        assertContains(html, 'class="marketing-fallback__description"', file);
+        assertContains(html, `alt="${marketingPage.imageAlt}"`, file);
+        assertContains(html, 'href="/login?next=%2Fmake"', file);
         assert(countMatches(html, /<h1(?:\s|>)/g) === 1, `${file}: 최초 HTML의 H1은 정확히 하나여야 함`);
         assert(!marketingTitles.has(marketingPage.title), `${file}: 검색 제목 중복`);
         assert(!marketingDescriptions.has(marketingPage.description), `${file}: 검색 설명 중복`);
