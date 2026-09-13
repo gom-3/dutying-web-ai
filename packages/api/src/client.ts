@@ -3,5 +3,5 @@ export interface IApiClient {
     post: <T>(url: string, data?: unknown, options?: {signal?: AbortSignal}) => Promise<{data: T}>;
     patch: <T>(url: string, data?: unknown) => Promise<{data: T}>;
     put: <T>(url: string, data?: unknown) => Promise<{data: T}>;
-    delete: <T>(url: string) => Promise<{data: T}>;
+    delete: <T>(url: string, options?: {suppressErrorToast?: boolean}) => Promise<{data: T}>;
 }

@@ -824,7 +824,7 @@ export interface IWardAPI {
         divisionNum: number,
         updateShiftTeamDivisionDTO: TUpdateShiftTeamDivisionDTO,
     ) => Promise<TShiftTeamResponse>;
-    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<TNurseResponse>;
+    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<void>;
     deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<TShiftTeamResponse>;
     getShiftTypes: (wardId: number) => Promise<TWardShiftTypeResponse[]>;
     createShiftType: (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;

@@ -389,9 +389,11 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                 ).data,
             ),
         removeNurseFromShiftTeam: async (wardId: number, shiftTeamId: number, nurseId: number) =>
-            normalizeNurseResponse(
-                (await client.delete<TNurseResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses/${nurseId}`))).data,
-            ),
+            (
+                await client.delete<void>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses/${nurseId}`), {
+                    suppressErrorToast: true,
+                })
+            ).data,
         getShiftTeams: async (wardId: number) =>
             (await client.get<{shiftTeams: TShiftTeamResponse[]}>(wardPath(`/${wardId}/shift-teams`))).data.shiftTeams.map(
                 normalizeShiftTeamResponse,

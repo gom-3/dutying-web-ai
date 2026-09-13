@@ -76,6 +76,7 @@ const renderPanel = (
     variant: 'panel' | 'modal' = 'panel',
 ) => {
     const saveNurseDetails = vi.fn().mockResolvedValue(true);
+    const deleteNurse = vi.fn().mockResolvedValue(true);
     const onClose = vi.fn();
 
     mockUseEditShiftTeam.mockReturnValue({
@@ -87,7 +88,7 @@ const renderPanel = (
         },
         actions: {
             saveNurseDetails,
-            deleteNurse: vi.fn(),
+            deleteNurse,
             setNurseDraftDirty: vi.fn(),
             disconnectNurse: vi.fn(),
         },
@@ -105,7 +106,7 @@ const renderPanel = (
         />,
     );
 
-    return {...utils, onClose, saveNurseDetails};
+    return {...utils, deleteNurse, onClose, saveNurseDetails};
 };
 
 describe('NurseDetailPanel', () => {
@@ -285,6 +286,37 @@ describe('NurseDetailPanel', () => {
 
         await waitFor(() => expect(saveNurseDetails).toHaveBeenCalledOnce());
         expect(onSaveSuccess).not.toHaveBeenCalled();
+    });
+
+    it('closes the worker editor only after nurse deletion succeeds', async () => {
+        const {deleteNurse, onClose} = renderPanel(createNurse(), [], undefined, 'modal');
+
+        fireEvent.click(screen.getByRole('button', {name: '삭제하기'}));
+
+        const dialog = screen.getByRole('dialog', {name: '간호사를 삭제할까요?'});
+
+        expect(dialog.closest('aside')).not.toBeNull();
+
+        fireEvent.click(within(dialog).getByRole('button', {name: '삭제하기'}));
+
+        await waitFor(() => expect(deleteNurse).toHaveBeenCalledWith(10, 101));
+        await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+        expect(screen.queryByRole('dialog', {name: '간호사를 삭제할까요?'})).not.toBeInTheDocument();
+    });
+
+    it('keeps the delete confirmation available for retry when deletion fails', async () => {
+        const {deleteNurse, onClose} = renderPanel(createNurse(), [], undefined, 'modal');
+
+        deleteNurse.mockResolvedValue(false);
+        fireEvent.click(screen.getByRole('button', {name: '삭제하기'}));
+
+        const dialog = screen.getByRole('dialog', {name: '간호사를 삭제할까요?'});
+
+        fireEvent.click(within(dialog).getByRole('button', {name: '삭제하기'}));
+
+        await waitFor(() => expect(deleteNurse).toHaveBeenCalledWith(10, 101));
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByRole('dialog', {name: '간호사를 삭제할까요?'})).toBeInTheDocument();
     });
 
     it('offers only cancel or leave without saving when closing a dirty detail panel', () => {

@@ -219,9 +219,11 @@ function NurseDetailPanel({
     const textInputRef = useRef<HTMLInputElement>(null);
     const memoTextareaRef = useRef<HTMLTextAreaElement>(null);
     const moveTeamMenuRef = useRef<HTMLDivElement>(null);
+    const panelRootRef = useRef<HTMLElement>(null);
     const loadedNurseSelectionRef = useRef<string | null>(null);
     const saveInFlightRef = useRef<Promise<boolean> | null>(null);
-    const modalRoot = document.getElementById('modal-root') ?? document.body;
+    const isModal = variant === 'modal';
+    const modalRoot = (isModal ? panelRootRef.current : null) ?? document.getElementById('modal-root') ?? document.body;
     const isSavingNurseDetail = nurseSaveStatus === 'saving' || isSavingDraft;
     const isBusy = isSavingNurseDetail || isDeletingNurse || isMovingTeam;
     const isCreateMode = selectedNurseDrawerMode === 'create';
@@ -231,7 +233,6 @@ function NurseDetailPanel({
     const isBirthDateValid = isValidBirthDate(writeNurse?.birthDate, birthDateMax);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
-    const isModal = variant === 'modal';
 
     useEffect(() => {
         const selectionKey = selectedNurse ? `${selectedNurseDrawerMode}:${selectedNurse.nurseId}` : null;
@@ -650,6 +651,7 @@ function NurseDetailPanel({
     if (!selectedNurse || !writeNurse) {
         return (
             <aside
+                ref={panelRootRef}
                 className={cn(
                     'h-full overflow-hidden border-0 bg-white p-4 min-[1600px]:p-5',
                     isModal ? 'w-full' : 'w-[300px] min-[1400px]:w-[340px] min-[1600px]:w-[400px]',
@@ -665,6 +667,7 @@ function NurseDetailPanel({
     return (
         <TooltipProvider delayDuration={120}>
             <aside
+                ref={panelRootRef}
                 className={cn(
                     'flex h-full flex-col overflow-hidden bg-white [&_button:not(:disabled)]:cursor-pointer',
                     isModal
@@ -1378,18 +1381,22 @@ function NurseDetailPanel({
                     ? createPortal(
                           <div
                               className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/45 px-4"
-                              onClick={() => setDeleteConfirmModalOpen(false)}
+                              onClick={() => {
+                                  if (!isDeletingNurse) setDeleteConfirmModalOpen(false);
+                              }}
                           >
                               <div
                                   role="dialog"
                                   aria-modal="true"
+                                  aria-labelledby="nurse-detail-delete-title"
+                                  aria-describedby="nurse-detail-delete-description"
                                   className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                  <p id="nurse-detail-delete-title" className="font-apple text-[20px] font-semibold text-sub-1">
                                       {t('page.member.modal.deleteNurseTitle')}
                                   </p>
-                                  <p className="mt-2 font-apple text-[15px] text-gray-3">
+                                  <p id="nurse-detail-delete-description" className="mt-2 font-apple text-[15px] text-gray-3">
                                       <span className="font-semibold text-sub-1">
                                           {writeNurse.name.trim() ? writeNurse.name : t('page.member.common.selectedNurse')}
                                       </span>
@@ -1398,23 +1405,35 @@ function NurseDetailPanel({
                                   <div className="mt-6 flex items-center gap-3">
                                       <button
                                           type="button"
-                                          className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                          disabled={isDeletingNurse}
+                                          className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] disabled:cursor-not-allowed disabled:opacity-50"
                                           onClick={() => setDeleteConfirmModalOpen(false)}
                                       >
                                           {t('page.member.common.close')}
                                       </button>
                                       <button
                                           type="button"
-                                          className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                                          disabled={isDeletingNurse}
+                                          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434] disabled:cursor-not-allowed disabled:opacity-60"
                                           onClick={async () => {
+                                              if (!writeNurse.shiftTeamId || isDeletingNurse) return;
+
+                                              const deleted = await deleteNurse(writeNurse.shiftTeamId, writeNurse.nurseId);
+
+                                              if (!deleted) return;
+
                                               setDeleteConfirmModalOpen(false);
-
-                                              if (!writeNurse.shiftTeamId) return;
-
-                                              await deleteNurse(writeNurse.shiftTeamId, writeNurse.nurseId);
+                                              onClose();
                                           }}
                                       >
-                                          {t('page.member.common.deleteAction')}
+                                          {isDeletingNurse ? (
+                                              <>
+                                                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                                  {t('page.member.detail.deleting')}
+                                              </>
+                                          ) : (
+                                              t('page.member.common.deleteAction')
+                                          )}
                                       </button>
                                   </div>
                               </div>

@@ -554,6 +554,19 @@ describe('@dutying/api public entry', () => {
         expect(deleteMock).toHaveBeenCalledWith('/wards/7/waiting-nurses/42/v1');
     });
 
+    it('accepts the empty response returned when a shift-team nurse is deleted', async () => {
+        const client = createClient();
+        const deleteMock = client.delete as ReturnType<typeof vi.fn>;
+
+        deleteMock.mockResolvedValueOnce({data: undefined});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.removeNurseFromShiftTeam(7, 3, 42)).resolves.toBeUndefined();
+
+        expect(deleteMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/nurses/42', {suppressErrorToast: true});
+    });
+
     it('builds ward chat endpoints', async () => {
         const client = createClient();
         const getMock = client.get as ReturnType<typeof vi.fn>;

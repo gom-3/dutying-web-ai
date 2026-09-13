@@ -38,6 +38,8 @@ export type TSaveNurseDetails = {
 };
 
 const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
+const isNotFoundApiError = (error: unknown) =>
+    typeof error === 'object' && error !== null && 'code' in error && (error as {code?: unknown}).code === 404;
 const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').replace(/\D/g, '');
 const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
 const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clearBlank?: boolean} = {}) => {
@@ -147,6 +149,15 @@ const appendNurseToShiftTeams = (shiftTeams: TWard['shiftTeams'], shiftTeamId: n
 
         shiftTeam.nurses.push(nurse);
         shiftTeam.nurseCnt = Math.max(shiftTeam.nurseCnt ?? 0, shiftTeam.nurses.length);
+    });
+const removeNurseFromShiftTeams = (shiftTeams: TWard['shiftTeams'], shiftTeamId: number, nurseId: number) =>
+    produce(shiftTeams, (draft) => {
+        const shiftTeam = draft.find((team) => team.shiftTeamId === shiftTeamId);
+
+        if (!shiftTeam) return;
+
+        shiftTeam.nurses = shiftTeam.nurses.filter((nurse) => nurse.nurseId !== nurseId);
+        shiftTeam.nurseCnt = shiftTeam.nurses.length;
     });
 const resolveShiftTeams = (wardShiftTeams: TWard['shiftTeams'] | undefined, queriedShiftTeams: TWard['shiftTeams'] | undefined) => {
     const safeQueriedShiftTeams = Array.isArray(queriedShiftTeams) ? queriedShiftTeams : undefined;
@@ -313,44 +324,69 @@ const useEditShiftTeam = () => {
     );
     const deleteNurse = useCallback(
         async (shiftTeamId: number, nurseId: number) => {
-            if (!wardId) return;
-
-            if (isTempNurseId(nurseId)) {
-                const oldWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? ward;
-
-                if (oldWard) {
-                    queryClient.setQueryData<TWard>(
-                        wardQueryKey,
-                        produce(oldWard, (draft) => {
-                            const shiftTeam = draft.shiftTeams.find((team) => team.shiftTeamId === shiftTeamId);
-
-                            if (!shiftTeam) return;
-
-                            shiftTeam.nurses = shiftTeam.nurses.filter((nurse) => nurse.nurseId !== nurseId);
-                            shiftTeam.nurseCnt = shiftTeam.nurses.length;
-                        }),
-                    );
-                }
-
-                completeDeletingNurse();
-
-                return;
-            }
+            if (!wardId) return false;
 
             beginDeletingNurse();
 
             try {
-                await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
+                const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? effectiveWard;
+                const targetShiftTeam = currentWard?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
+
+                if (!isTempNurseId(nurseId)) {
+                    try {
+                        await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
+                    } catch (error) {
+                        if (!isNotFoundApiError(error)) throw error;
+                    }
+                }
+
+                if (currentWard) {
+                    queryClient.setQueryData<TWard>(
+                        wardQueryKey,
+                        produce(currentWard, (draft) => {
+                            draft.shiftTeams = removeNurseFromShiftTeams(draft.shiftTeams, shiftTeamId, nurseId);
+                            draft.nurseCnt = getShiftTeamNurseCount(draft.shiftTeams);
+                        }),
+                    );
+                }
+
+                queryClient.setQueryData<TWard['shiftTeams']>(shiftTeamsQueryKey, (currentShiftTeams) => {
+                    const baseShiftTeams = currentShiftTeams ?? currentWard?.shiftTeams;
+
+                    if (!baseShiftTeams) return currentShiftTeams;
+
+                    return removeNurseFromShiftTeams(baseShiftTeams, shiftTeamId, nurseId);
+                });
+                queryClient.setQueryData<TShiftTeamNurse[]>(wardQueryKeys.shiftTeamNurses(wardId, shiftTeamId), (currentNurses) => {
+                    const baseNurses = currentNurses ?? targetShiftTeam?.nurses;
+
+                    return baseNurses?.filter((nurse) => nurse.nurseId !== nurseId);
+                });
                 completeDeletingNurse();
                 toast.success(t('feature.editShiftTeam.deleteNurseSuccess'));
-                await invalidateWard();
-            } catch (error) {
-                showActionErrorFeedback(error, t('feature.editShiftTeam.deleteNurseFailed'));
+                void invalidateWardShiftAndRequest();
+
+                return true;
+            } catch {
+                toast.error(t('feature.editShiftTeam.deleteNurseFailed'));
+
+                return false;
             } finally {
                 finishDeletingNurse();
             }
         },
-        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, queryClient, t, ward, wardId, wardQueryKey],
+        [
+            beginDeletingNurse,
+            completeDeletingNurse,
+            effectiveWard,
+            finishDeletingNurse,
+            invalidateWardShiftAndRequest,
+            queryClient,
+            shiftTeamsQueryKey,
+            t,
+            wardId,
+            wardQueryKey,
+        ],
     );
     const disconnectNurse = useCallback(
         async (nurseId: number) => {

@@ -1921,7 +1921,7 @@ function MemberNurseRow({
         change: {isPossible?: boolean; isPreferred?: boolean; isPrefer?: boolean},
         shiftTypeMeta?: TUpdateNurseShiftMeta,
     ) => Promise<boolean>;
-    onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<void>;
+    onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<boolean>;
     onDisconnectNurse: (nurseId: number) => Promise<boolean>;
     onOpenWardCodeGuide: () => void;
     onSelect: () => void;
