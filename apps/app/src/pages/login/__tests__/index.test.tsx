@@ -90,6 +90,9 @@ describe('LoginPage', () => {
         expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
         expect(visualImages[1]).not.toHaveAttribute('src');
         expect(visualImages[0]).toHaveAttribute('src', '/img/login-slide-1.webp');
+        expect(visualImages[0]).not.toHaveClass('login-visual-slide-active');
+        fireEvent.load(visualImages[0]);
+        expect(visualImages[0]).toHaveClass('login-visual-slide-active');
         expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
             'srcset',
             '/img/login-slide-1.webp',
@@ -127,7 +130,11 @@ describe('LoginPage', () => {
             </MemoryRouter>,
         );
 
-        expect(document.querySelector('.login-visual-slide-active')).toHaveAttribute('src', expectedFirstSrc);
+        const firstVisualImage = document.querySelector('.login-visual-slide[src]') as HTMLImageElement;
+        expect(firstVisualImage).toHaveAttribute('src', expectedFirstSrc);
+        expect(firstVisualImage).not.toHaveClass('login-visual-slide-active');
+        fireEvent.load(firstVisualImage);
+        expect(firstVisualImage).toHaveClass('login-visual-slide-active');
         expect(document.querySelector('source[srcset]')).toHaveAttribute('srcset', expectedFirstSrc);
 
         fireEvent.click(document.querySelector('.login-visual-arrow-next') as HTMLButtonElement);

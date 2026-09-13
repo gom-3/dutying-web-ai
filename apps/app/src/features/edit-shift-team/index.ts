@@ -83,6 +83,8 @@ const canCreateNurse = (nurse: TUpdateNurseDTO) => (nurse.name ?? '').trim().len
 
 type TShiftTeamNurse = TWard['shiftTeams'][number]['nurses'][number];
 
+const appendNurseToList = (nurses: TShiftTeamNurse[], nurse: TShiftTeamNurse) =>
+    nurses.some((currentNurse) => currentNurse.nurseId === nurse.nurseId) ? nurses : [...nurses, nurse];
 const updateNurseInShiftTeams = (
     shiftTeams: TWard['shiftTeams'],
     nurseId: number,
@@ -284,8 +286,11 @@ const useEditShiftTeam = () => {
 
                     return appendNurseToShiftTeams(baseShiftTeams, shiftTeamId, createdNurse);
                 });
+                queryClient.setQueryData<TShiftTeamNurse[]>(wardQueryKeys.shiftTeamNurses(wardId, shiftTeamId), (currentNurses) =>
+                    appendNurseToList(currentNurses ?? targetShiftTeam?.nurses ?? [], createdNurse),
+                );
                 completeAddingNurse(createdNurse.nurseId);
-                void invalidateWard();
+                void invalidateWardShiftAndRequest();
                 toast.success(t('feature.editShiftTeam.addNurseSuccess', {name: nextName}), {position: 'bottom-center'});
             } catch (error) {
                 showActionErrorFeedback(error, t('feature.editShiftTeam.addNurseFailed'));
@@ -298,7 +303,7 @@ const useEditShiftTeam = () => {
             completeAddingNurse,
             effectiveWard,
             finishAddingNurse,
-            invalidateWard,
+            invalidateWardShiftAndRequest,
             queryClient,
             shiftTeamsQueryKey,
             t,

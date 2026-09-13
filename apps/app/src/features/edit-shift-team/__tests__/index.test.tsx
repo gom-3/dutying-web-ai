@@ -272,7 +272,8 @@ describe('useEditShiftTeam', () => {
         expect(result.current.state.isAddingNurse).toBe(false);
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
-        expect(mockSetQueryData).toHaveBeenCalled();
+        expect(mockSetQueryData).toHaveBeenCalledWith(['ward', 'shiftTeamNurses', 1, 10], expect.any(Function));
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['ward', 'shiftTeamNurses', 1]});
         expect(mockToastSuccess).toHaveBeenCalledWith('신규간호사1를 추가했어요.', {
             position: 'bottom-center',
         });

@@ -198,6 +198,7 @@ function LoginPage() {
     const [isConfirmingPasswordReset, setIsConfirmingPasswordReset] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [loginVisualSlideIndex, setLoginVisualSlideIndex] = useState(0);
+    const [hasInitialLoginVisualLoaded, setHasInitialLoginVisualLoaded] = useState(false);
     const loginVisualAutoRotateTimerRef = useRef<number | null>(null);
     const scheduleLoginVisualAutoRotateRef = useRef<(delay: number) => void>(() => undefined);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
@@ -707,10 +708,14 @@ function LoginPage() {
                                 src={isActive ? fallback : undefined}
                                 alt=""
                                 aria-hidden="true"
-                                className={cn('login-visual-slide', isActive && 'login-visual-slide-active')}
+                                className={cn(
+                                    'login-visual-slide',
+                                    isActive && hasInitialLoginVisualLoaded && 'login-visual-slide-active',
+                                )}
                                 decoding="async"
                                 fetchPriority={isActive ? 'high' : 'low'}
                                 loading={isActive ? 'eager' : 'lazy'}
+                                onLoad={() => setHasInitialLoginVisualLoaded(true)}
                             />
                         </picture>
                     );

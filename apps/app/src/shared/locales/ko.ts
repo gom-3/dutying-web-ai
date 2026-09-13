@@ -662,7 +662,7 @@ export const ko = {
             tutorial: {
                 stepper: {
                     title: '근무표 만들기',
-                    info: '진행선을 보면서 5단계를 차례대로 진행해요.',
+                    info: '진행선을 보면서 4단계를 차례대로 진행해요.',
                 },
                 constraints: {
                     title: '제약조건 추가하기',
