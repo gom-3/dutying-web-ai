@@ -74,6 +74,30 @@ export function toChipRequestItem(knob: TAutofillAdjustKnob, value: number, disp
     return {kind: 'KNOB', knob, value, lifetime: 'MONTH', origin: 'CHIP', displayLabel};
 }
 
+/** 카드에서 수락한 CELL 항목. 표에 바로 반영할 한 칸이다. */
+export type TInterpretCell = {
+    nurseId: number;
+    date: string;
+    shiftCode: string;
+};
+
+/**
+ * 카드 항목 중 표에 직접 반영할 칸들.
+ *
+ * "김OO 쌤 15일은 오프 줘" 처럼 사람·날짜·근무가 모두 정해진 문장은 규칙으로 표현할 수 없다.
+ * 세 값이 다 있는 것만 고른다 — 하나라도 비면 어느 칸인지 정해지지 않는다.
+ */
+export function toInterpretCells(cardItems: TInterpretCardItem[]): TInterpretCell[] {
+    return cardItems
+        .filter(({item}) => item.kind === 'CELL')
+        .map(({item}) => item)
+        .filter(
+            (item): item is TScheduleMonthRequestItem & TInterpretCell =>
+                typeof item.nurseId === 'number' && typeof item.date === 'string' && typeof item.shiftCode === 'string',
+        )
+        .map(({nurseId, date, shiftCode}) => ({nurseId, date, shiftCode}));
+}
+
 export type TInterpretCardItem = {
     item: TScheduleMonthRequestItem;
     lifetime: TScheduleMonthRequestLifetime;
@@ -89,7 +113,11 @@ export type TInterpretCardItem = {
  * 수명은 RULE 에서 언제나 MONTH 다: "계속"은 확정 승격으로만 간다.
  */
 export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText: string): TScheduleMonthRequestItem[] {
-    return cardItems.map(({item, lifetime, severity}) =>
+    return cardItems
+        // CELL 은 규칙이 아니라 표의 한 자리다. 이번 달 요청으로 보내면 서버가 거절하고,
+        // 저장된다 해도 재생성 때마다 한 칸짜리 지정이 되살아난다. 표에 직접 반영한다.
+        .filter(({item}) => item.kind !== 'CELL')
+        .map(({item, lifetime, severity}) =>
         item.kind === 'RULE'
             ? {
                   kind: 'RULE' as const,

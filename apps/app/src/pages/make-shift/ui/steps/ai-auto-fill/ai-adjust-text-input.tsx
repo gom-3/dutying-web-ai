@@ -159,7 +159,27 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                                 >
                                     <span className="text-13">{item.displayLabel ?? item.knob ?? item.templateCode}</span>
 
-                                    {item.kind === 'RULE' ? (
+                                    {/* 문장이 값을 주지 않아 해석이 고른 숫자. 반드시 드러낸다 — */}
+                                    {/* 말하지 않은 값이 조용히 규칙이 되면 사용자는 자기가 안 한 말을 떠안는다. */}
+                                    {(item.assumedSlots?.length ?? 0) > 0 && (
+                                        <span
+                                            title={t('page.makeShift.aiRefill.adjust.card.assumedTooltip')}
+                                            className="text-12 border-line text-sub rounded-full border border-dashed px-2 py-0.5"
+                                        >
+                                            {t('page.makeShift.aiRefill.adjust.card.assumedBadge')}
+                                            {item.assumedSlots
+                                                ?.map((slot) => item.params?.[slot])
+                                                .filter((value) => value !== undefined && value !== null)
+                                                .map((value) => ` ${String(value)}`)
+                                                .join('')}
+                                        </span>
+                                    )}
+
+                                    {item.kind === 'CELL' ? (
+                                        <span className="text-12 text-sub border-line rounded-full border px-2 py-0.5">
+                                            {item.date} · {item.shiftCode}
+                                        </span>
+                                    ) : item.kind === 'RULE' ? (
                                         <>
                                             <span className="text-12 text-sub border-line rounded-full border px-2 py-0.5">
                                                 {t('page.makeShift.aiRefill.adjust.monthRuleBadge')}

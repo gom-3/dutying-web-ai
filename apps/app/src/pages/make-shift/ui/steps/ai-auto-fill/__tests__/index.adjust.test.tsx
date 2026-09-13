@@ -215,7 +215,7 @@ function makeDoc(): TDutyDoc {
             {workerId: '10', cells: ['D', 'E', 'N', 'D']},
             {workerId: '11', cells: ['N', 'D', 'E', 'E']},
         ],
-        workerMeta: {'10': {name: 'Kim'}, '11': {name: 'Lee'}},
+        workerMeta: {'10': {name: 'Kim', nurseId: 910}, '11': {name: 'Lee', nurseId: 911}},
         fixedCells: {'10|2026-07-01': true},
         requestCells: {'10|2026-07-02': true},
     };
@@ -229,7 +229,7 @@ function makeEmptyDoc(): TDutyDoc {
             {workerId: '10', cells: [null, null, null, null]},
             {workerId: '11', cells: [null, null, null, null]},
         ],
-        workerMeta: {'10': {name: 'Kim'}, '11': {name: 'Lee'}},
+        workerMeta: {'10': {name: 'Kim', nurseId: 910}, '11': {name: 'Lee', nurseId: 911}},
         fixedCells: {},
         requestCells: {},
     };
@@ -755,6 +755,73 @@ describe('AiAutofill adjust panel', () => {
         });
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(2));
         expect(screen.queryByText('page.makeShift.aiRefill.adjust.card.title')).not.toBeInTheDocument();
+    });
+
+    it('writes a named cell into the table and pins it instead of sending it as a month request', async () => {
+        // "김OO 쌤 15일은 오프 줘" 는 규칙이 아니라 표의 한 자리다. 이번 달 요청으로 보내면
+        // 서버가 거절하고, 저장된다 해도 재생성 때마다 한 칸짜리 지정이 되살아난다.
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [{kind: 'CELL', nurseId: 911, date: '2026-07-03', shiftCode: 'O', displayLabel: 'Lee 3일 오프'}],
+            unmapped: [],
+            strength: 'NORMAL',
+        });
+
+        await openAdjustDialog(user);
+        await user.type(screen.getByRole('textbox', {name: 'page.makeShift.aiRefill.adjust.textInput.label'}), 'Lee 3일은 오프 줘');
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.textInput.submit'}));
+
+        expect(await screen.findByText('page.makeShift.aiRefill.adjust.card.title')).toBeInTheDocument();
+
+        const callsBefore = mocks.requestAiSchedule.mock.calls.length;
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.card.apply'}));
+
+        await waitFor(() => {
+            const {doc} = useShiftEditorStore.getState();
+
+            expect(doc.rows[1]?.cells[2]).toBe('O');
+        });
+        // 고정까지 해야 다음 조절이 그 칸을 다시 옮기지 않는다.
+        expect(useShiftEditorStore.getState().doc.fixedCells['11|2026-07-03']).toBe(true);
+        // 칸 지정만 있었으므로 다시 풀지 않는다.
+        expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(callsBefore);
+    });
+
+    it('marks a number the interpreter had to choose so the user can see it before accepting', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [
+                {
+                    kind: 'RULE',
+                    templateCode: 'MAX_CONSECUTIVE_SHIFT',
+                    params: {target: 'ALL', shift: 'D', count: 4},
+                    severity: 'SOFT',
+                    displayLabel: 'D 연속 4일까지',
+                    assumedSlots: ['count'],
+                },
+            ],
+            unmapped: [],
+            strength: 'NORMAL',
+        });
+
+        await openAdjustDialog(user);
+        await user.type(screen.getByRole('textbox', {name: 'page.makeShift.aiRefill.adjust.textInput.label'}), '데이는 너무 길지 않게');
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.textInput.submit'}));
+
+        expect(await screen.findByText('page.makeShift.aiRefill.adjust.card.title')).toBeInTheDocument();
+        // 배지에 우리가 고른 값이 함께 보여야 한다 — "기본값"만으로는 무엇이 4인지 알 수 없다.
+        expect(screen.getByText(/page\.makeShift\.aiRefill\.adjust\.card\.assumedBadge 4/)).toBeInTheDocument();
     });
 
     it('lets the sentence box be edited without the editor key bindings eating Backspace, arrows or shift keys', async () => {

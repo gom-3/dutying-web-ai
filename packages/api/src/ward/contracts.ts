@@ -516,7 +516,14 @@ export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX'
 /** 얼마나 바꿔도 되는지. 전체 셀의 10/20/40%가 하드 상한이다. */
 export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
 
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE';
+/**
+ * KNOB(방향 축) / RULE(이번 달 제약조건) / CELL(표의 한 칸 지정).
+ *
+ * CELL 은 규칙이 아니라 표의 한 자리라 이번 달 요청으로 **저장되지 않는다** — 카드에서
+ * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
+ * 서버가 거절한다.
+ */
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'CELL';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
@@ -541,6 +548,19 @@ export type TScheduleMonthRequestItem = {
     lifetimeHint?: TScheduleMonthRequestLifetime;
     origin?: TScheduleMonthRequestOrigin;
     requestText?: string;
+    /** CELL 일 때 대상 간호사(nurseId). 행의 workerId 가 아니라 `workerMeta[].nurseId` 와 맞춘다. */
+    nurseId?: number;
+    /** CELL 일 때 날짜(YYYY-MM-DD). 편집 중인 달 안이다. */
+    date?: string;
+    /** CELL 일 때 그 자리에 둘 근무 코드. */
+    shiftCode?: string;
+    /**
+     * 문장이 값을 주지 않아 해석기가 고른 슬롯 이름들.
+     *
+     * 카드는 이 슬롯의 값을 도드라지게 보여야 한다 — 말하지 않은 숫자가 조용히 규칙이 되면
+     * "내가 안 한 말이 규칙이 됐다"가 되고, 그게 이 기능의 신뢰를 깎는다.
+     */
+    assumedSlots?: string[];
 };
 
 /** 저장된 이번 달 요청 한 건. */

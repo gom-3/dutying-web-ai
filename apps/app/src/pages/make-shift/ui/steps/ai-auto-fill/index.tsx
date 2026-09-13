@@ -49,6 +49,8 @@ import {
     promotableRuleRequests,
     toTextRequestItems,
     type TInterpretCardItem,
+    type TInterpretCell,
+    toInterpretCells,
 } from '../../../model/schedule-month-requests';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
@@ -1265,10 +1267,66 @@ export function AiAutofill() {
             month,
         });
     };
+    /**
+     * 카드가 지정한 칸을 표에 직접 반영하고 고정한다.
+     *
+     * 고정까지 하는 이유: 사용자가 "15일은 오프" 라고 말한 칸을 다음 조절이 다시 옮기면
+     * 말한 대로 된 것이 아니다. 고정하면 `adjustLockedCellKeys` 가 그 칸을 잠긴 목록에
+     * 실어 보내므로 엔진도 건드리지 않는다.
+     *
+     * 반영한 칸 수를 돌려준다 — 표에 없는 간호사·날짜는 조용히 건너뛰므로, 호출부가
+     * "하나도 반영되지 않았다"를 사용자에게 말할 수 있어야 한다.
+     */
+    const applyInterpretCells = (cells: TInterpretCell[]): number => {
+        if (cells.length === 0) return 0;
+
+        const {doc} = useShiftEditorStore.getState();
+        const positions: TCellPos[] = [];
+        const byShiftCode = new Map<string, TCellPos[]>();
+
+        for (const {nurseId, date, shiftCode} of cells) {
+            const workerId = Object.keys(doc.workerMeta).find((id) => doc.workerMeta[id]?.nurseId === nurseId);
+
+            if (workerId === undefined) continue;
+
+            const row = doc.rows.findIndex((entry) => entry.workerId === workerId);
+            const col = doc.columns.indexOf(date);
+
+            if (row < 0 || col < 0) continue;
+
+            const position = {row, col};
+
+            positions.push(position);
+            byShiftCode.set(shiftCode, [...(byShiftCode.get(shiftCode) ?? []), position]);
+        }
+
+        if (positions.length === 0) return 0;
+
+        // 근무 코드마다 한 번씩 — setCells 는 한 값만 받는다.
+        byShiftCode.forEach((cellPositions, shiftCode) => commands.setCells(cellPositions, shiftCode, 'user'));
+        commands.setCellsFixed(positions, true, 'user');
+
+        return positions.length;
+    };
     const handleApplyTextRequests = (items: TInterpretCardItem[], requestText: string) => {
         const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
+        const cells = toInterpretCells(items);
+        // 칸 지정을 먼저 반영한다. 그래야 이어지는 조절이 그 칸을 잠긴 것으로 보고 피해 간다.
+        const appliedCells = applyInterpretCells(cells);
 
-        if (requests.length === 0) return;
+        if (cells.length > 0 && appliedCells === 0) {
+            toast.error(t('page.makeShift.aiRefill.adjust.card.cellNotApplied'));
+        } else if (appliedCells > 0) {
+            toast.success(t('page.makeShift.aiRefill.adjust.card.cellApplied', {count: appliedCells}));
+        }
+
+        if (requests.length === 0) {
+            // 칸 지정만 있었다면 표는 이미 바뀌었다. 다시 풀지 않는다 — 사용자가 부탁한 것은
+            // 그 칸이지 근무표 전체가 아니고, 재해결은 "조절"을 다시 누르면 된다.
+            if (appliedCells > 0) setIsAdjustDialogOpen(false);
+
+            return;
+        }
 
         const readyContext = getAiFillReadyContext();
 
