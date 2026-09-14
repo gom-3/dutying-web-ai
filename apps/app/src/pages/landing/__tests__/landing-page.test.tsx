@@ -69,6 +69,8 @@ describe('LandingPage', () => {
         expect(screen.getByRole('link', {name: '웹에서 근무표 만들기'})).toHaveAttribute('href', `${ROUTE.LOGIN}?next=%2Fmake`);
         expect(screen.getByRole('link', {name: '근무표 관리자 웹'})).toHaveAttribute('href', '#web');
         expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '#app');
+        expect(screen.getByRole('link', {name: '이용약관'})).toHaveAttribute('href', ROUTE.TERMS);
+        expect(screen.getByRole('link', {name: '개인정보 처리방침'})).toHaveAttribute('href', ROUTE.PRIVACY);
 
         await user.click(screen.getByRole('button', {name: '언어 선택'}));
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('href', ROUTE.LANDING_EN);

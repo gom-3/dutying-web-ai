@@ -9,7 +9,6 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
-import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -18,8 +17,8 @@ import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import './landing-page.css';
 
-const termsOfServiceLink = RUNTIME_CONFIG.docs.termsOfService;
-const privacyPolicyLink = RUNTIME_CONFIG.docs.privacyPolicy;
+const termsOfServiceLink = ROUTE.TERMS;
+const privacyPolicyLink = ROUTE.PRIVACY;
 const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';

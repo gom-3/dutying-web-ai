@@ -1,3 +1,4 @@
+import {constraintRuleHelpJa} from './constraint-rule-help';
 import {en} from './en';
 import type {TLocale} from './ko';
 
@@ -1455,6 +1456,7 @@ export const ja: TLocale = {
             },
             constraints: {
                 ...en.page.makeShift.constraints,
+                help: constraintRuleHelpJa,
                 section: {
                     strong: '強制約',
                     weak: '弱制約',

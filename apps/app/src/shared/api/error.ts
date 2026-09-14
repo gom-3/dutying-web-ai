@@ -1,5 +1,5 @@
-import i18n from 'i18next';
 import type {TApiErrorDisplayPolicy, TApiErrorResponse} from '@dutying/api';
+import i18n from 'i18next';
 
 export type {TApiErrorDisplayPolicy, TApiErrorResponse};
 
@@ -14,17 +14,20 @@ export type TApiClientError = Error & {
     originalError: unknown;
 };
 
+export const SCHEDULE_ROSTER_CHANGED_EVENT = 'dutying:schedule-roster-changed';
+
+export type TScheduleRosterChangedEventDetail = {
+    message?: string;
+    requestId?: string;
+    traceId?: string;
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isDisplayPolicy(value: unknown): value is TApiErrorDisplayPolicy {
-    return (
-        value === 'CLIENT_TRANSLATE' ||
-        value === 'SERVER_TEXT' ||
-        value === 'SERVER_TEXT_WITH_LANGUAGE' ||
-        value === 'DEBUG_ONLY'
-    );
+    return value === 'CLIENT_TRANSLATE' || value === 'SERVER_TEXT' || value === 'SERVER_TEXT_WITH_LANGUAGE' || value === 'DEBUG_ONLY';
 }
 
 function optionalString(value: unknown) {
@@ -43,12 +46,47 @@ export function normalizeApiErrorResponse(value: unknown): TApiErrorResponse | u
         displayPolicy: isDisplayPolicy(value.displayPolicy) ? value.displayPolicy : undefined,
         requestId: optionalString(value.requestId),
         traceId: optionalString(value.traceId),
-        errors: Array.isArray(value.errors) ? value.errors.filter(isRecord).map((error) => ({
-            field: optionalString(error.field),
-            message: optionalString(error.message),
-            messageKey: optionalString(error.messageKey),
-        })) : undefined,
+        errors: Array.isArray(value.errors)
+            ? value.errors.filter(isRecord).map((error) => ({
+                  field: optionalString(error.field),
+                  message: optionalString(error.message),
+                  messageKey: optionalString(error.messageKey),
+              }))
+            : undefined,
     };
+}
+
+export function isScheduleRosterChangedApiError(error: unknown): boolean {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'serverCode' in error &&
+        (error as {serverCode?: unknown}).serverCode === 'SCHEDULE_ROSTER_CHANGED'
+    );
+}
+
+export function emitScheduleRosterChanged(errorResponse: TApiErrorResponse | undefined) {
+    if (errorResponse?.code !== 'SCHEDULE_ROSTER_CHANGED' || typeof window === 'undefined') return;
+
+    window.dispatchEvent(
+        new CustomEvent<TScheduleRosterChangedEventDetail>(SCHEDULE_ROSTER_CHANGED_EVENT, {
+            detail: {
+                message: errorResponse.message,
+                requestId: errorResponse.requestId,
+                traceId: errorResponse.traceId,
+            },
+        }),
+    );
+}
+
+export function onScheduleRosterChanged(listener: (detail: TScheduleRosterChangedEventDetail) => void) {
+    if (typeof window === 'undefined') return () => undefined;
+
+    const handle = (event: Event) => listener((event as CustomEvent<TScheduleRosterChangedEventDetail>).detail);
+
+    window.addEventListener(SCHEDULE_ROSTER_CHANGED_EVENT, handle);
+
+    return () => window.removeEventListener(SCHEDULE_ROSTER_CHANGED_EVENT, handle);
 }
 
 function translateMessageKey(errorResponse: TApiErrorResponse | undefined) {
@@ -57,10 +95,7 @@ function translateMessageKey(errorResponse: TApiErrorResponse | undefined) {
     return i18n.t(errorResponse.messageKey, errorResponse.messageArgs ?? {});
 }
 
-export function resolveApiErrorMessage(
-    errorResponse: TApiErrorResponse | undefined,
-    fallbackMessage = i18n.t('shared.api.requestFailed'),
-) {
+export function resolveApiErrorMessage(errorResponse: TApiErrorResponse | undefined, fallbackMessage = i18n.t('shared.api.requestFailed')) {
     const translated = translateMessageKey(errorResponse);
     const serverMessage = errorResponse?.message;
 

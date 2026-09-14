@@ -21,6 +21,7 @@ import {
     useShiftEditorStore,
     useViolationMap,
 } from '@/features/shift-editor';
+import {onScheduleRosterChanged} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {getCurrentTeamNurses, sortDutyDocByTeamNurseOrder} from '../../../model/nurse-order-sync';
@@ -321,6 +322,16 @@ export function useDutyEditorStep({
     const isAwaitingEditorHydration =
         enabled && dutyQuery.data !== undefined && !isWaitingForEditorSources && hydratedEditorContextKey !== currentContextKey;
     const isHydratingEditor = isWaitingForEditorSources || isAwaitingEditorHydration;
+
+    useEffect(
+        () =>
+            onScheduleRosterChanged(() => {
+                // bootstrap의 흐름 재조회와 별개로, 현재 에디터가 쓰는 Query 캐시도 즉시 새로 가져온다.
+                void dutyQuery.refetch();
+                void workspaceQuery.refetch();
+            }),
+        [dutyQuery.refetch, workspaceQuery.refetch],
+    );
 
     useEffect(() => {
         if (workspaceQuery.data?.rulesHash) {

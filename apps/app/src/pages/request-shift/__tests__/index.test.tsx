@@ -17,6 +17,8 @@ const translations: Record<string, string> = {
     'page.request.emptyGuide.title': '간호사에게 듀팅 앱으로 신청근무를 받아보세요',
     'page.request.emptyGuide.description': '간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.',
     'page.request.emptyGuide.directEntry': '직접 정하려면 다음 단계에서 입력할 수 있어요.',
+    'page.request.emptyGuide.requestPageDirectEntry':
+        '신청근무를 직접 등록하려면 ‘근무표 만들기’ 4단계에서 원하는 근무를 고정할 수 있어요.',
     'page.request.emptyGuide.close': '안내 닫기',
     'page.state.retry': '다시 시도',
     'page.state.errorDescription': '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
@@ -233,7 +235,7 @@ describe('RequestShiftPage', () => {
         expect(screen.getByText('request-calendar')).toBeInTheDocument();
     });
 
-    it('신청근무가 없으면 2초 뒤 캘린더 위에 앱 신청 안내를 보여준다', () => {
+    it('신청근무가 없으면 1초 뒤 캘린더 위에 앱 신청 안내를 보여준다', () => {
         vi.useFakeTimers();
         mockUseRequestShift.mockReturnValue(
             createUseRequestShiftValue({
@@ -245,15 +247,30 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        act(() => vi.advanceTimersByTime(1_999));
+        act(() => vi.advanceTimersByTime(999));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
         act(() => vi.advanceTimersByTime(1));
 
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-        expect(screen.getByText('간호사에게 듀팅 앱으로 신청근무를 받아보세요')).toBeInTheDocument();
+        const dialog = screen.getByRole('dialog');
+        const title = screen.getByRole('heading', {name: '간호사에게 듀팅 앱으로 신청근무를 받아보세요'});
+        const description = screen.getByText('간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.');
+
+        expect(dialog).toHaveClass('overflow-y-auto');
+        expect(title).toHaveClass('whitespace-normal', 'break-normal', '[overflow-wrap:anywhere]', '[text-wrap:balance]');
+        expect(title).not.toHaveClass('break-keep', 'sm:whitespace-nowrap');
+        expect(description).toHaveClass('[overflow-wrap:anywhere]', '[text-wrap:pretty]');
+        expect(description.parentElement).toHaveClass('min-w-0', 'break-normal', '[overflow-wrap:anywhere]');
+        expect(screen.getByText('신청근무를 직접 등록하려면 ‘근무표 만들기’ 4단계에서 원하는 근무를 고정할 수 있어요.')).toHaveClass(
+            '[overflow-wrap:anywhere]',
+            '[text-wrap:pretty]',
+        );
         expect(screen.getByTestId('request-calendar-content')).toHaveClass('blur-[3px]', 'opacity-65');
-        expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute('href', IOS_APP_STORE_URL_KO);
+
+        const appStoreLink = screen.getByRole('link', {name: 'App Store'});
+
+        expect(appStoreLink).toHaveAttribute('href', IOS_APP_STORE_URL_KO);
+        expect(appStoreLink.parentElement).toHaveClass('flex-wrap');
         expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute('href', ANDROID_PLAY_STORE_URL_KO);
 
         fireEvent.click(screen.getByRole('button', {name: '안내 닫기'}));

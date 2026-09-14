@@ -1,7 +1,9 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
+import {ko} from '@/shared/i18n/resources.generated';
 import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {useSchedulePublishSuccessStore} from '../../../../model/schedule-publish-success-store';
 import {AiAutofill} from '../index';
 
 const mocks = vi.hoisted(() => ({
@@ -17,6 +19,11 @@ const mocks = vi.hoisted(() => ({
     setStepNavigationBusy: vi.fn(),
     moveScheduleRow: vi.fn(),
     currentTeamNurses: [] as Array<{isConnected: boolean}>,
+    wardApi: {
+        getSnapshots: vi.fn(),
+        saveSnapshot: vi.fn(),
+        publishSnapshot: vi.fn(),
+    },
     shift: {
         days: [],
         wardShiftTypes: [],
@@ -44,9 +51,15 @@ vi.mock('@/features/shift-editor', async (importOriginal) => {
 
     return {
         ...actual,
+        buildSaveSnapshotDTO: () => ({}),
+        docToShift: () => mocks.shift,
         useAsyncScheduleValidation: () => ({status: 'idle'}),
     };
 });
+
+vi.mock('@/shared/api/ward', () => ({
+    default: mocks.wardApi,
+}));
 
 vi.mock('@/widgets/navigation-bar/navigation-bar-fold-store', () => ({
     useNavigationBarFoldStore: (selector: (state: {collapse: () => void}) => unknown) => selector({collapse: vi.fn()}),
@@ -242,6 +255,10 @@ describe('AiAutofill blank preview', () => {
         mocks.setStepNavigationBusy.mockReset();
         mocks.moveScheduleRow.mockReset();
         mocks.currentTeamNurses = [];
+        mocks.wardApi.getSnapshots.mockReset().mockResolvedValue({snapshots: []});
+        mocks.wardApi.saveSnapshot.mockReset().mockResolvedValue({snapshotId: 101});
+        mocks.wardApi.publishSnapshot.mockReset().mockResolvedValue(undefined);
+        useSchedulePublishSuccessStore.getState().close();
         seedEditor();
     });
 
@@ -282,7 +299,7 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'10|2026-07-02': true});
     });
 
-    it('confirms immediately without a publish confirmation when no nurses are connected', async () => {
+    it('shows the success dialog without a negative delivery message when no nurses are connected', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
@@ -292,6 +309,14 @@ describe('AiAutofill blank preview', () => {
         await waitFor(() =>
             expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'})).not.toBeInTheDocument(),
         );
+        await waitFor(() =>
+            expect(useSchedulePublishSuccessStore.getState().notice).toEqual({connectedNurseCount: 0, showConnectionHint: true}),
+        );
+        expect(ko.page.makeShift.aiRefill.publishSuccessWithoutRecipients).toBe('병동코드를 간호사에게 공유해 주세요.');
+        expect(ko.page.makeShift.aiRefill.publishSuccessConnectionDescription).toBe(
+            '듀팅 앱에서 확정된 근무표를 자동으로 받아볼 수 있어요!',
+        );
+        expect(ko.page.makeShift.aiRefill.publishSuccessWithoutRecipients).not.toContain('연동된 인원이 없어');
     });
 
     it('uses the purple previous-shift warning image in the publish confirmation', async () => {
@@ -306,6 +331,36 @@ describe('AiAutofill blank preview', () => {
         const dialog = await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'});
 
         expect(dialog.querySelector('img')).toHaveAttribute('src', expect.stringContaining('purple-warn-icon'));
+    });
+
+    it('adds the connection hint to the animated success dialog when any nurse is unlinked', async () => {
+        const user = userEvent.setup();
+
+        mocks.currentTeamNurses = [{isConnected: true}, {isConnected: false}];
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'confirm'}));
+        await user.click(await screen.findByRole('button', {name: 'page.makeShift.aiRefill.publishConfirm.confirm'}));
+
+        await waitFor(() =>
+            expect(useSchedulePublishSuccessStore.getState().notice).toEqual({connectedNurseCount: 1, showConnectionHint: true}),
+        );
+    });
+
+    it('does not show the connection hint when every nurse is connected', async () => {
+        const user = userEvent.setup();
+
+        mocks.currentTeamNurses = [{isConnected: true}];
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'confirm'}));
+        await user.click(await screen.findByRole('button', {name: 'page.makeShift.aiRefill.publishConfirm.confirm'}));
+
+        await waitFor(() =>
+            expect(useSchedulePublishSuccessStore.getState().notice).toEqual({connectedNurseCount: 1, showConnectionHint: false}),
+        );
     });
 
     it('shows every shift cell in the decision dialog before autofill starts', async () => {

@@ -9,7 +9,7 @@ import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup
 import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
-import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
+import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
@@ -113,7 +113,7 @@ const LegalAgreementOptions = ({
             <span>
                 <span className="font-semibold text-main-1">{t('page.login.requiredConsentLabel')}</span>{' '}
                 <a
-                    href={RUNTIME_CONFIG.docs.termsOfService}
+                    href={ROUTE.TERMS}
                     target="_blank"
                     rel="noreferrer"
                     className="text-sub-2 underline underline-offset-[3px]"
@@ -139,7 +139,7 @@ const LegalAgreementOptions = ({
         <p className="pl-6 text-xs leading-5 text-gray-3">
             {t('page.login.privacyNoticePrefix')}{' '}
             <a
-                href={RUNTIME_CONFIG.docs.privacyPolicy}
+                href={ROUTE.PRIVACY}
                 target="_blank"
                 rel="noreferrer"
                 className="text-gray-3 underline underline-offset-[3px]"

@@ -1,13 +1,9 @@
 import {Bell, ChevronRight, ExternalLink, FileText, MessageCircle, ShieldCheck, type LucideIcon} from 'lucide-react';
 import {Link} from 'react-router-dom';
-import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
-
-const TERMS_OF_SERVICE_LINK = RUNTIME_CONFIG.docs.termsOfService;
-const PRIVACY_POLICY_LINK = RUNTIME_CONFIG.docs.privacyPolicy;
 
 type TDutyingLinkItem = {
     titleKey: TI18nKey;
@@ -91,13 +87,13 @@ function DutyingPage() {
         {
             titleKey: 'page.dutying.items.terms.title',
             descriptionKey: 'page.dutying.items.terms.description',
-            href: TERMS_OF_SERVICE_LINK,
+            href: ROUTE.TERMS,
             Icon: FileText,
         },
         {
             titleKey: 'page.dutying.items.privacy.title',
             descriptionKey: 'page.dutying.items.privacy.description',
-            href: PRIVACY_POLICY_LINK,
+            href: ROUTE.PRIVACY,
             Icon: ShieldCheck,
         },
     ];

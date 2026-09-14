@@ -1,6 +1,13 @@
 import {useEffect, useMemo, useRef} from 'react';
+import toast from 'react-hot-toast';
 import {useSearchParams} from 'react-router';
-import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {
+    isDutyShiftFullyAssigned,
+    isDutyShiftWithoutAssignments,
+    useShiftEditorCommands,
+    useShiftEditorStore,
+} from '@/features/shift-editor';
+import {onScheduleRosterChanged} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
@@ -88,6 +95,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
     const reloadToken = useMakeShiftStore((s) => s.reloadToken);
+    const requestReload = useMakeShiftStore((s) => s.requestReload);
     const isHydrated = useMakeShiftStore((s) => s.isHydrated);
     const setHydrated = useMakeShiftStore((s) => s.setHydrated);
     const setWardId = useMakeShiftStore((s) => s.setWardId);
@@ -105,6 +113,16 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     useEffect(() => {
         setWardId(wardId);
     }, [wardId, setWardId]);
+
+    useEffect(
+        () =>
+            onScheduleRosterChanged(() => {
+                // 이 신호는 저장/확정을 재시도하라는 뜻이 아니다.
+                // bootstrap을 다시 돌려 서버가 현재 명단에 재투영한 문서를 받는다.
+                requestReload();
+            }),
+        [requestReload],
+    );
 
     useEffect(() => {
         if (isHydrated || !wardId) return;
@@ -245,16 +263,29 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 // 조절 칩 노출 여부는 서버 판정이다. 에디터 스텝의 workspace 쿼리와 같은 규칙으로 스토어에 싣는다.
                 setAutofillAdjustEnabled(workspace?.autofillAdjustEnabled === true);
 
+                const rosterReconciliation = workspace?.rosterReconciliation;
+                const requiresRosterReview = rosterReconciliation?.requiresReview === true;
+
+                if (requiresRosterReview && rosterReconciliation.message) {
+                    toast(rosterReconciliation.message, {
+                        id: 'make-shift-roster-reconciliation',
+                        duration: 8000,
+                    });
+                }
+
                 const workspaceWorkflowStep = getShiftWorkflowStep(workspace);
                 const shiftWorkflowStep = getShiftWorkflowStep(shift);
                 const workspaceWorkflowStatus = getShiftWorkflowStatus(workspace);
                 const shiftWorkflowStatus = getShiftWorkflowStatus(shift);
-                const workflowStep = workspaceWorkflowStep ?? shiftWorkflowStep;
-                const workflowStatus =
-                    workspaceWorkflowStatus ??
-                    shiftWorkflowStatus ??
-                    getWorkflowStatusFromStep(workspaceWorkflowStep) ??
-                    getWorkflowStatusFromStep(shiftWorkflowStep);
+                // 구 서버가 확정 상태를 그대로 내려도 reconciliation 신호가 있으면
+                // 변경된 명단을 검토하기 전에 확정 완료로 오인하지 않는다.
+                const workflowStep = requiresRosterReview ? MAKE_SHIFT_AUTHORING_STEP : (workspaceWorkflowStep ?? shiftWorkflowStep);
+                const workflowStatus = requiresRosterReview
+                    ? 'IN_PROGRESS'
+                    : (workspaceWorkflowStatus ??
+                      shiftWorkflowStatus ??
+                      getWorkflowStatusFromStep(workspaceWorkflowStep) ??
+                      getWorkflowStatusFromStep(shiftWorkflowStep));
                 const savedStep = loadDraftStep(wardId, currentShiftTeamId, year, month);
                 const hasAssignments = !isDutyShiftWithoutAssignments(shift);
                 const isOnboardingInitialSchedule = isInitialScheduleTarget(

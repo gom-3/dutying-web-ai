@@ -1046,9 +1046,11 @@ export const ko = {
                     "noConnectedDescription": "확정되지만 연동된 인원이 없어 앱 게시와 알림은 전송되지 않아요.",
                     "title": "근무표를 확정할까요?"
                 },
-                "publishSuccess": "근무표를 확정하고 게시했어요.",
-                "publishSuccessWithRecipients": "근무표를 확정하고 {{count}}명에게 게시·알림을 보냈어요.",
-                "publishSuccessWithoutRecipients": "근무표를 확정했어요. 연동된 인원이 없어 게시·알림은 전송되지 않았어요.",
+                "publishSuccess": "근무표가 확정되었어요",
+                "publishSuccessConfirm": "확인",
+                "publishSuccessConnectionDescription": "듀팅 앱에서 확정된 근무표를 자동으로 받아볼 수 있어요!",
+                "publishSuccessWithRecipients": "연동된 {{count}}명에게 근무표를 자동으로 전송했어요.",
+                "publishSuccessWithoutRecipients": "병동코드를 간호사에게 공유해 주세요.",
                 "requestFailed": "AI 자동 채우기를 완료하지 못했어요.",
                 "resetAction": "초기화",
                 "retry": "다시 시도",
@@ -1394,7 +1396,7 @@ export const ko = {
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
                         "label": "근무자 조합",
-                        "sentence": "{nurseA}과 {nurseB}은 같은 근무를 피해요"
+                        "sentence": "{nurseA} · {nurseB} 두 간호사는 같은 날짜에 서로 다른 근무를 하도록 배정해요"
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "사람별 근무 제한",
@@ -1402,7 +1404,7 @@ export const ko = {
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "근무자 조합",
-                        "sentence": "{nurseA}은 {nurseB}과 같은 근무를 하는 것이 좋아요"
+                        "sentence": "{nurseA} · {nurseB} 두 간호사는 같은 날짜에 같은 근무를 하도록 우선 배정해요"
                     },
                     "AVOID_ISOLATED_OFF_DAY": {
                         "label": "연속 근무·휴무 조건",
@@ -2621,6 +2623,13 @@ export const ko = {
                     "readonly": "수정할 수 없는 달이라 신청 근무 위치만 확인할 수 있어요.",
                     "rejected": "현재 근무표에는 다른 근무로 확정되어 있어요."
                 }
+            },
+            "emptyGuide": {
+                "close": "안내 닫기",
+                "description": "간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.",
+                "directEntry": "직접 정하려면 다음 단계에서 입력할 수 있어요.",
+                "requestPageDirectEntry": "신청근무를 직접 등록하려면 ‘근무표 만들기’ 4단계에서 원하는 근무를 고정할 수 있어요.",
+                "title": "간호사에게 듀팅 앱으로 신청근무를 받아보세요"
             },
             "changeEvent": {
                 "add": "추가 → {{shiftType}}",
@@ -4148,9 +4157,11 @@ export const en: TLocale = {
                     "noConnectedDescription": "The schedule will be confirmed but it will not be posted in the app or send notifications because no nurses are connected.",
                     "title": "Confirm this schedule?"
                 },
-                "publishSuccess": "Schedule confirmed and published.",
-                "publishSuccessWithRecipients": "Schedule confirmed and shared with {{count}} nurses with a notification.",
-                "publishSuccessWithoutRecipients": "Schedule confirmed. No app post or notification was sent because no nurses are connected.",
+                "publishSuccess": "Schedule confirmed",
+                "publishSuccessConfirm": "OK",
+                "publishSuccessConnectionDescription": "You can automatically receive confirmed schedules in the Dutying app!",
+                "publishSuccessWithRecipients": "The schedule was sent automatically to {{count}} connected nurses.",
+                "publishSuccessWithoutRecipients": "Share the ward code with your nurses.",
                 "requestFailed": "Could not complete AI autofill.",
                 "resetAction": "Reset",
                 "retry": "Retry",
@@ -5724,6 +5735,13 @@ export const en: TLocale = {
                     "rejected": "The current schedule is confirmed with another shift."
                 }
             },
+            "emptyGuide": {
+                "close": "Close guide",
+                "description": "Nurses can submit their preferred shifts in the app. Review them all here.",
+                "directEntry": "To assign shifts yourself, enter them in the next step.",
+                "requestPageDirectEntry": "To add shift requests manually, fix the shifts you want in step 4 of Create schedule.",
+                "title": "Collect shift requests with the Dutying app"
+            },
             "changeEvent": {
                 "add": "Add → {{shiftType}}",
                 "delete": "{{shiftType}} → Delete",
@@ -7248,9 +7266,11 @@ export const ja: TLocale = {
                     "noConnectedDescription": "勤務表は確定しますが連携済みのスタッフがいないためアプリへの公開と通知は行われません。",
                     "title": "この勤務表を確定しますか？"
                 },
-                "publishSuccess": "勤務表を確定して公開しました。",
-                "publishSuccessWithRecipients": "勤務表を確定して{{count}}名に公開し通知しました。",
-                "publishSuccessWithoutRecipients": "勤務表を確定しました。連携済みのスタッフがいないため公開と通知は行われませんでした。",
+                "publishSuccess": "勤務表を確定しました",
+                "publishSuccessConfirm": "確認",
+                "publishSuccessConnectionDescription": "Dutyingアプリで確定した勤務表を自動的に受け取れます！",
+                "publishSuccessWithRecipients": "連携済みの{{count}}名に勤務表を自動送信しました。",
+                "publishSuccessWithoutRecipients": "病棟コードを看護師に共有してください。",
                 "requestFailed": "AI自動入力を完了できませんでした。",
                 "resetAction": "リセット",
                 "retry": "再試行",
@@ -8824,6 +8844,13 @@ export const ja: TLocale = {
                     "rejected": "現在の勤務表では別の勤務で確定しています。"
                 }
             },
+            "emptyGuide": {
+                "close": "案内を閉じる",
+                "description": "看護師がアプリから希望勤務を送信するとここでまとめて確認できます。",
+                "directEntry": "直接決める場合は次のステップで入力できます。",
+                "requestPageDirectEntry": "希望勤務を直接登録する場合は「勤務表作成」のステップ4で希望する勤務を固定できます。",
+                "title": "Dutyingアプリで看護師から希望勤務を受け取りましょう"
+            },
             "changeEvent": {
                 "add": "追加 → {{shiftType}}",
                 "delete": "{{shiftType}} → 削除",
@@ -10348,9 +10375,11 @@ export const zh: TLocale = {
                     "noConnectedDescription": "排班表会被确认但由于没有已连接的护士不会在应用中发布也不会发送通知。",
                     "title": "确认这份排班表吗？"
                 },
-                "publishSuccess": "已确认并发布排班表。",
-                "publishSuccessWithRecipients": "已确认排班表并向 {{count}} 名护士发布和发送通知。",
-                "publishSuccessWithoutRecipients": "排班表已确认。由于没有已连接的护士未发布到应用也未发送通知。",
+                "publishSuccess": "排班表已确认",
+                "publishSuccessConfirm": "确定",
+                "publishSuccessConnectionDescription": "您可以在 Dutying 应用中自动接收已确认的排班表！",
+                "publishSuccessWithRecipients": "已将排班表自动发送给 {{count}} 名已关联的护士。",
+                "publishSuccessWithoutRecipients": "请将病区代码分享给护士。",
                 "requestFailed": "AI 自动填充无法完成。",
                 "resetAction": "重置",
                 "retry": "再试一次",
@@ -11924,6 +11953,13 @@ export const zh: TLocale = {
                     "rejected": "当前排班显示为其他班次。"
                 }
             },
+            "emptyGuide": {
+                "close": "关闭提示",
+                "description": "护士在 App 中提交希望的班次后，您可以在此统一查看。",
+                "directEntry": "如需自行安排，可在下一步直接录入。",
+                "requestPageDirectEntry": "如需手动登记班次申请，可在“创建排班表”的第 4 步固定所需班次。",
+                "title": "让护士通过 Dutying App 提交班次申请"
+            },
             "changeEvent": {
                 "add": "添加 → {{shiftType}}",
                 "delete": "{{shiftType}} → 删除",
@@ -13448,9 +13484,11 @@ export const th: TLocale = {
                     "noConnectedDescription": "กำหนดการจะได้รับการยืนยันแต่จะไม่เผยแพร่ในแอปหรือส่งการแจ้งเตือนเนื่องจากไม่มีพยาบาลที่เชื่อมต่อ",
                     "title": "ยืนยันกำหนดการนี้ไหม?"
                 },
-                "publishSuccess": "กำหนดการได้รับการยืนยันและเผยแพร่แล้ว",
-                "publishSuccessWithRecipients": "ยืนยันกำหนดการและเผยแพร่พร้อมส่งการแจ้งเตือนให้พยาบาล {{count}} คนแล้ว",
-                "publishSuccessWithoutRecipients": "ยืนยันกำหนดการแล้ว ไม่ได้เผยแพร่หรือส่งการแจ้งเตือนเนื่องจากไม่มีพยาบาลที่เชื่อมต่อ",
+                "publishSuccess": "ยืนยันตารางเวรแล้ว",
+                "publishSuccessConfirm": "ตกลง",
+                "publishSuccessConnectionDescription": "รับตารางเวรที่ยืนยันแล้วโดยอัตโนมัติในแอป Dutying!",
+                "publishSuccessWithRecipients": "ส่งตารางเวรให้พยาบาลที่เชื่อมต่อแล้ว {{count}} คนโดยอัตโนมัติ",
+                "publishSuccessWithoutRecipients": "แชร์รหัสวอร์ดให้พยาบาล",
                 "requestFailed": "ไม่สามารถกรอก AI อัตโนมัติได้",
                 "resetAction": "รีเซ็ต",
                 "retry": "ลองอีกครั้ง",
@@ -15024,6 +15062,13 @@ export const th: TLocale = {
                     "rejected": "กำหนดการปัจจุบันได้รับการยืนยันด้วยการเปลี่ยนแปลงอื่น"
                 }
             },
+            "emptyGuide": {
+                "close": "ปิดคำแนะนำ",
+                "description": "เมื่อพยาบาลส่งเวรที่ต้องการผ่านแอป คุณสามารถตรวจสอบทั้งหมดได้ที่นี่",
+                "directEntry": "หากต้องการกำหนดเอง สามารถกรอกได้ในขั้นตอนถัดไป",
+                "requestPageDirectEntry": "หากต้องการลงคำขอเวรด้วยตนเอง ให้ตรึงเวรที่ต้องการในขั้นตอนที่ 4 ของ “สร้างกำหนดการ”",
+                "title": "รับคำขอเวรจากพยาบาลผ่านแอป Dutying"
+            },
             "changeEvent": {
                 "add": "เพิ่ม → {{shiftType}}",
                 "delete": "{{shiftType}} → ลบ",
@@ -16548,9 +16593,11 @@ export const vi: TLocale = {
                     "noConnectedDescription": "Lịch sẽ được xác nhận nhưng không đăng trong ứng dụng hoặc gửi thông báo vì không có điều dưỡng nào được kết nối.",
                     "title": "Xác nhận lịch này?"
                 },
-                "publishSuccess": "lịch được xác nhận và công bố.",
-                "publishSuccessWithRecipients": "Đã xác nhận lịch và đăng kèm thông báo cho {{count}} điều dưỡng.",
-                "publishSuccessWithoutRecipients": "Đã xác nhận lịch. Không đăng trong ứng dụng hoặc gửi thông báo vì không có điều dưỡng nào được kết nối.",
+                "publishSuccess": "Đã xác nhận lịch trực",
+                "publishSuccessConfirm": "Đồng ý",
+                "publishSuccessConnectionDescription": "Bạn có thể tự động nhận lịch trực đã xác nhận trong ứng dụng Dutying!",
+                "publishSuccessWithRecipients": "Đã tự động gửi lịch trực đến {{count}} điều dưỡng đã liên kết.",
+                "publishSuccessWithoutRecipients": "Chia sẻ mã khoa với điều dưỡng.",
                 "requestFailed": "Không thể hoàn thành tính năng tự động điền AI.",
                 "resetAction": "Đặt lại",
                 "retry": "Thử lại",
@@ -18123,6 +18170,13 @@ export const vi: TLocale = {
                     "readonly": "Tháng này không thể chỉnh sửa được nên bạn chỉ có thể kiểm tra vị trí ca làm việc được yêu cầu.",
                     "rejected": "lịch hiện tại được xác nhận bằng một ca khác."
                 }
+            },
+            "emptyGuide": {
+                "close": "Đóng hướng dẫn",
+                "description": "Khi điều dưỡng gửi ca mong muốn trong ứng dụng, bạn có thể xem tất cả tại đây.",
+                "directEntry": "Nếu muốn tự sắp xếp, bạn có thể nhập ở bước tiếp theo.",
+                "requestPageDirectEntry": "Để tự đăng ký yêu cầu ca trực, hãy cố định ca mong muốn ở bước 4 của “Tạo lịch”.",
+                "title": "Nhận yêu cầu ca trực từ điều dưỡng qua ứng dụng Dutying"
             },
             "changeEvent": {
                 "add": "Thêm → {{shiftType}}",

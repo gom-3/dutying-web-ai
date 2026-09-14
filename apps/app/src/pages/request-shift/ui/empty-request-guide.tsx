@@ -5,17 +5,25 @@ import emptyRequestGuideImage from '@/shared/assets/images/dutying-empty-request
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
-const EMPTY_REQUEST_GUIDE_DELAY_MS = 2_000;
+const EMPTY_REQUEST_GUIDE_DELAY_MS = 1_000;
 
 type TEmptyRequestGuideProps = {
     children: ReactNode;
     contentTestId?: string;
+    directEntryText?: string;
     enabled: boolean;
     resetKey: string;
     wrapperClassName?: string;
 };
 
-export function EmptyRequestGuide({children, contentTestId, enabled, resetKey, wrapperClassName}: TEmptyRequestGuideProps) {
+export function EmptyRequestGuide({
+    children,
+    contentTestId,
+    directEntryText,
+    enabled,
+    resetKey,
+    wrapperClassName,
+}: TEmptyRequestGuideProps) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +70,7 @@ export function EmptyRequestGuide({children, contentTestId, enabled, resetKey, w
 
             {isOpen ? (
                 <div
-                    className="absolute inset-0 z-20 flex min-h-[420px] items-center justify-center px-4 py-8"
+                    className="absolute inset-0 z-20 flex min-h-[420px] items-center justify-center overflow-y-auto px-3 py-6 sm:px-4 sm:py-8"
                     role="dialog"
                     aria-labelledby="empty-request-guide-title"
                     aria-describedby="empty-request-guide-description"
@@ -80,7 +88,7 @@ export function EmptyRequestGuide({children, contentTestId, enabled, resetKey, w
                             maskImage: 'radial-gradient(ellipse at center, black 44%, rgba(0, 0, 0, 0.78) 67%, transparent 100%)',
                         }}
                     />
-                    <div className="relative z-10 w-full max-w-[640px] animate-in rounded-[32px] bg-white px-5 pt-4 pb-6 text-center shadow-[0_10px_32px_rgba(25,31,40,0.10)] duration-500 ease-out fade-in-0 zoom-in-95 slide-in-from-bottom-2 motion-reduce:animate-none sm:px-10 sm:pt-5 sm:pb-8">
+                    <div className="relative z-10 my-auto w-full max-w-[640px] min-w-0 animate-in rounded-[24px] bg-white px-4 pt-4 pb-5 text-center shadow-[0_10px_32px_rgba(25,31,40,0.10)] duration-500 ease-out fade-in-0 zoom-in-95 slide-in-from-bottom-2 motion-reduce:animate-none sm:rounded-[32px] sm:px-10 sm:pt-5 sm:pb-8">
                         <button
                             type="button"
                             aria-label={t('page.request.emptyGuide.close')}
@@ -96,20 +104,20 @@ export function EmptyRequestGuide({children, contentTestId, enabled, resetKey, w
                             src={emptyRequestGuideImage}
                             alt=""
                             aria-hidden="true"
-                            className="mx-auto h-[108px] w-[162px] object-contain sm:h-[124px] sm:w-[186px]"
+                            className="mx-auto h-[88px] w-[132px] object-contain min-[360px]:h-[108px] min-[360px]:w-[162px] sm:h-[124px] sm:w-[186px]"
                         />
                         <h2
                             id="empty-request-guide-title"
-                            className="mt-4 font-apple text-[22px] leading-[1.38] font-semibold tracking-[-0.025em] break-keep text-sub-1 sm:mt-5 sm:text-[25px] sm:whitespace-nowrap"
+                            className="mx-auto mt-4 max-w-full font-apple text-[20px] leading-[1.38] font-semibold tracking-[-0.025em] [text-wrap:balance] break-normal [overflow-wrap:anywhere] whitespace-normal text-sub-1 min-[360px]:text-[22px] sm:mt-5 sm:text-[25px]"
                         >
                             {t('page.request.emptyGuide.title')}
                         </h2>
                         <div
                             id="empty-request-guide-description"
-                            className="mx-auto mt-3 max-w-[570px] font-apple text-[15px] leading-6 font-medium break-keep text-gray-3 sm:text-[16px] sm:leading-7"
+                            className="mx-auto mt-3 max-w-[570px] min-w-0 font-apple text-[15px] leading-6 font-medium break-normal [overflow-wrap:anywhere] whitespace-normal text-gray-3 sm:text-[16px] sm:leading-7"
                         >
-                            <p className="sm:whitespace-nowrap">{t('page.request.emptyGuide.description')}</p>
-                            <div className="mt-3 flex items-center justify-center gap-4">
+                            <p className="[text-wrap:pretty] [overflow-wrap:anywhere]">{t('page.request.emptyGuide.description')}</p>
+                            <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                                 <a
                                     href={iosAppStoreUrl}
                                     target="_blank"
@@ -129,8 +137,8 @@ export function EmptyRequestGuide({children, contentTestId, enabled, resetKey, w
                                     Google Play
                                 </a>
                             </div>
-                            <p className="mt-4 rounded-[16px] bg-gray-7 px-4 py-3 text-[14px] leading-5.5 text-gray-3 sm:text-[15px] sm:leading-6">
-                                {t('page.request.emptyGuide.directEntry')}
+                            <p className="mt-4 rounded-[16px] bg-gray-7 px-3 py-3 text-[14px] leading-5.5 [text-wrap:pretty] [overflow-wrap:anywhere] text-gray-3 sm:px-4 sm:text-[15px] sm:leading-6">
+                                {directEntryText ?? t('page.request.emptyGuide.directEntry')}
                             </p>
                         </div>
                     </div>

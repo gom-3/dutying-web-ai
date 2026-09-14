@@ -113,7 +113,7 @@ describe('RequestsShifts', () => {
         expect(screen.queryByText('근무 팀과 신청 근무표를 순서대로 불러오고 있어요.')).not.toBeInTheDocument();
     });
 
-    it('신청근무가 없으면 2초 뒤 앱 신청 안내를 보여준다', () => {
+    it('신청근무가 없으면 1초 뒤 앱 신청 안내를 보여준다', () => {
         vi.useFakeTimers();
 
         mockUseRequestShift.mockReturnValue({
@@ -136,7 +136,7 @@ describe('RequestsShifts', () => {
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-        act(() => vi.advanceTimersByTime(1_999));
+        act(() => vi.advanceTimersByTime(999));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
         act(() => vi.advanceTimersByTime(1));
@@ -144,6 +144,7 @@ describe('RequestsShifts', () => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
         expect(screen.getByText('간호사에게 듀팅 앱으로 신청근무를 받아보세요')).toBeInTheDocument();
         expect(screen.getByText('간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.')).toBeInTheDocument();
+        expect(screen.getByText('직접 정하려면 다음 단계에서 입력할 수 있어요.')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute('href', IOS_APP_STORE_URL_KO);
         expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute('href', ANDROID_PLAY_STORE_URL_KO);
         expect(screen.getByTestId('make-request-calendar-content')).toHaveClass('blur-[3px]', 'opacity-65');
@@ -174,7 +175,7 @@ describe('RequestsShifts', () => {
 
         render(<RequestsShifts />);
 
-        act(() => vi.advanceTimersByTime(2_000));
+        act(() => vi.advanceTimersByTime(1_000));
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(screen.getByTestId('make-request-calendar-content')).not.toHaveClass('blur-[3px]', 'opacity-65');

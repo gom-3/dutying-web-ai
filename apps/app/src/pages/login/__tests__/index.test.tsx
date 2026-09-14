@@ -242,6 +242,8 @@ describe('LoginPage', () => {
         expect(screen.getByLabelText('이메일')).toBeInTheDocument();
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.SIGN_IN);
+        expect(screen.getByRole('link', {name: '이용약관'})).toHaveAttribute('href', ROUTE.TERMS);
+        expect(screen.getByRole('link', {name: '개인정보 처리방침'})).toHaveAttribute('href', ROUTE.PRIVACY);
         expect(screen.getByRole('link', {name: '카카오로 시작하기'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fregister%3FsocialSignup%3D1',

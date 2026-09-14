@@ -113,6 +113,7 @@ const RequestShiftPageContent = () => {
                         enabled={shouldScheduleEmptyRequestGuide}
                         resetKey={emptyRequestGuideResetKey}
                         contentTestId="request-calendar-content"
+                        directEntryText={t('page.request.emptyGuide.requestPageDirectEntry')}
                         wrapperClassName="flex-1"
                     >
                         <RequestCalendar />
