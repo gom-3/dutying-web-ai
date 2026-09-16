@@ -1,8 +1,9 @@
 import {cn} from '@dutying/utils/style';
 import {useMemo} from 'react';
-import {type TShift, type TWardShiftType} from '@/entities';
+import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor/model';
+import {countDutyByDay} from '@/features/shift-editor/model/count-duty-by-day';
 import {SHIFT_CALENDAR_DAY_GRID_CLASSNAME} from '@/features/shift-editor/ui/complex-view/shift-calendar/shift-calendar-layout';
 
 interface ICountDutyByDayProps {
@@ -15,42 +16,15 @@ interface ICountDutyByDayProps {
     variant?: 'underDateHeader' | 'card';
 }
 
-function CountDutyByDay({
-    shift,
-    doc,
-    focusDay = null,
-    className,
-    gridTemplateColumns,
-    variant = 'underDateHeader',
-}: ICountDutyByDayProps) {
-    const selection = useShiftEditorStore((s) => s.selection);
-    const {shiftTypeColorStyle} = useUIConfigStore();
-    const effectiveFocusDay = useMemo(() => {
-        if (typeof focusDay === 'number') return focusDay;
-
-        if (selection?.type !== 'single') return null;
-
-        return selection.anchor.col;
-    }, [focusDay, selection]);
+function CountDutyByDay({shift, doc, focusDay = null, className, gridTemplateColumns, variant = 'underDateHeader'}: ICountDutyByDayProps) {
+    const selectedDay = useShiftEditorStore((s) => (s.selection?.type === 'single' ? s.selection.anchor.col : null));
+    const shiftTypeColorStyle = useUIConfigStore((s) => s.shiftTypeColorStyle);
+    const effectiveFocusDay = focusDay ?? selectedDay;
     const countedShiftTypes = useMemo(() => shift.wardShiftTypes.filter((x) => x.isCounted), [shift.wardShiftTypes]);
-    const shortNameToType = useMemo(() => {
-        const map = new Map<string, TWardShiftType>();
-
-        for (const t of shift.wardShiftTypes) {
-            map.set(t.shortName, t);
-        }
-
-        return map;
-    }, [shift.wardShiftTypes]);
-    const getCountByDay = (dayIndex: number, wardShiftTypeId: number) =>
-        doc.rows.filter((row) => {
-            const cell = row.cells[dayIndex] ?? null;
-
-            if (!cell) return false;
-
-            return shortNameToType.get(cell)?.wardShiftTypeId === wardShiftTypeId;
-        }).length;
-
+    const dailyCounts = useMemo(
+        () => countDutyByDay(doc.rows, doc.columns.length, shift.wardShiftTypes),
+        [doc.rows, doc.columns.length, shift.wardShiftTypes],
+    );
     const isCard = variant === 'card';
 
     return (
@@ -66,7 +40,7 @@ function CountDutyByDay({
             {countedShiftTypes.map((wardShiftType) => (
                 <div
                     key={wardShiftType.wardShiftTypeId}
-                    className="grid h-8 w-full min-w-0 max-w-full items-center gap-x-2 border-b-[.0625rem] border-[#E0E0E0] last:border-b-0"
+                    className="grid h-8 w-full max-w-full min-w-0 items-center gap-x-2 border-b-[.0625rem] border-[#E0E0E0] last:border-b-0"
                     style={{gridTemplateColumns}}
                 >
                     <div className="min-w-0" />
@@ -90,11 +64,11 @@ function CountDutyByDay({
                         {doc.columns.map((_date, i) => (
                             <div
                                 key={i}
-                                className={`relative flex h-full min-h-0 w-full min-w-0 items-center justify-center px-[.125rem] font-poppins text-[clamp(9px,0.65vw,12px)] tabular-nums text-sub-2 ${
+                                className={`relative flex h-full min-h-0 w-full min-w-0 items-center justify-center px-[.125rem] font-poppins text-[clamp(9px,0.65vw,12px)] text-sub-2 tabular-nums ${
                                     effectiveFocusDay === i ? 'bg-main-4' : ''
                                 }`}
                             >
-                                {getCountByDay(i, wardShiftType.wardShiftTypeId)}
+                                {dailyCounts.get(wardShiftType.wardShiftTypeId)?.[i] ?? 0}
                             </div>
                         ))}
                     </div>

@@ -1,4 +1,5 @@
-import {describe, expect, it} from 'vitest';
+import Holidays from 'date-holidays';
+import {describe, expect, it, vi} from 'vitest';
 import type {TWardShiftType} from '@/entities';
 import {
     calculateBaseRestTarget,
@@ -56,6 +57,36 @@ const shiftTypes: TWardShiftType[] = [
 ];
 
 describe('rest leave policy', () => {
+    it('reuses annual holiday calculations across months and retains previous-year holidays in January', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            for (let month = 1; month <= 12; month += 1) {
+                getPublicHolidayDaysForLanguage(2032, month, 'ko');
+            }
+
+            expect(getHolidays.mock.calls.map(([year]) => year)).toEqual([2031, 2032]);
+            expect(getPublicHolidayDaysForLanguage(2032, 1, 'ko').map(({day}) => day)).toContain(1);
+            expect(getHolidays).toHaveBeenCalledTimes(2);
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
+    it('skips holiday calculation when it cannot affect the rest target', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            expect(calculateRestTargetForLanguage({...DEFAULT_REST_LEAVE_POLICY, enabled: false}, 2040, 1, 'en')).toBe(0);
+            expect(calculateRestTargetForLanguage({...DEFAULT_REST_LEAVE_POLICY, includeHolidays: false}, 2040, 1, 'en')).toBe(
+                countWeeklyRestDaysInMonth(2040, 1, 2),
+            );
+            expect(getHolidays).not.toHaveBeenCalled();
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
     it('주 단위 기준을 실제 달력에 적용해 월 목표 휴무일을 계산한다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
 

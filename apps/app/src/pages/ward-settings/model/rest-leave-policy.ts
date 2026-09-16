@@ -22,6 +22,9 @@ export const REST_LEAVE_POLICY_UPDATED_EVENT = 'dutying:rest-leave-policy-update
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 const HOLIDAY_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
+const MAX_CACHED_HOLIDAY_YEARS = 24;
+const holidayCalendars = new Map<THolidayCountry, Holidays>();
+const publicHolidaysByYearCache = new Map<string, ReturnType<Holidays['getHolidays']>>();
 const publicHolidayDaysCache = new Map<string, TDay[]>();
 
 export const DEFAULT_REST_LEAVE_POLICY: TRestLeavePolicy = {
@@ -192,6 +195,32 @@ export function getHolidayCountryForLanguage(language?: string | null): THoliday
     )[normalizedLanguage];
 }
 
+function getPublicHolidaysForYear(country: THolidayCountry, year: number, language: string) {
+    const cacheKey = `${country}:${year}`;
+    const cachedHolidays = publicHolidaysByYearCache.get(cacheKey);
+
+    if (cachedHolidays) return cachedHolidays;
+
+    let calendar = holidayCalendars.get(country);
+
+    if (!calendar) {
+        calendar = new Holidays(country, {languages: [language], types: ['public']});
+        holidayCalendars.set(country, calendar);
+    }
+
+    const holidays = calendar.getHolidays(year);
+
+    // Reuse the same year's calculations when moving between months, with a
+    // bounded cache for sessions that browse many years.
+    if (publicHolidaysByYearCache.size >= MAX_CACHED_HOLIDAY_YEARS) {
+        publicHolidaysByYearCache.delete(publicHolidaysByYearCache.keys().next().value!);
+    }
+
+    publicHolidaysByYearCache.set(cacheKey, holidays);
+
+    return holidays;
+}
+
 export function getPublicHolidayDaysForLanguage(year: number, month: number, language?: string | null): TDay[] {
     const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
     const country = getHolidayCountryForLanguage(normalizedLanguage);
@@ -200,15 +229,11 @@ export function getPublicHolidayDaysForLanguage(year: number, month: number, lan
 
     if (cachedDays) return cachedDays;
 
-    const holidayCalendar = new Holidays(country, {
-        languages: [normalizedLanguage],
-        types: ['public'],
-    });
     const holidayDates = new Set<number>();
     const yearsToLoad = month === 1 ? [year - 1, year] : [year];
 
     yearsToLoad.forEach((holidayYear) => {
-        holidayCalendar.getHolidays(holidayYear).forEach((holiday) => {
+        getPublicHolidaysForYear(country, holidayYear, normalizedLanguage).forEach((holiday) => {
             if (holiday.type !== 'public') return;
 
             const dateParts = HOLIDAY_DATE_PATTERN.exec(holiday.date);
@@ -232,6 +257,10 @@ export function getPublicHolidayDaysForLanguage(year: number, month: number, lan
     });
 
     const days = [...holidayDates].sort((left, right) => left - right).map((day): TDay => ({day, dayType: 'holiday'}));
+
+    if (publicHolidayDaysCache.size >= MAX_CACHED_HOLIDAY_YEARS * 12) {
+        publicHolidayDaysCache.delete(publicHolidayDaysCache.keys().next().value!);
+    }
 
     publicHolidayDaysCache.set(cacheKey, days);
 
@@ -273,6 +302,8 @@ export function countPublicHolidaysForRestTarget(
 }
 
 export function calculateRestTargetFromDays(policy: TRestLeavePolicy, year: number, month: number, days: TDay[] = []) {
+    if (!policy.enabled || !policy.includeHolidays) return calculateBaseRestTarget(policy, year, month);
+
     const weeklyOffDays = policy.targetMode === 'weekly' ? policy.weeklyOffDays : DEFAULT_REST_LEAVE_POLICY.weeklyOffDays;
 
     return calculateRestTarget(policy, year, month, countPublicHolidaysForRestTarget(year, month, days, weeklyOffDays));
@@ -288,6 +319,8 @@ export function countPublicHolidaysForLanguage(
 }
 
 export function calculateRestTargetForLanguage(policy: TRestLeavePolicy, year: number, month: number, language?: string | null) {
+    if (!policy.enabled || !policy.includeHolidays) return calculateBaseRestTarget(policy, year, month);
+
     return calculateRestTargetFromDays(policy, year, month, getPublicHolidayDaysForLanguage(year, month, language));
 }
 

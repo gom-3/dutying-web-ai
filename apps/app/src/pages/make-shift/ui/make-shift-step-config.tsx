@@ -1,11 +1,12 @@
-import {type ComponentType} from 'react';
+import {type ComponentType, lazy} from 'react';
 import {type TI18nKey} from '@/shared/hook/use-typed-translation';
 import {type TMakeShiftStep} from '../model/make-shift-store';
-import {AiAutofill} from './steps/ai-auto-fill';
-import {ConfirmedShifts} from './steps/confirmed-shifts';
-import {Constraints} from './steps/constraints';
-import {RequestsShifts} from './steps/requests-shifts';
-import {Workers} from './steps/workers';
+
+const Workers = lazy(() => import('./steps/workers').then((module) => ({default: module.Workers})));
+const Constraints = lazy(() => import('./steps/constraints').then((module) => ({default: module.Constraints})));
+const RequestsShifts = lazy(() => import('./steps/requests-shifts').then((module) => ({default: module.RequestsShifts})));
+const AiAutofill = lazy(() => import('./steps/ai-auto-fill').then((module) => ({default: module.AiAutofill})));
+const ConfirmedShifts = lazy(() => import('./steps/confirmed-shifts').then((module) => ({default: module.ConfirmedShifts})));
 
 type TMakeShiftStepIntro = {
     titleKey: TI18nKey;

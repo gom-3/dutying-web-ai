@@ -1,3 +1,4 @@
+import {Suspense} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
@@ -49,7 +50,20 @@ function StepIntroDescription({currentStep, description}: {currentStep: TMakeShi
     return <p className={`${MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS} whitespace-pre-line`}>{description}</p>;
 }
 
-export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = false, onPrev, onNext}: TMakeShiftStepContentProps) {
+export function MakeShiftStepContent(props: TMakeShiftStepContentProps) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <Suspense
+            key={props.currentStep}
+            fallback={<PageState tone="loading" title={t('page.state.loadingTitle')} description={t('page.state.loadingDescription')} />}
+        >
+            <LoadedMakeShiftStepContent {...props} />
+        </Suspense>
+    );
+}
+
+function LoadedMakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = false, onPrev, onNext}: TMakeShiftStepContentProps) {
     const {t} = useTypedTranslation();
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const stepConfig = MAKE_SHIFT_STEP_CONFIG[currentStep];

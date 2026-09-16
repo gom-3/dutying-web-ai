@@ -1,6 +1,5 @@
 import {cn} from '@dutying/utils/style';
 import {yupResolver} from '@hookform/resolvers/yup';
-import imageCompression from 'browser-image-compression';
 import {Camera} from 'lucide-react';
 import {type ChangeEvent, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';
@@ -166,8 +165,11 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
             return;
         }
 
+        const file = e.target.files[0];
+
         try {
-            const compressedFile = await imageCompression(e.target.files[0], {
+            const {default: imageCompression} = await import('browser-image-compression');
+            const compressedFile = await imageCompression(file, {
                 maxSizeMB: 1,
                 maxWidthOrHeight: 1920,
                 useWebWorker: true,

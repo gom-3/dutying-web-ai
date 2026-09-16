@@ -57,27 +57,27 @@
     "rewrites": [
         {
             "source": "/dutying/notices/:noticeId",
-            "destination": "/"
+            "destination": "/app-shell"
         },
         {
             "source": "/app/friends/invite",
-            "destination": "/"
+            "destination": "/app-shell"
         },
         {
             "source": "/app/moim/invite",
-            "destination": "/"
+            "destination": "/app-shell"
         },
         {
             "source": "/app/nultalk/posts/:postId",
-            "destination": "/"
+            "destination": "/app-shell"
         },
         {
             "source": "/app/wards/:wardId/board/posts/:postId",
-            "destination": "/"
+            "destination": "/app-shell"
         },
         {
             "source": "/app/notice/:noticeId",
-            "destination": "/"
+            "destination": "/app-shell"
         }
     ]
 }
