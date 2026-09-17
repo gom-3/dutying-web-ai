@@ -66,7 +66,7 @@ const MemberTutorial = () => {
 
         if (typeof firstNurseId === 'number') {
             steps.push({
-                highlightIds: ['nurse_sample', 'nurse_edit_drawer'],
+                highlightIds: ['nurse_edit_drawer'],
                 title: t('page.member.tutorial.edit.title'),
                 info: t('page.member.tutorial.edit.info'),
                 infoBoxAlignment: 'right',

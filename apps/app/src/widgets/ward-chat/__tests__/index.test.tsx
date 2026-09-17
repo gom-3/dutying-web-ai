@@ -345,6 +345,25 @@ describe('WardChatWidget', () => {
         expect(wardApiMock.getShiftTeams).toHaveBeenCalledWith(1);
     });
 
+    it('reuses fresh team data from other pages and responds to shared cache updates', async () => {
+        const user = userEvent.setup();
+        const {queryClient} = renderWithQueryClient(<WardChatWidget />);
+
+        act(() => {
+            queryClient.setQueryData(['ward', 'shiftTeams', 1], [{nurses: [{isConnected: true}]}]);
+        });
+        await user.click(await findOpenWardChatButton());
+
+        expect(await screen.findByText('1명')).toBeInTheDocument();
+        expect(wardApiMock.getShiftTeams).not.toHaveBeenCalled();
+
+        act(() => {
+            queryClient.setQueryData(['ward', 'shiftTeams', 1], [{nurses: [{isConnected: true}, {isConnected: true}]}]);
+        });
+
+        expect(await screen.findByText('2명')).toBeInTheDocument();
+    });
+
     it('closes when clicking outside the open ward chat panel', async () => {
         const user = userEvent.setup();
 

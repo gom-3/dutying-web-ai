@@ -1376,6 +1376,7 @@ describe('Constraints', () => {
             '[&::-webkit-scrollbar]:w-3',
         );
         expect(recommendationCards).toHaveLength(5);
+        expect(dialog.querySelectorAll('[data-constraint-help-trigger]')).toHaveLength(5);
         recommendationCards.forEach((card) => expect(card).toHaveClass('py-1.5'));
         expect(within(recommendationCards[0]!).getByTitle('추가').firstElementChild).toHaveClass('size-8');
         expect(within(dialog).queryByText('중요')).not.toBeInTheDocument();
@@ -1420,13 +1421,16 @@ describe('Constraints', () => {
         expect(dialog.querySelector('[data-constraint-template-card="MAX_MONTHLY_NIGHT_COUNT"]')).not.toBeInTheDocument();
 
         let normalRuleCount = 0;
+        let normalHelpCount = 0;
 
         for (const category of ['인원수', '연속 근무·휴무', '야간·전환', '사람별 제한', '근무자 조합']) {
             await userEvent.click(screen.getByRole('button', {name: category}));
             normalRuleCount += screen.queryAllByTitle('추가').length;
+            normalHelpCount += dialog.querySelectorAll('[data-constraint-help-trigger]').length;
         }
 
         expect(normalRuleCount).toBe(19);
+        expect(normalHelpCount).toBe(19);
         expect(screen.queryByRole('button', {name: '숙련도·역할'})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('sentinel-exact_staff_by_shift');
         expect(document.body.textContent).not.toContain('sentinel-max_day_night_transitions');
@@ -1870,6 +1874,16 @@ describe('Constraints', () => {
         expect(within(targetListbox).getByRole('option', {name: '신규 간호사 1'})).toBeInTheDocument();
         expect(within(targetListbox).getByRole('option', {name: /Nurse A/})).toBeInTheDocument();
         await userEvent.click(within(targetListbox).getByRole('option', {name: '신규 간호사 1'}));
+
+        const participationCard = document.querySelector<HTMLElement>(
+            '[data-constraint-template-card="MIXED_ROTATION_PARTICIPATION"]',
+        );
+        const helpTrigger = participationCard?.querySelector<HTMLButtonElement>('[data-constraint-help-trigger]');
+
+        expect(helpTrigger).toBeInTheDocument();
+        await userEvent.hover(helpTrigger!);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('신규 간호사 1');
+        await userEvent.unhover(helpTrigger!);
 
         const participationButton = screen.getByRole('button', {name: '인력 부족 시 2교대 가능'});
 

@@ -410,6 +410,17 @@ export type TSnapshotSummaryDto = {
     updatedAt: string;
 };
 
+export type TRosterReconciliationDto = {
+    status: 'REBASED';
+    requiresReview: boolean;
+    sourceSnapshotId: number;
+    removedShiftNurseIds: number[];
+    addedShiftNurseIds: number[];
+    ignoredCellCount: number;
+    clearedCellCount: number;
+    message: string;
+};
+
 export type TWorkspaceScheduleResponse = {
     wardId: number;
     shiftTeamId: number;
@@ -429,6 +440,8 @@ export type TWorkspaceScheduleResponse = {
     confirmedSnapshot?: TSnapshotSummaryDto | null;
     workflowStatus?: TShiftWorkflowStatus | null;
     workflowStep?: number | null;
+    /** 확정 후 명단 변경을 현재 명단에 안전하게 재투영한 경우에만 존재한다. */
+    rosterReconciliation?: TRosterReconciliationDto | null;
     /**
      * 이 사용자에게 조절(ADJUST) 칩을 열어 줄지. 서버가 사람 단위로 판정한다.
      * 없으면(구 서버) 꺼진 것으로 본다.
@@ -721,6 +734,7 @@ export type TSnapshotDetailRes = {
     baseHash?: string;
     rowOrder: TSnapshotRowOrderDTO[];
     cells: TSnapshotCellDTO[];
+    rosterReconciliation?: TRosterReconciliationDto | null;
     createdAt: string;
     updatedAt: string;
 };
@@ -824,7 +838,7 @@ export interface IWardAPI {
         divisionNum: number,
         updateShiftTeamDivisionDTO: TUpdateShiftTeamDivisionDTO,
     ) => Promise<TShiftTeamResponse>;
-    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<TNurseResponse>;
+    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<void>;
     deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<TShiftTeamResponse>;
     getShiftTypes: (wardId: number) => Promise<TWardShiftTypeResponse[]>;
     createShiftType: (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;

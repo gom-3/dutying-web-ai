@@ -15,17 +15,23 @@ import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-m
 import {getAiAutofillExitGuardReason, type TAiAutofillExitGuardReason, useAiAutofillExitGuardStore} from '../model/ai-autofill-exit-guard';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
+import {useSchedulePublishSuccessStore} from '../model/schedule-publish-success-store';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
+import {SchedulePublishSuccessDialog} from './schedule-publish-success-dialog';
 
 type TPendingAiAutofillExit = {
     action: () => void;
     reason: TAiAutofillExitGuardReason;
 };
 
-export const MakeShiftPageView = () => {
+type TMakeShiftPageViewProps = {
+    wardCode?: string;
+};
+
+export const MakeShiftPageView = ({wardCode = ''}: TMakeShiftPageViewProps) => {
     const {t} = useTypedTranslation();
     const navigate = useNavigate();
     const useCase = useMakeShiftUseCase();
@@ -40,6 +46,8 @@ export const MakeShiftPageView = () => {
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const wardId = useMakeShiftStore((s) => s.wardId);
     const stepNavigationBusy = useMakeShiftStore((s) => s.stepNavigationBusy);
+    const publishSuccessNotice = useSchedulePublishSuccessStore((s) => s.notice);
+    const closePublishSuccessNotice = useSchedulePublishSuccessStore((s) => s.close);
     const hasAiAutofillUnsavedChanges = useAiAutofillExitGuardStore((s) => s.hasUnsavedChanges);
     const isAiAutofillGenerating = useAiAutofillExitGuardStore((s) => s.isAiGenerating);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
@@ -108,6 +116,13 @@ export const MakeShiftPageView = () => {
 
         return () => document.removeEventListener('click', handleNavigationClick, true);
     }, [aiAutofillExitGuardReason, navigate, runWithAiAutofillExitGuard]);
+
+    useEffect(
+        () => () => {
+            useSchedulePublishSuccessStore.getState().close();
+        },
+        [],
+    );
 
     const aiAutofillExitDialogReason = pendingAiAutofillExit?.reason ?? aiAutofillExitGuardReason;
     const aiAutofillExitDialogOpen = pendingAiAutofillExit !== null;
@@ -257,6 +272,13 @@ export const MakeShiftPageView = () => {
                 tone="danger"
                 onClose={closeAiAutofillExitDialog}
                 onConfirm={confirmAiAutofillExitDialog}
+            />
+            <SchedulePublishSuccessDialog
+                open={publishSuccessNotice !== null}
+                connectedNurseCount={publishSuccessNotice?.connectedNurseCount ?? 0}
+                showConnectionHint={publishSuccessNotice?.showConnectionHint ?? false}
+                wardCode={wardCode}
+                onClose={closePublishSuccessNotice}
             />
         </div>
     );

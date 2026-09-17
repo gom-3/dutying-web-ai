@@ -1,5 +1,6 @@
 import {MemoryRouter, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type i18nModule from '@/i18n';
 import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import MemberPage from '..';
 
@@ -16,7 +17,7 @@ vi.mock('@/analytics', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+    const {default: i18n} = await vi.importActual<{default: typeof i18nModule}>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -38,13 +39,24 @@ vi.mock('../ui/connection-manage', () => ({
 }));
 
 vi.mock('../ui/nurse-detail-panel', () => ({
-    default: ({onRegisterDraftActions}: {onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void}) => void}) => {
+    default: ({
+        onRegisterDraftActions,
+        onRequestClose,
+    }: {
+        onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean}) => void;
+        onRequestClose?: (hasUnsavedChanges: boolean) => void;
+    }) => {
         onRegisterDraftActions?.({
             save: mockNurseDetailSave,
             discard: mockNurseDetailDiscard,
+            hasChanges: () => true,
         });
 
-        return null;
+        return (
+            <button type="button" onClick={() => onRequestClose?.(true)}>
+                상세 패널 닫기
+            </button>
+        );
     },
 }));
 
@@ -511,6 +523,40 @@ describe('MemberPage', () => {
         expect(mockNurseDetailSave).not.toHaveBeenCalled();
     });
 
+    it('수정 중이어도 이미 선택된 팀을 다시 누르면 이탈 확인을 띄우지 않는다', async () => {
+        mockDirtySelectedNurseState();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: /Team A/}));
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('상세 패널을 닫을 때도 페이지의 동일한 이탈 확인 흐름을 사용한다', async () => {
+        mockDirtySelectedNurseState();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: '상세 패널 닫기'}));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog).toHaveTextContent('저장하지 않고 나갈까요?');
+        expect(within(dialog).getAllByRole('button')).toHaveLength(2);
+        expect(within(dialog).getByRole('button', {name: '취소'})).toBeInTheDocument();
+        expect(within(dialog).getByRole('button', {name: '저장 안 함'})).toBeInTheDocument();
+        expect(within(dialog).queryByRole('button', {name: '저장 후 나가기'})).not.toBeInTheDocument();
+    });
+
     it('수정 중 팀 탭을 눌러 뜬 확인 모달에서 저장 안 함을 누르면 저장 없이 원래 팀 이동을 실행한다', async () => {
         mockDirtySelectedNurseState();
 
@@ -529,25 +575,5 @@ describe('MemberPage', () => {
         });
         expect(mockNurseDetailDiscard).toHaveBeenCalledTimes(1);
         expect(mockNurseDetailSave).not.toHaveBeenCalled();
-    });
-
-    it('수정 중 팀 탭을 눌러 뜬 확인 모달에서 저장 후 나가기를 누르면 저장 후 원래 팀 이동을 실행한다', async () => {
-        mockDirtySelectedNurseState();
-
-        render(
-            <MemoryRouter>
-                <MemberPage />
-                <LocationProbe />
-            </MemoryRouter>,
-        );
-
-        await userEvent.click(screen.getByRole('button', {name: /Team B/}));
-        await userEvent.click(screen.getByRole('button', {name: '저장 후 나가기'}));
-
-        await waitFor(() => {
-            expect(screen.getByTestId('location-search')).toHaveTextContent('shiftTeamId=20');
-        });
-        expect(mockNurseDetailSave).toHaveBeenCalledTimes(1);
-        expect(mockNurseDetailDiscard).not.toHaveBeenCalled();
     });
 });

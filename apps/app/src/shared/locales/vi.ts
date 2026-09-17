@@ -1,4 +1,5 @@
 import {vi as generatedVi} from '../i18n/resources.generated';
+import {constraintRuleHelpVi} from './constraint-rule-help';
 import {type TLocale} from './ko';
 
 export const vi = {
@@ -188,6 +189,7 @@ export const vi = {
             },
             constraints: {
                 ...generatedVi.page.makeShift.constraints,
+                help: constraintRuleHelpVi,
                 toast: {
                     ...generatedVi.page.makeShift.constraints.toast,
                     duplicateSkipped: 'Điều kiện này đã tồn tại.',

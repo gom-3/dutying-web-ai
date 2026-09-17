@@ -9,7 +9,7 @@ import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup
 import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
-import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
+import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
@@ -27,7 +27,7 @@ const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGIN_VISUAL_SLIDES_BY_LANGUAGE = {
     ko: [
-        {fallback: '/img/login_1.webp', webp: '/img/login_1.webp'},
+        {fallback: '/img/login-slide-1.webp', webp: '/img/login-slide-1.webp'},
         {fallback: '/img/login-slide-2.png', webp: '/img/login-slide-2.webp'},
         {fallback: '/img/login-slide-3.png', webp: '/img/login-slide-3.webp'},
     ],
@@ -113,7 +113,7 @@ const LegalAgreementOptions = ({
             <span>
                 <span className="font-semibold text-main-1">{t('page.login.requiredConsentLabel')}</span>{' '}
                 <a
-                    href={RUNTIME_CONFIG.docs.termsOfService}
+                    href={ROUTE.TERMS}
                     target="_blank"
                     rel="noreferrer"
                     className="text-sub-2 underline underline-offset-[3px]"
@@ -139,7 +139,7 @@ const LegalAgreementOptions = ({
         <p className="pl-6 text-xs leading-5 text-gray-3">
             {t('page.login.privacyNoticePrefix')}{' '}
             <a
-                href={RUNTIME_CONFIG.docs.privacyPolicy}
+                href={ROUTE.PRIVACY}
                 target="_blank"
                 rel="noreferrer"
                 className="text-gray-3 underline underline-offset-[3px]"
@@ -198,6 +198,7 @@ function LoginPage() {
     const [isConfirmingPasswordReset, setIsConfirmingPasswordReset] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [loginVisualSlideIndex, setLoginVisualSlideIndex] = useState(0);
+    const [hasInitialLoginVisualLoaded, setHasInitialLoginVisualLoaded] = useState(false);
     const loginVisualAutoRotateTimerRef = useRef<number | null>(null);
     const scheduleLoginVisualAutoRotateRef = useRef<(delay: number) => void>(() => undefined);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
@@ -707,10 +708,14 @@ function LoginPage() {
                                 src={isActive ? fallback : undefined}
                                 alt=""
                                 aria-hidden="true"
-                                className={cn('login-visual-slide', isActive && 'login-visual-slide-active')}
+                                className={cn(
+                                    'login-visual-slide',
+                                    isActive && hasInitialLoginVisualLoaded && 'login-visual-slide-active',
+                                )}
                                 decoding="async"
                                 fetchPriority={isActive ? 'high' : 'low'}
                                 loading={isActive ? 'eager' : 'lazy'}
+                                onLoad={() => setHasInitialLoginVisualLoaded(true)}
                             />
                         </picture>
                     );

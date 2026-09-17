@@ -145,7 +145,7 @@ const MakeShiftPage = () => {
                 wardTitle={getWardDisplayTitle(wardQuery.data)}
                 onClose={() => setShowOnboardingWardCodeGuide(false)}
             />
-            <MakeShiftPageView />
+            <MakeShiftPageView wardCode={getWardDisplayCode(wardQuery.data, '')} />
             <MakeTutorial />
         </>
     );

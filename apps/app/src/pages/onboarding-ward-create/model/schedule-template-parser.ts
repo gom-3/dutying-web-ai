@@ -1,6 +1,5 @@
 import type {Cell} from 'exceljs';
 import type * as ExcelJSImport from 'exceljs';
-import JSZip from 'jszip';
 import type {TOnboardingUploadedTeamSchedule} from './draft';
 
 const NAME_COLUMN_INDEX = 1;
@@ -22,6 +21,7 @@ const normalizePrefixedSpreadsheetXml = (xml: string) => {
     return xml.replace(match[0], `xmlns="${SPREADSHEET_MAIN_NAMESPACE}"`).replace(new RegExp(`(<\\/?)(?:${prefix}):`, 'g'), '$1');
 };
 const normalizePrefixedSpreadsheetWorkbook = async (data: ArrayBuffer) => {
+    const {default: JSZip} = await import('jszip');
     const archive = await JSZip.loadAsync(data);
 
     let changed = false;

@@ -597,7 +597,7 @@ export const en: TLocale = {
                     label: 'Workers',
                     caption: 'Review who will be placed and in what order',
                     introTitle: 'Review included workers',
-                    introDescription: 'Check that no one is missing\nMake changes from Worker Management if needed',
+                    introDescription: 'Check that no one is missing\nSelect a worker to edit their details',
                 },
                 constraints: {
                     label: 'Rules',
@@ -818,6 +818,107 @@ export const en: TLocale = {
                 },
                 ruleAction: {
                     deleteAria: 'Delete constraint',
+                },
+                help: {
+                    aria: 'View an explanation of {{constraint}}',
+                    title: 'How this constraint works',
+                    goodExample: 'Schedule it this way',
+                    avoidExample: 'Do not schedule it this way',
+                    preferredExample: 'Prefer this assignment',
+                    alternativeExample: 'Other duties are also possible',
+                    alternativePreferredExample: 'Prefer another duty',
+                    avoidIfPossibleExample: 'Avoid this assignment if possible',
+                    alternativeAssignmentExample: 'Other assignments are also possible',
+                    noteLabel: 'Note',
+                    fallbackDuty: {
+                        day: 'Day',
+                        twoDay: 'Day duty',
+                        evening: 'Evening',
+                        night: 'Night',
+                        nightContinuation: 'Night completion',
+                        off: 'Off',
+                    },
+                    audience: {
+                        allNurses: 'All nurses',
+                        selectedTarget: 'Selected target',
+                        firstNurse: 'First nurse',
+                        secondNurse: 'Second nurse',
+                    },
+                    value: {
+                        everyday: 'Every day',
+                        month: 'One month',
+                        requested: 'Requested',
+                        weekendHoliday: 'Weekends/holidays',
+                        people: '{{count}} people',
+                        times: '{{count}} times',
+                        withoutOff: 'Without an off day',
+                        configuredMode: 'Selected participation mode',
+                        otherMode: 'Another participation mode',
+                        configuredComposition: 'Selected composition',
+                        otherComposition: 'Another composition',
+                        lines: '{{count}} lines',
+                        twoShiftDuty: 'Two-shift duty',
+                        perNurse: 'Per nurse',
+                        restMinutes: '{{count}} minutes of rest',
+                        workMinutes: '{{count}} work minutes',
+                        workload: 'Workload',
+                        difference: 'Difference {{count}}',
+                        sameDate: 'Same date',
+                        allDuties: 'All duties',
+                    },
+                    note: {
+                        minimumNightIntervalOne: 'A value of one allows the basic gap between separate night blocks.',
+                        minimumContinuousNightOne: 'A value of one allows a single night shift.',
+                    },
+                    description: {
+                        STAFF_COUNT_BY_SHIFT:
+                            'On the selected days, staffing for this shift follows the configured minimum, maximum, or exact count.',
+                        CORE_MAX_CONTINUOUS_WORK:
+                            'Keep consecutive work to {{count}} days or fewer. The count starts over after a day off.',
+                        MIN_OFF_AFTER_CONSECUTIVE_WORK:
+                            'After {{workCount}} consecutive workdays, schedule at least {{offCount}} days off immediately afterward.',
+                        AVOID_ISOLATED_WORK_DAY: 'Avoid placing a single workday between days off.',
+                        AVOID_ISOLATED_OFF_DAY: 'Avoid placing a single day off between workdays.',
+                        CORE_MIN_NIGHT_INTERVAL: 'Leave at least {{count}} non-night days between one {{nightName}} block and the next.',
+                        CORE_MAX_CONTINUOUS_NIGHT: 'Do not schedule {{nightName}} for more than {{count}} consecutive days.',
+                        CORE_MIN_CONTINUOUS_NIGHT:
+                            'Keep each {{nightName}} block at least {{count}} days long to reduce isolated or overly short night blocks.',
+                        CORE_MIN_OFF_AFTER_NIGHT:
+                            'After a consecutive {{nightName}} block ends, schedule at least {{count}} days of {{offName}}.',
+                        FORBID_N_THEN_D: 'Do not schedule {{dayName}} immediately after {{nightName}}.',
+                        FORBID_N_THEN_E: 'Do not schedule {{eveningName}} immediately after {{nightName}}.',
+                        FORBID_E_THEN_D: 'Do not schedule {{dayName}} immediately after {{eveningName}}.',
+                        FORBID_E_THEN_N: 'Do not schedule {{nightName}} immediately after {{eveningName}}.',
+                        CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF:
+                            'Do not schedule {{nightName}} before an approved requested day off. This does not apply to every regular day off.',
+                        NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS:
+                            'Keep weekend and holiday {{shiftName}} for the selected target within {{count}} assignments per configured period.',
+                        NURSE_FORBID_WEEKEND: 'Do not schedule the selected nurse on weekends or holidays.',
+                        NURSE_PREFER_SHIFT: 'Prefer {{shiftName}} when scheduling the selected nurse.',
+                        NURSE_AVOID_SHIFT: 'Avoid {{shiftName}} when scheduling the selected nurse.',
+                        NURSE_PAIR_NOT_SAME_SHIFT: 'Do not place the selected pair on the same duty on the same day.',
+                        NURSE_PAIR_PREFER_SAME_SHIFT: 'Prefer placing the selected pair on the same duty on the same day.',
+                        TWO_SHIFT_NIGHT_THEN_CONTINUATION:
+                            'Schedule {{continuationName}} on the displayed day after {{nightName}} so the two duties form a pair.',
+                        TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF:
+                            'Schedule at least {{count}} days of {{offName}} after {{continuationName}}.',
+                        TWO_SHIFT_NIGHT_PAIR_MIN_OFF:
+                            'Schedule at least {{count}} days of {{offName}} after consecutive {{nightName}} duties.',
+                        MAX_MONTHLY_NIGHT_COUNT: 'Keep {{nightName}} within {{count}} assignments per month.',
+                        MIXED_ROTATION_PARTICIPATION:
+                            'Use the selected mixed-rotation participation mode for the selected target on applicable days.',
+                        MIXED_DAILY_COMPOSITION: 'Keep the configured mixed-rotation composition on applicable days.',
+                        TWO_SHIFT_DAILY_LINES: 'Keep the number of two-shift lines on applicable days at the configured value.',
+                        TWO_SHIFT_ASSIGNMENT_COUNT:
+                            'Keep two-shift assignments for the selected nurses within the configured period and range.',
+                        TIME_WINDOW_STAFF_COUNT: 'Keep the number of nurses working in the selected time window at the configured value.',
+                        MIN_REST_BETWEEN_SHIFTS: 'Give the selected target at least {{minutes}} minutes of rest between duties.',
+                        MAX_WORK_MINUTES_BY_PERIOD:
+                            'Keep the selected target’s total work time within {{minutes}} minutes for the configured period.',
+                        MIXED_SHIFT_WORKLOAD_BALANCE: 'Keep the workload difference between the selected nurses within {{difference}}.',
+                        MAX_CONSECUTIVE_WORK_DAYS: 'Keep consecutive work to {{count}} days or fewer.',
+                        OFF_AFTER_CONSECUTIVE_WORK: 'Schedule an off day immediately after {{count}} consecutive workdays.',
+                    },
                 },
                 import: {
                     title: 'Import constraints from another team',
@@ -1097,6 +1198,17 @@ export const en: TLocale = {
                 noNurseDescription: 'Add nurses before creating a schedule. You can start from member management.',
                 goMemberManagement: 'Go to member management',
                 dragHandleAria: 'Drag to reorder',
+                editExit: {
+                    title: 'Leave without saving your changes?',
+                    description: 'Your current edits will be lost.',
+                    continueEditing: 'Keep editing',
+                    discardAndClose: 'Leave without saving',
+                },
+                editModal: {
+                    title: 'Worker details',
+                    description: 'Edit the information used for this schedule.',
+                    basicInfo: 'Basic information',
+                },
             },
             fixedShifts: {
                 title: 'Select fixed shifts',
@@ -1962,7 +2074,7 @@ export const en: TLocale = {
                 deleteTeamTitle: 'Delete this team?',
                 deleteTeamDescriptionSuffix: ' team and its {{count}} nurses will be deleted.',
                 unsavedExitTitle: 'Leave without saving?',
-                unsavedExitDescription: 'Your changes may not be saved.',
+                unsavedExitDescription: "If you don't save, your changes will be lost.",
                 deleteNurseTitle: 'Delete this nurse?',
                 deleteNurseDescriptionSuffix: ' will be deleted permanently.',
                 disconnectTitle: 'Disconnect this account?',

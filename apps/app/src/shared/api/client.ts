@@ -5,7 +5,7 @@ import {match} from 'ts-pattern';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {buildApiLocaleHeaders, getStoredServiceRegion} from '@/shared/i18n/locale';
-import {normalizeApiErrorResponse, resolveApiErrorMessage, type TApiClientError} from './error';
+import {emitScheduleRosterChanged, normalizeApiErrorResponse, resolveApiErrorMessage, type TApiClientError} from './error';
 
 declare module 'axios' {
     // eslint-disable-next-line @typescript-eslint/naming-convention -- Axios module augmentation must use the library interface name.
@@ -69,6 +69,10 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
             const status: number | undefined = error?.response?.status;
             const responseBody = normalizeApiErrorResponse(error?.response?.data);
             const message = resolveApiErrorMessage(responseBody, i18n.t('shared.api.requestFailed'));
+
+            // 명단이 변경된 사이 저장/검증을 시도한 경우 작성 화면이 최신 workspace를 다시 읽게 한다.
+            // 자동 재저장이나 재확정은 이 계층에서 하지 않는다.
+            emitScheduleRosterChanged(responseBody);
 
             match(status)
                 .with(401, () => {

@@ -1,19 +1,20 @@
 import {cn} from '@dutying/utils/style';
 import {DragDropContext, type DropResult} from '@hello-pangea/dnd';
 import {useQuery} from '@tanstack/react-query';
-import {ArrowRight, ChevronDown, UserPlus} from 'lucide-react';
+import {ArrowRight, ChevronDown, Plus, UserPlus} from 'lucide-react';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {type TNurse} from '@/entities/nurse';
+import {getWardDisplayCode, getWardDisplayTitle, type TNurse} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useEditShiftTeam from '@/features/edit-shift-team';
-import {getGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
+import {createMoveNurseToTeamPayload, getGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {PersonIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {isMakeShiftTeamReadyForWard, type TWorkerConfirmationStatus, useMakeShiftStore} from '../../model/make-shift-store';
 import {
     applyMakeShiftWorkerDrag,
@@ -23,6 +24,7 @@ import {
 } from '../../model/make-shift-worker-order';
 import {useMakeShiftNurseOrder} from '../../model/use-make-shift-nurse-order';
 import {RestLeavePolicySummaryCard} from './rest-leave-policy-summary-card';
+import {WorkerEditModal} from './worker-edit-modal';
 import {WorkersList, WorkersTableHeader} from './workers-sections';
 
 const MAKE_SHIFT_WORKER_SORT_OPTIONS = [
@@ -89,8 +91,8 @@ export function Workers() {
     const setWorkerConfirmationState = useMakeShiftStore((s) => s.setWorkerConfirmationState);
     const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
     const {
-        state: {nurseSaveStatus},
-        actions: {updateNurse},
+        state: {ward: editableWard, shiftTeams: editableShiftTeams, selectedNurse, nurseSaveStatus, isAddingNurse},
+        actions: {addNurse, selectNurse, updateNurse},
     } = useEditShiftTeam();
     const {moveNurseOrder} = useMakeShiftNurseOrder();
     const teamNursesQuery = useQuery({
@@ -101,15 +103,13 @@ export function Workers() {
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
     });
-    const dutyQuery = useQuery({
-        ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
-        enabled,
-    });
     const teamNurses = teamNursesQuery.data ?? [];
     const ward = wardQuery.data;
     const sortedFromServer = useMemo(() => sortMakeShiftWorkersInitialOrder(teamNurses), [teamNurses]);
     const [sortMode, setSortMode] = useState<TMakeShiftWorkerSortMode>('priority');
     const [sortMenuOpen, setSortMenuOpen] = useState(false);
+    const [workerEditModalOpen, setWorkerEditModalOpen] = useState(false);
+    const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const [orderCustomized, setOrderCustomized] = useState(false);
     const [localWorkers, setLocalWorkers] = useState<TNurse[]>([]);
@@ -127,7 +127,14 @@ export function Workers() {
         setOrderCustomized(false);
         setLocalWorkers([]);
         setPendingWorkerByNurseId({});
+        setWorkerEditModalOpen(false);
     }, [currentShiftTeamId, wardId]);
+
+    useEffect(() => {
+        if (!workerEditModalOpen || selectedNurse || isAddingNurse) return;
+
+        setWorkerEditModalOpen(false);
+    }, [isAddingNurse, selectedNurse, workerEditModalOpen]);
 
     useEffect(() => {
         if (!orderCustomized) return;
@@ -407,145 +414,224 @@ export function Workers() {
         },
         [getWorkerState, isWorkerToggleBusy, updateNurse],
     );
+    const handleOpenWorkerEdit = useCallback(
+        (nurse: TNurse) => {
+            selectNurse(nurse.nurseId);
+            setWorkerEditModalOpen(true);
+        },
+        [selectNurse],
+    );
+    const handleCloseWorkerEdit = useCallback(() => {
+        setWorkerEditModalOpen(false);
+        selectNurse(null);
+    }, [selectNurse]);
+    const handleAddNurse = useCallback(async () => {
+        if (currentShiftTeamId === null || isAddingNurse) return;
+
+        await addNurse(currentShiftTeamId);
+        setWorkerEditModalOpen(true);
+    }, [addNurse, currentShiftTeamId, isAddingNurse]);
+    const handleMoveSelectedNurseToTeam = useCallback(
+        async (nextShiftTeamId: number) => {
+            if (!selectedNurse || !editableShiftTeams) return false;
+
+            const payload = createMoveNurseToTeamPayload({
+                shiftTeams: editableShiftTeams,
+                nurseId: selectedNurse.nurseId,
+                destinationShiftTeamId: nextShiftTeamId,
+            });
+
+            if (!payload) return false;
+
+            const moved = await moveNurseOrder(payload);
+
+            if (!moved) return false;
+
+            handleCloseWorkerEdit();
+
+            return true;
+        },
+        [editableShiftTeams, handleCloseWorkerEdit, moveNurseOrder, selectedNurse],
+    );
+    const wardForEditing = editableWard ?? ward;
+    const wardGuideCode = getWardDisplayCode(wardForEditing, '-');
+    const wardGuideTitle = getWardDisplayTitle(wardForEditing);
 
     return (
-        <div id="make_workers_step" className="make-shift-workers-root flex min-w-0 flex-col items-end">
-            <div className="make-shift-workers w-full max-w-[920px] min-w-[720px] rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)] min-[1400px]:max-w-[1000px] min-[1400px]:min-w-[740px] min-[1600px]:max-w-[1088px] min-[1600px]:min-w-[920px]">
-                {isWorkersLoading ? (
-                    <PageState
-                        tone="loading"
-                        layout="inline"
-                        loadingColor="purple"
-                        title={t('page.state.loadingTitle')}
-                        className="min-h-[220px] py-0"
-                    />
-                ) : workerCount > 0 ? (
-                    <>
-                        <div className="mb-3 flex min-w-0 items-center justify-between gap-3 px-1">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                                <span
-                                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 font-apple text-[12px] font-semibold text-sub-2"
-                                    aria-label={t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
-                                >
-                                    <PersonIcon aria-hidden className="size-3.5 shrink-0" />
-                                    <span className="tabular-nums">
-                                        {t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
+        <>
+            <WardCodeGuideModal
+                open={wardCodeGuideOpen}
+                wardCode={wardGuideCode}
+                wardTitle={wardGuideTitle}
+                onClose={() => setWardCodeGuideOpen(false)}
+            />
+            <WorkerEditModal
+                open={workerEditModalOpen && Boolean(selectedNurse)}
+                onClose={handleCloseWorkerEdit}
+                onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
+                shiftTeams={editableShiftTeams}
+                onMoveShiftTeam={handleMoveSelectedNurseToTeam}
+                wardShiftTypes={wardForEditing?.wardShiftTypes}
+            />
+            <div id="make_workers_step" className="make-shift-workers-root flex min-w-0 flex-col items-end">
+                <div className="make-shift-workers w-full max-w-[920px] min-w-[720px] rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)] min-[1400px]:max-w-[1000px] min-[1400px]:min-w-[740px] min-[1600px]:max-w-[1088px] min-[1600px]:min-w-[920px]">
+                    {isWorkersLoading ? (
+                        <PageState
+                            tone="loading"
+                            layout="inline"
+                            loadingColor="purple"
+                            title={t('page.state.loadingTitle')}
+                            className="min-h-[220px] py-0"
+                        />
+                    ) : workerCount > 0 ? (
+                        <>
+                            <div className="mb-3 flex min-w-0 items-center justify-between gap-3 px-1">
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <span
+                                        className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 font-apple text-[12px] font-semibold text-sub-2"
+                                        aria-label={t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
+                                    >
+                                        <PersonIcon aria-hidden className="size-3.5 shrink-0" />
+                                        <span className="tabular-nums">
+                                            {t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
+                                        </span>
                                     </span>
-                                </span>
-                                <RestLeavePolicySummaryCard
-                                    wardId={wardId}
-                                    shiftTeamId={currentShiftTeamId}
-                                    year={year}
-                                    month={month}
-                                    days={dutyQuery.data?.days}
-                                />
+                                    <RestLeavePolicySummaryCard
+                                        wardId={wardId}
+                                        shiftTeamId={currentShiftTeamId}
+                                        year={year}
+                                        month={month}
+                                    />
+                                </div>
+                                <div className="flex shrink-0 items-center gap-2">
+                                    <div ref={sortMenuRef} className="relative">
+                                        <button
+                                            type="button"
+                                            aria-haspopup="listbox"
+                                            aria-expanded={sortMenuOpen}
+                                            aria-label={t('page.makeShift.workers.sortListMenuAria')}
+                                            className={cn(
+                                                'flex h-8 min-w-[132px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[14px] font-medium text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                                                sortMenuOpen
+                                                    ? 'bg-white text-sub-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]'
+                                                    : 'hover:bg-gray-7',
+                                            )}
+                                            onClick={() => setSortMenuOpen((prev) => !prev)}
+                                        >
+                                            <span>{selectedSortOption ? t(selectedSortOption.labelKey) : ''}</span>
+                                            <ChevronDown
+                                                aria-hidden="true"
+                                                className={cn('h-4 w-4 shrink-0 transition-transform', sortMenuOpen && 'rotate-180')}
+                                            />
+                                        </button>
+                                        {sortMenuOpen ? (
+                                            <div
+                                                role="listbox"
+                                                className="absolute top-full right-0 z-20 mt-1 w-[150px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
+                                            >
+                                                {availableSortOptions.map((option) => {
+                                                    const isSelected = sortMode === option.value;
+
+                                                    return (
+                                                        <button
+                                                            key={option.value}
+                                                            type="button"
+                                                            role="option"
+                                                            aria-selected={isSelected}
+                                                            className={cn(
+                                                                'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                                                isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                                            )}
+                                                            onClick={() => {
+                                                                setSortMode(option.value);
+                                                                setSortMenuOpen(false);
+                                                            }}
+                                                        >
+                                                            {t(option.labelKey)}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                </div>
                             </div>
-                            <div ref={sortMenuRef} className="relative">
+                            {activeWorkerCount === 0 ? (
+                                <div
+                                    role="status"
+                                    className="mt-2 rounded-[10px] bg-[#FFF7E8] px-4 py-3 font-apple text-[14px] leading-5 text-[#8A5A00]"
+                                >
+                                    <p className="font-semibold text-[#6F4700]">{t('page.makeShift.workers.emptyTitle')}</p>
+                                    <p className="mt-0.5 font-medium">{t('page.makeShift.workers.emptyDescription')}</p>
+                                </div>
+                            ) : null}
+                        </>
+                    ) : null}
+
+                    {workerCount === 0 ? (
+                        <div className="mt-3 flex min-h-[240px] flex-col items-center justify-center px-4 py-10 text-center">
+                            <div className="grid size-12 place-items-center rounded-full bg-main-light text-main-1 shadow-[inset_0_0_0_1px_rgba(112,82,255,0.10)]">
+                                <UserPlus aria-hidden className="size-6" strokeWidth={2.2} />
+                            </div>
+                            <p className="mt-5 max-w-[520px] font-apple text-[22px] leading-[1.35] font-semibold break-keep text-sub-1">
+                                {noNurseTitle}
+                            </p>
+                            <p className="mt-2 max-w-[560px] font-apple text-[15px] leading-6 font-medium break-keep text-gray-3">
+                                {noNurseDescription}
+                            </p>
+                            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                                <ManagementActionButton
+                                    size="sm"
+                                    variant="primary"
+                                    className="h-11 cursor-pointer rounded-[12px] px-5 text-[15px]"
+                                    disabled={isAddingNurse}
+                                    onClick={() => (currentShiftTeamId === null ? navigate(ROUTE.MEMBER) : void handleAddNurse())}
+                                >
+                                    {currentShiftTeamId === null
+                                        ? t('page.makeShift.workers.goMemberManagement')
+                                        : isAddingNurse
+                                          ? t('page.member.addingNurse')
+                                          : t('page.member.addFirstNurse')}
+                                    {currentShiftTeamId === null ? (
+                                        <ArrowRight aria-hidden className="size-4" />
+                                    ) : (
+                                        <Plus aria-hidden className="size-4" />
+                                    )}
+                                </ManagementActionButton>
+                            </div>
+                        </div>
+                    ) : currentShiftTeamId !== null ? (
+                        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                            <WorkersTableHeader />
+                            <WorkersList
+                                grouped={grouped}
+                                shiftTeamId={currentShiftTeamId}
+                                divisionLabelByNum={divisionLabelByNum}
+                                wardShiftTypes={ward?.wardShiftTypes}
+                                isBusy={isWorkerToggleBusy}
+                                getWorkerState={getWorkerState}
+                                onToggleWorker={(nurse, checked) => void handleToggleWorker(nurse, checked)}
+                                selectedNurseId={workerEditModalOpen ? selectedNurse?.nurseId : null}
+                                onEditNurse={handleOpenWorkerEdit}
+                                setRowRef={setWorkerRowRef}
+                            />
+                            <div className="mt-3 flex justify-end px-1">
                                 <button
                                     type="button"
-                                    aria-haspopup="listbox"
-                                    aria-expanded={sortMenuOpen}
-                                    aria-label={t('page.makeShift.workers.sortListMenuAria')}
-                                    className={cn(
-                                        'flex h-8 min-w-[132px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[14px] font-medium text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                                        sortMenuOpen
-                                            ? 'bg-white text-sub-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]'
-                                            : 'hover:bg-gray-7',
-                                    )}
-                                    onClick={() => setSortMenuOpen((prev) => !prev)}
+                                    disabled={isAddingNurse}
+                                    className="group inline-flex min-h-8 items-center gap-2 rounded-[7px] px-1.5 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:bg-[#E7E0FF] focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                                    onClick={() => void handleAddNurse()}
                                 >
-                                    <span>{selectedSortOption ? t(selectedSortOption.labelKey) : ''}</span>
-                                    <ChevronDown
-                                        aria-hidden="true"
-                                        className={cn('h-4 w-4 shrink-0 transition-transform', sortMenuOpen && 'rotate-180')}
-                                    />
+                                    <span className="flex size-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C] group-focus-visible:bg-main-1">
+                                        <Plus aria-hidden className="size-[11px] text-white" strokeWidth={2.8} />
+                                    </span>
+                                    {isAddingNurse ? t('page.member.addingNurse') : t('page.member.addNurse')}
                                 </button>
-                                {sortMenuOpen ? (
-                                    <div
-                                        role="listbox"
-                                        className="absolute top-full right-0 z-20 mt-1 w-[150px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
-                                    >
-                                        {availableSortOptions.map((option) => {
-                                            const isSelected = sortMode === option.value;
-
-                                            return (
-                                                <button
-                                                    key={option.value}
-                                                    type="button"
-                                                    role="option"
-                                                    aria-selected={isSelected}
-                                                    className={cn(
-                                                        'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                                                        isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
-                                                    )}
-                                                    onClick={() => {
-                                                        setSortMode(option.value);
-                                                        setSortMenuOpen(false);
-                                                    }}
-                                                >
-                                                    {t(option.labelKey)}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                ) : null}
                             </div>
-                        </div>
-                        {activeWorkerCount === 0 ? (
-                            <div
-                                role="status"
-                                className="mt-2 rounded-[10px] bg-[#FFF7E8] px-4 py-3 font-apple text-[14px] leading-5 text-[#8A5A00]"
-                            >
-                                <p className="font-semibold text-[#6F4700]">{t('page.makeShift.workers.emptyTitle')}</p>
-                                <p className="mt-0.5 font-medium">{t('page.makeShift.workers.emptyDescription')}</p>
-                            </div>
-                        ) : null}
-                    </>
-                ) : null}
-
-                {workerCount === 0 ? (
-                    <div className="mt-3 flex min-h-[240px] flex-col items-center justify-center px-4 py-10 text-center">
-                        <div className="grid size-12 place-items-center rounded-full bg-main-light text-main-1 shadow-[inset_0_0_0_1px_rgba(112,82,255,0.10)]">
-                            <UserPlus aria-hidden className="size-6" strokeWidth={2.2} />
-                        </div>
-                        <p className="mt-5 max-w-[520px] font-apple text-[22px] leading-[1.35] font-semibold break-keep text-sub-1">
-                            {noNurseTitle}
-                        </p>
-                        <p className="mt-2 max-w-[560px] font-apple text-[15px] leading-6 font-medium break-keep text-gray-3">
-                            {noNurseDescription}
-                        </p>
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                            <ManagementActionButton
-                                size="sm"
-                                variant="primary"
-                                className="h-11 cursor-pointer rounded-[12px] px-5 text-[15px]"
-                                onClick={() => {
-                                    navigate(
-                                        currentShiftTeamId === null ? ROUTE.MEMBER : `${ROUTE.MEMBER}?shiftTeamId=${currentShiftTeamId}`,
-                                    );
-                                }}
-                            >
-                                {t('page.makeShift.workers.goMemberManagement')}
-                                <ArrowRight aria-hidden className="size-4" />
-                            </ManagementActionButton>
-                        </div>
-                    </div>
-                ) : currentShiftTeamId !== null ? (
-                    <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-                        <WorkersTableHeader />
-                        <WorkersList
-                            grouped={grouped}
-                            shiftTeamId={currentShiftTeamId}
-                            divisionLabelByNum={divisionLabelByNum}
-                            wardShiftTypes={ward?.wardShiftTypes}
-                            isBusy={isWorkerToggleBusy}
-                            getWorkerState={getWorkerState}
-                            onToggleWorker={(nurse, checked) => void handleToggleWorker(nurse, checked)}
-                            setRowRef={setWorkerRowRef}
-                        />
-                    </DragDropContext>
-                ) : null}
+                        </DragDropContext>
+                    ) : null}
+                </div>
             </div>
-        </div>
+        </>
     );
 }

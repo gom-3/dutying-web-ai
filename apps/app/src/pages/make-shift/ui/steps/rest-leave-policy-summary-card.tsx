@@ -1,11 +1,11 @@
 import {Minus, Plus, Settings} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import type {TShift} from '@/entities';
+import i18n from '@/i18n';
 import {
     calculateBaseRestTarget,
-    calculateRestTargetFromDays,
-    countPublicHolidaysForRestTarget,
-    getApproximateWeekCount,
+    calculateRestTargetForLanguage,
+    countPublicHolidaysForLanguage,
+    DEFAULT_REST_LEAVE_POLICY,
     useRestLeavePolicy,
 } from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -16,7 +16,6 @@ type TRestLeavePolicySummaryCardProps = {
     shiftTeamId: number | null;
     year: number;
     month: number;
-    days?: TShift['days'] | null;
 };
 
 type TRestLeavePolicySummaryState = ReturnType<typeof useRestLeavePolicySummary>;
@@ -33,20 +32,31 @@ function formatAdjustmentLabel(adjustmentDays: number, t: ReturnType<typeof useT
         : t('page.makeShift.workers.restPolicy.adjustmentMinus', {count: Math.abs(adjustmentDays)});
 }
 
-function useRestLeavePolicySummary({wardId, shiftTeamId, year, month, days}: TRestLeavePolicySummaryCardProps) {
+function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeavePolicySummaryCardProps) {
     const {t} = useTypedTranslation();
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays, setAdjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId, year, month});
-    const weekCount = useMemo(() => getApproximateWeekCount(year, month), [month, year]);
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const baseTarget = useMemo(() => calculateBaseRestTarget(policy, year, month), [month, policy, year]);
-    const holidayCount = useMemo(() => countPublicHolidaysForRestTarget(year, month, days ?? []), [days, month, year]);
-    const targetWithHolidays = useMemo(() => calculateRestTargetFromDays(policy, year, month, days ?? []), [days, month, policy, year]);
+    const holidayCount = useMemo(
+        () =>
+            countPublicHolidaysForLanguage(
+                year,
+                month,
+                language,
+                policy.targetMode === 'weekly' ? policy.weeklyOffDays : DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
+            ),
+        [language, month, policy.targetMode, policy.weeklyOffDays, year],
+    );
+    const targetWithHolidays = useMemo(
+        () => calculateRestTargetForLanguage(policy, year, month, language),
+        [language, month, policy, year],
+    );
     const adjustedTarget = Math.max(0, targetWithHolidays + adjustmentDays);
     const baseTargetLabel =
         policy.targetMode === 'weekly'
             ? t('page.makeShift.workers.restPolicy.weeklyTarget', {
                   days: policy.weeklyOffDays,
-                  weeks: weekCount,
                   count: baseTarget,
               })
             : t('page.makeShift.workers.restPolicy.fixedTarget', {count: baseTarget});

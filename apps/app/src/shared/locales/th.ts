@@ -1,4 +1,5 @@
 import {th as generatedTh} from '../i18n/resources.generated';
+import {constraintRuleHelpTh} from './constraint-rule-help';
 import {type TLocale} from './ko';
 
 export const th = {
@@ -188,6 +189,7 @@ export const th = {
             },
             constraints: {
                 ...generatedTh.page.makeShift.constraints,
+                help: constraintRuleHelpTh,
                 toast: {
                     ...generatedTh.page.makeShift.constraints.toast,
                     duplicateSkipped: 'มีเงื่อนไขเดียวกันอยู่แล้ว',

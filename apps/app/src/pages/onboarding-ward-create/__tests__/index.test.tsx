@@ -297,13 +297,11 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('병원명')).toBeInTheDocument();
         expect(screen.getByLabelText('병동명')).toBeInTheDocument();
         expect(screen.getByText('(선택) 병동명')).toBeInTheDocument();
-        // 병원은 카탈로그 추천이 붙었을 뿐 여전히 자유 입력이다.
-        expect(screen.getByPlaceholderText('병원명을 입력해 주세요')).toBeInTheDocument();
-        expect(screen.getByText('목록에 없으면 적은 그대로 두셔도 돼요')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('병원명을 검색해 주세요')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('병동명을 입력해 주세요')).toBeInTheDocument();
     });
 
-    it('shows the rotation choices on their own step and blocks unavailable options as coming soon', async () => {
+    it('shows the rotation choices on their own step and allows every option', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
@@ -323,16 +321,19 @@ describe('OnboardingWardCreatePage', () => {
         const twoShiftButton = screen.getByRole('button', {name: /2교대만 운영해요/});
         const mixedShiftButton = screen.getByRole('button', {name: /3교대와 2교대를 함께 운영해요/});
 
-        expect(twoShiftButton).toBeDisabled();
-        expect(mixedShiftButton).toBeDisabled();
-        expect(screen.getAllByText('준비 중')).toHaveLength(2);
+        expect(twoShiftButton).toBeEnabled();
+        expect(mixedShiftButton).toBeEnabled();
+        expect(screen.queryByText('준비 중')).not.toBeInTheDocument();
 
         await user.click(twoShiftButton);
-        await user.click(mixedShiftButton);
-
-        expect(screen.getByRole('button', {name: /3교대만 운영해요/})).toHaveAttribute('aria-pressed', 'true');
-        expect(screen.getByRole('button', {name: /2교대만 운영해요/})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: /3교대만 운영해요/})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: /2교대만 운영해요/})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.getByRole('button', {name: /3교대와 2교대를 함께 운영해요/})).toHaveAttribute('aria-pressed', 'false');
+
+        await user.click(mixedShiftButton);
+        expect(screen.getByRole('button', {name: /3교대만 운영해요/})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: /2교대만 운영해요/})).toHaveAttribute('aria-pressed', 'false');
+        expect(screen.getByRole('button', {name: /3교대와 2교대를 함께 운영해요/})).toHaveAttribute('aria-pressed', 'true');
         expect(screen.queryByRole('group', {name: '야간근무 후 아침에 퇴근한 날을 어떻게 표시하나요?'})).not.toBeInTheDocument();
     });
 

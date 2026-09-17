@@ -57,7 +57,7 @@ const supplementalKo = {
                     adjustmentNone: '추가 조정 없음',
                     adjustmentPlus: '+{{count}}일 추가',
                     adjustmentMinus: '{{count}}일 차감',
-                    weeklyTarget: '주 {{days}}일 × {{weeks}}주 = {{count}}일',
+                    weeklyTarget: '주 {{days}}일 기준 · 실제 달력 {{count}}일',
                     fixedTarget: '월 {{count}}일',
                     decreaseTarget: '목표 휴무일 줄이기',
                     increaseTarget: '목표 휴무일 늘리기',
@@ -79,8 +79,8 @@ const supplementalKo = {
                     title: '목표 휴무일 설정',
                     weekly: {
                         title: '주 단위로 계산',
-                        description: '한 주에 필요한 휴무일 수를 기준으로 월 목표를 자동 계산해요.',
-                        stepperLabel: '{{count}}주 기준 주간 휴무일 수',
+                        description: '한 주의 휴무일 수를 실제 달력에 맞춰 계산해요.',
+                        stepperLabel: '주간 휴무일 수',
                     },
                     fixed: {
                         title: '월 고정값으로 계산',

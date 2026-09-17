@@ -1,3 +1,4 @@
+import {constraintRuleHelpJa} from './constraint-rule-help';
 import {en} from './en';
 import type {TLocale} from './ko';
 
@@ -987,7 +988,7 @@ export const ja: TLocale = {
                 deleteTeamTitle: 'チームを削除しますか？',
                 deleteTeamDescriptionSuffix: 'チームを削除すると所属看護師{{count}}名も一緒に削除されます。',
                 unsavedExitTitle: '保存せずに移動しますか？',
-                unsavedExitDescription: '変更内容が保存されない可能性があります。',
+                unsavedExitDescription: '保存しない場合、変更内容は失われます。',
                 deleteNurseTitle: '看護師を削除しますか？',
                 deleteNurseDescriptionSuffix: ' 削除後は元に戻せません。',
                 disconnectTitle: '連携を解除しますか？',
@@ -1198,7 +1199,7 @@ export const ja: TLocale = {
                     label: 'スタッフ確認',
                     caption: '勤務に入る看護師を確認します',
                     introTitle: '勤務に入る人数を確認してください',
-                    introDescription: '抜けている看護師がいないか確認してください\n変更が必要な場合は看護師管理で編集できます',
+                    introDescription: '抜けている看護師がいないか確認してください\nスタッフを選ぶと詳細情報を編集できます',
                 },
                 constraints: {
                     label: '制約条件',
@@ -1336,6 +1337,17 @@ export const ja: TLocale = {
                 noNurseDescription: '勤務表を作成するには、先に看護師を追加してください。スタッフ管理からすぐに開始できます。',
                 goMemberManagement: 'スタッフ管理へ移動',
                 dragHandleAria: 'ドラッグして順序を変更',
+                editExit: {
+                    title: '変更内容を保存せずに移動しますか？',
+                    description: '移動すると、現在の変更内容は失われます。',
+                    continueEditing: '編集を続ける',
+                    discardAndClose: '保存せずに移動',
+                },
+                editModal: {
+                    title: 'スタッフ情報',
+                    description: '勤務表に反映する情報を編集してください。',
+                    basicInfo: '基本情報',
+                },
             },
             aiRefill: {
                 ...en.page.makeShift.aiRefill,
@@ -1444,6 +1456,7 @@ export const ja: TLocale = {
             },
             constraints: {
                 ...en.page.makeShift.constraints,
+                help: constraintRuleHelpJa,
                 section: {
                     strong: '強制約',
                     weak: '弱制約',

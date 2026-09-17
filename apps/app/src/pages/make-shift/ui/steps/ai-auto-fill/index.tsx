@@ -28,6 +28,7 @@ import {adjustLockedCellKeys} from '@/features/shift-editor/model/schedule-autho
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import i18n from '@/i18n';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
+import {isScheduleRosterChangedApiError} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
 import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
 import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
@@ -52,6 +53,7 @@ import {
     type TInterpretCell,
     toInterpretCells,
 } from '../../../model/schedule-month-requests';
+import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-success-store';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
@@ -236,6 +238,7 @@ function resolveSnapshotDisplayTitle(params: {
  */
 export function AiAutofill() {
     const {t} = useTypedTranslation();
+    const language = i18n.resolvedLanguage ?? i18n.language;
     const queryClient = useQueryClient();
     const {
         state: {wardId},
@@ -363,6 +366,7 @@ export function AiAutofill() {
         [currentTeamNurses, dutyQuery.data],
     );
     const connectedNurseCount = useMemo(() => currentTeamNurses.filter((nurse) => nurse.isConnected).length, [currentTeamNurses]);
+    const hasNursesToConnect = connectedNurseCount === 0 || connectedNurseCount < currentTeamNurses.length;
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const promotableRules = useMemo(() => promotableRuleRequests(monthRequests), [monthRequests]);
@@ -515,9 +519,10 @@ export function AiAutofill() {
                       year,
                       month,
                       adjustmentDays,
+                      language,
                   })
                 : undefined,
-        [adjustmentDays, hydratedDoc, month, orderedShift, policy, year],
+        [adjustmentDays, hydratedDoc, language, month, orderedShift, policy, year],
     );
     const canConfirm =
         !isWorking &&
@@ -707,6 +712,7 @@ export function AiAutofill() {
             year,
             month,
             adjustmentDays,
+            language,
         });
         const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
 
@@ -757,8 +763,10 @@ export function AiAutofill() {
             }
 
             await saveSnapshotFromList(snapshots);
-        } catch {
-            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+        } catch (error) {
+            if (!isScheduleRosterChangedApiError(error)) {
+                toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+            }
         } finally {
             setIsSavingSnapshot(false);
         }
@@ -864,17 +872,15 @@ export function AiAutofill() {
             }
 
             await publishCurrentSchedule(snapshots);
-            toast.success(
-                t(
-                    connectedNurseCount > 0
-                        ? 'page.makeShift.aiRefill.publishSuccessWithRecipients'
-                        : 'page.makeShift.aiRefill.publishSuccessWithoutRecipients',
-                    {count: connectedNurseCount},
-                ),
-                {id: progressToastId},
-            );
-        } catch {
-            toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
+            toast.dismiss(progressToastId);
+            useSchedulePublishSuccessStore.getState().show({
+                connectedNurseCount,
+                showConnectionHint: hasNursesToConnect,
+            });
+        } catch (error) {
+            if (!isScheduleRosterChangedApiError(error)) {
+                toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
+            }
         } finally {
             setIsWorking(false);
         }
@@ -973,8 +979,10 @@ export function AiAutofill() {
 
             try {
                 await saveSnapshotFromList(snapshots, oldestSnapshot);
-            } catch {
-                toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+            } catch (error) {
+                if (!isScheduleRosterChangedApiError(error)) {
+                    toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+                }
             } finally {
                 setIsSavingSnapshot(false);
             }
@@ -992,17 +1000,15 @@ export function AiAutofill() {
 
         try {
             await publishCurrentSchedule(snapshots, oldestSnapshot);
-            toast.success(
-                t(
-                    connectedNurseCount > 0
-                        ? 'page.makeShift.aiRefill.publishSuccessWithRecipients'
-                        : 'page.makeShift.aiRefill.publishSuccessWithoutRecipients',
-                    {count: connectedNurseCount},
-                ),
-                {id: progressToastId},
-            );
-        } catch {
-            toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
+            toast.dismiss(progressToastId);
+            useSchedulePublishSuccessStore.getState().show({
+                connectedNurseCount,
+                showConnectionHint: hasNursesToConnect,
+            });
+        } catch (error) {
+            if (!isScheduleRosterChangedApiError(error)) {
+                toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
+            }
         } finally {
             setIsWorking(false);
             setDeletingSnapshotId(null);
@@ -1723,13 +1729,7 @@ export function AiAutofill() {
                         divisionLabelByNum={divisionLabelByNum}
                         stickyHeader
                         restPolicyControl={
-                            <RestLeavePolicySummaryButton
-                                wardId={wardId}
-                                shiftTeamId={currentShiftTeamId}
-                                year={year}
-                                month={month}
-                                days={orderedShift.days}
-                            />
+                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
                         }
                     />
                 )}

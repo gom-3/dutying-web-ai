@@ -3,6 +3,7 @@ import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
 import {useShiftEditorStore} from '@/features/shift-editor';
+import {emitScheduleRosterChanged} from '@/shared/api/error';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {act, renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
@@ -14,6 +15,11 @@ const wardApiMocks = vi.hoisted(() => ({
     getShift: vi.fn(),
     getWorkspaceSchedule: vi.fn(),
     getWardConstraint: vi.fn(),
+}));
+const toastMock = vi.hoisted(() => vi.fn());
+
+vi.mock('react-hot-toast', () => ({
+    default: toastMock,
 }));
 
 vi.mock('@/shared/api/ward', () => ({
@@ -102,6 +108,7 @@ describe('useMakeShiftBootstrap', () => {
         wardApiMocks.getShift.mockReset();
         wardApiMocks.getWorkspaceSchedule.mockReset();
         wardApiMocks.getWardConstraint.mockReset();
+        toastMock.mockReset();
         wardApiMocks.getShiftTeams.mockResolvedValue([{shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []}] satisfies TShiftTeam[]);
         wardApiMocks.getShift.mockResolvedValue(makeEmptyShift());
         wardApiMocks.getWorkspaceSchedule.mockResolvedValue({});
@@ -224,6 +231,70 @@ describe('useMakeShiftBootstrap', () => {
                 shiftFullyAssigned: true,
                 restoreDraftModalOpen: false,
             });
+        });
+    });
+
+    it('reopens authoring and warns when the confirmed snapshot was rebased to a changed roster', async () => {
+        saveDraftStep(1, 10, 2026, 6, 5);
+        saveMaxReachedStep(1, 10, 2026, 6, 5);
+        wardApiMocks.getShift.mockResolvedValue({
+            ...makeFullyAssignedShift(),
+            workflowStatus: 'CONFIRMED',
+            workflowStep: 5,
+        });
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue({
+            workflowStatus: 'CONFIRMED',
+            workflowStep: 5,
+            rosterReconciliation: {
+                status: 'REBASED',
+                requiresReview: true,
+                sourceSnapshotId: 700,
+                removedShiftNurseIds: [21750],
+                addedShiftNurseIds: [],
+                ignoredCellCount: 30,
+                clearedCellCount: 0,
+                message: '근무자 명단 변경을 반영했습니다. 배정을 확인하고 다시 확정해 주세요.',
+            },
+        });
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 4,
+                maxReachedStep: 4,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+                restoreDraftModalOpen: false,
+            });
+        });
+        expect(toastMock).toHaveBeenCalledWith('근무자 명단 변경을 반영했습니다. 배정을 확인하고 다시 확정해 주세요.', {
+            id: 'make-shift-roster-reconciliation',
+            duration: 8000,
+        });
+    });
+
+    it('reloads the schedule context when a write reports a changed roster', async () => {
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(wardApiMocks.getShift).toHaveBeenCalledTimes(1);
+            expect(useMakeShiftStore.getState().shiftStatus).toBe('success');
+        });
+
+        act(() => {
+            emitScheduleRosterChanged({code: 'SCHEDULE_ROSTER_CHANGED'});
+        });
+
+        await waitFor(() => {
+            expect(wardApiMocks.getShift).toHaveBeenCalledTimes(2);
+            expect(wardApiMocks.getWorkspaceSchedule).toHaveBeenCalledTimes(2);
         });
     });
 

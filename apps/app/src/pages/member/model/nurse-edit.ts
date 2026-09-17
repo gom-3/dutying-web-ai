@@ -1,15 +1,26 @@
 import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
-import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, getNurseShiftTypeKey} from './nurse-shift-types';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from './nurse-role';
+import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, getNurseShiftTypeKey} from './nurse-shift-types';
 
-const nurseProfileEditableKeys = ['name', 'phoneNum', 'birthDate', 'isWorker', 'isWardManager'] as const;
+const normalizeRequiredText = (value: string | null | undefined) => value?.trim() ?? '';
+const normalizeOptionalText = (value: string | null | undefined) => {
+    const normalized = value?.trim() ?? '';
+
+    return normalized.length > 0 ? normalized : null;
+};
 
 export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
 
-    if (nurseProfileEditableKeys.some((key) => original[key] !== draft[key])) return true;
+    if (normalizeRequiredText(original.name) !== normalizeRequiredText(draft.name)) return true;
+
+    if (normalizeOptionalText(original.phoneNum) !== normalizeOptionalText(draft.phoneNum)) return true;
+
+    if (normalizeOptionalText(original.birthDate) !== normalizeOptionalText(draft.birthDate)) return true;
+
+    if (original.isWorker !== draft.isWorker || original.isWardManager !== draft.isWardManager) return true;
 
     return (
         getMemoWithoutRoleMarkers(original.memo) !== getMemoWithoutRoleMarkers(draft.memo) ||

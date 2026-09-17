@@ -4,6 +4,7 @@ import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
+import {EmptyRequestGuide} from './ui/empty-request-guide';
 import RequestCalendar from './ui/request-calendar';
 import {RequestCalendarSkeleton} from './ui/request-calendar-skeleton';
 import Toolbar from './ui/toolbar';
@@ -11,11 +12,25 @@ import Toolbar from './ui/toolbar';
 const RequestShiftPageContent = () => {
     const {t} = useTypedTranslation();
     const {
-        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus},
+        state: {
+            year,
+            month,
+            requestShift,
+            shiftStatus,
+            shiftTeams,
+            shiftTeamsStatus,
+            bootstrapStatus,
+            dutyRequestList,
+            dutyRequestStatus,
+            currentShiftTeam,
+        },
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
     const shouldShowToolbar = bootstrapStatus === 'success' && shiftTeamsStatus === 'success' && shiftTeamCount > 0;
+    const hasNoDutyRequests = dutyRequestStatus === 'success' && (dutyRequestList?.length ?? 0) === 0;
+    const shouldScheduleEmptyRequestGuide = hasNoDutyRequests && shiftStatus === 'success' && Boolean(requestShift);
+    const emptyRequestGuideResetKey = `${currentShiftTeam?.shiftTeamId ?? 'none'}:${year}:${month}`;
     const pageState =
         bootstrapStatus === 'pending'
             ? {
@@ -94,7 +109,15 @@ const RequestShiftPageContent = () => {
                         ) : null}
                     </PageState>
                 ) : (
-                    <RequestCalendar />
+                    <EmptyRequestGuide
+                        enabled={shouldScheduleEmptyRequestGuide}
+                        resetKey={emptyRequestGuideResetKey}
+                        contentTestId="request-calendar-content"
+                        directEntryText={t('page.request.emptyGuide.requestPageDirectEntry')}
+                        wrapperClassName="flex-1"
+                    >
+                        <RequestCalendar />
+                    </EmptyRequestGuide>
                 )}
             </div>
         </div>

@@ -10,6 +10,7 @@ import {AdminAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
 import {normalizePreferredLanguage, normalizeServiceRegion, setStoredServiceRegion} from '@/shared/i18n/locale';
+import {getIndexedMarketingLanguageFromPath} from '@/shared/seo/marketing-locale';
 import {withTimeout} from '@/shared/util/with-timeout';
 import {toAccountCompatibleAdminMe} from './model/admin-account';
 import {isWardAdminAccessToken} from './model/admin-token';
@@ -48,7 +49,7 @@ const syncAccountLocalePreferences = (account: TAccount) => {
         setStoredServiceRegion(nextServiceRegion);
     }
 
-    if (getExplicitLanguageFromQuery()) return;
+    if (getExplicitLanguageFromQuery() || getIndexedMarketingLanguageFromPath(window.location.pathname)) return;
 
     const nextLanguage = normalizePreferredLanguage(account.preferredLanguage) ?? normalizePreferredLanguage(account.resolvedLanguage);
 

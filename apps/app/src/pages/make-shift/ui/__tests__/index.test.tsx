@@ -5,6 +5,7 @@ import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {useAiAutofillExitGuardStore} from '../../model/ai-autofill-exit-guard';
+import {useSchedulePublishSuccessStore} from '../../model/schedule-publish-success-store';
 import {MakeShiftPageView} from '../index';
 
 const queryMockState = vi.hoisted(() => ({
@@ -98,7 +99,7 @@ function renderMakeShiftPageView() {
                     path={ROUTE.MAKE}
                     element={
                         <>
-                            <MakeShiftPageView />
+                            <MakeShiftPageView wardCode="WARD123" />
                             <LocationProbe />
                         </>
                     }
@@ -119,6 +120,7 @@ describe('MakeShiftPageView layout', () => {
         queryMockState.pendingMutations = 0;
         useEditNurseStore.getState().reset();
         useAiAutofillExitGuardStore.getState().resetExitGuard();
+        useSchedulePublishSuccessStore.getState().close();
         vi.restoreAllMocks();
 
         makeShiftState = {
@@ -168,6 +170,7 @@ describe('MakeShiftPageView layout', () => {
         expect(contentCard).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(contentCard).not.toHaveClass('overflow-hidden');
         expect(contentCard).not.toHaveClass('min-h-0');
+
         expect(stepContentWrapper).toHaveClass('pb-3');
         expect(stepContentWrapper).not.toHaveClass('min-h-0');
         expect(stepContentWrapper).not.toHaveClass('flex-1');
@@ -311,5 +314,39 @@ describe('MakeShiftPageView layout', () => {
 
         expect(confirmSpy).not.toHaveBeenCalled();
         expect(mockUseCase.goToStep).toHaveBeenCalledWith(5);
+    });
+
+    it('keeps the publish success dialog visible after the page changes to the confirmed step', async () => {
+        const user = userEvent.setup();
+
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 5,
+            maxReachedStep: 5,
+        };
+        useSchedulePublishSuccessStore.getState().show({connectedNurseCount: 1, showConnectionHint: true});
+
+        renderMakeShiftPageView();
+
+        const dialog = screen.getByRole('dialog', {name: 'page.makeShift.aiRefill.publishSuccess'});
+
+        expect(dialog).toHaveTextContent('page.makeShift.aiRefill.publishSuccessWithRecipients');
+        expect(dialog).toHaveTextContent('page.makeShift.aiRefill.publishSuccessWithoutRecipients');
+        expect(dialog).toHaveTextContent('page.makeShift.aiRefill.publishSuccessConnectionDescription');
+        expect(dialog).toHaveTextContent('📱 page.makeShift.aiRefill.publishSuccessConnectionDescription');
+        expect(screen.getByText('page.makeShift.aiRefill.publishSuccessConnectionDescription')).toHaveClass('whitespace-nowrap');
+        expect(dialog).toHaveTextContent('WARD123');
+        expect(dialog.querySelector('.schedule-publish-success__icon')).toBeInTheDocument();
+
+        const wardCodeBadge = screen.getByText('WARD123');
+
+        expect(wardCodeBadge.parentElement).toHaveClass('rounded-full', 'bg-main-light');
+        expect(screen.queryByRole('button', {name: 'widget.wardCodeGuide.copyAria'})).not.toBeInTheDocument();
+        expect(dialog.querySelector('[class~="bg-[#F6F3FF]"]')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.publishSuccessConfirm'}));
+
+        expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.publishSuccess'})).not.toBeInTheDocument();
+        expect(useSchedulePublishSuccessStore.getState().notice).toBeNull();
     });
 });

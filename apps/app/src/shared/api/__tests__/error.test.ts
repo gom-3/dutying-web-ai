@@ -1,6 +1,12 @@
+import {describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
-import {describe, expect, it} from 'vitest';
-import {normalizeApiErrorResponse, resolveApiErrorMessage} from '../error';
+import {
+    emitScheduleRosterChanged,
+    isScheduleRosterChangedApiError,
+    normalizeApiErrorResponse,
+    onScheduleRosterChanged,
+    resolveApiErrorMessage,
+} from '../error';
 
 describe('api error i18n adapter', () => {
     it('normalizes the server error contract and preserves request metadata', () => {
@@ -51,11 +57,38 @@ describe('api error i18n adapter', () => {
     });
 
     it('hides debug-only server text behind the generic fallback', () => {
-        const message = resolveApiErrorMessage({
-            message: 'stack trace detail',
-            displayPolicy: 'DEBUG_ONLY',
-        }, 'fallback');
+        const message = resolveApiErrorMessage(
+            {
+                message: 'stack trace detail',
+                displayPolicy: 'DEBUG_ONLY',
+            },
+            'fallback',
+        );
 
         expect(message).toBe('fallback');
+    });
+
+    it('emits a recovery signal only for a changed schedule roster', () => {
+        const listener = vi.fn();
+        const unsubscribe = onScheduleRosterChanged(listener);
+
+        emitScheduleRosterChanged({
+            code: 'SCHEDULE_ROSTER_CHANGED',
+            message: '근무자 명단이 변경되었습니다.',
+            requestId: 'req-roster',
+            traceId: 'trace-roster',
+        });
+        emitScheduleRosterChanged({code: 'INVALID_PARAMETER'});
+
+        expect(listener).toHaveBeenCalledTimes(1);
+        expect(listener).toHaveBeenCalledWith({
+            message: '근무자 명단이 변경되었습니다.',
+            requestId: 'req-roster',
+            traceId: 'trace-roster',
+        });
+        expect(isScheduleRosterChangedApiError({serverCode: 'SCHEDULE_ROSTER_CHANGED'})).toBe(true);
+        expect(isScheduleRosterChangedApiError({serverCode: 'INVALID_PARAMETER'})).toBe(false);
+
+        unsubscribe();
     });
 });

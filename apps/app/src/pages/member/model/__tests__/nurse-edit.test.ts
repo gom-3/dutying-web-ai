@@ -63,6 +63,19 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(true);
     });
 
+    it('does not mark server-normalized blank values or harmless outer whitespace as changed', () => {
+        const nurse = {...createNurse(), phoneNum: null, birthDate: null};
+
+        expect(
+            hasNurseChanges(nurse, {
+                ...nurse,
+                name: `  ${nurse.name}  `,
+                phoneNum: '   ',
+                birthDate: '',
+            }),
+        ).toBe(false);
+    });
+
     it('detects shift type target ratio changes', () => {
         const nurse = createNurse();
         const draft = {

@@ -594,7 +594,7 @@ export const ko = {
                     label: '근무자 확인',
                     caption: '근무에 투입될 간호사를 확인해요',
                     introTitle: '근무투입 인원을 확인해 주세요',
-                    introDescription: '빠진 인원이 없는지 확인해 주세요\n수정이 필요하면 근무자 관리에서 변경할 수 있어요',
+                    introDescription: '빠진 인원이 없는지 확인해 주세요\n근무자를 누르면 상세 정보를 수정할 수 있어요',
                 },
                 constraints: {
                     label: '제약조건',
@@ -662,7 +662,7 @@ export const ko = {
             tutorial: {
                 stepper: {
                     title: '근무표 만들기',
-                    info: '진행선을 보면서 5단계를 차례대로 진행해요.',
+                    info: '진행선을 보면서 4단계를 차례대로 진행해요.',
                 },
                 constraints: {
                     title: '제약조건 추가하기',
@@ -815,6 +815,103 @@ export const ko = {
                 },
                 ruleAction: {
                     deleteAria: '제약 조건 삭제',
+                },
+                help: {
+                    aria: '{{constraint}} 설명 보기',
+                    title: '이 조건은 이렇게 적용돼요',
+                    goodExample: '이렇게 배정해요',
+                    avoidExample: '이렇게는 배정하지 않아요',
+                    preferredExample: '우선 배정해요',
+                    alternativeExample: '다른 근무도 가능해요',
+                    alternativePreferredExample: '다른 근무를 우선해요',
+                    avoidIfPossibleExample: '가능하면 배정하지 않아요',
+                    alternativeAssignmentExample: '다른 배정도 가능해요',
+                    noteLabel: '참고',
+                    fallbackDuty: {
+                        day: '데이',
+                        twoDay: '주간',
+                        evening: '이브닝',
+                        night: '나이트',
+                        nightContinuation: '퇴근일',
+                        off: '휴무',
+                    },
+                    audience: {
+                        allNurses: '모든 간호사',
+                        selectedTarget: '선택한 대상',
+                        firstNurse: '첫 번째 간호사',
+                        secondNurse: '두 번째 간호사',
+                    },
+                    value: {
+                        everyday: '매일',
+                        month: '한 달',
+                        requested: '신청',
+                        weekendHoliday: '주말·공휴일',
+                        people: '{{count}}명',
+                        times: '{{count}}회',
+                        withoutOff: '휴무 없이',
+                        configuredMode: '선택한 참여 방식',
+                        otherMode: '다른 참여 방식',
+                        configuredComposition: '선택한 편성',
+                        otherComposition: '다른 편성',
+                        lines: '{{count}}개 라인',
+                        twoShiftDuty: '2교대 근무',
+                        perNurse: '간호사별',
+                        restMinutes: '{{count}}분 휴식',
+                        workMinutes: '{{count}}분 근무',
+                        workload: '근무 부담',
+                        difference: '차이 {{count}}',
+                        sameDate: '같은 날짜',
+                        allDuties: '전체 근무',
+                    },
+                    note: {
+                        minimumNightIntervalOne: '설정값이 1일이면 서로 다른 나이트 묶음 사이의 기본 간격을 허용해요.',
+                        minimumContinuousNightOne: '설정값이 1일이면 나이트를 하루만 배정해도 괜찮아요.',
+                    },
+                    description: {
+                        STAFF_COUNT_BY_SHIFT: '선택한 적용일마다 해당 근무 인원이 설정한 최소·최대·정확 인원에 맞도록 배정해요.',
+                        CORE_MAX_CONTINUOUS_WORK:
+                            '휴무 없이 이어지는 근무가 최대 {{count}}일을 넘지 않도록 해요. 휴무를 만나면 연속 횟수를 다시 세요.',
+                        MIN_OFF_AFTER_CONSECUTIVE_WORK:
+                            '{{workCount}}일 연속으로 근무했다면 바로 다음부터 {{offCount}}일 이상 쉬도록 배정해요.',
+                        AVOID_ISOLATED_WORK_DAY: '휴무 사이에 근무가 하루만 끼는 배치를 피하도록 해요.',
+                        AVOID_ISOLATED_OFF_DAY: '근무 사이에 휴무가 하루만 끼는 배치를 피하도록 해요.',
+                        CORE_MIN_NIGHT_INTERVAL:
+                            '한 {{nightName}} 묶음이 끝난 뒤 다음 {{nightName}}가 시작되기 전까지 최소 {{count}}일의 비야간 간격을 둬요.',
+                        CORE_MAX_CONTINUOUS_NIGHT: '{{nightName}} 연속 배정이 {{count}}일을 넘지 않도록 해요.',
+                        CORE_MIN_CONTINUOUS_NIGHT:
+                            '{{nightName}} 한 묶음이 최소 {{count}}일 이어지도록 해 단독 또는 너무 짧은 야간 배정을 줄여요.',
+                        CORE_MIN_OFF_AFTER_NIGHT:
+                            '연속된 {{nightName}} 묶음이 끝나면 바로 다음 날부터 {{count}}일 이상 {{offName}}로 배정해요.',
+                        FORBID_N_THEN_D: '{{nightName}} 바로 다음 달력일에는 {{dayName}} 배정을 하지 않아요.',
+                        FORBID_N_THEN_E: '{{nightName}} 바로 다음 달력일에는 {{eveningName}} 배정을 하지 않아요.',
+                        FORBID_E_THEN_D: '{{eveningName}} 바로 다음 달력일에는 {{dayName}} 배정을 하지 않아요.',
+                        FORBID_E_THEN_N: '{{eveningName}} 바로 다음 달력일에는 {{nightName}} 배정을 하지 않아요.',
+                        CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF:
+                            '승인되어 생성 조건에 포함된 신청 휴무 전날에는 {{nightName}} 배정을 하지 않아요. 일반 휴무 전체를 뜻하지는 않아요.',
+                        NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS:
+                            '선택한 대상의 주말·공휴일 {{shiftName}} 배정이 설정한 기간에 최대 {{count}}회를 넘지 않도록 해요.',
+                        NURSE_FORBID_WEEKEND: '선택한 간호사는 주말·공휴일에 근무하지 않도록 해요.',
+                        NURSE_PREFER_SHIFT: '선택한 간호사에게 {{shiftName}} 배정을 가능한 한 우선해요.',
+                        NURSE_AVOID_SHIFT: '선택한 간호사에게 {{shiftName}} 배정을 가능한 한 하지 않아요.',
+                        NURSE_PAIR_NOT_SAME_SHIFT: '선택한 두 간호사가 같은 날 같은 근무에 함께 배정되지 않도록 해요.',
+                        NURSE_PAIR_PREFER_SAME_SHIFT: '선택한 두 간호사를 가능한 한 같은 날 같은 근무에 배정해요.',
+                        TWO_SHIFT_NIGHT_THEN_CONTINUATION:
+                            '모든 간호사는 {{nightName}} 다음 표시일을 {{continuationName}}로 배정해 두 근무가 한 쌍이 되도록 해요.',
+                        TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF:
+                            '{{continuationName}} 다음 표시일부터 최소 {{count}}일을 {{offName}}로 배정해요.',
+                        TWO_SHIFT_NIGHT_PAIR_MIN_OFF: '{{nightName}} 연속 배정이 끝난 뒤 최소 {{count}}일을 {{offName}}로 배정해요.',
+                        MAX_MONTHLY_NIGHT_COUNT: '한 달 동안 {{nightName}} 배정이 최대 {{count}}회를 넘지 않도록 해요.',
+                        MIXED_ROTATION_PARTICIPATION: '선택한 대상은 적용일마다 지정한 혼합교대 참여 방식으로 근무하도록 해요.',
+                        MIXED_DAILY_COMPOSITION: '선택한 적용일마다 지정한 혼합교대 편성이 유지되도록 해요.',
+                        TWO_SHIFT_DAILY_LINES: '선택한 적용일의 2교대 근무 라인 수가 설정값에 맞도록 해요.',
+                        TWO_SHIFT_ASSIGNMENT_COUNT: '선택한 간호사들의 2교대 근무 횟수가 설정한 기간과 범위 안에 들도록 해요.',
+                        TIME_WINDOW_STAFF_COUNT: '선택한 시간대에 근무 중인 인원이 설정값에 맞도록 배정해요.',
+                        MIN_REST_BETWEEN_SHIFTS: '선택한 대상의 연속 근무 사이에 최소 {{minutes}}분의 휴식 시간을 보장해요.',
+                        MAX_WORK_MINUTES_BY_PERIOD: '선택한 대상의 기간별 총 근무시간이 최대 {{minutes}}분을 넘지 않도록 해요.',
+                        MIXED_SHIFT_WORKLOAD_BALANCE: '선택한 간호사들 사이의 근무 부담 차이가 최대 {{difference}}를 넘지 않도록 맞춰요.',
+                        MAX_CONSECUTIVE_WORK_DAYS: '휴무 없이 이어지는 근무가 최대 {{count}}일을 넘지 않도록 해요.',
+                        OFF_AFTER_CONSECUTIVE_WORK: '{{count}}일 연속으로 근무하면 바로 다음 날은 휴무로 배정해요.',
+                    },
                 },
                 import: {
                     title: '다른 팀 제약조건 불러오기',
@@ -1049,11 +1146,11 @@ export const ko = {
                     },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: '근무자 조합',
-                        sentence: '{nurseA}과 {nurseB}은 같은 근무를 피해요',
+                        sentence: '{nurseA} · {nurseB} 두 간호사는 같은 날짜에 서로 다른 근무를 하도록 배정해요',
                     },
                     SOFT_PREFER_SAME_DUTY_PAIR: {
                         label: '근무자 조합',
-                        sentence: '{nurseA}은 {nurseB}과 같은 근무를 하는 것이 좋아요',
+                        sentence: '{nurseA} · {nurseB} 두 간호사는 같은 날짜에 같은 근무를 하도록 우선 배정해요',
                     },
                 },
                 phrase: {
@@ -1094,6 +1191,17 @@ export const ko = {
                 noNurseDescription: '근무표를 만들려면 먼저 간호사를 추가해 주세요. 근무자 관리에서 바로 시작할 수 있어요',
                 goMemberManagement: '근무자 관리로 이동',
                 dragHandleAria: '드래그하여 순서 변경',
+                editExit: {
+                    title: '변경사항을 저장하지 않고 나갈까요?',
+                    description: '나가면 지금 수정한 내용은 사라져요.',
+                    continueEditing: '계속 수정하기',
+                    discardAndClose: '저장하지 않고 나가기',
+                },
+                editModal: {
+                    title: '근무자 정보',
+                    description: '근무표에 반영할 정보를 수정해 주세요.',
+                    basicInfo: '기본 정보',
+                },
             },
             fixedShifts: {
                 title: '고정 근무를 선택해 주세요',
@@ -1184,13 +1292,14 @@ export const ko = {
                     },
                     card: {
                         title: '이렇게 이해했어요',
+                        empty: '조절 요청으로 바꾸지 못했어요. 휴무, 근무 묶기, 숙련도 배치처럼 다시 적어 보세요.',
                         lifetimeLabel: '{{label}} 수명',
                         teamHint: '계속 쓰실 것 같아요',
                         assumedBadge: '기본값',
                         assumedTooltip: '말씀하신 숫자가 없어 저희가 골랐어요. 다르면 다시 말씀해 주세요.',
                         cellApplied: '{{count}}칸을 표에 반영하고 고정했어요',
                         cellNotApplied: '표에서 그 칸을 찾지 못했어요',
-
+                        ruleNote: '규칙으로 만들 수 있어요 — 이번 조절에는 적용되지 않아요.',
                         apply: '적용하기',
                         cancel: '취소',
                     },
@@ -1961,7 +2070,7 @@ export const ko = {
                 deleteTeamTitle: '팀을 삭제할까요?',
                 deleteTeamDescriptionSuffix: ' 팀을 삭제하면 소속 간호사 {{count}}명도 함께 삭제돼요.',
                 unsavedExitTitle: '저장하지 않고 나갈까요?',
-                unsavedExitDescription: '변경사항이 저장되지 않을 수 있어요.',
+                unsavedExitDescription: '저장하지 않으면 수정한 내용이 사라져요.',
                 deleteNurseTitle: '간호사를 삭제할까요?',
                 deleteNurseDescriptionSuffix: ' 삭제 후에는 되돌릴 수 없어요.',
                 disconnectTitle: '연동을 끊을까요?',

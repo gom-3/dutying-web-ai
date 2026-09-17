@@ -1,4 +1,5 @@
 import {zh as generatedZh} from '../i18n/resources.generated';
+import {constraintRuleHelpZh} from './constraint-rule-help';
 import {type TLocale} from './ko';
 
 export const zh = {
@@ -187,6 +188,7 @@ export const zh = {
             },
             constraints: {
                 ...generatedZh.page.makeShift.constraints,
+                help: constraintRuleHelpZh,
                 toast: {
                     ...generatedZh.page.makeShift.constraints.toast,
                     duplicateSkipped: '相同条件已存在。',

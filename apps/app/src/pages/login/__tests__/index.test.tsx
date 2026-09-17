@@ -89,10 +89,13 @@ describe('LoginPage', () => {
         expect(visualImages[0]).toHaveAttribute('loading', 'eager');
         expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
         expect(visualImages[1]).not.toHaveAttribute('src');
-        expect(visualImages[0]).toHaveAttribute('src', '/img/login_1.webp');
+        expect(visualImages[0]).toHaveAttribute('src', '/img/login-slide-1.webp');
+        expect(visualImages[0]).not.toHaveClass('login-visual-slide-active');
+        fireEvent.load(visualImages[0]);
+        expect(visualImages[0]).toHaveClass('login-visual-slide-active');
         expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
             'srcset',
-            '/img/login_1.webp',
+            '/img/login-slide-1.webp',
         );
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
@@ -113,7 +116,7 @@ describe('LoginPage', () => {
     });
 
     it.each([
-        ['ko', '/img/login_1.webp', '/img/login-slide-2.webp', '/img/login-slide-3.webp'],
+        ['ko', '/img/login-slide-1.webp', '/img/login-slide-2.webp', '/img/login-slide-3.webp'],
         ['ja', '/img/login-ja.webp', '/img/login-slide-2-ja.webp', '/img/login-slide-3-ja.webp'],
         ['en', '/img/login-default.webp', '/img/login-slide-2-default.webp', '/img/login-slide-3-default.webp'],
     ])('uses the localized login visual for %s', async (language, expectedFirstSrc, expectedSecondSrc, expectedThirdSrc) => {
@@ -127,7 +130,11 @@ describe('LoginPage', () => {
             </MemoryRouter>,
         );
 
-        expect(document.querySelector('.login-visual-slide-active')).toHaveAttribute('src', expectedFirstSrc);
+        const firstVisualImage = document.querySelector('.login-visual-slide[src]') as HTMLImageElement;
+        expect(firstVisualImage).toHaveAttribute('src', expectedFirstSrc);
+        expect(firstVisualImage).not.toHaveClass('login-visual-slide-active');
+        fireEvent.load(firstVisualImage);
+        expect(firstVisualImage).toHaveClass('login-visual-slide-active');
         expect(document.querySelector('source[srcset]')).toHaveAttribute('srcset', expectedFirstSrc);
 
         fireEvent.click(document.querySelector('.login-visual-arrow-next') as HTMLButtonElement);
@@ -235,6 +242,8 @@ describe('LoginPage', () => {
         expect(screen.getByLabelText('이메일')).toBeInTheDocument();
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.SIGN_IN);
+        expect(screen.getByRole('link', {name: '이용약관'})).toHaveAttribute('href', ROUTE.TERMS);
+        expect(screen.getByRole('link', {name: '개인정보 처리방침'})).toHaveAttribute('href', ROUTE.PRIVACY);
         expect(screen.getByRole('link', {name: '카카오로 시작하기'})).toHaveAttribute(
             'href',
             'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fregister%3FsocialSignup%3D1',

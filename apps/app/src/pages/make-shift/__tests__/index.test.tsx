@@ -1,3 +1,4 @@
+import {within} from '@testing-library/react';
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
@@ -29,7 +30,7 @@ vi.mock('../model/use-bootstrap', () => ({
 }));
 
 vi.mock('../ui', () => ({
-    MakeShiftPageView: () => <div>make shift page</div>,
+    MakeShiftPageView: ({wardCode}: {wardCode: string}) => <div data-testid="make-shift-page-view">{wardCode}</div>,
 }));
 
 vi.mock('../ui/make-tutorial', () => ({
@@ -72,9 +73,12 @@ describe('MakeShiftPage', () => {
             </MemoryRouter>,
         );
 
-        expect(await screen.findByRole('dialog', {name: '소속 간호사에게 병동코드를 알려주세요'})).toBeInTheDocument();
+        const dialog = await screen.findByRole('dialog', {name: '소속 간호사에게 병동코드를 알려주세요'});
+
+        expect(dialog).toBeInTheDocument();
         expect(screen.getByText('듀팅병원 중환자실 병동코드')).toBeInTheDocument();
-        expect(screen.getByText('ABC123')).toBeInTheDocument();
+        expect(within(dialog).getByText('ABC123')).toBeInTheDocument();
+        expect(screen.getByTestId('make-shift-page-view')).toHaveTextContent('ABC123');
 
         await waitFor(() => {
             expect(screen.getByText(ROUTE.MAKE)).toBeInTheDocument();

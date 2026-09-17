@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import useRequestShift from '@/features/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
+import {EmptyRequestGuide} from '@/pages/request-shift/ui/empty-request-guide';
 import RequestCalendar from '@/pages/request-shift/ui/request-calendar';
 import {RequestCalendarSkeleton} from '@/pages/request-shift/ui/request-calendar-skeleton';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -63,11 +64,14 @@ export function RequestsShifts() {
     }, [isMakeShiftTeamReady, makeMonth, makeShiftTeamId, makeWardId, makeYear, setRequestState, setRequestWardContext]);
 
     const {
-        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus},
+        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus, dutyRequestList, dutyRequestStatus},
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
     const orderedRequestShift = sortScheduleByTeamNurseOrder(requestShift, currentTeamNurses);
+    const hasNoDutyRequests = dutyRequestStatus === 'success' && (dutyRequestList?.length ?? 0) === 0;
+    const shouldScheduleEmptyRequestGuide = hasNoDutyRequests && shiftStatus === 'success' && Boolean(requestShift);
+    const emptyRequestGuideResetKey = `${makeWardId ?? 'none'}:${makeShiftTeamId ?? 'none'}:${makeYear}:${makeMonth}`;
     const pageState =
         !isRequestContextSynced || bootstrapStatus === 'pending'
             ? {
@@ -175,17 +179,23 @@ export function RequestsShifts() {
                         ) : null}
                     </PageState>
                 ) : (
-                    <RequestCalendar
-                        defaultReviewMode="pending"
-                        canReorderRows
-                        rowReorderDisabled={isReorderingRows}
-                        orderSourceNurses={currentTeamNurses}
-                        onRowDragEnd={(result) => {
-                            if (!orderedRequestShift) return;
+                    <EmptyRequestGuide
+                        enabled={shouldScheduleEmptyRequestGuide}
+                        resetKey={emptyRequestGuideResetKey}
+                        contentTestId="make-request-calendar-content"
+                    >
+                        <RequestCalendar
+                            defaultReviewMode="pending"
+                            canReorderRows
+                            rowReorderDisabled={isReorderingRows}
+                            orderSourceNurses={currentTeamNurses}
+                            onRowDragEnd={(result) => {
+                                if (!orderedRequestShift) return;
 
-                            void moveScheduleRow(orderedRequestShift, result, {scheduleKind: 'request'});
-                        }}
-                    />
+                                void moveScheduleRow(orderedRequestShift, result, {scheduleKind: 'request'});
+                            }}
+                        />
+                    </EmptyRequestGuide>
                 )}
             </div>
         </div>

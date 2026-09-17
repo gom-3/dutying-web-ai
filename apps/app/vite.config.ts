@@ -3,7 +3,7 @@ import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import {defineConfig, loadEnv} from 'vite';
+import {createServer, defineConfig, loadEnv} from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import marketingPageData from './src/shared/seo/marketing-pages.json';
@@ -50,7 +50,6 @@ const appStaticRoutes = [
     '/dutying/notices',
 ] as const;
 const marketingSeoBlockPattern = /<!-- MARKETING_SEO_START -->[\s\S]*?<!-- MARKETING_SEO_END -->/;
-const marketingFallbackPattern = /<!-- MARKETING_FALLBACK_START -->[\s\S]*?<!-- MARKETING_FALLBACK_END -->/;
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
 const getEnvValue = (value: string | undefined) => (value === undefined || value === '' ? undefined : value);
@@ -64,7 +63,6 @@ const normalizeMarketingPath = (value: string) => {
 };
 const getMarketingPage = (path: string) => marketingPages.find((page) => page.path === normalizeMarketingPath(path)) ?? koreanMarketingPage;
 const getCanonicalUrl = (appSiteUrl: string, path: string) => (path === '/' ? `${appSiteUrl}/` : `${appSiteUrl}${path}`);
-const getMarketingHeading = (page: TMarketingPage) => page.title.split(' | ')[0] ?? page.title;
 const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
     const canonicalUrl = getCanonicalUrl(appSiteUrl, page.path);
 
@@ -141,23 +139,10 @@ ${alternatePages.map((alternatePage) => `        <meta property="og:locale:alter
         <script type="application/ld+json">${structuredData}</script>
         <!-- MARKETING_SEO_END -->`;
 };
-const createMarketingFallback = (page: TMarketingPage) => `<!-- MARKETING_FALLBACK_START -->
-            <main
-                data-marketing-fallback
-                style="box-sizing: border-box; display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #f8f6fc; padding: 48px 24px; color: #150b3c; font-family: Arial, sans-serif; text-align: center;"
-            >
-                <section style="max-width: 760px;">
-                    <p style="margin: 0 0 16px; color: #7047eb; font-size: 18px; font-weight: 700;">Dutying</p>
-                    <h1 style="margin: 0; font-size: clamp(32px, 6vw, 56px); line-height: 1.2;">${escapeHtml(getMarketingHeading(page))}</h1>
-                    <p style="margin: 24px auto 0; color: #5f557f; font-size: 18px; line-height: 1.7;">${escapeHtml(page.description)}</p>
-                </section>
-            </main>
-            <!-- MARKETING_FALLBACK_END -->`;
 const renderMarketingSeoHtml = (html: string, page: TMarketingPage, appSiteUrl: string, robots: string) =>
     html
         .replace(/<html lang="[^"]*">/, `<html lang="${page.language}">`)
-        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots))
-        .replace(marketingFallbackPattern, createMarketingFallback(page));
+        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots));
 const createSitemap = (appSiteUrl: string) => {
     const localizedUrls = marketingPages
         .map((page) => {
@@ -204,6 +189,7 @@ export default defineConfig(({mode}) => {
     return {
         envDir: workspaceRoot,
         build: {
+            manifest: true,
             sourcemap: true,
         },
         plugins: [
@@ -258,10 +244,14 @@ export default defineConfig(({mode}) => {
                         source: createSitemap(appSiteUrl),
                     });
                 },
-                closeBundle() {
+                async closeBundle() {
                     if (!shouldEmitStaticRoutes) return;
 
                     const indexHtml = readFileSync(resolve(resolvedOutDir, 'index.html'), 'utf8');
+                    writeFileSync(
+                        resolve(resolvedOutDir, 'app-shell.html'),
+                        indexHtml.replace(/<meta name="robots" content="[^"]*"\s*\/>/, '<meta name="robots" content="noindex, follow" />'),
+                    );
 
                     // Cloudflare Pages에 404.html이 있으면 자동 SPA fallback이 꺼진다.
                     // 유효한 라우트만 정적 HTML 별칭으로 발행해 딥링크는 200을 유지하고,
@@ -276,11 +266,63 @@ export default defineConfig(({mode}) => {
                                   appSiteUrl,
                                   isProductionSite ? 'index, follow' : 'noindex, nofollow',
                               )
-                            : indexHtml.replace(marketingFallbackPattern, '');
+                            : indexHtml;
 
                         mkdirSync(dirname(routeFile), {recursive: true});
                         writeFileSync(routeFile, routeHtml);
                     });
+
+                    // Render the real responsive landing with the same React component used
+                    // by the browser. Product routes above deliberately keep their empty SPA root.
+                    const appRoot = fileURLToPath(new URL('.', import.meta.url));
+                    const renderer = await createServer({
+                        configFile: false,
+                        root: appRoot,
+                        envDir: workspaceRoot,
+                        mode,
+                        plugins: [react(), tsconfigPaths({projects: [resolve(appRoot, 'tsconfig.app.json')]})],
+                        server: {middlewareMode: true, watch: null, hmr: false, ws: false, preTransformRequests: false},
+                        optimizeDeps: {noDiscovery: true, include: []},
+                        appType: 'custom',
+                        ssr: {noExternal: ['@dutying/utils', '@dutying/domain']},
+                    });
+
+                    try {
+                        const {renderLanding} = await renderer.ssrLoadModule('/src/pages/landing/entry-server.tsx');
+                        const manifest = JSON.parse(readFileSync(resolve(resolvedOutDir, '.vite/manifest.json'), 'utf8'));
+                        const styles = new Set<string>();
+                        const visited = new Set<string>();
+                        const collectStyles = (key: string) => {
+                            if (visited.has(key)) return;
+                            visited.add(key);
+                            const entry = manifest[key];
+                            if (!entry) return;
+                            (entry.css ?? []).forEach((file: string) => styles.add(file));
+                            (entry.imports ?? []).forEach(collectStyles);
+                        };
+                        collectStyles('src/pages/landing/entry-client.tsx');
+                        if (styles.size === 0) throw new Error('Landing styles are missing from the Vite manifest');
+                        const stylesheetLinks = [...styles]
+                            .map((file) => `<link rel="stylesheet" crossorigin href="/${file}" />`)
+                            .join('\n');
+
+                        for (const page of marketingPages) {
+                            const {html, data} = renderLanding(page.language, page.path);
+                            const routeFile = resolve(resolvedOutDir, page.path === '/' ? 'index.html' : `${page.path.slice(1)}.html`);
+                            const document = renderMarketingSeoHtml(
+                                indexHtml,
+                                page,
+                                appSiteUrl,
+                                isProductionSite ? 'index, follow' : 'noindex, nofollow',
+                            )
+                                .replace('<div id="root"></div>', `<div id="root" data-rendered="landing">${html}</div>`)
+                                .replace('</head>', `${stylesheetLinks}\n</head>`)
+                                .replace('</body>', `<script id="landing-data" type="application/json">${data}</script>\n</body>`);
+                            writeFileSync(routeFile, document);
+                        }
+                    } finally {
+                        await renderer.close();
+                    }
                 },
             },
         ],

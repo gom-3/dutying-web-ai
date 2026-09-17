@@ -1,13 +1,18 @@
-import {describe, expect, it} from 'vitest';
+import Holidays from 'date-holidays';
+import {describe, expect, it, vi} from 'vitest';
 import type {TWardShiftType} from '@/entities';
 import {
     calculateBaseRestTarget,
     calculateRestTargetFromDays,
+    calculateRestTargetForLanguage,
     calculateRestTarget,
+    countPublicHolidaysForLanguage,
     countPublicHolidaysForRestTarget,
+    countWeeklyRestDaysInMonth,
     DEFAULT_REST_LEAVE_POLICY,
     getDefaultCountedRestShiftTypeIds,
     getHolidayCountryForLanguage,
+    getPublicHolidayDaysForLanguage,
     normalizeRestLeavePolicy,
     resolveCountedRestShiftTypeIds,
 } from '../rest-leave-policy';
@@ -52,11 +57,52 @@ const shiftTypes: TWardShiftType[] = [
 ];
 
 describe('rest leave policy', () => {
-    it('주 단위 기준으로 월 목표 휴무일을 계산한다', () => {
+    it('reuses annual holiday calculations across months and retains previous-year holidays in January', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            for (let month = 1; month <= 12; month += 1) {
+                getPublicHolidayDaysForLanguage(2032, month, 'ko');
+            }
+
+            expect(getHolidays.mock.calls.map(([year]) => year)).toEqual([2031, 2032]);
+            expect(getPublicHolidayDaysForLanguage(2032, 1, 'ko').map(({day}) => day)).toContain(1);
+            expect(getHolidays).toHaveBeenCalledTimes(2);
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
+    it('skips holiday calculation when it cannot affect the rest target', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            expect(calculateRestTargetForLanguage({...DEFAULT_REST_LEAVE_POLICY, enabled: false}, 2040, 1, 'en')).toBe(0);
+            expect(calculateRestTargetForLanguage({...DEFAULT_REST_LEAVE_POLICY, includeHolidays: false}, 2040, 1, 'en')).toBe(
+                countWeeklyRestDaysInMonth(2040, 1, 2),
+            );
+            expect(getHolidays).not.toHaveBeenCalled();
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
+    it('주 단위 기준을 실제 달력에 적용해 월 목표 휴무일을 계산한다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
 
-        expect(calculateBaseRestTarget(policy, 2026, 6)).toBe(10);
-        expect(calculateRestTarget(policy, 2026, 6, 1)).toBe(11);
+        expect(countWeeklyRestDaysInMonth(2026, 6, 2)).toBe(8);
+        expect(calculateBaseRestTarget(policy, 2026, 6)).toBe(8);
+        expect(calculateRestTarget(policy, 2026, 6, 1)).toBe(9);
+    });
+
+    it('같은 5주 상당의 달이어도 실제 주말 개수를 따로 센다', () => {
+        expect(countWeeklyRestDaysInMonth(2026, 6, 2)).toBe(8);
+        expect(countWeeklyRestDaysInMonth(2026, 8, 2)).toBe(10);
+    });
+
+    it('주간 휴무일 수가 다르면 일요일부터 거꾸로 실제 날짜를 센다', () => {
+        expect(countWeeklyRestDaysInMonth(2026, 8, 1)).toBe(5);
+        expect(countWeeklyRestDaysInMonth(2026, 8, 3)).toBe(14);
     });
 
     it('월 고정 기준은 공휴일 포함 여부와 분리해 계산한다', () => {
@@ -76,6 +122,17 @@ describe('rest leave policy', () => {
 
         expect(countPublicHolidaysForRestTarget(2026, 8, days)).toBe(1);
         expect(calculateRestTargetFromDays(policy, 2026, 8, days)).toBe(11);
+    });
+
+    it('이미 주간 휴무일에 포함된 공휴일은 중복해서 더하지 않는다', () => {
+        const days = [
+            {day: 14, dayType: 'holiday' as const},
+            {day: 20, dayType: 'holiday' as const},
+        ];
+        const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 3};
+
+        expect(countPublicHolidaysForRestTarget(2026, 8, days, policy.weeklyOffDays)).toBe(1);
+        expect(calculateRestTargetFromDays(policy, 2026, 8, days)).toBe(15);
     });
 
     it('휴무일 계산을 끄면 기준일을 계산하지 않는다', () => {
@@ -105,6 +162,29 @@ describe('rest leave policy', () => {
         expect(getHolidayCountryForLanguage('zh-CN')).toBe('CN');
         expect(getHolidayCountryForLanguage('th-TH')).toBe('TH');
         expect(getHolidayCountryForLanguage('vi-VN')).toBe('VN');
+        expect(getHolidayCountryForLanguage('unsupported')).toBe('KR');
+    });
+
+    it('언어별 국가 공휴일을 여러 날인 연휴까지 날짜별로 계산한다', () => {
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'ko').map(({day}) => day)).toEqual([24, 25, 26]);
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'ja').map(({day}) => day)).toEqual([21, 22, 23]);
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'en').map(({day}) => day)).toEqual([7]);
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'zh').map(({day}) => day)).toEqual([25]);
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'th')).toEqual([]);
+        expect(getPublicHolidayDaysForLanguage(2026, 9, 'vi').map(({day}) => day)).toEqual([2]);
+    });
+
+    it('언어별 공휴일 중 실제 주말과 겹치지 않는 날만 목표 휴무일에 더한다', () => {
+        const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
+
+        expect(countPublicHolidaysForLanguage(2026, 9, 'ko')).toBe(2);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'ko')).toBe(10);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'ja')).toBe(11);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'en')).toBe(9);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'zh')).toBe(9);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'th')).toBe(8);
+        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'vi')).toBe(9);
+        expect(calculateRestTargetForLanguage({...policy, includeHolidays: false}, 2026, 9, 'ja')).toBe(8);
     });
 
     it('알 수 없는 저장값은 단순 기본 정책으로 정규화한다', () => {

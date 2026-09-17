@@ -5,6 +5,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useShiftEditorStore} from '@/features/shift-editor/model';
 import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
+import {emitScheduleRosterChanged} from '@/shared/api/error';
 import {act, renderHook, waitFor} from '@/shared/util/test-utils';
 import {focusEditorWithoutScrolling, useDutyEditorStep} from '../use-duty-editor-step';
 
@@ -485,5 +486,26 @@ describe('useDutyEditorStep', () => {
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
+    });
+
+    it('refetches duty and workspace when a write reports a changed roster', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeShift());
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(wardApiMocks.getShift).toHaveBeenCalledTimes(1);
+            expect(wardApiMocks.getWorkspaceSchedule).toHaveBeenCalledTimes(1);
+        });
+
+        act(() => {
+            emitScheduleRosterChanged({code: 'SCHEDULE_ROSTER_CHANGED'});
+        });
+
+        await waitFor(() => {
+            expect(wardApiMocks.getShift).toHaveBeenCalledTimes(2);
+            expect(wardApiMocks.getWorkspaceSchedule).toHaveBeenCalledTimes(2);
+        });
     });
 });

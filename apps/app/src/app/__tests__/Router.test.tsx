@@ -1,5 +1,6 @@
 import {MemoryRouter, useLocation} from 'react-router-dom';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import {Router} from '../Router';
@@ -39,10 +40,31 @@ const setPhoneDevice = (isPhone: boolean) => {
             : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
     });
 };
+const originalLocation = window.location;
+const mockLocationReplace = () => {
+    const replace = vi.fn();
+
+    Object.defineProperty(window, 'location', {
+        configurable: true,
+        value: {
+            ...window.location,
+            replace,
+        },
+    });
+
+    return replace;
+};
 
 describe('Router', () => {
     beforeEach(() => {
         setPhoneDevice(false);
+    });
+
+    afterEach(() => {
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: originalLocation,
+        });
     });
 
     it('renders the renewed landing directly at the www root', async () => {
@@ -85,7 +107,11 @@ describe('Router', () => {
         expect(screen.getByText('renewed landing route')).toBeInTheDocument();
     });
 
-    it('keeps legal routes public for desktop visitors', async () => {
+    it('keeps the privacy route and redirects desktop visitors to the matching published document', async () => {
+        const replace = mockLocationReplace();
+
+        await i18n.changeLanguage('zh');
+
         render(
             <MemoryRouter initialEntries={[ROUTE.PRIVACY]}>
                 <Router />
@@ -94,13 +120,16 @@ describe('Router', () => {
         );
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.PRIVACY));
-
-        expect(await screen.findByRole('heading', {name: '개인정보 처리방침'})).toBeInTheDocument();
-        expect(screen.getByText('3. Google 사용자 데이터 처리')).toBeInTheDocument();
+        await waitFor(() =>
+            expect(replace).toHaveBeenCalledWith('https://app.notion.com/p/CN-zh-CN-v2026-06-20-38598c0fae258136a48eeb77e58bccc8?pvs=21'),
+        );
     });
 
-    it('keeps legal routes public for phone visitors', async () => {
+    it('keeps the terms route and redirects phone visitors to the matching published document', async () => {
+        const replace = mockLocationReplace();
+
         setPhoneDevice(true);
+        await i18n.changeLanguage('ja');
 
         render(
             <MemoryRouter initialEntries={[ROUTE.TERMS]}>
@@ -110,8 +139,9 @@ describe('Router', () => {
         );
 
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.TERMS));
-
-        expect(await screen.findByRole('heading', {name: '이용약관'})).toBeInTheDocument();
+        await waitFor(() =>
+            expect(replace).toHaveBeenCalledWith('https://app.notion.com/p/JP-ja-JP-v2026-06-20-38598c0fae25810285b4fbe0439b60a5?pvs=21'),
+        );
     });
 
     it('keeps service status routes available for phone visitors', async () => {

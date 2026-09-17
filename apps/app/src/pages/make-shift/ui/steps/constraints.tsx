@@ -12,6 +12,7 @@ import useAuthStore from '@/features/auth/model/store';
 import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
+import {TooltipProvider} from '@/shared/ui/primitives/tooltip';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {
@@ -28,6 +29,8 @@ import {
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
 } from '../../model/shift-constraint-rules';
+import {ConstraintRuleHelp} from './constraint-rule-help';
+import {hasConstraintHelp} from './constraint-rule-help-codes';
 
 type TSelectOption = {
     value: string;
@@ -3726,6 +3729,7 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
 
 type TRuleRowProps = {
     rule: TShiftConstraintRuleDraft;
+    rotationMode: TWardRotationMode;
     template?: TShiftConstraintTemplate;
     softTemplate?: TSoftRuleTemplate;
     options: TShiftConstraintOptions;
@@ -3800,6 +3804,7 @@ function StaticImportantBadge({isRecommended}: {isRecommended: boolean}) {
 
 const RuleRow = memo(function RuleRow({
     rule,
+    rotationMode,
     template,
     softTemplate,
     options,
@@ -3817,12 +3822,13 @@ const RuleRow = memo(function RuleRow({
     const slots = template?.slots ?? [];
     const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
     const canChangeSeverity = !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
+    const showHelp = hasConstraintHelp(rule.templateCode);
 
     return (
         <div
             id={getConstraintRuleRowId(rule.clientId)}
             data-constraint-rule-id={rule.clientId}
-            className={`grid min-h-[52px] grid-cols-[minmax(0,1fr)_34px] items-center gap-3 rounded-[10px] bg-white px-3 py-2.5 transition-colors ${
+            className={`grid min-h-[52px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] bg-white px-3 py-2.5 transition-colors ${
                 highlighted ? 'shadow-[0_0_0_2px_rgba(127,93,255,0.10)] ring-2 ring-main-1/55' : ''
             }`}
         >
@@ -3859,7 +3865,15 @@ const RuleRow = memo(function RuleRow({
                 ) : null}
             </div>
 
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end gap-1">
+                {showHelp ? (
+                    <ConstraintRuleHelp
+                        rule={rule}
+                        ruleTitle={getRuleTitle(rule, template)}
+                        optionMap={optionMap}
+                        rotationMode={rotationMode}
+                    />
+                ) : null}
                 <button
                     type="button"
                     onClick={onDelete}
@@ -4302,69 +4316,89 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                         ))}
                     </div>
 
-                    <div
-                        ref={scrollRegionRef}
-                        data-constraint-modal-scroll="true"
-                        onScroll={updateScrollHint}
-                        className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-6 pr-2 pb-14 [scrollbar-color:#8C83D8_#EEF0F4] [scrollbar-gutter:stable] [scrollbar-width:auto] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#8C83D8] [&::-webkit-scrollbar-thumb:hover]:bg-main-1 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#EEF0F4]"
-                    >
-                        {visibleTemplates.map((template) => {
-                            const templateParams = draftParams[template.id] ?? {};
-                            const addDescription = template.buildText(normalizeSoftRuleParams(template, templateParams, optionMap));
-                            const addIssue = getSoftRuleAddIssue(template, templateParams, optionMap);
-                            const canAdd = addIssue === null;
-                            const addIssueId = `constraint-add-issue-${template.id}`;
+                    <TooltipProvider delayDuration={140} skipDelayDuration={80}>
+                        <div
+                            ref={scrollRegionRef}
+                            data-constraint-modal-scroll="true"
+                            onScroll={updateScrollHint}
+                            className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-6 pr-2 pb-14 [scrollbar-color:#8C83D8_#EEF0F4] [scrollbar-gutter:stable] [scrollbar-width:auto] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#8C83D8] [&::-webkit-scrollbar-thumb:hover]:bg-main-1 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#EEF0F4]"
+                        >
+                            {visibleTemplates.map((template) => {
+                                const templateParams = draftParams[template.id] ?? {};
+                                const addDescription = template.buildText(normalizeSoftRuleParams(template, templateParams, optionMap));
+                                const addIssue = getSoftRuleAddIssue(template, templateParams, optionMap);
+                                const canAdd = addIssue === null;
+                                const addIssueId = `constraint-add-issue-${template.id}`;
+                                const helpRule: TShiftConstraintRuleDraft | null = hasConstraintHelp(template.id)
+                                    ? {
+                                          clientId: `constraint-modal-help-${template.id}`,
+                                          templateCode: template.id,
+                                          category: template.category,
+                                          severity: 'SOFT',
+                                          sortOrder: 0,
+                                          params: templateParams,
+                                      }
+                                    : null;
 
-                            return (
-                                <div
-                                    key={template.id}
-                                    data-constraint-template-card={template.id}
-                                    className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <SoftSentence
-                                            template={template}
-                                            params={templateParams}
-                                            optionMap={optionMap}
-                                            onParamChange={(key, value) =>
-                                                setDraftParams((prev) => ({
-                                                    ...prev,
-                                                    [template.id]: normalizeCombinationParams(
-                                                        template,
-                                                        {...(prev[template.id] ?? {}), [key]: value},
-                                                        optionMap,
-                                                    ),
-                                                }))
-                                            }
-                                        />
-                                        {addIssue ? (
-                                            <p
-                                                id={addIssueId}
-                                                className="mt-1 font-apple text-[11px] leading-4 font-semibold text-[#A35B00]"
+                                return (
+                                    <div
+                                        key={template.id}
+                                        data-constraint-template-card={template.id}
+                                        className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
+                                    >
+                                        <div className="min-w-0 flex-1">
+                                            <SoftSentence
+                                                template={template}
+                                                params={templateParams}
+                                                optionMap={optionMap}
+                                                onParamChange={(key, value) =>
+                                                    setDraftParams((prev) => ({
+                                                        ...prev,
+                                                        [template.id]: normalizeCombinationParams(
+                                                            template,
+                                                            {...(prev[template.id] ?? {}), [key]: value},
+                                                            optionMap,
+                                                        ),
+                                                    }))
+                                                }
+                                            />
+                                            {addIssue ? (
+                                                <p
+                                                    id={addIssueId}
+                                                    className="mt-1 font-apple text-[11px] leading-4 font-semibold text-[#A35B00]"
+                                                >
+                                                    {t(addIssue)}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {helpRule ? (
+                                                <ConstraintRuleHelp
+                                                    rule={helpRule}
+                                                    ruleTitle={addDescription}
+                                                    optionMap={optionMap}
+                                                    rotationMode={rotationMode}
+                                                />
+                                            ) : null}
+                                            <button
+                                                type="button"
+                                                disabled={!canAdd}
+                                                onClick={() => onAdd(template, templateParams)}
+                                                className="group inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-white transition-colors hover:bg-main-light focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                                aria-label={`${t('page.makeShift.constraints.modal.addAria')}: ${addDescription}`}
+                                                aria-describedby={addIssue ? addIssueId : undefined}
+                                                title={t('page.makeShift.constraints.modal.addTitle')}
                                             >
-                                                {t(addIssue)}
-                                            </p>
-                                        ) : null}
+                                                <span className="inline-flex size-8 items-center justify-center rounded-full bg-main-1 transition-colors group-hover:bg-main-1-hover group-disabled:bg-gray-5">
+                                                    <Plus className="size-3.5" />
+                                                </span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <button
-                                            type="button"
-                                            disabled={!canAdd}
-                                            onClick={() => onAdd(template, templateParams)}
-                                            className="group inline-flex size-11 cursor-pointer items-center justify-center rounded-full text-white transition-colors hover:bg-main-light focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                                            aria-label={`${t('page.makeShift.constraints.modal.addAria')}: ${addDescription}`}
-                                            aria-describedby={addIssue ? addIssueId : undefined}
-                                            title={t('page.makeShift.constraints.modal.addTitle')}
-                                        >
-                                            <span className="inline-flex size-8 items-center justify-center rounded-full bg-main-1 transition-colors group-hover:bg-main-1-hover group-disabled:bg-gray-5">
-                                                <Plus className="size-3.5" />
-                                            </span>
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    </TooltipProvider>
                     {hasMoreBelow ? (
                         <div
                             data-constraint-scroll-hint="true"
@@ -5395,36 +5429,39 @@ export function Constraints({
                             </>
                         }
                     >
-                        <div className="space-y-2.5">
-                            {softRuleViewModels.length ? (
-                                softRuleViewModels.map(
-                                    ({rule, template, softTemplate, highlighted, isImportant, isRecommended, isSeverityLocked}) => (
-                                        <RuleRow
-                                            key={rule.clientId}
-                                            rule={rule}
-                                            template={template}
-                                            softTemplate={softTemplate}
-                                            options={options}
-                                            optionMap={optionMap}
-                                            highlighted={highlighted}
-                                            isImportant={isImportant}
-                                            isRecommended={isRecommended}
-                                            isSeverityLocked={isSeverityLocked}
-                                            onDelete={() => removeRule(rule)}
-                                            onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
-                                            onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
-                                            onSoftParamChange={(softTemplate, key, value) =>
-                                                updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
-                                            }
-                                        />
-                                    ),
-                                )
-                            ) : (
-                                <div className="rounded-[10px] bg-white px-4 py-5 text-center font-apple text-[13px] font-medium text-gray-4">
-                                    {t('page.makeShift.constraints.empty')}
-                                </div>
-                            )}
-                        </div>
+                        <TooltipProvider delayDuration={140} skipDelayDuration={80}>
+                            <div className="space-y-2.5">
+                                {softRuleViewModels.length ? (
+                                    softRuleViewModels.map(
+                                        ({rule, template, softTemplate, highlighted, isImportant, isRecommended, isSeverityLocked}) => (
+                                            <RuleRow
+                                                key={rule.clientId}
+                                                rule={rule}
+                                                rotationMode={rotationMode}
+                                                template={template}
+                                                softTemplate={softTemplate}
+                                                options={options}
+                                                optionMap={optionMap}
+                                                highlighted={highlighted}
+                                                isImportant={isImportant}
+                                                isRecommended={isRecommended}
+                                                isSeverityLocked={isSeverityLocked}
+                                                onDelete={() => removeRule(rule)}
+                                                onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
+                                                onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
+                                                onSoftParamChange={(softTemplate, key, value) =>
+                                                    updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
+                                                }
+                                            />
+                                        ),
+                                    )
+                                ) : (
+                                    <div className="rounded-[10px] bg-white px-4 py-5 text-center font-apple text-[13px] font-medium text-gray-4">
+                                        {t('page.makeShift.constraints.empty')}
+                                    </div>
+                                )}
+                            </div>
+                        </TooltipProvider>
                     </Section>
                 </div>
             </div>

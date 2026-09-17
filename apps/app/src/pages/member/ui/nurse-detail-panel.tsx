@@ -27,13 +27,18 @@ import {
     type TNurseShiftTypeOption,
 } from '../model/nurse-shift-types';
 
+export type TNurseDetailDraftActions = {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean};
+
 interface INurseDetailPanelProps {
     onClose: () => void;
+    onRequestClose?: (hasUnsavedChanges: boolean) => void;
+    onSaveSuccess?: () => void;
     onOpenWardCodeGuide: () => void;
-    onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void} | null) => void;
+    onRegisterDraftActions?: (actions: TNurseDetailDraftActions | null) => void;
     shiftTeams: TShiftTeam[] | undefined;
     onMoveShiftTeam: (shiftTeamId: number) => Promise<boolean>;
     wardShiftTypes: TWardShiftType[] | undefined;
+    variant?: 'panel' | 'modal';
 }
 
 const MIN_SHIFT_RATIO_WEIGHT = 1;
@@ -124,29 +129,36 @@ function BirthDateField({
     value,
     disabled,
     isInvalid,
+    isModal = false,
     onChange,
 }: {
     value: string | null | undefined;
     disabled: boolean;
     isInvalid: boolean;
+    isModal?: boolean;
     onChange: (value: string) => void;
 }) {
     const {t} = useTypedTranslation();
     const label = t('page.member.detail.birthDate');
 
     return (
-        <div className="mb-2.5">
+        <div className={cn('mb-2.5', isModal && 'mb-0')}>
             <div className="flex items-center justify-between gap-3">
                 <label htmlFor="nurseBirthDate" className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                     {label}
                 </label>
-                {!value ? (
+                {!value && !isModal ? (
                     <span className="font-apple text-[12px] font-medium text-gray-4 min-[1600px]:text-[13px]">
                         {t('page.member.detail.birthDateEmpty')}
                     </span>
                 ) : null}
             </div>
-            <div className="mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-gray-7 px-2.5 min-[1600px]:text-[14px]">
+            <div
+                className={cn(
+                    'mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-gray-7 px-2.5 min-[1600px]:text-[14px]',
+                    isModal && 'h-12 rounded-[12px] border-0 bg-[#F2F4F6] px-4 transition-colors focus-within:bg-[#E5E8ED]',
+                )}
+            >
                 <input
                     id="nurseBirthDate"
                     type="text"
@@ -178,17 +190,21 @@ function BirthDateField({
 
 function NurseDetailPanel({
     onClose,
+    onRequestClose,
+    onSaveSuccess,
     onOpenWardCodeGuide,
     onRegisterDraftActions,
     shiftTeams,
     onMoveShiftTeam,
     wardShiftTypes,
+    variant = 'panel',
 }: INurseDetailPanelProps) {
     const {
         state: {selectedNurse, selectedNurseDrawerMode, nurseSaveStatus, isDeletingNurse},
-        actions: {updateNurse, updateNurseShift, deleteNurse, setNurseDraftDirty, disconnectNurse},
+        actions: {saveNurseDetails, deleteNurse, setNurseDraftDirty, disconnectNurse},
     } = useEditShiftTeam();
     const {t} = useTypedTranslation();
+    const [savedNurseBaseline, setSavedNurseBaseline] = useState<TNurse | null>(null);
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [showNameRequiredError, setShowNameRequiredError] = useState(false);
     const [disconnectConfirmModalOpen, setDisconnectConfirmModalOpen] = useState(false);
@@ -203,7 +219,11 @@ function NurseDetailPanel({
     const textInputRef = useRef<HTMLInputElement>(null);
     const memoTextareaRef = useRef<HTMLTextAreaElement>(null);
     const moveTeamMenuRef = useRef<HTMLDivElement>(null);
-    const modalRoot = document.getElementById('modal-root') ?? document.body;
+    const panelRootRef = useRef<HTMLElement>(null);
+    const loadedNurseSelectionRef = useRef<string | null>(null);
+    const saveInFlightRef = useRef<Promise<boolean> | null>(null);
+    const isModal = variant === 'modal';
+    const modalRoot = (isModal ? panelRootRef.current : null) ?? document.getElementById('modal-root') ?? document.body;
     const isSavingNurseDetail = nurseSaveStatus === 'saving' || isSavingDraft;
     const isBusy = isSavingNurseDetail || isDeletingNurse || isMovingTeam;
     const isCreateMode = selectedNurseDrawerMode === 'create';
@@ -215,14 +235,23 @@ function NurseDetailPanel({
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
 
     useEffect(() => {
-        setWriteNurse(selectedNurse ? normalizeNurseRoleFields(selectedNurse) : null);
+        const selectionKey = selectedNurse ? `${selectedNurseDrawerMode}:${selectedNurse.nurseId}` : null;
+
+        if (loadedNurseSelectionRef.current === selectionKey) return;
+
+        loadedNurseSelectionRef.current = selectionKey;
+
+        const normalizedSelectedNurse = selectedNurse ? normalizeNurseRoleFields(selectedNurse) : null;
+
+        setSavedNurseBaseline(normalizedSelectedNurse);
+        setWriteNurse(normalizedSelectedNurse);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
         setIsMovingTeam(false);
         setIsShiftRatioOpen(false);
 
         if (selectedNurse) textInputRef.current?.focus();
-    }, [selectedNurse]);
+    }, [selectedNurse, selectedNurseDrawerMode]);
 
     useEffect(() => {
         setManualShiftRatioWeightKeys(new Set());
@@ -274,7 +303,7 @@ function NurseDetailPanel({
             );
         });
     }, [manualShiftRatioBaselineWeights, manualShiftRatioWeightKeys, shiftTypeOptions]);
-    const isDirty = hasNurseChanges(selectedNurse, writeNurse) || hasManualShiftRatioWeightChanges;
+    const isDirty = hasNurseChanges(savedNurseBaseline, writeNurse) || hasManualShiftRatioWeightChanges;
 
     useEffect(() => {
         setNurseDraftDirty(isDirty);
@@ -449,29 +478,31 @@ function NurseDetailPanel({
         },
         [],
     );
-    const handleSave = useCallback(async () => {
-        if (!selectedNurse || !writeNurse || isBusy) return false;
+    const handleSave = useCallback((): Promise<boolean> => {
+        if (saveInFlightRef.current) return saveInFlightRef.current;
+
+        if (!savedNurseBaseline || !writeNurse || isBusy) return Promise.resolve(false);
 
         if (writeNurse.name.trim().length === 0) {
             setShowNameRequiredError(true);
 
-            return false;
+            return Promise.resolve(false);
         }
 
-        if (isCreateMode && !canSaveCreateDraft(writeNurse)) return false;
+        if (isCreateMode && !canSaveCreateDraft(writeNurse)) return Promise.resolve(false);
 
-        if (!isBirthDateValid) return false;
+        if (!isBirthDateValid) return Promise.resolve(false);
 
         setIsSavingDraft(true);
 
-        try {
+        const savePromise = (async () => {
             const originalShiftTypeByWardShiftTypeId = new Map(
-                selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
+                savedNurseBaseline.nurseShiftTypes.flatMap((shiftType) =>
                     typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
                 ),
             );
             const originalShiftTypeByNurseShiftTypeId = new Map(
-                selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
+                savedNurseBaseline.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
             );
             const changedShiftTypes = shiftTypeOptions.filter((draftShiftType) => {
                 const draftShiftTypeKey = getNurseShiftTypeKey(draftShiftType);
@@ -494,22 +525,47 @@ function NurseDetailPanel({
                     hasManualTargetRatioWeightChange
                 );
             });
+            const shiftTypes = changedShiftTypes.map((shiftType) => ({
+                nurseShiftTypeId: shiftType.apiShiftTypeId,
+                change: {isPossible: shiftType.isPossible, targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight)},
+                shiftTypeMeta: {
+                    wardShiftTypeId: shiftType.wardShiftTypeId,
+                    name: shiftType.name,
+                    shortName: shiftType.shortName ?? '',
+                    targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight),
+                },
+            }));
 
-            for (const shiftType of changedShiftTypes) {
-                const saved = await updateNurseShift(
-                    writeNurse.nurseId,
-                    shiftType.apiShiftTypeId,
-                    {isPossible: shiftType.isPossible, targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight)},
-                    {
-                        wardShiftTypeId: shiftType.wardShiftTypeId,
-                        name: shiftType.name,
-                        shortName: shiftType.shortName ?? '',
-                        targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight),
-                    },
-                );
+            let nursePayload: TUpdateNurseDTO | undefined;
 
-                if (!saved) return false;
+            if (hasNurseProfileChanges(savedNurseBaseline, writeNurse)) {
+                const birthDate = normalizeBirthDateForStorage(writeNurse.birthDate);
+                const originalBirthDate = normalizeBirthDateForStorage(savedNurseBaseline.birthDate);
+
+                nursePayload = {
+                    name: writeNurse.name,
+                    phoneNum: writeNurse.phoneNum,
+                    isWorker: writeNurse.isWorker,
+                    isWardManager: writeNurse.isWardManager,
+                    memo: getMemoWithoutRoleMarkers(writeNurse.memo),
+                    isPreceptor,
+                    isPreceptee,
+                };
+
+                if (birthDate !== originalBirthDate) {
+                    nursePayload.birthDate = birthDate;
+                }
             }
+
+            const saved = await saveNurseDetails(writeNurse.nurseId, {
+                nurse: nursePayload,
+                shiftTypes,
+            });
+
+            if (!saved) return false;
+
+            setSavedNurseBaseline(normalizeNurseRoleFields(writeNurse));
+            setNurseDraftDirty(false);
 
             if (changedShiftTypes.length > 0) {
                 setManualShiftRatioBaselineWeights((prev) => {
@@ -527,36 +583,20 @@ function NurseDetailPanel({
                 });
             }
 
-            if (hasNurseProfileChanges(selectedNurse, writeNurse)) {
-                const birthDate = normalizeBirthDateForStorage(writeNurse.birthDate);
-                const originalBirthDate = normalizeBirthDateForStorage(selectedNurse.birthDate);
-                const nursePayload: TUpdateNurseDTO = {
-                    name: writeNurse.name,
-                    phoneNum: writeNurse.phoneNum,
-                    isWorker: writeNurse.isWorker,
-                    isWardManager: writeNurse.isWardManager,
-                    memo: getMemoWithoutRoleMarkers(writeNurse.memo),
-                    isPreceptor,
-                    isPreceptee,
-                };
-
-                if (birthDate !== originalBirthDate) {
-                    nursePayload.birthDate = birthDate;
-                }
-
-                const saved = await updateNurse(writeNurse.nurseId, nursePayload);
-
-                if (!saved) return false;
-            }
-
             if (isDirty) {
                 toast.success(t('page.member.toast.saveNurseInfo'));
             }
 
             return true;
-        } finally {
+        })();
+        const trackedSavePromise = savePromise.finally(() => {
+            saveInFlightRef.current = null;
             setIsSavingDraft(false);
-        }
+        });
+
+        saveInFlightRef.current = trackedSavePromise;
+
+        return trackedSavePromise;
     }, [
         isBusy,
         isCreateMode,
@@ -564,21 +604,21 @@ function NurseDetailPanel({
         isBirthDateValid,
         manualShiftRatioBaselineWeights,
         manualShiftRatioWeightKeys,
-        selectedNurse,
+        savedNurseBaseline,
+        saveNurseDetails,
+        setNurseDraftDirty,
         t,
         shiftTypeOptions,
-        updateNurse,
-        updateNurseShift,
         writeNurse,
     ]);
     const handleDiscardDraft = useCallback(() => {
-        setWriteNurse(selectedNurse ?? null);
+        setWriteNurse(savedNurseBaseline);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
         setManualShiftRatioWeightKeys(new Set());
         setManualShiftRatioBaselineWeights(new Map());
         setNurseDraftDirty(false);
-    }, [selectedNurse, setNurseDraftDirty]);
+    }, [savedNurseBaseline, setNurseDraftDirty]);
 
     useEffect(() => {
         if (!onRegisterDraftActions) return;
@@ -586,12 +626,19 @@ function NurseDetailPanel({
         onRegisterDraftActions({
             save: handleSave,
             discard: handleDiscardDraft,
+            hasChanges: () => isDirty,
         });
 
         return () => onRegisterDraftActions(null);
-    }, [handleDiscardDraft, handleSave, onRegisterDraftActions]);
+    }, [handleDiscardDraft, handleSave, isDirty, onRegisterDraftActions]);
 
     const handleRequestClose = () => {
+        if (onRequestClose) {
+            onRequestClose(isDirty);
+
+            return;
+        }
+
         if (isDirty) {
             setExitConfirmModalOpen(true);
 
@@ -603,7 +650,13 @@ function NurseDetailPanel({
 
     if (!selectedNurse || !writeNurse) {
         return (
-            <aside className="h-full w-[300px] overflow-hidden border-0 bg-white p-4 min-[1400px]:w-[340px] min-[1600px]:w-[400px] min-[1600px]:p-5">
+            <aside
+                ref={panelRootRef}
+                className={cn(
+                    'h-full overflow-hidden border-0 bg-white p-4 min-[1600px]:p-5',
+                    isModal ? 'w-full' : 'w-[300px] min-[1400px]:w-[340px] min-[1600px]:w-[400px]',
+                )}
+            >
                 <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-gray-6 bg-main-bg px-6 text-center">
                     <p className="font-apple text-[15px] leading-7 text-gray-3">{t('page.member.detail.emptyPinnedDescription')}</p>
                 </div>
@@ -613,75 +666,118 @@ function NurseDetailPanel({
 
     return (
         <TooltipProvider delayDuration={120}>
-            <aside className="flex h-full w-[300px] flex-col overflow-hidden bg-white min-[1400px]:w-[340px] min-[1600px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
-                <div className="shrink-0 px-3 pt-3 pb-2.5 min-[1600px]:px-4 min-[1600px]:pt-4 min-[1600px]:pb-3">
-                    <div className="flex items-center justify-between">
-                        <p className="font-apple text-[13px] font-semibold text-gray-3">{t('page.member.table.name')}</p>
-                        <button
-                            type="button"
-                            className="grid size-7 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-8"
-                            onClick={handleRequestClose}
-                            aria-label={t('page.member.detail.close')}
-                        >
-                            <ChevronRight
-                                aria-hidden="true"
-                                className="h-[18px] w-[18px] min-[1600px]:h-5 min-[1600px]:w-5"
-                                strokeWidth={2.4}
-                            />
-                        </button>
-                    </div>
-                    <div className="mt-2 grid grid-cols-[minmax(0,88fr)_minmax(0,12fr)] items-center gap-2.5">
-                        <TextField
-                            ref={textInputRef}
-                            autoFocus
-                            disabled={isBusy}
-                            name="nurseName"
-                            maxLength={30}
-                            placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
-                            className={cn(
-                                'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',
-                                showNameRequiredError &&
-                                    '!border !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-none focus-visible:!border-[#E57373]',
-                            )}
-                            value={writeNurse.name}
-                            onChange={(event) => {
-                                if (showNameRequiredError && event.target.value.trim().length > 0) {
-                                    setShowNameRequiredError(false);
-                                }
-
-                                setWriteNurse((prev) => (prev ? {...prev, name: event.target.value} : prev));
-                                sendEvent(events.memberPage.editNurseDrawer.changeNurseName);
-                            }}
-                        />
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+            <aside
+                ref={panelRootRef}
+                className={cn(
+                    'flex h-full flex-col overflow-hidden bg-white [&_button:not(:disabled)]:cursor-pointer',
+                    isModal
+                        ? 'w-full [&_*]:!shadow-none [&_[role=checkbox]]:!border-0 [&_[role=listbox]]:!border-0 [&_[role=listbox]]:!shadow-none [&_button]:!border-0 [&_button:focus-visible]:!bg-[#E5DEFF] [&_button:focus-visible]:!text-main-1 [&_button:focus-visible]:!outline-none [&_input]:!border-0 [&_input:focus-visible]:!outline-none [&_textarea]:!border-0 [&_textarea:focus-visible]:!outline-none'
+                        : 'w-[300px] min-[1400px]:w-[340px] min-[1600px]:w-[400px]',
+                )}
+            >
+                <div
+                    data-worker-edit-scroll-region={isModal || undefined}
+                    className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain"
+                >
+                    <div
+                        className={cn(
+                            'shrink-0',
+                            isModal
+                                ? 'px-7 pt-1 pb-5 max-sm:px-5'
+                                : 'px-3 pt-3 pb-2.5 min-[1600px]:px-4 min-[1600px]:pt-4 min-[1600px]:pb-3',
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <p className={cn('font-apple font-semibold text-gray-3', isModal ? 'text-[14px]' : 'text-[13px]')}>
+                                {t('page.member.table.name')}
+                            </p>
+                            {!isModal ? (
                                 <button
                                     type="button"
-                                    disabled={isBusy}
-                                    className="inline-flex h-10 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1600px]:h-11"
-                                    onClick={() => {
-                                        if (writeNurse.isConnected) {
-                                            setDisconnectConfirmModalOpen(true);
-
-                                            return;
-                                        }
-
-                                        onOpenWardCodeGuide();
-                                    }}
-                                    aria-label={t('page.member.detail.connectionStatusAria', {nurseName: nurseNameForAria})}
+                                    className="grid size-7 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-8"
+                                    onClick={handleRequestClose}
+                                    aria-label={t('page.member.detail.close')}
                                 >
-                                    {writeNurse.isConnected ? <LinkedIcon className="h-5 w-5" /> : <UnlinkedIcon className="h-5 w-5" />}
+                                    <ChevronRight
+                                        aria-hidden="true"
+                                        className="h-[18px] w-[18px] min-[1600px]:h-5 min-[1600px]:w-5"
+                                        strokeWidth={2.4}
+                                    />
                                 </button>
-                            </TooltipTrigger>
-                            {!writeNurse.isConnected ? (
-                                <TooltipContent side="top">{t('page.member.detail.disconnectedTooltip')}</TooltipContent>
                             ) : null}
-                        </Tooltip>
-                    </div>
-                </div>
+                        </div>
+                        <div
+                            className={cn(
+                                'mt-2 grid items-center gap-2.5',
+                                isModal ? 'grid-cols-1' : 'grid-cols-[minmax(0,88fr)_minmax(0,12fr)]',
+                            )}
+                        >
+                            <TextField
+                                ref={textInputRef}
+                                autoFocus
+                                disabled={isBusy}
+                                name="nurseName"
+                                maxLength={30}
+                                placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
+                                className={cn(
+                                    'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',
+                                    isModal &&
+                                        'h-12 rounded-[12px] bg-[#F2F4F6] px-4 text-[19px] focus:!border-0 focus:!bg-[#E5E8ED] focus:!text-[#191F28] focus:!outline-none focus-visible:!border-0 focus-visible:!outline-none',
+                                    showNameRequiredError &&
+                                        (isModal
+                                            ? '!border-0 bg-[#FFF0F0] font-normal text-[#B42318] placeholder:font-normal placeholder:text-[#D6DCE6]'
+                                            : '!border !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-none focus-visible:!border-[#E57373]'),
+                                )}
+                                value={writeNurse.name}
+                                onChange={(event) => {
+                                    if (showNameRequiredError && event.target.value.trim().length > 0) {
+                                        setShowNameRequiredError(false);
+                                    }
 
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
-                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                                    setWriteNurse((prev) => (prev ? {...prev, name: event.target.value} : prev));
+                                    sendEvent(events.memberPage.editNurseDrawer.changeNurseName);
+                                }}
+                            />
+                            {!isModal ? (
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            disabled={isBusy}
+                                            className="inline-flex h-10 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1600px]:h-11"
+                                            onClick={() => {
+                                                if (writeNurse.isConnected) {
+                                                    setDisconnectConfirmModalOpen(true);
+
+                                                    return;
+                                                }
+
+                                                onOpenWardCodeGuide();
+                                            }}
+                                            aria-label={t('page.member.detail.connectionStatusAria', {nurseName: nurseNameForAria})}
+                                        >
+                                            {writeNurse.isConnected ? (
+                                                <LinkedIcon className="h-5 w-5" />
+                                            ) : (
+                                                <UnlinkedIcon className="h-5 w-5" />
+                                            )}
+                                        </button>
+                                    </TooltipTrigger>
+                                    {!writeNurse.isConnected ? (
+                                        <TooltipContent side="top">{t('page.member.detail.disconnectedTooltip')}</TooltipContent>
+                                    ) : null}
+                                </Tooltip>
+                            ) : null}
+                        </div>
+                    </div>
+                    <div
+                        className={cn(
+                            'shrink-0',
+                            isModal
+                                ? 'px-7 pt-4 pb-3 max-sm:px-5'
+                                : 'border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3',
+                        )}
+                    >
                         <div className="flex items-center justify-between">
                             <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                                 {t('page.member.detail.shiftTypes')}
@@ -696,7 +792,9 @@ function NurseDetailPanel({
                                         <InfoIcon className="size-4" />
                                     </button>
                                 </TooltipTrigger>
-                                <TooltipContent side="top">{t('page.member.detail.shiftTypesHint')}</TooltipContent>
+                                <TooltipContent side="top" className={cn(isModal && 'z-[1100]')}>
+                                    {t('page.member.detail.shiftTypesHint')}
+                                </TooltipContent>
                             </Tooltip>
                         </div>
                         <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
@@ -717,7 +815,10 @@ function NurseDetailPanel({
                                         aria-pressed={isPossible}
                                         title={`${shortName ? `${shortName} ` : ''}${name}`.trim()}
                                         className={cn(
-                                            'inline-flex min-h-7 w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
+                                            'inline-flex w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden py-1 font-apple whitespace-nowrap transition-[background-color,color,opacity,filter] duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50',
+                                            isModal
+                                                ? 'min-h-10 rounded-[10px] border-0 px-3 text-[14px] focus-visible:bg-[#E5DEFF] focus-visible:text-main-1 focus-visible:outline-none'
+                                                : 'min-h-7 rounded-[5px] border px-1.5 text-[13px] hover:-translate-y-[1px] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
                                         )}
                                         style={
                                             isPossible
@@ -952,12 +1053,24 @@ function NurseDetailPanel({
                             </div>
                         ) : null}
                     </div>
-                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                    <div
+                        className={cn(
+                            'shrink-0',
+                            isModal
+                                ? 'px-7 pt-5 pb-3 max-sm:px-5'
+                                : 'border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3',
+                        )}
+                    >
                         <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.rolesAndPermissions')}
                         </p>
-                        <div className="mt-2 grid grid-cols-2 gap-1.5">
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                        <div className={cn('mt-2 grid grid-cols-2 gap-1.5', isModal && 'grid-cols-3 gap-2 max-sm:grid-cols-1')}>
+                            <div
+                                className={cn(
+                                    'flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10',
+                                    isModal && 'min-h-12 rounded-[12px] bg-[#F2F4F6] px-4',
+                                )}
+                            >
                                 <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.preceptor')}
                                 </p>
@@ -989,7 +1102,12 @@ function NurseDetailPanel({
                                     <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                                 </button>
                             </div>
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                            <div
+                                className={cn(
+                                    'flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10',
+                                    isModal && 'min-h-12 rounded-[12px] bg-[#F2F4F6] px-4',
+                                )}
+                            >
                                 <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.preceptee')}
                                 </p>
@@ -1023,7 +1141,12 @@ function NurseDetailPanel({
                                     <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                                 </button>
                             </div>
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                            <div
+                                className={cn(
+                                    'flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10',
+                                    isModal && 'min-h-12 rounded-[12px] bg-[#F2F4F6] px-4',
+                                )}
+                            >
                                 <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.worker')}
                                 </p>
@@ -1039,37 +1162,60 @@ function NurseDetailPanel({
                         </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
-                        <BirthDateField
-                            value={writeNurse.birthDate}
-                            disabled={isBusy}
-                            isInvalid={!isBirthDateValid}
-                            onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
-                        />
-                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
-                            {t('page.member.detail.phone')}
-                        </p>
-                        <input
-                            type="tel"
-                            disabled={isBusy}
-                            name="nursePhoneNum"
-                            className="mt-2 h-10 w-full shrink-0 rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-poppins text-[13px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:text-[14px]"
-                            value={writeNurse.phoneNum ?? ''}
-                            onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
-                        />
+                    <div
+                        className={cn(
+                            'flex shrink-0 flex-col',
+                            isModal
+                                ? 'px-7 pt-3 pb-7 max-sm:px-5'
+                                : 'border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3',
+                        )}
+                    >
+                        <div className={cn(isModal && 'grid grid-cols-2 gap-3 max-sm:grid-cols-1')}>
+                            <BirthDateField
+                                value={writeNurse.birthDate}
+                                disabled={isBusy}
+                                isInvalid={!isBirthDateValid}
+                                isModal={isModal}
+                                onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
+                            />
+                            <div>
+                                <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
+                                    {t('page.member.detail.phone')}
+                                </p>
+                                <input
+                                    type="tel"
+                                    disabled={isBusy}
+                                    name="nursePhoneNum"
+                                    className={cn(
+                                        'mt-2 h-10 w-full shrink-0 rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-poppins text-[13px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:text-[14px]',
+                                        isModal &&
+                                            'h-12 rounded-[12px] border-0 bg-[#F2F4F6] px-4 focus:border-0 focus:bg-[#E5E8ED] focus:text-[#191F28] focus-visible:outline-none',
+                                    )}
+                                    value={writeNurse.phoneNum ?? ''}
+                                    onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
+                                />
+                            </div>
+                        </div>
                         <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.memo')}
                         </p>
                         <textarea
                             ref={memoTextareaRef}
                             name="nurseMemo"
+                            rows={3}
+                            wrap="soft"
                             aria-label={t('page.member.detail.memo')}
                             value={getMemoWithoutRoleMarkers(writeNurse.memo)}
                             disabled={isBusy}
-                            className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1600px]:h-16 min-[1600px]:text-[14px]"
+                            className={cn(
+                                'mt-2 w-full shrink-0 resize-none rounded-[9px] font-apple text-[13px] leading-5 text-sub-1 transition-colors min-[1600px]:text-[14px]',
+                                isModal
+                                    ? '[field-sizing:content] h-auto max-h-36 min-h-20 overflow-y-auto rounded-[12px] border-0 bg-[#F2F4F6] px-4 py-3 [overflow-wrap:anywhere] focus:border-0 focus:bg-[#E5E8ED] focus:text-[#191F28] focus-visible:outline-none min-[1600px]:h-auto'
+                                    : 'h-14 overflow-hidden border border-gray-6 bg-main-bg p-2.5 focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1600px]:h-16',
+                            )}
                             onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, memo: event.target.value} : prev))}
                         />
-                        <div ref={moveTeamMenuRef} className="relative shrink-0 pt-1.5">
+                        <div ref={moveTeamMenuRef} className={cn('relative shrink-0 pt-1.5', isModal && 'pt-4')}>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     type="button"
@@ -1078,6 +1224,8 @@ function NurseDetailPanel({
                                     disabled={isBusy || moveTargetShiftTeams.length === 0}
                                     className={cn(
                                         'inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#F3F4F6] px-3 font-apple text-[13px] font-semibold text-[#5C667D] transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:h-10 min-[1600px]:text-[14px]',
+                                        isModal &&
+                                            'h-11 rounded-[12px] bg-[#F2F4F6] text-[14px] focus-visible:bg-[#E5DEFF] focus-visible:text-main-1 focus-visible:outline-none',
                                         moveTeamMenuOpen && 'bg-[#EAECEF] text-sub-1',
                                     )}
                                     onClick={() => setMoveTeamMenuOpen((prev) => !prev)}
@@ -1092,7 +1240,11 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     disabled={isBusy}
-                                    className="h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1600px]:h-10 min-[1600px]:text-[14px]"
+                                    className={cn(
+                                        'h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1600px]:h-10 min-[1600px]:text-[14px]',
+                                        isModal &&
+                                            'h-11 rounded-[12px] bg-[#FFF0F0] text-[14px] hover:bg-[#FFE3E3] focus-visible:bg-[#FFD9D9] focus-visible:text-[#A52F2F] focus-visible:outline-none',
+                                    )}
                                     onClick={() => setDeleteConfirmModalOpen(true)}
                                 >
                                     {t('page.member.common.deleteAction')}
@@ -1101,7 +1253,10 @@ function NurseDetailPanel({
                             {moveTeamMenuOpen ? (
                                 <div
                                     role="listbox"
-                                    className="dropdown-scrollbar-visible absolute right-0 bottom-full left-0 z-20 mb-2 max-h-[260px] overflow-y-auto rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
+                                    className={cn(
+                                        'dropdown-scrollbar-visible absolute right-0 bottom-full left-0 z-20 mb-2 max-h-[260px] overflow-y-auto rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]',
+                                        isModal && '!border-0 !bg-[#ECEEF2] !shadow-none',
+                                    )}
                                 >
                                     <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">
                                         {t('page.member.detail.moveTargetTeam')}
@@ -1146,12 +1301,27 @@ function NurseDetailPanel({
                         </div>
                     </div>
                 </div>
-                <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                <div
+                    className={cn(
+                        'shrink-0',
+                        isModal
+                            ? '!border-0 bg-white px-7 pt-3 pb-7 max-sm:px-5 max-sm:pb-5'
+                            : 'border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3',
+                    )}
+                >
                     <button
                         type="button"
                         disabled={isBusy || !isDirty || !isBirthDateValid}
-                        className="flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
-                        onClick={() => void handleSave()}
+                        className={cn(
+                            'flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]',
+                            isModal &&
+                                'h-13 rounded-[14px] text-[16px] focus-visible:bg-[#4B2FCB] focus-visible:text-white focus-visible:outline-none',
+                        )}
+                        onClick={() => {
+                            void handleSave().then((saved) => {
+                                if (saved) onSaveSuccess?.();
+                            });
+                        }}
                     >
                         {isSavingNurseDetail ? (
                             <>
@@ -1211,18 +1381,22 @@ function NurseDetailPanel({
                     ? createPortal(
                           <div
                               className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/45 px-4"
-                              onClick={() => setDeleteConfirmModalOpen(false)}
+                              onClick={() => {
+                                  if (!isDeletingNurse) setDeleteConfirmModalOpen(false);
+                              }}
                           >
                               <div
                                   role="dialog"
                                   aria-modal="true"
+                                  aria-labelledby="nurse-detail-delete-title"
+                                  aria-describedby="nurse-detail-delete-description"
                                   className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                  <p id="nurse-detail-delete-title" className="font-apple text-[20px] font-semibold text-sub-1">
                                       {t('page.member.modal.deleteNurseTitle')}
                                   </p>
-                                  <p className="mt-2 font-apple text-[15px] text-gray-3">
+                                  <p id="nurse-detail-delete-description" className="mt-2 font-apple text-[15px] text-gray-3">
                                       <span className="font-semibold text-sub-1">
                                           {writeNurse.name.trim() ? writeNurse.name : t('page.member.common.selectedNurse')}
                                       </span>
@@ -1231,23 +1405,35 @@ function NurseDetailPanel({
                                   <div className="mt-6 flex items-center gap-3">
                                       <button
                                           type="button"
-                                          className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                          disabled={isDeletingNurse}
+                                          className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] disabled:cursor-not-allowed disabled:opacity-50"
                                           onClick={() => setDeleteConfirmModalOpen(false)}
                                       >
                                           {t('page.member.common.close')}
                                       </button>
                                       <button
                                           type="button"
-                                          className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                                          disabled={isDeletingNurse}
+                                          className="flex h-11 flex-1 items-center justify-center gap-2 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434] disabled:cursor-not-allowed disabled:opacity-60"
                                           onClick={async () => {
+                                              if (!writeNurse.shiftTeamId || isDeletingNurse) return;
+
+                                              const deleted = await deleteNurse(writeNurse.shiftTeamId, writeNurse.nurseId);
+
+                                              if (!deleted) return;
+
                                               setDeleteConfirmModalOpen(false);
-
-                                              if (!writeNurse.shiftTeamId) return;
-
-                                              await deleteNurse(writeNurse.shiftTeamId, writeNurse.nurseId);
+                                              onClose();
                                           }}
                                       >
-                                          {t('page.member.common.deleteAction')}
+                                          {isDeletingNurse ? (
+                                              <>
+                                                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                                  {t('page.member.detail.deleting')}
+                                              </>
+                                          ) : (
+                                              t('page.member.common.deleteAction')
+                                          )}
                                       </button>
                                   </div>
                               </div>
@@ -1255,7 +1441,7 @@ function NurseDetailPanel({
                           modalRoot,
                       )
                     : null}
-                {exitConfirmModalOpen
+                {exitConfirmModalOpen && !onRequestClose
                     ? createPortal(
                           <div
                               className="fixed inset-0 z-[1003] flex items-center justify-center bg-black/45 px-4"
@@ -1264,44 +1450,35 @@ function NurseDetailPanel({
                               <div
                                   role="dialog"
                                   aria-modal="true"
+                                  aria-labelledby="nurse-detail-unsaved-title"
+                                  aria-describedby="nurse-detail-unsaved-description"
                                   className="w-full max-w-[460px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                  <p id="nurse-detail-unsaved-title" className="font-apple text-[20px] font-semibold text-sub-1">
                                       {t('page.member.modal.unsavedExitTitle')}
                                   </p>
-                                  <p className="mt-2 font-apple text-[15px] text-gray-3">{t('page.member.modal.unsavedExitDescription')}</p>
-                                  <div className="mt-6 grid grid-cols-3 gap-2">
+                                  <p id="nurse-detail-unsaved-description" className="mt-2 font-apple text-[15px] text-gray-3">
+                                      {t('page.member.modal.unsavedExitDescription')}
+                                  </p>
+                                  <div className="mt-6 grid grid-cols-2 gap-3 max-[380px]:grid-cols-1">
                                       <button
                                           type="button"
-                                          className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                          className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] focus-visible:bg-[#E1DBFF] focus-visible:text-main-1 focus-visible:outline-none"
                                           onClick={() => setExitConfirmModalOpen(false)}
                                       >
                                           {t('page.member.common.cancel')}
                                       </button>
                                       <button
                                           type="button"
-                                          className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
+                                          className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] focus-visible:bg-[#FFDCDC] focus-visible:text-[#A52F2F] focus-visible:outline-none"
                                           onClick={() => {
                                               setExitConfirmModalOpen(false);
+                                              handleDiscardDraft();
                                               onClose();
                                           }}
                                       >
                                           {t('page.member.common.discard')}
-                                      </button>
-                                      <button
-                                          type="button"
-                                          className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-1-hover"
-                                          onClick={async () => {
-                                              const saved = await handleSave();
-
-                                              if (!saved) return;
-
-                                              setExitConfirmModalOpen(false);
-                                              onClose();
-                                          }}
-                                      >
-                                          {t('page.member.common.saveAndLeave')}
                                       </button>
                                   </div>
                               </div>

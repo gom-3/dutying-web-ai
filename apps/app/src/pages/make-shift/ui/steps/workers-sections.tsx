@@ -1,5 +1,5 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
-import {Check} from 'lucide-react';
+import {Check, Pencil} from 'lucide-react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
@@ -150,6 +150,8 @@ type TWorkersListProps = {
     isBusy: boolean;
     getWorkerState: (nurse: TNurse) => boolean;
     onToggleWorker: (nurse: TNurse, checked: boolean) => void;
+    selectedNurseId: number | null | undefined;
+    onEditNurse: (nurse: TNurse) => void;
     setRowRef: (nurseId: number, element: HTMLDivElement | null) => void;
 };
 
@@ -161,6 +163,8 @@ export function WorkersList({
     isBusy,
     getWorkerState,
     onToggleWorker,
+    selectedNurseId,
+    onEditNurse,
     setRowRef,
 }: TWorkersListProps) {
     return (
@@ -199,6 +203,8 @@ export function WorkersList({
                                             isWorker={getWorkerState(nurse)}
                                             isBusy={isBusy}
                                             onToggleWorker={onToggleWorker}
+                                            isSelected={selectedNurseId === nurse.nurseId}
+                                            onEditNurse={onEditNurse}
                                             setRowRef={setRowRef}
                                         />
                                     ))}
@@ -220,10 +226,12 @@ type TWorkerRowProps = {
     isWorker: boolean;
     isBusy: boolean;
     onToggleWorker: (nurse: TNurse, checked: boolean) => void;
+    isSelected: boolean;
+    onEditNurse: (nurse: TNurse) => void;
     setRowRef: (nurseId: number, element: HTMLDivElement | null) => void;
 };
 
-function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWorker, setRowRef}: TWorkerRowProps) {
+function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWorker, isSelected, onEditNurse, setRowRef}: TWorkerRowProps) {
     const {t} = useTypedTranslation();
     const shiftTypeBadges = buildShiftTypeBadges(nurse, wardShiftTypes);
     const isPreceptor = hasNursePreceptorRole(nurse);
@@ -244,13 +252,14 @@ function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWork
                             setRowRef(nurse.nurseId, element);
                         }}
                         {...draggableProps}
-                        className={`make-shift-workers__row grid min-h-10 items-center rounded-[12px] bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} transition-colors hover:bg-[#FBFDFF] ${fadedRowClass} ${
-                            dragSnapshot.isDragging ? 'opacity-95' : ''
-                        }`}
+                        className={`make-shift-workers__row group grid min-h-10 cursor-pointer items-center rounded-[12px] ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} transition-colors ${
+                            isSelected ? 'bg-[#EEE9FF]' : 'bg-white hover:bg-[#F4F1FF]'
+                        } ${fadedRowClass} ${dragSnapshot.isDragging ? 'opacity-95' : ''}`}
                         style={{
                             ...(dragStyle ?? {}),
                             gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL,
                         }}
+                        onClick={() => onEditNurse(nurse)}
                     >
                         <div className="make-shift-workers__row-name relative flex min-w-0 items-center justify-center pr-1 pl-7">
                             <button
@@ -260,13 +269,30 @@ function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWork
                                 className={`make-shift-workers__row-drag-handle absolute left-0 grid size-7 shrink-0 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-not-allowed ${
                                     isWorker ? 'cursor-grab active:cursor-grabbing' : ''
                                 }`}
+                                onClick={(event) => event.stopPropagation()}
                                 {...dragProvided.dragHandleProps}
                             >
                                 <SixDotsIcon className="size-[clamp(13px,1.1vw,16px)]" />
                             </button>
-                            <p className={WORKERS_NAME_TEXT_CLASS} title={nurse.name}>
-                                {formatNurseDisplayName(nurse.name, null)}
-                            </p>
+                            <button
+                                type="button"
+                                data-worker-edit-trigger={nurse.nurseId}
+                                className="flex max-w-full min-w-0 items-center justify-center gap-1 rounded-[7px] px-1 transition-colors hover:text-main-1 focus-visible:bg-[#DDD4FF] focus-visible:text-main-1 focus-visible:outline-none"
+                                aria-label={`${nurse.name} ${t('page.member.tutorial.edit.title')}`}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onEditNurse(nurse);
+                                }}
+                            >
+                                <span className={WORKERS_NAME_TEXT_CLASS} title={nurse.name}>
+                                    {formatNurseDisplayName(nurse.name, null)}
+                                </span>
+                                <Pencil
+                                    aria-hidden="true"
+                                    className="size-3 shrink-0 text-gray-4 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+                                    strokeWidth={2.2}
+                                />
+                            </button>
                         </div>
                         <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.24vw,4px)]">
                             {shiftTypeBadges.length > 0 ? (

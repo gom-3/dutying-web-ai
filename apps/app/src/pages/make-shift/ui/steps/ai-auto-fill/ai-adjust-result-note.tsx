@@ -44,7 +44,7 @@ export default function AiAdjustResultNote({changedCount, ruleResults, isStronge
                 <span>
                     {changedCount === 0
                         ? t('page.makeShift.aiRefill.adjust.noChange')
-                        : t('page.makeShift.aiRefill.adjust.applied', {count: changedCount})}
+                        : t('page.makeShift.aiRefill.adjust.applied', {count: changedCount ?? 0})}
                 </span>
             )}
         </div>

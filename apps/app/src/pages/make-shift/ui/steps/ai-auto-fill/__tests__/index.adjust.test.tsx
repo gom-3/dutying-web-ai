@@ -901,7 +901,7 @@ describe('AiAutofill adjust panel', () => {
 
         await completeFirstFill(user);
 
-        mocks.requestAiSchedule.mockImplementation(async (payload: {adjust?: {requests?: unknown[]}}) => {
+        mocks.requestAiSchedule.mockImplementation(async (payload: {adjust?: {requests?: TScheduleMonthRequestItem[]}}) => {
             const result = await adjustResultSavingRequests([cell(11, '2026-07-01', 'D')])(payload);
 
             return {

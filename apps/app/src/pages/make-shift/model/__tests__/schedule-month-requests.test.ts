@@ -40,7 +40,7 @@ describe('deriveAdjustKnobs', () => {
             request({id: 1, knob: 'CLUSTERING', value: 1}),
             request({id: 2, knob: 'CLUSTERING', value: -1, origin: 'TEXT'}),
             request({id: 3, knob: 'SENIORITY_MIX', value: 1, status: 'DISABLED'}),
-            request({id: 4, kind: 'RULE', knob: undefined, value: undefined, nurseId: 7}),
+            request({id: 4, kind: 'RULE', knob: undefined, value: undefined}),
             request({id: 5, knob: 'WEEKEND' as never, value: 1}),
         ]);
 
