@@ -375,6 +375,8 @@ export function AiAutofill() {
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
+    // 마지막 근무 공란 경고를 거친 뒤에도, 조절에서 시작한 "고정 근무 확인" 단계를 잃지 않는다.
+    const pendingAiFillAfterLastShiftWarningRef = useRef<(() => void) | null>(null);
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
     const [lastAiGeneratedDocVersion, setLastAiGeneratedDocVersion] = useState(0);
     const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
@@ -1398,10 +1400,12 @@ export function AiAutofill() {
 
         if (cellsToUnfix.length > 0) commands.setCellsFixed(cellsToUnfix, false);
     };
-    const runAiFillWithDecision = (readyContext = getAiFillReadyContext()) => {
+    const runAiFillWithDecision = (readyContext = getAiFillReadyContext(), forceFixedDecision = false) => {
         if (!readyContext) return;
 
-        if (!hasCompletedAiFill) {
+        // 조절 대화상자에서 다시 생성할 때도, 현재 표의 근무 중 지켜야 할 것을 고를 기회를
+        // 준다. 이전에는 이미 AI를 한 번 돌렸다는 이유로 이 단계를 건너뛰어 바로 덮어썼다.
+        if (forceFixedDecision || !hasCompletedAiFill) {
             if (unprotectedFilledCells.length > 0) {
                 openAiFillDecision({kind: 'initial', cellCount: unprotectedFilledCells.length});
 
@@ -1422,12 +1426,18 @@ export function AiAutofill() {
         commands.resetAutofilled('user');
         void runAiFill(readyContext);
     };
-    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>) => {
+    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>, forceFixedDecision = false) => {
         setIsAiBlankPreviewVisible(true);
 
-        if (requestLastShiftBlankWarning('aiFill')) return;
+        pendingAiFillAfterLastShiftWarningRef.current = null;
 
-        runAiFillWithDecision(readyContext);
+        if (requestLastShiftBlankWarning('aiFill')) {
+            pendingAiFillAfterLastShiftWarningRef.current = () => runAiFillWithDecision(readyContext, forceFixedDecision);
+
+            return;
+        }
+
+        runAiFillWithDecision(readyContext, forceFixedDecision);
     };
     /**
      * 빈 표의 첫 채우기는 곧장 돌린다. 조절할 것이 생긴 뒤부터는 대화상자를 먼저 연다 —
@@ -1453,7 +1463,7 @@ export function AiAutofill() {
         if (!readyContext) return;
 
         setIsAdjustDialogOpen(false);
-        startAiFill(readyContext);
+        startAiFill(readyContext, true);
     };
     const handleConfirmAiFillDecision = () => {
         const decisionContext = aiFillDecisionContext;
@@ -1535,6 +1545,16 @@ export function AiAutofill() {
         }
 
         if (warningIntent === 'aiFill') {
+            const continueAiFill = pendingAiFillAfterLastShiftWarningRef.current;
+
+            pendingAiFillAfterLastShiftWarningRef.current = null;
+
+            if (continueAiFill) {
+                continueAiFill();
+
+                return;
+            }
+
             runAiFillWithDecision();
 
             return;
@@ -1562,6 +1582,7 @@ export function AiAutofill() {
         const firstBlankLastShiftCell = findFirstBlankLastShiftCell(useShiftEditorStore.getState().doc);
 
         setLastShiftBlankWarningIntent(null);
+        pendingAiFillAfterLastShiftWarningRef.current = null;
 
         if (!firstBlankLastShiftCell) return;
 

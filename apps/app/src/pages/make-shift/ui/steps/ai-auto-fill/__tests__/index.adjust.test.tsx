@@ -625,12 +625,16 @@ describe('AiAutofill adjust panel', () => {
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(1));
         expect(screen.getByText(`page.makeShift.aiRefill.adjust.applied {"count":1}`)).toBeInTheDocument();
 
-        // 조절 직후에는 손으로 고친 칸이 없으므로 재생성은 확인 다이얼로그 없이 바로 돈다.
+        // 조절 대화상자 다음에는, 손으로 고친 칸이 없어도 현재 근무 중 고정할 것을 고르는
+        // 단계를 한 번 보여 준다. 이 단계를 건너뛰면 조절 기능을 켠 사용자만 고정 기회를 잃는다.
         mocks.requestAiSchedule.mockImplementation(async () => okResult(FIRST_FILL_CELLS, 'GENERATE'));
 
         await openAdjustDialog(user);
         await user.click(screen.getByRole('button', {name: ADJUST_DIALOG_REGENERATE}));
 
+        await screen.findByRole('dialog', {name: DECISION_TITLE});
+        expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(3));
         // 요청은 서버 상태라 재생성해도 남는다. 바뀐 칸 수만 지난 조절의 것이라 지운다.
         expect(mocks.monthRequests.filter((request) => request.status === 'ACTIVE')).toHaveLength(1);
