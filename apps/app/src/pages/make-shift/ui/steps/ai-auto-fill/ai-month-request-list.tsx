@@ -12,7 +12,7 @@ type TProps = {
 
 /**
  * 이 달에 걸린 요청 목록. 서버 상태이므로 "다시 생성"·새로고침 뒤에도 남는다.
- * ✕ 는 요청을 끄고(DISABLED) 곧바로 다시 조절한다 — 목록과 표가 어긋난 채로 두지 않는다.
+ * ✕ 는 요청만 끈다(DISABLED). 표를 다시 풀려면 사용자가 "다시 생성"을 선택한다.
  */
 export default function AiMonthRequestList({requests, disabled, disablingRequestId, onDisable}: TProps) {
     const {t} = useTypedTranslation();

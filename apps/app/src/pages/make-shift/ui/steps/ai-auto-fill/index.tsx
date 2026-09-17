@@ -1221,15 +1221,13 @@ export function AiAutofill() {
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
     };
     /**
-     * 요청을 끄고(PATCH DISABLED) 곧바로 다시 조절한다. 새 요청은 없으므로 서버는 남은
-     * ACTIVE 요청만 합산한다 — 마지막 칩을 껐을 때 표가 조절된 채로 남는 문제를 이렇게 푼다.
+     * 요청을 끈다(PATCH DISABLED). ✕는 설정만 바꾸는 액션이므로 여기서 자동완성을 다시
+     * 실행하지 않는다. 바뀐 설정으로 표를 다시 풀고 싶을 때는 사용자가 "다시 생성"을 누른다.
      */
-    const disableRequestsAndReadjust = async (
+    const disableMonthRequests = async (
         targets: TScheduleMonthRequestRes[],
         readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>,
     ) => {
-        setLastAdjustChangedCount(null);
-
         if (targets.length > 0) {
             setDisablingRequestId(targets[0]!.id);
 
@@ -1248,16 +1246,15 @@ export function AiAutofill() {
             }
         }
 
-        await runAiFill(readyContext, {strength: 'NORMAL'});
+        void syncMonthRequests();
     };
-    /** 목록에서 요청 하나를 끄고 바로 다시 푼다. 끈 채로 표를 남겨 두면 화면이 거짓말을 한다. */
+    /** 목록의 ✕는 요청만 끈다. 자동채우기는 대화상자의 "다시 생성"에서만 시작한다. */
     const handleDisableMonthRequest = (request: TScheduleMonthRequestRes) => {
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
 
-        setIsAdjustDialogOpen(false);
-        void disableRequestsAndReadjust([request], readyContext);
+        void disableMonthRequests([request], readyContext);
     };
     const interpretAdjustText = async (text: string) => {
         if (wardId == null || currentShiftTeamId == null) throw new Error('not ready');

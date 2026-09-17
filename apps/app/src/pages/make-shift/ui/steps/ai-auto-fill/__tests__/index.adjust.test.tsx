@@ -659,7 +659,7 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
-    it('removes a request from the month list and re-adjusts', async () => {
+    it('removes a request from the month list without autofilling', async () => {
         storeRequest({kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, origin: 'TEXT', displayLabel: 'fair off', requestText: 'x'});
 
         const user = userEvent.setup();
@@ -672,14 +672,12 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByText('page.makeShift.aiRefill.adjust.requests.persistNote')).toBeInTheDocument();
         expect(screen.getByText('fair off')).toBeInTheDocument();
 
-        mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([]));
-
         await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.requests.remove {"label":"fair off"}'}));
 
         await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledWith(1, 10, 1, {status: 'DISABLED'}));
-        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
-        expect(mocks.requestAiSchedule.mock.calls[0]?.[0].adjust).toEqual({strength: 'NORMAL'});
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         await waitFor(() => expect(screen.queryByText('fair off')).not.toBeInTheDocument());
+        expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeInTheDocument();
     });
 
     it('interprets a sentence and applies the card as TEXT requests with the chosen lifetime', async () => {
