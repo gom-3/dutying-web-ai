@@ -718,7 +718,7 @@ function NurseDetailPanel({
                                 autoFocus
                                 disabled={isBusy}
                                 name="nurseName"
-                                maxLength={30}
+                                maxLength={NURSE_NAME_MAX_LENGTH}
                                 placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
                                 className={cn(
                                     'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',
