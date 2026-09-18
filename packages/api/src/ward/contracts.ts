@@ -530,13 +530,13 @@ export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX'
 export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
 
 /**
- * KNOB(방향 축) / RULE(이번 달 제약조건) / CELL(표의 한 칸 지정).
+ * KNOB(방향 축) / RULE(이번 달 제약조건) / OFF_GOAL(월 오프 목표) / CELL(표의 한 칸 지정).
  *
  * CELL 은 규칙이 아니라 표의 한 자리라 이번 달 요청으로 **저장되지 않는다** — 카드에서
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'CELL';
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
@@ -549,6 +549,10 @@ export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
     knob?: TAutofillAdjustKnob;
     value?: number;
+    /** OFF_GOAL 일 때 기준 증가 또는 명시 최소 오프 목표. */
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM';
+    minimumOff?: number;
+    source?: 'MIN_MONTHLY_OFF' | 'USER_INPUT';
     /** RULE 일 때 제약조건 템플릿 코드. 이번 달에만 걸리고 병동 제약조건 목록은 건드리지 않는다. */
     templateCode?: string;
     /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
@@ -586,6 +590,9 @@ export type TScheduleMonthRequestRes = {
     displayLabel: string;
     knob?: TAutofillAdjustKnob | null;
     value?: number | null;
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM' | null;
+    minimumOff?: number | null;
+    source?: 'MIN_MONTHLY_OFF' | 'USER_INPUT' | null;
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
@@ -689,6 +696,21 @@ export type TAutofillResponse = {
     /** 엔진 판정. 조절이 "이미 그 방향으로 최적"인지 구분하는 데 쓴다. */
     engineResult?: {
         status?: string;
+        offGoal?: {
+            operation: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM';
+            minimumOff: number;
+            source?: string | null;
+            goalStatus: 'SATISFIED' | 'PARTIAL' | 'REJECTED' | 'TIME_LIMIT';
+            totalDeficit?: number;
+            nurses?: Array<{
+                shiftNurseId: string | number;
+                current: number;
+                target: number;
+                achieved: number;
+                deficit: number;
+                blockingReasons?: string[];
+            }>;
+        } | null;
         solver?: {
             /** 바뀐 칸이 없을 때 'ADJUST_NO_CHANGE'. 실패가 아니다. */
             reason?: string;

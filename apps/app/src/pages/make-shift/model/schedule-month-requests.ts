@@ -129,6 +129,17 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   origin: 'TEXT' as const,
                   requestText,
               }
+            : item.kind === 'OFF_GOAL'
+              ? {
+                    kind: 'OFF_GOAL' as const,
+                    operation: item.operation,
+                    minimumOff: item.minimumOff,
+                    source: item.source,
+                    displayLabel: item.displayLabel,
+                    lifetime: 'MONTH' as const,
+                    origin: 'TEXT' as const,
+                    requestText,
+                }
             : {
                   kind: 'KNOB' as const,
                   knob: item.knob,

@@ -2,6 +2,7 @@ import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
+    TAutofillResponse,
     TScheduleMonthRequestItem,
     TScheduleMonthRequestRes,
     TScheduleRequestRuleResult,
@@ -291,6 +292,7 @@ export function AiAutofill() {
     const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
     const [lastRuleResults, setLastRuleResults] = useState<TScheduleRequestRuleResult[]>([]);
+    const [lastOffGoal, setLastOffGoal] = useState<NonNullable<TAutofillResponse['engineResult']>['offGoal']>(null);
     const [lastAdjustStrength, setLastAdjustStrength] = useState<TAutofillAdjustStrength>('NORMAL');
     // 로딩 문구를 가른다. 조절은 "채우는 중"이 아니라 "방향을 조절하는 중"이다.
     const [isAdjusting, setIsAdjusting] = useState(false);
@@ -1150,6 +1152,7 @@ export function AiAutofill() {
 
                 setLastAdjustChangedCount(movedCount);
                 setLastRuleResults(result.response.requestRuleResults ?? []);
+                setLastOffGoal(result.response.engineResult?.offGoal ?? null);
                 setLastAdjustStrength(adjust.strength);
 
                 void syncMonthRequests();
@@ -1165,6 +1168,7 @@ export function AiAutofill() {
                 // 바뀐 칸 수와 잔여 위반만 지난 조절의 것이므로 지운다.
                 setLastAdjustChangedCount(null);
                 setLastRuleResults([]);
+                setLastOffGoal(null);
             }
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
@@ -1680,6 +1684,7 @@ export function AiAutofill() {
                     <AiAdjustResultNote
                         changedCount={lastAdjustChangedCount}
                         ruleResults={lastRuleResults}
+                        offGoal={lastOffGoal}
                         isStrongest={lastAdjustStrength === 'STRONG'}
                         disabled={isAiGenerating || disablingRequestId !== null}
                         onAdjustHarder={() => {
