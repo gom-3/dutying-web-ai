@@ -115,15 +115,19 @@ describe('NurseDetailPanel', () => {
     });
 
     it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full English name %s', async (name) => {
-        const {updateNurse} = renderPanel(createNurse());
+        const {saveNurseDetails} = renderPanel(createNurse());
         const nameInput = screen.getByDisplayValue('김듀티');
 
         expect(nameInput).toHaveAttribute('maxlength', '50');
-        await userEvent.clear(nameInput);
-        await userEvent.type(nameInput, name);
-        await userEvent.click(screen.getByRole('button', {name: '저장하기'}));
+        fireEvent.change(nameInput, {target: {value: name}});
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
 
-        await waitFor(() => expect(updateNurse).toHaveBeenCalledWith(101, expect.objectContaining({name})));
+        await waitFor(() =>
+            expect(saveNurseDetails).toHaveBeenCalledWith(
+                101,
+                expect.objectContaining({nurse: expect.objectContaining({name})}),
+            ),
+        );
     });
 
     it('lets a connected nurse birthDate be edited and sends it in the nurse patch payload', async () => {
