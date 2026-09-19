@@ -70,7 +70,7 @@ export function EmptyRequestGuide({
 
             {isOpen ? (
                 <div
-                    className="absolute inset-0 z-20 flex min-h-[420px] items-center justify-center overflow-y-auto px-3 py-6 sm:px-4 sm:py-8"
+                    className="absolute inset-0 z-20 scrollbar-hide flex min-h-[420px] items-center justify-center overflow-x-hidden overflow-y-auto px-3 py-6 sm:px-4 sm:py-8"
                     role="dialog"
                     aria-labelledby="empty-request-guide-title"
                     aria-describedby="empty-request-guide-description"
@@ -82,7 +82,7 @@ export function EmptyRequestGuide({
                 >
                     <div
                         aria-hidden="true"
-                        className="pointer-events-none absolute -inset-x-8 -inset-y-6 bg-white/45 backdrop-blur-[3px]"
+                        className="pointer-events-none absolute inset-0 bg-white/45 backdrop-blur-[3px]"
                         style={{
                             WebkitMaskImage: 'radial-gradient(ellipse at center, black 44%, rgba(0, 0, 0, 0.78) 67%, transparent 100%)',
                             maskImage: 'radial-gradient(ellipse at center, black 44%, rgba(0, 0, 0, 0.78) 67%, transparent 100%)',

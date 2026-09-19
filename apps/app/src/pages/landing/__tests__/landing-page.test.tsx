@@ -123,6 +123,25 @@ describe('LandingPage', () => {
     });
 
     it.each([
+        ['ko', '/img/iPhone%2015_1.webp'],
+        ['ja', '/img/landing-mobile-hero-ja.png'],
+        ['en', '/img/landing-mobile-hero-en.png'],
+        ['zh', '/img/landing-mobile-hero-zh.png'],
+        ['th', '/img/landing-mobile-hero-en.png'],
+        ['vi', '/img/landing-mobile-hero-en.png'],
+    ])('uses the localized mobile hero image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        expect(document.querySelector(`source[srcset="${expectedSrc}"]`)).toHaveAttribute('media', '(max-width: 767px)');
+    });
+
+    it.each([
         ['ko', '/img/landing-work-schedule-2.webp'],
         ['ja', '/img/landing-work-schedule-jp.webp'],
         ['en', '/img/landing-work-schedule-en.webp'],

@@ -34,6 +34,14 @@ const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
     th: '/img/landing-hero-en.webp',
     vi: '/img/landing-hero-en.webp',
 };
+const landingMobileHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+    ko: '/img/iPhone%2015_1.webp',
+    ja: '/img/landing-mobile-hero-ja.png',
+    en: '/img/landing-mobile-hero-en.png',
+    zh: '/img/landing-mobile-hero-zh.png',
+    th: '/img/landing-mobile-hero-en.png',
+    vi: '/img/landing-mobile-hero-en.png',
+};
 const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
     ko: '/img/landing-work-schedule-2.webp',
     ja: '/img/landing-work-schedule-jp.webp',
@@ -216,6 +224,12 @@ function getLandingHeroImageSrc(language?: string | null) {
     const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
 
     return landingHeroImageByLanguage[normalizedLanguage];
+}
+
+function getLandingMobileHeroImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+
+    return landingMobileHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWorkScheduleImageSrc(language?: string | null) {
@@ -1136,6 +1150,7 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
+    const mobileHeroImageSrc = getLandingMobileHeroImageSrc(currentLanguage);
     const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
     const appSectionImageSrc = getLandingAppSectionImageSrc(currentLanguage);
     const normalizedCurrentLanguage = normalizePreferredLanguage(currentLanguage) ?? 'en';
@@ -1220,7 +1235,12 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                     </div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end">
-                        <source media="(max-width: 767px)" srcSet="/img/iPhone%2015_1.webp" width="900" height="785" />
+                        <source
+                            media="(max-width: 767px)"
+                            srcSet={mobileHeroImageSrc}
+                            width="1366"
+                            height="1152"
+                        />
                         <img
                             src={heroImageSrc}
                             width="1800"
