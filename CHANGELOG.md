@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.1.1 - 2026-09-19
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 온보딩 제약 후보의 확인 상태와 원본 강도 권고를 서버에 전달해, 확인 전 안전 규칙이 HARD로 저장되지 않도록 개선합니다.
+
 ## 1.1.0 - 2026-09-12
 
 - `@dutying/config` (minor), `@dutying/docs` (minor): 공용 설정 패키지와 docs 워크스페이스를 초기 분리합니다.
