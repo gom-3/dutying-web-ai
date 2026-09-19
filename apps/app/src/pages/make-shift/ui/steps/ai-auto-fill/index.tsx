@@ -1317,7 +1317,11 @@ export function AiAutofill() {
 
         return positions.length;
     };
-    const handleApplyTextRequests = (items: TInterpretCardItem[], requestText: string) => {
+    const handleApplyTextRequests = (
+        items: TInterpretCardItem[],
+        requestText: string,
+        strength: TAutofillAdjustStrength,
+    ) => {
         const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
         const cells = toInterpretCells(items);
         // 칸 지정을 먼저 반영한다. 그래야 이어지는 조절이 그 칸을 잠긴 것으로 보고 피해 간다.
@@ -1343,7 +1347,7 @@ export function AiAutofill() {
 
         setIsAdjustDialogOpen(false);
         setLastAdjustChangedCount(null);
-        void runAiFill(readyContext, {strength: 'NORMAL', requests});
+        void runAiFill(readyContext, {strength, requests});
     };
     const handleCarryOverApply = async (requestIds: number[]) => {
         if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;

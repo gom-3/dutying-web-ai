@@ -128,17 +128,20 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   lifetime: 'MONTH' as const,
                   origin: 'TEXT' as const,
                   requestText,
+                  assumedSlots: item.assumedSlots,
               }
             : item.kind === 'OFF_GOAL'
               ? {
                     kind: 'OFF_GOAL' as const,
                     operation: item.operation,
                     minimumOff: item.minimumOff,
+                    targetOff: item.targetOff,
                     source: item.source,
                     displayLabel: item.displayLabel,
                     lifetime: 'MONTH' as const,
                     origin: 'TEXT' as const,
                     requestText,
+                    assumedSlots: item.assumedSlots,
                 }
             : {
                   kind: 'KNOB' as const,
@@ -148,6 +151,7 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   lifetime,
                   origin: 'TEXT' as const,
                   requestText,
+                  assumedSlots: item.assumedSlots,
               },
     );
 }

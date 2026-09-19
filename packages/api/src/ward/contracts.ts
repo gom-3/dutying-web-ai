@@ -549,10 +549,11 @@ export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
     knob?: TAutofillAdjustKnob;
     value?: number;
-    /** OFF_GOAL 일 때 기준 증가 또는 명시 최소 오프 목표. */
-    operation?: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM';
+    /** OFF_GOAL: 기준까지 증가 / 정확 목표에 접근 / 최소 하한. */
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
     minimumOff?: number;
-    source?: 'MIN_MONTHLY_OFF' | 'USER_INPUT';
+    targetOff?: number;
+    source?: 'SOLVER_OFF_TARGET' | 'MIN_MONTHLY_OFF' | 'USER_INPUT';
     /** RULE 일 때 제약조건 템플릿 코드. 이번 달에만 걸리고 병동 제약조건 목록은 건드리지 않는다. */
     templateCode?: string;
     /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
@@ -590,12 +591,14 @@ export type TScheduleMonthRequestRes = {
     displayLabel: string;
     knob?: TAutofillAdjustKnob | null;
     value?: number | null;
-    operation?: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM' | null;
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM' | null;
     minimumOff?: number | null;
-    source?: 'MIN_MONTHLY_OFF' | 'USER_INPUT' | null;
+    targetOff?: number | null;
+    source?: 'SOLVER_OFF_TARGET' | 'MIN_MONTHLY_OFF' | 'USER_INPUT' | null;
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
+    assumedSlots?: string[];
     requestText?: string | null;
     carriedFromRequestId?: number | null;
     /** 확정 시 병동 제약조건으로 승격됐으면 그 규칙 id. */
@@ -609,7 +612,7 @@ export type TScheduleRequestRuleResult = {
     displayLabel?: string | null;
     /** 지켜지지 못한 자리의 수. 0 이면 전부 지켜졌다. */
     violationCount: number;
-    /** "꼭"으로 걸었지만 이번 표에서는 권장으로 내려 푼 경우 true. */
+    /** 이전 서버가 HARD를 자동 완화했던 응답과의 읽기 호환용. 새 서버는 자동 완화하지 않는다. */
     downgraded?: boolean | null;
 };
 
@@ -693,21 +696,25 @@ export type TAutofillResponse = {
     validation: TValidationRes;
     unmetInstructions: string[];
     sameAsPrevious: boolean;
-    /** 엔진 판정. 조절이 "이미 그 방향으로 최적"인지 구분하는 데 쓴다. */
+    /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
         status?: string;
         offGoal?: {
-            operation: 'INCREASE_TO_BASELINE' | 'SET_MINIMUM';
-            minimumOff: number;
+            operation: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
+            minimumOff?: number | null;
+            targetOff?: number | null;
             source?: string | null;
             goalStatus: 'SATISFIED' | 'PARTIAL' | 'REJECTED' | 'TIME_LIMIT';
             totalDeficit?: number;
+            totalDeviation?: number;
             nurses?: Array<{
                 shiftNurseId: string | number;
                 current: number;
                 target: number;
                 achieved: number;
                 deficit: number;
+                excess?: number;
+                deviation?: number;
                 blockingReasons?: string[];
             }>;
         } | null;

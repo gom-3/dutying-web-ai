@@ -1,4 +1,5 @@
 import type {
+    TAutofillAdjustStrength,
     TScheduleAdjustInterpretRes,
     TScheduleMonthRequestItem,
     TScheduleMonthRequestLifetime,
@@ -19,7 +20,7 @@ export type TAdjustTextInputHandle = {
 type TProps = {
     disabled: boolean;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
-    onApply: (items: TInterpretCardItem[], requestText: string) => void;
+    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength) => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
 
@@ -27,6 +28,7 @@ type TCard = {
     requestText: string;
     items: TInterpretCardItem[];
     unmapped: TScheduleAdjustInterpretRes['unmapped'];
+    strength: TAutofillAdjustStrength;
 };
 
 function toCardItems(items: TScheduleMonthRequestItem[]): TInterpretCardItem[] {
@@ -70,7 +72,12 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
         try {
             const result = await interpret(trimmed);
 
-            setCard({requestText: trimmed, items: toCardItems(result.items ?? []), unmapped: result.unmapped ?? []});
+            setCard({
+                requestText: trimmed,
+                items: toCardItems(result.items ?? []),
+                unmapped: result.unmapped ?? [],
+                strength: result.strength ?? 'NORMAL',
+            });
         } catch {
             setError(t('page.makeShift.aiRefill.adjust.interpretFailed'));
         } finally {
@@ -90,7 +97,7 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
     const handleApply = () => {
         if (!card) return;
 
-        onApply(card.items, card.requestText);
+        onApply(card.items, card.requestText, card.strength);
         setCard(null);
         setText('');
     };

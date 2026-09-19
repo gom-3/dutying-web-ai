@@ -814,7 +814,7 @@ describe('AiAutofill adjust panel', () => {
                 },
             ],
             unmapped: [],
-            strength: 'NORMAL',
+            strength: 'STRONG',
         });
 
         await openAdjustDialog(user);
@@ -824,6 +824,14 @@ describe('AiAutofill adjust panel', () => {
         expect(await screen.findByText('page.makeShift.aiRefill.adjust.card.title')).toBeInTheDocument();
         // 배지에 우리가 고른 값이 함께 보여야 한다 — "기본값"만으로는 무엇이 4인지 알 수 없다.
         expect(screen.getByText(/page\.makeShift\.aiRefill\.adjust\.card\.assumedBadge 4/)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.card.apply'}));
+
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toMatchObject({
+            strength: 'STRONG',
+            requests: [{assumedSlots: ['count']}],
+        });
     });
 
     it('lets the sentence box be edited without the editor key bindings eating Backspace, arrows or shift keys', async () => {

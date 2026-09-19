@@ -26,13 +26,16 @@ export default function AiAdjustResultNote({changedCount, ruleResults, offGoal, 
     if (changedCount === null && !unmet && !offGoal) return null;
 
     const offGoalUnmet = offGoal && offGoal.goalStatus !== 'SATISFIED';
+    const offGoalLabel = offGoal?.operation === 'SET_TARGET'
+        ? `${offGoal.targetOff}일 목표에서 총 ${offGoal.totalDeviation ?? 0}일 차이가 남았어요.`
+        : offGoal?.operation === 'INCREASE_TO_BASELINE'
+          ? `기준 오프까지 총 ${offGoal.totalDeficit ?? 0}일이 아직 부족해요.`
+          : `최소 ${offGoal?.minimumOff}일 오프 목표 중 ${offGoal?.totalDeficit ?? 0}일이 아직 부족해요.`;
 
     return (
         <div className="ai-adjust-result-note text-12 text-sub flex flex-wrap items-center gap-2 px-4" role="status">
             {offGoalUnmet ? (
-                <span>
-                    최소 {offGoal.minimumOff}일 오프 목표 중 {offGoal.totalDeficit ?? 0}일이 아직 부족해요.
-                </span>
+                <span>{offGoalLabel}</span>
             ) : unmet ? (
                 <>
                     <span>
