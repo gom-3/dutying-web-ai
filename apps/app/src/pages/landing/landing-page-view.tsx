@@ -1238,8 +1238,8 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                         <source
                             media="(max-width: 767px)"
                             srcSet={mobileHeroImageSrc}
-                            width="1366"
-                            height="1152"
+                            width="1343"
+                            height="1171"
                         />
                         <img
                             src={heroImageSrc}
