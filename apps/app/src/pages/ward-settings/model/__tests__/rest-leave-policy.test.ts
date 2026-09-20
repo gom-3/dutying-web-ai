@@ -1,17 +1,16 @@
-import {describe, expect, it} from 'vitest';
+import Holidays from 'date-holidays';
+import {describe, expect, it, vi} from 'vitest';
 import type {TWardShiftType} from '@/entities';
 import {
     calculateBaseRestTarget,
     calculateRestTargetFromDays,
-    calculateRestTargetForLanguage,
+    calculateRestTargetForPolicy,
     calculateRestTarget,
-    countPublicHolidaysForLanguage,
     countPublicHolidaysForRestTarget,
     countWeeklyRestDaysInMonth,
     DEFAULT_REST_LEAVE_POLICY,
     getDefaultCountedRestShiftTypeIds,
-    getHolidayCountryForLanguage,
-    getPublicHolidayDaysForLanguage,
+    getPublicHolidayDaysForPolicy,
     normalizeRestLeavePolicy,
     resolveCountedRestShiftTypeIds,
 } from '../rest-leave-policy';
@@ -56,6 +55,36 @@ const shiftTypes: TWardShiftType[] = [
 ];
 
 describe('rest leave policy', () => {
+    it('reuses annual holiday calculations across months and retains previous-year holidays in January', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            for (let month = 1; month <= 12; month += 1) {
+                getPublicHolidayDaysForPolicy(2032, month, {holidayCountry: 'KR', holidayRegion: null});
+            }
+
+            expect(getHolidays.mock.calls.map(([year]) => year)).toEqual([2031, 2032]);
+            expect(getPublicHolidayDaysForPolicy(2032, 1, {holidayCountry: 'KR', holidayRegion: null}).map(({day}) => day)).toContain(1);
+            expect(getHolidays).toHaveBeenCalledTimes(2);
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
+    it('skips holiday calculation when it cannot affect the rest target', () => {
+        const getHolidays = vi.spyOn(Holidays.prototype, 'getHolidays');
+
+        try {
+            expect(calculateRestTargetForPolicy({...DEFAULT_REST_LEAVE_POLICY, enabled: false}, 2040, 1)).toBe(0);
+            expect(calculateRestTargetForPolicy({...DEFAULT_REST_LEAVE_POLICY, includeHolidays: false}, 2040, 1)).toBe(
+                countWeeklyRestDaysInMonth(2040, 1, 2),
+            );
+            expect(getHolidays).not.toHaveBeenCalled();
+        } finally {
+            getHolidays.mockRestore();
+        }
+    });
+
     it('주 단위 기준을 실제 달력에 적용해 월 목표 휴무일을 계산한다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
 
@@ -124,36 +153,32 @@ describe('rest leave policy', () => {
         expect(resolveCountedRestShiftTypeIds({...DEFAULT_REST_LEAVE_POLICY, leaveCountMode: 'offOnly'}, shiftTypes)).toEqual([1]);
     });
 
-    it('지원 언어에 맞춰 공휴일 국가를 정한다', () => {
-        expect(getHolidayCountryForLanguage('ko-KR')).toBe('KR');
-        expect(getHolidayCountryForLanguage('ja-JP')).toBe('JP');
-        expect(getHolidayCountryForLanguage('en-US')).toBe('US');
-        expect(getHolidayCountryForLanguage('zh-CN')).toBe('CN');
-        expect(getHolidayCountryForLanguage('th-TH')).toBe('TH');
-        expect(getHolidayCountryForLanguage('vi-VN')).toBe('VN');
-        expect(getHolidayCountryForLanguage('unsupported')).toBe('KR');
+    it('선택한 국가 공휴일을 여러 날인 연휴까지 날짜별로 계산한다', () => {
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'KR', holidayRegion: null}).map(({day}) => day)).toEqual([
+            24, 25, 26,
+        ]);
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'JP', holidayRegion: null}).map(({day}) => day)).toEqual([
+            21, 22, 23,
+        ]);
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'US', holidayRegion: null}).map(({day}) => day)).toEqual([7]);
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'CN', holidayRegion: null}).map(({day}) => day)).toEqual([25]);
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'TH', holidayRegion: null})).toEqual([]);
+        expect(getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'VN', holidayRegion: null}).map(({day}) => day)).toEqual([2]);
     });
 
-    it('언어별 국가 공휴일을 여러 날인 연휴까지 날짜별로 계산한다', () => {
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'ko').map(({day}) => day)).toEqual([24, 25, 26]);
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'ja').map(({day}) => day)).toEqual([21, 22, 23]);
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'en').map(({day}) => day)).toEqual([7]);
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'zh').map(({day}) => day)).toEqual([25]);
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'th')).toEqual([]);
-        expect(getPublicHolidayDaysForLanguage(2026, 9, 'vi').map(({day}) => day)).toEqual([2]);
-    });
-
-    it('언어별 공휴일 중 실제 주말과 겹치지 않는 날만 목표 휴무일에 더한다', () => {
+    it('국가별 공휴일 중 실제 주말과 겹치지 않는 날만 목표 휴무일에 더한다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
 
-        expect(countPublicHolidaysForLanguage(2026, 9, 'ko')).toBe(2);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'ko')).toBe(10);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'ja')).toBe(11);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'en')).toBe(9);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'zh')).toBe(9);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'th')).toBe(8);
-        expect(calculateRestTargetForLanguage(policy, 2026, 9, 'vi')).toBe(9);
-        expect(calculateRestTargetForLanguage({...policy, includeHolidays: false}, 2026, 9, 'ja')).toBe(8);
+        expect(
+            countPublicHolidaysForRestTarget(2026, 9, getPublicHolidayDaysForPolicy(2026, 9, {holidayCountry: 'KR', holidayRegion: null})),
+        ).toBe(2);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'KR'}, 2026, 9)).toBe(10);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'JP'}, 2026, 9)).toBe(11);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'US'}, 2026, 9)).toBe(9);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'CN'}, 2026, 9)).toBe(9);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'TH'}, 2026, 9)).toBe(8);
+        expect(calculateRestTargetForPolicy({...policy, holidayCountry: 'VN'}, 2026, 9)).toBe(9);
+        expect(calculateRestTargetForPolicy({...policy, includeHolidays: false}, 2026, 9)).toBe(8);
     });
 
     it('알 수 없는 저장값은 단순 기본 정책으로 정규화한다', () => {
@@ -163,5 +188,27 @@ describe('rest leave policy', () => {
     it('휴무일 계산 사용 여부를 저장값에서 정규화한다', () => {
         expect(normalizeRestLeavePolicy({enabled: false})).toMatchObject({enabled: false});
         expect(normalizeRestLeavePolicy({enabled: 'yes'})).toMatchObject({enabled: true});
+    });
+});
+
+describe('explicit holiday locations', () => {
+    it('distinguishes UK regions and keeps their caches separate', () => {
+        const england = {holidayCountry: 'GB' as const, holidayRegion: 'ENG'};
+        const scotland = {...england, holidayRegion: 'SCT'};
+
+        expect(getPublicHolidayDaysForPolicy(2026, 1, england).map((d) => d.day)).toEqual([1]);
+        expect(getPublicHolidayDaysForPolicy(2026, 1, scotland).map((d) => d.day)).toEqual([1, 2]);
+        expect(getPublicHolidayDaysForPolicy(2026, 1, england).map((d) => d.day)).toEqual([1]);
+    });
+    it('supports Ireland and European regional holidays', () => {
+        expect(getPublicHolidayDaysForPolicy(2026, 3, {holidayCountry: 'IE', holidayRegion: null}).map((d) => d.day)).toContain(17);
+        expect(getPublicHolidayDaysForPolicy(2026, 1, {holidayCountry: 'DE', holidayRegion: 'BW'}).map((d) => d.day)).toContain(6);
+        expect(getPublicHolidayDaysForPolicy(2026, 1, {holidayCountry: 'DE', holidayRegion: 'BE'}).map((d) => d.day)).not.toContain(6);
+    });
+    it('does not infer a country when the ward has not selected one', () => {
+        expect(getPublicHolidayDaysForPolicy(2026, 9, DEFAULT_REST_LEAVE_POLICY)).toEqual([]);
+        expect(getPublicHolidayDaysForPolicy(2026, 1, {holidayCountry: 'GB', holidayRegion: null})).toEqual([]);
+        expect(normalizeRestLeavePolicy({holidayCountry: 'KR', holidayRegion: 'SCT'}).holidayRegion).toBeNull();
+        expect(normalizeRestLeavePolicy({holidayCountry: 'XX'}).holidayCountry).toBeNull();
     });
 });

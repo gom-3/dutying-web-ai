@@ -1,7 +1,7 @@
 import type {TShift} from '@/entities';
 import type {TDutyDoc} from '@/features/shift-editor/model';
 import {
-    calculateRestTargetForLanguage,
+    calculateRestTargetForPolicy,
     resolveCountedRestShiftTypeIds,
     type TRestLeavePolicy,
 } from '@/pages/ward-settings/model/rest-leave-policy';
@@ -23,11 +23,11 @@ export function calculateRestCheckByShiftNurse(params: {
     adjustmentDays: number;
     language?: string | null;
 }) {
-    const {shift, doc, policy, year, month, adjustmentDays, language} = params;
+    const {shift, doc, policy, year, month, adjustmentDays} = params;
 
     if (!policy.enabled) return undefined;
 
-    const monthlyTarget = calculateRestTargetForLanguage(policy, year, month, language) + adjustmentDays;
+    const monthlyTarget = calculateRestTargetForPolicy(policy, year, month) + adjustmentDays;
     const countedRestShiftTypeIds = new Set(resolveCountedRestShiftTypeIds(policy, shift.wardShiftTypes));
     const shiftTypeByShortName = new Map(shift.wardShiftTypes.map((shiftType) => [shiftType.shortName, shiftType]));
     const restCheckByShiftNurseId: Record<number, TRestCheckSummary> = {};

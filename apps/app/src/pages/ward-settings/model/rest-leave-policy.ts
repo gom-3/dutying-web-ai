@@ -1,11 +1,13 @@
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import Holidays from 'date-holidays';
-import {useCallback, useEffect, useState} from 'react';
+import {useMemo} from 'react';
 import type {TDay, TWardShiftType} from '@/entities';
-import {DEFAULT_PREFERRED_LANGUAGE, normalizePreferredLanguage} from '@/shared/i18n/locale';
+import axiosInstance from '@/shared/api/client';
+import {HOLIDAY_COUNTRIES, getHolidayRegions, type THolidayCountry} from './holiday-location';
+export type {THolidayCountry} from './holiday-location';
 
 export type TRestTargetMode = 'weekly' | 'fixed';
 export type TLeaveCountMode = 'allLeaves' | 'offOnly';
-export type THolidayCountry = 'KR' | 'JP' | 'US' | 'CN' | 'TH' | 'VN';
 
 export type TRestLeavePolicy = {
     enabled: boolean;
@@ -16,12 +18,18 @@ export type TRestLeavePolicy = {
     countedRestShiftTypeIds: number[] | null;
     leaveCountMode: TLeaveCountMode;
     carryOverEnabled: boolean;
+    holidayCountry: THolidayCountry | null;
+    holidayRegion: string | null;
 };
 
-export const REST_LEAVE_POLICY_UPDATED_EVENT = 'dutying:rest-leave-policy-updated';
+export type TRestLeavePolicyResponse = TRestLeavePolicy & {wardId: number; persisted: boolean; version: number};
+export const restLeavePolicyQueryKey = (wardId: number | null | undefined) => ['ward', 'restLeavePolicy', wardId];
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 const HOLIDAY_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})/;
+const MAX_CACHED_HOLIDAY_YEARS = 24;
+const holidayCalendars = new Map<string, Holidays>();
+const publicHolidaysByYearCache = new Map<string, ReturnType<Holidays['getHolidays']>>();
 const publicHolidayDaysCache = new Map<string, TDay[]>();
 
 export const DEFAULT_REST_LEAVE_POLICY: TRestLeavePolicy = {
@@ -33,12 +41,11 @@ export const DEFAULT_REST_LEAVE_POLICY: TRestLeavePolicy = {
     countedRestShiftTypeIds: null,
     leaveCountMode: 'allLeaves',
     carryOverEnabled: false,
+    holidayCountry: null,
+    holidayRegion: null,
 };
 
-type TRestLeavePolicyUpdatedEventDetail = {
-    wardId: number;
-    policy: TRestLeavePolicy;
-};
+const UNAVAILABLE_POLICY: TRestLeavePolicy = {...DEFAULT_REST_LEAVE_POLICY, enabled: false};
 
 function getStorageKey(wardId: number) {
     return `dutying:ward:${wardId}:rest-leave-policy`;
@@ -64,8 +71,15 @@ function normalizeIdList(value: unknown) {
 
 export function normalizeRestLeavePolicy(value: unknown): TRestLeavePolicy {
     const raw = value && typeof value === 'object' ? (value as Partial<TRestLeavePolicy>) : {};
+    const holidayCountry = HOLIDAY_COUNTRIES.includes(raw.holidayCountry as THolidayCountry)
+        ? (raw.holidayCountry as THolidayCountry)
+        : null;
+    const holidayRegion =
+        holidayCountry && raw.holidayRegion && getHolidayRegions(holidayCountry)[raw.holidayRegion] ? raw.holidayRegion : null;
 
     return {
+        holidayCountry,
+        holidayRegion,
         enabled: raw.enabled === undefined ? DEFAULT_REST_LEAVE_POLICY.enabled : Boolean(raw.enabled),
         targetMode: normalizeStringOption<TRestTargetMode>(raw.targetMode, DEFAULT_REST_LEAVE_POLICY.targetMode, ['weekly', 'fixed']),
         weeklyOffDays: clampDayCount(raw.weeklyOffDays, DEFAULT_REST_LEAVE_POLICY.weeklyOffDays, 1, 7),
@@ -80,76 +94,84 @@ export function normalizeRestLeavePolicy(value: unknown): TRestLeavePolicy {
     };
 }
 
-export function loadRestLeavePolicy(wardId: number | null | undefined): TRestLeavePolicy {
-    if (!wardId || typeof window === 'undefined') return DEFAULT_REST_LEAVE_POLICY;
+// Only exposed as a user-initiated import when no shared policy exists. Never write back locally.
+export function loadLegacyRestLeavePolicy(wardId: number | null | undefined): TRestLeavePolicy | null {
+    if (!wardId || typeof window === 'undefined') return null;
 
     try {
         const raw = window.localStorage.getItem(getStorageKey(wardId));
 
-        if (!raw) return DEFAULT_REST_LEAVE_POLICY;
-
-        return normalizeRestLeavePolicy(JSON.parse(raw));
+        return raw ? normalizeRestLeavePolicy(JSON.parse(raw)) : null;
     } catch {
-        return DEFAULT_REST_LEAVE_POLICY;
+        return null;
     }
 }
 
-export function saveRestLeavePolicy(wardId: number | null | undefined, policy: TRestLeavePolicy) {
-    if (!wardId || typeof window === 'undefined') return;
-
-    const normalized = normalizeRestLeavePolicy(policy);
-
-    window.localStorage.setItem(getStorageKey(wardId), JSON.stringify(normalized));
-    window.dispatchEvent(
-        new CustomEvent<TRestLeavePolicyUpdatedEventDetail>(REST_LEAVE_POLICY_UPDATED_EVENT, {
-            detail: {wardId, policy: normalized},
-        }),
-    );
-}
-
 export function useRestLeavePolicy(wardId: number | null | undefined) {
-    const [policy, setPolicyState] = useState<TRestLeavePolicy>(() => loadRestLeavePolicy(wardId));
+    const queryClient = useQueryClient();
+    const queryKey = restLeavePolicyQueryKey(wardId);
+    const query = useQuery({
+        queryKey,
+        enabled: Boolean(wardId),
+        queryFn: async ({signal}) =>
+            (
+                await axiosInstance.get<TRestLeavePolicyResponse>(`/wards/${wardId}/rest-leave-policy`, {
+                    suppressErrorToast: true,
+                    signal,
+                })
+            ).data,
+        staleTime: 0,
+        refetchInterval: 30_000,
+        refetchOnWindowFocus: true,
+        retry: false,
+    });
+    const mutation = useMutation({
+        mutationFn: async ({
+            policy,
+            version,
+            targetWardId,
+        }: {
+            policy: TRestLeavePolicy;
+            version: number;
+            targetWardId: number | null | undefined;
+        }) => {
+            if (!targetWardId) throw new Error('Ward is required');
 
-    useEffect(() => {
-        setPolicyState(loadRestLeavePolicy(wardId));
-    }, [wardId]);
-
-    useEffect(() => {
-        if (!wardId || typeof window === 'undefined') return;
-
-        const handlePolicyUpdated = (event: Event) => {
-            const detail = (event as CustomEvent<TRestLeavePolicyUpdatedEventDetail>).detail;
-
-            if (detail?.wardId !== wardId) return;
-
-            setPolicyState(detail.policy);
-        };
-        const handleStorage = (event: StorageEvent) => {
-            if (event.key !== getStorageKey(wardId)) return;
-
-            setPolicyState(loadRestLeavePolicy(wardId));
-        };
-
-        window.addEventListener(REST_LEAVE_POLICY_UPDATED_EVENT, handlePolicyUpdated);
-        window.addEventListener('storage', handleStorage);
-
-        return () => {
-            window.removeEventListener(REST_LEAVE_POLICY_UPDATED_EVENT, handlePolicyUpdated);
-            window.removeEventListener('storage', handleStorage);
-        };
-    }, [wardId]);
-
-    const setPolicy = useCallback(
-        (nextPolicy: TRestLeavePolicy) => {
-            const normalized = normalizeRestLeavePolicy(nextPolicy);
-
-            setPolicyState(normalized);
-            saveRestLeavePolicy(wardId, normalized);
+            return (
+                await axiosInstance.put<TRestLeavePolicyResponse>(
+                    `/wards/${targetWardId}/rest-leave-policy`,
+                    {
+                        ...policy,
+                        version,
+                    },
+                    {suppressErrorToast: true},
+                )
+            ).data;
         },
-        [wardId],
+        onSuccess: async (data) => {
+            // Cancel older in-flight GETs before publishing the acknowledged server version.
+            const savedQueryKey = restLeavePolicyQueryKey(data.wardId);
+
+            await queryClient.cancelQueries({queryKey: savedQueryKey});
+            queryClient.setQueryData(savedQueryKey, data);
+        },
+    });
+    const policy = useMemo(
+        () => (!query.isError && query.data ? normalizeRestLeavePolicy(query.data) : UNAVAILABLE_POLICY),
+        [query.data, query.isError],
     );
 
-    return {policy, setPolicy};
+    return {
+        policy,
+        version: query.data?.version ?? 0,
+        persisted: query.data?.persisted ?? false,
+        isLoading: Boolean(wardId) && query.isPending,
+        isError: query.isError,
+        isSaving: mutation.isPending,
+        refetch: query.refetch,
+        setPolicy: (nextPolicy: TRestLeavePolicy, version: number) =>
+            mutation.mutateAsync({policy: nextPolicy, version, targetWardId: wardId}),
+    };
 }
 
 export function getDaysInMonth(year: number, month: number) {
@@ -177,38 +199,52 @@ export function countWeeklyRestDaysInMonth(year: number, month: number, weeklyOf
     return count;
 }
 
-export function getHolidayCountryForLanguage(language?: string | null): THolidayCountry {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
+function getPublicHolidaysForYear(country: THolidayCountry, region: string | null, year: number) {
+    const locationKey = `${country}:${region ?? 'national'}`;
+    const cacheKey = `${locationKey}:${year}`;
+    const cachedHolidays = publicHolidaysByYearCache.get(cacheKey);
 
-    return (
-        {
-            ko: 'KR',
-            ja: 'JP',
-            en: 'US',
-            zh: 'CN',
-            th: 'TH',
-            vi: 'VN',
-        } satisfies Record<NonNullable<ReturnType<typeof normalizePreferredLanguage>>, THolidayCountry>
-    )[normalizedLanguage];
+    if (cachedHolidays) return cachedHolidays;
+
+    let calendar = holidayCalendars.get(locationKey);
+
+    if (!calendar) {
+        calendar = region ? new Holidays(country, region, {types: ['public']}) : new Holidays(country, {types: ['public']});
+        holidayCalendars.set(locationKey, calendar);
+    }
+
+    const holidays = calendar.getHolidays(year);
+
+    // Reuse the same year's calculations when moving between months, with a
+    // bounded cache for sessions that browse many years.
+    if (publicHolidaysByYearCache.size >= MAX_CACHED_HOLIDAY_YEARS) {
+        publicHolidaysByYearCache.delete(publicHolidaysByYearCache.keys().next().value!);
+    }
+
+    publicHolidaysByYearCache.set(cacheKey, holidays);
+
+    return holidays;
 }
 
-export function getPublicHolidayDaysForLanguage(year: number, month: number, language?: string | null): TDay[] {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
-    const country = getHolidayCountryForLanguage(normalizedLanguage);
-    const cacheKey = `${country}:${year}:${month}`;
+export function getPublicHolidayDaysForPolicy(
+    year: number,
+    month: number,
+    policy: Pick<TRestLeavePolicy, 'holidayCountry' | 'holidayRegion'>,
+): TDay[] {
+    const {holidayCountry: country, holidayRegion: region} = policy;
+
+    if (!country || (country === 'GB' && !region)) return [];
+
+    const cacheKey = `${country}:${region ?? 'national'}:${year}:${month}`;
     const cachedDays = publicHolidayDaysCache.get(cacheKey);
 
     if (cachedDays) return cachedDays;
 
-    const holidayCalendar = new Holidays(country, {
-        languages: [normalizedLanguage],
-        types: ['public'],
-    });
     const holidayDates = new Set<number>();
     const yearsToLoad = month === 1 ? [year - 1, year] : [year];
 
     yearsToLoad.forEach((holidayYear) => {
-        holidayCalendar.getHolidays(holidayYear).forEach((holiday) => {
+        getPublicHolidaysForYear(country, region, holidayYear).forEach((holiday) => {
             if (holiday.type !== 'public') return;
 
             const dateParts = HOLIDAY_DATE_PATTERN.exec(holiday.date);
@@ -278,17 +314,10 @@ export function calculateRestTargetFromDays(policy: TRestLeavePolicy, year: numb
     return calculateRestTarget(policy, year, month, countPublicHolidaysForRestTarget(year, month, days, weeklyOffDays));
 }
 
-export function countPublicHolidaysForLanguage(
-    year: number,
-    month: number,
-    language?: string | null,
-    weeklyOffDays = DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
-) {
-    return countPublicHolidaysForRestTarget(year, month, getPublicHolidayDaysForLanguage(year, month, language), weeklyOffDays);
-}
+export function calculateRestTargetForPolicy(policy: TRestLeavePolicy, year: number, month: number) {
+    if (!policy.enabled || !policy.includeHolidays) return calculateBaseRestTarget(policy, year, month);
 
-export function calculateRestTargetForLanguage(policy: TRestLeavePolicy, year: number, month: number, language?: string | null) {
-    return calculateRestTargetFromDays(policy, year, month, getPublicHolidayDaysForLanguage(year, month, language));
+    return calculateRestTargetFromDays(policy, year, month, getPublicHolidayDaysForPolicy(year, month, policy));
 }
 
 export function getRestShiftTypes(shiftTypes: TWardShiftType[]) {

@@ -1,10 +1,10 @@
 import {Minus, Plus, Settings} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import i18n from '@/i18n';
 import {
     calculateBaseRestTarget,
-    calculateRestTargetForLanguage,
-    countPublicHolidaysForLanguage,
+    calculateRestTargetForPolicy,
+    countPublicHolidaysForRestTarget,
+    getPublicHolidayDaysForPolicy,
     DEFAULT_REST_LEAVE_POLICY,
     useRestLeavePolicy,
 } from '@/pages/ward-settings/model/rest-leave-policy';
@@ -36,22 +36,18 @@ function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeav
     const {t} = useTypedTranslation();
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays, setAdjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId, year, month});
-    const language = i18n.resolvedLanguage ?? i18n.language;
     const baseTarget = useMemo(() => calculateBaseRestTarget(policy, year, month), [month, policy, year]);
     const holidayCount = useMemo(
         () =>
-            countPublicHolidaysForLanguage(
+            countPublicHolidaysForRestTarget(
                 year,
                 month,
-                language,
+                getPublicHolidayDaysForPolicy(year, month, policy),
                 policy.targetMode === 'weekly' ? policy.weeklyOffDays : DEFAULT_REST_LEAVE_POLICY.weeklyOffDays,
             ),
-        [language, month, policy.targetMode, policy.weeklyOffDays, year],
+        [month, policy, year],
     );
-    const targetWithHolidays = useMemo(
-        () => calculateRestTargetForLanguage(policy, year, month, language),
-        [language, month, policy, year],
-    );
+    const targetWithHolidays = useMemo(() => calculateRestTargetForPolicy(policy, year, month), [month, policy, year]);
     const adjustedTarget = Math.max(0, targetWithHolidays + adjustmentDays);
     const baseTargetLabel =
         policy.targetMode === 'weekly'
