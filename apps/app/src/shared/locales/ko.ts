@@ -2524,7 +2524,7 @@ export const ko = {
     },
     feature: {
         editShiftTeam: {
-            newNursePrefix: '신규간호사',
+            newNursePrefix: '신규 간호사',
             addNurseSuccess: '{{name}}를 추가했어요.',
             addNurseFailed: '간호사를 추가하지 못했어요.',
             deleteNurseSuccess: '간호사를 삭제했어요.',

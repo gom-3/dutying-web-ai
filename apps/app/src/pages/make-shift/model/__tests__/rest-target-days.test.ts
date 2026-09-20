@@ -56,7 +56,7 @@ function createDoc(days: TShift['days']): TDutyDoc {
 }
 
 describe('rest target days', () => {
-    it('adds public holidays for the selected language country', () => {
+    it.each(['en', 'ko', 'ja'])('uses the ward country when display language is %s', (language) => {
         const days: TShift['days'] = [
             {day: 1, dayType: 'workday'},
             {day: 2, dayType: 'holiday'},
@@ -66,6 +66,7 @@ describe('rest target days', () => {
             doc: createDoc(days),
             policy: {
                 ...DEFAULT_REST_LEAVE_POLICY,
+                holidayCountry: 'US',
                 targetMode: 'fixed',
                 fixedMonthlyOffDays: 10,
                 includeHolidays: true,
@@ -73,7 +74,7 @@ describe('rest target days', () => {
             year: 2026,
             month: 6,
             adjustmentDays: 0,
-            language: 'en',
+            language,
         });
 
         expect(result?.[shiftNurse.shiftNurseId]).toMatchObject({
@@ -93,6 +94,7 @@ describe('rest target days', () => {
             doc: createDoc(days),
             policy: {
                 ...DEFAULT_REST_LEAVE_POLICY,
+                holidayCountry: 'US',
                 targetMode: 'fixed',
                 fixedMonthlyOffDays: 10,
                 includeHolidays: true,

@@ -1142,7 +1142,8 @@ export const ko = {
                 "violationLevel": {
                     "error": "중요",
                     "warning": "일반"
-                }
+                },
+                "groupStatistics": "{{group}} 근무 통계"
             },
             "confirmedShifts": {
                 "editAction": "수정하기",
@@ -3011,6 +3012,21 @@ export const ko = {
                     "exclude": {
                         "title": "공휴일 제외",
                         "description": "근무표 안의 휴무 유형만 휴무일로 계산해요."
+                    },
+                    "country": "공휴일 기준 국가",
+                    "selectCountry": "국가 선택",
+                    "region": "공휴일 기준 지역",
+                    "selectRegion": "지역 선택",
+                    "national": "전국 공통 공휴일만",
+                    "locationHint": "화면 언어와 관계없이 선택한 국가·지역으로 계산해요. 지역 미선택 시 전국 공통 공휴일만 반영해요. 시·군 및 병원 자체 휴일은 포함하지 않아요.",
+                    "required": "공휴일 국가를 선택해 주세요. 영국은 지역도 선택해야 해요.",
+                    "previewDates": "{{month}}월 반영 공휴일 {{count}}일 · 공휴일 날짜(주간 휴무 중복 제외 전)",
+                    "gb": {
+                        "ENG": "잉글랜드",
+                        "WLS": "웨일스",
+                        "SCT": "스코틀랜드",
+                        "NIR": "북아일랜드",
+                        "ALD": "올더니"
                     }
                 },
                 "carryOver": {
@@ -3029,6 +3045,18 @@ export const ko = {
                 "save": "저장하기",
                 "toast": {
                     "saved": "휴무일 계산 설정을 저장했어요."
+                },
+                "sync": {
+                    "loading": "병동 공통 설정을 불러오는 중이에요.",
+                    "loadFailed": "설정을 불러오지 못했어요. 다시 시도해 주세요.",
+                    "retry": "다시 시도",
+                    "shared": "저장한 기준은 이 병동의 모든 관리자와 기기에서 함께 사용해요.",
+                    "legacyHint": "이 브라우저에 예전 설정이 있어요. 가져온 뒤 공휴일 국가를 확인하고 저장해 주세요.",
+                    "importLegacy": "이전 설정 가져오기",
+                    "conflict": "다른 관리자가 설정을 변경했어요. 최신 설정을 불러온 뒤 다시 수정해 주세요. 현재 입력은 저장되지 않았어요.",
+                    "reload": "입력 취소하고 최신 설정 불러오기",
+                    "saveFailed": "저장하지 못했어요. 입력한 내용은 유지되니 다시 시도해 주세요.",
+                    "saving": "저장 중…"
                 }
             }
         }
@@ -4253,7 +4281,8 @@ export const en: TLocale = {
                 "violationLevel": {
                     "error": "Important",
                     "warning": "General"
-                }
+                },
+                "groupStatistics": "{{group}} shift statistics"
             },
             "confirmedShifts": {
                 "editAction": "Edit",
@@ -6122,6 +6151,21 @@ export const en: TLocale = {
                     "exclude": {
                         "title": "Exclude holidays",
                         "description": "Count only leave shift types in the schedule as rest days."
+                    },
+                    "country": "Holiday country",
+                    "selectCountry": "Select a country",
+                    "region": "Holiday region",
+                    "selectRegion": "Select a region",
+                    "national": "National holidays only",
+                    "locationHint": "Calculations use this country and region regardless of display language. Without a region, only national holidays apply. Municipal and hospital-specific holidays are excluded.",
+                    "required": "Select a holiday country. A region is also required for the United Kingdom.",
+                    "previewDates": "Month {{month}}: {{count}} holidays counted · holiday dates (before weekly rest overlap is removed)",
+                    "gb": {
+                        "ENG": "England",
+                        "WLS": "Wales",
+                        "SCT": "Scotland",
+                        "NIR": "Northern Ireland",
+                        "ALD": "Alderney"
                     }
                 },
                 "carryOver": {
@@ -6140,6 +6184,18 @@ export const en: TLocale = {
                 "save": "Save",
                 "toast": {
                     "saved": "Saved rest day rule settings."
+                },
+                "sync": {
+                    "loading": "Loading shared ward settings.",
+                    "loadFailed": "Could not load settings. Please try again.",
+                    "retry": "Retry",
+                    "shared": "Saved settings are shared by all administrators and devices in this ward.",
+                    "legacyHint": "This browser has previous settings. Import them, confirm the holiday country, then save.",
+                    "importLegacy": "Import previous settings",
+                    "conflict": "Another administrator changed these settings. Load the latest settings and edit again. Your changes have not been saved.",
+                    "reload": "Discard edits and load latest settings",
+                    "saveFailed": "Could not save. Your edits are preserved; please try again.",
+                    "saving": "Saving…"
                 }
             }
         }
@@ -7362,7 +7418,8 @@ export const ja: TLocale = {
                 "violationLevel": {
                     "error": "重要",
                     "warning": "通常"
-                }
+                },
+                "groupStatistics": "{{group}}の勤務統計"
             },
             "confirmedShifts": {
                 "editAction": "編集する",
@@ -9231,6 +9288,21 @@ export const ja: TLocale = {
                     "exclude": {
                         "title": "祝日を除外",
                         "description": "勤務表内の休み区分だけを休日として計算します。"
+                    },
+                    "country": "祝日の基準国",
+                    "selectCountry": "国を選択",
+                    "region": "祝日の基準地域",
+                    "selectRegion": "地域を選択",
+                    "national": "全国共通の祝日のみ",
+                    "locationHint": "表示言語に関係なく選択した国・地域で計算します。地域未選択時は全国共通の祝日のみ反映します。市町村・病院独自の休日は含みません。",
+                    "required": "祝日の国を選択してください。英国は地域の選択も必要です。",
+                    "previewDates": "{{month}}月の加算祝日 {{count}}日 · 祝日日付（週休との重複除外前）",
+                    "gb": {
+                        "ENG": "イングランド",
+                        "WLS": "ウェールズ",
+                        "SCT": "スコットランド",
+                        "NIR": "北アイルランド",
+                        "ALD": "オルダニー"
                     }
                 },
                 "carryOver": {
@@ -9249,6 +9321,18 @@ export const ja: TLocale = {
                 "save": "保存",
                 "toast": {
                     "saved": "休日計算設定を保存しました。"
+                },
+                "sync": {
+                    "loading": "病棟の共通設定を読み込み中です。",
+                    "loadFailed": "設定を読み込めませんでした。もう一度お試しください。",
+                    "retry": "再試行",
+                    "shared": "保存した設定は、この病棟のすべての管理者と端末で共有されます。",
+                    "legacyHint": "このブラウザーに以前の設定があります。取り込み後、祝日の国を確認して保存してください。",
+                    "importLegacy": "以前の設定を取り込む",
+                    "conflict": "別の管理者が設定を変更しました。最新の設定を読み込んで再編集してください。変更は保存されていません。",
+                    "reload": "編集を破棄して最新の設定を読み込む",
+                    "saveFailed": "保存できませんでした。編集内容は保持されています。もう一度お試しください。",
+                    "saving": "保存中…"
                 }
             }
         }
@@ -10471,7 +10555,8 @@ export const zh: TLocale = {
                 "violationLevel": {
                     "error": "重要性",
                     "warning": "常见的"
-                }
+                },
+                "groupStatistics": "{{group}}排班统计"
             },
             "confirmedShifts": {
                 "editAction": "编辑",
@@ -12340,6 +12425,21 @@ export const zh: TLocale = {
                     "exclude": {
                         "title": "排除假日",
                         "description": "仅将排班表中的休假类型计为休息日。"
+                    },
+                    "country": "节假日所属国家",
+                    "selectCountry": "选择国家",
+                    "region": "节假日所属地区",
+                    "selectRegion": "选择地区",
+                    "national": "仅全国性节假日",
+                    "locationHint": "按所选国家和地区计算，与显示语言无关。不选地区时仅计入全国性节假日，不含市级或医院自定假日。",
+                    "required": "请选择节假日国家。英国还需选择地区。",
+                    "previewDates": "{{month}}月计入{{count}}天节假日 · 节假日日期（未排除周休重叠）",
+                    "gb": {
+                        "ENG": "英格兰",
+                        "WLS": "威尔士",
+                        "SCT": "苏格兰",
+                        "NIR": "北爱尔兰",
+                        "ALD": "奥尔德尼"
                     }
                 },
                 "carryOver": {
@@ -12358,6 +12458,18 @@ export const zh: TLocale = {
                 "save": "保存",
                 "toast": {
                     "saved": "已保存休息日规则设置。"
+                },
+                "sync": {
+                    "loading": "正在加载病区共享设置。",
+                    "loadFailed": "无法加载设置，请重试。",
+                    "retry": "重试",
+                    "shared": "保存的设置将由本病区所有管理员和设备共享。",
+                    "legacyHint": "此浏览器中有旧设置。导入后请确认节假日国家并保存。",
+                    "importLegacy": "导入旧设置",
+                    "conflict": "其他管理员已更改设置。请加载最新设置后重新编辑。您的更改尚未保存。",
+                    "reload": "放弃编辑并加载最新设置",
+                    "saveFailed": "保存失败。编辑内容已保留，请重试。",
+                    "saving": "正在保存…"
                 }
             }
         }
@@ -13580,7 +13692,8 @@ export const th: TLocale = {
                 "violationLevel": {
                     "error": "สำคัญ",
                     "warning": "ทั่วไป"
-                }
+                },
+                "groupStatistics": "สถิติเวรของ{{group}}"
             },
             "confirmedShifts": {
                 "editAction": "แก้ไข",
@@ -15449,6 +15562,21 @@ export const th: TLocale = {
                     "exclude": {
                         "title": "ไม่รวมวันหยุด",
                         "description": "นับเฉพาะประเภทวันลาในตารางเป็นวันหยุด"
+                    },
+                    "country": "ประเทศที่ใช้อ้างอิงวันหยุด",
+                    "selectCountry": "เลือกประเทศ",
+                    "region": "ภูมิภาคที่ใช้อ้างอิงวันหยุด",
+                    "selectRegion": "เลือกภูมิภาค",
+                    "national": "เฉพาะวันหยุดทั่วประเทศ",
+                    "locationHint": "คำนวณตามประเทศและภูมิภาคที่เลือก ไม่ขึ้นกับภาษาหน้าจอ หากไม่เลือกภูมิภาคจะใช้เฉพาะวันหยุดทั่วประเทศ ไม่รวมวันหยุดเทศบาลหรือโรงพยาบาล",
+                    "required": "โปรดเลือกประเทศ สำหรับสหราชอาณาจักรต้องเลือกภูมิภาคด้วย",
+                    "previewDates": "เดือน {{month}} นับวันหยุด {{count}} วัน · วันที่วันหยุด (ก่อนหักวันพักประจำสัปดาห์ที่ซ้ำ)",
+                    "gb": {
+                        "ENG": "อังกฤษ",
+                        "WLS": "เวลส์",
+                        "SCT": "สกอตแลนด์",
+                        "NIR": "ไอร์แลนด์เหนือ",
+                        "ALD": "ออลเดอร์นีย์"
                     }
                 },
                 "carryOver": {
@@ -15467,6 +15595,18 @@ export const th: TLocale = {
                 "save": "บันทึก",
                 "toast": {
                     "saved": "บันทึกการตั้งค่ากฎวันหยุดแล้ว"
+                },
+                "sync": {
+                    "loading": "กำลังโหลดการตั้งค่าร่วมของวอร์ด",
+                    "loadFailed": "โหลดการตั้งค่าไม่ได้ โปรดลองอีกครั้ง",
+                    "retry": "ลองอีกครั้ง",
+                    "shared": "การตั้งค่าที่บันทึกจะใช้ร่วมกันสำหรับผู้ดูแลและอุปกรณ์ทั้งหมดในวอร์ดนี้",
+                    "legacyHint": "เบราว์เซอร์นี้มีการตั้งค่าเดิม นำเข้าแล้วตรวจสอบประเทศก่อนบันทึก",
+                    "importLegacy": "นำเข้าการตั้งค่าเดิม",
+                    "conflict": "ผู้ดูแลคนอื่นเปลี่ยนการตั้งค่าแล้ว โปรดโหลดค่าล่าสุดแล้วแก้ไขอีกครั้ง ยังไม่ได้บันทึกการเปลี่ยนแปลงของคุณ",
+                    "reload": "ละทิ้งการแก้ไขและโหลดค่าล่าสุด",
+                    "saveFailed": "บันทึกไม่ได้ ข้อมูลที่แก้ไขยังอยู่ โปรดลองอีกครั้ง",
+                    "saving": "กำลังบันทึก…"
                 }
             }
         }
@@ -16689,7 +16829,8 @@ export const vi: TLocale = {
                 "violationLevel": {
                     "error": "Quan trọng",
                     "warning": "chung"
-                }
+                },
+                "groupStatistics": "Thống kê ca trực {{group}}"
             },
             "confirmedShifts": {
                 "editAction": "Chỉnh sửa",
@@ -18558,6 +18699,21 @@ export const vi: TLocale = {
                     "exclude": {
                         "title": "Không tính ngày lễ",
                         "description": "Chỉ tính các loại nghỉ trong lịch là ngày nghỉ."
+                    },
+                    "country": "Quốc gia áp dụng ngày lễ",
+                    "selectCountry": "Chọn quốc gia",
+                    "region": "Khu vực áp dụng ngày lễ",
+                    "selectRegion": "Chọn khu vực",
+                    "national": "Chỉ ngày lễ toàn quốc",
+                    "locationHint": "Tính theo quốc gia và khu vực đã chọn, không phụ thuộc ngôn ngữ hiển thị. Nếu không chọn khu vực, chỉ tính ngày lễ toàn quốc. Không gồm ngày nghỉ riêng của địa phương hoặc bệnh viện.",
+                    "required": "Hãy chọn quốc gia ngày lễ. Vương quốc Anh cần chọn cả khu vực.",
+                    "previewDates": "Tháng {{month}}: tính {{count}} ngày lễ · ngày lễ (trước khi loại ngày trùng nghỉ tuần)",
+                    "gb": {
+                        "ENG": "Anh",
+                        "WLS": "Wales",
+                        "SCT": "Scotland",
+                        "NIR": "Bắc Ireland",
+                        "ALD": "Alderney"
                     }
                 },
                 "carryOver": {
@@ -18576,6 +18732,18 @@ export const vi: TLocale = {
                 "save": "Lưu",
                 "toast": {
                     "saved": "Đã lưu cài đặt quy tắc ngày nghỉ."
+                },
+                "sync": {
+                    "loading": "Đang tải cài đặt chung của khoa.",
+                    "loadFailed": "Không thể tải cài đặt. Vui lòng thử lại.",
+                    "retry": "Thử lại",
+                    "shared": "Cài đặt đã lưu được dùng chung cho mọi quản trị viên và thiết bị của khoa.",
+                    "legacyHint": "Trình duyệt này có cài đặt cũ. Hãy nhập, kiểm tra quốc gia ngày lễ rồi lưu.",
+                    "importLegacy": "Nhập cài đặt cũ",
+                    "conflict": "Quản trị viên khác đã đổi cài đặt. Hãy tải bản mới nhất rồi chỉnh sửa lại. Thay đổi của bạn chưa được lưu.",
+                    "reload": "Bỏ chỉnh sửa và tải cài đặt mới nhất",
+                    "saveFailed": "Không thể lưu. Nội dung chỉnh sửa vẫn được giữ, vui lòng thử lại.",
+                    "saving": "Đang lưu…"
                 }
             }
         }

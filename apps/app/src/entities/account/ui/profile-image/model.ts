@@ -3,41 +3,23 @@ export type TProfileImageValue = {
     defaultProfileImgId?: number;
 };
 
-type TGetProfileImageSourcesArgs = {
-    profileImg?: TProfileImageValue;
-    imageBaseUrl?: string;
-};
+export const DEFAULT_PROFILE_IMAGE_URL = '/img/default-profile-20260920.png';
+const DEFAULT_PROFILE_IMAGE_PATH = /\/(?:profile_img\/default|images\/default)\/profile\d+\.png$/;
 
-const DEFAULT_PROFILE_IMG_ID = 1;
-const normalizeSource = (source?: string) => {
-    const trimmedSource = source?.trim();
+export const getProfileImageSources = ({profileImg}: {profileImg?: TProfileImageValue}): string[] => {
+    const source = profileImg?.profileImgUrl?.trim();
 
-    return trimmedSource === '' ? undefined : trimmedSource;
-};
-const getDefaultProfileImageSource = ({defaultProfileImgId, imageBaseUrl}: {defaultProfileImgId?: number; imageBaseUrl?: string}) => {
-    if (defaultProfileImgId === undefined || defaultProfileImgId < 1) return undefined;
+    if (!source || source === DEFAULT_PROFILE_IMAGE_URL) return [DEFAULT_PROFILE_IMAGE_URL];
 
-    const normalizedImageBaseUrl = normalizeSource(imageBaseUrl);
+    try {
+        const {pathname} = new URL(source, 'https://app.dutying.ai');
 
-    if (!normalizedImageBaseUrl) return undefined;
+        if (DEFAULT_PROFILE_IMAGE_PATH.test(pathname)) return [DEFAULT_PROFILE_IMAGE_URL];
+    } catch {
+        // Let the image error handler fall back when an uploaded URL is invalid.
+    }
 
-    return `${normalizedImageBaseUrl}/profile_img/default/profile${defaultProfileImgId}.png`;
-};
-
-export const getProfileImageSources = ({profileImg, imageBaseUrl}: TGetProfileImageSourcesArgs): string[] => {
-    const explicitProfileImage = normalizeSource(profileImg?.profileImgUrl);
-    const selectedDefaultImage = getDefaultProfileImageSource({
-        defaultProfileImgId: profileImg?.defaultProfileImgId,
-        imageBaseUrl,
-    });
-    const fallbackDefaultImage = getDefaultProfileImageSource({
-        defaultProfileImgId: DEFAULT_PROFILE_IMG_ID,
-        imageBaseUrl,
-    });
-
-    return [explicitProfileImage, selectedDefaultImage, fallbackDefaultImage].filter((source, index, sources): source is string => {
-        return Boolean(source) && sources.indexOf(source) === index;
-    });
+    return [source, DEFAULT_PROFILE_IMAGE_URL];
 };
 
 export const getProfileImageFallbackText = (name?: string) => {

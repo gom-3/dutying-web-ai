@@ -153,6 +153,99 @@ describe('MakeShiftCalendar', () => {
         expect(header?.querySelector('.bg-gray-6')).toBeInTheDocument();
     });
 
+    it('expands each group independently and counts only its current worker assignments', async () => {
+        const user = userEvent.setup();
+        const baseRow = shift.divisionShiftNurses[1]![0]!;
+        const groupedShift: TShift = {
+            ...shift,
+            divisionShiftNurses: [
+                [],
+                [{...baseRow, shiftNurse: {...baseRow.shiftNurse, divisionName: 'A팀'}}],
+                [{...baseRow, shiftNurse: {...baseRow.shiftNurse, shiftNurseId: 3, divisionNum: 2, divisionName: 'B팀'}}],
+                [],
+            ],
+        };
+        const groupedDoc: TDutyDoc = {
+            ...doc,
+            // Document order intentionally differs from group order.
+            rows: [
+                {...doc.rows[0]!, workerId: '3', cells: ['D', 'D']},
+                {...doc.rows[0]!, cells: [null, 'D']},
+                {...doc.rows[0]!, workerId: '4', cells: ['D', 'D']},
+            ],
+        };
+        const props = {shift: groupedShift, doc: groupedDoc, violationMap: new Map(), showFaults: false, showDivisionStatistics: true};
+        const editorKeyDown = vi.fn();
+        const renderCalendar = (calendarDoc: TDutyDoc) => (
+            <div onKeyDown={editorKeyDown}>
+                <MakeShiftCalendar {...props} doc={calendarDoc} />
+            </div>
+        );
+        const {container, rerender} = render(renderCalendar(groupedDoc));
+        const firstToggle = screen.getByRole('button', {name: 'A팀 근무 통계'});
+        const secondToggle = screen.getByRole('button', {name: 'B팀 근무 통계'});
+        const getCounts = (root: Element) =>
+            Array.from(root.querySelectorAll('.make-shift-daily-summary__cell'), (cell) => cell.textContent);
+        const getGroupCounts = (toggle: HTMLElement) => getCounts(document.getElementById(toggle.getAttribute('aria-controls')!)!);
+        const overall = container.querySelector('.make-shift-calendar > .make-shift-daily-summary')!;
+
+        expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(secondToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(container.querySelectorAll('.make-shift-daily-summary')).toHaveLength(1);
+        expect(getCounts(overall)).toEqual(['2', '3']);
+
+        const divider = container.querySelector('.make-shift-calendar__overall-statistics-divider');
+
+        expect(container.querySelectorAll('.make-shift-calendar__overall-statistics-divider')).toHaveLength(1);
+        expect(divider).toHaveClass('h-0', 'opacity-0');
+        expect(screen.queryByText('전체 근무 통계')).not.toBeInTheDocument();
+
+        await user.click(firstToggle);
+        expect(firstToggle).toHaveAttribute('aria-expanded', 'true');
+        expect(secondToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(getGroupCounts(firstToggle)).toEqual(['0', '1']);
+        expect(divider).toHaveClass('h-0', 'opacity-0');
+        expect(getCounts(overall)).toEqual(['2', '3']);
+
+        await user.click(secondToggle);
+        expect(divider).toHaveClass('h-px', 'opacity-100');
+        expect(getGroupCounts(secondToggle)).toEqual(['1', '1']);
+        expect(container.querySelectorAll('.make-shift-calendar__row-summary')).toHaveLength(2);
+
+        rerender(
+            renderCalendar({
+                ...groupedDoc,
+                rows: groupedDoc.rows.map((row) => (row.workerId === '2' ? {...row, cells: ['D', null]} : row)),
+            }),
+        );
+        expect(getGroupCounts(firstToggle)).toEqual(['1', '0']);
+        expect(getGroupCounts(secondToggle)).toEqual(['1', '1']);
+        expect(getCounts(overall)).toEqual(['3', '2']);
+
+        firstToggle.focus();
+        await user.keyboard('{Enter}');
+        expect(firstToggle).toHaveAttribute('aria-expanded', 'false');
+        expect(secondToggle).toHaveAttribute('aria-expanded', 'true');
+        expect(getGroupCounts(firstToggle)).toEqual([]);
+        expect(editorKeyDown).not.toHaveBeenCalled();
+        expect(divider).toHaveClass('h-px', 'opacity-100');
+
+        await user.click(secondToggle);
+        expect(divider).toHaveClass('h-0', 'opacity-0');
+        expect(overall).toBeVisible();
+    });
+
+    it('does not add group statistics to other calendars or simplified and static previews', () => {
+        const props = {shift, doc, violationMap: new Map(), showFaults: false};
+        const {container, rerender} = render(<MakeShiftCalendar {...props} />);
+
+        expect(container.querySelector('.make-shift-calendar__division-statistics')).not.toBeInTheDocument();
+        rerender(<MakeShiftCalendar {...props} showDivisionStatistics variant="simplified" />);
+        expect(container.querySelector('.make-shift-calendar__division-statistics')).not.toBeInTheDocument();
+        rerender(<MakeShiftCalendar {...props} showDivisionStatistics staticPreview />);
+        expect(container.querySelector('.make-shift-calendar__division-statistics')).not.toBeInTheDocument();
+    });
+
     it('shares one summary width across the header, rows, and daily footer', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
 

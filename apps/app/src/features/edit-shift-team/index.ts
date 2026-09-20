@@ -10,13 +10,13 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
+import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const TEMP_NURSE_ID_BASE = -1_000_000;
 const DUMMY_PHONE_NUM = '01000000000';
-const LEGACY_NEW_NURSE_PREFIX = '\uC2E0\uADDC\uAC04\uD638\uC0AC';
 const DEFAULT_NURSE_SHIFT_RATIO_WEIGHT = 7;
 
 export type TUpdateNurseShiftMeta = {
@@ -64,23 +64,6 @@ const toOptionalBirthDate = (birthDate: string | null | undefined) => {
 };
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
-const getNextNewNurseName = (names: string[], prefix: string) => {
-    const usedNumbers = names
-        .map((name) => {
-            const matchedPrefix = [prefix, LEGACY_NEW_NURSE_PREFIX].find((candidate) => name.startsWith(candidate));
-
-            if (!matchedPrefix) return null;
-
-            const suffix = name.slice(matchedPrefix.length).trim();
-            const parsed = Number.parseInt(suffix, 10);
-
-            return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-        })
-        .filter((value): value is number => value != null);
-    const nextNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
-
-    return `${prefix}${nextNumber}`;
-};
 const canCreateNurse = (nurse: TUpdateNurseDTO) => (nurse.name ?? '').trim().length > 0;
 
 type TShiftTeamNurse = TWard['shiftTeams'][number]['nurses'][number];
@@ -271,7 +254,7 @@ const useEditShiftTeam = () => {
                 const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? effectiveWard;
                 const targetShiftTeam = currentWard?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
                 const nextName = getNextNewNurseName(
-                    (targetShiftTeam?.nurses ?? []).map((nurse) => nurse.name.trim()),
+                    (currentWard?.shiftTeams ?? []).flatMap((shiftTeam) => shiftTeam.nurses.map((nurse) => nurse.name)),
                     t('feature.editShiftTeam.newNursePrefix'),
                 );
                 const createdNurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
