@@ -102,7 +102,7 @@ export const ko = {
             "disconnectFailed": "연동을 끊지 못했어요.",
             "disconnectSuccess": "연동을 끊었어요.",
             "moveNurseFailed": "간호사를 이동하지 못했어요.",
-            "newNursePrefix": "신규간호사",
+            "newNursePrefix": "신규 간호사",
             "updateNurseFailed": "간호사 정보를 수정하지 못했어요.",
             "updateNurseShiftFailed": "가능한 근무 유형을 저장하지 못했어요."
         },
