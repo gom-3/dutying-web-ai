@@ -11,7 +11,6 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TCreateAccountProfileDTO, useCreateAccount} from '@/features/account/model';
 import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
-import {RandomIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     DEFAULT_PREFERRED_LANGUAGE,
@@ -122,7 +121,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const phoneNumField = register('phoneNum');
     const isSocialMode = mode === 'social';
     const watchName = watch('name');
-    const {profileImg, setRandomImage, setPhotoImage} = useProfileImage(
+    const {profileImg, setPhotoImage} = useProfileImage(
         accountMe?.status === 'WARD_SELECT_PENDING' && accountMe.profileImgUrl
             ? {profileImgUrl: accountMe.profileImgUrl}
             : {defaultProfileImgId: 1},
@@ -231,15 +230,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                         <ProfileImage name={watchName} profileImg={profileImg} className="h-full w-full" />
                     </div>
                     <div className="flex items-center gap-1">
-                        <button
-                            type="button"
-                            className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                            onClick={setRandomImage}
-                            aria-label={t('page.register.nurse.randomAvatar')}
-                            title={t('page.register.nurse.randomAvatar')}
-                        >
-                            <RandomIcon className="h-4 w-4" />
-                        </button>
                         <button
                             type="button"
                             className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
