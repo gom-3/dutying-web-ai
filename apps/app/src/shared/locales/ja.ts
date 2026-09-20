@@ -2109,7 +2109,7 @@ export const ja: TLocale = {
         },
         auth: {
             ...en.feature.auth,
-            documentTitle: 'Dutying',
+            documentTitle: '看護師の勤務表作成、AIでわずか1分 | Dutying',
             sessionExpired: 'ログイン時間が終了しました。もう一度ログインしてください。',
             state: {
                 loadingTitle: 'ログイン状態を確認しています',
