@@ -306,6 +306,20 @@ function NurseDetailPanel({
     }, [manualShiftRatioBaselineWeights, manualShiftRatioWeightKeys, shiftTypeOptions]);
     const isDirty = hasNurseChanges(savedNurseBaseline, writeNurse) || hasManualShiftRatioWeightChanges;
 
+    // Inline edits in the nurse list are saved through the shared context. Keep an open
+    // detail panel in step, but never replace an unsaved draft with a background update.
+    useEffect(() => {
+        if (!selectedNurse || !savedNurseBaseline || !writeNurse || isDirty || isSavingDraft) return;
+        if (selectedNurse.nurseId !== savedNurseBaseline.nurseId) return;
+
+        const nextNurse = normalizeNurseRoleFields(selectedNurse);
+
+        if (!hasNurseChanges(savedNurseBaseline, nextNurse)) return;
+
+        setSavedNurseBaseline(nextNurse);
+        setWriteNurse(nextNurse);
+    }, [selectedNurse, savedNurseBaseline, writeNurse, isDirty, isSavingDraft]);
+
     useEffect(() => {
         setNurseDraftDirty(isDirty);
     }, [isDirty, setNurseDraftDirty]);
