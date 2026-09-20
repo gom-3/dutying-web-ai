@@ -87,7 +87,7 @@ describe('OnboardingWardCreatePage model', () => {
         );
 
         expect(teamDraft.teams[teamDraft.teams.length - 1]?.name).toBe('Localized Team 4');
-        expect(nurseDraft.nurses[nurseDraft.nurses.length - 1]?.name).toBe('Localized Nurse 5');
+        expect(nurseDraft.nurses[nurseDraft.nurses.length - 1]?.name).toBe('Localized Nurse 1');
         expect(uploadedDraft.teams.map((team) => team.name)).toEqual(['Localized Team 1']);
     });
 

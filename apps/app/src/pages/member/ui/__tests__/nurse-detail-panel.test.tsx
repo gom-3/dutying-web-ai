@@ -118,9 +118,10 @@ describe('NurseDetailPanel', () => {
         const original = createNurse();
         const {rerender} = renderPanel(original);
         const refresh = (selectedNurse: TNurse) => {
+            const current = mockUseEditShiftTeam.mock.results[mockUseEditShiftTeam.mock.results.length - 1]?.value;
             mockUseEditShiftTeam.mockReturnValue({
-                ...mockUseEditShiftTeam.mock.results.at(-1)?.value,
-                state: {...mockUseEditShiftTeam.mock.results.at(-1)?.value.state, selectedNurse},
+                ...current,
+                state: {...current.state, selectedNurse},
             });
             rerender(
                 <NurseDetailPanel onClose={vi.fn()} onOpenWardCodeGuide={vi.fn()} shiftTeams={[]}
