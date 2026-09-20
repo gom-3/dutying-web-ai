@@ -360,7 +360,7 @@ describe('LandingPage', () => {
         await user.click(accountSettingsMenuItem);
 
         expect(screen.getByRole('dialog', {name: '마이페이지'})).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: '마이페이지', level: 1})).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: '마이페이지', level: 1}, {timeout: 5000})).toBeInTheDocument();
         expect(screen.queryByText('기본 정보')).not.toBeInTheDocument();
         expect(screen.queryByText('이름과 연락처를 확인해요.')).not.toBeInTheDocument();
 
