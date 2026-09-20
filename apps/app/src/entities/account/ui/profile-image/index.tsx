@@ -1,7 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {useEffect, useState} from 'react';
 import {PersonIcon} from '@/shared/assets/svg';
-import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getProfileImageFallbackText, getProfileImageSources, type TProfileImageValue} from './model';
 
@@ -13,23 +12,24 @@ interface IProfileImageProps
 
 export const ProfileImage = ({profileImg, name, className, alt, onError, ...props}: IProfileImageProps) => {
     const {t} = useTypedTranslation();
-    const imageBaseUrl = RUNTIME_CONFIG.profileImageBaseUrl();
     const [failedSources, setFailedSources] = useState<string[]>([]);
-    const imageSources = getProfileImageSources({profileImg, imageBaseUrl});
+    const imageSources = getProfileImageSources({profileImg});
     const currentSource = imageSources.find((source) => !failedSources.includes(source));
-    const accessibleAlt = alt ?? t('entity.account.profileImageAlt', {name: name?.trim() || t('entity.account.userFallback')});
+    const trimmedName = name?.trim();
+    const accessibleName = trimmedName?.length ? trimmedName : t('entity.account.userFallback');
+    const accessibleAlt = alt ?? t('entity.account.profileImageAlt', {name: accessibleName});
     const fallbackText = getProfileImageFallbackText(name);
 
     useEffect(() => {
         setFailedSources([]);
-    }, [imageBaseUrl, profileImg?.defaultProfileImgId, profileImg?.profileImgUrl]);
+    }, [profileImg?.defaultProfileImgId, profileImg?.profileImgUrl]);
 
     if (!currentSource) {
         return (
             <div
                 role="img"
                 aria-label={accessibleAlt}
-                className={cn('flex items-center justify-center rounded-full bg-sub-3 text-white', className)}
+                className={cn('flex items-center justify-center rounded-full text-sub-3', className)}
             >
                 {fallbackText ? (
                     <span className="font-apple text-[clamp(1.125rem,3vw,2.5rem)] font-semibold">{fallbackText}</span>

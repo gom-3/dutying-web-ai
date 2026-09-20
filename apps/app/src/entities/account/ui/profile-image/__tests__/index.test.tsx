@@ -4,12 +4,6 @@ import i18n from '@/i18n';
 import {render, screen} from '@/shared/util/test-utils';
 import {ProfileImage} from '..';
 
-vi.mock('@/shared/config/runtime', () => ({
-    RUNTIME_CONFIG: {
-        profileImageBaseUrl: () => 'https://cdn.example.com',
-    },
-}));
-
 describe('ProfileImage', () => {
     beforeEach(async () => {
         await i18n.changeLanguage('ko');
@@ -34,10 +28,7 @@ describe('ProfileImage', () => {
 
         fireEvent.error(image);
 
-        expect(screen.getByRole('img', {name: '홍길동 프로필 이미지'})).toHaveAttribute(
-            'src',
-            'https://cdn.example.com/profile_img/default/profile2.png',
-        );
+        expect(screen.getByRole('img', {name: '홍길동 프로필 이미지'})).toHaveAttribute('src', '/img/default-profile-20260920.png');
     });
 
     it('모든 이미지 소스가 실패하면 이니셜 placeholder를 보여준다', () => {

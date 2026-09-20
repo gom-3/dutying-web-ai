@@ -112,6 +112,29 @@ const normalizeMarketingPath = (value: string) => {
 const getMarketingPage = (path: string) => marketingPages.find((page) => page.path === normalizeMarketingPath(path)) ?? koreanMarketingPage;
 const getCanonicalUrl = (appSiteUrl: string, path: string) => (path === '/' ? `${appSiteUrl}/` : `${appSiteUrl}${path}`);
 const getMarketingHeading = (page: TMarketingPage) => page.title.split(' | ')[0] ?? page.title;
+const getOgImageMetadata = (page: TMarketingPage) => {
+    if (page.language === 'ko') {
+        return {
+            path: '/img/og-image-preview222.png',
+            width: 1200,
+            height: 630,
+        };
+    }
+
+    if (page.language === 'ja') {
+        return {
+            path: '/img/landing-hero-ja-2026.png',
+            width: 1672,
+            height: 941,
+        };
+    }
+
+    return {
+        path: '/img/landing-hero-en-2026.png',
+        width: 1672,
+        height: 941,
+    };
+};
 const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
     const canonicalUrl = getCanonicalUrl(appSiteUrl, page.path);
 
@@ -152,7 +175,8 @@ const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
 const createMarketingSeoBlock = (page: TMarketingPage, appSiteUrl: string, robots: string) => {
     const canonicalUrl = getCanonicalUrl(appSiteUrl, page.path);
     const alternatePages = marketingPages.filter((alternatePage) => alternatePage.language !== page.language);
-    const ogImageUrl = `${appSiteUrl}/img/og-image-preview222.png`;
+    const ogImage = getOgImageMetadata(page);
+    const ogImageUrl = `${appSiteUrl}${ogImage.path}`;
     const structuredData = JSON.stringify(createStructuredData(page, appSiteUrl)).replace(/</g, '\\u003c');
 
     return `<!-- MARKETING_SEO_START -->
@@ -176,8 +200,8 @@ ${alternatePages.map((alternatePage) => `        <meta property="og:locale:alter
         <meta property="og:title" content="${escapeHtml(page.title)}" />
         <meta property="og:description" content="${escapeHtml(page.description)}" />
         <meta property="og:image" content="${ogImageUrl}" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
+        <meta property="og:image:width" content="${ogImage.width}" />
+        <meta property="og:image:height" content="${ogImage.height}" />
         <meta property="og:image:alt" content="${escapeHtml(page.imageAlt)}" />
 
         <meta property="twitter:card" content="summary_large_image" />

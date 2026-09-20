@@ -11,6 +11,7 @@ import useEditShiftTeam from '@/features/edit-shift-team';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
+import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -304,6 +305,21 @@ function NurseDetailPanel({
         });
     }, [manualShiftRatioBaselineWeights, manualShiftRatioWeightKeys, shiftTypeOptions]);
     const isDirty = hasNurseChanges(savedNurseBaseline, writeNurse) || hasManualShiftRatioWeightChanges;
+
+    // Inline edits in the nurse list are saved through the shared context. Keep an open
+    // detail panel in step, but never replace an unsaved draft with a background update.
+    useEffect(() => {
+        if (!selectedNurse || !savedNurseBaseline || !writeNurse || isDirty || isSavingDraft) return;
+
+        if (selectedNurse.nurseId !== savedNurseBaseline.nurseId) return;
+
+        const nextNurse = normalizeNurseRoleFields(selectedNurse);
+
+        if (!hasNurseChanges(savedNurseBaseline, nextNurse)) return;
+
+        setSavedNurseBaseline(nextNurse);
+        setWriteNurse(nextNurse);
+    }, [selectedNurse, savedNurseBaseline, writeNurse, isDirty, isSavingDraft]);
 
     useEffect(() => {
         setNurseDraftDirty(isDirty);
@@ -717,7 +733,7 @@ function NurseDetailPanel({
                                 autoFocus
                                 disabled={isBusy}
                                 name="nurseName"
-                                maxLength={30}
+                                maxLength={NURSE_NAME_MAX_LENGTH}
                                 placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
                                 className={cn(
                                     'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',

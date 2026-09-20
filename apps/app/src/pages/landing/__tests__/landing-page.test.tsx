@@ -126,6 +126,25 @@ describe('LandingPage', () => {
     });
 
     it.each([
+        ['ko', '/img/iPhone%2015_1.webp'],
+        ['ja', '/img/landing-mobile-hero-ja.png'],
+        ['en', '/img/landing-mobile-hero-en.png'],
+        ['zh', '/img/landing-mobile-hero-zh.png'],
+        ['th', '/img/landing-mobile-hero-en.png'],
+        ['vi', '/img/landing-mobile-hero-en.png'],
+    ])('uses the localized mobile hero image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        expect(document.querySelector(`source[srcset="${expectedSrc}"]`)).toHaveAttribute('media', '(max-width: 767px)');
+    });
+
+    it.each([
         ['ko', '/img/landing-work-schedule-2.webp'],
         ['ja', '/img/landing-work-schedule-jp.webp'],
         ['en', '/img/landing-work-schedule-en.webp'],
@@ -341,7 +360,7 @@ describe('LandingPage', () => {
         await user.click(accountSettingsMenuItem);
 
         expect(screen.getByRole('dialog', {name: '마이페이지'})).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: '마이페이지', level: 1})).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: '마이페이지', level: 1}, {timeout: 5000})).toBeInTheDocument();
         expect(screen.queryByText('기본 정보')).not.toBeInTheDocument();
         expect(screen.queryByText('이름과 연락처를 확인해요.')).not.toBeInTheDocument();
 

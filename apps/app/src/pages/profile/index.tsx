@@ -13,7 +13,7 @@ import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useProfileImage from '@/features/file';
-import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
+import {CameraIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -192,7 +192,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
     const [confirmAction, setConfirmAction] = useState<TConfirmAction | null>(null);
-    const {profileImg, isLoading: isProfileImageLoading, setRandomImage, setPhotoImage, resetProfileImage} = useProfileImage();
+    const {profileImg, isLoading: isProfileImageLoading, setPhotoImage, resetProfileImage} = useProfileImage();
     const wardQuery = useQuery({
         ...wardQueryOptions.id(accountMe?.wardId ?? 0),
         enabled: Boolean(accountMe?.wardId),
@@ -501,7 +501,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const basicInfoSectionClassName = isModalLayout
         ? 'rounded-none border-0 border-t border-[#F2F4F6] bg-white px-0 pt-6 pb-0'
         : 'rounded-[24px] border-transparent p-6';
-    const profileImageFrameClassName = cn('shrink-0 rounded-full bg-[#F2F4F6]', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
+    const profileImageFrameClassName = cn('shrink-0 rounded-full', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
     const profileImageButtonClassName = cn(
         'rounded-full text-[#6B7684] hover:bg-[#E5E8EB] hover:text-[#333D4B]',
         isModalLayout ? 'h-9 w-9 bg-[#F2F4F6]' : 'h-9 w-9 bg-gray-7',
@@ -613,18 +613,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                             <p className="mt-0.5 truncate font-apple text-[13px] leading-5 text-[#8B95A1]">{accountMe.email}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className={profileImageButtonClassName}
-                                onClick={setRandomImage}
-                                disabled={isProfileImageLoading}
-                                aria-label={t('page.profile.randomAvatar')}
-                                title={t('page.profile.randomAvatar')}
-                            >
-                                <RandomIcon className="h-4 w-4" />
-                            </Button>
                             <Button
                                 type="button"
                                 variant="ghost"

@@ -246,7 +246,7 @@ describe('useEditShiftTeam', () => {
             nurseId: 22,
             shiftTeamId: 10,
             wardId: 1,
-            name: '신규간호사1',
+            name: '신규 간호사 1',
             gender: '여',
             isWorker: true,
             employmentDate: '',
@@ -262,7 +262,7 @@ describe('useEditShiftTeam', () => {
         });
 
         expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
-            name: '신규간호사1',
+            name: '신규 간호사 1',
             isWorker: true,
             isWardManager: false,
             isPreceptor: false,
@@ -274,7 +274,7 @@ describe('useEditShiftTeam', () => {
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
         expect(mockSetQueryData).toHaveBeenCalledWith(['ward', 'shiftTeamNurses', 1, 10], expect.any(Function));
         expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['ward', 'shiftTeamNurses', 1]});
-        expect(mockToastSuccess).toHaveBeenCalledWith('신규간호사1를 추가했어요.', {
+        expect(mockToastSuccess).toHaveBeenCalledWith('신규 간호사 1를 추가했어요.', {
             position: 'bottom-center',
         });
     });

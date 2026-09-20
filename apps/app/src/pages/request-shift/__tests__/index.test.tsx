@@ -256,7 +256,7 @@ describe('RequestShiftPage', () => {
         const title = screen.getByRole('heading', {name: '간호사에게 듀팅 앱으로 신청근무를 받아보세요'});
         const description = screen.getByText('간호사가 앱에서 원하는 근무를 보내면 이곳에서 한 번에 확인할 수 있어요.');
 
-        expect(dialog).toHaveClass('overflow-y-auto');
+        expect(dialog).toHaveClass('overflow-x-hidden', 'overflow-y-auto', 'scrollbar-hide');
         expect(title).toHaveClass('whitespace-normal', 'break-normal', '[overflow-wrap:anywhere]', '[text-wrap:balance]');
         expect(title).not.toHaveClass('break-keep', 'sm:whitespace-nowrap');
         expect(description).toHaveClass('[overflow-wrap:anywhere]', '[text-wrap:pretty]');

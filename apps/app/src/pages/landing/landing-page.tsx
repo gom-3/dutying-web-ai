@@ -38,6 +38,14 @@ const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
     th: '/img/landing-hero-en.webp',
     vi: '/img/landing-hero-en.webp',
 };
+const landingMobileHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+    ko: '/img/iPhone%2015_1.webp',
+    ja: '/img/landing-mobile-hero-ja.png',
+    en: '/img/landing-mobile-hero-en.png',
+    zh: '/img/landing-mobile-hero-zh.png',
+    th: '/img/landing-mobile-hero-en.png',
+    vi: '/img/landing-mobile-hero-en.png',
+};
 const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
     ko: '/img/landing-work-schedule-2.webp',
     ja: '/img/landing-work-schedule-jp.webp',
@@ -281,6 +289,12 @@ function getLandingHeroImageSrc(language?: string | null) {
     const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
 
     return landingHeroImageByLanguage[normalizedLanguage];
+}
+
+function getLandingMobileHeroImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+
+    return landingMobileHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWorkScheduleImageSrc(language?: string | null) {
@@ -1170,6 +1184,8 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
 
 function MobileAppLanding() {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const mobileHeroImageSrc = getLandingMobileHeroImageSrc(i18n.resolvedLanguage ?? i18n.language);
     const mobileHeroPhrases = buildMobileHeroPhrases(t);
     const mobileAppBenefits = mobileAppBenefitSpecs.map((benefit) => ({
         ...benefit,
@@ -1211,7 +1227,7 @@ function MobileAppLanding() {
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none mt-auto flex min-h-[310px] items-end justify-center pt-8">
                         <img
-                            src="/img/iPhone 15_1.webp"
+                            src={mobileHeroImageSrc}
                             alt={t('page.landing.imageAlt.mobileHero')}
                             decoding="async"
                             className="w-[118%] max-w-[500px] -translate-x-3 object-contain"
@@ -1299,6 +1315,7 @@ function LandingPage() {
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
     const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
     const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
+    const mobileHeroImageSrc = getLandingMobileHeroImageSrc(currentLanguage);
     const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
     const appSectionImageSrc = getLandingAppSectionImageSrc(currentLanguage);
     const normalizedCurrentLanguage = normalizePreferredLanguage(currentLanguage) ?? 'en';
@@ -1368,6 +1385,7 @@ function LandingPage() {
                     </div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end">
+                        <source media="(max-width: 767px)" srcSet={mobileHeroImageSrc} width="1343" height="1171" />
                         <img
                             src={heroImageSrc}
                             alt={t('page.landing.imageAlt.webSchedule')}

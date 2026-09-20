@@ -114,6 +114,49 @@ describe('NurseDetailPanel', () => {
         mockUseEditShiftTeam.mockReset();
     });
 
+    it('reflects a saved inline role change without replacing an unsaved detail draft', async () => {
+        const original = createNurse();
+        const {rerender} = renderPanel(original);
+        const refresh = (selectedNurse: TNurse) => {
+            const current = mockUseEditShiftTeam.mock.results[mockUseEditShiftTeam.mock.results.length - 1]?.value;
+
+            mockUseEditShiftTeam.mockReturnValue({
+                ...current,
+                state: {...current.state, selectedNurse},
+            });
+            rerender(
+                <NurseDetailPanel
+                    onClose={vi.fn()}
+                    onOpenWardCodeGuide={vi.fn()}
+                    shiftTeams={[]}
+                    onMoveShiftTeam={vi.fn()}
+                    wardShiftTypes={[]}
+                />,
+            );
+        };
+
+        refresh(createNurse({isPreceptor: true}));
+        await waitFor(() => expect(screen.getByRole('checkbox', {name: '김듀티 프리셉터'})).toHaveAttribute('aria-checked', 'true'));
+
+        fireEvent.change(screen.getByDisplayValue('김듀티'), {target: {value: '수정 중'}});
+        refresh(createNurse({isPreceptor: false}));
+        expect(screen.getByDisplayValue('수정 중')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', {name: '수정 중 프리셉터'})).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full English name %s', async (name) => {
+        const {saveNurseDetails} = renderPanel(createNurse());
+        const nameInput = screen.getByDisplayValue('김듀티');
+
+        expect(nameInput).toHaveAttribute('maxlength', '50');
+        fireEvent.change(nameInput, {target: {value: name}});
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() =>
+            expect(saveNurseDetails).toHaveBeenCalledWith(101, expect.objectContaining({nurse: expect.objectContaining({name})})),
+        );
+    });
+
     it('lets a connected nurse birthDate be edited and sends it in the nurse patch payload', async () => {
         const {saveNurseDetails} = renderPanel(createNurse({birthDate: null}));
         const birthDateInput = screen.getByLabelText('생년월일');

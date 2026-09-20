@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {type DraggableProvided, type DropResult, DragDropContext, Draggable, Droppable} from '@hello-pangea/dnd';
-import {Pin} from 'lucide-react';
+import {ChevronDown, Pin} from 'lucide-react';
 import {
     type CSSProperties,
     type MouseEvent as ReactMouseEvent,
@@ -8,6 +8,7 @@ import {
     type ReactNode,
     useCallback,
     useEffect,
+    useId,
     useMemo,
     useRef,
     useState,
@@ -96,6 +97,8 @@ type TMakeShiftCalendarProps = {
     rowReorderDisabled?: boolean;
     onRowDragEnd?: (result: DropResult) => void;
     showDivisionHeaders?: boolean;
+    /** 각 그룹 아래에 기본적으로 접힌 일자별 근무 통계를 표시한다. */
+    showDivisionStatistics?: boolean;
     divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
     rowNameClassName?: string;
     rowGapClassName?: string;
@@ -1218,6 +1221,7 @@ export function MakeShiftCalendar({
     rowReorderDisabled = false,
     onRowDragEnd,
     showDivisionHeaders = false,
+    showDivisionStatistics = false,
     divisionLabelByNum,
     rowNameClassName,
     rowGapClassName,
@@ -1614,6 +1618,10 @@ export function MakeShiftCalendar({
         : getLeftGridTemplateColumns(nameColumnWidth, showCarryColumn, showDragHandleColumn);
     const shimmerInsetLeft = getShimmerInsetLeft(nameColumnWidth, isSimplified, showCarryColumn, showDragHandleColumn);
     const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn);
+    const lastVisibleDivisionLevel = shift.divisionShiftNurses.reduce(
+        (lastLevel, division, level) => (division.some((row) => row.shiftNurse.isWorker) ? level : lastLevel),
+        -1,
+    );
 
     let didAssignTutorialCell = false;
 
@@ -2041,6 +2049,26 @@ export function MakeShiftCalendar({
                                         </div>
                                     )}
                                 </div>
+                                {showDivisionStatistics && !isSimplified && !staticPreview && hasSummaryShiftTypes && (
+                                    <DivisionDailySummary
+                                        key={divisionNum}
+                                        divisionLabel={divisionLabel}
+                                        separateOverallStatistics={level === lastVisibleDivisionLevel}
+                                        doc={doc}
+                                        rows={rows.flatMap((row) => {
+                                            const entry = workerRowMap.get(String(row.shiftNurse.shiftNurseId));
+
+                                            return entry ? [entry.row] : [];
+                                        })}
+                                        shortNameToType={shortNameToType}
+                                        summaryShiftTypes={summaryShiftTypes}
+                                        leftGridTemplateColumns={leftGridTemplateColumns}
+                                        showCarryColumn={showCarryColumn}
+                                        showDragHandleColumn={showDragHandleColumn}
+                                        showRestCheckColumn={showRestCheckColumn}
+                                        summaryGridWidth={summaryGridWidth}
+                                    />
+                                )}
                             </div>
                         );
                     })}
@@ -2785,8 +2813,47 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
     );
 }
 
+function DivisionDailySummary({
+    divisionLabel,
+    separateOverallStatistics,
+    ...summaryProps
+}: Parameters<typeof DailySummary>[0] & {divisionLabel: string; separateOverallStatistics: boolean}) {
+    const {t} = useTypedTranslation();
+    const [expanded, setExpanded] = useState(false);
+    const contentId = useId();
+
+    return (
+        <div className="make-shift-calendar__division-statistics mt-1 flex min-w-0 flex-col pb-1">
+            <button
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={contentId}
+                onClick={() => setExpanded((previous) => !previous)}
+                onKeyDown={(event) => event.stopPropagation()}
+                className="inline-flex max-w-full items-center gap-1 self-end rounded-md px-1 py-1 font-apple text-[12px] font-medium text-gray-4 transition-colors hover:bg-gray-7 hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1"
+            >
+                <ChevronDown aria-hidden="true" className={cn('size-3 shrink-0 transition-transform', expanded && 'rotate-180')} />
+                <span className="truncate">{t('page.makeShift.calendar.groupStatistics', {group: divisionLabel})}</span>
+            </button>
+            <div id={contentId} hidden={!expanded}>
+                {expanded && <DailySummary {...summaryProps} />}
+            </div>
+            {separateOverallStatistics && (
+                <div
+                    aria-hidden="true"
+                    className={cn(
+                        'make-shift-calendar__overall-statistics-divider shrink-0 bg-gray-6 transition-[height,margin,opacity] duration-300 ease-out motion-reduce:transition-none',
+                        expanded ? 'mt-4 mb-2 h-px opacity-100' : 'my-0 h-0 opacity-0',
+                    )}
+                />
+            )}
+        </div>
+    );
+}
+
 function DailySummary({
     doc,
+    rows = doc.rows,
     shortNameToType,
     summaryShiftTypes,
     leftGridTemplateColumns,
@@ -2796,6 +2863,7 @@ function DailySummary({
     summaryGridWidth,
 }: {
     doc: TDutyDoc;
+    rows?: TDutyDoc['rows'];
     shortNameToType: Map<string, TWardShiftType>;
     summaryShiftTypes: TWardShiftType[];
     leftGridTemplateColumns: string;
@@ -2805,7 +2873,7 @@ function DailySummary({
     summaryGridWidth: string;
 }) {
     const countByDay = (j: number, typeId: number) =>
-        doc.rows.filter((row) => {
+        rows.filter((row) => {
             const cell = row.cells[j] ?? null;
 
             if (!cell) return false;

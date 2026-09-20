@@ -1,5 +1,6 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
+import {getNextNewNurseNumber} from '@/shared/lib/new-nurse-name';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {
     getDefaultTimeRangeForRotation,
@@ -2158,7 +2159,10 @@ export const addNurseDraft = (
         return draft;
     }
 
-    const nurseNumber = draft.nurses.length + 1;
+    const nurseNumber = getNextNewNurseNumber(
+        draft.nurses.map((nurse) => nurse.name),
+        labels.newNurseName(1).replace(/\s*1$/, ''),
+    );
     const targetTeam = draft.teams.find((team) => team.id === teamId);
     const targetTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
     const lastDivisionNum =
