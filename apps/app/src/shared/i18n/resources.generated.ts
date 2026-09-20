@@ -1142,7 +1142,8 @@ export const ko = {
                 "violationLevel": {
                     "error": "중요",
                     "warning": "일반"
-                }
+                },
+                "groupStatistics": "{{group}} 근무 통계"
             },
             "confirmedShifts": {
                 "editAction": "수정하기",
@@ -4253,7 +4254,8 @@ export const en: TLocale = {
                 "violationLevel": {
                     "error": "Important",
                     "warning": "General"
-                }
+                },
+                "groupStatistics": "{{group}} shift statistics"
             },
             "confirmedShifts": {
                 "editAction": "Edit",
@@ -7362,7 +7364,8 @@ export const ja: TLocale = {
                 "violationLevel": {
                     "error": "重要",
                     "warning": "通常"
-                }
+                },
+                "groupStatistics": "{{group}}の勤務統計"
             },
             "confirmedShifts": {
                 "editAction": "編集する",
@@ -10471,7 +10474,8 @@ export const zh: TLocale = {
                 "violationLevel": {
                     "error": "重要性",
                     "warning": "常见的"
-                }
+                },
+                "groupStatistics": "{{group}}排班统计"
             },
             "confirmedShifts": {
                 "editAction": "编辑",
@@ -13580,7 +13584,8 @@ export const th: TLocale = {
                 "violationLevel": {
                     "error": "สำคัญ",
                     "warning": "ทั่วไป"
-                }
+                },
+                "groupStatistics": "สถิติเวรของ{{group}}"
             },
             "confirmedShifts": {
                 "editAction": "แก้ไข",
@@ -16689,7 +16694,8 @@ export const vi: TLocale = {
                 "violationLevel": {
                     "error": "Quan trọng",
                     "warning": "chung"
-                }
+                },
+                "groupStatistics": "Thống kê ca trực {{group}}"
             },
             "confirmedShifts": {
                 "editAction": "Chỉnh sửa",

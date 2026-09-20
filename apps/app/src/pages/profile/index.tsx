@@ -501,7 +501,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const basicInfoSectionClassName = isModalLayout
         ? 'rounded-none border-0 border-t border-[#F2F4F6] bg-white px-0 pt-6 pb-0'
         : 'rounded-[24px] border-transparent p-6';
-    const profileImageFrameClassName = cn('shrink-0 rounded-full bg-[#F2F4F6]', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
+    const profileImageFrameClassName = cn('shrink-0 rounded-full', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
     const profileImageButtonClassName = cn(
         'rounded-full text-[#6B7684] hover:bg-[#E5E8EB] hover:text-[#333D4B]',
         isModalLayout ? 'h-9 w-9 bg-[#F2F4F6]' : 'h-9 w-9 bg-gray-7',

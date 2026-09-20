@@ -1708,6 +1708,7 @@ export function AiAutofill() {
                             void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
                         }}
                         showDivisionHeaders
+                        showDivisionStatistics
                         divisionLabelByNum={divisionLabelByNum}
                         stickyHeader
                         restPolicyControl={

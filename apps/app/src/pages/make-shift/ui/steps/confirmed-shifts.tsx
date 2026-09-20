@@ -238,6 +238,7 @@ export function ConfirmedShifts() {
                                 disableInitialSelection
                                 restCheckByShiftNurseId={restCheckByShiftNurseId}
                                 showDivisionHeaders
+                                showDivisionStatistics
                                 divisionLabelByNum={divisionLabelByNum}
                                 stickyHeader
                             />
