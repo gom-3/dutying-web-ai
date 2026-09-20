@@ -11,6 +11,7 @@ const editConfirmedMock = vi.fn();
 const confirmedCalendarMock = vi.hoisted(() => ({
     props: null as {
         showDivisionHeaders?: boolean;
+        showDivisionStatistics?: boolean;
         divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
     } | null,
 }));
@@ -71,7 +72,7 @@ vi.mock('@/features/shift-editor', () => ({
 }));
 
 vi.mock('../shared/make-shift-calendar', () => ({
-    MakeShiftCalendar: (props: {showDivisionHeaders?: boolean; divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>}) => {
+    MakeShiftCalendar: (props: {showDivisionHeaders?: boolean; showDivisionStatistics?: boolean; divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>}) => {
         confirmedCalendarMock.props = props;
 
         return <div data-testid="confirmed-calendar" />;
@@ -196,6 +197,7 @@ describe('ConfirmedShifts', () => {
 
         expect(screen.getByTestId('confirmed-calendar')).toBeInTheDocument();
         expect(confirmedCalendarMock.props?.showDivisionHeaders).toBe(true);
+        expect(confirmedCalendarMock.props?.showDivisionStatistics).toBe(true);
         expect(confirmedCalendarMock.props?.divisionLabelByNum?.get(1)).toBe('나이트 전담');
     });
 
