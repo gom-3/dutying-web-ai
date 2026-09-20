@@ -4,6 +4,7 @@ export type TProfileImageValue = {
 };
 
 export const DEFAULT_PROFILE_IMAGE_URL = '/img/default-profile-20260920.png';
+
 const DEFAULT_PROFILE_IMAGE_PATH = /\/(?:profile_img\/default|images\/default)\/profile\d+\.png$/;
 
 export const getProfileImageSources = ({profileImg}: {profileImg?: TProfileImageValue}): string[] => {

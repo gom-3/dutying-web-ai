@@ -310,6 +310,7 @@ function NurseDetailPanel({
     // detail panel in step, but never replace an unsaved draft with a background update.
     useEffect(() => {
         if (!selectedNurse || !savedNurseBaseline || !writeNurse || isDirty || isSavingDraft) return;
+
         if (selectedNurse.nurseId !== savedNurseBaseline.nurseId) return;
 
         const nextNurse = normalizeNurseRoleFields(selectedNurse);

@@ -72,7 +72,11 @@ vi.mock('@/features/shift-editor', () => ({
 }));
 
 vi.mock('../shared/make-shift-calendar', () => ({
-    MakeShiftCalendar: (props: {showDivisionHeaders?: boolean; showDivisionStatistics?: boolean; divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>}) => {
+    MakeShiftCalendar: (props: {
+        showDivisionHeaders?: boolean;
+        showDivisionStatistics?: boolean;
+        divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
+    }) => {
         confirmedCalendarMock.props = props;
 
         return <div data-testid="confirmed-calendar" />;

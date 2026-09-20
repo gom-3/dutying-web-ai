@@ -10,8 +10,8 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
-import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
