@@ -1,8 +1,9 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, waitFor} from '@/shared/util/test-utils';
+import {act, render, screen, waitFor} from '@/shared/util/test-utils';
 import {NotAuthLayout} from '../not-auth-layout';
 
 vi.mock('@/features/auth', () => ({
@@ -14,6 +15,28 @@ const mockedUseAuth = vi.mocked(useAuth);
 describe('NotAuthLayout', () => {
     beforeEach(() => {
         mockedUseAuth.mockReset();
+    });
+
+    it('localizes the login title and updates it when the language changes', async () => {
+        mockedUseAuth.mockReturnValue({state: {isAuth: false, _loaded: true}} as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.LOGIN]}>
+                <Routes>
+                    <Route element={<NotAuthLayout />}>
+                        <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(document.title).toBe('간호사 근무표 만들기, AI로 1분 만에 | 듀팅'));
+
+        await act(async () => {
+            await i18n.changeLanguage('en');
+        });
+
+        await waitFor(() => expect(document.title).toBe('AI Nurse Shift Schedule Maker in 1 Minute | Dutying'));
     });
 
     it('redirects authenticated users to home instead of root', async () => {

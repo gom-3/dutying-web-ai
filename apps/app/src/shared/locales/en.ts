@@ -2557,7 +2557,7 @@ export const en: TLocale = {
             },
         },
         auth: {
-            documentTitle: 'Dutying',
+            documentTitle: 'AI Nurse Shift Schedule Maker in 1 Minute | Dutying',
             sessionExpired: 'Your login has expired. Please sign in again.',
             state: {
                 loadingTitle: 'Checking your sign-in status',

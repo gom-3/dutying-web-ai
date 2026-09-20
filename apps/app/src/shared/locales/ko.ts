@@ -2551,7 +2551,7 @@ export const ko = {
             },
         },
         auth: {
-            documentTitle: '듀팅 | Dutying',
+            documentTitle: '간호사 근무표 만들기, AI로 1분 만에 | 듀팅',
             sessionExpired: '로그인 시간이 끝났어요. 다시 로그인해 주세요.',
             state: {
                 loadingTitle: '로그인 상태를 확인하고 있어요',
