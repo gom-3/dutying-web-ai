@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
+import {resources} from '@/shared/i18n/resources.generated';
 import {getIndexedMarketingLanguageFromPath, getMarketingLanguageHref} from '../marketing-locale';
+import marketingPages from '../marketing-pages.json';
 
 describe('marketing locale routing', () => {
     it('maps indexed landing paths to their language', () => {
@@ -19,5 +21,13 @@ describe('marketing locale routing', () => {
         expect(getMarketingLanguageHref('zh')).toBe('/zh');
         expect(getMarketingLanguageHref('th')).toBe('/th');
         expect(getMarketingLanguageHref('vi')).toBe('/vi');
+    });
+
+    it('keeps product app titles identical to the localized landing titles', () => {
+        for (const page of marketingPages.pages) {
+            const language = page.language as keyof typeof resources;
+
+            expect(resources[language].translation.feature.auth.documentTitle).toBe(page.title);
+        }
     });
 });

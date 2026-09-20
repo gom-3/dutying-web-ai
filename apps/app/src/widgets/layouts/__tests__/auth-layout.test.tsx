@@ -1,11 +1,13 @@
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
-import type i18nDefault from '@/i18n';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import useInterval from '@/shared/util/useInterval';
 import {AuthLayout} from '../auth-layout';
+
+type TI18n = typeof i18n;
 
 vi.mock('@/features/auth', () => ({
     default: vi.fn(),
@@ -16,7 +18,7 @@ vi.mock('@/shared/util/useInterval', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<{default: typeof i18nDefault}>('@/i18n');
+    const {default: i18n} = await vi.importActual<{default: TI18n}>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -65,6 +67,29 @@ describe('AuthLayout', () => {
 
     afterEach(() => {
         vi.useRealTimers();
+    });
+
+    it.each([
+        ['ko', '간호사 근무표 만들기, AI로 1분 만에 | 듀팅'],
+        ['en', 'AI Nurse Shift Schedule Maker in 1 Minute | Dutying'],
+        ['ja', '看護師の勤務表作成、AIでわずか1分 | Dutying'],
+        ['zh', '护士排班表制作，AI 1分钟自动生成 | Dutying'],
+        ['th', 'สร้างตารางเวรพยาบาลด้วย AI ใน 1 นาที | Dutying'],
+        ['vi', 'Tạo lịch trực điều dưỡng bằng AI trong 1 phút | Dutying'],
+    ])('uses the %s landing title after login', async (language, expectedTitle) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.REGISTER]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(document.title).toBe(expectedTitle));
     });
 
     it('redirects unauthenticated users to login before rendering protected routes', async () => {
