@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dutying Web Release Verify"
+  short_description: "Safely verify the public web release and deployment"
+  default_prompt: "Use $dutying-web-release-verify to verify the current web release before declaring it live."
