@@ -748,13 +748,12 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByText('주말 공평은 아직 안 돼요. 이렇게 써 보세요: 주말 근무는 3번 이하로')).toBeInTheDocument();
         expect(screen.getByText('page.makeShift.aiRefill.adjust.monthRuleBadge')).toBeInTheDocument();
 
-        // 기본 수명은 MONTH. 사용자가 "계속"으로 바꾼 것만 TEAM 으로 나간다.
+        // 해석이 "계속"으로 제안한 TEAM을 카드에서 확인할 수 있다.
         const lifetimeSelect = screen.getByRole('combobox', {
             name: 'page.makeShift.aiRefill.adjust.card.lifetimeLabel {"label":"fair off"}',
         });
 
-        expect(lifetimeSelect).toHaveValue('MONTH');
-        await user.selectOptions(lifetimeSelect, 'TEAM');
+        expect(lifetimeSelect).toHaveValue('TEAM');
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D')]));
 
@@ -774,8 +773,7 @@ describe('AiAutofill adjust panel', () => {
                     requestText: 'fair off please',
                 },
                 {
-                    // RULE 도 함께 나간다(5단계). 이번 달에만 걸리는 제약조건이고 수명은 언제나 MONTH 다 —
-                    // "계속"은 확정 시 승격으로만 간다.
+                    // 지속 표현이 없는 RULE은 이번 달로 유지된다.
                     kind: 'RULE',
                     templateCode: 'MAX_CONSECUTIVE_SHIFT',
                     params: {target: 'ALL', shift: 'D', count: 4},

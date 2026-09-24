@@ -123,7 +123,7 @@ export type TInterpretCardItem = {
  *
  * RULE 도 보낸다(5단계). 이번 달에만 걸리는 제약조건으로 저장되고 엔진 호출 때 저장 규칙
  * 뒤에 이어 붙는다 — 병동 제약조건 목록은 건드리지 않으며, 남기는 것은 확정 시 사용자가 고른다.
- * 수명은 RULE 에서 언제나 MONTH 다: "계속"은 확정 승격으로만 간다.
+ * RULE의 TEAM도 카드에서 사용자가 확인한 값이다. 확정 시 승격 질문을 한 번 더 거친다.
  */
 export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText: string): TScheduleMonthRequestItem[] {
     return cardItems
@@ -136,9 +136,11 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   kind: 'RULE' as const,
                   templateCode: item.templateCode,
                   params: item.params,
+                  ...(item.condition ? {condition: item.condition} : {}),
                   severity,
                   displayLabel: item.displayLabel,
-                  lifetime: 'MONTH' as const,
+                  lifetime,
+                  ...(item.applyMonths?.length ? {applyMonths: item.applyMonths} : {}),
                   origin: 'TEXT' as const,
                   requestText,
                   assumedSlots: item.assumedSlots,
@@ -155,6 +157,7 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                     origin: 'TEXT' as const,
                     requestText,
                     assumedSlots: item.assumedSlots,
+                    ...(item.applyMonths?.length ? {applyMonths: item.applyMonths} : {}),
                 }
             : {
                   kind: 'KNOB' as const,
@@ -165,6 +168,7 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   origin: 'TEXT' as const,
                   requestText,
                   assumedSlots: item.assumedSlots,
+                  ...(item.applyMonths?.length ? {applyMonths: item.applyMonths} : {}),
               },
     );
 }

@@ -120,6 +120,7 @@ export const th = {
                         HARD: 'บังคับ',
                         label: 'ความเข้มของ {{label}}',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: 'รอข้อมูลการดำเนินงาน', INACTIVE_CONDITION: 'ยังไม่ตรงตามเงื่อนไข'},
                     promote: {
                         title: 'ใช้กฎเหล่านี้เดือนหน้าด้วยไหม',
                         description:

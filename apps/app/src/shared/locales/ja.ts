@@ -1394,6 +1394,7 @@ export const ja: TLocale = {
                         HARD: '必須',
                         label: '{{label}} の強さ',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: '運用データ待ち', INACTIVE_CONDITION: '現在は条件未達'},
                     promote: {
                         title: 'このルール、来月も使いますか？',
                         description: '今月に文章で設定したルールです。残すを選んだものだけが病棟の制約条件になり、ほかは今月で終わります。',

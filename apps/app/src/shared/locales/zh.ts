@@ -120,6 +120,7 @@ export const zh = {
                         HARD: '必须',
                         label: '{{label}} 强度',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: '等待运营数据', INACTIVE_CONDITION: '当前条件未满足'},
                     promote: {
                         title: '这些规则下个月还用吗？',
                         description: '这是您这个月用句子设置的规则。只有选择保留的会成为病区约束条件，其余到本月为止。',

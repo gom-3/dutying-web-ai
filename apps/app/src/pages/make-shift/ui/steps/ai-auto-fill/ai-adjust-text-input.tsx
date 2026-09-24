@@ -32,9 +32,8 @@ type TCard = {
 };
 
 function toCardItems(items: TScheduleMonthRequestItem[]): TInterpretCardItem[] {
-    // 기본 수명은 언제나 MONTH. lifetimeHint 는 배지 옆 보조 표시일 뿐이다 —
-    // "이번 달만"이 다음 달로 새는 쪽이 훨씬 나쁜 실패라서 기본값을 해석에 맡기지 않는다.
-    return items.map((item) => ({item, lifetime: 'MONTH', severity: item.severity ?? 'SOFT'}));
+    // "계속"을 명시한 문장은 TEAM을 제안하되, 카드에서 사용자가 확인하고 적용해야 저장된다.
+    return items.map((item) => ({item, lifetime: item.lifetimeHint ?? 'MONTH', severity: item.severity ?? 'SOFT'}));
 }
 
 /**
@@ -165,6 +164,11 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                                     className="flex flex-wrap items-center gap-2"
                                 >
                                     <span className="text-13">{item.displayLabel ?? item.knob ?? item.templateCode}</span>
+                                    {(item.applyMonths?.length ?? 0) > 1 && (
+                                        <span className="text-12 text-sub border-line rounded-full border px-2 py-0.5">
+                                            {item.applyMonths?.map(({year, month}) => `${year}.${month}`).join(', ')}
+                                        </span>
+                                    )}
 
                                     {/* 문장이 값을 주지 않아 해석이 고른 숫자. 반드시 드러낸다 — */}
                                     {/* 말하지 않은 값이 조용히 규칙이 되면 사용자는 자기가 안 한 말을 떠안는다. */}
@@ -205,6 +209,19 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                                             >
                                                 <option value="SOFT">{t('page.makeShift.aiRefill.adjust.severity.SOFT')}</option>
                                                 <option value="HARD">{t('page.makeShift.aiRefill.adjust.severity.HARD')}</option>
+                                            </select>
+                                            <select
+                                                value={lifetime}
+                                                aria-label={t('page.makeShift.aiRefill.adjust.card.lifetimeLabel', {
+                                                    label: item.displayLabel ?? item.templateCode ?? '',
+                                                })}
+                                                onChange={(event) =>
+                                                    handleLifetimeChange(index, event.target.value as TScheduleMonthRequestLifetime)
+                                                }
+                                                className="text-12 border-line rounded-full border bg-white px-2 py-0.5"
+                                            >
+                                                <option value="MONTH">{t('page.makeShift.aiRefill.adjust.lifetime.MONTH')}</option>
+                                                <option value="TEAM">{t('page.makeShift.aiRefill.adjust.lifetime.TEAM')}</option>
                                             </select>
                                         </>
                                     ) : (

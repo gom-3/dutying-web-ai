@@ -1267,6 +1267,7 @@ export const ko = {
                         HARD: '꼭',
                         label: '{{label}} 강도',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: '운영 데이터 대기', INACTIVE_CONDITION: '현재 조건 미충족'},
                     promote: {
                         title: '이 규칙, 다음 달에도 쓸까요?',
                         description:

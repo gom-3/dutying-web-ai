@@ -1271,6 +1271,7 @@ export const en: TLocale = {
                         HARD: 'Required',
                         label: '{{label}} strength',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: 'Waiting for operational data', INACTIVE_CONDITION: 'Condition not currently met'},
                     promote: {
                         title: 'Keep these rules next month?',
                         description:

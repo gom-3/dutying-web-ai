@@ -120,6 +120,7 @@ export const vi = {
                         HARD: 'Bắt buộc',
                         label: 'Mức độ của {{label}}',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: 'Đang chờ dữ liệu vận hành', INACTIVE_CONDITION: 'Hiện chưa đạt điều kiện'},
                     promote: {
                         title: 'Giữ các quy tắc này cho tháng sau?',
                         description:

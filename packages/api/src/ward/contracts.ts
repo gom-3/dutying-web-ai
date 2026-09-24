@@ -540,6 +540,15 @@ export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL' | 
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
+export type TScheduleAdjustmentSignal = {
+    id: number | null;
+    signalDate: string;
+    signalKey: string;
+    numericValue?: number | null;
+    booleanValue?: boolean | null;
+    sourceRevision: string;
+};
+export type TUpsertScheduleAdjustmentSignalDTO = Omit<TScheduleAdjustmentSignal, 'id'>;
 export type TScheduleMonthRequestOrigin = 'CHIP' | 'TEXT' | 'CARRIED_OVER';
 /** SOFT: 권장(최대한 지킴). HARD: 꼭(못 지키면 위반으로 표시). */
 export type TScheduleMonthRequestSeverity = 'SOFT' | 'HARD';
@@ -558,12 +567,15 @@ export type TScheduleMonthRequestItem = {
     templateCode?: string;
     /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
     params?: Record<string, unknown>;
+    condition?: {key: string; operator: 'GT' | 'GTE' | 'LT' | 'LTE' | 'EQ'; value: number | boolean};
     /** RULE 일 때 SOFT(권장) 또는 HARD(꼭). 카드의 토글이 정한다. */
     severity?: TScheduleMonthRequestSeverity;
     displayLabel?: string;
     lifetime?: TScheduleMonthRequestLifetime;
     /** 해석이 추측한 수명. 카드의 배지 기본값이 아니라 보조 표시. */
     lifetimeHint?: TScheduleMonthRequestLifetime;
+    /** 사용자가 명시한 적용 월. 비어 있으면 현재 편집 월만 적용한다. */
+    applyMonths?: {year: number; month: number}[];
     origin?: TScheduleMonthRequestOrigin;
     requestText?: string;
     /** CELL 일 때 대상 간호사(nurseId). 행의 workerId 가 아니라 `workerMeta[].nurseId` 와 맞춘다. */
@@ -602,6 +614,8 @@ export type TScheduleMonthRequestRes = {
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
+    condition?: TScheduleMonthRequestItem['condition'] | null;
+    conditionStatus?: 'ACTIVE' | 'WAITING_FOR_DATA' | 'INACTIVE_CONDITION' | null;
     assumedSlots?: string[];
     requestText?: string | null;
     carriedFromRequestId?: number | null;
@@ -933,6 +947,11 @@ export interface IWardAPI {
         interpretDTO: TScheduleAdjustInterpretDTO,
         options?: {signal?: AbortSignal},
     ) => Promise<TScheduleAdjustInterpretRes>;
+    getScheduleAdjustmentSignals: (wardId: number, start: string, end: string) => Promise<TScheduleAdjustmentSignal[]>;
+    upsertScheduleAdjustmentSignal: (
+        wardId: number,
+        dto: TUpsertScheduleAdjustmentSignalDTO,
+    ) => Promise<TScheduleAdjustmentSignal>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
