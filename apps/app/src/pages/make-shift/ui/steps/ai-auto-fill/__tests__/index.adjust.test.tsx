@@ -1,4 +1,9 @@
-import type {TScheduleMonthRequestItem, TScheduleMonthRequestRes, TSnapshotCellDTO} from '@dutying/api/ward';
+import type {
+    TScheduleAdjustmentNotice,
+    TScheduleMonthRequestItem,
+    TScheduleMonthRequestRes,
+    TSnapshotCellDTO,
+} from '@dutying/api/ward';
 import {useEffect} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
@@ -250,7 +255,11 @@ function cell(workerId: number, date: string, shiftCode: string | null): TSnapsh
 }
 
 /** 응답의 draftRevision 은 호출 시점의 스토어 값이어야 한다 — 미리 굳히면 버려진다. */
-function okResult(changedCells: TSnapshotCellDTO[], operationType: 'GENERATE' | 'ADJUST') {
+function okResult(
+    changedCells: TSnapshotCellDTO[],
+    operationType: 'GENERATE' | 'ADJUST',
+    adjustmentNotices: TScheduleAdjustmentNotice[] = [],
+) {
     const draftRevision = useShiftEditorStore.getState().draftRevision;
     const validation = {
         draftRevision,
@@ -269,6 +278,7 @@ function okResult(changedCells: TSnapshotCellDTO[], operationType: 'GENERATE' | 
             validation,
             unmetInstructions: [],
             sameAsPrevious: false,
+            adjustmentNotices,
         },
         validation,
     };
@@ -541,6 +551,28 @@ describe('AiAutofill adjust panel', () => {
         expect(rowCells('11')).toEqual(['D', 'E', 'E', 'E']);
     });
 
+    it('shows a non-blocking notice when this month adjustment overrides a stored ward rule', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+
+        mocks.requestAiSchedule.mockImplementation(async () =>
+            okResult([], 'ADJUST', [
+                {
+                    type: 'MONTH_REQUEST_OVERRIDES_WARD_RULE',
+                    requestId: 21,
+                    relatedRuleId: 8,
+                    message: "이번 달 조절이 기존 '월 나이트 최대 4회' 조건보다 우선 적용돼요. 기존 제약조건은 변경되지 않아요.",
+                },
+            ]),
+        );
+
+        await adjustBySentence(user, [CLUSTER_ITEM]);
+
+        expect(await screen.findByText(/기존 제약조건은 변경되지 않아요/)).toBeInTheDocument();
+    });
+
     it('restores the pre-adjust schedule with a single undo', async () => {
         const user = userEvent.setup();
 
@@ -716,13 +748,12 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByText('주말 공평은 아직 안 돼요. 이렇게 써 보세요: 주말 근무는 3번 이하로')).toBeInTheDocument();
         expect(screen.getByText('page.makeShift.aiRefill.adjust.monthRuleBadge')).toBeInTheDocument();
 
-        // 기본 수명은 MONTH. 사용자가 "계속"으로 바꾼 것만 TEAM 으로 나간다.
+        // 해석이 "계속"으로 제안한 TEAM을 카드에서 확인할 수 있다.
         const lifetimeSelect = screen.getByRole('combobox', {
             name: 'page.makeShift.aiRefill.adjust.card.lifetimeLabel {"label":"fair off"}',
         });
 
-        expect(lifetimeSelect).toHaveValue('MONTH');
-        await user.selectOptions(lifetimeSelect, 'TEAM');
+        expect(lifetimeSelect).toHaveValue('TEAM');
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D')]));
 
@@ -742,8 +773,7 @@ describe('AiAutofill adjust panel', () => {
                     requestText: 'fair off please',
                 },
                 {
-                    // RULE 도 함께 나간다(5단계). 이번 달에만 걸리는 제약조건이고 수명은 언제나 MONTH 다 —
-                    // "계속"은 확정 시 승격으로만 간다.
+                    // 지속 표현이 없는 RULE은 이번 달로 유지된다.
                     kind: 'RULE',
                     templateCode: 'MAX_CONSECUTIVE_SHIFT',
                     params: {target: 'ALL', shift: 'D', count: 4},

@@ -107,6 +107,12 @@ export const vi = {
                         nurseAvoidShift: 'Tháng này đừng xếp ca chiều cho ○○',
                         nurseForbidWeekend: 'Đừng xếp ca cuối tuần cho ○○',
                         pairNotSameShift: 'Đừng xếp ○○ và △△ cùng một ca',
+                        pairSameShift: '○○ phải làm cùng ngày và cùng ca với △△',
+                        nightKeeper: 'Tháng này ○○ chuyên ca đêm, đúng 12 ca đêm',
+                        pregnancyWeekdayDay: 'Tháng này điều dưỡng mang thai ○○ chỉ làm ca ngày trong tuần',
+                        returnNoNight: 'Tháng này điều dưỡng ○○ mới trở lại chỉ làm ca ngày và chiều, không làm đêm',
+                        precepteeNotAlone: 'Đừng để điều dưỡng mới ○○ trực ca đêm một mình',
+                        chargeCoverage: 'Mỗi ca đêm phải có ít nhất 1 điều dưỡng phụ trách',
                         combined: 'Sau ca đêm cho nghỉ hai ngày, và ca ngày tối đa 4 ngày liên tiếp',
                     },
                     severity: {
@@ -114,6 +120,7 @@ export const vi = {
                         HARD: 'Bắt buộc',
                         label: 'Mức độ của {{label}}',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: 'Đang chờ dữ liệu vận hành', INACTIVE_CONDITION: 'Hiện chưa đạt điều kiện'},
                     promote: {
                         title: 'Giữ các quy tắc này cho tháng sau?',
                         description:

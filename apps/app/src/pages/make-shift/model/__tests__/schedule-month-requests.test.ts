@@ -7,6 +7,7 @@ import {
     markCarryOverAnswered,
     promotableRuleRequests,
     toChipRequestItem,
+    toInterpretCells,
     toTextRequestItems,
 } from '../schedule-month-requests';
 
@@ -97,6 +98,22 @@ describe('promotableRuleRequests', () => {
 });
 
 describe('request item builders', () => {
+    it('expands a compact CELL_SET into pinned table cells without persisting it as a request', () => {
+        const cards = [{
+            item: {kind: 'CELL_SET' as const, nurseIds: [11, 12], dates: ['2026-10-03', '2026-10-04'], shiftCode: 'O'},
+            lifetime: 'MONTH' as const,
+            severity: 'SOFT' as const,
+        }];
+
+        expect(toInterpretCells(cards)).toEqual([
+            {nurseId: 11, date: '2026-10-03', shiftCode: 'O'},
+            {nurseId: 11, date: '2026-10-04', shiftCode: 'O'},
+            {nurseId: 12, date: '2026-10-03', shiftCode: 'O'},
+            {nurseId: 12, date: '2026-10-04', shiftCode: 'O'},
+        ]);
+        expect(toTextRequestItems(cards, '3일부터 4일까지 쉬어')).toEqual([]);
+    });
+
     it('builds a chip request with MONTH lifetime and CHIP origin', () => {
         expect(toChipRequestItem('SENIORITY_MIX', 1, '숙련도 섞기')).toEqual({
             kind: 'KNOB',
@@ -108,9 +125,7 @@ describe('request item builders', () => {
         });
     });
 
-    it('keeps the chosen lifetime for a knob and pins a rule to this month', () => {
-        // RULE 의 수명은 언제나 MONTH 다. "계속"은 확정 시 승격으로만 가고, 요청이 스스로
-        // 다음 달로 넘어가면 사용자가 만든 적 없는 제약조건이 돌아온다.
+    it('keeps the explicitly chosen lifetime for knobs and rules', () => {
         const items = toTextRequestItems(
             [
                 {
@@ -148,11 +163,29 @@ describe('request item builders', () => {
                 params: {target: 'ALL', shift: 'D', count: 4},
                 severity: 'HARD',
                 displayLabel: 'day max 4',
-                lifetime: 'MONTH',
+                lifetime: 'TEAM',
                 origin: 'TEXT',
                 requestText: 'fair please',
             },
         ]);
+    });
+
+    it('keeps explicitly selected future months in the request contract', () => {
+        const [item] = toTextRequestItems(
+            [{
+                item: {
+                    kind: 'KNOB',
+                    knob: 'CLUSTERING',
+                    value: 1,
+                    applyMonths: [{year: 2026, month: 9}, {year: 2026, month: 10}],
+                },
+                lifetime: 'MONTH',
+                severity: 'SOFT',
+            }],
+            '이번 달과 다음 달 근무를 붙여줘',
+        );
+
+        expect(item?.applyMonths).toEqual([{year: 2026, month: 9}, {year: 2026, month: 10}]);
     });
 });
 
