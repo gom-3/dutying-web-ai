@@ -26,6 +26,8 @@ describe('AiAdjustExamples', () => {
         fireEvent.click(screen.getByText('page.makeShift.aiRefill.adjust.examplesMore'));
 
         expect(screen.getByText('page.makeShift.aiRefill.adjust.examples.weekendCap')).toBeTruthy();
+        expect(screen.getByText('page.makeShift.aiRefill.adjust.examples.nightKeeper')).toBeTruthy();
+        expect(screen.getByText('page.makeShift.aiRefill.adjust.examples.precepteeNotAlone')).toBeTruthy();
     });
 
     it('조절이 도는 동안에는 누를 수 없다', () => {

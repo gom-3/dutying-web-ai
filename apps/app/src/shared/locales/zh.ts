@@ -107,6 +107,12 @@ export const zh = {
                         nurseAvoidShift: '○○这个月不要排小夜',
                         nurseForbidWeekend: '○○周末不要排班',
                         pairNotSameShift: '○○和△△不要排同一个班',
+                        pairSameShift: '○○必须和△△同一天上同一个班',
+                        nightKeeper: '○○本月固定夜班，夜班正好12次',
+                        pregnancyWeekdayDay: '怀孕的○○本月只上工作日白班',
+                        returnNoNight: '返岗的○○本月不上夜班，只上白班和小夜',
+                        precepteeNotAlone: '夜班不要让新护士○○单独值班',
+                        chargeCoverage: '每天夜班至少安排1名责任护士',
                         combined: '夜班后休两天，白班最多连上4天',
                     },
                     severity: {

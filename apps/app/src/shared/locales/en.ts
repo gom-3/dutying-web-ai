@@ -1258,6 +1258,12 @@ export const en: TLocale = {
                         nurseAvoidShift: 'Keep ○○ off evening shifts this month',
                         nurseForbidWeekend: 'Do not schedule ○○ on weekends',
                         pairNotSameShift: 'Do not put ○○ and △△ on the same shift',
+                        pairSameShift: '○○ must work the same days and shifts as △△',
+                        nightKeeper: '○○ is a night keeper with exactly 12 night shifts this month',
+                        pregnancyWeekdayDay: 'Pregnant nurse ○○ works weekday day shifts only this month',
+                        returnNoNight: 'Returning nurse ○○ works day and evening only, with no nights this month',
+                        precepteeNotAlone: 'Do not leave new nurse ○○ alone on a night shift',
+                        chargeCoverage: 'Schedule at least one charge nurse on every night shift',
                         combined: 'Two days off after nights, and at most 4 day shifts in a row',
                     },
                     severity: {

@@ -26,6 +26,12 @@ const MORE_KEYS = [
     'weekendCap',
     'nurseForbidWeekend',
     'pairNotSameShift',
+    'pairSameShift',
+    'nightKeeper',
+    'pregnancyWeekdayDay',
+    'returnNoNight',
+    'precepteeNotAlone',
+    'chargeCoverage',
     'combined',
 ] as const;
 
