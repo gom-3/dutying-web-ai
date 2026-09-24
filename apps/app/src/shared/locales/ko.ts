@@ -1254,6 +1254,12 @@ export const ko = {
                         nurseAvoidShift: '○○ 쌤은 이번 달 이브닝은 빼줘',
                         nurseForbidWeekend: '○○ 쌤은 주말에는 근무 넣지 마',
                         pairNotSameShift: '○○ 쌤과 △△ 쌤은 같은 근무에 넣지 마',
+                        pairSameShift: '○○ 쌤은 △△ 쌤과 꼭 같이 근무해야 해',
+                        nightKeeper: '○○ 쌤은 이번 달 나이트를 정확히 12번 하는 나이트킵이야',
+                        pregnancyWeekdayDay: '임신한 ○○ 쌤은 이번 달 평일 데이만 근무해',
+                        returnNoNight: '복직한 ○○ 쌤은 이번 달 나이트 없이 데이·이브닝만 근무해',
+                        precepteeNotAlone: '신규 ○○ 쌤은 나이트 근무에 혼자 두지 마',
+                        chargeCoverage: '매일 나이트에 책임간호사를 최소 1명 넣어줘',
                         combined: '나이트 끝나면 이틀 쉬게 하고, 데이는 4일 연속까지만',
                     },
                     severity: {
@@ -1261,6 +1267,7 @@ export const ko = {
                         HARD: '꼭',
                         label: '{{label}} 강도',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: '운영 데이터 대기', INACTIVE_CONDITION: '현재 조건 미충족'},
                     promote: {
                         title: '이 규칙, 다음 달에도 쓸까요?',
                         description:

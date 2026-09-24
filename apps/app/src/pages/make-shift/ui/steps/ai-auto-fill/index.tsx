@@ -291,6 +291,8 @@ export function AiAutofill() {
     const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
     const [lastRuleResults, setLastRuleResults] = useState<TScheduleRequestRuleResult[]>([]);
+    const [lastAdjustmentNotices, setLastAdjustmentNotices] = useState<NonNullable<TAutofillResponse['adjustmentNotices']>>([]);
+    const [lastOffGoal, setLastOffGoal] = useState<NonNullable<TAutofillResponse['engineResult']>['offGoal']>(null);
     const [lastAdjustStrength, setLastAdjustStrength] = useState<TAutofillAdjustStrength>('NORMAL');
     // 로딩 문구를 가른다. 조절은 "채우는 중"이 아니라 "방향을 조절하는 중"이다.
     const [isAdjusting, setIsAdjusting] = useState(false);
@@ -1139,6 +1141,9 @@ export function AiAutofill() {
             markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(result.response.changedCells.length > 0);
             commands.setScheduleValidationFromApi(result.validation);
+            // 월간 요청은 일반 자동완성에도 다시 적용된다. 병동 규칙 shadow 안내 역시
+            // 조절 직후뿐 아니라 재생성 결과에서 계속 보여야 한다.
+            setLastAdjustmentNotices(result.response.adjustmentNotices ?? []);
 
             if (adjust) {
                 // 응답의 changedCells 를 그대로 센다. 서버가 고정·신청 칸을 이미 걸러 낸 "적용된
@@ -1662,6 +1667,8 @@ export function AiAutofill() {
                     <AiAdjustResultNote
                         changedCount={lastAdjustChangedCount}
                         ruleResults={lastRuleResults}
+                        notices={lastAdjustmentNotices}
+                        offGoal={lastOffGoal}
                         isStrongest={lastAdjustStrength === 'STRONG'}
                         disabled={isAiGenerating || disablingRequestId !== null}
                         onAdjustHarder={() => {

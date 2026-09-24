@@ -6,6 +6,8 @@ import type {
     TScheduleCarryOverCandidatesRes,
     TScheduleMonthRequestListRes,
     TScheduleMonthRequestRes,
+    TScheduleAdjustmentSignal,
+    TUpsertScheduleAdjustmentSignalDTO,
     TAddShiftTeamNurseDTO,
     TCreateWardChatMessageDTO,
     TCreateShiftTypeDTO,
@@ -517,6 +519,14 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     options,
                 )
             ).data,
+        getScheduleAdjustmentSignals: async (wardId, start, end) =>
+            (
+                await client.get<TScheduleAdjustmentSignal[]>(
+                    wardPath(`/${wardId}/schedule-adjustment-signals?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`),
+                )
+            ).data,
+        upsertScheduleAdjustmentSignal: async (wardId, dto: TUpsertScheduleAdjustmentSignalDTO) =>
+            (await client.post<TScheduleAdjustmentSignal>(wardPath(`/${wardId}/schedule-adjustment-signals`), dto)).data,
         getSnapshots: async (wardId, shiftTeamId, year, month) =>
             (
                 await client.get<TSnapshotListRes>(
