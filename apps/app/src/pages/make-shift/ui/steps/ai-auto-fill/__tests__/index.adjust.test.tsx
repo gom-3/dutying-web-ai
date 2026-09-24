@@ -1,4 +1,9 @@
-import type {TScheduleMonthRequestItem, TScheduleMonthRequestRes, TSnapshotCellDTO} from '@dutying/api/ward';
+import type {
+    TScheduleAdjustmentNotice,
+    TScheduleMonthRequestItem,
+    TScheduleMonthRequestRes,
+    TSnapshotCellDTO,
+} from '@dutying/api/ward';
 import {useEffect} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
@@ -250,7 +255,11 @@ function cell(workerId: number, date: string, shiftCode: string | null): TSnapsh
 }
 
 /** 응답의 draftRevision 은 호출 시점의 스토어 값이어야 한다 — 미리 굳히면 버려진다. */
-function okResult(changedCells: TSnapshotCellDTO[], operationType: 'GENERATE' | 'ADJUST') {
+function okResult(
+    changedCells: TSnapshotCellDTO[],
+    operationType: 'GENERATE' | 'ADJUST',
+    adjustmentNotices: TScheduleAdjustmentNotice[] = [],
+) {
     const draftRevision = useShiftEditorStore.getState().draftRevision;
     const validation = {
         draftRevision,
@@ -269,6 +278,7 @@ function okResult(changedCells: TSnapshotCellDTO[], operationType: 'GENERATE' | 
             validation,
             unmetInstructions: [],
             sameAsPrevious: false,
+            adjustmentNotices,
         },
         validation,
     };
@@ -539,6 +549,28 @@ describe('AiAutofill adjust panel', () => {
         expect(await screen.findByText(`page.makeShift.aiRefill.adjust.applied {"count":3}`)).toBeInTheDocument();
         expect(rowCells('10')).toEqual(['D', 'E', 'D', 'E']);
         expect(rowCells('11')).toEqual(['D', 'E', 'E', 'E']);
+    });
+
+    it('shows a non-blocking notice when this month adjustment overrides a stored ward rule', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+
+        mocks.requestAiSchedule.mockImplementation(async () =>
+            okResult([], 'ADJUST', [
+                {
+                    type: 'MONTH_REQUEST_OVERRIDES_WARD_RULE',
+                    requestId: 21,
+                    relatedRuleId: 8,
+                    message: "이번 달 조절이 기존 '월 나이트 최대 4회' 조건보다 우선 적용돼요. 기존 제약조건은 변경되지 않아요.",
+                },
+            ]),
+        );
+
+        await adjustBySentence(user, [CLUSTER_ITEM]);
+
+        expect(await screen.findByText(/기존 제약조건은 변경되지 않아요/)).toBeInTheDocument();
     });
 
     it('restores the pre-adjust schedule with a single undo', async () => {

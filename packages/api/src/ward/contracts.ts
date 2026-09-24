@@ -620,6 +620,15 @@ export type TScheduleRequestRuleResult = {
     downgraded?: boolean | null;
 };
 
+export type TScheduleAdjustmentNotice = {
+    type: 'MONTH_REQUEST_OVERRIDES_WARD_RULE';
+    requestId?: number | null;
+    relatedRuleId?: number | null;
+    requestLabel?: string | null;
+    relatedRuleLabel?: string | null;
+    message: string;
+};
+
 export type TScheduleMonthRequestListRes = {
     year: number;
     month: number;
@@ -733,6 +742,8 @@ export type TAutofillResponse = {
     };
     /** 이번 달 문장 요청(RULE)이 얼마나 지켜졌는지. 요청이 없으면 비어 있다. */
     requestRuleResults?: TScheduleRequestRuleResult[];
+    /** 병동 규칙은 그대로 두고 이번 달 조절이 실행 시에만 우선한 비차단 안내. */
+    adjustmentNotices?: TScheduleAdjustmentNotice[];
 };
 
 export type TSaveSnapshotDTO = {
