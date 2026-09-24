@@ -1,3 +1,4 @@
+import {CommercialEntry, WardUsageSummary} from '@/features/commercial/entry';
 import {cn} from '@dutying/utils/style';
 import {useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
@@ -139,6 +140,8 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                     )}
                 </div>
 
+                <CommercialEntry compact={isCollapsed} />
+                {!isCollapsed ? <WardUsageSummary /> : null}
                 <NavigationBarItemGroups
                     collapsed={isCollapsed}
                     stableCollapsedLayout={stableCollapsedLayout}

@@ -1,3 +1,5 @@
+import {useWardEntitlement} from '@/features/commercial/api';
+import {Link} from 'react-router';
 import {WARD_ADMIN_MAX_COUNT, type TWardAdminMembershipResponse, type TWardReservedAdminEmailResponse} from '@dutying/api/ward';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Plus, Trash2} from 'lucide-react';
@@ -44,9 +46,8 @@ const getAccountRole = (account: unknown, currentWardId?: number | null) => {
             ? undefined
             : (memberships.find((membership) => membership.status === 'ACTIVE' && membership.wardId === wardId) ??
               memberships.find((membership) => membership.wardId === wardId));
-    const activeMembership = memberships.find((membership) => membership.status === 'ACTIVE');
 
-    return currentWardMembership?.role ?? activeMembership?.role ?? roleSource.role ?? undefined;
+    return currentWardMembership?.role ?? (roleSource.wardId === currentWardId ? roleSource.role : undefined);
 };
 const getApiErrorCode = (error: unknown) =>
     typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
@@ -173,6 +174,8 @@ function ReservedAdminEmailRow({
 }
 
 function WardAdminsPage() {
+    const commercial = useWardEntitlement();
+    const adminLimit = commercial.data?.adminSeats.limit ?? WARD_ADMIN_MAX_COUNT;
     const {t} = useTypedTranslation();
     const {
         state: {accountMe, wardId},
@@ -238,19 +241,20 @@ function WardAdminsPage() {
             });
         },
     });
-    const canAddAdmins = hasAccountWardMembership(accountMe, wardId);
+    const canAddAdmins =
+        hasAccountWardMembership(accountMe, wardId) && (!commercial.data || commercial.data.allowedActions.includes('WARD_INVITE_CREATE'));
     const canRemoveAdmins = getAccountRole(accountMe, wardId) === 'OWNER';
     const isSubmitting = createAdminEmailMutation.isPending;
     const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
     const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
     const adminCount = getAdminCount(members, reservedEmails);
-    const hasReachedAdminLimit = adminCount >= WARD_ADMIN_MAX_COUNT;
+    const hasReachedAdminLimit = adminCount >= adminLimit;
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
 
         if (hasReachedAdminLimit) {
-            setError(t('page.wardAdmins.error.maxAdmins', {count: WARD_ADMIN_MAX_COUNT}));
+            setError(t('page.wardAdmins.error.maxAdmins', {count: adminLimit}));
 
             return;
         }
@@ -305,6 +309,11 @@ function WardAdminsPage() {
 
     return (
         <div className="mx-auto w-full">
+            {commercial.data && wardId ? (
+                <Link to={`/workspace/WARD/${wardId}/members`} className="mb-4 block rounded-xl bg-main-light p-4 text-sm">
+                    관리자 초대·OWNER 인계 관리 ↗
+                </Link>
+            ) : null}
             <section className="rounded-[24px] bg-white p-6">
                 <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
                     <img src={wardAdminIcon} alt="" aria-hidden="true" className="h-6 w-6 shrink-0 object-contain" />
@@ -334,9 +343,7 @@ function WardAdminsPage() {
                         </div>
                         {error ? <p className="mt-2 text-xs text-red">{error}</p> : null}
                         {hasReachedAdminLimit ? (
-                            <p className="mt-2 text-xs text-gray-3">
-                                {t('page.wardAdmins.error.maxAdmins', {count: WARD_ADMIN_MAX_COUNT})}
-                            </p>
+                            <p className="mt-2 text-xs text-gray-3">{t('page.wardAdmins.error.maxAdmins', {count: adminLimit})}</p>
                         ) : null}
                     </form>
                 ) : (

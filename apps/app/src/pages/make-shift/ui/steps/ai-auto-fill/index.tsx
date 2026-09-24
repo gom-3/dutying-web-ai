@@ -11,6 +11,9 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
+import {commercialGet} from '@/features/commercial/api';
+import {batchCellsForReview, type CommercialBatchResult} from '@/features/commercial/batch-result';
+import {AiPlanNotice} from '@/features/commercial/entry';
 import useAuth from '@/features/auth';
 import {
     buildSaveSnapshotDTO,
@@ -238,6 +241,9 @@ function resolveSnapshotDisplayTitle(params: {
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
 export function AiAutofill() {
+    const [batchKey, setBatchKey] = useState(() => new URLSearchParams(window.location.search).get('commercialBatch'));
+    const [loadingBatch, setLoadingBatch] = useState(false);
+    const batchCopy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
     const {t} = useTypedTranslation();
     const language = i18n.resolvedLanguage ?? i18n.language;
     const queryClient = useQueryClient();
@@ -1321,11 +1327,7 @@ export function AiAutofill() {
 
         return positions.length;
     };
-    const handleApplyTextRequests = (
-        items: TInterpretCardItem[],
-        requestText: string,
-        strength: TAutofillAdjustStrength,
-    ) => {
+    const handleApplyTextRequests = (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength) => {
         const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
         const cells = toInterpretCells(items);
         // 칸 지정을 먼저 반영한다. 그래야 이어지는 조절이 그 칸을 잠긴 것으로 보고 피해 간다.
@@ -1633,6 +1635,63 @@ export function AiAutofill() {
             </span>
         </>
     );
+    const reviewBatchResult = async () => {
+        const ready = getAiFillReadyContext();
+        if (!ready || !batchKey || !wardId || !currentShiftTeamId) return;
+        const requested = {wardId, teamId: currentShiftTeamId, year, month};
+        setLoadingBatch(true);
+        try {
+            const batch = await commercialGet<CommercialBatchResult>(`/wards/${wardId}/ai-batches/${encodeURIComponent(batchKey)}`);
+            const current = currentAiContextRef.current;
+            if (
+                current.wardId !== requested.wardId ||
+                current.shiftTeamId !== requested.teamId ||
+                current.year !== requested.year ||
+                current.month !== requested.month
+            )
+                return;
+            const cells = batchCellsForReview(batch, currentShiftTeamId, year, month, useShiftEditorStore.getState().doc);
+            if (
+                !window.confirm(
+                    batchCopy(
+                        `생성 결과 ${cells.length}칸을 현재 임시 근무표에 적용할까요? 직접 편집한 값은 바뀔 수 있습니다. 고정·신청 근무는 유지하며, 저장·확정은 검토 후 별도로 해주세요. 추가 횟수는 사용하지 않습니다.`,
+                        `Apply ${cells.length} generated cells to this draft? Unsaved edits may change. Fixed and requested cells stay protected. Review before saving or confirming. No additional use is charged.`,
+                    ),
+                )
+            )
+                return;
+            commands.applyChangedCells(cells, ready.originalShift, 'ai');
+            markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
+            setHasAiGeneratedUnsavedChanges(cells.length > 0);
+            setHasCompletedAiFill(true);
+            setAiStatus('success');
+            setBatchKey(null);
+            const after = useShiftEditorStore.getState();
+            await fetchAndApplyScheduleValidation(
+                {
+                    wardId,
+                    shiftTeamId: currentShiftTeamId,
+                    year,
+                    month,
+                    doc: after.doc,
+                    originalShift: ready.originalShift,
+                    draftRevision: after.draftRevision,
+                    rulesHash: ready.rulesHash,
+                },
+                commands.setScheduleValidationFromApi,
+            );
+        } catch {
+            toast.error(
+                batchCopy(
+                    '결과의 팀·편성 월·명단 또는 검증 상태를 확인해 주세요. 저장·확정 전에 현재 규칙으로 다시 검증해야 합니다.',
+                    'Check the result’s team, month, roster and validation status. Validate against current rules before saving or confirming.',
+                ),
+            );
+        } finally {
+            setLoadingBatch(false);
+        }
+    };
+
     const publishConfirmDescription =
         connectedNurseCount > 0
             ? t('page.makeShift.aiRefill.publishConfirm.description', {count: connectedNurseCount})
@@ -1647,6 +1706,25 @@ export function AiAutofill() {
                 onPasteCapture={onPasteCapture}
                 tabIndex={0}
             >
+                <AiPlanNotice hasResult={hasCompletedAiFill} />
+                {batchKey && (
+                    <div className="rounded-xl bg-purple-50 p-3 text-sm">
+                        <p>
+                            {batchCopy(
+                                '여러 팀 전체 생성 결과가 준비되어 있습니다. 현재 명단과 보호할 근무를 확인한 뒤 불러옵니다.',
+                                'Review the batch result against the current roster and protected shifts.',
+                            )}
+                        </p>
+                        <button
+                            type="button"
+                            disabled={loadingBatch || isAiGenerating || !isCurrentShiftTeamReady || isHydratingEditor}
+                            onClick={() => void reviewBatchResult()}
+                            className="mt-2 rounded-lg bg-purple-600 px-4 py-2 text-white disabled:opacity-50"
+                        >
+                            {batchCopy('결과 불러와 검토하기 · 추가 차감 없음', 'Load result for review · no extra use')}
+                        </button>
+                    </div>
+                )}
                 <AiAutofillToolbar
                     onFixedShiftsAttentionStart={() => showCellAttention('fixed')}
                     onFixedShiftsAttentionEnd={clearCellAttention}

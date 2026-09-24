@@ -22,6 +22,12 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
+vi.mock('@/widgets/layouts/not-auth-layout', async () => {
+    const {Outlet} = await import('react-router-dom');
+    return {NotAuthLayout: () => <Outlet />};
+});
+vi.mock('@/pages/login', () => ({default: () => <div>commercial login route</div>}));
+
 vi.mock('@/pages/landing', () => ({
     default: () => <div>renewed landing route</div>,
 }));
@@ -92,7 +98,7 @@ describe('Router', () => {
         },
     );
 
-    it('redirects phone visitors away from auth routes to the landing page', async () => {
+    it('keeps authentication available for phone billing and invitation flows', async () => {
         setPhoneDevice(true);
 
         render(
@@ -102,9 +108,9 @@ describe('Router', () => {
             </MemoryRouter>,
         );
 
-        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/));
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.LOGIN));
 
-        expect(screen.getByText('renewed landing route')).toBeInTheDocument();
+        expect(await screen.findByText('commercial login route')).toBeInTheDocument();
     });
 
     it('keeps the privacy route and redirects desktop visitors to the matching published document', async () => {

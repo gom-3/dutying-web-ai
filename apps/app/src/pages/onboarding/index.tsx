@@ -1,3 +1,4 @@
+import {useCommercialContext} from '@/features/commercial/api';
 import {Navigate} from 'react-router';
 import useAuth from '@/features/auth';
 import RegisterShell from '@/pages/register/ui/register-shell';
@@ -7,6 +8,7 @@ import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
 function OnboardingPage() {
+    const commercial = useCommercialContext();
     const {t} = useTypedTranslation();
     const {
         state: {accountMe, accountMeStatus, _loaded},
@@ -14,11 +16,16 @@ function OnboardingPage() {
     } = useAuth();
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
-    const redirectTarget = accountMe?.status === 'LINKED' || accountMe?.status === 'DEMO' ? ROUTE.HOME : ROUTE.REGISTER;
+    const redirectTarget =
+        commercial.data?.scopes.some((s) => s.type === 'HOSPITAL') && accountMe?.status !== 'LINKED'
+            ? '/workspace'
+            : accountMe?.status === 'LINKED' || accountMe?.status === 'DEMO'
+              ? ROUTE.HOME
+              : ROUTE.REGISTER;
 
     return (
         <RegisterShell>
-            {isAccountBootstrapPending ? (
+            {isAccountBootstrapPending || commercial.isFetching ? (
                 <div className="flex min-h-[420px] flex-col items-center justify-center">
                     <LoadingSpinner size={56} />
                 </div>

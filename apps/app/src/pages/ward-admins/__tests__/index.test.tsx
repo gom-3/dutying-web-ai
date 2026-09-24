@@ -112,7 +112,7 @@ describe('WardAdminsPage', () => {
         vi.clearAllMocks();
         mockUseAuth.mockReturnValue({
             state: {
-                accountMe: {role: 'OWNER'},
+                accountMe: {role: 'OWNER', wardId: 10},
                 wardId: 10,
             },
         });

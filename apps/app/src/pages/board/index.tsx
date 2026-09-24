@@ -1,3 +1,4 @@
+import {PlanFeatureNotice} from '@/features/commercial/entry';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
@@ -2448,6 +2449,7 @@ function BoardPage() {
 
     return (
         <div className="mx-auto flex min-h-screen w-full max-w-[1520px] min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
+            <PlanFeatureNotice action="BOARD_CREATE" />
             <div className="min-w-0">
                 <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">{boardT('title')}</h1>
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">

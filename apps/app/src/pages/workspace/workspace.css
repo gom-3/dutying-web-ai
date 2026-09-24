@@ -1,0 +1,345 @@
+.workspace-app {
+    height: 100%;
+    overflow: auto;
+    background: #f5f6f8;
+    color: #202631;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.65;
+}
+.workspace-app * {
+    box-sizing: border-box;
+}
+.workspace-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px max(24px, calc((100% - 1120px) / 2));
+    background: white;
+}
+.workspace-brand {
+    font-size: 25px;
+    font-weight: 750;
+    letter-spacing: -1px;
+    color: #8054cf;
+}
+.workspace-header nav {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+.workspace-main {
+    max-width: 1170px;
+    margin: auto;
+    padding: 40px 24px 80px;
+}
+.workspace-title {
+    display: flex;
+    gap: 24px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+}
+.workspace-title h1 {
+    font-size: 30px;
+    line-height: 1.25;
+    font-weight: 720;
+    margin: 8px 0;
+}
+.workspace-title p {
+    color: #667080;
+}
+.workspace-title .workspace-field {
+    min-width: 230px;
+}
+.workspace-section {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px;
+    margin: 18px 0;
+}
+.workspace-section h2 {
+    font-size: 21px;
+    font-weight: 700;
+    margin: 0 0 18px;
+}
+.workspace-section h3 {
+    font-size: 17px;
+    font-weight: 650;
+    margin: 0 0 10px;
+}
+.workspace-section p {
+    margin: 10px 0;
+}
+.workspace-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 16px;
+    margin: 18px 0;
+}
+.workspace-choice,
+.workspace-usage {
+    display: block;
+    background: #f6f3fb;
+    border-radius: 16px;
+    padding: 24px;
+    color: #24212b;
+    text-align: left;
+}
+.workspace-choice p {
+    color: #686575;
+}
+.workspace-choice:hover {
+    background: #eee8f8;
+}
+.workspace-app button,
+.workspace-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #8054cf;
+    color: white;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 11px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    margin: 6px 8px 6px 0;
+    text-decoration: none;
+}
+.workspace-app button.secondary,
+.workspace-button.secondary {
+    background: #eef0f4;
+    color: #343c49;
+}
+.workspace-app button.danger {
+    color: #ab3232;
+}
+.workspace-app button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.workspace-app :focus-visible {
+    outline: 3px solid #b399e1;
+    outline-offset: 3px;
+}
+.workspace-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 8px 22px;
+    align-items: end;
+}
+.workspace-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 14px 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+.workspace-field input,
+.workspace-field select,
+.workspace-field textarea {
+    width: 100%;
+    min-height: 46px;
+    background: #f0f2f5;
+    color: #202631;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font: inherit;
+}
+.workspace-field textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+.workspace-notice {
+    background: #f2eff9;
+    color: #574c6d;
+    padding: 16px 20px;
+    border-radius: 12px;
+}
+.workspace-error {
+    background: #fff0ef;
+    color: #a42626;
+    padding: 16px;
+    border-radius: 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.workspace-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin: 22px 0;
+}
+.workspace-stats > div {
+    flex: 1;
+    min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.workspace-stats strong,
+.workspace-usage > strong {
+    font-size: 28px;
+    font-weight: 720;
+    letter-spacing: -0.7px;
+}
+.workspace-stats span {
+    color: #657080;
+    font-size: 13px;
+}
+.workspace-usage meter {
+    width: 100%;
+    height: 10px;
+    margin: 10px 0;
+}
+.workspace-usage ul {
+    padding-left: 18px;
+    color: #686575;
+    font-size: 13px;
+}
+.workspace-review {
+    background: #f7f8fa;
+    border-radius: 14px;
+    padding: 24px;
+    margin: 20px 0;
+}
+.workspace-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 18px 0;
+}
+.workspace-check input {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    accent-color: #8054cf;
+}
+.workspace-plan-summary {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 20px 0;
+}
+.workspace-plan-summary strong {
+    font-size: 24px;
+}
+.workspace-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+    overflow-wrap: anywhere;
+}
+.workspace-row p {
+    margin: 2px 0;
+    color: #687081;
+    font-size: 13px;
+}
+.workspace-tabs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 18px 0;
+}
+.workspace-tabs a {
+    padding: 10px 15px;
+    border-radius: 10px;
+    color: #5f6774;
+}
+.workspace-tabs a[aria-current='page'] {
+    background: #eae1f6;
+    color: #643bab;
+    font-weight: 650;
+}
+.workspace-table-wrap {
+    overflow: auto;
+    margin: 18px 0;
+}
+.workspace-table-wrap table {
+    width: 100%;
+    text-align: left;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+.workspace-table-wrap th {
+    background: #f5f6f8;
+    color: #637082;
+    font-weight: 600;
+}
+.workspace-table-wrap th,
+.workspace-table-wrap td {
+    padding: 14px;
+    vertical-align: top;
+    white-space: nowrap;
+}
+.workspace-table-wrap tbody tr:nth-child(even) {
+    background: #fafbfc;
+}
+.workspace-reauth {
+    max-width: 540px;
+    margin: 22px 0;
+}
+.workspace-app a:not(.workspace-button):hover {
+    text-decoration: underline;
+}
+.workspace-presets {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+    .workspace-header {
+        padding: 18px 20px;
+        align-items: flex-start;
+    }
+    .workspace-header nav {
+        gap: 10px;
+        font-size: 12px;
+        justify-content: flex-end;
+    }
+    .workspace-main {
+        padding: 24px 16px 60px;
+    }
+    .workspace-title {
+        display: block;
+    }
+    .workspace-title h1 {
+        font-size: 25px;
+    }
+    .workspace-section {
+        padding: 22px 18px;
+    }
+    .workspace-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .workspace-stats strong {
+        font-size: 25px;
+    }
+    .workspace-review {
+        padding: 18px;
+    }
+    .workspace-app button {
+        max-width: 100%;
+        white-space: normal;
+    }
+    .workspace-tabs {
+        gap: 2px;
+        font-size: 13px;
+    }
+    .workspace-tabs a {
+        padding: 9px 12px;
+    }
+}

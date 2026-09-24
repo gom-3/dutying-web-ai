@@ -1,10 +1,11 @@
 import {Suspense, lazy} from 'react';
-import {Navigate, Route, Routes} from 'react-router-dom';
+import {Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 
+const WorkspacePage = lazy(() => import('@/pages/workspace'));
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const OAuthErrorPage = lazy(() => import('@/pages/login/oauth-error-page.tsx'));
@@ -44,8 +45,14 @@ const NotAuthLayout = lazy(() => import('@/widgets/layouts/not-auth-layout').the
 export const Router = () => {
     const {t} = useTypedTranslation();
     const isPhoneDevice = usePhoneDevice();
+    const location = useLocation();
 
-    if (isPhoneDevice) {
+    if (
+        isPhoneDevice &&
+        !['/workspace', '/login', '/signup', '/redirect', '/refresh', '/register', '/profile'].some((prefix) =>
+            location.pathname.startsWith(prefix),
+        )
+    ) {
         return (
             <Suspense
                 fallback={
@@ -117,6 +124,7 @@ export const Router = () => {
                 </Route>
                 {/* 인증되지 않은 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<AuthLayout />}>
+                    <Route path="/workspace/*" element={<WorkspacePage />} />
                     <Route path={ROUTE.REGISTER} element={<RegisterPage />} />
                     <Route path={ROUTE.ENTER_WARD} element={<EnterWard />} />
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />

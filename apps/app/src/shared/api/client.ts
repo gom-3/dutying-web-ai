@@ -73,6 +73,8 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
             // 명단이 변경된 사이 저장/검증을 시도한 경우 작성 화면이 최신 workspace를 다시 읽게 한다.
             // 자동 재저장이나 재확정은 이 계층에서 하지 않는다.
             emitScheduleRosterChanged(responseBody);
+            if (status === 403 && ['SCOPE_ACCESS_DENIED', 'WARD_ADMIN_MEMBERSHIP_REQUIRED'].includes(responseBody?.code ?? ''))
+                window.dispatchEvent(new Event('dutying:scope-access-revoked'));
 
             match(status)
                 .with(401, () => {

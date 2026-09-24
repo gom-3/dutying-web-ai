@@ -695,6 +695,7 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    idempotencyKey?: string;
     year: number;
     month: number;
     prompt?: string;
@@ -948,10 +949,7 @@ export interface IWardAPI {
         options?: {signal?: AbortSignal},
     ) => Promise<TScheduleAdjustInterpretRes>;
     getScheduleAdjustmentSignals: (wardId: number, start: string, end: string) => Promise<TScheduleAdjustmentSignal[]>;
-    upsertScheduleAdjustmentSignal: (
-        wardId: number,
-        dto: TUpsertScheduleAdjustmentSignalDTO,
-    ) => Promise<TScheduleAdjustmentSignal>;
+    upsertScheduleAdjustmentSignal: (wardId: number, dto: TUpsertScheduleAdjustmentSignalDTO) => Promise<TScheduleAdjustmentSignal>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
