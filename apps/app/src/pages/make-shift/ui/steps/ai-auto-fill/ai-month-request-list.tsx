@@ -56,6 +56,11 @@ export default function AiMonthRequestList({requests, disabled, disablingRequest
                                         {request.kind === 'RULE' && (
                                             <span className="text-12 text-sub">{t('page.makeShift.aiRefill.adjust.card.ruleNote')}</span>
                                         )}
+                                        {request.conditionStatus && request.conditionStatus !== 'ACTIVE' && (
+                                            <span className="text-12 border-line text-sub rounded-full border px-2 py-0.5">
+                                                {t(`page.makeShift.aiRefill.adjust.conditionStatus.${request.conditionStatus}`)}
+                                            </span>
+                                        )}
                                         <button
                                             type="button"
                                             disabled={disabled || isDisabling}

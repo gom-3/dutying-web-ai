@@ -1381,6 +1381,12 @@ export const ja: TLocale = {
                         nurseAvoidShift: '○○さんは今月、準夜を外してください',
                         nurseForbidWeekend: '○○さんは週末に勤務を入れないでください',
                         pairNotSameShift: '○○さんと△△さんは同じ勤務にしないでください',
+                        pairSameShift: '○○さんは△△さんと必ず同じ日に同じ勤務にしてください',
+                        nightKeeper: '○○さんは今月、夜勤をちょうど12回する夜勤専従です',
+                        pregnancyWeekdayDay: '妊娠中の○○さんは今月、平日の日勤だけにしてください',
+                        returnNoNight: '復職した○○さんは今月、夜勤なしで日勤・準夜だけにしてください',
+                        precepteeNotAlone: '新人の○○さんを夜勤で一人にしないでください',
+                        chargeCoverage: '毎日の夜勤に責任看護師を1人以上入れてください',
                         combined: '夜勤の後は2日休ませて、日勤は4日連続まで',
                     },
                     severity: {
@@ -1388,6 +1394,7 @@ export const ja: TLocale = {
                         HARD: '必須',
                         label: '{{label}} の強さ',
                     },
+                    conditionStatus: {WAITING_FOR_DATA: '運用データ待ち', INACTIVE_CONDITION: '現在は条件未達'},
                     promote: {
                         title: 'このルール、来月も使いますか？',
                         description: '今月に文章で設定したルールです。残すを選んだものだけが病棟の制約条件になり、ほかは今月で終わります。',

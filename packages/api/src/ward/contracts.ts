@@ -536,10 +536,19 @@ export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'CELL';
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL' | 'CELL_SET';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
+export type TScheduleAdjustmentSignal = {
+    id: number | null;
+    signalDate: string;
+    signalKey: string;
+    numericValue?: number | null;
+    booleanValue?: boolean | null;
+    sourceRevision: string;
+};
+export type TUpsertScheduleAdjustmentSignalDTO = Omit<TScheduleAdjustmentSignal, 'id'>;
 export type TScheduleMonthRequestOrigin = 'CHIP' | 'TEXT' | 'CARRIED_OVER';
 /** SOFT: 권장(최대한 지킴). HARD: 꼭(못 지키면 위반으로 표시). */
 export type TScheduleMonthRequestSeverity = 'SOFT' | 'HARD';
@@ -553,12 +562,15 @@ export type TScheduleMonthRequestItem = {
     templateCode?: string;
     /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
     params?: Record<string, unknown>;
+    condition?: {key: string; operator: 'GT' | 'GTE' | 'LT' | 'LTE' | 'EQ'; value: number | boolean};
     /** RULE 일 때 SOFT(권장) 또는 HARD(꼭). 카드의 토글이 정한다. */
     severity?: TScheduleMonthRequestSeverity;
     displayLabel?: string;
     lifetime?: TScheduleMonthRequestLifetime;
     /** 해석이 추측한 수명. 카드의 배지 기본값이 아니라 보조 표시. */
     lifetimeHint?: TScheduleMonthRequestLifetime;
+    /** 사용자가 명시한 적용 월. 비어 있으면 현재 편집 월만 적용한다. */
+    applyMonths?: {year: number; month: number}[];
     origin?: TScheduleMonthRequestOrigin;
     requestText?: string;
     /** CELL 일 때 대상 간호사(nurseId). 행의 workerId 가 아니라 `workerMeta[].nurseId` 와 맞춘다. */
@@ -567,6 +579,10 @@ export type TScheduleMonthRequestItem = {
     date?: string;
     /** CELL 일 때 그 자리에 둘 근무 코드. */
     shiftCode?: string;
+    /** CELL_SET 일 때 대상 간호사 목록. */
+    nurseIds?: number[];
+    /** CELL_SET 일 때 대상 날짜 목록. */
+    dates?: string[];
     /**
      * 문장이 값을 주지 않아 해석기가 고른 슬롯 이름들.
      *
@@ -589,6 +605,9 @@ export type TScheduleMonthRequestRes = {
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
+    condition?: TScheduleMonthRequestItem['condition'] | null;
+    conditionStatus?: 'ACTIVE' | 'WAITING_FOR_DATA' | 'INACTIVE_CONDITION' | null;
+    assumedSlots?: string[];
     requestText?: string | null;
     carriedFromRequestId?: number | null;
     /** 확정 시 병동 제약조건으로 승격됐으면 그 규칙 id. */
@@ -604,6 +623,15 @@ export type TScheduleRequestRuleResult = {
     violationCount: number;
     /** "꼭"으로 걸었지만 이번 표에서는 권장으로 내려 푼 경우 true. */
     downgraded?: boolean | null;
+};
+
+export type TScheduleAdjustmentNotice = {
+    type: 'MONTH_REQUEST_OVERRIDES_WARD_RULE';
+    requestId?: number | null;
+    relatedRuleId?: number | null;
+    requestLabel?: string | null;
+    relatedRuleLabel?: string | null;
+    message: string;
 };
 
 export type TScheduleMonthRequestListRes = {
@@ -700,6 +728,8 @@ export type TAutofillResponse = {
     };
     /** 이번 달 문장 요청(RULE)이 얼마나 지켜졌는지. 요청이 없으면 비어 있다. */
     requestRuleResults?: TScheduleRequestRuleResult[];
+    /** 병동 규칙은 그대로 두고 이번 달 조절이 실행 시에만 우선한 비차단 안내. */
+    adjustmentNotices?: TScheduleAdjustmentNotice[];
 };
 
 export type TSaveSnapshotDTO = {
@@ -889,6 +919,11 @@ export interface IWardAPI {
         interpretDTO: TScheduleAdjustInterpretDTO,
         options?: {signal?: AbortSignal},
     ) => Promise<TScheduleAdjustInterpretRes>;
+    getScheduleAdjustmentSignals: (wardId: number, start: string, end: string) => Promise<TScheduleAdjustmentSignal[]>;
+    upsertScheduleAdjustmentSignal: (
+        wardId: number,
+        dto: TUpsertScheduleAdjustmentSignalDTO,
+    ) => Promise<TScheduleAdjustmentSignal>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
