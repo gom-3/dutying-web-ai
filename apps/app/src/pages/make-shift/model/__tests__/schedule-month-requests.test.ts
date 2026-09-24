@@ -7,6 +7,7 @@ import {
     markCarryOverAnswered,
     promotableRuleRequests,
     toChipRequestItem,
+    toInterpretCells,
     toTextRequestItems,
 } from '../schedule-month-requests';
 
@@ -97,6 +98,22 @@ describe('promotableRuleRequests', () => {
 });
 
 describe('request item builders', () => {
+    it('expands a compact CELL_SET into pinned table cells without persisting it as a request', () => {
+        const cards = [{
+            item: {kind: 'CELL_SET' as const, nurseIds: [11, 12], dates: ['2026-10-03', '2026-10-04'], shiftCode: 'O'},
+            lifetime: 'MONTH' as const,
+            severity: 'SOFT' as const,
+        }];
+
+        expect(toInterpretCells(cards)).toEqual([
+            {nurseId: 11, date: '2026-10-03', shiftCode: 'O'},
+            {nurseId: 11, date: '2026-10-04', shiftCode: 'O'},
+            {nurseId: 12, date: '2026-10-03', shiftCode: 'O'},
+            {nurseId: 12, date: '2026-10-04', shiftCode: 'O'},
+        ]);
+        expect(toTextRequestItems(cards, '3일부터 4일까지 쉬어')).toEqual([]);
+    });
+
     it('builds a chip request with MONTH lifetime and CHIP origin', () => {
         expect(toChipRequestItem('SENIORITY_MIX', 1, '숙련도 섞기')).toEqual({
             kind: 'KNOB',

@@ -88,7 +88,7 @@ export type TInterpretCell = {
  * 세 값이 다 있는 것만 고른다 — 하나라도 비면 어느 칸인지 정해지지 않는다.
  */
 export function toInterpretCells(cardItems: TInterpretCardItem[]): TInterpretCell[] {
-    return cardItems
+    const singleCells = cardItems
         .filter(({item}) => item.kind === 'CELL')
         .map(({item}) => item)
         .filter(
@@ -96,6 +96,19 @@ export function toInterpretCells(cardItems: TInterpretCardItem[]): TInterpretCel
                 typeof item.nurseId === 'number' && typeof item.date === 'string' && typeof item.shiftCode === 'string',
         )
         .map(({nurseId, date, shiftCode}) => ({nurseId, date, shiftCode}));
+    const cellSets = cardItems
+        .filter(({item}) => item.kind === 'CELL_SET')
+        .flatMap(({item}) => {
+            if (!Array.isArray(item.nurseIds) || !Array.isArray(item.dates) || typeof item.shiftCode !== 'string') return [];
+            return item.nurseIds.flatMap((nurseId) =>
+                item.dates!.map((date) => ({nurseId, date, shiftCode: item.shiftCode!})),
+            );
+        });
+    return [...singleCells, ...cellSets].filter(
+        (cell, index, all) => all.findIndex((candidate) =>
+            candidate.nurseId === cell.nurseId && candidate.date === cell.date,
+        ) === index,
+    );
 }
 
 export type TInterpretCardItem = {
@@ -116,7 +129,7 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
     return cardItems
         // CELL 은 규칙이 아니라 표의 한 자리다. 이번 달 요청으로 보내면 서버가 거절하고,
         // 저장된다 해도 재생성 때마다 한 칸짜리 지정이 되살아난다. 표에 직접 반영한다.
-        .filter(({item}) => item.kind !== 'CELL')
+        .filter(({item}) => item.kind !== 'CELL' && item.kind !== 'CELL_SET')
         .map(({item, lifetime, severity}) =>
         item.kind === 'RULE'
             ? {

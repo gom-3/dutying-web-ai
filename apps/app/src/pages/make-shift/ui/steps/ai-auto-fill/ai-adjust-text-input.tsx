@@ -182,9 +182,11 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                                         </span>
                                     )}
 
-                                    {item.kind === 'CELL' ? (
+                                    {item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
                                         <span className="text-12 text-sub border-line rounded-full border px-2 py-0.5">
-                                            {item.date} · {item.shiftCode}
+                                            {item.kind === 'CELL'
+                                                ? `${item.date} · ${item.shiftCode}`
+                                                : `${item.nurseIds?.length ?? 0}명 · ${item.dates?.length ?? 0}일 · ${item.shiftCode}`}
                                         </span>
                                     ) : item.kind === 'RULE' ? (
                                         <>

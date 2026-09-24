@@ -536,7 +536,7 @@ export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL';
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL' | 'CELL_SET';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
@@ -572,6 +572,10 @@ export type TScheduleMonthRequestItem = {
     date?: string;
     /** CELL 일 때 그 자리에 둘 근무 코드. */
     shiftCode?: string;
+    /** CELL_SET 일 때 대상 간호사 목록. */
+    nurseIds?: number[];
+    /** CELL_SET 일 때 대상 날짜 목록. */
+    dates?: string[];
     /**
      * 문장이 값을 주지 않아 해석기가 고른 슬롯 이름들.
      *
