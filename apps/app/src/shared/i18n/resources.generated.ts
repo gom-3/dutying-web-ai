@@ -1528,7 +1528,7 @@ export const ko = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "인원 조건",
-                        "sentence": "{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요"
+                        "sentence": "{target} 대상은 {dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "혼합교대 운영 방식"
@@ -1569,9 +1569,9 @@ export const ko = {
                     "unmarkTitle": "중요 표시를 뺄까요?"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}}에는 {{shift}} 근무자가 최소 {{count}}명 필요해요.",
-                    "max": "{{dateScope}}에는 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.",
-                    "exact": "{{dateScope}}에는 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
+                    "min": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 최소 {{count}}명 필요해요.",
+                    "max": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.",
+                    "exact": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
                 },
                 "savedWarnings": {
                     "title": "저장됐지만 확인이 필요한 제약조건이 있어요"
@@ -4667,7 +4667,7 @@ export const en: TLocale = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "Staffing constraint",
-                        "sentence": "{dateScope} {shift} shifts must have {operator} {count} staff"
+                        "sentence": "For {target} on {dateScope}, {shift} shifts must have {operator} {count} staff"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "Mixed-shift operating policy"
@@ -4708,9 +4708,9 @@ export const en: TLocale = {
                     "unmarkTitle": "Remove the Important mark?"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}}: at least {{count}} nurses are needed for {{shift}}.",
-                    "max": "{{dateScope}}: up to {{count}} nurses can be assigned to {{shift}}.",
-                    "exact": "{{dateScope}}: exactly {{count}} nurses must be assigned to {{shift}}."
+                    "min": "For {{target}} on {{dateScope}}, at least {{count}} nurses are needed for {{shift}}.",
+                    "max": "For {{target}} on {{dateScope}}, up to {{count}} nurses can be assigned to {{shift}}.",
+                    "exact": "For {{target}} on {{dateScope}}, exactly {{count}} nurses must be assigned to {{shift}}."
                 },
                 "savedWarnings": {
                     "title": "Saved, but some constraints need review"
@@ -7804,7 +7804,7 @@ export const ja: TLocale = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "人数条件",
-                        "sentence": "{dateScope}の{shift}勤務人数は{operator}{count}名にします"
+                        "sentence": "{target}は{dateScope}の{shift}勤務人数を{operator}{count}名にします"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "混合交代の運用方式"
@@ -7845,9 +7845,9 @@ export const ja: TLocale = {
                     "unmarkTitle": "重要マークを外しますか？"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}}の{{shift}}勤務には最低{{count}}人必要です。",
-                    "max": "{{dateScope}}の{{shift}}勤務には最大{{count}}人まで配置できます。",
-                    "exact": "{{dateScope}}の{{shift}}勤務はちょうど{{count}}人にします。"
+                    "min": "{{target}}は{{dateScope}}の{{shift}}勤務に最低{{count}}人必要です。",
+                    "max": "{{target}}は{{dateScope}}の{{shift}}勤務に最大{{count}}人まで配置できます。",
+                    "exact": "{{target}}は{{dateScope}}の{{shift}}勤務をちょうど{{count}}人にします。"
                 },
                 "savedWarnings": {
                     "title": "保存しましたが、確認が必要な制約条件があります"
@@ -10941,7 +10941,7 @@ export const zh: TLocale = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "人数条件",
-                        "sentence": "{dateScope}的{shift}班人数必须{operator}{count}人"
+                        "sentence": "{target}在{dateScope}的{shift}班人数必须{operator}{count}人"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "混合轮班运行方式"
@@ -10982,9 +10982,9 @@ export const zh: TLocale = {
                     "unmarkTitle": "要重要的标记去掉吗？"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。",
-                    "max": "{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。",
-                    "exact": "{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。"
+                    "min": "{{target}}在{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。",
+                    "max": "{{target}}在{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。",
+                    "exact": "{{target}}在{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。"
                 },
                 "savedWarnings": {
                     "title": "已保存，但有些约束条件需要确认"
@@ -14078,7 +14078,7 @@ export const th: TLocale = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "เงื่อนไขจำนวนคน",
-                        "sentence": "{dateScope} เวร{shift}ต้องมี{operator}{count}คน"
+                        "sentence": "สำหรับ {target} ใน {dateScope} เวร{shift}ต้องมี{operator}{count}คน"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "นโยบายการทำงานแบบผสม"
@@ -14119,9 +14119,9 @@ export const th: TLocale = {
                     "unmarkTitle": "ลบเครื่องหมายสำคัญออกใช่ไหม"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}",
-                    "max": "{{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}",
-                    "exact": "{{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี"
+                    "min": "สำหรับ {{target}} ใน {{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}",
+                    "max": "สำหรับ {{target}} ใน {{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}",
+                    "exact": "สำหรับ {{target}} ใน {{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี"
                 },
                 "savedWarnings": {
                     "title": "บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ"
@@ -17215,7 +17215,7 @@ export const vi: TLocale = {
                     },
                     "STAFF_COUNT_BY_SHIFT": {
                         "label": "Điều kiện nhân sự",
-                        "sentence": "{dateScope}, ca {shift} phải có {operator} {count} người"
+                        "sentence": "Đối với {target} vào {dateScope}, ca {shift} phải có {operator} {count} người"
                     },
                     "MIXED_OPERATION_POLICY": {
                         "label": "Chính sách vận hành ca hỗn hợp"
@@ -17256,9 +17256,9 @@ export const vi: TLocale = {
                     "unmarkTitle": "Xóa dấu quan trọng?"
                 },
                 "staffCountText": {
-                    "min": "{{dateScope}}: cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.",
-                    "max": "{{dateScope}}: có thể phân công tối đa {{count}} điều dưỡng cho ca {{shift}}.",
-                    "exact": "{{dateScope}}: ca {{shift}} phải có chính xác {{count}} điều dưỡng."
+                    "min": "Đối với {{target}} vào {{dateScope}}, cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.",
+                    "max": "Đối với {{target}} vào {{dateScope}}, có thể phân công tối đa {{count}} điều dưỡng cho ca {{shift}}.",
+                    "exact": "Đối với {{target}} vào {{dateScope}}, ca {{shift}} phải có chính xác {{count}} điều dưỡng."
                 },
                 "savedWarnings": {
                     "title": "Đã lưu, nhưng có một số điều kiện cần kiểm tra"

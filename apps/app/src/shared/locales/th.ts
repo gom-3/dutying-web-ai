@@ -206,9 +206,9 @@ export const th = {
                     title: 'บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ',
                 },
                 staffCountText: {
-                    min: '{{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}',
-                    max: '{{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}',
-                    exact: '{{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี',
+                    min: 'สำหรับ {{target}} ใน {{dateScope}} ต้องมีพยาบาลอย่างน้อย {{count}} คนสำหรับเวร {{shift}}',
+                    max: 'สำหรับ {{target}} ใน {{dateScope}} สามารถจัดพยาบาลได้สูงสุด {{count}} คนสำหรับเวร {{shift}}',
+                    exact: 'สำหรับ {{target}} ใน {{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี',
                 },
                 category: {
                     ...generatedTh.page.makeShift.constraints.category,
@@ -270,7 +270,7 @@ export const th = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: 'เงื่อนไขจำนวนคน',
-                        sentence: '{dateScope} เวร{shift}ต้องมี{operator}{count}คน',
+                        sentence: 'สำหรับ {target} ใน {dateScope} เวร{shift}ต้องมี{operator}{count}คน',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'เงื่อนไขจำนวนคน',

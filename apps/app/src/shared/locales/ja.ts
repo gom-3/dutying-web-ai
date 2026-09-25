@@ -1577,9 +1577,9 @@ export const ja: TLocale = {
                     importantUnmarked: '重要マークを外しました。',
                 },
                 staffCountText: {
-                    min: '{{dateScope}}の{{shift}}勤務には最低{{count}}人必要です。',
-                    max: '{{dateScope}}の{{shift}}勤務には最大{{count}}人まで配置できます。',
-                    exact: '{{dateScope}}の{{shift}}勤務はちょうど{{count}}人にします。',
+                    min: '{{target}}は{{dateScope}}の{{shift}}勤務に最低{{count}}人必要です。',
+                    max: '{{target}}は{{dateScope}}の{{shift}}勤務に最大{{count}}人まで配置できます。',
+                    exact: '{{target}}は{{dateScope}}の{{shift}}勤務をちょうど{{count}}人にします。',
                 },
                 state: {
                     teamRequired: '先に勤務チームを選択してください。',
@@ -1613,7 +1613,7 @@ export const ja: TLocale = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '人数条件',
-                        sentence: '{dateScope}の{shift}勤務人数は{operator}{count}名にします',
+                        sentence: '{target}は{dateScope}の{shift}勤務人数を{operator}{count}名にします',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '人数条件',

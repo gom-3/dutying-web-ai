@@ -962,9 +962,9 @@ export const ko = {
                     importantUnmarked: '중요 표시를 해제했어요.',
                 },
                 staffCountText: {
-                    min: '{{dateScope}}에는 {{shift}} 근무자가 최소 {{count}}명 필요해요.',
-                    max: '{{dateScope}}에는 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.',
-                    exact: '{{dateScope}}에는 {{shift}} 근무자가 정확히 {{count}}명이어야 해요.',
+                    min: '{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 최소 {{count}}명 필요해요.',
+                    max: '{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자를 최대 {{count}}명까지 배정할 수 있어요.',
+                    exact: '{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 정확히 {{count}}명이어야 해요.',
                 },
                 state: {
                     teamRequired: '근무팀을 먼저 선택해 주세요.',
@@ -998,7 +998,7 @@ export const ko = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '인원 조건',
-                        sentence: '{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
+                        sentence: '{target} 대상은 {dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '인원 조건',

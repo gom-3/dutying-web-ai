@@ -997,7 +997,12 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     FORBID_N_THEN_E: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_E_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_E_THEN_N: {target: ALL_CONSTRAINT_TARGET_OPTION},
-    STAFF_COUNT_BY_SHIFT: {dateScope: {type: 'EVERYDAY'}, operator: {type: 'EXACT'}, count: 2},
+    STAFF_COUNT_BY_SHIFT: {
+        target: ALL_CONSTRAINT_TARGET_OPTION,
+        dateScope: {type: 'EVERYDAY'},
+        operator: {type: 'EXACT'},
+        count: 2,
+    },
     MIN_STAFF_BY_SHIFT: {count: '1'},
     MAX_STAFF_BY_SHIFT: {count: '1'},
     MIN_STAFF_BY_DATE_SHIFT: {count: '1'},
@@ -1065,6 +1070,8 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     targets: 'target',
     TARGET: 'target',
     TARGETS: 'target',
+    staffingTargets: 'target',
+    STAFFING_TARGETS: 'target',
     nightShift: 'nightShift',
     nightShifts: 'nightShift',
     NIGHT_SHIFT: 'nightShift',
@@ -1514,6 +1521,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
             template.templateCode === 'STAFF_COUNT_BY_SHIFT'
                 ? (params: Record<string, string>) => {
                       const interpolation = {
+                          target: params.target ?? '',
                           dateScope: params.dateScope ?? '',
                           shift: params.shift ?? '',
                           count: params.count ?? '',
@@ -1720,8 +1728,19 @@ function getNumberBounds(
 
         min = template.id === 'STAFF_COUNT_BY_SHIFT' && operator === 'MIN' ? 1 : 0;
 
+        const target = isConstraintOption(params.target) ? params.target : ALL_CONSTRAINT_TARGET_OPTION;
+        const targetType = getConstraintOptionType(target) ?? 'ALL';
+        const targetNurses = (optionMap.nurse ?? []).filter((option) => {
+            if (targetType === 'DIVISION') return option.divisionNum === target.divisionNum;
+
+            if (targetType === 'NURSE') {
+                return option.raw?.nurseId === target.nurseId || option.value === String(target.nurseId);
+            }
+
+            return targetType === 'ALL';
+        });
         const nurseCount = new Set(
-            (optionMap.nurse ?? []).map((option) => option.raw?.nurseId).filter((nurseId): nurseId is number => nurseId != null),
+            targetNurses.map((option) => option.raw?.nurseId).filter((nurseId): nurseId is number => nurseId != null),
         ).size;
 
         if (nurseCount > 0) max = nurseCount;
@@ -2115,6 +2134,17 @@ function getStaffingDuplicateCount(rule: TShiftConstraintRuleDraft) {
     return Number.isFinite(numericValue) ? String(numericValue) : String(value);
 }
 
+function getStaffingDuplicateTarget(rule: TShiftConstraintRuleDraft) {
+    const target = isConstraintOption(rule.params.target) ? rule.params.target : ALL_CONSTRAINT_TARGET_OPTION;
+    const type = getConstraintOptionType(target) ?? 'ALL';
+
+    if (type === 'DIVISION') return `DIVISION:${target.divisionNum ?? ''}`;
+
+    if (type === 'NURSE') return `NURSE:${target.nurseId ?? ''}`;
+
+    return type;
+}
+
 function getStaffingDuplicateKey(rule: TShiftConstraintRuleDraft) {
     if (!STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return null;
 
@@ -2122,18 +2152,21 @@ function getStaffingDuplicateKey(rule: TShiftConstraintRuleDraft) {
     const shift = getStaffingDuplicateShift(rule);
     const operator = getStaffingDuplicateOperator(rule);
     const count = getStaffingDuplicateCount(rule);
+    const target = getStaffingDuplicateTarget(rule);
 
     if (!dateScope || !shift || !operator || count == null) return null;
 
-    return ['STAFF_COUNT_BY_SHIFT', dateScope, shift, operator, count].join('|');
+    return ['STAFF_COUNT_BY_SHIFT', target, dateScope, shift, operator, count].join('|');
 }
 
 function hasStaffingCountConflict(rules: TShiftConstraintRuleDraft[], candidate: TShiftConstraintRuleDraft) {
     const candidateScope = getStaffingDuplicateDateScope(candidate);
     const candidateShift = getStaffingDuplicateShift(candidate);
+    const candidateTarget = getStaffingDuplicateTarget(candidate);
     const relevantRules = [...rules, candidate].filter(
         (rule) =>
             STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode) &&
+            getStaffingDuplicateTarget(rule) === candidateTarget &&
             getStaffingDuplicateDateScope(rule) === candidateScope &&
             getStaffingDuplicateShift(rule) === candidateShift,
     );
@@ -2611,9 +2644,15 @@ function mergeCandidateOptionMap(
         {includeFallback: true},
     );
     const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes, t);
-    const allTargetCandidates = getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t, {
-        includeFallback: true,
-    });
+    const allTargetCandidates = getCandidateOptions(
+        candidates,
+        'target',
+        ['staffingTargets', 'STAFFING_TARGETS', 'targets', 'TARGETS'],
+        fallback.target,
+        shiftTypes,
+        t,
+        {includeFallback: true},
+    );
     const target = allTargetCandidates.filter((option) => {
         const type = option.raw?.type?.toUpperCase();
 
