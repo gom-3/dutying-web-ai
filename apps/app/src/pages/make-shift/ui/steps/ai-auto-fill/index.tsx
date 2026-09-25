@@ -1042,7 +1042,7 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto) => {
+    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto, prompt?: string) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -1085,6 +1085,7 @@ export function AiAutofill() {
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
+                prompt,
                 adjust,
                 lockedCellKeys: adjustLocked,
                 signal: abortController.signal,
@@ -1325,6 +1326,7 @@ export function AiAutofill() {
         items: TInterpretCardItem[],
         requestText: string,
         strength: TAutofillAdjustStrength,
+        llmPrompt?: string,
     ) => {
         const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
         const cells = toInterpretCells(items);
@@ -1337,7 +1339,7 @@ export function AiAutofill() {
             toast.success(t('page.makeShift.aiRefill.adjust.card.cellApplied', {count: appliedCells}));
         }
 
-        if (requests.length === 0) {
+        if (requests.length === 0 && !llmPrompt) {
             // 칸 지정만 있었다면 표는 이미 바뀌었다. 다시 풀지 않는다 — 사용자가 부탁한 것은
             // 그 칸이지 근무표 전체가 아니고, 재해결은 "조절"을 다시 누르면 된다.
             if (appliedCells > 0) setIsAdjustDialogOpen(false);
@@ -1351,7 +1353,7 @@ export function AiAutofill() {
 
         setIsAdjustDialogOpen(false);
         setLastAdjustChangedCount(null);
-        void runAiFill(readyContext, {strength, requests});
+        void runAiFill(readyContext, {strength, ...(requests.length > 0 ? {requests} : {})}, llmPrompt);
     };
     const handleCarryOverApply = async (requestIds: number[]) => {
         if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;

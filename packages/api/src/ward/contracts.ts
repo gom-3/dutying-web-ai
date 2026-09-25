@@ -681,6 +681,8 @@ export type TScheduleAdjustInterpretUnmapped = {
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
 export type TScheduleAdjustInterpretRes = {
     items: TScheduleMonthRequestItem[];
+    /** 규칙/축으로 구조화하지 못해 이번 ADJUST에서만 LLM이 처리할 사용자 원문의 잔여 문장. */
+    llmPrompt?: string | null;
     unmapped: TScheduleAdjustInterpretUnmapped[];
     strength?: TAutofillAdjustStrength | null;
     promptVersion?: string | null;
@@ -948,10 +950,7 @@ export interface IWardAPI {
         options?: {signal?: AbortSignal},
     ) => Promise<TScheduleAdjustInterpretRes>;
     getScheduleAdjustmentSignals: (wardId: number, start: string, end: string) => Promise<TScheduleAdjustmentSignal[]>;
-    upsertScheduleAdjustmentSignal: (
-        wardId: number,
-        dto: TUpsertScheduleAdjustmentSignalDTO,
-    ) => Promise<TScheduleAdjustmentSignal>;
+    upsertScheduleAdjustmentSignal: (wardId: number, dto: TUpsertScheduleAdjustmentSignalDTO) => Promise<TScheduleAdjustmentSignal>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;

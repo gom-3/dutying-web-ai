@@ -1,9 +1,4 @@
-import type {
-    TScheduleAdjustmentNotice,
-    TScheduleMonthRequestItem,
-    TScheduleMonthRequestRes,
-    TSnapshotCellDTO,
-} from '@dutying/api/ward';
+import type {TScheduleAdjustmentNotice, TScheduleMonthRequestItem, TScheduleMonthRequestRes, TSnapshotCellDTO} from '@dutying/api/ward';
 import {useEffect} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
@@ -730,6 +725,7 @@ describe('AiAutofill adjust panel', () => {
                     displayLabel: 'day max 4',
                 },
             ],
+            llmPrompt: '전체 흐름은 자연스럽게 다듬어줘',
             unmapped: [{text: 'weekends please', hint: '주말 공평은 아직 안 돼요. 이렇게 써 보세요: 주말 근무는 3번 이하로'}],
             strength: 'NORMAL',
         });
@@ -785,8 +781,42 @@ describe('AiAutofill adjust panel', () => {
                 },
             ],
         });
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].prompt).toBe('전체 흐름은 자연스럽게 다듬어줘');
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(2));
         expect(screen.queryByText('page.makeShift.aiRefill.adjust.card.title')).not.toBeInTheDocument();
+    });
+
+    it('applies a pure residual sentence through ADJUST even when there are no structured cards', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [],
+            llmPrompt: '전체 흐름만 자연스럽게 다듬어줘',
+            unmapped: [],
+            strength: 'LIGHT',
+        });
+        mocks.requestAiSchedule.mockImplementation(async () => okResult([], 'ADJUST'));
+
+        await openAdjustDialog(user);
+        await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), '전체 흐름만 자연스럽게 다듬어줘');
+        await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
+
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.adjust.card.title'})).toHaveTextContent(
+            '전체 흐름만 자연스럽게 다듬어줘',
+        );
+        expect(screen.getByRole('button', {name: CARD_APPLY})).toBeEnabled();
+
+        await user.click(screen.getByRole('button', {name: CARD_APPLY}));
+
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({
+            adjust: {strength: 'LIGHT'},
+            prompt: '전체 흐름만 자연스럽게 다듬어줘',
+        });
     });
 
     it('writes a named cell into the table and pins it instead of sending it as a month request', async () => {

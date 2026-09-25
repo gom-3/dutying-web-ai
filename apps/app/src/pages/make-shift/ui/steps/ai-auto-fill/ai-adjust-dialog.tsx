@@ -19,7 +19,7 @@ type TProps = {
     /** 예시를 누르면 입력창에 채워질 뿐 바로 실행되지 않는다. */
     onPickExample: (sentence: string) => void;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
-    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength) => void;
+    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength, llmPrompt?: string) => void;
     requests: TScheduleMonthRequestRes[];
     disablingRequestId: number | null;
     onDisableRequest: (request: TScheduleMonthRequestRes) => void;

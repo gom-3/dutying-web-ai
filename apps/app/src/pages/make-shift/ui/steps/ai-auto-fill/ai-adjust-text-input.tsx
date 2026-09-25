@@ -20,13 +20,14 @@ export type TAdjustTextInputHandle = {
 type TProps = {
     disabled: boolean;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
-    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength) => void;
+    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength, llmPrompt?: string) => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
 
 type TCard = {
     requestText: string;
     items: TInterpretCardItem[];
+    llmPrompt?: string;
     unmapped: TScheduleAdjustInterpretRes['unmapped'];
     strength: TAutofillAdjustStrength;
 };
@@ -70,10 +71,12 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
 
         try {
             const result = await interpret(trimmed);
+            const llmPrompt = result.llmPrompt?.trim();
 
             setCard({
                 requestText: trimmed,
                 items: toCardItems(result.items ?? []),
+                ...(llmPrompt ? {llmPrompt} : {}),
                 unmapped: result.unmapped ?? [],
                 strength: result.strength ?? 'NORMAL',
             });
@@ -96,7 +99,7 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
     const handleApply = () => {
         if (!card) return;
 
-        onApply(card.items, card.requestText, card.strength);
+        onApply(card.items, card.requestText, card.strength, card.llmPrompt);
         setCard(null);
         setText('');
     };
@@ -105,7 +108,7 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
         setCard(null);
         setText(sentence.slice(0, MAX_TEXT_LENGTH));
     };
-    const applicableCount = card?.items.length ?? 0;
+    const applicableCount = (card?.items.length ?? 0) + (card?.llmPrompt ? 1 : 0);
 
     return (
         <div className="ai-adjust-text-input flex flex-col gap-2 px-4 pb-2" data-preserve-duty-selection="true">
@@ -250,6 +253,8 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                             ))}
                         </ul>
                     )}
+
+                    {card.llmPrompt && <p className="text-13 border-line rounded-lg border bg-white px-3 py-2">{card.llmPrompt}</p>}
 
                     {card.unmapped.length > 0 && (
                         <ul className="flex flex-col gap-1">
