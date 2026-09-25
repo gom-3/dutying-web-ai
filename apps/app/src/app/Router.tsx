@@ -32,6 +32,7 @@ const MemberPage = lazy(() => import('@/pages/member'));
 const WardSettingsPage = lazy(() => import('@/pages/ward-settings'));
 const WardAdminsPage = lazy(() => import('@/pages/ward-admins'));
 const WardInfoSettingsPage = lazy(() => import('@/pages/ward-info-settings'));
+const CommercialPage = lazy(() => import('@/pages/commercial'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
 const DutyingPage = lazy(() => import('@/pages/dutying'));
 const DutyingNoticesPage = lazy(() => import('@/pages/dutying/notices'));
@@ -132,6 +133,7 @@ export const Router = () => {
                         <Route path={ROUTE.WARD_SETTINGS} element={<WardSettingsPage />} />
                         <Route path={ROUTE.WARD_ADMINS} element={<WardAdminsPage />} />
                         <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
+                        <Route path={ROUTE.COMMERCIAL} element={<CommercialPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                         <Route path={ROUTE.DUTYING} element={<DutyingPage />} />
                         <Route path={ROUTE.DUTYING_NOTICES} element={<DutyingNoticesPage />} />
