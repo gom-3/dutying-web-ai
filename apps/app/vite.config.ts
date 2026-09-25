@@ -45,6 +45,7 @@ const appStaticRoutes = [
     '/ward-settings',
     '/ward-settings/admins',
     '/ward-info-settings',
+    '/commercial',
     '/profile',
     '/dutying',
     '/dutying/notices',
