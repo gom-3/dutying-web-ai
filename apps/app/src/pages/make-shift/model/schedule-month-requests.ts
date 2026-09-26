@@ -143,6 +143,7 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                   ...(item.applyMonths?.length ? {applyMonths: item.applyMonths} : {}),
                   origin: 'TEXT' as const,
                   requestText,
+                  assumedSlots: item.assumedSlots,
               }
             : item.kind === 'OFF_GOAL'
               ? {

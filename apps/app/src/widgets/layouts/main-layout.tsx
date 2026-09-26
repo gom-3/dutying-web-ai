@@ -17,6 +17,13 @@ import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
 const WORKSPACE_NAV_AUTO_FOLD_WIDTH = 1536;
 const DEFAULT_NAV_AUTO_FOLD_WIDTH = 1280;
+const getNavigationViewportWidth = () => {
+    if (window.innerWidth < DEFAULT_NAV_AUTO_FOLD_WIDTH) return 0;
+
+    if (window.innerWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH) return DEFAULT_NAV_AUTO_FOLD_WIDTH;
+
+    return WORKSPACE_NAV_AUTO_FOLD_WIDTH;
+};
 const NAV_AUTO_FOLD_ROUTES = new Set<string>([ROUTE.MAKE, ROUTE.MEMBER]);
 const MEMBER_DETAIL_NOTIFICATION_OFFSET_CLASS_NAME =
     'pr-[calc(0.75rem+300px+0.5rem)] min-[1400px]:pr-[calc(1rem+340px+0.75rem)] min-[1600px]:pr-[calc(2.5rem+400px+1.25rem)]';
@@ -111,7 +118,7 @@ export const MainLayout = () => {
     const layoutRef = useRef<HTMLDivElement>(null);
     const previousResponsiveStateRef = useRef<{pathname: string; shouldAutoFold: boolean} | null>(null);
     const locationState = location.state as TMainLayoutLocationState;
-    const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+    const [viewportWidth, setViewportWidth] = useState(getNavigationViewportWidth);
     const locationGuidePayload = useMemo(
         () => normalizeWardCreatedGuidePayload(locationState?.onboardingWardCreated),
         [locationState?.onboardingWardCreated],
@@ -158,7 +165,8 @@ export const MainLayout = () => {
     }, [location.pathname, location.search, locationGuidePayload, navigate]);
 
     useEffect(() => {
-        const handleResize = () => setViewportWidth(window.innerWidth);
+        // Navigation depends on two breakpoints, not every resized pixel.
+        const handleResize = () => setViewportWidth(getNavigationViewportWidth());
 
         window.addEventListener('resize', handleResize);
 

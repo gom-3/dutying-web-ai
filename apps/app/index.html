@@ -4,6 +4,18 @@
         <meta charset="UTF-8" />
         <link rel="icon" type="image/png" href="/favicon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script>
+            // Keep legacy language links on the matching static URL before content is painted.
+            if (location.pathname === '/') {
+                const landingParams = new URLSearchParams(location.search);
+                const landingLanguage = (landingParams.get('lng') || '').toLowerCase().split(/[-_]/)[0];
+                if (['en', 'ja', 'zh', 'th', 'vi'].includes(landingLanguage)) {
+                    landingParams.delete('lng');
+                    const landingSearch = landingParams.toString();
+                    location.replace('/' + landingLanguage + (landingSearch ? '?' + landingSearch : '') + location.hash);
+                }
+            }
+        </script>
         <!-- 네이버 서치어드바이저 소유확인. www.dutying.ai 등록 코드 (2026-09-04). -->
         <meta name="naver-site-verification" content="89d8f5a6cc39b77acb5b3524acf327421cd908cd" />
 
@@ -53,216 +65,7 @@
         <!-- MARKETING_SEO_END -->
     </head>
     <body>
-        <div id="root">
-            <!-- MARKETING_FALLBACK_START -->
-            <style>
-                .marketing-fallback {
-                    box-sizing: border-box;
-                    min-height: 100vh;
-                    background: #f8f5ff;
-                    color: #150b3c;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-                }
-                .marketing-fallback * {
-                    box-sizing: border-box;
-                }
-                .marketing-fallback__header {
-                    display: flex;
-                    height: 64px;
-                    align-items: center;
-                    background: #ffffff;
-                    padding: 0 20px;
-                }
-                .marketing-fallback__header-inner {
-                    width: 100%;
-                    max-width: 1180px;
-                    margin: 0 auto;
-                }
-                .marketing-fallback__logo {
-                    display: block;
-                    width: auto;
-                    height: 29px;
-                }
-                .marketing-fallback__hero {
-                    display: grid;
-                    min-height: calc(100vh - 64px);
-                    align-items: center;
-                    gap: 40px;
-                    max-width: 1180px;
-                    margin: 0 auto;
-                    padding: 56px 20px 40px;
-                }
-                .marketing-fallback__content {
-                    position: relative;
-                    z-index: 1;
-                    max-width: 620px;
-                }
-                .marketing-fallback__eyebrow {
-                    margin: 0 0 16px;
-                    color: #7047eb;
-                    font-size: 15px;
-                    font-weight: 800;
-                    letter-spacing: -0.01em;
-                }
-                .marketing-fallback__title {
-                    margin: 0;
-                    color: #150b3c;
-                    font-size: clamp(34px, 7vw, 56px);
-                    font-weight: 850;
-                    letter-spacing: -0.045em;
-                    line-height: 1.16;
-                    word-break: keep-all;
-                }
-                .marketing-fallback__description {
-                    max-width: 600px;
-                    margin: 24px 0 0;
-                    color: #5f557f;
-                    font-size: 17px;
-                    font-weight: 500;
-                    letter-spacing: -0.02em;
-                    line-height: 1.75;
-                    word-break: keep-all;
-                }
-                .marketing-fallback__actions {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                    margin-top: 36px;
-                }
-                .marketing-fallback__action {
-                    display: inline-flex;
-                    min-height: 48px;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 10px;
-                    padding: 0 22px;
-                    font-size: 15px;
-                    font-weight: 800;
-                    text-decoration: none;
-                    transition:
-                        background-color 160ms ease,
-                        color 160ms ease,
-                        transform 160ms ease;
-                }
-                .marketing-fallback__action--primary {
-                    background: #17131f;
-                    color: #ffffff;
-                }
-                .marketing-fallback__action--secondary {
-                    background: #ebe4ff;
-                    color: #5c3dc4;
-                }
-                .marketing-fallback__action--primary:hover,
-                .marketing-fallback__action--primary:focus-visible {
-                    background: #7047eb;
-                    color: #ffffff;
-                    transform: translateY(-2px);
-                }
-                .marketing-fallback__action--secondary:hover,
-                .marketing-fallback__action--secondary:focus-visible {
-                    background: #dcd0ff;
-                    color: #3b237f;
-                    transform: translateY(-2px);
-                }
-                .marketing-fallback__action:focus-visible {
-                    outline: none;
-                }
-                .marketing-fallback__visual {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-width: 0;
-                }
-                .marketing-fallback__visual img {
-                    display: block;
-                    width: min(100%, 620px);
-                    height: auto;
-                }
-                @media (min-width: 768px) {
-                    .marketing-fallback__header {
-                        height: 72px;
-                        padding: 0 32px;
-                    }
-                    .marketing-fallback__logo {
-                        height: 32px;
-                    }
-                    .marketing-fallback__hero {
-                        min-height: calc(100vh - 72px);
-                        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-                        gap: 56px;
-                        padding: 72px 32px 56px;
-                    }
-                    .marketing-fallback__title {
-                        font-size: clamp(48px, 4.2vw, 62px);
-                    }
-                    .marketing-fallback__description {
-                        font-size: 18px;
-                    }
-                    .marketing-fallback__visual img {
-                        width: 116%;
-                        max-width: 720px;
-                    }
-                }
-                @media (max-width: 767px) {
-                    .marketing-fallback__hero {
-                        align-content: center;
-                    }
-                    .marketing-fallback__visual {
-                        margin: 0 -8px;
-                    }
-                    .marketing-fallback__actions {
-                        display: grid;
-                    }
-                    .marketing-fallback__action {
-                        width: 100%;
-                    }
-                }
-                @media (prefers-reduced-motion: reduce) {
-                    .marketing-fallback__action {
-                        transition: none;
-                    }
-                }
-                @media (forced-colors: active) {
-                    .marketing-fallback__action:focus-visible {
-                        outline: 2px solid ButtonText;
-                        outline-offset: 3px;
-                    }
-                }
-            </style>
-            <main data-marketing-fallback class="marketing-fallback">
-                <header class="marketing-fallback__header">
-                    <div class="marketing-fallback__header-inner">
-                        <img class="marketing-fallback__logo" src="/img/group-19.png" alt="Dutying" width="181" height="65" />
-                    </div>
-                </header>
-                <section class="marketing-fallback__hero" aria-labelledby="marketing-fallback-title">
-                    <div class="marketing-fallback__content">
-                        <p class="marketing-fallback__eyebrow">AI 간호사 근무표</p>
-                        <h1 id="marketing-fallback-title" class="marketing-fallback__title">간호사 근무표 만들기, AI로 1분 만에</h1>
-                        <p class="marketing-fallback__description">
-                            간호사 근무표를 AI로 1분 만에 만들어 보세요. 병동 규칙에 맞춰 교대근무 일정을 관리하고 듀팅 간호사 앱과 간편하게
-                            연동하세요.
-                        </p>
-                        <nav class="marketing-fallback__actions" aria-label="듀팅 시작하기">
-                            <a class="marketing-fallback__action marketing-fallback__action--primary" href="/login?next=%2Fmake">
-                                웹에서 근무표 만들기
-                            </a>
-                            <a class="marketing-fallback__action marketing-fallback__action--secondary" href="#app"> 앱 다운로드 </a>
-                        </nav>
-                    </div>
-                    <picture class="marketing-fallback__visual">
-                        <img
-                            src="/img/landing-hero-kr.webp"
-                            alt="간호사 근무표 작성과 일정 관리를 지원하는 듀팅"
-                            width="1800"
-                            height="1127"
-                            fetchpriority="high"
-                        />
-                    </picture>
-                </section>
-            </main>
-            <!-- MARKETING_FALLBACK_END -->
-        </div>
+        <div id="root"></div>
         <div id="modal-root"></div>
         <div id="edit-modal-root"></div>
         <div id="info-modal-root"></div>

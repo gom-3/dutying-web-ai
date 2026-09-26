@@ -206,9 +206,9 @@ export const vi = {
                     title: 'Đã lưu, nhưng có một số điều kiện cần kiểm tra',
                 },
                 staffCountText: {
-                    min: '{{dateScope}}: cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.',
-                    max: '{{dateScope}}: có thể phân công tối đa {{count}} điều dưỡng cho ca {{shift}}.',
-                    exact: '{{dateScope}}: ca {{shift}} phải có chính xác {{count}} điều dưỡng.',
+                    min: 'Đối với {{target}} vào {{dateScope}}, cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.',
+                    max: 'Đối với {{target}} vào {{dateScope}}, có thể phân công tối đa {{count}} điều dưỡng cho ca {{shift}}.',
+                    exact: 'Đối với {{target}} vào {{dateScope}}, ca {{shift}} phải có chính xác {{count}} điều dưỡng.',
                 },
                 category: {
                     ...generatedVi.page.makeShift.constraints.category,
@@ -270,7 +270,7 @@ export const vi = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: 'Điều kiện nhân sự',
-                        sentence: '{dateScope}, ca {shift} phải có {operator} {count} người',
+                        sentence: 'Đối với {target} vào {dateScope}, ca {shift} phải có {operator} {count} người',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'Điều kiện nhân sự',

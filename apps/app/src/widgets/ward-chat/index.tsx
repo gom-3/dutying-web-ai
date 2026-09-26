@@ -6,6 +6,7 @@ import {ChevronUp, ImagePlus, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, 
 import {Fragment, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {getWardAdminAccountIdFromAccessToken} from '@/features/auth/model/admin-token';
 import {uploadImageToS3} from '@/features/file/model/upload-file';
@@ -37,7 +38,6 @@ const CHAT_IMAGE_MAX_SIZE_BYTES = CHAT_IMAGE_MAX_SIZE_MB * 1024 * 1024;
 const CHAT_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']);
 const CHAT_IMAGE_URL_KEYS = ['imageUrls', 'images', 'photoUrls', 'photos', 'attachments'] as const;
 const wardChatQueryKeys = {
-    connectedMembers: (wardId: number) => ['ward-chat', 'connected-members', wardId] as const,
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
     unread: (wardId: number) => ['ward-chat', 'unread', wardId] as const,
 };
@@ -823,8 +823,8 @@ export default function WardChatWidget() {
         refetchInterval: isOpen ? OPEN_REFETCH_INTERVAL_MS : false,
     });
     const connectedMemberCountQuery = useQuery({
-        queryKey: wardChatQueryKeys.connectedMembers(effectiveWardId),
-        queryFn: async () => countConnectedWardMembers(await WardAPI.getShiftTeams(effectiveWardId)),
+        ...wardQueryOptions.shiftTeams(effectiveWardId),
+        select: countConnectedWardMembers,
         enabled: isWidgetAvailable && isOpen,
         retry: false,
         staleTime: 30000,

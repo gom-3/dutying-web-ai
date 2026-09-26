@@ -32,19 +32,31 @@ for (const file of appHtmlFiles) {
     const canonicalPath = marketingPage?.path ?? '/';
     const canonicalUrl = canonicalPath === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${canonicalPath}`;
 
-    assertContains(html, '<meta name="robots" content="index, follow"', file);
+    assertContains(
+        html,
+        file.endsWith('/app-shell.html') ? '<meta name="robots" content="noindex, follow"' : '<meta name="robots" content="index, follow"',
+        file,
+    );
     assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
 
     if (marketingPage) {
-        const marketingHeading = marketingPage.title.split(' | ')[0] ?? marketingPage.title;
+        const landingData = JSON.parse(
+            html.match(/<script id="landing-data" type="application\/json">([\s\S]*?)<\/script>/)?.[1] ?? 'null',
+        );
+        assert(landingData?.language === marketingPage.language, `${file}: 랜딩 hydration 언어 불일치`);
 
         assertContains(html, `<html lang="${marketingPage.language}"`, file);
         assertContains(html, `<title>${marketingPage.title}</title>`, file);
         assertContains(html, `<meta name="description" content="${marketingPage.description}"`, file);
-        assertContains(html, 'data-marketing-fallback', file);
-        assertContains(html, marketingHeading, file);
-        assertContains(html, 'class="marketing-fallback__description"', file);
-        assertContains(html, `alt="${marketingPage.imageAlt}"`, file);
+        assertContains(html, 'data-rendered="landing"', file);
+        assertContains(html, 'landing-main--responsive', file);
+        assertContains(html, 'id="web"', file);
+        assertContains(html, 'id="app"', file);
+        assertContains(html, 'id="mobile-app-download"', file);
+        assertContains(html, 'rel="stylesheet"', file);
+        assert(!html.includes('marketing-fallback'), `${file}: 검색용 임시 화면이 남아 있음`);
+        assert(!html.includes('is-reveal-pending'), `${file}: 초기 HTML의 본문이 숨겨져 있음`);
+        assert(!html.includes('<!--$!-->'), `${file}: 미완성 Suspense fallback이 정적 HTML에 남아 있음`);
         assertContains(html, 'href="/login?next=%2Fmake"', file);
         assert(countMatches(html, /<h1(?:\s|>)/g) === 1, `${file}: 최초 HTML의 H1은 정확히 하나여야 함`);
         assert(!marketingTitles.has(marketingPage.title), `${file}: 검색 제목 중복`);
@@ -61,11 +73,14 @@ for (const file of appHtmlFiles) {
         marketingTitles.add(marketingPage.title);
         marketingDescriptions.add(marketingPage.description);
     } else {
-        assert(!html.includes('data-marketing-fallback'), `${file}: 앱 내부 경로에 검색용 랜딩 fallback이 남아 있음`);
+        assert(!html.includes('data-rendered="landing"'), `${file}: 앱 내부 경로에 랜딩이 남아 있음`);
     }
 }
 
-assert(!existsSync(resolve(root, 'apps/landing')), '은퇴한 apps/landing 디렉터리가 남아 있음');
+assert(
+    !existsSync(resolve(root, 'apps/landing/package.json')) && !existsSync(resolve(root, 'apps/landing/src')),
+    '은퇴한 apps/landing 소스가 남아 있음',
+);
 
 assert(existsSync(resolve(root, 'apps/app/dist/404.html')), '앱 404.html 누락');
 assertContains(read('apps/app/dist/404.html'), '<meta name="robots" content="noindex, follow"', 'apps/app/dist/404.html');
@@ -101,7 +116,7 @@ assertContains(
 
 const appRedirects = read('apps/app/dist/_redirects');
 
-assertContains(appRedirects, '/dutying/notices/:noticeId / 200', 'apps/app/dist/_redirects');
+assertContains(appRedirects, '/dutying/notices/:noticeId /app-shell 200', 'apps/app/dist/_redirects');
 assert(!appRedirects.includes('/* /index.html 200'), '전체 SPA fallback 규칙이 남아 있음');
 assert(!appRedirects.includes('/ https://www.dutying.ai'), '앱 루트가 www에서 자기 자신으로 리디렉션될 수 있음');
 

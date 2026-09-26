@@ -4,7 +4,6 @@ import {getNextNewNurseName, getNextNewNurseNumber} from '../new-nurse-name';
 describe('new nurse numbering', () => {
     it('uses the highest existing number across old and current Korean formats', () => {
         const names = ['신규간호사2', '신규 간호사 5', '신규 간호사 3'];
-
         expect(getNextNewNurseName(names, '신규 간호사')).toBe('신규 간호사 6');
     });
 

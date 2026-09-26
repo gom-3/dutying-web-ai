@@ -1,8 +1,7 @@
-# 유효한 동적 SPA 경로만 루트 앱 셸로 프록시한다.
-# /index.html은 Cloudflare의 clean URL 처리로 /에 308될 수 있으므로 사용하지 않는다.
-/dutying/notices/:noticeId / 200
-/app/friends/invite / 200
-/app/moim/invite / 200
-/app/nultalk/posts/:postId / 200
-/app/wards/:wardId/board/posts/:postId / 200
-/app/notice/:noticeId / 200
+# 동적 앱 경로는 검색용 랜딩이 없는 앱 셸로 프록시한다.
+/dutying/notices/:noticeId /app-shell 200
+/app/friends/invite /app-shell 200
+/app/moim/invite /app-shell 200
+/app/nultalk/posts/:postId /app-shell 200
+/app/wards/:wardId/board/posts/:postId /app-shell 200
+/app/notice/:noticeId /app-shell 200

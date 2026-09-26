@@ -530,7 +530,7 @@ export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX'
 export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
 
 /**
- * KNOB(방향 축) / RULE(이번 달 제약조건) / CELL(표의 한 칸 지정).
+ * KNOB(방향 축) / RULE(이번 달 제약조건) / OFF_GOAL(월 오프 목표) / CELL(표의 한 칸 지정).
  *
  * CELL 은 규칙이 아니라 표의 한 자리라 이번 달 요청으로 **저장되지 않는다** — 카드에서
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
@@ -558,6 +558,11 @@ export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
     knob?: TAutofillAdjustKnob;
     value?: number;
+    /** OFF_GOAL: 기준까지 증가 / 정확 목표에 접근 / 최소 하한. */
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
+    minimumOff?: number;
+    targetOff?: number;
+    source?: 'SOLVER_OFF_TARGET' | 'MIN_MONTHLY_OFF' | 'USER_INPUT';
     /** RULE 일 때 제약조건 템플릿 코드. 이번 달에만 걸리고 병동 제약조건 목록은 건드리지 않는다. */
     templateCode?: string;
     /** RULE 일 때 템플릿 슬롯 값. 근무는 코드("D"), 대상은 "ALL" 또는 nurseId 목록이다. */
@@ -602,6 +607,10 @@ export type TScheduleMonthRequestRes = {
     displayLabel: string;
     knob?: TAutofillAdjustKnob | null;
     value?: number | null;
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM' | null;
+    minimumOff?: number | null;
+    targetOff?: number | null;
+    source?: 'SOLVER_OFF_TARGET' | 'MIN_MONTHLY_OFF' | 'USER_INPUT' | null;
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
@@ -621,7 +630,7 @@ export type TScheduleRequestRuleResult = {
     displayLabel?: string | null;
     /** 지켜지지 못한 자리의 수. 0 이면 전부 지켜졌다. */
     violationCount: number;
-    /** "꼭"으로 걸었지만 이번 표에서는 권장으로 내려 푼 경우 true. */
+    /** 이전 서버가 HARD를 자동 완화했던 응답과의 읽기 호환용. 새 서버는 자동 완화하지 않는다. */
     downgraded?: boolean | null;
 };
 
@@ -672,6 +681,8 @@ export type TScheduleAdjustInterpretUnmapped = {
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
 export type TScheduleAdjustInterpretRes = {
     items: TScheduleMonthRequestItem[];
+    /** 규칙/축으로 구조화하지 못해 이번 ADJUST에서만 LLM이 처리할 사용자 원문의 잔여 문장. */
+    llmPrompt?: string | null;
     unmapped: TScheduleAdjustInterpretUnmapped[];
     strength?: TAutofillAdjustStrength | null;
     promptVersion?: string | null;
@@ -714,9 +725,28 @@ export type TAutofillResponse = {
     validation: TValidationRes;
     unmetInstructions: string[];
     sameAsPrevious: boolean;
-    /** 엔진 판정. 조절이 "이미 그 방향으로 최적"인지 구분하는 데 쓴다. */
+    /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
         status?: string;
+        offGoal?: {
+            operation: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
+            minimumOff?: number | null;
+            targetOff?: number | null;
+            source?: string | null;
+            goalStatus: 'SATISFIED' | 'PARTIAL' | 'REJECTED' | 'TIME_LIMIT';
+            totalDeficit?: number;
+            totalDeviation?: number;
+            nurses?: Array<{
+                shiftNurseId: string | number;
+                current: number;
+                target: number;
+                achieved: number;
+                deficit: number;
+                excess?: number;
+                deviation?: number;
+                blockingReasons?: string[];
+            }>;
+        } | null;
         solver?: {
             /** 바뀐 칸이 없을 때 'ADJUST_NO_CHANGE'. 실패가 아니다. */
             reason?: string;
@@ -920,10 +950,7 @@ export interface IWardAPI {
         options?: {signal?: AbortSignal},
     ) => Promise<TScheduleAdjustInterpretRes>;
     getScheduleAdjustmentSignals: (wardId: number, start: string, end: string) => Promise<TScheduleAdjustmentSignal[]>;
-    upsertScheduleAdjustmentSignal: (
-        wardId: number,
-        dto: TUpsertScheduleAdjustmentSignalDTO,
-    ) => Promise<TScheduleAdjustmentSignal>;
+    upsertScheduleAdjustmentSignal: (wardId: number, dto: TUpsertScheduleAdjustmentSignalDTO) => Promise<TScheduleAdjustmentSignal>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
@@ -979,6 +1006,12 @@ export type TCreateWardSeedNurseDTO = {
 export type TCreateWardConstraintRuleDTO = {
     templateCode: string;
     severity?: TShiftConstraintSeverity;
+    /** 추출기 원본 권고. 'HARD_AFTER_CONFIRM'은 강도가 아니라 "확인하면 HARD"라는 계약이라 그대로 보낸다. */
+    severityRecommendation?: string | null;
+    /** 사용자가 후보를 화면에서 실제로 확인했는지. HARD_AFTER_CONFIRM 승격의 유일한 근거다. */
+    confirmed?: boolean;
+    /** 추출기 신뢰도(0~1). 서버가 저신뢰 후보로 병동 기본 안전값을 덮어쓰지 않게 하는 게이트에 쓴다. */
+    confidence?: number | null;
     selected?: boolean;
     params: Record<string, unknown>;
 };
