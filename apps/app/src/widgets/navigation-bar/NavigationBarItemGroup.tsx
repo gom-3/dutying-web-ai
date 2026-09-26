@@ -93,6 +93,11 @@ const sections: TNavSection[] = [
                 icon: navigationIcons.wardInfo,
                 textKey: 'page.navigationBar.items.wardInfoSettings',
             },
+            {
+                path: ROUTE.COMMERCIAL,
+                icon: navigationIcons.wardInfo,
+                text: '요금제',
+            },
         ],
     },
 ];

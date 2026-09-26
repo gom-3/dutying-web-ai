@@ -205,9 +205,9 @@ export const zh = {
                     title: '已保存，但有些约束条件需要确认',
                 },
                 staffCountText: {
-                    min: '{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。',
-                    max: '{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。',
-                    exact: '{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。',
+                    min: '{{target}}在{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。',
+                    max: '{{target}}在{{dateScope}}的{{shift}}班次最多可安排{{count}}名护士。',
+                    exact: '{{target}}在{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。',
                 },
                 category: {
                     ...generatedZh.page.makeShift.constraints.category,
@@ -269,7 +269,7 @@ export const zh = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: '人数条件',
-                        sentence: '{dateScope}的{shift}班人数必须{operator}{count}人',
+                        sentence: '{target}在{dateScope}的{shift}班人数必须{operator}{count}人',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '人数条件',

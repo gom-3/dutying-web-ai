@@ -12,16 +12,17 @@ const dynamicAppPaths = [
 ];
 
 describe('deep link hosting configuration', () => {
-    it('proxies Cloudflare routes to the root app shell without redirecting to index.html', () => {
+    it('proxies Cloudflare routes to the dedicated app shell without serving the static landing', () => {
         const redirects = readFileSync(resolve(process.cwd(), 'public/_redirects'), 'utf8');
 
         for (const path of dynamicAppPaths) {
-            expect(redirects).toContain(`${path} / 200`);
+            expect(redirects).toContain(`${path} /app-shell 200`);
+            expect(redirects).not.toContain(`${path} / 200`);
         }
         expect(redirects).not.toContain('/index.html 200');
     });
 
-    it('uses the same root app shell rewrites on Vercel', () => {
+    it('uses the same dedicated app shell rewrites on Vercel', () => {
         const config = JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8')) as {
             rewrites: Array<{source: string; destination: string}>;
         };
@@ -31,7 +32,7 @@ describe('deep link hosting configuration', () => {
                 dynamicAppPaths.map((source) =>
                     expect.objectContaining({
                         source,
-                        destination: '/',
+                        destination: '/app-shell',
                     }),
                 ),
             ),

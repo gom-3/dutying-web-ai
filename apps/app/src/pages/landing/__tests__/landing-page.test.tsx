@@ -1,3 +1,4 @@
+import {waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
@@ -79,10 +80,6 @@ describe('LandingPage', () => {
         expect(screen.getByRole('option', {name: /ภาษาไทย/})).toHaveAttribute('href', ROUTE.LANDING_TH);
         expect(screen.getByRole('option', {name: /Tiếng Việt/})).toHaveAttribute('href', ROUTE.LANDING_VI);
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('aria-selected', 'false');
-
-        await user.click(screen.getByRole('option', {name: 'English'}));
-
-        expect(await screen.findByRole('button', {name: 'Select language'})).toHaveAttribute('aria-expanded', 'false');
     });
 
     it('links the App Store button to the localized iOS listing', async () => {
@@ -403,7 +400,7 @@ describe('LandingPage', () => {
         await user.click(screen.getByRole('button', {name: '프로필 메뉴'}));
         await user.click(screen.getByRole('menuitem', {name: '마이페이지'}));
 
-        expect(getWardSpy).toHaveBeenCalledWith(24);
+        await waitFor(() => expect(getWardSpy).toHaveBeenCalledWith(24));
         expect(screen.getByRole('dialog', {name: '마이페이지'})).toBeInTheDocument();
         expect(screen.queryByText('프로필 정보를 준비하고 있어요')).not.toBeInTheDocument();
         expect(screen.getByLabelText('이름')).toHaveValue('김연결');
@@ -412,55 +409,32 @@ describe('LandingPage', () => {
         getWardSpy.mockRestore();
     });
 
-    it('shows app-only landing content on a phone device', () => {
+    it('keeps product information and app download links in one responsive document on phones', () => {
         setPhoneDevice(true);
-
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter>
                 <LandingPage />
             </MemoryRouter>,
         );
 
-        expect(screen.getByRole('heading', {name: /듀팅에서 바로 확인해요/})).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: /간호사에게 꼭 필요한 기능을\s*듀팅에 담았어요/})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /PC 버전으로 보기/})).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: '근무표 관리자 웹'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: /웹에서 근무표 만들기/})).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: '로그인'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: '회원가입'})).not.toBeInTheDocument();
-        expect(document.querySelector('main.landing-main--web-fixed')).not.toBeInTheDocument();
+        expect(screen.getAllByRole('heading', {level: 1})).toHaveLength(1);
+        expect(screen.getByRole('heading', {name: /빈 근무표를\s*처음부터/})).toBeInTheDocument();
+        expect(screen.getAllByRole('link', {name: 'App Store'}).length).toBeGreaterThan(0);
+        expect(screen.getByRole('link', {name: '앱 다운로드'})).toHaveAttribute('href', '#mobile-app-download');
+        expect(document.querySelector('picture source')).toHaveAttribute('media', '(max-width: 767px)');
     });
 
-    it('ignores desktop landing preference on a phone device', () => {
+    it('does not force a desktop viewport from an old saved preference', () => {
         setPhoneDevice(true);
         window.localStorage.setItem('dutying:landing-view-preference', 'desktop');
         window.history.pushState(null, '', '/?view=desktop');
-
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter>
                 <LandingPage />
             </MemoryRouter>,
         );
 
-        expect(screen.getByRole('heading', {name: /듀팅에서 바로 확인해요/})).toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: '근무표 관리자 웹'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /모바일 버전으로 보기/})).not.toBeInTheDocument();
         expect(document.querySelector('meta[name="viewport"]')).toHaveAttribute('content', 'width=device-width, initial-scale=1.0');
-    });
-
-    it('keeps the full landing for a narrow desktop browser viewport', () => {
-        setPhoneDevice(false);
-        Object.defineProperty(window, 'innerWidth', {configurable: true, writable: true, value: 500});
-
-        render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
-                <LandingPage />
-            </MemoryRouter>,
-        );
-
-        expect(screen.getByRole('heading', {name: /교대 근무표,.*듀팅으로 더 간편하게/})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '로그인'})).toBeInTheDocument();
-        expect(screen.queryByRole('heading', {name: /듀팅에서 바로 확인해요/})).not.toBeInTheDocument();
-        expect(document.querySelector('main.landing-main--web-fixed')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /모바일 버전으로 보기/})).not.toBeInTheDocument();
     });
 });

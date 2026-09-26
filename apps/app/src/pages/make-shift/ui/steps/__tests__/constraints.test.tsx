@@ -3544,6 +3544,11 @@ describe('Constraints', () => {
             wardId: 1,
             shiftTeamId: 10,
             options: {
+                staffingTargets: [
+                    {type: 'ALL', label: '모든 간호사'},
+                    {type: 'DIVISION', divisionNum: 2, label: '신규 간호사'},
+                    {type: 'NURSE', nurseId: 7, label: '김간호사'},
+                ],
                 dateScopes: [
                     {type: 'EVERYDAY', label: '매일'},
                     {type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'},
@@ -3562,12 +3567,13 @@ describe('Constraints', () => {
                 {
                     templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
+                    displayTemplate: '{target} 대상은 {dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'staffingTargets'},
                         {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
                         {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
                         {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
@@ -3589,6 +3595,10 @@ describe('Constraints', () => {
 
         await userEvent.click(addButton);
 
+        await userEvent.click(await screen.findByRole('button', {name: '모든 간호사'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '신규 간호사'}));
+
+        expect(screen.getByRole('button', {name: '신규 간호사'})).toBeInTheDocument();
         expect(await screen.findByRole('button', {name: '매일'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '데이'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '정확히'})).toBeInTheDocument();
@@ -3607,6 +3617,7 @@ describe('Constraints', () => {
                         expect.objectContaining({
                             templateCode: 'STAFF_COUNT_BY_SHIFT',
                             params: expect.objectContaining({
+                                target: {type: 'DIVISION', divisionNum: 2},
                                 dateScope: expect.objectContaining({type: 'EVERYDAY'}),
                                 shift: expect.objectContaining({type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11}),
                                 operator: expect.objectContaining({type: 'EXACT'}),
@@ -3740,12 +3751,13 @@ describe('Constraints', () => {
                 {
                     templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '{dateScope} {shift} {operator} {count}',
+                    displayTemplate: '{target} {dateScope} {shift} {operator} {count}',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'staffingTargets'},
                         {key: 'dateScope', label: 'Date scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
                         {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
                         {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
@@ -3770,7 +3782,9 @@ describe('Constraints', () => {
         expect(screen.getByRole('button', {name: 'Every day'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Exactly'})).toBeInTheDocument();
         expect(
-            screen.getByRole('button', {name: /^Add constraint: Every day: exactly 2 nurses must be assigned to .+\.$/}),
+            screen.getByRole('button', {
+                name: /^Add constraint: For All nurses on Every day, exactly 2 nurses must be assigned to .+\.$/,
+            }),
         ).toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: 'Day'}));

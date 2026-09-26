@@ -731,16 +731,22 @@ describe('OnboardingWardCreatePage adapter', () => {
             {date: '2025-03-04', shiftShortName: '교육'},
         ]);
         expect(nextDraft.constraintCandidates).toHaveLength(1);
+        // 'HARD_AFTER_CONFIRM'은 "확인하면 HARD"라는 계약이다. 확인 UI 를 거치기 전에는 SOFT 이고,
+        // 원본 권고는 그대로 서버로 넘겨 승격 판단을 서버가 하게 한다.
         expect(nextDraft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',
-            severity: 'HARD',
+            severity: 'SOFT',
+            severityRecommendation: 'HARD_AFTER_CONFIRM',
             selected: true,
             confidence: 0.86,
         });
         expect(payload.shiftTeams[0]?.constraintRules).toEqual([
             {
                 templateCode: 'MIN_STAFF_BY_SHIFT',
-                severity: 'HARD',
+                severity: 'SOFT',
+                severityRecommendation: 'HARD_AFTER_CONFIRM',
+                confidence: 0.86,
+                confirmed: false,
                 selected: true,
                 params: {staffing: [{shift: 'D', count: 2}]},
             },

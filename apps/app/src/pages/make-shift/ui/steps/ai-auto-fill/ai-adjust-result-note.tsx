@@ -35,7 +35,9 @@ export default function AiAdjustResultNote({changedCount, ruleResults, notices =
 
     return (
         <div className="ai-adjust-result-note text-12 text-sub flex flex-wrap items-center gap-2 px-4" role="status">
-            {unmet ? (
+            {offGoalUnmet ? (
+                <span>{offGoalLabel}</span>
+            ) : unmet ? (
                 <>
                     <span>
                         {t(unmet.downgraded ? 'page.makeShift.aiRefill.adjust.downgraded' : 'page.makeShift.aiRefill.adjust.remaining', {

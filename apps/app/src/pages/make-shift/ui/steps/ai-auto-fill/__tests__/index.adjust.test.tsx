@@ -1,9 +1,4 @@
-import type {
-    TScheduleAdjustmentNotice,
-    TScheduleMonthRequestItem,
-    TScheduleMonthRequestRes,
-    TSnapshotCellDTO,
-} from '@dutying/api/ward';
+import type {TScheduleAdjustmentNotice, TScheduleMonthRequestItem, TScheduleMonthRequestRes, TSnapshotCellDTO} from '@dutying/api/ward';
 import {useEffect} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
@@ -657,12 +652,16 @@ describe('AiAutofill adjust panel', () => {
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(1));
         expect(screen.getByText(`page.makeShift.aiRefill.adjust.applied {"count":1}`)).toBeInTheDocument();
 
-        // 조절 직후에는 손으로 고친 칸이 없으므로 재생성은 확인 다이얼로그 없이 바로 돈다.
+        // 조절 대화상자 다음에는, 손으로 고친 칸이 없어도 현재 근무 중 고정할 것을 고르는
+        // 단계를 한 번 보여 준다. 이 단계를 건너뛰면 조절 기능을 켠 사용자만 고정 기회를 잃는다.
         mocks.requestAiSchedule.mockImplementation(async () => okResult(FIRST_FILL_CELLS, 'GENERATE'));
 
         await openAdjustDialog(user);
         await user.click(screen.getByRole('button', {name: ADJUST_DIALOG_REGENERATE}));
 
+        await screen.findByRole('dialog', {name: DECISION_TITLE});
+        expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(3));
         // 요청은 서버 상태라 재생성해도 남는다. 바뀐 칸 수만 지난 조절의 것이라 지운다.
         expect(mocks.monthRequests.filter((request) => request.status === 'ACTIVE')).toHaveLength(1);
@@ -687,7 +686,7 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
-    it('removes a request from the month list and re-adjusts', async () => {
+    it('removes a request from the month list without autofilling', async () => {
         storeRequest({kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, origin: 'TEXT', displayLabel: 'fair off', requestText: 'x'});
 
         const user = userEvent.setup();
@@ -700,14 +699,12 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByText('page.makeShift.aiRefill.adjust.requests.persistNote')).toBeInTheDocument();
         expect(screen.getByText('fair off')).toBeInTheDocument();
 
-        mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([]));
-
         await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.requests.remove {"label":"fair off"}'}));
 
         await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledWith(1, 10, 1, {status: 'DISABLED'}));
-        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
-        expect(mocks.requestAiSchedule.mock.calls[0]?.[0].adjust).toEqual({strength: 'NORMAL'});
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         await waitFor(() => expect(screen.queryByText('fair off')).not.toBeInTheDocument());
+        expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeInTheDocument();
     });
 
     it('interprets a sentence and applies the card as TEXT requests with the chosen lifetime', async () => {
@@ -728,6 +725,7 @@ describe('AiAutofill adjust panel', () => {
                     displayLabel: 'day max 4',
                 },
             ],
+            llmPrompt: '전체 흐름은 자연스럽게 다듬어줘',
             unmapped: [{text: 'weekends please', hint: '주말 공평은 아직 안 돼요. 이렇게 써 보세요: 주말 근무는 3번 이하로'}],
             strength: 'NORMAL',
         });
@@ -783,8 +781,42 @@ describe('AiAutofill adjust panel', () => {
                 },
             ],
         });
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].prompt).toBe('전체 흐름은 자연스럽게 다듬어줘');
         await waitFor(() => expect(mocks.monthRequests).toHaveLength(2));
         expect(screen.queryByText('page.makeShift.aiRefill.adjust.card.title')).not.toBeInTheDocument();
+    });
+
+    it('applies a pure residual sentence through ADJUST even when there are no structured cards', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await completeFirstFill(user);
+
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [],
+            llmPrompt: '전체 흐름만 자연스럽게 다듬어줘',
+            unmapped: [],
+            strength: 'LIGHT',
+        });
+        mocks.requestAiSchedule.mockImplementation(async () => okResult([], 'ADJUST'));
+
+        await openAdjustDialog(user);
+        await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), '전체 흐름만 자연스럽게 다듬어줘');
+        await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
+
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.adjust.card.title'})).toHaveTextContent(
+            '전체 흐름만 자연스럽게 다듬어줘',
+        );
+        expect(screen.getByRole('button', {name: CARD_APPLY})).toBeEnabled();
+
+        await user.click(screen.getByRole('button', {name: CARD_APPLY}));
+
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({
+            adjust: {strength: 'LIGHT'},
+            prompt: '전체 흐름만 자연스럽게 다듬어줘',
+        });
     });
 
     it('writes a named cell into the table and pins it instead of sending it as a month request', async () => {
@@ -842,7 +874,7 @@ describe('AiAutofill adjust panel', () => {
                 },
             ],
             unmapped: [],
-            strength: 'NORMAL',
+            strength: 'STRONG',
         });
 
         await openAdjustDialog(user);
@@ -852,6 +884,14 @@ describe('AiAutofill adjust panel', () => {
         expect(await screen.findByText('page.makeShift.aiRefill.adjust.card.title')).toBeInTheDocument();
         // 배지에 우리가 고른 값이 함께 보여야 한다 — "기본값"만으로는 무엇이 4인지 알 수 없다.
         expect(screen.getByText(/page\.makeShift\.aiRefill\.adjust\.card\.assumedBadge 4/)).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.adjust.card.apply'}));
+
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toMatchObject({
+            strength: 'STRONG',
+            requests: [{assumedSlots: ['count']}],
+        });
     });
 
     it('lets the sentence box be edited without the editor key bindings eating Backspace, arrows or shift keys', async () => {

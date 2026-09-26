@@ -1,4 +1,3 @@
-import {toBlob} from 'html-to-image';
 import i18n from '@/i18n';
 
 type TBuildShiftImageFileNameOptions = {
@@ -39,9 +38,7 @@ export function buildShiftImageFileName({year, month, teamName}: TBuildShiftImag
     const safeTeamName = teamName ? sanitizeFileNameSegment(teamName) : '';
     const baseName = i18n.t('feature.shiftEditor.export.image.fileName', {year, month});
 
-    return safeTeamName
-        ? i18n.t('feature.shiftEditor.export.image.teamFileName', {year, month, teamName: safeTeamName})
-        : baseName;
+    return safeTeamName ? i18n.t('feature.shiftEditor.export.image.teamFileName', {year, month, teamName: safeTeamName}) : baseName;
 }
 
 export function buildShiftImageTitle({
@@ -181,6 +178,7 @@ async function createA4ShiftImageBlob({sourceBlob, title}: {sourceBlob: Blob; ti
 }
 
 export async function shiftToImage({element, year, month, teamName, hospitalName, wardName}: TShiftToImageOptions) {
+    const {toBlob} = await import('html-to-image');
     const blob = await toBlob(element, {
         backgroundColor: A4_PAGE_BACKGROUND_COLOR,
         cacheBust: true,

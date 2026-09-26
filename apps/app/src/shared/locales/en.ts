@@ -969,9 +969,9 @@ export const en: TLocale = {
                     importantUnmarked: 'Important mark removed.',
                 },
                 staffCountText: {
-                    min: '{{dateScope}}: at least {{count}} nurses are needed for {{shift}}.',
-                    max: '{{dateScope}}: up to {{count}} nurses can be assigned to {{shift}}.',
-                    exact: '{{dateScope}}: exactly {{count}} nurses must be assigned to {{shift}}.',
+                    min: 'For {{target}} on {{dateScope}}, at least {{count}} nurses are needed for {{shift}}.',
+                    max: 'For {{target}} on {{dateScope}}, up to {{count}} nurses can be assigned to {{shift}}.',
+                    exact: 'For {{target}} on {{dateScope}}, exactly {{count}} nurses must be assigned to {{shift}}.',
                 },
                 state: {
                     teamRequired: 'Select a shift team first.',
@@ -1005,7 +1005,7 @@ export const en: TLocale = {
                     },
                     STAFF_COUNT_BY_SHIFT: {
                         label: 'Staffing constraint',
-                        sentence: '{dateScope} {shift} shifts must have {operator} {count} staff',
+                        sentence: 'For {target} on {dateScope}, {shift} shifts must have {operator} {count} staff',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'Staffing constraint',

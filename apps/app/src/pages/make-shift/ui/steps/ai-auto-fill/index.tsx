@@ -2,6 +2,7 @@ import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
+    TAutofillResponse,
     TScheduleMonthRequestItem,
     TScheduleMonthRequestRes,
     TScheduleRequestRuleResult,
@@ -381,6 +382,8 @@ export function AiAutofill() {
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
+    // 마지막 근무 공란 경고를 거친 뒤에도, 조절에서 시작한 "고정 근무 확인" 단계를 잃지 않는다.
+    const pendingAiFillAfterLastShiftWarningRef = useRef<(() => void) | null>(null);
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
     const [lastAiGeneratedDocVersion, setLastAiGeneratedDocVersion] = useState(0);
     const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
@@ -1039,7 +1042,7 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto) => {
+    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto, prompt?: string) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -1082,6 +1085,7 @@ export function AiAutofill() {
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
+                prompt,
                 adjust,
                 lockedCellKeys: adjustLocked,
                 signal: abortController.signal,
@@ -1153,6 +1157,7 @@ export function AiAutofill() {
 
                 setLastAdjustChangedCount(movedCount);
                 setLastRuleResults(result.response.requestRuleResults ?? []);
+                setLastOffGoal(result.response.engineResult?.offGoal ?? null);
                 setLastAdjustStrength(adjust.strength);
 
                 void syncMonthRequests();
@@ -1168,6 +1173,7 @@ export function AiAutofill() {
                 // 바뀐 칸 수와 잔여 위반만 지난 조절의 것이므로 지운다.
                 setLastAdjustChangedCount(null);
                 setLastRuleResults([]);
+                setLastOffGoal(null);
             }
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
@@ -1230,15 +1236,13 @@ export function AiAutofill() {
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
     };
     /**
-     * 요청을 끄고(PATCH DISABLED) 곧바로 다시 조절한다. 새 요청은 없으므로 서버는 남은
-     * ACTIVE 요청만 합산한다 — 마지막 칩을 껐을 때 표가 조절된 채로 남는 문제를 이렇게 푼다.
+     * 요청을 끈다(PATCH DISABLED). ✕는 설정만 바꾸는 액션이므로 여기서 자동완성을 다시
+     * 실행하지 않는다. 바뀐 설정으로 표를 다시 풀고 싶을 때는 사용자가 "다시 생성"을 누른다.
      */
-    const disableRequestsAndReadjust = async (
+    const disableMonthRequests = async (
         targets: TScheduleMonthRequestRes[],
         readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>,
     ) => {
-        setLastAdjustChangedCount(null);
-
         if (targets.length > 0) {
             setDisablingRequestId(targets[0]!.id);
 
@@ -1257,16 +1261,15 @@ export function AiAutofill() {
             }
         }
 
-        await runAiFill(readyContext, {strength: 'NORMAL'});
+        void syncMonthRequests();
     };
-    /** 목록에서 요청 하나를 끄고 바로 다시 푼다. 끈 채로 표를 남겨 두면 화면이 거짓말을 한다. */
+    /** 목록의 ✕는 요청만 끈다. 자동채우기는 대화상자의 "다시 생성"에서만 시작한다. */
     const handleDisableMonthRequest = (request: TScheduleMonthRequestRes) => {
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
 
-        setIsAdjustDialogOpen(false);
-        void disableRequestsAndReadjust([request], readyContext);
+        void disableMonthRequests([request], readyContext);
     };
     const interpretAdjustText = async (text: string) => {
         if (wardId == null || currentShiftTeamId == null) throw new Error('not ready');
@@ -1319,7 +1322,12 @@ export function AiAutofill() {
 
         return positions.length;
     };
-    const handleApplyTextRequests = (items: TInterpretCardItem[], requestText: string) => {
+    const handleApplyTextRequests = (
+        items: TInterpretCardItem[],
+        requestText: string,
+        strength: TAutofillAdjustStrength,
+        llmPrompt?: string,
+    ) => {
         const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
         const cells = toInterpretCells(items);
         // 칸 지정을 먼저 반영한다. 그래야 이어지는 조절이 그 칸을 잠긴 것으로 보고 피해 간다.
@@ -1331,7 +1339,7 @@ export function AiAutofill() {
             toast.success(t('page.makeShift.aiRefill.adjust.card.cellApplied', {count: appliedCells}));
         }
 
-        if (requests.length === 0) {
+        if (requests.length === 0 && !llmPrompt) {
             // 칸 지정만 있었다면 표는 이미 바뀌었다. 다시 풀지 않는다 — 사용자가 부탁한 것은
             // 그 칸이지 근무표 전체가 아니고, 재해결은 "조절"을 다시 누르면 된다.
             if (appliedCells > 0) setIsAdjustDialogOpen(false);
@@ -1345,7 +1353,7 @@ export function AiAutofill() {
 
         setIsAdjustDialogOpen(false);
         setLastAdjustChangedCount(null);
-        void runAiFill(readyContext, {strength: 'NORMAL', requests});
+        void runAiFill(readyContext, {strength, ...(requests.length > 0 ? {requests} : {})}, llmPrompt);
     };
     const handleCarryOverApply = async (requestIds: number[]) => {
         if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;
@@ -1409,10 +1417,12 @@ export function AiAutofill() {
 
         if (cellsToUnfix.length > 0) commands.setCellsFixed(cellsToUnfix, false);
     };
-    const runAiFillWithDecision = (readyContext = getAiFillReadyContext()) => {
+    const runAiFillWithDecision = (readyContext = getAiFillReadyContext(), forceFixedDecision = false) => {
         if (!readyContext) return;
 
-        if (!hasCompletedAiFill) {
+        // 조절 대화상자에서 다시 생성할 때도, 현재 표의 근무 중 지켜야 할 것을 고를 기회를
+        // 준다. 이전에는 이미 AI를 한 번 돌렸다는 이유로 이 단계를 건너뛰어 바로 덮어썼다.
+        if (forceFixedDecision || !hasCompletedAiFill) {
             if (unprotectedFilledCells.length > 0) {
                 openAiFillDecision({kind: 'initial', cellCount: unprotectedFilledCells.length});
 
@@ -1433,12 +1443,18 @@ export function AiAutofill() {
         commands.resetAutofilled('user');
         void runAiFill(readyContext);
     };
-    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>) => {
+    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>, forceFixedDecision = false) => {
         setIsAiBlankPreviewVisible(true);
 
-        if (requestLastShiftBlankWarning('aiFill')) return;
+        pendingAiFillAfterLastShiftWarningRef.current = null;
 
-        runAiFillWithDecision(readyContext);
+        if (requestLastShiftBlankWarning('aiFill')) {
+            pendingAiFillAfterLastShiftWarningRef.current = () => runAiFillWithDecision(readyContext, forceFixedDecision);
+
+            return;
+        }
+
+        runAiFillWithDecision(readyContext, forceFixedDecision);
     };
     /**
      * 빈 표의 첫 채우기는 곧장 돌린다. 조절할 것이 생긴 뒤부터는 대화상자를 먼저 연다 —
@@ -1464,7 +1480,7 @@ export function AiAutofill() {
         if (!readyContext) return;
 
         setIsAdjustDialogOpen(false);
-        startAiFill(readyContext);
+        startAiFill(readyContext, true);
     };
     const handleConfirmAiFillDecision = () => {
         const decisionContext = aiFillDecisionContext;
@@ -1546,6 +1562,16 @@ export function AiAutofill() {
         }
 
         if (warningIntent === 'aiFill') {
+            const continueAiFill = pendingAiFillAfterLastShiftWarningRef.current;
+
+            pendingAiFillAfterLastShiftWarningRef.current = null;
+
+            if (continueAiFill) {
+                continueAiFill();
+
+                return;
+            }
+
             runAiFillWithDecision();
 
             return;
@@ -1573,6 +1599,7 @@ export function AiAutofill() {
         const firstBlankLastShiftCell = findFirstBlankLastShiftCell(useShiftEditorStore.getState().doc);
 
         setLastShiftBlankWarningIntent(null);
+        pendingAiFillAfterLastShiftWarningRef.current = null;
 
         if (!firstBlankLastShiftCell) return;
 

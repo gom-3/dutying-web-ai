@@ -119,19 +119,13 @@ describe('NurseDetailPanel', () => {
         const {rerender} = renderPanel(original);
         const refresh = (selectedNurse: TNurse) => {
             const current = mockUseEditShiftTeam.mock.results[mockUseEditShiftTeam.mock.results.length - 1]?.value;
-
             mockUseEditShiftTeam.mockReturnValue({
                 ...current,
                 state: {...current.state, selectedNurse},
             });
             rerender(
-                <NurseDetailPanel
-                    onClose={vi.fn()}
-                    onOpenWardCodeGuide={vi.fn()}
-                    shiftTeams={[]}
-                    onMoveShiftTeam={vi.fn()}
-                    wardShiftTypes={[]}
-                />,
+                <NurseDetailPanel onClose={vi.fn()} onOpenWardCodeGuide={vi.fn()} shiftTeams={[]}
+                    onMoveShiftTeam={vi.fn()} wardShiftTypes={[]} />,
             );
         };
 
@@ -153,7 +147,10 @@ describe('NurseDetailPanel', () => {
         fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() =>
-            expect(saveNurseDetails).toHaveBeenCalledWith(101, expect.objectContaining({nurse: expect.objectContaining({name})})),
+            expect(saveNurseDetails).toHaveBeenCalledWith(
+                101,
+                expect.objectContaining({nurse: expect.objectContaining({name})}),
+            ),
         );
     });
 

@@ -1,17 +1,20 @@
 import {cn} from '@dutying/utils/style';
 import {Check, Minus, Plus} from 'lucide-react';
 import type {ReactNode} from 'react';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Switch} from '@/shared/ui/primitives/switch';
+import {HOLIDAY_COUNTRIES, getHolidayRegions, getHolidayCountryName, type THolidayCountry} from '../model/holiday-location';
 import {
     calculateBaseRestTarget,
     calculateRestTargetFromDays,
     countPublicHolidaysForRestTarget,
     DEFAULT_REST_LEAVE_POLICY,
-    getPublicHolidayDaysForLanguage,
+    getPublicHolidayDaysForPolicy,
+    loadLegacyRestLeavePolicy,
+    normalizeRestLeavePolicy,
     getRestShiftTypes,
     resolveCountedRestShiftTypeIds,
     type TRestLeavePolicy,
@@ -226,11 +229,20 @@ function FeatureToggle({
 
 export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRestLeavePolicySectionProps) {
     const {t} = useTypedTranslation();
-    const {policy, setPolicy} = useRestLeavePolicy(wardId);
+    const {policy, setPolicy, version, persisted, isLoading, isError, isSaving, refetch} = useRestLeavePolicy(wardId);
+    const [draftVersion, setDraftVersion] = useState(version);
+    const [saveError, setSaveError] = useState<'failed' | 'conflict' | null>(null);
+    const dirtyRef = useRef(false);
+    const draftWardRef = useRef(wardId);
+    const legacyPolicy = useMemo(() => loadLegacyRestLeavePolicy(wardId), [wardId]);
     const [draft, setDraft] = useState<TRestLeavePolicy>(policy);
+    const [draftBase, setDraftBase] = useState<TRestLeavePolicy>(policy);
     const {year, month} = useMemo(getCurrentYearMonth, []);
     const language = i18n.resolvedLanguage ?? i18n.language;
-    const publicHolidayDays = useMemo(() => getPublicHolidayDaysForLanguage(year, month, language), [language, month, year]);
+    const publicHolidayDays = useMemo(() => getPublicHolidayDaysForPolicy(year, month, draft), [draft, month, year]);
+    const holidayRegions = draft.holidayCountry ? getHolidayRegions(draft.holidayCountry) : {};
+    const locationMissing =
+        draft.enabled && draft.includeHolidays && (!draft.holidayCountry || (draft.holidayCountry === 'GB' && !draft.holidayRegion));
     const baseTarget = calculateBaseRestTarget(draft, year, month);
     const previewTarget = calculateRestTargetFromDays(draft, year, month, publicHolidayDays);
     const holidayCount = countPublicHolidaysForRestTarget(
@@ -242,7 +254,10 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     const restShiftTypes = useMemo(() => getRestShiftTypes(shiftTypes), [shiftTypes]);
     const countedRestShiftTypeIds = useMemo(() => resolveCountedRestShiftTypeIds(draft, shiftTypes), [draft, shiftTypes]);
     const countedRestShiftTypeIdSet = useMemo(() => new Set(countedRestShiftTypeIds), [countedRestShiftTypeIds]);
-    const hasChanges = JSON.stringify(draft) !== JSON.stringify(policy);
+    const hasChanges = JSON.stringify(draft) !== JSON.stringify(draftBase);
+
+    dirtyRef.current = hasChanges;
+
     const targetSummary =
         draft.targetMode === 'weekly'
             ? t('page.makeShift.workers.restPolicy.weeklyTarget', {
@@ -259,8 +274,14 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     const previewSummary = [targetSummary, holidaySummary].filter(Boolean).join(' · ');
 
     useEffect(() => {
-        setDraft(policy);
-    }, [policy]);
+        if (draftWardRef.current !== wardId || !dirtyRef.current) {
+            setDraft(policy);
+            setDraftBase(policy);
+            setDraftVersion(version);
+            setSaveError(null);
+            draftWardRef.current = wardId;
+        }
+    }, [policy, version, wardId]);
 
     useEffect(() => {
         onDirtyChange?.(hasChanges);
@@ -289,14 +310,60 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
             countedRestShiftTypeIds: restShiftTypes.map((shiftType) => shiftType.wardShiftTypeId).filter((id) => selectedIds.has(id)),
         });
     };
-    const handleSave = () => {
-        setPolicy(draft);
-        toast.success(t('page.wardSettings.restLeavePolicy.toast.saved'));
+    const handleSave = async () => {
+        setSaveError(null);
+
+        try {
+            const saved = await setPolicy(draft, draftVersion);
+
+            if (saved.wardId !== draftWardRef.current) return;
+
+            setDraft(normalizeRestLeavePolicy(saved));
+            setDraftBase(normalizeRestLeavePolicy(saved));
+            setDraftVersion(saved.version);
+            toast.success(t('page.wardSettings.restLeavePolicy.toast.saved'));
+        } catch (error) {
+            const status =
+                (error as {code?: number; response?: {status?: number}}).code ?? (error as {response?: {status?: number}}).response?.status;
+
+            setSaveError(status === 409 ? 'conflict' : 'failed');
+        }
     };
+    const reloadPolicy = async () => {
+        const result = await refetch();
+
+        if (result.data && !result.isError) {
+            setDraft(normalizeRestLeavePolicy(result.data));
+            setDraftBase(normalizeRestLeavePolicy(result.data));
+            setDraftVersion(result.data.version);
+            setSaveError(null);
+        }
+    };
+
+    if (isLoading) return <p role="status">{t('page.wardSettings.restLeavePolicy.sync.loading')}</p>;
+
+    if (isError)
+        return (
+            <div role="alert">
+                <p>{t('page.wardSettings.restLeavePolicy.sync.loadFailed')}</p>
+                <button type="button" onClick={() => void refetch()}>
+                    {t('page.wardSettings.restLeavePolicy.sync.retry')}
+                </button>
+            </div>
+        );
 
     return (
         <div className="w-full overflow-x-auto">
-            <div className="min-w-[860px]">
+            <fieldset disabled={isSaving || !wardId} className="min-w-[860px]">
+                <p className="mb-4 text-sm text-gray-3">{t('page.wardSettings.restLeavePolicy.sync.shared')}</p>
+                {!persisted && legacyPolicy ? (
+                    <div className="mb-4 rounded-xl bg-gray-7 p-4">
+                        <p className="text-sm text-gray-3">{t('page.wardSettings.restLeavePolicy.sync.legacyHint')}</p>
+                        <button type="button" className="mt-2 text-sm font-semibold text-main-1" onClick={() => setDraft(legacyPolicy)}>
+                            {t('page.wardSettings.restLeavePolicy.sync.importLegacy')}
+                        </button>
+                    </div>
+                ) : null}
                 <FeatureToggle
                     enabled={draft.enabled}
                     title={t('page.wardSettings.restLeavePolicy.availability.title')}
@@ -364,6 +431,79 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                                             onClick={() => patchDraft({includeHolidays: false})}
                                         />
                                     </div>
+                                    {draft.includeHolidays ? (
+                                        <div className="mt-4 rounded-2xl bg-gray-7 p-4">
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <label className="grid gap-2 text-sm font-medium text-sub-1">
+                                                    {t('page.wardSettings.restLeavePolicy.holiday.country')}
+                                                    <select
+                                                        aria-label={t('page.wardSettings.restLeavePolicy.holiday.country')}
+                                                        className="h-11 rounded-xl bg-white px-3"
+                                                        value={draft.holidayCountry ?? ''}
+                                                        onChange={(event) =>
+                                                            patchDraft({
+                                                                holidayCountry: (event.target.value || null) as THolidayCountry | null,
+                                                                holidayRegion: null,
+                                                            })
+                                                        }
+                                                    >
+                                                        <option value="">
+                                                            {t('page.wardSettings.restLeavePolicy.holiday.selectCountry')}
+                                                        </option>
+                                                        {HOLIDAY_COUNTRIES.map((country) => (
+                                                            <option key={country} value={country}>
+                                                                {getHolidayCountryName(country, language)}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </label>
+                                                {Object.keys(holidayRegions).length > 0 ? (
+                                                    <label className="grid gap-2 text-sm font-medium text-sub-1">
+                                                        {t('page.wardSettings.restLeavePolicy.holiday.region')}
+                                                        <select
+                                                            aria-label={t('page.wardSettings.restLeavePolicy.holiday.region')}
+                                                            className="h-11 rounded-xl bg-white px-3"
+                                                            value={draft.holidayRegion ?? ''}
+                                                            onChange={(event) => patchDraft({holidayRegion: event.target.value || null})}
+                                                        >
+                                                            <option value="">
+                                                                {t(
+                                                                    draft.holidayCountry === 'GB'
+                                                                        ? 'page.wardSettings.restLeavePolicy.holiday.selectRegion'
+                                                                        : 'page.wardSettings.restLeavePolicy.holiday.national',
+                                                                )}
+                                                            </option>
+                                                            {Object.entries(holidayRegions).map(([code, name]) => (
+                                                                <option key={code} value={code}>
+                                                                    {draft.holidayCountry === 'GB'
+                                                                        ? t(`page.wardSettings.restLeavePolicy.holiday.gb.${code}`)
+                                                                        : name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+                                                ) : null}
+                                            </div>
+                                            <p className="mt-3 text-xs leading-5 text-gray-3">
+                                                {t('page.wardSettings.restLeavePolicy.holiday.locationHint')}
+                                            </p>
+                                            {locationMissing ? (
+                                                <p className="mt-2 text-sm text-main-1">
+                                                    {t('page.wardSettings.restLeavePolicy.holiday.required')}
+                                                </p>
+                                            ) : draft.holidayCountry ? (
+                                                <p className="mt-2 text-sm text-sub-1">
+                                                    {t('page.wardSettings.restLeavePolicy.holiday.previewDates', {
+                                                        month,
+                                                        count: holidayCount,
+                                                    })}
+                                                    {publicHolidayDays.length > 0
+                                                        ? ` · ${publicHolidayDays.map(({day}) => day).join(', ')}`
+                                                        : ''}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
                                 </SettingPanel>
 
                                 <SettingPanel eyebrow="03" title={t('page.wardSettings.restLeavePolicy.carryOver.title')}>
@@ -448,17 +588,33 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                     </>
                 ) : null}
 
+                {saveError ? (
+                    <div role="alert" className="mt-4 rounded-xl bg-gray-7 p-4 text-sm">
+                        <p>
+                            {t(
+                                saveError === 'conflict'
+                                    ? 'page.wardSettings.restLeavePolicy.sync.conflict'
+                                    : 'page.wardSettings.restLeavePolicy.sync.saveFailed',
+                            )}
+                        </p>
+                        {saveError === 'conflict' ? (
+                            <button type="button" className="mt-2 font-semibold text-main-1" onClick={() => void reloadPolicy()}>
+                                {t('page.wardSettings.restLeavePolicy.sync.reload')}
+                            </button>
+                        ) : null}
+                    </div>
+                ) : null}
                 <div className="mt-4 flex justify-end">
                     <button
                         type="button"
-                        disabled={!hasChanges}
+                        disabled={!hasChanges || locationMissing || isSaving || !wardId}
                         className={cn(SETTINGS_PRIMARY_BUTTON_CLASS, 'w-full justify-center sm:w-auto')}
                         onClick={handleSave}
                     >
-                        {t('page.wardSettings.restLeavePolicy.save')}
+                        {t(isSaving ? 'page.wardSettings.restLeavePolicy.sync.saving' : 'page.wardSettings.restLeavePolicy.save')}
                     </button>
                 </div>
-            </div>
+            </fieldset>
         </div>
     );
 }

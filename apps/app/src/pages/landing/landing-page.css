@@ -1,6 +1,6 @@
 .reveal-on-scroll {
-    opacity: 0;
-    transform: translateY(34px);
+    opacity: 1;
+    transform: none;
     transition:
         opacity 720ms cubic-bezier(0.22, 1, 0.36, 1),
         transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -8,12 +8,10 @@
 }
 
 .reveal-on-scroll--image {
-    transform: translateY(42px) scale(0.985);
     transition-duration: 840ms;
 }
 
 .reveal-on-scroll--hero {
-    transform: translateY(18px) scale(1.015);
     transition-duration: 980ms;
 }
 
@@ -23,6 +21,11 @@
 
 .reveal-on-scroll--delay-2 {
     transition-delay: 220ms;
+}
+
+.reveal-on-scroll.is-reveal-pending {
+    opacity: 0;
+    transform: translateY(34px);
 }
 
 .reveal-on-scroll.is-visible {
@@ -121,15 +124,6 @@
     scroll-snap-align: none;
 }
 
-.landing-main--desktop-forced {
-    min-width: 1180px;
-}
-
-.landing-main--web-fixed {
-    width: max(100%, 1180px);
-    min-width: 1180px;
-}
-
 .landing-dark-action-button {
     width: max-content;
     min-width: 252px;
@@ -178,82 +172,101 @@
     }
 }
 
-/* Keep the web landing as a desktop canvas when a non-phone viewport is narrow. */
+/* CSS selects the layout before JavaScript; the DOM stays identical through hydration. */
+.landing-mobile-only {
+    display: none;
+}
+.landing-main--responsive {
+    width: 100%;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .landing-section-nav {
+        gap: 20px;
+    }
+    .landing-hero-grid {
+        grid-template-columns: 1fr;
+        padding-top: 48px;
+        padding-bottom: 64px;
+        gap: 32px;
+    }
+    .landing-hero-actions {
+        margin-top: 32px;
+    }
+    .landing-hero-grid > picture {
+        margin-top: 0;
+        justify-content: center;
+    }
+    .landing-hero-grid > picture img {
+        width: 100%;
+        max-width: 720px;
+        transform: none;
+    }
+}
+
 @media (max-width: 767px) {
-    .landing-main--web-fixed .landing-section-nav {
+    .landing-desktop-only {
+        display: none !important;
+    }
+    .landing-mobile-only {
+        display: block;
+    }
+    a.landing-mobile-only {
+        display: inline-flex;
+    }
+    div.landing-mobile-only {
+        display: grid;
+    }
+    .landing-main {
+        scroll-snap-type: none;
+    }
+    .landing-header-inner {
+        max-width: 520px;
+    }
+    .landing-hero-grid {
         display: flex;
+        flex-direction: column;
+        min-height: calc(100svh - 60px);
+        max-width: 520px;
+        gap: 0;
+        padding: 32px 20px 28px;
     }
-
-    .landing-main--web-fixed .landing-hero-grid {
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-        gap: 2.5rem;
-        min-height: min(calc(88svh - 4.5rem), 820px);
-        padding: 8rem 2rem 1.5rem;
+    .landing-hero-title {
+        font-size: 36px;
+        line-height: 1.18;
     }
-
-    .landing-main--web-fixed .landing-hero-grid > picture {
-        justify-content: flex-end;
-        margin-top: -4rem;
+    .landing-hero-grid > picture {
+        width: 100%;
+        min-height: 310px;
+        margin-top: auto;
+        padding-top: 32px;
+        align-items: flex-end;
     }
-
-    .landing-main--web-fixed .landing-hero-grid > picture img {
+    .landing-hero-grid > picture img {
         width: 118%;
-        max-width: none;
-        transform: translateX(2rem);
+        max-width: 500px;
+        height: auto;
+        transform: translateX(-12px);
     }
-
-    .landing-main--web-fixed .landing-hero-title {
-        font-size: 51px;
+    .landing-dark-action-button {
+        min-width: 0;
+        max-width: 100%;
     }
-
-    .landing-main--web-fixed .landing-hero-description {
-        font-size: 1.125rem;
-        line-height: 2rem;
+    .landing-cta-row {
+        align-items: stretch;
     }
-
-    .landing-main--web-fixed .landing-hero-actions {
-        margin-top: 7rem;
-        flex-direction: row;
-        max-width: 680px;
+    .landing-app-section__image.landing-app-section__image--compact {
+        width: 100%;
+        margin-top: 0;
     }
-
-    .landing-main--web-fixed .landing-web-section__inner {
-        grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-        gap: 6rem;
-        padding: 9.7rem 2rem;
+    .landing-main > footer > div {
+        max-width: 520px;
     }
+}
 
-    .landing-main--web-fixed .landing-feature-section__inner,
-    .landing-main--web-fixed .landing-app-feature-section__inner {
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 3rem;
-        padding: 7rem 2rem;
-    }
-
-    .landing-main--web-fixed .landing-app-section__inner {
-        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-        padding: 5rem 2rem;
-    }
-
-    .landing-main--web-fixed .landing-final-cta__inner {
-        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-        padding: 5.5rem 2rem 2rem;
-    }
-
-    .landing-main--web-fixed .landing-final-cta__inner img {
-        width: 765px;
-    }
-
-    .landing-main--web-fixed #app-ward > .landing-app-feature-section__inner > picture {
-        order: 2;
-    }
-
-    .landing-main--web-fixed .landing-web-actions,
-    .landing-main--web-fixed .landing-cta-row {
-        flex-direction: row;
-    }
-
-    .landing-main--web-fixed .landing-dark-action-button {
-        min-width: 252px;
+@media (prefers-reduced-motion: reduce) {
+    .reveal-on-scroll.is-reveal-pending {
+        opacity: 1;
+        transform: none;
     }
 }

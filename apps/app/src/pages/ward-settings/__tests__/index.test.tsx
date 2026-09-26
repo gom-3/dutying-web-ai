@@ -6,6 +6,16 @@ import i18n from '@/i18n';
 import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
+import {DEFAULT_REST_LEAVE_POLICY} from '../model/rest-leave-policy';
+import type * as RestPolicyModule from '../model/rest-leave-policy';
+
+const {mockUseRestLeavePolicy, mockSaveRestPolicy} = vi.hoisted(() => ({mockUseRestLeavePolicy: vi.fn(), mockSaveRestPolicy: vi.fn()}));
+
+vi.mock('../model/rest-leave-policy', async () => {
+    const actual = await vi.importActual<typeof RestPolicyModule>('../model/rest-leave-policy');
+
+    return {...actual, useRestLeavePolicy: () => mockUseRestLeavePolicy()};
+});
 
 const mockUseWardSettings = vi.fn();
 const mockNavigate = vi.hoisted(() => vi.fn());
@@ -266,6 +276,19 @@ function mixedShiftTypes() {
 describe('WardSettingsPage', () => {
     beforeEach(async () => {
         await i18n.changeLanguage('ko');
+        mockSaveRestPolicy
+            .mockReset()
+            .mockImplementation(async (policy, version) => ({...policy, wardId: 1, persisted: true, version: version + 1}));
+        mockUseRestLeavePolicy.mockReturnValue({
+            policy: {...DEFAULT_REST_LEAVE_POLICY, holidayCountry: 'KR'},
+            version: 1,
+            persisted: true,
+            isLoading: false,
+            isError: false,
+            isSaving: false,
+            refetch: vi.fn(),
+            setPolicy: mockSaveRestPolicy,
+        });
         mockUseWardSettings.mockReset();
         mockNavigate.mockClear();
         mockAuthState.accessToken = null;
@@ -855,9 +878,7 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() => {
-            expect(JSON.parse(window.localStorage.getItem('dutying:ward:1:rest-leave-policy') ?? '{}')).toMatchObject({
-                countedRestShiftTypeIds: [2],
-            });
+            expect(mockSaveRestPolicy).toHaveBeenCalledWith(expect.objectContaining({countedRestShiftTypeIds: [2]}), 1);
         });
     });
 
@@ -881,7 +902,7 @@ describe('WardSettingsPage', () => {
         }
     });
 
-    it('현재 언어에 맞는 국가 공휴일로 미리보기를 다시 계산한다', async () => {
+    it('화면 언어를 바꿔도 병동에 저장한 국가로 미리보기를 계산한다', async () => {
         await i18n.changeLanguage('ja');
         vi.useFakeTimers();
         vi.setSystemTime(new Date(2026, 8, 13));
@@ -896,7 +917,7 @@ describe('WardSettingsPage', () => {
         try {
             render(<WardSettingsPage />);
 
-            expect(screen.getByText('週2日基準・暦上8日 · 祝日を含める +3日')).toBeInTheDocument();
+            expect(screen.getByText('週2日基準・暦上8日 · 祝日を含める +2日')).toBeInTheDocument();
         } finally {
             vi.useRealTimers();
         }
@@ -972,9 +993,7 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() => {
-            expect(JSON.parse(window.localStorage.getItem('dutying:ward:1:rest-leave-policy') ?? '{}')).toMatchObject({
-                enabled: false,
-            });
+            expect(mockSaveRestPolicy).toHaveBeenCalledWith(expect.objectContaining({enabled: false}), 1);
         });
     });
 

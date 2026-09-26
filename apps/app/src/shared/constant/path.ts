@@ -36,6 +36,7 @@ const ROUTE = {
     MEMBER: '/member',
     WARD_SETTINGS: '/ward-settings',
     WARD_ADMINS: '/ward-settings/admins',
+    COMMERCIAL: '/commercial',
     WARD_INFO_SETTINGS: '/ward-info-settings',
     PROFILE: '/profile',
     DUTYING: '/dutying',
