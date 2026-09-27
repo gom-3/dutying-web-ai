@@ -2,6 +2,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
 import {LoaderIcon, Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
+import useAuthStore from '@/features/auth/model/store';
 import App from '@/app/App';
 import {captureOAuthRedirectPayload} from '@/features/auth/model/oauth-redirect-payload';
 import {initializeProfileImageStore} from '@/features/file';
@@ -25,6 +26,21 @@ const queryClient = new QueryClient({
             staleTime: 1000 * 10,
         },
     },
+});
+
+useAuthStore.subscribe((next, previous) => {
+    if (next.accountId !== previous.accountId || next.wardId !== previous.wardId || (!next.isAuth && previous.isAuth)) {
+        void queryClient.cancelQueries();
+        queryClient.clear();
+    }
+});
+window.addEventListener('dutying:scope-access-revoked', () => {
+    void queryClient.cancelQueries();
+    queryClient.clear();
+    if (!window.location.pathname.startsWith('/workspace')) window.location.replace('/workspace');
+});
+window.addEventListener('dutying:commercial-usage-changed', () => {
+    void queryClient.invalidateQueries({queryKey: ['commercial']});
 });
 
 if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCATOR === 'true') {

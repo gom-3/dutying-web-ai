@@ -756,6 +756,7 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    idempotencyKey?: string;
     year: number;
     month: number;
     prompt?: string;

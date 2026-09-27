@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {useCommercialContext} from '@/features/commercial/api';
 import {getDemoSessionInfo, isDemoSessionExpired} from '@/features/auth/model/demo-session';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -12,6 +13,7 @@ import {DemoExpiredModal} from './demo-expired-modal';
 import DemoSessionBanner from './demo-session-banner';
 
 export const AuthLayout = () => {
+    const commercial = useCommercialContext();
     const [currentTime, setCurrentTime] = useState(() => Date.now());
     const navigate = useNavigate();
     const {pathname, search} = useLocation();
@@ -41,11 +43,18 @@ export const AuthLayout = () => {
          * WARD_SELECT_PENDING is neither LINKED nor DEMO, so keep onboarding/register routes
          * explicitly allowed here to avoid bouncing back to /register.
          */
+        if (pathname.startsWith('/workspace')) return;
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
+            if ([ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname)) return;
+            if (commercial.isFetching) return;
+            if (commercial.data?.scopes.some((scope) => scope.type === 'HOSPITAL')) {
+                navigate('/workspace', {replace: true});
+                return;
+            }
             if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
                 navigate(ROUTE.REGISTER);
         }
-    }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname, search]);
+    }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname, search, commercial.data, commercial.isFetching]);
 
     useEffect(() => {
         if (!_loaded || !isAuth || !accessToken) {
