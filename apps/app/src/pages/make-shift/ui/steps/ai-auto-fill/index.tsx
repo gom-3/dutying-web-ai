@@ -455,7 +455,9 @@ export function AiAutofill() {
             .then((detail) => {
                 if (!active) return;
 
-                if (detail.candidate.applicationStatus === 'UNDONE' || detail.candidate.applicationStatus === 'CONFIRMED') {
+                if (detail.candidate.applicationStatus === 'UNDONE'
+                    || detail.candidate.applicationStatus === 'CONFIRMED'
+                    || detail.candidate.applicationStatus === 'CONFIRMED_MODIFIED') {
                     writeStoredGoalCandidate(storageKey, null);
 
                     return;
@@ -786,7 +788,7 @@ export function AiAutofill() {
         prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshot);
         invalidateSnapshots(wardId, currentShiftTeamId, year, month);
 
-        await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
+        const publishResult = await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
             overwriteWardShift: true,
             applyRowOrder: true,
             // 고른 것이 없으면 키를 넣지 않는다. 승격은 기본 미선택이고, 안 고른 확정의
@@ -802,7 +804,10 @@ export function AiAutofill() {
                       ...current,
                       response: {
                           ...current.response,
-                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'CONFIRMED'},
+                          goalCandidate: {
+                              ...current.response.goalCandidate,
+                              applicationStatus: publishResult?.goalCandidateStatus ?? 'CONFIRMED',
+                          },
                       },
                   }
                 : current,
