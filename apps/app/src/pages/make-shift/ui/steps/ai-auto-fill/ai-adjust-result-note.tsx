@@ -24,6 +24,12 @@ type TProps = {
 export default function AiAdjustResultNote({changedCount, ruleResults, notices = [], goalResult, offGoal, isStrongest, disabled, onAdjustHarder}: TProps) {
     const {t} = useTypedTranslation();
     const unmet = ruleResults.find((entry) => (entry.violationCount ?? 0) > 0);
+    const offGoalUnmet = offGoal && offGoal.goalStatus !== 'SATISFIED';
+    const offGoalLabel = offGoal?.operation === 'SET_TARGET'
+        ? `${offGoal.targetOff}일 목표에서 총 ${offGoal.totalDeviation ?? 0}일 차이가 남았어요.`
+        : offGoal?.operation === 'INCREASE_TO_BASELINE'
+          ? `기준 오프까지 총 ${offGoal.totalDeficit ?? 0}일이 아직 부족해요.`
+          : `최소 ${offGoal?.minimumOff}일 오프 목표 중 ${offGoal?.totalDeficit ?? 0}일이 아직 부족해요.`;
 
     if (changedCount === null && !unmet && !goalResult && !offGoal && notices.length === 0) return null;
 
