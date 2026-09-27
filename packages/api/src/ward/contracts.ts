@@ -662,8 +662,31 @@ export type TScheduleGoalResult = {
 export type TScheduleGoalCandidate = {
     candidateId: string;
     baseDraftRevision: number;
+    appliedDraftRevision?: number | null;
+    baseCellsHash: string;
     planHash: string;
-    applicationStatus: 'NOT_APPLIED' | 'APPLIED' | 'UNDONE';
+    applicationStatus: 'CREATED' | 'APPLIED' | 'UNDONE' | 'CONFIRMED';
+};
+
+export type TScheduleGoalCandidateEvent = {
+    eventType: string;
+    draftRevision?: number | null;
+    reason?: string | null;
+    createdAt?: string | null;
+};
+
+export type TScheduleGoalCandidateDetail = {
+    candidate: TScheduleGoalCandidate;
+    changedCells: TSnapshotCellDTO[];
+    revertCells: TSnapshotCellDTO[];
+    goalResult: TScheduleGoalResult;
+    events: TScheduleGoalCandidateEvent[];
+};
+
+export type TScheduleGoalCandidateTransitionDTO = {
+    eventId: string;
+    draftRevision: number;
+    cells: TSnapshotCellDTO[];
 };
 
 export type TScheduleAdjustmentNotice = {
@@ -830,6 +853,8 @@ export type TPublishSnapshotDTO = {
      * 기본은 빈 목록이다 — 확정 화면에서 사용자가 직접 고른 것만 남는다. 자동 승격은 없다.
      */
     promoteRequestIds?: number[];
+    /** 실제로 이 스냅샷에 반영된 목표 조절 후보. 서버가 최종 셀 hash를 대조한다. */
+    goalCandidateId?: string;
 };
 
 export type TPublishSnapshotRes = {
@@ -947,6 +972,19 @@ export interface IWardAPI {
         autofillDTO: TAutofillDTO,
         options?: {signal?: AbortSignal},
     ) => Promise<TAutofillResponse>;
+    getScheduleGoalCandidate: (wardId: number, shiftTeamId: number, candidateId: string) => Promise<TScheduleGoalCandidateDetail>;
+    applyScheduleGoalCandidate: (
+        wardId: number,
+        shiftTeamId: number,
+        candidateId: string,
+        transitionDTO: TScheduleGoalCandidateTransitionDTO,
+    ) => Promise<TScheduleGoalCandidateDetail>;
+    undoScheduleGoalCandidate: (
+        wardId: number,
+        shiftTeamId: number,
+        candidateId: string,
+        transitionDTO: TScheduleGoalCandidateTransitionDTO,
+    ) => Promise<TScheduleGoalCandidateDetail>;
     getScheduleMonthRequests: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TScheduleMonthRequestListRes>;
     updateScheduleMonthRequest: (
         wardId: number,
