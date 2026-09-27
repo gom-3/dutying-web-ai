@@ -688,6 +688,10 @@ describe('AiAutofill adjust panel', () => {
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         expect(rowCells('11')).toEqual(['N', 'D', 'E', 'E']);
+        // 실패가 토스트와 함께 사라지면 사용자는 요청이 반영됐는지조차 알 수 없다. 같은
+        // 조절 창을 다시 열고 표 위에도 이유를 남겨, 요청을 고치거나 다시 실행할 수 있게 한다.
+        expect(await screen.findByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeInTheDocument();
+        expect(screen.getByText('조절을 적용하지 않았어요. rejected')).toBeInTheDocument();
     });
 
     it('drops an adjust response that lands after the month changed', async () => {
