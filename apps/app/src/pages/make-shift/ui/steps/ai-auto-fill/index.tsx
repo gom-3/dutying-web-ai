@@ -1,4 +1,4 @@
-import type {TSnapshotSummaryDto} from '@dutying/api/ward';
+import type {TScheduleGoalResult, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
@@ -11,6 +11,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
+import type {TShift} from '@/entities/shift';
 import useAuth from '@/features/auth';
 import {
     buildSaveSnapshotDTO,
@@ -74,6 +75,7 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
 import AiAdjustResultNote from './ai-adjust-result-note';
+import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
@@ -97,6 +99,14 @@ type TAiFillDecisionContext = {kind: 'initial'; cellCount: number} | {kind: 'reg
 type TSelectionFixedStats = {
     fixableFilledCount: number;
     fixedCount: number;
+};
+
+type TGoalCandidateReview = {
+    response: TAutofillResponse;
+    goalResult: TScheduleGoalResult;
+    originalShift: TShift;
+    /** 적용 직후 판본. 그 판본에서 곧바로 undo한 경우만 후보 되돌리기로 기록한다. */
+    appliedDraftRevision?: number;
 };
 
 function hasScheduleScopeShape(shift: NonNullable<Parameters<typeof isDutyDocInScheduleScope>[1]>) {
@@ -292,6 +302,7 @@ export function AiAutofill() {
     const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
     const [lastRuleResults, setLastRuleResults] = useState<TScheduleRequestRuleResult[]>([]);
+    const [lastGoalResult, setLastGoalResult] = useState<TScheduleGoalResult | null>(null);
     const [lastAdjustmentNotices, setLastAdjustmentNotices] = useState<NonNullable<TAutofillResponse['adjustmentNotices']>>([]);
     const [lastOffGoal, setLastOffGoal] = useState<NonNullable<TAutofillResponse['engineResult']>['offGoal']>(null);
     const [lastAdjustStrength, setLastAdjustStrength] = useState<TAutofillAdjustStrength>('NORMAL');
@@ -313,6 +324,7 @@ export function AiAutofill() {
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
     const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
+    const [goalCandidateReview, setGoalCandidateReview] = useState<TGoalCandidateReview | null>(null);
     const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
@@ -1138,6 +1150,34 @@ export function AiAutofill() {
 
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
+            const goalResult = result.response.goalResults?.[0];
+            if (adjust && result.response.goalCandidate && goalResult) {
+                // 목표 조절은 검토 전에는 표에 적용하지 않는다. candidate의 입력 판본을 함께
+                // 보존해 두었다가 적용 버튼 순간에 다시 비교한다.
+                setGoalCandidateReview({
+                    response: result.response,
+                    goalResult,
+                    originalShift: readyContext.originalShift,
+                });
+                setIsAdjustDialogOpen(true);
+                setLastGoalResult(goalResult);
+                setAiStatus('success');
+                return;
+            }
+            if (adjust && goalResult) {
+                // 재검증이 필수 목표 미달을 보았거나 엔진이 시간 제한으로 후보를 확정하지
+                // 못한 경우다. changedCells가 응답에 있어도 절대로 표에 반영하지 않는다.
+                setLastGoalResult(goalResult);
+                setLastAdjustChangedCount(null);
+                setAiStatus('error');
+                toast.error(
+                    goalResult.required
+                        ? '필수 목표를 달성하지 못해 결과를 적용하지 않았어요.'
+                        : '시간 안에 적용 가능한 목표 조절 후보를 확정하지 못했어요.',
+                );
+                return;
+            }
+
             commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
 
             const docAfterApply = useShiftEditorStore.getState().doc;
@@ -1157,6 +1197,7 @@ export function AiAutofill() {
 
                 setLastAdjustChangedCount(movedCount);
                 setLastRuleResults(result.response.requestRuleResults ?? []);
+                setLastGoalResult(null);
                 setLastOffGoal(result.response.engineResult?.offGoal ?? null);
                 setLastAdjustStrength(adjust.strength);
 
@@ -1354,6 +1395,60 @@ export function AiAutofill() {
         setIsAdjustDialogOpen(false);
         setLastAdjustChangedCount(null);
         void runAiFill(readyContext, {strength, ...(requests.length > 0 ? {requests} : {})}, llmPrompt);
+    };
+    const applyGoalCandidate = () => {
+        if (!goalCandidateReview?.response.goalCandidate || !goalCandidateReview.originalShift) return;
+
+        const {response, goalResult, originalShift} = goalCandidateReview;
+        const candidate = response.goalCandidate;
+        if (!candidate) return;
+        if (useShiftEditorStore.getState().draftRevision !== candidate.baseDraftRevision) {
+            toast.error('표가 변경되어 이전 조절 후보를 적용할 수 없어요. 다시 계산해 주세요.');
+
+            return;
+        }
+        if (goalResult.required && goalResult.goalStatus !== 'SATISFIED') return;
+
+        commands.applyChangedCells(response.changedCells, originalShift, 'ai');
+        const docAfterApply = useShiftEditorStore.getState().doc;
+
+        markLastAiGeneratedDoc(docAfterApply);
+        setHasAiGeneratedUnsavedChanges(response.changedCells.length > 0);
+        commands.setScheduleValidationFromApi(response.validation);
+        setLastAdjustChangedCount(response.changedCells.length);
+        setLastRuleResults(response.requestRuleResults ?? []);
+        setLastGoalResult(goalResult);
+        setLastAdjustmentNotices(response.adjustmentNotices ?? []);
+        setHasCompletedAiFill(true);
+        const appliedDraftRevision = useShiftEditorStore.getState().draftRevision;
+        setGoalCandidateReview((current) =>
+            current?.response.goalCandidate
+                ? {
+                      ...current,
+                      response: {
+                          ...current.response,
+                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'APPLIED'},
+                      },
+                      appliedDraftRevision,
+                  }
+                : current,
+        );
+        void syncMonthRequests();
+    };
+    const undoWithGoalCandidate = () => {
+        const currentRevision = useShiftEditorStore.getState().draftRevision;
+        commands.undo();
+        setGoalCandidateReview((current) =>
+            current?.response.goalCandidate?.applicationStatus === 'APPLIED' && current.appliedDraftRevision === currentRevision
+                ? {
+                      ...current,
+                      response: {
+                          ...current.response,
+                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'UNDONE'},
+                      },
+                  }
+                : current,
+        );
     };
     const handleCarryOverApply = async (requestIds: number[]) => {
         if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;
@@ -1664,7 +1759,7 @@ export function AiAutofill() {
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
                     canRedo={history.future.length > 0}
-                    onUndo={() => commands.undo()}
+                    onUndo={undoWithGoalCandidate}
                     onRedo={() => commands.redo()}
                     onOpenSnapshotHistory={openSnapshotSidebar}
                     onAiFill={handleAiFill}
@@ -1695,6 +1790,7 @@ export function AiAutofill() {
                         changedCount={lastAdjustChangedCount}
                         ruleResults={lastRuleResults}
                         notices={lastAdjustmentNotices}
+                        goalResult={lastGoalResult}
                         offGoal={lastOffGoal}
                         isStrongest={lastAdjustStrength === 'STRONG'}
                         disabled={isAiGenerating || disablingRequestId !== null}
@@ -1705,6 +1801,21 @@ export function AiAutofill() {
 
                             void runAiFill(readyContext, {strength: 'STRONG'});
                         }}
+                    />
+                )}
+
+                {goalCandidateReview?.response.goalCandidate && (
+                    <AiGoalCandidateReview
+                        candidate={goalCandidateReview.response.goalCandidate}
+                        result={goalCandidateReview.goalResult}
+                        changedCount={goalCandidateReview.response.changedCells.length}
+                        changedCells={goalCandidateReview.response.changedCells}
+                        stale={
+                            goalCandidateReview.response.goalCandidate.applicationStatus === 'NOT_APPLIED' &&
+                            goalCandidateReview.response.goalCandidate.baseDraftRevision !== useShiftEditorStore.getState().draftRevision
+                        }
+                        onApply={applyGoalCandidate}
+                        onDiscard={() => setGoalCandidateReview(null)}
                     />
                 )}
 
@@ -1764,6 +1875,7 @@ export function AiAutofill() {
                 onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
                 interpret={interpretAdjustText}
                 onApply={handleApplyTextRequests}
+                goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
                 requests={monthRequests}
                 disablingRequestId={disablingRequestId}
                 onDisableRequest={handleDisableMonthRequest}
