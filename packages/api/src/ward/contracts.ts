@@ -665,7 +665,7 @@ export type TScheduleGoalCandidate = {
     appliedDraftRevision?: number | null;
     baseCellsHash: string;
     planHash: string;
-    applicationStatus: 'CREATED' | 'APPLIED' | 'UNDONE' | 'CONFIRMED';
+    applicationStatus: 'CREATED' | 'APPLIED' | 'UNDONE' | 'CONFIRMED' | 'CONFIRMED_MODIFIED';
 };
 
 export type TScheduleGoalCandidateEvent = {
@@ -853,7 +853,7 @@ export type TPublishSnapshotDTO = {
      * 기본은 빈 목록이다 — 확정 화면에서 사용자가 직접 고른 것만 남는다. 자동 승격은 없다.
      */
     promoteRequestIds?: number[];
-    /** 실제로 이 스냅샷에 반영된 목표 조절 후보. 서버가 최종 셀 hash를 대조한다. */
+    /** 실제로 이 스냅샷에 반영된 목표 조절 후보. 적용 뒤 수동 편집된 확정표도 후보 이력에 연결한다. */
     goalCandidateId?: string;
 };
 
@@ -863,6 +863,8 @@ export type TPublishSnapshotRes = {
     publishedWardShiftCount: number;
     emptyCellCount: number;
     rowOrderApplied: boolean;
+    /** 후보 결과 그대로 확정했는지, 적용 뒤 사람이 수정한 표를 확정했는지의 서버 기록 상태. */
+    goalCandidateStatus?: 'CONFIRMED' | 'CONFIRMED_MODIFIED';
     publishedAt: string;
 };
 
