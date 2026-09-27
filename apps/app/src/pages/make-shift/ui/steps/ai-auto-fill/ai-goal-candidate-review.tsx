@@ -6,6 +6,8 @@ type TProps = {
     changedCount: number;
     changedCells: TSnapshotCellDTO[];
     stale: boolean;
+    /** 네트워크 응답만 유실된 apply 요청은 같은 eventId로 회복할 수 있다. */
+    applyRecoveryPending: boolean;
     onApply: () => void;
     onDiscard: () => void;
 };
@@ -14,9 +16,10 @@ type TProps = {
  * 목표 조절은 수치와 변경 범위를 먼저 보고 표에 반영한다. 일반 조절처럼 응답을 받는 즉시
  * 덮어쓰면, "개선" 결과를 성공으로 오해하거나 사람이 방금 고친 표에 오래된 후보를 적용할 수 있다.
  */
-export function AiGoalCandidateReview({candidate, result, changedCount, changedCells, stale, onApply, onDiscard}: TProps) {
+export function AiGoalCandidateReview({candidate, result, changedCount, changedCells, stale, applyRecoveryPending, onApply, onDiscard}: TProps) {
     const requiredUnmet = result.required && result.goalStatus !== 'SATISFIED';
-    const canApply = !stale && !requiredUnmet && candidate.applicationStatus === 'NOT_APPLIED';
+    const canApply = !stale && !requiredUnmet
+        && (candidate.applicationStatus === 'CREATED' || (candidate.applicationStatus === 'APPLIED' && applyRecoveryPending));
 
     return (
         <section className="border-line mx-4 mb-3 flex flex-col gap-2 rounded-xl border bg-violet-50 p-3" aria-label="목표 조절 결과 검토">
@@ -54,7 +57,7 @@ export function AiGoalCandidateReview({candidate, result, changedCount, changedC
                     onClick={onApply}
                     className="rounded-full bg-primary px-3 py-1 text-13 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    표에 적용
+                    {applyRecoveryPending ? '적용 결과 복구' : '표에 적용'}
                 </button>
             </div>
         </section>

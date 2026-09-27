@@ -28,6 +28,7 @@ import {
 import {getDocCellKey, getEditedFilledCellsSinceBaseline} from '@/features/shift-editor/model/doc-diff';
 import {adjustLockedCellKeys} from '@/features/shift-editor/model/schedule-authoring';
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
+import {docToSnapshotCellsDTO} from '@/features/shift-editor/model/shift-adapter';
 import i18n from '@/i18n';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {isScheduleRosterChangedApiError} from '@/shared/api/error';
@@ -101,12 +102,49 @@ type TSelectionFixedStats = {
     fixedCount: number;
 };
 
+type TGoalCandidateResponse = Pick<TAutofillResponse, 'changedCells'> & Partial<Pick<TAutofillResponse, 'validation' | 'requestRuleResults' | 'adjustmentNotices'>> & {
+    goalCandidate: NonNullable<TAutofillResponse['goalCandidate']>;
+};
+
 type TGoalCandidateReview = {
-    response: TAutofillResponse;
+    response: TGoalCandidateResponse;
     goalResult: TScheduleGoalResult;
     originalShift: TShift;
     /** 적용 직후 판본. 그 판본에서 곧바로 undo한 경우만 후보 되돌리기로 기록한다. */
     appliedDraftRevision?: number;
+};
+
+const goalCandidateStorageKey = (wardId: number, shiftTeamId: number, year: number, month: number) =>
+    `dutying:goal-candidate:${wardId}:${shiftTeamId}:${year}:${month}`;
+
+type TStoredGoalCandidate = {candidateId: string; applyEventId?: string};
+
+const readStoredGoalCandidate = (key: string): TStoredGoalCandidate | null => {
+    try {
+        const value = window.localStorage.getItem(key);
+
+        if (!value) return null;
+
+        let parsed: Partial<TStoredGoalCandidate>;
+        try {
+            parsed = JSON.parse(value) as Partial<TStoredGoalCandidate>;
+        } catch {
+            return {candidateId: value};
+        }
+
+        return typeof parsed.candidateId === 'string' ? {candidateId: parsed.candidateId, applyEventId: parsed.applyEventId} : {candidateId: value};
+    } catch {
+        return null;
+    }
+};
+
+const writeStoredGoalCandidate = (key: string, candidate: TStoredGoalCandidate | null) => {
+    try {
+        if (candidate) window.localStorage.setItem(key, JSON.stringify(candidate));
+        else window.localStorage.removeItem(key);
+    } catch {
+        // private browsing 등 저장소를 쓸 수 없는 환경에서는 현재 탭의 검토만 제공한다.
+    }
 };
 
 function hasScheduleScopeShape(shift: NonNullable<Parameters<typeof isDutyDocInScheduleScope>[1]>) {
@@ -325,6 +363,7 @@ export function AiAutofill() {
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
     const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
     const [goalCandidateReview, setGoalCandidateReview] = useState<TGoalCandidateReview | null>(null);
+    const [pendingGoalCandidateApplyEventId, setPendingGoalCandidateApplyEventId] = useState<string | null>(null);
     const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
@@ -402,6 +441,46 @@ export function AiAutofill() {
     const setExitGuard = useAiAutofillExitGuardStore((s) => s.setExitGuard);
     const resetExitGuard = useAiAutofillExitGuardStore((s) => s.resetExitGuard);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
+
+    useEffect(() => {
+        if (wardId == null || currentShiftTeamId == null || !orderedShift) return;
+
+        const storageKey = goalCandidateStorageKey(wardId, currentShiftTeamId, year, month);
+        const stored = readStoredGoalCandidate(storageKey);
+
+        if (!stored || goalCandidateReview) return;
+
+        let active = true;
+        void WardAPI.getScheduleGoalCandidate(wardId, currentShiftTeamId, stored.candidateId)
+            .then((detail) => {
+                if (!active) return;
+
+                if (detail.candidate.applicationStatus === 'UNDONE' || detail.candidate.applicationStatus === 'CONFIRMED') {
+                    writeStoredGoalCandidate(storageKey, null);
+
+                    return;
+                }
+
+                setGoalCandidateReview({
+                    response: {
+                        goalCandidate: detail.candidate,
+                        changedCells: detail.changedCells,
+                    },
+                    goalResult: detail.goalResult,
+                    originalShift: orderedShift,
+                    appliedDraftRevision: detail.candidate.appliedDraftRevision ?? undefined,
+                });
+                setPendingGoalCandidateApplyEventId(stored.applyEventId ?? null);
+            })
+            .catch(() => {
+                // 후보가 삭제되거나 다른 병동의 id인 경우 로컬 참조만 지운다. 표는 바꾸지 않는다.
+                if (active) writeStoredGoalCandidate(storageKey, null);
+            });
+
+        return () => {
+            active = false;
+        };
+    }, [currentShiftTeamId, goalCandidateReview, orderedShift, wardId, year, month]);
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
@@ -713,7 +792,25 @@ export function AiAutofill() {
             // 고른 것이 없으면 키를 넣지 않는다. 승격은 기본 미선택이고, 안 고른 확정의
             // 본문은 이 기능 도입 전과 같아야 한다.
             ...(promoteRequestIdsRef.current.length > 0 ? {promoteRequestIds: promoteRequestIdsRef.current} : {}),
+            ...(goalCandidateReview?.response.goalCandidate?.applicationStatus === 'APPLIED'
+                ? {goalCandidateId: goalCandidateReview.response.goalCandidate.candidateId}
+                : {}),
         });
+        setGoalCandidateReview((current) =>
+            current?.response.goalCandidate?.applicationStatus === 'APPLIED'
+                ? {
+                      ...current,
+                      response: {
+                          ...current.response,
+                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'CONFIRMED'},
+                      },
+                  }
+                : current,
+        );
+        if (goalCandidateReview?.response.goalCandidate?.applicationStatus === 'APPLIED') {
+            writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), null);
+            setPendingGoalCandidateApplyEventId(null);
+        }
 
         const nextShift = {
             ...docToShift(docToPublish, orderedShift),
@@ -1155,10 +1252,16 @@ export function AiAutofill() {
                 // 목표 조절은 검토 전에는 표에 적용하지 않는다. candidate의 입력 판본을 함께
                 // 보존해 두었다가 적용 버튼 순간에 다시 비교한다.
                 setGoalCandidateReview({
-                    response: result.response,
+                    response: {...result.response, goalCandidate: result.response.goalCandidate},
                     goalResult,
                     originalShift: readyContext.originalShift,
                 });
+                if (wardId != null && currentShiftTeamId != null) {
+                    writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), {
+                        candidateId: result.response.goalCandidate.candidateId,
+                    });
+                    setPendingGoalCandidateApplyEventId(null);
+                }
                 setIsAdjustDialogOpen(true);
                 setLastGoalResult(goalResult);
                 setAiStatus('success');
@@ -1396,28 +1499,56 @@ export function AiAutofill() {
         setLastAdjustChangedCount(null);
         void runAiFill(readyContext, {strength, ...(requests.length > 0 ? {requests} : {})}, llmPrompt);
     };
-    const applyGoalCandidate = () => {
+    const applyGoalCandidate = async () => {
         if (!goalCandidateReview?.response.goalCandidate || !goalCandidateReview.originalShift) return;
 
         const {response, goalResult, originalShift} = goalCandidateReview;
         const candidate = response.goalCandidate;
         if (!candidate) return;
-        if (useShiftEditorStore.getState().draftRevision !== candidate.baseDraftRevision) {
+        const currentRevision = useShiftEditorStore.getState().draftRevision;
+        if (currentRevision !== candidate.baseDraftRevision) {
             toast.error('표가 변경되어 이전 조절 후보를 적용할 수 없어요. 다시 계산해 주세요.');
 
             return;
         }
         if (goalResult.required && goalResult.goalStatus !== 'SATISFIED') return;
 
-        commands.applyChangedCells(response.changedCells, originalShift, 'ai');
+        if (wardId == null || currentShiftTeamId == null) return;
+
+        const applyEventId = pendingGoalCandidateApplyEventId ?? crypto.randomUUID();
+        setPendingGoalCandidateApplyEventId(applyEventId);
+        writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), {
+            candidateId: candidate.candidateId,
+            applyEventId,
+        });
+        let persisted;
+        try {
+            persisted = await WardAPI.applyScheduleGoalCandidate(wardId, currentShiftTeamId, candidate.candidateId, {
+                eventId: applyEventId,
+                draftRevision: currentRevision,
+                cells: docToSnapshotCellsDTO(useShiftEditorStore.getState().doc, originalShift),
+            });
+        } catch {
+            toast.error('표가 변경되었거나 이미 처리된 후보라 적용할 수 없어요.');
+
+            return;
+        }
+        if (persisted.candidate.applicationStatus !== 'APPLIED') return;
+
+        setPendingGoalCandidateApplyEventId(null);
+        writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), {
+            candidateId: candidate.candidateId,
+        });
+
+        commands.applyChangedCells(persisted.changedCells, originalShift, 'ai');
         const docAfterApply = useShiftEditorStore.getState().doc;
 
         markLastAiGeneratedDoc(docAfterApply);
-        setHasAiGeneratedUnsavedChanges(response.changedCells.length > 0);
-        commands.setScheduleValidationFromApi(response.validation);
-        setLastAdjustChangedCount(response.changedCells.length);
+        setHasAiGeneratedUnsavedChanges(persisted.changedCells.length > 0);
+        if (response.validation) commands.setScheduleValidationFromApi(response.validation);
+        setLastAdjustChangedCount(persisted.changedCells.length);
         setLastRuleResults(response.requestRuleResults ?? []);
-        setLastGoalResult(goalResult);
+        setLastGoalResult(persisted.goalResult);
         setLastAdjustmentNotices(response.adjustmentNotices ?? []);
         setHasCompletedAiFill(true);
         const appliedDraftRevision = useShiftEditorStore.getState().draftRevision;
@@ -1427,7 +1558,9 @@ export function AiAutofill() {
                       ...current,
                       response: {
                           ...current.response,
-                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'APPLIED'},
+                          goalCandidate: persisted.candidate,
+                          changedCells: persisted.changedCells,
+                          goalResults: [persisted.goalResult],
                       },
                       appliedDraftRevision,
                   }
@@ -1435,20 +1568,38 @@ export function AiAutofill() {
         );
         void syncMonthRequests();
     };
-    const undoWithGoalCandidate = () => {
+    const undoWithGoalCandidate = async () => {
         const currentRevision = useShiftEditorStore.getState().draftRevision;
+        const current = goalCandidateReview;
+        if (
+            current?.response.goalCandidate?.applicationStatus === 'APPLIED' &&
+            current.appliedDraftRevision === currentRevision &&
+            wardId != null &&
+            currentShiftTeamId != null
+        ) {
+            try {
+                const persisted = await WardAPI.undoScheduleGoalCandidate(wardId, currentShiftTeamId, current.response.goalCandidate.candidateId, {
+                    eventId: crypto.randomUUID(),
+                    draftRevision: currentRevision,
+                    cells: docToSnapshotCellsDTO(useShiftEditorStore.getState().doc, current.originalShift),
+                });
+                if (persisted.candidate.applicationStatus !== 'UNDONE') return;
+                // 페이지를 다시 열었어도 command history가 아니라 저장된 실행 직전 셀로 되돌린다.
+                commands.applyChangedCells(persisted.revertCells, current.originalShift, 'ai');
+                setGoalCandidateReview((latest) =>
+                    latest
+                        ? {...latest, response: {...latest.response, goalCandidate: persisted.candidate}}
+                        : latest,
+                );
+                writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), null);
+                setPendingGoalCandidateApplyEventId(null);
+            } catch {
+                toast.error('다른 편집이 있어 목표 조절 결과를 안전하게 되돌릴 수 없어요.');
+            }
+
+            return;
+        }
         commands.undo();
-        setGoalCandidateReview((current) =>
-            current?.response.goalCandidate?.applicationStatus === 'APPLIED' && current.appliedDraftRevision === currentRevision
-                ? {
-                      ...current,
-                      response: {
-                          ...current.response,
-                          goalCandidate: {...current.response.goalCandidate, applicationStatus: 'UNDONE'},
-                      },
-                  }
-                : current,
-        );
     };
     const handleCarryOverApply = async (requestIds: number[]) => {
         if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;
@@ -1759,7 +1910,7 @@ export function AiAutofill() {
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
                     canRedo={history.future.length > 0}
-                    onUndo={undoWithGoalCandidate}
+                    onUndo={() => void undoWithGoalCandidate()}
                     onRedo={() => commands.redo()}
                     onOpenSnapshotHistory={openSnapshotSidebar}
                     onAiFill={handleAiFill}
@@ -1811,11 +1962,18 @@ export function AiAutofill() {
                         changedCount={goalCandidateReview.response.changedCells.length}
                         changedCells={goalCandidateReview.response.changedCells}
                         stale={
-                            goalCandidateReview.response.goalCandidate.applicationStatus === 'NOT_APPLIED' &&
+                            goalCandidateReview.response.goalCandidate.applicationStatus === 'CREATED' &&
                             goalCandidateReview.response.goalCandidate.baseDraftRevision !== useShiftEditorStore.getState().draftRevision
                         }
-                        onApply={applyGoalCandidate}
-                        onDiscard={() => setGoalCandidateReview(null)}
+                        applyRecoveryPending={pendingGoalCandidateApplyEventId !== null}
+                        onApply={() => void applyGoalCandidate()}
+                        onDiscard={() => {
+                            if (wardId != null && currentShiftTeamId != null) {
+                                writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), null);
+                            }
+                            setPendingGoalCandidateApplyEventId(null);
+                            setGoalCandidateReview(null);
+                        }}
                     />
                 )}
 

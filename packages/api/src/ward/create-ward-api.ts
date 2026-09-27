@@ -2,6 +2,7 @@ import type {IApiClient} from '../client';
 import type {
     IWardAPI,
     TAutofillResponse,
+    TScheduleGoalCandidateDetail,
     TScheduleAdjustInterpretRes,
     TScheduleCarryOverCandidatesRes,
     TScheduleMonthRequestListRes,
@@ -483,6 +484,26 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`),
                     autofillDTO,
                     options,
+                )
+            ).data,
+        getScheduleGoalCandidate: async (wardId, shiftTeamId, candidateId) =>
+            (
+                await client.get<TScheduleGoalCandidateDetail>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/goal-candidates/${encodeURIComponent(candidateId)}`),
+                )
+            ).data,
+        applyScheduleGoalCandidate: async (wardId, shiftTeamId, candidateId, transitionDTO) =>
+            (
+                await client.post<TScheduleGoalCandidateDetail>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/goal-candidates/${encodeURIComponent(candidateId)}/apply`),
+                    transitionDTO,
+                )
+            ).data,
+        undoScheduleGoalCandidate: async (wardId, shiftTeamId, candidateId, transitionDTO) =>
+            (
+                await client.post<TScheduleGoalCandidateDetail>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/goal-candidates/${encodeURIComponent(candidateId)}/undo`),
+                    transitionDTO,
                 )
             ).data,
         getScheduleMonthRequests: async (wardId, shiftTeamId, year, month) =>
