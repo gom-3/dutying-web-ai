@@ -536,7 +536,7 @@ export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL' | 'CELL_SET';
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'GOAL' | 'CELL' | 'CELL_SET';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
@@ -556,6 +556,21 @@ export type TScheduleMonthRequestSeverity = 'SOFT' | 'HARD';
 /** 조절 요청 한 건. 칩 클릭과 문장 해석 결과가 같은 모양으로 서버에 들어간다(서버 `ScheduleMonthRequestDto.Item`). */
 export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
+    /** GOAL 일 때 목표 종류. V1은 하루짜리 나이트 최소화만 지원한다. */
+    goalType?: 'MINIMIZE_SINGLE_NIGHT_RUNS';
+    /** GOAL의 O 개수 차이 허용치. 자연어에 없으면 확인 카드에서 반드시 받는다. */
+    maxOffDifference?: number;
+    /** true면 목표 미달 후보를 표에 적용할 수 없다. */
+    required?: boolean;
+    /** GOAL의 고립 야간을 계산할 간호사 집단. */
+    targetNurseIds?: number[];
+    /** GOAL의 O 편차를 비교할 간호사 집단. */
+    comparisonNurseIds?: number[];
+    /** OFF_GOAL의 실행 형태. GOAL과 별개의 기존 오프 일수 목표다. */
+    operation?: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
+    minimumOff?: number;
+    targetOff?: number;
+    source?: 'SOLVER_OFF_TARGET' | 'USER_INPUT';
     knob?: TAutofillAdjustKnob;
     value?: number;
     /** RULE 일 때 제약조건 템플릿 코드. 이번 달에만 걸리고 병동 제약조건 목록은 건드리지 않는다. */
@@ -602,6 +617,11 @@ export type TScheduleMonthRequestRes = {
     displayLabel: string;
     knob?: TAutofillAdjustKnob | null;
     value?: number | null;
+    goalType?: TScheduleMonthRequestItem['goalType'] | null;
+    maxOffDifference?: number | null;
+    required?: boolean | null;
+    targetNurseIds?: number[] | null;
+    comparisonNurseIds?: number[] | null;
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
@@ -623,6 +643,27 @@ export type TScheduleRequestRuleResult = {
     violationCount: number;
     /** "꼭"으로 걸었지만 이번 표에서는 권장으로 내려 푼 경우 true. */
     downgraded?: boolean | null;
+};
+
+export type TScheduleGoalResult = {
+    requestId?: number | null;
+    goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS';
+    maxOffDifference: number;
+    required: boolean;
+    goalStatus: 'SATISFIED' | 'IMPROVED_UNMET' | 'NOT_IMPROVED' | 'NOT_EVALUABLE';
+    beforeSingleNightRuns: number;
+    afterSingleNightRuns: number;
+    actualOffDifference: number;
+    boundaryUnknownCount: number;
+    metricDefinitionVersion: string;
+};
+
+/** 표 반영 전 후보. baseDraftRevision이 달라지면 오래된 후보로 취급한다. */
+export type TScheduleGoalCandidate = {
+    candidateId: string;
+    baseDraftRevision: number;
+    planHash: string;
+    applicationStatus: 'NOT_APPLIED' | 'APPLIED' | 'UNDONE';
 };
 
 export type TScheduleAdjustmentNotice = {
@@ -717,6 +758,14 @@ export type TAutofillResponse = {
     /** 엔진 판정. 조절이 "이미 그 방향으로 최적"인지 구분하는 데 쓴다. */
     engineResult?: {
         status?: string;
+        offGoal?: {
+            operation: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
+            goalStatus: 'SATISFIED' | 'IMPROVED_UNMET' | 'NOT_IMPROVED' | 'NOT_EVALUABLE';
+            minimumOff?: number;
+            targetOff?: number;
+            totalDeviation?: number;
+            totalDeficit?: number;
+        } | null;
         solver?: {
             /** 바뀐 칸이 없을 때 'ADJUST_NO_CHANGE'. 실패가 아니다. */
             reason?: string;
@@ -728,6 +777,9 @@ export type TAutofillResponse = {
     };
     /** 이번 달 문장 요청(RULE)이 얼마나 지켜졌는지. 요청이 없으면 비어 있다. */
     requestRuleResults?: TScheduleRequestRuleResult[];
+    /** 독립 재검증한 목표 수치. candidate와 함께 올 때만 표 적용 전 검토 화면을 띄운다. */
+    goalResults?: TScheduleGoalResult[];
+    goalCandidate?: TScheduleGoalCandidate | null;
     /** 병동 규칙은 그대로 두고 이번 달 조절이 실행 시에만 우선한 비차단 안내. */
     adjustmentNotices?: TScheduleAdjustmentNotice[];
 };

@@ -20,6 +20,7 @@ type TProps = {
     onPickExample: (sentence: string) => void;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
     onApply: (items: TInterpretCardItem[], requestText: string) => void;
+    goalNurses: {nurseId: number; name: string}[];
     requests: TScheduleMonthRequestRes[];
     disablingRequestId: number | null;
     onDisableRequest: (request: TScheduleMonthRequestRes) => void;
@@ -42,6 +43,7 @@ export default function AiAdjustDialog({
     onPickExample,
     interpret,
     onApply,
+    goalNurses,
     requests,
     disablingRequestId,
     onDisableRequest,
@@ -78,7 +80,13 @@ export default function AiAdjustDialog({
 
                     <div className="min-h-0 flex-1 overflow-y-auto bg-white py-4">
                         <AiAdjustExamples disabled={disabled} onPick={onPickExample} />
-                        <AiAdjustTextInput ref={textInputRef} disabled={disabled} interpret={interpret} onApply={onApply} />
+                        <AiAdjustTextInput
+                            ref={textInputRef}
+                            disabled={disabled}
+                            interpret={interpret}
+                            onApply={onApply}
+                            goalNurses={goalNurses}
+                        />
                         <AiMonthRequestList
                             requests={requests}
                             disabled={disabled}
