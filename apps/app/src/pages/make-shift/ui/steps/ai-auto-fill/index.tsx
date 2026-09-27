@@ -281,6 +281,20 @@ function resolveSnapshotDisplayTitle(params: {
     return resolveHistoryTitle(detailTitle, fallbackTitle);
 }
 
+function adjustFailureMessage(response: TAutofillResponse): string {
+    const reason = response.engineResult?.solver?.reason;
+
+    if (reason === 'invalid_adjustment_goal_selector') {
+        return '조절 대상을 현재 근무표와 연결하지 못했어요. 표를 새로고침한 뒤 다시 시도해 주세요.';
+    }
+
+    return response.unmetInstructions[0] ?? '조절 요청을 처리하지 못했어요. 요청 내용을 확인한 뒤 다시 시도해 주세요.';
+}
+
+function isRejectedAdjustResponse(response: TAutofillResponse): boolean {
+    return ['REJECTED', 'ERROR', 'INFEASIBLE'].includes(response.engineResult?.status ?? '');
+}
+
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
@@ -338,6 +352,7 @@ export function AiAutofill() {
     const [disablingRequestId, setDisablingRequestId] = useState<number | null>(null);
     const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
+    const [lastAdjustFailure, setLastAdjustFailure] = useState<string | null>(null);
     const [lastRuleResults, setLastRuleResults] = useState<TScheduleRequestRuleResult[]>([]);
     const [lastGoalResult, setLastGoalResult] = useState<TScheduleGoalResult | null>(null);
     const [lastAdjustmentNotices, setLastAdjustmentNotices] = useState<NonNullable<TAutofillResponse['adjustmentNotices']>>([]);
@@ -1174,6 +1189,7 @@ export function AiAutofill() {
         setIsAiEffectVisible(true);
         setIsAdjusting(Boolean(adjust));
         setAiStatus('loading');
+        if (adjust) setLastAdjustFailure(null);
 
         let shouldKeepAiEffectVisible = false;
 
@@ -1231,6 +1247,8 @@ export function AiAutofill() {
                 // 취소(canceled)는 위에서 먼저 빠져나가므로 여기 오지 않는다.
                 if (adjust) {
                     setLastAdjustChangedCount(null);
+                    setLastAdjustFailure(result.message || t('page.makeShift.aiRefill.adjust.failed'));
+                    setIsAdjustDialogOpen(true);
                     void refetchMonthRequests();
                 }
 
@@ -1247,6 +1265,18 @@ export function AiAutofill() {
             }
 
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
+
+            if (adjust && isRejectedAdjustResponse(result.response)) {
+                const message = adjustFailureMessage(result.response);
+
+                setLastAdjustChangedCount(null);
+                setLastAdjustFailure(message);
+                setAiStatus('error');
+                setIsAdjustDialogOpen(true);
+                toast.error(message);
+
+                return;
+            }
 
             const goalResult = result.response.goalResults?.[0];
             if (adjust && result.response.goalCandidate && goalResult) {
@@ -1273,6 +1303,7 @@ export function AiAutofill() {
                 // 못한 경우다. changedCells가 응답에 있어도 절대로 표에 반영하지 않는다.
                 setLastGoalResult(goalResult);
                 setLastAdjustChangedCount(null);
+                setLastAdjustFailure(null);
                 setAiStatus('error');
                 toast.error(
                     goalResult.required
@@ -1300,6 +1331,7 @@ export function AiAutofill() {
                 const movedCount = result.response.changedCells.length;
 
                 setLastAdjustChangedCount(movedCount);
+                setLastAdjustFailure(null);
                 setLastRuleResults(result.response.requestRuleResults ?? []);
                 setLastGoalResult(null);
                 setLastAdjustStrength(adjust.strength);
@@ -1917,6 +1949,7 @@ export function AiAutofill() {
                 {isAdjustAvailable && (
                     <AiAdjustResultNote
                         changedCount={lastAdjustChangedCount}
+                        failure={lastAdjustFailure}
                         ruleResults={lastRuleResults}
                         notices={lastAdjustmentNotices}
                         goalResult={lastGoalResult}
