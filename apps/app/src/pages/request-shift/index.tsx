@@ -1,3 +1,4 @@
+import {PlanFeatureNotice} from '@/features/commercial/entry';
 import {useLayoutEffect, useState} from 'react';
 import useRequestShift from '@/features/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
@@ -88,6 +89,7 @@ const RequestShiftPageContent = () => {
     return (
         <div className="mx-auto flex min-h-screen w-full max-w-[1680px] min-w-0 flex-col px-3 pt-4 pb-3 min-[1600px]:px-10 lg:px-4">
             <div className="flex min-h-0 flex-1 flex-col">
+                <PlanFeatureNotice action="REQUEST_SUBMIT" />
                 {shouldShowToolbar ? <Toolbar /> : null}
 
                 {pageState?.tone === 'loading' ? (
