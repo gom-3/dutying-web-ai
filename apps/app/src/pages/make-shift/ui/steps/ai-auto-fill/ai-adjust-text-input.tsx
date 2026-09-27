@@ -34,9 +34,23 @@ type TCard = {
     strength: TAutofillAdjustStrength;
 };
 
-function toCardItems(items: TScheduleMonthRequestItem[]): TInterpretCardItem[] {
+export function toCardItems(items: TScheduleMonthRequestItem[], goalNurseIds: number[]): TInterpretCardItem[] {
     // "계속"을 명시한 문장은 TEAM을 제안하되, 카드에서 사용자가 확인하고 적용해야 저장된다.
-    return items.map((item) => ({item, lifetime: item.lifetimeHint ?? 'MONTH', severity: item.severity ?? 'SOFT'}));
+    return items.map((item) => {
+        if (item.kind !== 'GOAL') return {item, lifetime: item.lifetimeHint ?? 'MONTH', severity: item.severity ?? 'SOFT'};
+
+        // 문장이 특정인을 가리키지 않으면 현재 근무팀 전체가 자연스러운 비교 범위다.
+        // 사용자는 카드에서 제외하거나 범위를 좁힐 수 있지만, 전원을 하나씩 고르게 하지는 않는다.
+        return {
+            item: {
+                ...item,
+                targetNurseIds: item.targetNurseIds?.length ? item.targetNurseIds : goalNurseIds,
+                comparisonNurseIds: item.comparisonNurseIds?.length ? item.comparisonNurseIds : goalNurseIds,
+            },
+            lifetime: item.lifetimeHint ?? 'MONTH',
+            severity: item.severity ?? 'SOFT',
+        };
+    });
 }
 
 /**
@@ -77,7 +91,10 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, goalNur
 
             setCard({
                 requestText: trimmed,
-                items: toCardItems(result.items ?? []),
+                items: toCardItems(
+                    result.items ?? [],
+                    goalNurses.map((nurse) => nurse.nurseId),
+                ),
                 ...(llmPrompt ? {llmPrompt} : {}),
                 unmapped: result.unmapped ?? [],
                 strength: result.strength ?? 'NORMAL',
@@ -252,12 +269,14 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, goalNur
                                                 selected={item.targetNurseIds ?? []}
                                                 nurses={goalNurses}
                                                 onToggle={(nurseId) => toggleGoalNurse(index, 'targetNurseIds', nurseId)}
+                                                onSelectAll={() => updateGoal(index, {targetNurseIds: goalNurses.map((nurse) => nurse.nurseId)})}
                                             />
                                             <GoalNursePicker
                                                 label="O 편차 비교 집단"
                                                 selected={item.comparisonNurseIds ?? []}
                                                 nurses={goalNurses}
                                                 onToggle={(nurseId) => toggleGoalNurse(index, 'comparisonNurseIds', nurseId)}
+                                                onSelectAll={() => updateGoal(index, {comparisonNurseIds: goalNurses.map((nurse) => nurse.nurseId)})}
                                             />
                                         </div>
                                     ) : item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
@@ -379,15 +398,26 @@ function GoalNursePicker({
     selected,
     nurses,
     onToggle,
+    onSelectAll,
 }: {
     label: string;
     selected: number[];
     nurses: {nurseId: number; name: string}[];
     onToggle: (nurseId: number) => void;
+    onSelectAll: () => void;
 }) {
+    const allSelected = nurses.length > 0 && nurses.every((nurse) => selected.includes(nurse.nurseId));
+
     return (
         <fieldset className="flex flex-wrap items-center gap-1">
-            <legend className="mr-1 inline text-sub">{label}</legend>
+            <legend className="mr-1 inline text-sub">
+                {label} {allSelected ? `전체 ${nurses.length}명` : `${selected.length}명 선택`}
+            </legend>
+            {!allSelected && (
+                <button type="button" onClick={onSelectAll} className="text-12 text-primary underline">
+                    전체 선택
+                </button>
+            )}
             {nurses.map((nurse) => (
                 <label key={nurse.nurseId} className="border-line flex items-center gap-1 rounded-full border px-2 py-0.5">
                     <input
