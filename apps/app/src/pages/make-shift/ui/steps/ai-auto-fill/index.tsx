@@ -1,4 +1,4 @@
-import type {TScheduleGoalResult, TSnapshotSummaryDto} from '@dutying/api/ward';
+import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
@@ -110,14 +110,14 @@ type TGoalCandidateReview = {
     response: TGoalCandidateResponse;
     goalResult: TScheduleGoalResult;
     originalShift: TShift;
-    /** 적용 직후 판본. 그 판본에서 곧바로 undo한 경우만 후보 되돌리기로 기록한다. */
-    appliedDraftRevision?: number;
 };
 
 const goalCandidateStorageKey = (wardId: number, shiftTeamId: number, year: number, month: number) =>
     `dutying:goal-candidate:${wardId}:${shiftTeamId}:${year}:${month}`;
 
 type TStoredGoalCandidate = {candidateId: string; applyEventId?: string};
+
+type TCandidateCellState = 'APPLIED' | 'BASE' | 'MODIFIED';
 
 const readStoredGoalCandidate = (key: string): TStoredGoalCandidate | null => {
     try {
@@ -146,6 +146,46 @@ const writeStoredGoalCandidate = (key: string, candidate: TStoredGoalCandidate |
         // private browsing 등 저장소를 쓸 수 없는 환경에서는 현재 탭의 검토만 제공한다.
     }
 };
+
+function candidateCellValue(cell: TSnapshotCellDTO, shiftCodeByTypeId: Map<number, string>) {
+    if (cell.wardShiftTypeId != null) return shiftCodeByTypeId.get(cell.wardShiftTypeId) ?? null;
+
+    return cell.shiftCode && cell.shiftCode.length > 0 ? cell.shiftCode : null;
+}
+
+/**
+ * 새로고침 뒤에는 후보 출력이 브라우저의 미확정 draft에만 있던 경우가 있다. 후보가 이미
+ * 반영됐는지, 실행 전 표인지, 또는 사람이 일부를 고쳤는지를 changed/revert 셀로 구분한다.
+ * MODIFIED에는 절대 후보를 다시 덮어쓰지 않는다.
+ */
+function candidateCellState(
+    doc: TDutyDoc,
+    originalShift: TShift,
+    changedCells: TSnapshotCellDTO[],
+    revertCells: TSnapshotCellDTO[],
+): TCandidateCellState {
+    const revertByCell = new Map(revertCells.map((cell) => [`${cell.shiftNurseId}|${cell.date}`, cell]));
+    const shiftCodeByTypeId = new Map(originalShift.wardShiftTypes.map((type) => [type.wardShiftTypeId, type.shortName]));
+    let matchesApplied = true;
+    let matchesBase = true;
+
+    for (const changed of changedCells) {
+        const row = doc.rows.find((entry) => entry.workerId === String(changed.shiftNurseId));
+        const col = doc.columns.indexOf(changed.date);
+        const reverted = revertByCell.get(`${changed.shiftNurseId}|${changed.date}`);
+
+        if (!row || col < 0 || !reverted) return 'MODIFIED';
+
+        const current = row.cells[col] ?? null;
+        if (current !== candidateCellValue(changed, shiftCodeByTypeId)) matchesApplied = false;
+        if (current !== candidateCellValue(reverted, shiftCodeByTypeId)) matchesBase = false;
+    }
+
+    if (matchesApplied) return 'APPLIED';
+    if (matchesBase) return 'BASE';
+
+    return 'MODIFIED';
+}
 
 function hasScheduleScopeShape(shift: NonNullable<Parameters<typeof isDutyDocInScheduleScope>[1]>) {
     return shift.days.length > 0 && shift.divisionShiftNurses.some((division) => division.some((row) => row.shiftNurse.isWorker));
@@ -364,6 +404,7 @@ export function AiAutofill() {
     const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
     const [goalCandidateReview, setGoalCandidateReview] = useState<TGoalCandidateReview | null>(null);
     const [pendingGoalCandidateApplyEventId, setPendingGoalCandidateApplyEventId] = useState<string | null>(null);
+    const restoringGoalCandidateKeyRef = useRef<string | null>(null);
     const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
@@ -447,8 +488,11 @@ export function AiAutofill() {
 
         const storageKey = goalCandidateStorageKey(wardId, currentShiftTeamId, year, month);
         const stored = readStoredGoalCandidate(storageKey);
+        const restoringKey = stored ? `${storageKey}:${stored.candidateId}` : null;
 
-        if (!stored || goalCandidateReview) return;
+        if (!stored || goalCandidateReview || restoringGoalCandidateKeyRef.current === restoringKey) return;
+
+        restoringGoalCandidateKeyRef.current = restoringKey;
 
         let active = true;
         void WardAPI.getScheduleGoalCandidate(wardId, currentShiftTeamId, stored.candidateId)
@@ -459,8 +503,24 @@ export function AiAutofill() {
                     || detail.candidate.applicationStatus === 'CONFIRMED'
                     || detail.candidate.applicationStatus === 'CONFIRMED_MODIFIED') {
                     writeStoredGoalCandidate(storageKey, null);
+                    restoringGoalCandidateKeyRef.current = null;
 
                     return;
+                }
+
+                if (detail.candidate.applicationStatus === 'APPLIED') {
+                    const state = candidateCellState(
+                        useShiftEditorStore.getState().doc,
+                        orderedShift,
+                        detail.changedCells,
+                        detail.revertCells,
+                    );
+
+                    // 새 탭·새로고침에서 후보 반영 전 표만 복원한다. 편집 history가 있거나
+                    // 후보 셀 일부가 다르면 사람이 고친 표이므로 절대 덮어쓰지 않는다.
+                    if (state === 'BASE' && useShiftEditorStore.getState().history.past.length === 0) {
+                        commands.applyChangedCells(detail.changedCells, orderedShift, 'ai');
+                    }
                 }
 
                 setGoalCandidateReview({
@@ -470,13 +530,15 @@ export function AiAutofill() {
                     },
                     goalResult: detail.goalResult,
                     originalShift: orderedShift,
-                    appliedDraftRevision: detail.candidate.appliedDraftRevision ?? undefined,
                 });
                 setPendingGoalCandidateApplyEventId(stored.applyEventId ?? null);
             })
             .catch(() => {
                 // 후보가 삭제되거나 다른 병동의 id인 경우 로컬 참조만 지운다. 표는 바꾸지 않는다.
-                if (active) writeStoredGoalCandidate(storageKey, null);
+                if (active) {
+                    writeStoredGoalCandidate(storageKey, null);
+                    restoringGoalCandidateKeyRef.current = null;
+                }
             });
 
         return () => {
@@ -1556,7 +1618,6 @@ export function AiAutofill() {
         setLastGoalResult(persisted.goalResult);
         setLastAdjustmentNotices(response.adjustmentNotices ?? []);
         setHasCompletedAiFill(true);
-        const appliedDraftRevision = useShiftEditorStore.getState().draftRevision;
         setGoalCandidateReview((current) =>
             current?.response.goalCandidate
                 ? {
@@ -1567,7 +1628,6 @@ export function AiAutofill() {
                           changedCells: persisted.changedCells,
                           goalResults: [persisted.goalResult],
                       },
-                      appliedDraftRevision,
                   }
                 : current,
         );
@@ -1576,12 +1636,7 @@ export function AiAutofill() {
     const undoWithGoalCandidate = async () => {
         const currentRevision = useShiftEditorStore.getState().draftRevision;
         const current = goalCandidateReview;
-        if (
-            current?.response.goalCandidate?.applicationStatus === 'APPLIED' &&
-            current.appliedDraftRevision === currentRevision &&
-            wardId != null &&
-            currentShiftTeamId != null
-        ) {
+        if (current?.response.goalCandidate?.applicationStatus === 'APPLIED' && wardId != null && currentShiftTeamId != null) {
             try {
                 const persisted = await WardAPI.undoScheduleGoalCandidate(wardId, currentShiftTeamId, current.response.goalCandidate.candidateId, {
                     eventId: crypto.randomUUID(),

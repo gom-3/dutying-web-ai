@@ -32,6 +32,9 @@ const mocks = vi.hoisted(() => ({
     getScheduleCarryOverCandidates: vi.fn(),
     carryOverScheduleMonthRequests: vi.fn(),
     interpretScheduleAdjust: vi.fn(),
+    getScheduleGoalCandidate: vi.fn(),
+    applyScheduleGoalCandidate: vi.fn(),
+    undoScheduleGoalCandidate: vi.fn(),
 }));
 
 vi.mock('@/shared/api/ward', () => ({
@@ -41,6 +44,9 @@ vi.mock('@/shared/api/ward', () => ({
         getScheduleCarryOverCandidates: mocks.getScheduleCarryOverCandidates,
         carryOverScheduleMonthRequests: mocks.carryOverScheduleMonthRequests,
         interpretScheduleAdjust: mocks.interpretScheduleAdjust,
+        getScheduleGoalCandidate: mocks.getScheduleGoalCandidate,
+        applyScheduleGoalCandidate: mocks.applyScheduleGoalCandidate,
+        undoScheduleGoalCandidate: mocks.undoScheduleGoalCandidate,
     },
 }));
 
@@ -336,6 +342,9 @@ function installRequestStore() {
     mocks.getScheduleCarryOverCandidates.mockResolvedValue({sourceYear: 2026, sourceMonth: 6, requests: []});
     mocks.carryOverScheduleMonthRequests.mockResolvedValue([]);
     mocks.interpretScheduleAdjust.mockReset();
+    mocks.getScheduleGoalCandidate.mockReset();
+    mocks.applyScheduleGoalCandidate.mockReset();
+    mocks.undoScheduleGoalCandidate.mockReset();
 }
 
 function rowCells(workerId: string) {
@@ -383,6 +392,39 @@ const CLUSTER_ITEM: TScheduleMonthRequestItem = {
     displayLabel: 'cluster',
 };
 
+const GOAL_CANDIDATE_STORAGE_KEY = 'dutying:goal-candidate:1:10:2026:7';
+
+function goalResult() {
+    return {
+        goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS' as const,
+        maxOffDifference: 1,
+        required: false,
+        goalStatus: 'SATISFIED' as const,
+        beforeSingleNightRuns: 1,
+        afterSingleNightRuns: 0,
+        actualOffDifference: 1,
+        boundaryUnknownCount: 0,
+        metricDefinitionVersion: 'goal-metrics-v1',
+    };
+}
+
+function appliedGoalCandidateDetail() {
+    return {
+        candidate: {
+            candidateId: 'candidate-1',
+            baseDraftRevision: 1,
+            appliedDraftRevision: 1,
+            baseCellsHash: 'sha256:base',
+            planHash: 'sha256:plan',
+            applicationStatus: 'APPLIED' as const,
+        },
+        changedCells: [cell(11, '2026-07-01', 'D')],
+        revertCells: [cell(11, '2026-07-01', 'N')],
+        goalResult: goalResult(),
+        events: [],
+    };
+}
+
 describe('AiAutofill adjust panel', () => {
     beforeEach(() => {
         mocks.requestAiSchedule.mockReset();
@@ -391,6 +433,7 @@ describe('AiAutofill adjust panel', () => {
         mocks.month = 7;
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
         window.sessionStorage.clear();
+        window.localStorage.clear();
         installRequestStore();
         seedEditor();
     });
@@ -586,6 +629,50 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: 'undo'}));
 
         expect(rowCells('11')).toEqual(beforeAdjust);
+    });
+
+    it('rehydrates an applied goal candidate after refresh so it can be safely undone', async () => {
+        // 후보 적용 결과는 확정 전이라 서버 근무표에 아직 없을 수 있다. 새로고침 뒤에는
+        // immutable changed/revert 셀로 후보 출력만 다시 올린 뒤, 서버 hash 검증을 거쳐 undo한다.
+        window.localStorage.setItem(GOAL_CANDIDATE_STORAGE_KEY, JSON.stringify({candidateId: 'candidate-1'}));
+        mocks.getScheduleGoalCandidate.mockResolvedValue(appliedGoalCandidateDetail());
+        mocks.undoScheduleGoalCandidate.mockResolvedValue({
+            ...appliedGoalCandidateDetail(),
+            candidate: {...appliedGoalCandidateDetail().candidate, applicationStatus: 'UNDONE'},
+        });
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await waitFor(() => expect(mocks.getScheduleGoalCandidate).toHaveBeenCalled());
+        expect(window.localStorage.getItem(GOAL_CANDIDATE_STORAGE_KEY)).not.toBeNull();
+        await waitFor(() => expect(rowCells('11')?.[0]).toBe('D'));
+        await user.click(screen.getByRole('button', {name: 'undo'}));
+
+        await waitFor(() => expect(mocks.undoScheduleGoalCandidate).toHaveBeenCalledTimes(1));
+        expect(rowCells('11')?.[0]).toBe('N');
+        expect(window.localStorage.getItem(GOAL_CANDIDATE_STORAGE_KEY)).toBeNull();
+    });
+
+    it('rejects goal-candidate undo after manual edits and preserves the edited cell', async () => {
+        const edited = makeDoc();
+
+        edited.rows[1] = {...edited.rows[1]!, cells: ['O', 'D', 'E', 'E']};
+        seedEditor(edited);
+        window.localStorage.setItem(GOAL_CANDIDATE_STORAGE_KEY, JSON.stringify({candidateId: 'candidate-1'}));
+        mocks.getScheduleGoalCandidate.mockResolvedValue(appliedGoalCandidateDetail());
+        mocks.undoScheduleGoalCandidate.mockRejectedValue(new Error('candidate result is stale'));
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await waitFor(() => expect(mocks.getScheduleGoalCandidate).toHaveBeenCalled());
+        await user.click(screen.getByRole('button', {name: 'undo'}));
+
+        await waitFor(() => expect(mocks.undoScheduleGoalCandidate).toHaveBeenCalledTimes(1));
+        expect(rowCells('11')?.[0]).toBe('O');
     });
 
     it('leaves the table untouched when the adjust request is rejected', async () => {
