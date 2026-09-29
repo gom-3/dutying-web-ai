@@ -32,6 +32,10 @@ function toErrorMessage(error: unknown): string {
 }
 
 function firstUnmetInstruction(response: Awaited<ReturnType<TAiScheduleProvider['generate']>>): string | null {
+    if (response.engineResult?.solver?.reason === 'time_limit_no_solution') {
+        return '기존 조건과 요청을 함께 계산했지만 시간 안에 적용 가능한 조절안을 찾지 못했어요. 표는 바뀌지 않았습니다. 요청을 나누거나 조건을 줄여 다시 시도해 주세요.';
+    }
+
     const message = response.unmetInstructions?.find((instruction) => instruction.trim().length > 0)?.trim();
 
     return message ?? null;
