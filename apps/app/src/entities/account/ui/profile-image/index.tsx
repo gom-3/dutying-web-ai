@@ -15,7 +15,9 @@ export const ProfileImage = ({profileImg, name, className, alt, onError, ...prop
     const [failedSources, setFailedSources] = useState<string[]>([]);
     const imageSources = getProfileImageSources({profileImg});
     const currentSource = imageSources.find((source) => !failedSources.includes(source));
-    const accessibleAlt = alt ?? t('entity.account.profileImageAlt', {name: name?.trim() || t('entity.account.userFallback')});
+    const trimmedName = name?.trim();
+    const accessibleName = trimmedName?.length ? trimmedName : t('entity.account.userFallback');
+    const accessibleAlt = alt ?? t('entity.account.profileImageAlt', {name: accessibleName});
     const fallbackText = getProfileImageFallbackText(name);
 
     useEffect(() => {
