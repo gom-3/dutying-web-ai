@@ -1,3 +1,4 @@
+import type {TAnnualLeaveDay} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {type DraggableProvided, type DropResult, DragDropContext, Draggable, Droppable} from '@hello-pangea/dnd';
 import {ChevronDown, Pin} from 'lucide-react';
@@ -17,6 +18,7 @@ import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import type {TAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import {
     type TCellPos,
     type TCellValue,
@@ -38,6 +40,9 @@ import {formatNurseDisplayName} from './format-nurse-display-name';
 type TViolationMap = Map<string, TViolation>;
 
 type TMakeShiftCalendarProps = {
+    annualLeaveColumns?: TAnnualLeaveScheduleColumns;
+    showRestCheck?: boolean;
+    annualLeaveDays?: TAnnualLeaveDay[];
     shift: TShift;
     doc: TDutyDoc;
     violationMap: TViolationMap;
@@ -189,8 +194,13 @@ const SUMMARY_GAP = 'clamp(2px,0.22cqw,6px)';
 const SUMMARY_CELL_HEIGHT = 'h-[clamp(16px,1.4cqw,22px)]';
 const SUMMARY_CELL_WIDTH = 'w-full';
 const SUMMARY_CELL_SIZE = 'clamp(14px,1.05cqw,18px)';
-const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boolean) =>
-    [count > 0 ? `repeat(${count}, minmax(${SUMMARY_CELL_SIZE}, 1fr))` : null, showRestCheckColumn ? REST_CHECK_COL : null]
+const ANNUAL_LEAVE_COL = 'clamp(28px,2.1cqw,34px)';
+const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boolean, annualLeaveColumnCount = 0) =>
+    [
+        count > 0 ? `repeat(${count}, minmax(${SUMMARY_CELL_SIZE}, 1fr))` : null,
+        showRestCheckColumn ? REST_CHECK_COL : null,
+        ...Array.from({length: annualLeaveColumnCount}, () => ANNUAL_LEAVE_COL),
+    ]
         .filter(Boolean)
         .join(' ');
 /**
@@ -198,11 +208,12 @@ const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boole
  * 콘텐츠의 intrinsic width에 맡기면 좁은 화면에서 소수점 반올림 차이가 생길 수 있다.
  * 동일한 최소 track + gap + padding을 하나의 폭으로 공유해 좌측 날짜 그리드의 끝을 고정한다.
  */
-const getSummaryGridWidth = (count: number, showRestCheckColumn: boolean) => {
-    const columnCount = count + (showRestCheckColumn ? 1 : 0);
+const getSummaryGridWidth = (count: number, showRestCheckColumn: boolean, annualLeaveColumnCount = 0) => {
+    const columnCount = count + (showRestCheckColumn ? 1 : 0) + annualLeaveColumnCount;
     const terms = [
         ...Array.from({length: count}, () => SUMMARY_CELL_SIZE),
         ...(showRestCheckColumn ? [REST_CHECK_COL] : []),
+        ...Array.from({length: annualLeaveColumnCount}, () => ANNUAL_LEAVE_COL),
         ...Array.from({length: Math.max(0, columnCount - 1)}, () => SUMMARY_GAP),
         SUMMARY_PADDING_X,
         SUMMARY_PADDING_X,
@@ -1194,6 +1205,9 @@ function ShiftTypeDropdown({
 }
 
 export function MakeShiftCalendar({
+    annualLeaveColumns,
+    showRestCheck = true,
+    annualLeaveDays,
     shift,
     doc,
     violationMap,
@@ -1607,17 +1621,18 @@ export function MakeShiftCalendar({
     }, [shift.wardShiftTypes, stickySummaryShiftTypeIds, visibleSummaryShiftTypeIds]);
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
-    const showRestCheckColumn = !isSimplified && restCheckByShiftNurseId !== undefined;
+    const showRestCheckColumn = !isSimplified && showRestCheck && restCheckByShiftNurseId !== undefined;
+    const annualLeaveColumnCount = !isSimplified ? (annualLeaveColumns?.count ?? 0) : 0;
     const showCarryColumn =
         showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
-    const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn;
+    const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn || annualLeaveColumnCount > 0;
     const showDragHandleColumn = canReorderRows;
     const nameColumnWidth = nameColumnDensity === 'comfortable' ? COMFORTABLE_NAME_COL : COMPACT_NAME_COL;
     const leftGridTemplateColumns = isSimplified
         ? getLeftGridTemplateColumnsSimplified(nameColumnWidth, showDragHandleColumn)
         : getLeftGridTemplateColumns(nameColumnWidth, showCarryColumn, showDragHandleColumn);
     const shimmerInsetLeft = getShimmerInsetLeft(nameColumnWidth, isSimplified, showCarryColumn, showDragHandleColumn);
-    const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn);
+    const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn, annualLeaveColumnCount);
     const lastVisibleDivisionLevel = shift.divisionShiftNurses.reduce(
         (lastLevel, division, level) => (division.some((row) => row.shiftNurse.isWorker) ? level : lastLevel),
         -1,
@@ -1777,7 +1792,11 @@ export function MakeShiftCalendar({
                         className="make-shift-calendar__type-summary-header grid shrink-0 items-center justify-center justify-items-center"
                         style={{
                             width: summaryGridWidth,
-                            gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
+                            gridTemplateColumns: getSummaryGridTemplateColumns(
+                                summaryShiftTypes.length,
+                                showRestCheckColumn,
+                                annualLeaveColumnCount,
+                            ),
                             gap: SUMMARY_GAP,
                             paddingInline: SUMMARY_PADDING_X,
                         }}
@@ -1810,6 +1829,7 @@ export function MakeShiftCalendar({
                                 {restPolicyControl}
                             </div>
                         ) : null}
+                        {annualLeaveColumns?.header}
                     </div>
                 )}
             </div>
@@ -1963,6 +1983,11 @@ export function MakeShiftCalendar({
                                                                 >
                                                                     <CalendarRowLeft
                                                                         nurseName={row.shiftNurse.name}
+                                                                        annualLeaveDays={annualLeaveDays?.filter(
+                                                                            (day) =>
+                                                                                day.nurseId === row.shiftNurse.nurseId &&
+                                                                                day.source === 'DAY_USAGE',
+                                                                        )}
                                                                         carriedDays={
                                                                             restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]
                                                                                 ?.carriedDays
@@ -2037,12 +2062,14 @@ export function MakeShiftCalendar({
                                                 return (
                                                     <CalendarRowSummary
                                                         key={row.shiftNurse.shiftNurseId}
+                                                        annualLeaveCells={annualLeaveColumns?.renderRow(row.shiftNurse.nurseId)}
                                                         cells={docEntry.row.cells}
                                                         days={shift.days}
                                                         shortNameToType={shortNameToType}
                                                         summaryShiftTypes={summaryShiftTypes}
                                                         restCheck={restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]}
                                                         showRestCheckColumn={showRestCheckColumn}
+                                                        annualLeaveColumnCount={annualLeaveColumnCount}
                                                     />
                                                 );
                                             })}
@@ -2066,6 +2093,7 @@ export function MakeShiftCalendar({
                                         showCarryColumn={showCarryColumn}
                                         showDragHandleColumn={showDragHandleColumn}
                                         showRestCheckColumn={showRestCheckColumn}
+                                        annualLeaveColumnCount={annualLeaveColumnCount}
                                         summaryGridWidth={summaryGridWidth}
                                     />
                                 )}
@@ -2085,6 +2113,7 @@ export function MakeShiftCalendar({
                     showCarryColumn={showCarryColumn}
                     showDragHandleColumn={showDragHandleColumn}
                     showRestCheckColumn={showRestCheckColumn}
+                    annualLeaveColumnCount={annualLeaveColumnCount}
                     summaryGridWidth={summaryGridWidth}
                 />
             )}
@@ -2122,6 +2151,7 @@ function HeaderLabel({children, className, title}: {children: React.ReactNode; c
 }
 
 type TCalendarRowLeftProps = {
+    annualLeaveDays?: TAnnualLeaveDay[];
     nurseName: string;
     carriedDays?: number;
     lastShifts: (TWardShiftType | null)[];
@@ -2172,6 +2202,7 @@ type TCalendarRowLeftProps = {
  * 행의 좌측 (이름·전달근무·일자) — division 카드 안에 들어간다.
  */
 function CalendarRowLeft({
+    annualLeaveDays,
     nurseName,
     carriedDays,
     lastShifts,
@@ -2636,6 +2667,18 @@ function CalendarRowLeft({
                                         borderless={borderlessPreview}
                                         className={SHIFT_BADGE_CELL_BADGE}
                                     />
+                                    {annualLeaveDays
+                                        ?.filter((day) => day.date === columns[j])
+                                        .map((day) => (
+                                            <span
+                                                key={day.date}
+                                                data-annual-leave-days={day.days}
+                                                title={t('annualLeave.leaveTag', {count: day.days})}
+                                                className="absolute -right-1 -bottom-1 z-[60] rounded bg-main-1 px-0.5 text-[8px] leading-3 text-white"
+                                            >
+                                                {day.days}
+                                            </span>
+                                        ))}
                                     {showCellStatusPins && (
                                         <CellStatusPins
                                             fixed={showFixedStatusPin}
@@ -2730,6 +2773,8 @@ function CalendarRowLeft({
 }
 
 type TCalendarRowSummaryProps = {
+    annualLeaveCells?: ReactNode;
+    annualLeaveColumnCount?: number;
     cells: TDutyDoc['rows'][number]['cells'];
     days: TShift['days'];
     shortNameToType: Map<string, TWardShiftType>;
@@ -2742,7 +2787,16 @@ type TCalendarRowSummaryProps = {
  * 행의 우측 합계 (D/E/N/O/WO) — division 카드 밖에 분리되어 배치된다.
  * 좌측 행과 동일한 height로 vertically 정렬된다.
  */
-function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, restCheck, showRestCheckColumn}: TCalendarRowSummaryProps) {
+function CalendarRowSummary({
+    cells,
+    days,
+    shortNameToType,
+    summaryShiftTypes,
+    restCheck,
+    showRestCheckColumn,
+    annualLeaveCells,
+    annualLeaveColumnCount = 0,
+}: TCalendarRowSummaryProps) {
     const {t} = useTypedTranslation();
     const countByType = (typeId: number) =>
         cells.filter((cell, j) => {
@@ -2771,7 +2825,7 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
             )}
             style={{
                 width: '100%',
-                gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
+                gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn, annualLeaveColumnCount),
                 gap: SUMMARY_GAP,
                 paddingInline: SUMMARY_PADDING_X,
             }}
@@ -2809,6 +2863,7 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
                     {restCheckLabel}
                 </div>
             ) : null}
+            {annualLeaveCells}
         </div>
     );
 }
@@ -2860,6 +2915,7 @@ function DailySummary({
     showCarryColumn,
     showDragHandleColumn,
     showRestCheckColumn,
+    annualLeaveColumnCount = 0,
     summaryGridWidth,
 }: {
     doc: TDutyDoc;
@@ -2870,6 +2926,7 @@ function DailySummary({
     showCarryColumn: boolean;
     showDragHandleColumn: boolean;
     showRestCheckColumn: boolean;
+    annualLeaveColumnCount?: number;
     summaryGridWidth: string;
 }) {
     const countByDay = (j: number, typeId: number) =>
@@ -2939,6 +2996,7 @@ function DailySummary({
             <DailySummarySpacer
                 count={summaryShiftTypes.length}
                 showRestCheckColumn={showRestCheckColumn}
+                annualLeaveColumnCount={annualLeaveColumnCount}
                 summaryGridWidth={summaryGridWidth}
             />
         </div>
@@ -2955,10 +3013,12 @@ function DailySummary({
 function DailySummarySpacer({
     count,
     showRestCheckColumn,
+    annualLeaveColumnCount = 0,
     summaryGridWidth,
 }: {
     count: number;
     showRestCheckColumn: boolean;
+    annualLeaveColumnCount?: number;
     summaryGridWidth: string;
 }) {
     return (
@@ -2966,7 +3026,7 @@ function DailySummarySpacer({
             className="make-shift-daily-summary__spacer grid shrink-0 items-center justify-center justify-items-center"
             style={{
                 width: summaryGridWidth,
-                gridTemplateColumns: getSummaryGridTemplateColumns(count, showRestCheckColumn),
+                gridTemplateColumns: getSummaryGridTemplateColumns(count, showRestCheckColumn, annualLeaveColumnCount),
                 gap: SUMMARY_GAP,
                 paddingInline: SUMMARY_PADDING_X,
             }}
@@ -2976,6 +3036,9 @@ function DailySummarySpacer({
                 <div key={i} className={cn(SUMMARY_CELL_HEIGHT, SUMMARY_CELL_WIDTH)} />
             ))}
             {showRestCheckColumn ? <div className={cn(SUMMARY_CELL_HEIGHT)} /> : null}
+            {Array.from({length: annualLeaveColumnCount}, (_, index) => (
+                <div key={`annual-${index}`} className={SUMMARY_CELL_HEIGHT} />
+            ))}
         </div>
     );
 }

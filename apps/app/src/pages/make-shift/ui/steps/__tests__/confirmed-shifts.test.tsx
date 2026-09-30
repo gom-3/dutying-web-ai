@@ -190,7 +190,12 @@ describe('ConfirmedShifts', () => {
             const key = options.queryKey ?? [];
 
             return {
-                data: key.includes('id') ? {hospitalName: '듀팅병원', name: '중환자실', code: 'ABC123'} : confirmedShift,
+                data:
+                    key[0] === 'annualLeave'
+                        ? undefined
+                        : key.includes('id')
+                          ? {hospitalName: '듀팅병원', name: '중환자실', code: 'ABC123'}
+                          : confirmedShift,
                 isLoading: false,
                 isError: false,
                 refetch: vi.fn(),

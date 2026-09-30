@@ -54,6 +54,40 @@ describe('NavigationBar', () => {
         useNavigationBarFoldStore.getState().reset();
     });
 
+    it('근무 설정을 펼쳐 하위 메뉴로 이동하고 선택 상태를 표시한다', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.HOME]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        const parent = screen.getByRole('button', {name: '근무 설정'});
+
+        expect(parent).toHaveAttribute('aria-expanded', 'false');
+        await user.click(parent);
+        expect(parent).toHaveAttribute('aria-expanded', 'true');
+
+        const annual = screen.getByRole('link', {name: '연차 관리'});
+
+        await user.click(annual);
+        expect(annual).toHaveAttribute('aria-current', 'page');
+        expect(screen.getByRole('link', {name: '근무 유형'})).not.toHaveAttribute('aria-current');
+        await user.click(parent);
+        expect(screen.queryByRole('link', {name: '연차 관리'})).not.toBeInTheDocument();
+    });
+
+    it('설정 직접 링크에서 하위 메뉴를 자동으로 펼친다', () => {
+        render(
+            <MemoryRouter initialEntries={['/ward-settings?tab=restLeavePolicy']}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+        expect(screen.getByRole('button', {name: '근무 설정'})).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('link', {name: '휴무일 계산'})).toHaveAttribute('aria-current', 'page');
+    });
+
     it('홈을 병원/병동명 바로 아래에 두고 근무표 만들기 메뉴를 노출한다', () => {
         mockUseEditWard.mockReturnValueOnce({
             state: {

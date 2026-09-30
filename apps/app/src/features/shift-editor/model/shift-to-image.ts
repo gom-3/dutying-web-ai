@@ -181,6 +181,7 @@ export async function shiftToImage({element, year, month, teamName, hospitalName
     const {toBlob} = await import('html-to-image');
     const blob = await toBlob(element, {
         backgroundColor: A4_PAGE_BACKGROUND_COLOR,
+        filter: (node) => !(node instanceof Element && node.hasAttribute('data-private-annual-leave')),
         cacheBust: true,
         pixelRatio: 2,
         width: Math.max(element.scrollWidth, element.clientWidth),

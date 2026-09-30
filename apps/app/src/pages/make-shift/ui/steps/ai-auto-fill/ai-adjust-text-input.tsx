@@ -21,6 +21,8 @@ type TProps = {
     disabled: boolean;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
     onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength, llmPrompt?: string) => void;
+    /** 목표 카드에서 사용자가 확인할 현재 근무팀 간호사 목록. */
+    goalNurses: {nurseId: number; name: string}[];
     ref?: Ref<TAdjustTextInputHandle>;
 };
 
@@ -32,9 +34,23 @@ type TCard = {
     strength: TAutofillAdjustStrength;
 };
 
-function toCardItems(items: TScheduleMonthRequestItem[]): TInterpretCardItem[] {
+export function toCardItems(items: TScheduleMonthRequestItem[], goalNurseIds: number[]): TInterpretCardItem[] {
     // "계속"을 명시한 문장은 TEAM을 제안하되, 카드에서 사용자가 확인하고 적용해야 저장된다.
-    return items.map((item) => ({item, lifetime: item.lifetimeHint ?? 'MONTH', severity: item.severity ?? 'SOFT'}));
+    return items.map((item) => {
+        if (item.kind !== 'GOAL') return {item, lifetime: item.lifetimeHint ?? 'MONTH', severity: item.severity ?? 'SOFT'};
+
+        // 문장이 특정인을 가리키지 않으면 현재 근무팀 전체가 자연스러운 비교 범위다.
+        // 사용자는 카드에서 제외하거나 범위를 좁힐 수 있지만, 전원을 하나씩 고르게 하지는 않는다.
+        return {
+            item: {
+                ...item,
+                targetNurseIds: item.targetNurseIds?.length ? item.targetNurseIds : goalNurseIds,
+                comparisonNurseIds: item.comparisonNurseIds?.length ? item.comparisonNurseIds : goalNurseIds,
+            },
+            lifetime: item.lifetimeHint ?? 'MONTH',
+            severity: item.severity ?? 'SOFT',
+        };
+    });
 }
 
 /**
@@ -46,7 +62,7 @@ function toCardItems(items: TScheduleMonthRequestItem[]): TInterpretCardItem[] {
  * 돌아오고, 사용자가 그것을 눌러 입력창에 채운 뒤 고쳐서 보낸다. 질문에 답하는 UI 를 두면
  * 조절이 대화가 되고, 그 순간 칩보다 느려진다.
  */
-export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: TProps) {
+export default function AiAdjustTextInput({disabled, interpret, onApply, goalNurses, ref}: TProps) {
     const {t} = useTypedTranslation();
     const [text, setText] = useState('');
     const [isInterpreting, setIsInterpreting] = useState(false);
@@ -75,7 +91,10 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
 
             setCard({
                 requestText: trimmed,
-                items: toCardItems(result.items ?? []),
+                items: toCardItems(
+                    result.items ?? [],
+                    goalNurses.map((nurse) => nurse.nurseId),
+                ),
                 ...(llmPrompt ? {llmPrompt} : {}),
                 unmapped: result.unmapped ?? [],
                 strength: result.strength ?? 'NORMAL',
@@ -96,8 +115,41 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
             current ? {...current, items: current.items.map((entry, i) => (i === index ? {...entry, severity} : entry))} : current,
         );
     };
+    const updateGoal = (index: number, update: Partial<TScheduleMonthRequestItem>) => {
+        setCard((current) =>
+            current
+                ? {
+                      ...current,
+                      items: current.items.map((entry, i) =>
+                          i === index ? {...entry, item: {...entry.item, ...update}} : entry,
+                      ),
+                  }
+                : current,
+        );
+    };
+    const toggleGoalNurse = (index: number, field: 'targetNurseIds' | 'comparisonNurseIds', nurseId: number) => {
+        const current = card?.items[index]?.item[field] ?? [];
+        const next = current.includes(nurseId) ? current.filter((id) => id !== nurseId) : [...current, nurseId];
+
+        updateGoal(index, {[field]: next});
+    };
     const handleApply = () => {
         if (!card) return;
+
+        const incompleteGoal = card.items.find(({item}) =>
+            item.kind === 'GOAL' &&
+            (!item.goalType ||
+                !Number.isInteger(item.maxOffDifference) ||
+                (item.maxOffDifference ?? -1) < 0 ||
+                (item.maxOffDifference ?? 32) > 31 ||
+                !item.targetNurseIds?.length ||
+                (item.comparisonNurseIds?.length ?? 0) < 2),
+        );
+        if (incompleteGoal) {
+            setError('목표 대상, 비교 집단, 오프 차이 허용치를 모두 확인해 주세요.');
+
+            return;
+        }
 
         onApply(card.items, card.requestText, card.strength, card.llmPrompt);
         setCard(null);
@@ -189,7 +241,45 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                                         </span>
                                     )}
 
-                                    {item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
+                                    {item.kind === 'GOAL' ? (
+                                        <div className="border-line flex w-full flex-col gap-2 rounded-md border bg-white p-2 text-12">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="font-semibold">{item.required ? '필수 목표' : '개선 목표'}</span>
+                                                <span>하루짜리 나이트 최소화</span>
+                                                <label className="flex items-center gap-1">
+                                                    O 편차
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={31}
+                                                        value={item.maxOffDifference ?? ''}
+                                                        onChange={(event) => {
+                                                            const value = event.target.value;
+                                                            updateGoal(index, {maxOffDifference: value === '' ? undefined : Number(value)});
+                                                        }}
+                                                        aria-label="오프 차이 허용치"
+                                                        className="border-line w-14 rounded border px-1 py-0.5"
+                                                    />
+                                                    일 이내
+                                                </label>
+                                            </div>
+                                            <p className="text-sub">적용 기간: 이번 달 · 변경 가능 범위: 현재 표에서 고정·신청 셀 제외</p>
+                                            <GoalNursePicker
+                                                label="목표 대상"
+                                                selected={item.targetNurseIds ?? []}
+                                                nurses={goalNurses}
+                                                onToggle={(nurseId) => toggleGoalNurse(index, 'targetNurseIds', nurseId)}
+                                                onSelectAll={() => updateGoal(index, {targetNurseIds: goalNurses.map((nurse) => nurse.nurseId)})}
+                                            />
+                                            <GoalNursePicker
+                                                label="O 편차 비교 집단"
+                                                selected={item.comparisonNurseIds ?? []}
+                                                nurses={goalNurses}
+                                                onToggle={(nurseId) => toggleGoalNurse(index, 'comparisonNurseIds', nurseId)}
+                                                onSelectAll={() => updateGoal(index, {comparisonNurseIds: goalNurses.map((nurse) => nurse.nurseId)})}
+                                            />
+                                        </div>
+                                    ) : item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
                                         <span className="text-12 text-sub border-line rounded-full border px-2 py-0.5">
                                             {item.kind === 'CELL'
                                                 ? `${item.date} · ${item.shiftCode}`
@@ -300,6 +390,45 @@ export default function AiAdjustTextInput({disabled, interpret, onApply, ref}: T
                 </section>
             )}
         </div>
+    );
+}
+
+function GoalNursePicker({
+    label,
+    selected,
+    nurses,
+    onToggle,
+    onSelectAll,
+}: {
+    label: string;
+    selected: number[];
+    nurses: {nurseId: number; name: string}[];
+    onToggle: (nurseId: number) => void;
+    onSelectAll: () => void;
+}) {
+    const allSelected = nurses.length > 0 && nurses.every((nurse) => selected.includes(nurse.nurseId));
+
+    return (
+        <fieldset className="flex flex-wrap items-center gap-1">
+            <legend className="mr-1 inline text-sub">
+                {label} {allSelected ? `전체 ${nurses.length}명` : `${selected.length}명 선택`}
+            </legend>
+            {!allSelected && (
+                <button type="button" onClick={onSelectAll} className="text-12 text-primary underline">
+                    전체 선택
+                </button>
+            )}
+            {nurses.map((nurse) => (
+                <label key={nurse.nurseId} className="border-line flex items-center gap-1 rounded-full border px-2 py-0.5">
+                    <input
+                        type="checkbox"
+                        checked={selected.includes(nurse.nurseId)}
+                        onChange={() => onToggle(nurse.nurseId)}
+                    />
+                    {nurse.name}
+                </label>
+            ))}
+        </fieldset>
     );
 }
 

@@ -2,6 +2,7 @@ import {cn} from '@dutying/utils/style';
 import {useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
 import {events, sendEvent} from '@/analytics';
+import {CommercialEntry, WardUsageSummary} from '@/features/commercial/entry';
 import {FoldIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -93,7 +94,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
             >
                 <div
                     className={cn(
-                        'flex min-h-11 items-center [@media(max-height:760px)]:min-h-10',
+                        'flex min-h-11 shrink-0 items-center [@media(max-height:760px)]:min-h-10',
                         isCollapsed || stableCollapsedLayout ? 'flex-col gap-2' : 'justify-between',
                     )}
                 >
@@ -139,6 +140,8 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                     )}
                 </div>
 
+                <CommercialEntry compact={isCollapsed} />
+                {!isCollapsed ? <WardUsageSummary /> : null}
                 <NavigationBarItemGroups
                     collapsed={isCollapsed}
                     stableCollapsedLayout={stableCollapsedLayout}

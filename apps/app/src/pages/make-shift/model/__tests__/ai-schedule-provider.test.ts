@@ -160,6 +160,29 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         expect(result).toEqual({ok: false, message: '', notAllowed: true});
     });
 
+    it('시간 안에 해를 찾지 못한 조절은 원인과 표 미변경을 안내한다', async () => {
+        apiGenerate.mockResolvedValue({
+            operationType: 'ADJUST',
+            draftRevision: 3,
+            resultType: 'PATCH',
+            changedCells: [],
+            validation: response.validation,
+            unmetInstructions: ['전체 월 근무표를 안전하게 생성하지 못했습니다.'],
+            sameAsPrevious: true,
+            engineResult: {status: 'TIME_LIMIT', solver: {reason: 'time_limit_no_solution'}},
+        });
+
+        const result = await requestAiSchedule({
+            ...request,
+            adjust: {knobs: {OFF_BALANCE: 1}, strength: 'NORMAL'},
+        });
+
+        expect(result).toEqual({
+            ok: false,
+            message: '기존 조건과 요청을 함께 계산했지만 시간 안에 적용 가능한 조절안을 찾지 못했어요. 표는 바뀌지 않았습니다. 요청을 나누거나 조건을 줄여 다시 시도해 주세요.',
+        });
+    });
+
     it('조절이 아닌 요청에서는 빈 결과가 여전히 실패다', async () => {
         apiGenerate.mockResolvedValue({
             operationType: 'GENERATE',

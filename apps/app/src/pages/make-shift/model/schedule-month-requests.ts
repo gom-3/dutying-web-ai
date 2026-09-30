@@ -159,6 +159,21 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
                     assumedSlots: item.assumedSlots,
                     ...(item.applyMonths?.length ? {applyMonths: item.applyMonths} : {}),
                 }
+            : item.kind === 'GOAL'
+              ? {
+                    kind: 'GOAL' as const,
+                    goalType: item.goalType,
+                    maxOffDifference: item.maxOffDifference,
+                    required: Boolean(item.required),
+                    targetNurseIds: item.targetNurseIds,
+                    comparisonNurseIds: item.comparisonNurseIds,
+                    displayLabel: item.displayLabel,
+                    // 목표 계획은 이번 조절의 수용 범위다. TEAM으로 저장해 다음 달에
+                    // 무심코 이어지면 확인했던 요청과 다른 일이 되므로 항상 MONTH다.
+                    lifetime: 'MONTH' as const,
+                    origin: 'TEXT' as const,
+                    requestText,
+                }
             : {
                   kind: 'KNOB' as const,
                   knob: item.knob,

@@ -11,6 +11,7 @@ import {
     vi as generatedVi,
     zh as generatedZh,
 } from '@/shared/i18n/resources.generated';
+import {annualLeaveKo, annualLeaveEn} from '@/shared/locales/annual-leave';
 import {en} from '@/shared/locales/en';
 import {ja} from '@/shared/locales/ja';
 import {ko} from '@/shared/locales/ko';
@@ -30,6 +31,7 @@ const fillMissingTranslations = <TPrimary, TFallback>(primary: TPrimary, fallbac
 
         if (primaryValue === undefined) {
             result[key] = fallbackValue;
+
             return;
         }
 
@@ -47,7 +49,6 @@ const fillMissingTranslations = <TPrimary, TFallback>(primary: TPrimary, fallbac
 
     return result as TPrimary & TFallback;
 };
-
 const supplementalKo = {
     page: {
         makeShift: {
@@ -123,16 +124,14 @@ const supplementalKo = {
         },
     },
 } as const;
-
 const resources = {
-    ko: {translation: fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo)},
-    en: {translation: fillMissingTranslations(generatedEn, en)},
-    ja: {translation: fillMissingTranslations(generatedJa, ja)},
-    zh: {translation: fillMissingTranslations(generatedZh, zh)},
-    th: {translation: fillMissingTranslations(generatedTh, th)},
-    vi: {translation: fillMissingTranslations(generatedVi, vi)},
+    ko: {translation: {...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo), annualLeave: annualLeaveKo}},
+    en: {translation: {...fillMissingTranslations(generatedEn, en), annualLeave: annualLeaveEn}},
+    ja: {translation: {...fillMissingTranslations(generatedJa, ja), annualLeave: annualLeaveEn}},
+    zh: {translation: {...fillMissingTranslations(generatedZh, zh), annualLeave: annualLeaveEn}},
+    th: {translation: {...fillMissingTranslations(generatedTh, th), annualLeave: annualLeaveEn}},
+    vi: {translation: {...fillMissingTranslations(generatedVi, vi), annualLeave: annualLeaveEn}},
 } as const;
-
 const syncDocumentLocale = (lng?: string) => {
     const language = normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;
     const locale = getLocaleForLanguage(language);

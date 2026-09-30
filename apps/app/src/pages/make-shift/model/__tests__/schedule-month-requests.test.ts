@@ -187,6 +187,38 @@ describe('request item builders', () => {
 
         expect(item?.applyMonths).toEqual([{year: 2026, month: 9}, {year: 2026, month: 10}]);
     });
+
+    it('keeps the confirmed goal plan intact and never turns it into a recurring request', () => {
+        const [item] = toTextRequestItems(
+            [{
+                item: {
+                    kind: 'GOAL',
+                    goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS',
+                    maxOffDifference: 1,
+                    required: false,
+                    targetNurseIds: [11, 12],
+                    comparisonNurseIds: [11, 12, 13],
+                    displayLabel: '하루짜리 나이트 줄이기',
+                },
+                lifetime: 'TEAM',
+                severity: 'SOFT',
+            }],
+            '하루짜리 나이트를 줄여줘. 오프 차이는 하루 이내로.',
+        );
+
+        expect(item).toEqual({
+            kind: 'GOAL',
+            goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS',
+            maxOffDifference: 1,
+            required: false,
+            targetNurseIds: [11, 12],
+            comparisonNurseIds: [11, 12, 13],
+            displayLabel: '하루짜리 나이트 줄이기',
+            lifetime: 'MONTH',
+            origin: 'TEXT',
+            requestText: '하루짜리 나이트를 줄여줘. 오프 차이는 하루 이내로.',
+        });
+    });
 });
 
 describe('carry-over answered flag', () => {

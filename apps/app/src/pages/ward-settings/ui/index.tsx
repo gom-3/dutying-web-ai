@@ -1,4 +1,4 @@
-﻿import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
+import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {Check, CircleAlert, Plus, X} from 'lucide-react';
@@ -6,6 +6,7 @@ import {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useNavigate} from 'react-router';
+import {AnnualLeaveSettingsSection} from '@/features/annual-leave/settings-section';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/constraints';
@@ -51,7 +52,6 @@ type TWardSettingsPageViewProps = {
     actions: TWardSettingsActions;
 };
 
-const TAB_ORDER: TWardSettingsTab[] = ['constraints', 'shiftTypes', 'restLeavePolicy', 'requestReception'];
 const SHIFT_COLOR_OPTIONS = [
     '#63C8B8',
     '#F790A4',
@@ -324,6 +324,8 @@ function toCanonicalShiftTime(value: string) {
 }
 
 function getTabDescriptionKey(tab: TWardSettingsTab) {
+    if (tab === 'annualLeave') return 'annualLeave.description';
+
     if (tab === 'shiftTypes') return 'page.wardSettings.description.shiftTypes';
 
     if (tab === 'restLeavePolicy') return 'page.wardSettings.description.restLeavePolicy';
@@ -335,37 +337,6 @@ function getTabDescriptionKey(tab: TWardSettingsTab) {
 
 function SettingsStateFrame({children}: {children: ReactNode}) {
     return <div className="flex min-h-[240px] items-center justify-center rounded-[16px] bg-white px-6 py-8">{children}</div>;
-}
-
-function Tabs({currentTab, onSelect}: {currentTab: TWardSettingsTab; onSelect: (tab: TWardSettingsTab) => void}) {
-    const {t} = useTypedTranslation();
-
-    return (
-        <div
-            className="grid grid-cols-2 gap-1 rounded-[12px] bg-[#F2F4F6] p-1 lg:grid-cols-4"
-            role="group"
-            aria-label={t('page.wardSettings.title')}
-        >
-            {TAB_ORDER.map((tab) => {
-                const active = currentTab === tab;
-
-                return (
-                    <button
-                        key={tab}
-                        type="button"
-                        aria-pressed={active}
-                        className={cn(
-                            'h-10 rounded-[9px] px-3 font-apple text-sm font-semibold transition-colors',
-                            active ? 'bg-white text-sub-1' : 'text-gray-3 hover:text-sub-1',
-                        )}
-                        onClick={() => onSelect(tab)}
-                    >
-                        {t(`page.wardSettings.tabs.${tab}`)}
-                    </button>
-                );
-            })}
-        </div>
-    );
 }
 
 function InlineFieldError({id, children}: {id?: string; children: ReactNode}) {
@@ -1467,11 +1438,11 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
         state: {accessToken},
     } = useAuth();
     const [hasUnsavedRestLeavePolicyChanges, setHasUnsavedRestLeavePolicyChanges] = useState(false);
-    const [pendingTab, setPendingTab] = useState<TWardSettingsTab | null>(null);
     const [pendingNavigationPath, setPendingNavigationPath] = useState<string | null>(null);
-    const unsavedDialogOpen = pendingTab !== null || pendingNavigationPath !== null;
+    const unsavedDialogOpen = pendingNavigationPath !== null;
     const isCurrentTabReady = (() => {
         switch (state.currentTab) {
+            case 'annualLeave':
             case 'shiftTypes':
             case 'restLeavePolicy':
                 return state.shiftTypesStatus === 'success';
@@ -1482,20 +1453,6 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
         }
     })();
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken) && state.wardId !== null && isCurrentTabReady;
-    const handleSelectTab = useCallback(
-        (tab: TWardSettingsTab) => {
-            if (tab === state.currentTab) return;
-
-            if (state.currentTab === 'restLeavePolicy' && hasUnsavedRestLeavePolicyChanges) {
-                setPendingTab(tab);
-
-                return;
-            }
-
-            actions.selectTab(tab);
-        },
-        [actions, hasUnsavedRestLeavePolicyChanges, state.currentTab],
-    );
 
     useEffect(() => {
         if (!hasUnsavedRestLeavePolicyChanges || state.currentTab !== 'restLeavePolicy') return;
@@ -1519,7 +1476,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
             const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-navigation-path]') : null;
             const navigationPath = target?.dataset.navigationPath;
 
-            if (!navigationPath || navigationPath === window.location.pathname) return;
+            if (!navigationPath || navigationPath === window.location.pathname + window.location.search) return;
 
             event.preventDefault();
             event.stopPropagation();
@@ -1532,20 +1489,10 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
     }, [hasUnsavedRestLeavePolicyChanges, state.currentTab]);
 
     const closeUnsavedDialog = () => {
-        setPendingTab(null);
         setPendingNavigationPath(null);
     };
     const confirmDiscardUnsavedChanges = () => {
         setHasUnsavedRestLeavePolicyChanges(false);
-
-        if (pendingTab !== null) {
-            const nextTab = pendingTab;
-
-            setPendingTab(null);
-            actions.selectTab(nextTab);
-
-            return;
-        }
 
         if (pendingNavigationPath !== null) {
             const nextPath = pendingNavigationPath;
@@ -1566,11 +1513,12 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                     </div>
                 ) : null}
                 <div>
-                    <h1 className="font-apple text-[30px] font-semibold text-sub-1">{t('page.wardSettings.title')}</h1>
+                    <p className="mb-2 font-apple text-sm text-gray-3">{t('page.wardSettings.title')}</p>
+                    <h1 className="pr-12 font-apple text-[30px] font-semibold text-sub-1">
+                        {t(state.currentTab === 'annualLeave' ? 'annualLeave.title' : `page.wardSettings.tabs.${state.currentTab}`)}
+                    </h1>
                     <p className="mt-1 font-apple text-sm text-gray-3">{t(getTabDescriptionKey(state.currentTab))}</p>
                 </div>
-
-                <Tabs currentTab={state.currentTab} onSelect={handleSelectTab} />
             </div>
 
             <div className={cn(SETTINGS_CONTENT_CLASS, 'mt-6')}>
@@ -1589,6 +1537,8 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         shiftTypes={state.shiftTypes.filter((shiftType) => shiftType.isActive !== false)}
                         onDirtyChange={setHasUnsavedRestLeavePolicyChanges}
                     />
+                ) : state.currentTab === 'annualLeave' ? (
+                    <AnnualLeaveSettingsSection wardId={state.wardId} shiftTypes={state.shiftTypes} shiftTeams={state.shiftTeams} />
                 ) : state.currentTab === 'requestReception' ? (
                     <RequestReceptionContent
                         settings={state.requestReceptionSettings}

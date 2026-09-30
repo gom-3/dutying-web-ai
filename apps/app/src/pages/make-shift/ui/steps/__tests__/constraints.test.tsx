@@ -3596,7 +3596,10 @@ describe('Constraints', () => {
         await userEvent.click(addButton);
 
         await userEvent.click(await screen.findByRole('button', {name: '모든 간호사'}));
-        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '신규 간호사'}));
+        const targetListbox = await screen.findByRole('listbox');
+
+        expect(within(targetListbox).queryByRole('option', {name: '김간호사'})).not.toBeInTheDocument();
+        await userEvent.click(within(targetListbox).getByRole('option', {name: '신규 간호사'}));
 
         expect(screen.getByRole('button', {name: '신규 간호사'})).toBeInTheDocument();
         expect(await screen.findByRole('button', {name: '매일'})).toBeInTheDocument();

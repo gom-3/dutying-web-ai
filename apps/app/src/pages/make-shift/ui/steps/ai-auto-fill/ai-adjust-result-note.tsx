@@ -1,11 +1,14 @@
-import type {TAutofillResponse, TScheduleAdjustmentNotice, TScheduleRequestRuleResult} from '@dutying/api/ward';
+import type {TAutofillResponse, TScheduleAdjustmentNotice, TScheduleGoalResult, TScheduleRequestRuleResult} from '@dutying/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TProps = {
     /** 직전 조절이 옮긴 칸 수. 조절을 아직 안 했으면 null. */
     changedCount: number | null;
+    /** 실패는 토스트로만 끝내지 않는다. 다음 행동을 판단할 수 있도록 표 위에 남긴다. */
+    failure?: string | null;
     ruleResults: TScheduleRequestRuleResult[];
     notices?: TScheduleAdjustmentNotice[];
+    goalResult?: TScheduleGoalResult | null;
     offGoal?: NonNullable<TAutofillResponse['engineResult']>['offGoal'];
     /** 이미 가장 센 강도로 돌렸는지. 그러면 "더 세게" 버튼을 주지 않는다. */
     isStrongest: boolean;
@@ -20,12 +23,9 @@ type TProps = {
  * 잔여 위반이 있으면 그것이 먼저다. "12칸 바꿨어요"보다 "'D 최대 4연속'이 2곳 남았어요"가
  * 다음에 할 일을 정한다. 여러 줄을 쌓지 않고 가장 먼저 안 지켜진 것 하나만 보여 준다.
  */
-export default function AiAdjustResultNote({changedCount, ruleResults, notices = [], offGoal, isStrongest, disabled, onAdjustHarder}: TProps) {
+export default function AiAdjustResultNote({changedCount, failure, ruleResults, notices = [], goalResult, offGoal, isStrongest, disabled, onAdjustHarder}: TProps) {
     const {t} = useTypedTranslation();
     const unmet = ruleResults.find((entry) => (entry.violationCount ?? 0) > 0);
-
-    if (changedCount === null && !unmet && !offGoal && notices.length === 0) return null;
-
     const offGoalUnmet = offGoal && offGoal.goalStatus !== 'SATISFIED';
     const offGoalLabel = offGoal?.operation === 'SET_TARGET'
         ? `${offGoal.targetOff}일 목표에서 총 ${offGoal.totalDeviation ?? 0}일 차이가 남았어요.`
@@ -33,9 +33,13 @@ export default function AiAdjustResultNote({changedCount, ruleResults, notices =
           ? `기준 오프까지 총 ${offGoal.totalDeficit ?? 0}일이 아직 부족해요.`
           : `최소 ${offGoal?.minimumOff}일 오프 목표 중 ${offGoal?.totalDeficit ?? 0}일이 아직 부족해요.`;
 
+    if (changedCount === null && !failure && !unmet && !goalResult && !offGoal && notices.length === 0) return null;
+
     return (
-        <div className="ai-adjust-result-note text-12 text-sub flex flex-wrap items-center gap-2 px-4" role="status">
-            {offGoalUnmet ? (
+        <div className="ai-adjust-result-note text-12 text-sub flex flex-wrap items-center gap-2 px-4" role={failure ? 'alert' : 'status'}>
+            {failure ? (
+                <span className="text-red">조절을 적용하지 않았어요. {failure}</span>
+            ) : offGoalUnmet ? (
                 <span>{offGoalLabel}</span>
             ) : unmet ? (
                 <>
@@ -51,6 +55,10 @@ export default function AiAdjustResultNote({changedCount, ruleResults, notices =
                         </button>
                     )}
                 </>
+            ) : goalResult ? (
+                <span>
+                    하루짜리 나이트 {goalResult.beforeSingleNightRuns}건 → {goalResult.afterSingleNightRuns}건 · O 편차 {goalResult.actualOffDifference}일 · 월 경계 미확정 {goalResult.boundaryUnknownCount}건
+                </span>
             ) : notices.length > 0 ? (
                 <span>{notices[0].message}</span>
             ) : (

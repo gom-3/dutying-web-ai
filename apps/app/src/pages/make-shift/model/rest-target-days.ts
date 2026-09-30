@@ -1,3 +1,4 @@
+import type {TAnnualLeaveDay} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
 import type {TDutyDoc} from '@/features/shift-editor/model';
 import {
@@ -22,6 +23,7 @@ export function calculateRestCheckByShiftNurse(params: {
     month: number;
     adjustmentDays: number;
     language?: string | null;
+    annualLeaveDays?: TAnnualLeaveDay[];
 }) {
     const {shift, doc, policy, year, month, adjustmentDays} = params;
 
@@ -36,10 +38,22 @@ export function calculateRestCheckByShiftNurse(params: {
         division.forEach(({shiftNurse}) => {
             const docRow = doc.rows.find((row) => row.workerId === String(shiftNurse.shiftNurseId));
             const assignedDays =
-                docRow?.cells.filter((cell) => {
+                docRow?.cells.filter((cell, index) => {
                     if (!cell) return false;
 
                     const shiftType = shiftTypeByShortName.get(cell);
+                    const exception = params.annualLeaveDays?.find(
+                        (day) => day.nurseId === shiftNurse.nurseId && day.date === doc.columns[index] && day.source === 'DAY_USAGE',
+                    );
+
+                    if (
+                        shiftType?.isOff &&
+                        exception &&
+                        !exception.needsReview &&
+                        exception.days >= 1 &&
+                        exception.referenceShiftTypeId != null
+                    )
+                        return countedRestShiftTypeIds.has(exception.referenceShiftTypeId);
 
                     return shiftType !== undefined && countedRestShiftTypeIds.has(shiftType.wardShiftTypeId);
                 }).length ?? 0;

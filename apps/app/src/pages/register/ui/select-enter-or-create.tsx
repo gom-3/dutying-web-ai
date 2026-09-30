@@ -1,6 +1,8 @@
 import {ArrowLeft, ChevronRight} from 'lucide-react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {useCommercialContext} from '@/features/commercial/api';
+import {useTranslation} from 'react-i18next';
 import wardCodeEnterIcon from '@/shared/assets/images/ward-code-enter-icon.webp';
 import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings-icon.webp';
 import ROUTE from '@/shared/constant/path';
@@ -12,6 +14,8 @@ interface ISelectEnterOrCreateProps {
 
 function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
     const {t} = useTypedTranslation();
+    const commercial = useCommercialContext();
+    const {i18n} = useTranslation();
     const {
         state: {accountMe},
     } = useAuth();
@@ -40,6 +44,25 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
             </div>
 
             <div className="mt-6 space-y-3">
+                {commercial.data?.enabled ? (
+                    <button
+                        type="button"
+                        className="flex min-h-24 w-full items-center justify-between rounded-[24px] bg-white p-6 text-left hover:bg-gray-7"
+                        onClick={() => navigate('/workspace/adoption')}
+                    >
+                        <span>
+                            <strong className="block text-[20px]">
+                                {i18n.language.startsWith('ko') ? '병원 전체 도입' : 'Hospital rollout'}
+                            </strong>
+                            <span className="mt-2 block text-sm text-gray-3">
+                                {i18n.language.startsWith('ko')
+                                    ? '여러 병동의 계약과 운영 현황을 관리합니다.'
+                                    : 'Manage contracts and overview across wards.'}
+                            </span>
+                        </span>
+                        <ChevronRight className="h-5 w-5" />
+                    </button>
+                ) : null}
                 <button
                     type="button"
                     className="group flex min-h-36 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-6 text-left transition-colors hover:bg-gray-7"

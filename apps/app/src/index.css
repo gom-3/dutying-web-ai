@@ -47,6 +47,31 @@
         display: none;
     }
 
+    .navigation-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #d6d6de transparent;
+        scrollbar-gutter: stable;
+    }
+
+    .navigation-scrollbar::-webkit-scrollbar {
+        display: block;
+        width: 6px;
+    }
+
+    .navigation-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .navigation-scrollbar::-webkit-scrollbar-thumb {
+        border: 0;
+        border-radius: 999px;
+        background: #d6d6de;
+    }
+
+    .navigation-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #b4b4c3;
+    }
+
     #root {
         height: 100vh;
         display: flex;

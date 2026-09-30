@@ -16,6 +16,7 @@ import {
 } from '../../make-shift-step-layout';
 
 type TAiAutofillToolbarProps = {
+    displaySettings?: ReactNode;
     onFixedShiftsAttentionStart: () => void;
     onFixedShiftsAttentionEnd: () => void;
     onRequestShiftsAttentionStart: () => void;
@@ -53,6 +54,7 @@ const AI_ACTION_LABEL_KEYS = {
 } as const;
 
 export function AiAutofillToolbar({
+    displaySettings,
     onFixedShiftsAttentionStart,
     onFixedShiftsAttentionEnd,
     onRequestShiftsAttentionStart,
@@ -186,6 +188,7 @@ export function AiAutofillToolbar({
                         </IconToolButton>
                     </div>
 
+                    {displaySettings}
                     <span id="make_ai_history_tools" className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-2">
                         <span
                             id="make_ai_history_undo_redo_tools"

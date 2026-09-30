@@ -156,6 +156,13 @@ describe('shift-to-image', () => {
                 pixelRatio: 2,
             }),
         );
+
+        const filter = vi.mocked(toBlob).mock.calls[0]![1]!.filter!;
+        const privateCell = document.createElement('button');
+
+        privateCell.setAttribute('data-private-annual-leave', '');
+        expect(filter(privateCell)).toBe(false);
+        expect(filter(document.createElement('div'))).toBe(true);
         expect(canvas.width).toBe(3508);
         expect(canvas.height).toBe(2480);
         expect(context.fillText).toHaveBeenCalledWith('2027년 1월 듀팅병원 7A 근무표', 172, 132, 3164);

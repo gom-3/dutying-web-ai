@@ -1,3 +1,4 @@
+import type {IAnnualLeaveApi} from './annual-leave';
 import type {
     TDay,
     TDutyRequest,
@@ -536,7 +537,7 @@ export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
  * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
-export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'CELL' | 'CELL_SET';
+export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'GOAL' | 'CELL' | 'CELL_SET';
 /** MONTH: 이번 달만. TEAM: 계속(확정 시 팀 프로필로 승격). 기본은 언제나 MONTH. */
 export type TScheduleMonthRequestLifetime = 'MONTH' | 'TEAM';
 export type TScheduleMonthRequestStatus = 'ACTIVE' | 'DISABLED';
@@ -556,6 +557,16 @@ export type TScheduleMonthRequestSeverity = 'SOFT' | 'HARD';
 /** 조절 요청 한 건. 칩 클릭과 문장 해석 결과가 같은 모양으로 서버에 들어간다(서버 `ScheduleMonthRequestDto.Item`). */
 export type TScheduleMonthRequestItem = {
     kind: TScheduleMonthRequestKind;
+    /** GOAL 일 때 목표 종류. V1은 하루짜리 나이트 최소화만 지원한다. */
+    goalType?: 'MINIMIZE_SINGLE_NIGHT_RUNS';
+    /** GOAL의 O 개수 차이 허용치. 자연어에 없으면 확인 카드에서 반드시 받는다. */
+    maxOffDifference?: number;
+    /** true면 목표 미달 후보를 표에 적용할 수 없다. */
+    required?: boolean;
+    /** GOAL의 고립 야간을 계산할 간호사 집단. */
+    targetNurseIds?: number[];
+    /** GOAL의 O 편차를 비교할 간호사 집단. */
+    comparisonNurseIds?: number[];
     knob?: TAutofillAdjustKnob;
     value?: number;
     /** OFF_GOAL: 기준까지 증가 / 정확 목표에 접근 / 최소 하한. */
@@ -611,6 +622,11 @@ export type TScheduleMonthRequestRes = {
     minimumOff?: number | null;
     targetOff?: number | null;
     source?: 'SOLVER_OFF_TARGET' | 'MIN_MONTHLY_OFF' | 'USER_INPUT' | null;
+    goalType?: TScheduleMonthRequestItem['goalType'] | null;
+    maxOffDifference?: number | null;
+    required?: boolean | null;
+    targetNurseIds?: number[] | null;
+    comparisonNurseIds?: number[] | null;
     templateCode?: string | null;
     params?: Record<string, unknown> | null;
     severity?: TScheduleMonthRequestSeverity | null;
@@ -632,6 +648,50 @@ export type TScheduleRequestRuleResult = {
     violationCount: number;
     /** 이전 서버가 HARD를 자동 완화했던 응답과의 읽기 호환용. 새 서버는 자동 완화하지 않는다. */
     downgraded?: boolean | null;
+};
+
+export type TScheduleGoalResult = {
+    requestId?: number | null;
+    goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS';
+    maxOffDifference: number;
+    required: boolean;
+    goalStatus: 'SATISFIED' | 'IMPROVED_UNMET' | 'NOT_IMPROVED' | 'NOT_EVALUABLE';
+    beforeSingleNightRuns: number;
+    afterSingleNightRuns: number;
+    actualOffDifference: number;
+    boundaryUnknownCount: number;
+    metricDefinitionVersion: string;
+};
+
+/** 표 반영 전 후보. baseDraftRevision이 달라지면 오래된 후보로 취급한다. */
+export type TScheduleGoalCandidate = {
+    candidateId: string;
+    baseDraftRevision: number;
+    appliedDraftRevision?: number | null;
+    baseCellsHash: string;
+    planHash: string;
+    applicationStatus: 'CREATED' | 'APPLIED' | 'UNDONE' | 'CONFIRMED' | 'CONFIRMED_MODIFIED';
+};
+
+export type TScheduleGoalCandidateEvent = {
+    eventType: string;
+    draftRevision?: number | null;
+    reason?: string | null;
+    createdAt?: string | null;
+};
+
+export type TScheduleGoalCandidateDetail = {
+    candidate: TScheduleGoalCandidate;
+    changedCells: TSnapshotCellDTO[];
+    revertCells: TSnapshotCellDTO[];
+    goalResult: TScheduleGoalResult;
+    events: TScheduleGoalCandidateEvent[];
+};
+
+export type TScheduleGoalCandidateTransitionDTO = {
+    eventId: string;
+    draftRevision: number;
+    cells: TSnapshotCellDTO[];
 };
 
 export type TScheduleAdjustmentNotice = {
@@ -697,6 +757,7 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    idempotencyKey?: string;
     year: number;
     month: number;
     prompt?: string;
@@ -733,7 +794,7 @@ export type TAutofillResponse = {
             minimumOff?: number | null;
             targetOff?: number | null;
             source?: string | null;
-            goalStatus: 'SATISFIED' | 'PARTIAL' | 'REJECTED' | 'TIME_LIMIT';
+            goalStatus: 'SATISFIED' | 'PARTIAL' | 'REJECTED' | 'TIME_LIMIT' | 'IMPROVED_UNMET' | 'NOT_IMPROVED' | 'NOT_EVALUABLE';
             totalDeficit?: number;
             totalDeviation?: number;
             nurses?: Array<{
@@ -758,6 +819,9 @@ export type TAutofillResponse = {
     };
     /** 이번 달 문장 요청(RULE)이 얼마나 지켜졌는지. 요청이 없으면 비어 있다. */
     requestRuleResults?: TScheduleRequestRuleResult[];
+    /** 독립 재검증한 목표 수치. candidate와 함께 올 때만 표 적용 전 검토 화면을 띄운다. */
+    goalResults?: TScheduleGoalResult[];
+    goalCandidate?: TScheduleGoalCandidate | null;
     /** 병동 규칙은 그대로 두고 이번 달 조절이 실행 시에만 우선한 비차단 안내. */
     adjustmentNotices?: TScheduleAdjustmentNotice[];
 };
@@ -808,6 +872,8 @@ export type TPublishSnapshotDTO = {
      * 기본은 빈 목록이다 — 확정 화면에서 사용자가 직접 고른 것만 남는다. 자동 승격은 없다.
      */
     promoteRequestIds?: number[];
+    /** 실제로 이 스냅샷에 반영된 목표 조절 후보. 적용 뒤 수동 편집된 확정표도 후보 이력에 연결한다. */
+    goalCandidateId?: string;
 };
 
 export type TPublishSnapshotRes = {
@@ -816,10 +882,12 @@ export type TPublishSnapshotRes = {
     publishedWardShiftCount: number;
     emptyCellCount: number;
     rowOrderApplied: boolean;
+    /** 후보 결과 그대로 확정했는지, 적용 뒤 사람이 수정한 표를 확정했는지의 서버 기록 상태. */
+    goalCandidateStatus?: 'CONFIRMED' | 'CONFIRMED_MODIFIED';
     publishedAt: string;
 };
 
-export interface IWardAPI {
+export interface IWardAPI extends IAnnualLeaveApi {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;
@@ -925,6 +993,19 @@ export interface IWardAPI {
         autofillDTO: TAutofillDTO,
         options?: {signal?: AbortSignal},
     ) => Promise<TAutofillResponse>;
+    getScheduleGoalCandidate: (wardId: number, shiftTeamId: number, candidateId: string) => Promise<TScheduleGoalCandidateDetail>;
+    applyScheduleGoalCandidate: (
+        wardId: number,
+        shiftTeamId: number,
+        candidateId: string,
+        transitionDTO: TScheduleGoalCandidateTransitionDTO,
+    ) => Promise<TScheduleGoalCandidateDetail>;
+    undoScheduleGoalCandidate: (
+        wardId: number,
+        shiftTeamId: number,
+        candidateId: string,
+        transitionDTO: TScheduleGoalCandidateTransitionDTO,
+    ) => Promise<TScheduleGoalCandidateDetail>;
     getScheduleMonthRequests: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TScheduleMonthRequestListRes>;
     updateScheduleMonthRequest: (
         wardId: number,

@@ -1,7 +1,8 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {useState} from 'react';
-import {Link} from 'react-router';
+import {useId} from 'react';
+import {Link, useLocation} from 'react-router';
 import {notificationQueryOptions} from '@/entities/notification';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
@@ -11,6 +12,7 @@ import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-to
 import ROUTE, {type TRoute} from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
+import {useNavigationBarFoldStore} from './navigation-bar-fold-store';
 import NavigationBarItem, {type TNavigationBarItemIcon} from './NavigationBarItem';
 
 type TNavItem = {
@@ -189,6 +191,72 @@ const WardIdentity = ({collapsed, onItemNavigate, ward}: TWardIdentityProps) => 
         </>
     );
 };
+const settingsChildren = [
+    {tab: 'shiftTypes', key: 'page.wardSettings.tabs.shiftTypes'},
+    {tab: 'constraints', key: 'page.wardSettings.tabs.constraints'},
+    {tab: 'restLeavePolicy', key: 'page.wardSettings.tabs.restLeavePolicy'},
+    {tab: 'annualLeave', key: 'annualLeave.title'},
+    {tab: 'requestReception', key: 'page.wardSettings.tabs.requestReception'},
+] as const;
+
+function SettingsNavigation({collapsed = false, stableCollapsedLayout = false, onItemNavigate}: TNavigationBarItemGroupsProps) {
+    const {t} = useTypedTranslation();
+    const location = useLocation();
+    const isSettings = location.pathname === ROUTE.WARD_SETTINGS;
+    const tab = new URLSearchParams(location.search).get('tab') ?? 'shiftTypes';
+    const [disclosure, setDisclosure] = useState<{locationKey: string; open: boolean} | null>(null);
+    const open = disclosure?.locationKey === location.key ? disclosure.open : isSettings;
+    const expand = useNavigationBarFoldStore((state) => state.expand);
+    const id = useId();
+
+    return (
+        <div>
+            <NavigationBarItem
+                path={ROUTE.WARD_SETTINGS}
+                icon={navigationIcons.wardSettings}
+                text={t('page.navigationBar.items.wardSettings')}
+                collapsed={collapsed}
+                alignWithCollapsedIcon={stableCollapsedLayout}
+                expanded={open && !collapsed}
+                controls={id}
+                onActivate={() => {
+                    if (collapsed) expand('user');
+
+                    setDisclosure({
+                        locationKey: location.key,
+                        open: collapsed || (stableCollapsedLayout && disclosure?.locationKey !== location.key) || !open,
+                    });
+                }}
+            />
+            {open && !collapsed ? (
+                <ul id={id} className="mt-1 ml-5 flex flex-col gap-0.5">
+                    {settingsChildren.map((child) => {
+                        const active = isSettings && tab === child.tab;
+                        const to = `${ROUTE.WARD_SETTINGS}?tab=${child.tab}`;
+
+                        return (
+                            <li key={child.tab}>
+                                <Link
+                                    to={to}
+                                    data-navigation-path={to}
+                                    aria-current={active ? 'page' : undefined}
+                                    onClick={onItemNavigate}
+                                    className={cn(
+                                        'flex min-h-11 items-center rounded-lg px-3 py-2 text-sm transition-colors focus-visible:bg-main-light focus-visible:font-semibold focus-visible:text-main-1 focus-visible:outline-none',
+                                        active ? 'bg-main-light font-semibold text-main-1' : 'text-gray-3 hover:bg-gray-7 hover:text-sub-1',
+                                    )}
+                                >
+                                    {t(child.key)}
+                                </Link>
+                            </li>
+                        );
+                    })}
+                </ul>
+            ) : null}
+        </div>
+    );
+}
+
 const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = false, onItemNavigate}: TNavigationBarItemGroupsProps) => {
     const {t} = useTypedTranslation();
     const {
@@ -216,7 +284,7 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                 collapsed || stableCollapsedLayout ? 'mt-5 [@media(max-height:720px)]:mt-3' : 'mt-6 [@media(max-height:760px)]:mt-4',
             )}
         >
-            <div>
+            <div className="shrink-0">
                 {collapsed || stableCollapsedLayout ? (
                     <div className="mb-4 [@media(max-height:720px)]:mb-3">
                         <NavigationBarItem
@@ -232,6 +300,8 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                     </div>
                 ) : null}
                 {stableCollapsedLayout ? null : <WardIdentity collapsed={collapsed} onItemNavigate={onItemNavigate} ward={ward} />}
+            </div>
+            <div className="navigation-scrollbar -mr-2 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pr-0.5 [overflow-anchor:none]">
                 {sections.map((section, sectionIndex) => (
                     <div
                         key={section.labelKey}
@@ -264,23 +334,36 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                                     : 'gap-1.5 [@media(max-height:760px)]:gap-1',
                             )}
                         >
-                            {section.items.map((item) => (
-                                <NavigationBarItem
-                                    key={item.path ?? item.textKey ?? item.text}
-                                    path={item.path}
-                                    activePaths={item.activePaths}
-                                    icon={item.icon}
-                                    text={item.text ?? t(item.textKey!)}
-                                    collapsed={collapsed}
-                                    alignWithCollapsedIcon={stableCollapsedLayout}
-                                    disabled={item.disabled}
-                                    badgeCount={
-                                        item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
-                                    }
-                                    badgeDot={item.path === ROUTE.BOARD && hasBoardUnreadNotification}
-                                    onNavigate={onItemNavigate}
-                                />
-                            ))}
+                            {section.items.map((item) =>
+                                item.path === ROUTE.WARD_SETTINGS ? (
+                                    <SettingsNavigation
+                                        key={item.path}
+                                        collapsed={collapsed}
+                                        stableCollapsedLayout={stableCollapsedLayout}
+                                        onItemNavigate={onItemNavigate}
+                                    />
+                                ) : (
+                                    <NavigationBarItem
+                                        key={item.path ?? item.textKey ?? item.text}
+                                        path={item.path}
+                                        activePaths={item.activePaths}
+                                        icon={item.icon}
+                                        text={item.text ?? t(item.textKey!)}
+                                        collapsed={collapsed}
+                                        alignWithCollapsedIcon={stableCollapsedLayout}
+                                        disabled={item.disabled}
+                                        badgeCount={
+                                            item.path === ROUTE.MEMBER
+                                                ? waitingCount
+                                                : item.path === ROUTE.REQUEST
+                                                  ? pendingRequestCount
+                                                  : 0
+                                        }
+                                        badgeDot={item.path === ROUTE.BOARD && hasBoardUnreadNotification}
+                                        onNavigate={onItemNavigate}
+                                    />
+                                ),
+                            )}
                             {section.labelKey === 'page.navigationBar.sections.settings' ? (
                                 <>
                                     <div

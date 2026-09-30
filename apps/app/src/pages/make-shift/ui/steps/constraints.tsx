@@ -2820,6 +2820,14 @@ function getOptionsForControl(
             })
           : options;
 
+    if (template.id === 'STAFF_COUNT_BY_SHIFT' && control.optionsKey === 'target') {
+        return resolvedOptions.filter((option) => {
+            const type = getConstraintOptionType(option.raw ?? option.value);
+
+            return type === 'ALL' || type === 'DIVISION';
+        });
+    }
+
     if (template.targetLockedToAll && control.optionsKey === 'target') {
         return resolvedOptions.filter(isAllSelectOption);
     }
