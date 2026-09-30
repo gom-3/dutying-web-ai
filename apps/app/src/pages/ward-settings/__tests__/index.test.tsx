@@ -755,42 +755,11 @@ describe('WardSettingsPage', () => {
         expect(toast.success).not.toHaveBeenCalled();
     });
 
-    it('제약 조건 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
-        const user = userEvent.setup();
-        const selectTab = vi.fn();
-
-        mockUseWardSettings.mockReturnValue(
-            createValue({
-                actions: {
-                    selectTab,
-                },
-            }),
-        );
-
+    it('선택한 설정을 제목으로 표시하고 본문 탭은 반복하지 않는다', () => {
+        mockUseWardSettings.mockReturnValue(createValue({}));
         render(<WardSettingsPage />);
-
-        await user.click(screen.getByRole('button', {name: '제약 조건'}));
-
-        expect(selectTab).toHaveBeenCalledWith('constraints');
-    });
-
-    it('신청근무 접수 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
-        const user = userEvent.setup();
-        const selectTab = vi.fn();
-
-        mockUseWardSettings.mockReturnValue(
-            createValue({
-                actions: {
-                    selectTab,
-                },
-            }),
-        );
-
-        render(<WardSettingsPage />);
-
-        await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
-
-        expect(selectTab).toHaveBeenCalledWith('requestReception');
+        expect(screen.getByRole('heading', {level: 1, name: '근무 유형'})).toBeInTheDocument();
+        expect(screen.queryByRole('group', {name: '근무 설정'})).not.toBeInTheDocument();
     });
 
     it('신청근무 접수 설정을 저장한다', async () => {
@@ -999,7 +968,6 @@ describe('WardSettingsPage', () => {
 
     it('휴무일 계산 탭에서 변경 후 다른 탭으로 나가려 하면 확인 모달을 띄운다', async () => {
         const user = userEvent.setup();
-        const selectTab = vi.fn();
 
         mockUseWardSettings.mockReturnValue(
             createValue({
@@ -1020,13 +988,15 @@ describe('WardSettingsPage', () => {
                         },
                     ],
                 },
-                actions: {
-                    selectTab,
-                },
             }),
         );
 
-        render(<WardSettingsPage />);
+        render(
+            <>
+                <button data-navigation-path="/ward-settings?tab=requestReception">신청근무 접수</button>
+                <WardSettingsPage />
+            </>,
+        );
 
         await user.click(screen.getByRole('switch', {name: '휴무일 계산 사용'}));
         await waitFor(() => {
@@ -1035,12 +1005,12 @@ describe('WardSettingsPage', () => {
 
         await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
 
-        expect(selectTab).not.toHaveBeenCalled();
+        expect(mockNavigate).not.toHaveBeenCalled();
         expect(screen.getByText('저장하지 않고 나갈까요?')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '저장 안 함'}));
 
-        expect(selectTab).toHaveBeenCalledWith('requestReception');
+        expect(mockNavigate).toHaveBeenCalledWith('/ward-settings?tab=requestReception');
     });
 
     it('근무 유형 추가하기를 누르면 새 근무 유형 행을 추가한다', async () => {

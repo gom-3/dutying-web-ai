@@ -13,7 +13,7 @@ import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
-export type TWardSettingsTab = 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
+export type TWardSettingsTab = 'shiftTypes' | 'annualLeave' | 'restLeavePolicy' | 'requestReception' | 'constraints';
 type TQueryStatus = 'idle' | 'pending' | 'error' | 'success';
 type TRawWardShiftType = Omit<TWardShiftType, 'startTime' | 'endTime'> & {
     startTime?: string | null;
@@ -62,7 +62,8 @@ async function getReqShiftReceptionSettingsOrDefault(wardId: number): Promise<TR
 }
 
 function parseWardSettingsTab(raw: string | null): TWardSettingsTab | null {
-    if (raw === 'shiftTypes' || raw === 'restLeavePolicy' || raw === 'requestReception' || raw === 'constraints') return raw;
+    if (raw === 'annualLeave' || raw === 'shiftTypes' || raw === 'restLeavePolicy' || raw === 'requestReception' || raw === 'constraints')
+        return raw;
 
     return null;
 }
@@ -96,9 +97,9 @@ export function useWardSettings() {
     });
 
     useEffect(() => {
-        const queryTab = parseWardSettingsTab(searchParams.get('tab'));
+        const queryTab = parseWardSettingsTab(searchParams.get('tab')) ?? 'shiftTypes';
 
-        if (!queryTab || queryTab === currentTab) return;
+        if (queryTab === currentTab) return;
 
         setCurrentTab(queryTab);
     }, [currentTab, searchParams]);

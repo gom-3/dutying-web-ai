@@ -79,6 +79,47 @@ describe('MakeShiftCalendar', () => {
         useUIConfigStore.getState().reset();
     });
 
+    it('aligns optional annual leave columns across the header, worker rows and footer independently of OFF', () => {
+        const renderRow = vi.fn((nurseId: number) => (
+            <>
+                <span>{nurseId} month</span>
+                <span>{nurseId} left</span>
+            </>
+        ));
+        const rest = {2: {targetDays: 10, assignedDays: 8, carriedDays: 0, carryOverApplied: false, differenceDays: -2}};
+        const props = {shift, doc, violationMap: new Map(), showFaults: false, restCheckByShiftNurseId: rest};
+        const columns = {
+            count: 2,
+            header: (
+                <>
+                    <span>month</span>
+                    <span>left</span>
+                </>
+            ),
+            renderRow,
+        };
+        const view = render(<MakeShiftCalendar {...props} showRestCheck={false} annualLeaveColumns={columns} />);
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__type-summary-header')!;
+        const row = document.querySelector<HTMLElement>('.make-shift-calendar__row-summary')!;
+        const spacer = document.querySelector<HTMLElement>('.make-shift-daily-summary__spacer')!;
+
+        expect(renderRow).toHaveBeenCalledWith(100);
+        expect(header.style.gridTemplateColumns).toBe(row.style.gridTemplateColumns);
+        expect(header.style.gridTemplateColumns).toBe(spacer.style.gridTemplateColumns);
+        expect(header.style.width).toBe(spacer.style.width);
+        expect(screen.getByText('100 left')).toBeVisible();
+        expect(document.querySelector('.make-shift-calendar__rest-check-header')).toBeNull();
+
+        const widthWithLeave = header.style.width;
+
+        view.rerender(<MakeShiftCalendar {...props} showRestCheck />);
+        expect(screen.queryByText('100 left')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__rest-check-header')).not.toBeNull();
+        expect(header.style.width).not.toBe(widthWithLeave);
+        expect(header.style.gridTemplateColumns).toBe(row.style.gridTemplateColumns);
+        expect(header.style.gridTemplateColumns).toBe(spacer.style.gridTemplateColumns);
+    });
+
     it('assigns the tutorial cell id to the first visible day cell', () => {
         render(
             <MakeShiftCalendar

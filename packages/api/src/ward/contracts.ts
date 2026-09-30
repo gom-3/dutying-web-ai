@@ -1,3 +1,4 @@
+import type {IAnnualLeaveApi} from './annual-leave';
 import type {
     TDay,
     TDutyRequest,
@@ -886,7 +887,7 @@ export type TPublishSnapshotRes = {
     publishedAt: string;
 };
 
-export interface IWardAPI {
+export interface IWardAPI extends IAnnualLeaveApi {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;

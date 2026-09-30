@@ -35,6 +35,9 @@ interface INavigationBarItemProps {
     badgeCount?: number;
     badgeDot?: boolean;
     onNavigate?: () => void;
+    onActivate?: () => void;
+    expanded?: boolean;
+    controls?: string;
 }
 
 const NavigationBarItem = ({
@@ -48,11 +51,14 @@ const NavigationBarItem = ({
     badgeCount = 0,
     badgeDot = false,
     onNavigate,
+    onActivate,
+    expanded,
+    controls,
 }: INavigationBarItemProps) => {
     const navigate = useNavigate();
     const {pathname} = useLocation();
     const isSelected = Boolean(path) && (activePaths ?? [path]).some((activePath) => activePath === pathname);
-    const isDisabled = disabled || !path;
+    const isDisabled = disabled || (!path && !onActivate);
     const [isPressedPreview, setIsPressedPreview] = useState(false);
     const [isNavigationPreview, setIsNavigationPreview] = useState(false);
     const [isTapAnimating, setIsTapAnimating] = useState(false);
@@ -94,15 +100,17 @@ const NavigationBarItem = ({
     return (
         <button
             type="button"
-            data-navigation-path={path}
+            data-navigation-path={onActivate ? undefined : path}
+            aria-expanded={expanded}
+            aria-controls={controls}
             title={collapsed ? text : undefined}
             aria-label={collapsed ? text : undefined}
-            aria-current={isSelected ? 'page' : undefined}
+            aria-current={isSelected && !onActivate ? 'page' : undefined}
             aria-disabled={isDisabled ? true : undefined}
             disabled={isDisabled}
             className={cn(
                 'group relative flex min-h-[clamp(38px,5.6vh,44px)] w-full items-center rounded-[10px] font-apple text-[15px] leading-normal font-semibold transition-colors duration-150',
-                'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
+                'focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none',
                 collapsed
                     ? 'justify-center px-0'
                     : alignWithCollapsedIcon
@@ -125,6 +133,14 @@ const NavigationBarItem = ({
             onPointerLeave={() => setIsPressedPreview(false)}
             onClick={() => {
                 if (isDisabled) return;
+
+                if (onActivate) {
+                    onActivate();
+
+                    return;
+                }
+
+                if (!path) return;
 
                 onNavigate?.();
                 setIsNavigationPreview(true);
@@ -192,6 +208,11 @@ const NavigationBarItem = ({
                 />
             ) : null}
             {collapsed ? null : <span className="min-w-0 flex-1 truncate text-left">{text}</span>}
+            {expanded !== undefined && !collapsed ? (
+                <span aria-hidden="true" className="text-xs">
+                    {expanded ? '▾' : '▸'}
+                </span>
+            ) : null}
             {badgeCount > 0 ? (
                 <span
                     className={cn(

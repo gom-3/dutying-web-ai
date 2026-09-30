@@ -4,9 +4,12 @@ import {Component, useMemo, useRef, useState, type ReactNode} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TShift} from '@/entities';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
+import {useAnnualLeaveSchedule} from '@/features/annual-leave/queries';
+import {useAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import useAuth from '@/features/auth';
 import {shiftToDoc, type TViolation, useShiftImageExport} from '@/features/shift-editor';
 import i18n from '@/i18n';
+import {useScheduleDisplay} from '@/pages/make-shift/model/use-schedule-display';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
@@ -21,6 +24,7 @@ import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
+import {ScheduleDisplayMenu} from './shared/schedule-display-menu';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
@@ -78,6 +82,9 @@ export function ConfirmedShifts() {
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const doc = useMemo(() => toConfirmedDoc(orderedShift, year, month), [month, orderedShift, year]);
+    const annualLeave = useAnnualLeaveSchedule(wardId, currentShiftTeamId, year, month, orderedShift, doc, true);
+    const display = useScheduleDisplay(wardId);
+    const annualColumns = useAnnualLeaveScheduleColumns(annualLeave, display.value.annualLeave);
     const restCheckByShiftNurseId = useMemo(
         () =>
             orderedShift && doc
@@ -89,9 +96,10 @@ export function ConfirmedShifts() {
                       month,
                       adjustmentDays,
                       language,
+                      annualLeaveDays: annualLeave.data?.days ?? annualLeave.overview.data?.days,
                   })
                 : undefined,
-        [adjustmentDays, doc, language, month, orderedShift, policy, year],
+        [annualLeave.data?.days, annualLeave.overview.data?.days, adjustmentDays, doc, language, month, orderedShift, policy, year],
     );
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,
@@ -151,6 +159,7 @@ export function ConfirmedShifts() {
                     </div>
 
                     <div className="confirmed-shifts-toolbar__actions ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">
+                        <ScheduleDisplayMenu display={display} />
                         <TooltipProvider delayDuration={120}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -232,6 +241,9 @@ export function ConfirmedShifts() {
                             <MakeShiftCalendar
                                 shift={orderedShift}
                                 doc={doc}
+                                annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
+                                annualLeaveColumns={annualColumns.columns}
+                                showRestCheck={display.value.rest}
                                 violationMap={EMPTY_VIOLATION_MAP}
                                 showFaults={false}
                                 readonly
