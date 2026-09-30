@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
-import useAuthStore from '@/features/auth/model/store';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import useAuthStore from '@/features/auth/model/store';
 import {adminAxiosInstance} from '@/shared/api/client';
 
 export type ScopeType = 'WARD' | 'HOSPITAL';
@@ -246,12 +246,23 @@ export const legacyDelete = async (path: string) => {
     await adminAxiosInstance.delete(path);
 };
 export const commercialQueryKey = (accountId: number | null, ...parts: unknown[]) => ['commercial', accountId, ...parts];
+export async function getCommercialContext(): Promise<AccessContext> {
+    try {
+        return await commercialGet<AccessContext>('/access-context');
+    } catch (error) {
+        // The minimal production controller omits this endpoint until commercial launch.
+        if (error instanceof Error && 'code' in error && error.code === 404) return {enabled: false, scopes: []};
+
+        throw error;
+    }
+}
 export function useCommercialContext() {
     const accountId = useAuthStore((s) => s.accountId);
     const token = useAuthStore((s) => s.accessToken);
+
     return useQuery({
         queryKey: commercialQueryKey(accountId, 'context'),
-        queryFn: () => commercialGet<AccessContext>('/access-context'),
+        queryFn: getCommercialContext,
         enabled: !!token && isWardAdminAccessToken(token),
         retry: false,
         staleTime: 10_000,

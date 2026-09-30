@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {CommercialAPI} from './api';
+import {CommercialAPI, getCommercialContext} from './api';
 
 const {get, put} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn()}));
 
@@ -26,5 +26,20 @@ describe('CommercialAPI', () => {
         await CommercialAPI.applyDevelopmentPlan(12, 'PLUS');
 
         expect(put).toHaveBeenCalledWith('/admin/commercial/wards/12/plan', {planCode: 'PLUS'}, {suppressErrorToast: true});
+    });
+
+    it('treats the missing pre-launch commercial context as disabled', async () => {
+        get.mockRejectedValue(Object.assign(new Error('Not found'), {code: 404}));
+
+        await expect(getCommercialContext()).resolves.toEqual({enabled: false, scopes: []});
+        expect(get).toHaveBeenCalledWith('/admin/commercial/access-context', {suppressErrorToast: true});
+    });
+
+    it('does not hide other commercial context failures', async () => {
+        const error = Object.assign(new Error('Unavailable'), {code: 503});
+
+        get.mockRejectedValue(error);
+
+        await expect(getCommercialContext()).rejects.toBe(error);
     });
 });
