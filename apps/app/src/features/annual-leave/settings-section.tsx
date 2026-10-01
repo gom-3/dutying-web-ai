@@ -305,6 +305,7 @@ export function AnnualLeaveSettingsSection({
     const [settingsBusy, setSettingsBusy] = useState(false);
     const [showBulk, setShowBulk] = useState(false);
     const [registrationNurseId, setRegistrationNurseId] = useState<number | null>(null);
+    const [renewing, setRenewing] = useState(false);
     const [grantMode, setGrantMode] = useState<TGrantMode>('GRANT');
     const [showGrant, setShowGrant] = useState(false);
     const [grantSelected, setGrantSelected] = useState<number[]>([]);
@@ -321,7 +322,7 @@ export function AnnualLeaveSettingsSection({
             (person) =>
                 person.active &&
                 (registrationNurseId == null || person.nurseId === registrationNurseId) &&
-                (person.openingDays == null || person.checks.includes('RESTART_REQUIRED')),
+                (renewing || person.openingDays == null || person.checks.includes('RESTART_REQUIRED')),
         ) ?? [];
 
     if (wardId == null) return null;
@@ -362,6 +363,13 @@ export function AnnualLeaveSettingsSection({
             setBusy(false);
         }
     };
+    const closeRegistration = () => {
+        setShowBulk(false);
+        setRegistrationNurseId(null);
+        setRenewing(false);
+        setBulkDays({});
+        setBulkPreviousUsed({});
+    };
     const applyBulk = async () => {
         const entries: TAnnualLeaveInitialization[] = eligible
             .filter((person) => (bulkDays[person.nurseId] ?? '').trim() !== '')
@@ -374,7 +382,7 @@ export function AnnualLeaveSettingsSection({
                 balanceBasis: 'TODAY_INCLUDED',
                 includedPlannedDates: [],
                 reviewOn: null,
-                reason: t('annualLeave.bulk'),
+                reason: t(renewing ? 'annualLeave.renew' : 'annualLeave.bulk'),
             }));
 
         if (
@@ -393,12 +401,11 @@ export function AnnualLeaveSettingsSection({
         setBusy(true);
 
         try {
-            await WardAPI.initializeAnnualLeave(wardId, {requestId: requestId(entries), entries});
+            const payload = {entries, ...(renewing ? {renew: true} : {})};
+
+            await WardAPI.initializeAnnualLeave(wardId, {...payload, requestId: requestId(payload)});
             await refresh();
-            setShowBulk(false);
-            setRegistrationNurseId(null);
-            setBulkDays({});
-            setBulkPreviousUsed({});
+            closeRegistration();
         } catch (error) {
             showActionErrorFeedback(error, t('annualLeave.saveError'));
             await refresh();
@@ -415,6 +422,10 @@ export function AnnualLeaveSettingsSection({
     const registrationPerson = registrationNurseId == null ? null : eligible[0];
     const registrationDays = registrationPerson ? (bulkDays[registrationPerson.nurseId] ?? '').trim() : '';
     const registrationPreviousUsed = registrationPerson ? (bulkPreviousUsed[registrationPerson.nurseId] ?? '').trim() : '';
+    const registrationGridClass = renewing
+        ? 'grid-cols-[7.5rem_minmax(0,1fr)] max-w-[440px]'
+        : 'grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] max-w-[640px]';
+    const registrationBalanceLabel = t(renewing ? 'annualLeave.renewRemaining' : 'annualLeave.current');
     const grantable = people.filter(canGrant);
     const allGrantedSelected = grantable.length > 0 && grantable.every((person) => grantSelected.includes(person.nurseId));
 
@@ -448,6 +459,7 @@ export function AnnualLeaveSettingsSection({
                                               {
                                                   label: t('annualLeave.bulk'),
                                                   onSelect: () => {
+                                                      setRenewing(false);
                                                       setRegistrationNurseId(null);
                                                       setShowBulk(true);
                                                       setBulkDays({});
@@ -487,6 +499,20 @@ export function AnnualLeaveSettingsSection({
                                         label: t(data.settings.enabled ? 'annualLeave.settings' : 'annualLeave.resume'),
                                         onSelect: () => setShowSettings(true),
                                     },
+                                    ...(data.settings.enabled
+                                        ? [
+                                              {
+                                                  label: t('annualLeave.renew'),
+                                                  onSelect: () => {
+                                                      setRenewing(true);
+                                                      setRegistrationNurseId(null);
+                                                      setShowBulk(true);
+                                                      setBulkDays({});
+                                                      setBulkPreviousUsed({});
+                                                  },
+                                              },
+                                          ]
+                                        : []),
                                 ]}
                             />
                         </div>
@@ -494,7 +520,15 @@ export function AnnualLeaveSettingsSection({
                 </div>
                 {!data.settings.startedOn ? (
                     <div className="w-full py-2 sm:py-4">
-                        <SettingsForm wardId={wardId} settings={data.settings} shiftTypes={shiftTypes} onDone={() => setShowBulk(true)} />
+                        <SettingsForm
+                            wardId={wardId}
+                            settings={data.settings}
+                            shiftTypes={shiftTypes}
+                            onDone={() => {
+                                setRenewing(false);
+                                setShowBulk(true);
+                            }}
+                        />
                     </div>
                 ) : (
                     <>
@@ -594,6 +628,7 @@ export function AnnualLeaveSettingsSection({
                                                                     type="button"
                                                                     aria-label={t('annualLeave.registerPerson', {name: person.name})}
                                                                     onClick={() => {
+                                                                        setRenewing(false);
                                                                         setRegistrationNurseId(person.nurseId);
                                                                         setBulkDays({});
                                                                         setBulkPreviousUsed({});
@@ -619,11 +654,6 @@ export function AnnualLeaveSettingsSection({
                                                                     </span>
                                                                 )}
                                                         </span>
-                                                        {index === 1 && person.openingDays != null && person.previousUsedDays == null && (
-                                                            <span className="block text-[11px] font-normal text-gray-3">
-                                                                {t('annualLeave.usageSinceStart')}
-                                                            </span>
-                                                        )}
                                                     </td>
                                                 ),
                                             )}
@@ -687,9 +717,11 @@ export function AnnualLeaveSettingsSection({
                 <AnnualLeaveDialog
                     compact={registrationNurseId != null}
                     title={
-                        registrationPerson ? t('annualLeave.registerSingleTitle', {name: registrationPerson.name}) : t('annualLeave.bulk')
+                        registrationPerson
+                            ? t('annualLeave.registerSingleTitle', {name: registrationPerson.name})
+                            : t(renewing ? 'annualLeave.renew' : 'annualLeave.bulk')
                     }
-                    onClose={() => setShowBulk(false)}
+                    onClose={closeRegistration}
                     busy={busy}
                 >
                     <form
@@ -775,7 +807,9 @@ export function AnnualLeaveSettingsSection({
                             </>
                         ) : eligible.length > 0 ? (
                             <div className="flex items-start justify-between gap-4 px-1">
-                                <p className="text-sm leading-5 break-keep text-sub-2">{t('annualLeave.bulkHint')}</p>
+                                <p className="text-sm leading-5 break-keep text-sub-2">
+                                    {t(renewing ? 'annualLeave.renewHint' : 'annualLeave.bulkHint')}
+                                </p>
                                 <p className="shrink-0 pt-0.5 text-xs font-medium text-gray-3">
                                     {t('annualLeave.todayBasis', {date: today})}
                                 </p>
@@ -795,35 +829,37 @@ export function AnnualLeaveSettingsSection({
                                 {eligible.length > 0 && (
                                     <div
                                         role="row"
-                                        className="mx-auto grid w-full max-w-[640px] grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] items-end gap-3 px-4 pb-2 text-xs leading-4 font-medium text-sub-2"
+                                        className={`mx-auto grid w-full ${registrationGridClass} items-end gap-3 px-4 pb-2 text-xs leading-4 font-medium text-sub-2`}
                                     >
                                         <span role="columnheader">{t('annualLeave.name')}</span>
                                         <span role="columnheader" className="flex items-start justify-center gap-0.5 text-center">
-                                            <span>{t('annualLeave.current')}</span>
+                                            <span>{registrationBalanceLabel}</span>
                                             <span aria-hidden="true" className="mt-px text-[10px] leading-none text-red">
                                                 *
                                             </span>
                                         </span>
-                                        <span role="columnheader" className="text-center">
-                                            {t('annualLeave.previousUsed')}
-                                        </span>
+                                        {!renewing && (
+                                            <span role="columnheader" className="text-center">
+                                                {t('annualLeave.previousUsed')}
+                                            </span>
+                                        )}
                                     </div>
                                 )}
                                 {eligible.map((person) => (
                                     <div
                                         key={person.nurseId}
                                         role="row"
-                                        className="mx-auto mb-2 grid min-h-14 w-full max-w-[640px] grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 rounded-xl bg-gray-7 px-4 py-1.5 text-sm last:mb-0"
+                                        className={`mx-auto mb-2 grid min-h-14 w-full ${registrationGridClass} items-center gap-3 rounded-xl bg-gray-7 px-4 py-1.5 text-sm last:mb-0`}
                                     >
                                         <strong role="rowheader" className="min-w-0 truncate font-semibold text-sub-1">
                                             {person.name}
                                         </strong>
                                         <label role="cell" className="min-w-0">
-                                            <span className="sr-only">{t('annualLeave.current')}</span>
+                                            <span className="sr-only">{registrationBalanceLabel}</span>
                                             <span className="mx-auto flex w-full max-w-48 min-w-0 items-center gap-1 rounded-lg bg-white px-3 focus-within:bg-main-light">
                                                 <input
                                                     type="number"
-                                                    aria-label={`${person.name} ${t('annualLeave.current')}`}
+                                                    aria-label={`${person.name} ${registrationBalanceLabel}`}
                                                     min="-99999"
                                                     max="99999"
                                                     step="0.001"
@@ -837,34 +873,36 @@ export function AnnualLeaveSettingsSection({
                                                 <span className="shrink-0 text-sub-2">{t('annualLeave.dayUnit')}</span>
                                             </span>
                                         </label>
-                                        <label role="cell" className="min-w-0 text-sub-2">
-                                            <span className="sr-only">{t('annualLeave.previousUsed')}</span>
-                                            <span className="mx-auto flex w-full max-w-48 min-w-0 items-center gap-1 rounded-lg bg-white px-3 focus-within:bg-main-light">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="99999"
-                                                    step="0.001"
-                                                    disabled={busy}
-                                                    aria-label={`${person.name} ${t('annualLeave.previousUsed')}`}
-                                                    value={bulkPreviousUsed[person.nurseId] ?? ''}
-                                                    onChange={(e) =>
-                                                        setBulkPreviousUsed((previous) => ({
-                                                            ...previous,
-                                                            [person.nurseId]: e.target.value,
-                                                        }))
-                                                    }
-                                                    className="h-11 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-base font-semibold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                                />
-                                                <span className="shrink-0">{t('annualLeave.dayUnit')}</span>
-                                            </span>
-                                        </label>
+                                        {!renewing && (
+                                            <label role="cell" className="min-w-0 text-sub-2">
+                                                <span className="sr-only">{t('annualLeave.previousUsed')}</span>
+                                                <span className="mx-auto flex w-full max-w-48 min-w-0 items-center gap-1 rounded-lg bg-white px-3 focus-within:bg-main-light">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="99999"
+                                                        step="0.001"
+                                                        disabled={busy}
+                                                        aria-label={`${person.name} ${t('annualLeave.previousUsed')}`}
+                                                        value={bulkPreviousUsed[person.nurseId] ?? ''}
+                                                        onChange={(e) =>
+                                                            setBulkPreviousUsed((previous) => ({
+                                                                ...previous,
+                                                                [person.nurseId]: e.target.value,
+                                                            }))
+                                                        }
+                                                        className="h-11 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-base font-semibold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                    />
+                                                    <span className="shrink-0">{t('annualLeave.dayUnit')}</span>
+                                                </span>
+                                            </label>
+                                        )}
                                     </div>
                                 ))}
                             </div>
                         )}
                         <div className="flex justify-end gap-2">
-                            <button type="button" className={annualSecondaryClass} disabled={busy} onClick={() => setShowBulk(false)}>
+                            <button type="button" className={annualSecondaryClass} disabled={busy} onClick={closeRegistration}>
                                 {t('annualLeave.close')}
                             </button>
                             {eligible.length > 0 && (
@@ -873,7 +911,7 @@ export function AnnualLeaveSettingsSection({
                                     className={annualButtonClass}
                                     disabled={busy || !eligible.some((person) => (bulkDays[person.nurseId] ?? '').trim() !== '')}
                                 >
-                                    {t(busy ? 'annualLeave.saving' : 'annualLeave.bulkRegister')}
+                                    {t(busy ? 'annualLeave.saving' : renewing ? 'annualLeave.renewAction' : 'annualLeave.bulkRegister')}
                                 </button>
                             )}
                         </div>

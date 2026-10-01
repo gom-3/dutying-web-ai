@@ -102,3 +102,24 @@ it('sends previous usage separately from remaining leave', async () => {
         expect.objectContaining({nurseId: 1, remainingDays: 12, previousUsedDays: 3, balanceBasis: 'TODAY_INCLUDED'}),
     ]);
 });
+
+it('renews already registered people while leaving blank rows unchanged', async () => {
+    const save = vi.spyOn(WardAPI, 'initializeAnnualLeave').mockResolvedValue(undefined);
+    save.mockClear();
+    render(<AnnualLeaveSettingsSection wardId={1} shiftTypes={[]} shiftTeams={[]} />);
+    await userEvent.click(screen.getByRole('button', {name: '연차 관리 더보기'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: '연차 갱신'}));
+    expect(screen.getByRole('dialog', {name: '연차 갱신'})).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', {name: '간호사 3 새 잔여 연차'})).toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', {name: '간호사 3 (선택) 이전에 사용한 연차'})).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole('spinbutton', {name: '간호사 3 새 잔여 연차'}), '18');
+    await userEvent.click(screen.getByRole('button', {name: '갱신'}));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+            renew: true,
+            entries: [expect.objectContaining({nurseId: 3, remainingDays: 18, reason: '연차 갱신'})],
+        }),
+    );
+});

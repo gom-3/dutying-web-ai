@@ -108,7 +108,10 @@ export interface IAnnualLeaveApi {
             unitRules: TAnnualLeaveUnitRule[];
         },
     ) => Promise<TAnnualLeaveSettings>;
-    initializeAnnualLeave: (wardId: number, request: {requestId: string; entries: TAnnualLeaveInitialization[]}) => Promise<void>;
+    initializeAnnualLeave: (
+        wardId: number,
+        request: {requestId: string; entries: TAnnualLeaveInitialization[]; renew?: boolean},
+    ) => Promise<void>;
     changeAnnualLeave: (wardId: number, nurseId: number, request: TAnnualLeaveCommand) => Promise<void>;
     getAnnualLeaveHistory: (wardId: number, nurseId: number, before?: number) => Promise<TAnnualLeaveHistory>;
     previewAnnualLeave: (wardId: number, request: TAnnualLeavePreview) => Promise<TAnnualLeaveOverview>;

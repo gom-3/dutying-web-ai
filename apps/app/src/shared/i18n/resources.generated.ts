@@ -3018,8 +3018,8 @@ export const ko = {
                     "region": "공휴일 기준 지역",
                     "selectRegion": "지역 선택",
                     "national": "전국 공통 공휴일만",
-                    "locationHint": "화면 언어와 관계없이 선택한 국가·지역으로 계산해요. 지역 미선택 시 전국 공통 공휴일만 반영해요. 시·군 및 병원 자체 휴일은 포함하지 않아요.",
-                    "required": "공휴일 국가를 선택해 주세요. 영국은 지역도 선택해야 해요.",
+                    "locationHint": "선택한 국가·지역의 공휴일로 계산해요.",
+                    "required": "공휴일 국가를 선택해 주세요. 영국은 지역도 필요해요.",
                     "previewDates": "{{month}}월 반영 공휴일 {{count}}일 · 공휴일 날짜(주간 휴무 중복 제외 전)",
                     "gb": {
                         "ENG": "잉글랜드",
@@ -6157,8 +6157,8 @@ export const en: TLocale = {
                     "region": "Holiday region",
                     "selectRegion": "Select a region",
                     "national": "National holidays only",
-                    "locationHint": "Calculations use this country and region regardless of display language. Without a region, only national holidays apply. Municipal and hospital-specific holidays are excluded.",
-                    "required": "Select a holiday country. A region is also required for the United Kingdom.",
+                    "locationHint": "Uses public holidays for the selected country and region.",
+                    "required": "Select a holiday country. The UK also requires a region.",
                     "previewDates": "Month {{month}}: {{count}} holidays counted · holiday dates (before weekly rest overlap is removed)",
                     "gb": {
                         "ENG": "England",
@@ -9294,8 +9294,8 @@ export const ja: TLocale = {
                     "region": "祝日の基準地域",
                     "selectRegion": "地域を選択",
                     "national": "全国共通の祝日のみ",
-                    "locationHint": "表示言語に関係なく選択した国・地域で計算します。地域未選択時は全国共通の祝日のみ反映します。市町村・病院独自の休日は含みません。",
-                    "required": "祝日の国を選択してください。英国は地域の選択も必要です。",
+                    "locationHint": "選択した国・地域の祝日で計算します。",
+                    "required": "祝日の国を選択してください。英国は地域も必要です。",
                     "previewDates": "{{month}}月の加算祝日 {{count}}日 · 祝日日付（週休との重複除外前）",
                     "gb": {
                         "ENG": "イングランド",
@@ -12431,7 +12431,7 @@ export const zh: TLocale = {
                     "region": "节假日所属地区",
                     "selectRegion": "选择地区",
                     "national": "仅全国性节假日",
-                    "locationHint": "按所选国家和地区计算，与显示语言无关。不选地区时仅计入全国性节假日，不含市级或医院自定假日。",
+                    "locationHint": "按所选国家和地区的公共假日计算。",
                     "required": "请选择节假日国家。英国还需选择地区。",
                     "previewDates": "{{month}}月计入{{count}}天节假日 · 节假日日期（未排除周休重叠）",
                     "gb": {
@@ -15568,8 +15568,8 @@ export const th: TLocale = {
                     "region": "ภูมิภาคที่ใช้อ้างอิงวันหยุด",
                     "selectRegion": "เลือกภูมิภาค",
                     "national": "เฉพาะวันหยุดทั่วประเทศ",
-                    "locationHint": "คำนวณตามประเทศและภูมิภาคที่เลือก ไม่ขึ้นกับภาษาหน้าจอ หากไม่เลือกภูมิภาคจะใช้เฉพาะวันหยุดทั่วประเทศ ไม่รวมวันหยุดเทศบาลหรือโรงพยาบาล",
-                    "required": "โปรดเลือกประเทศ สำหรับสหราชอาณาจักรต้องเลือกภูมิภาคด้วย",
+                    "locationHint": "คำนวณตามวันหยุดของประเทศและภูมิภาคที่เลือก",
+                    "required": "โปรดเลือกประเทศวันหยุด สหราชอาณาจักรต้องเลือกภูมิภาคด้วย",
                     "previewDates": "เดือน {{month}} นับวันหยุด {{count}} วัน · วันที่วันหยุด (ก่อนหักวันพักประจำสัปดาห์ที่ซ้ำ)",
                     "gb": {
                         "ENG": "อังกฤษ",
@@ -18705,8 +18705,8 @@ export const vi: TLocale = {
                     "region": "Khu vực áp dụng ngày lễ",
                     "selectRegion": "Chọn khu vực",
                     "national": "Chỉ ngày lễ toàn quốc",
-                    "locationHint": "Tính theo quốc gia và khu vực đã chọn, không phụ thuộc ngôn ngữ hiển thị. Nếu không chọn khu vực, chỉ tính ngày lễ toàn quốc. Không gồm ngày nghỉ riêng của địa phương hoặc bệnh viện.",
-                    "required": "Hãy chọn quốc gia ngày lễ. Vương quốc Anh cần chọn cả khu vực.",
+                    "locationHint": "Tính theo ngày lễ của quốc gia và khu vực đã chọn.",
+                    "required": "Vui lòng chọn quốc gia ngày lễ. Vương quốc Anh cũng cần khu vực.",
                     "previewDates": "Tháng {{month}}: tính {{count}} ngày lễ · ngày lễ (trước khi loại ngày trùng nghỉ tuần)",
                     "gb": {
                         "ENG": "Anh",
