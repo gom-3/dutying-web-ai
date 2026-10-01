@@ -25,6 +25,7 @@ import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
 import {ScheduleDisplayMenu} from './shared/schedule-display-menu';
+import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
@@ -159,7 +160,18 @@ export function ConfirmedShifts() {
                     </div>
 
                     <div className="confirmed-shifts-toolbar__actions ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">
-                        <ScheduleDisplayMenu display={display} />
+                        <ScheduleDisplayMenu
+                            display={display}
+                            settings={
+                                <RestLeavePolicySummaryButton
+                                    wardId={wardId}
+                                    shiftTeamId={currentShiftTeamId}
+                                    year={year}
+                                    month={month}
+                                    variant="menu"
+                                />
+                            }
+                        />
                         <TooltipProvider delayDuration={120}>
                             <Tooltip>
                                 <TooltipTrigger asChild>

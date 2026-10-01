@@ -1,10 +1,10 @@
 import {SlidersHorizontal} from 'lucide-react';
-import {useEffect, useId, useRef, useState} from 'react';
+import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {dropdownItemClassName, dropdownSurfaceClassName} from '@/shared/ui/dropdown-styles';
 import type {useScheduleDisplay} from '../../../model/use-schedule-display';
 
-export function ScheduleDisplayMenu({display}: {display: ReturnType<typeof useScheduleDisplay>}) {
+export function ScheduleDisplayMenu({display, settings}: {display: ReturnType<typeof useScheduleDisplay>; settings?: ReactNode}) {
     const {t} = useTypedTranslation();
     const [open, setOpen] = useState(false);
     const root = useRef<HTMLDivElement>(null);
@@ -60,7 +60,7 @@ export function ScheduleDisplayMenu({display}: {display: ReturnType<typeof useSc
                     id={id}
                     role="menu"
                     aria-label={t('annualLeave.display.title')}
-                    className={`${dropdownSurfaceClassName} absolute top-full right-0 mt-2 w-60`}
+                    className={`${dropdownSurfaceClassName} absolute top-full right-0 mt-2 w-64`}
                     onKeyDown={(event) => {
                         // Keep calendar shortcuts from consuming menu keystrokes.
                         event.stopPropagation();
@@ -74,7 +74,9 @@ export function ScheduleDisplayMenu({display}: {display: ReturnType<typeof useSc
                         if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
                             event.preventDefault();
 
-                            const buttons = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+                            const buttons = Array.from(
+                                menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [],
+                            );
                             const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
                             const next =
                                 event.key === 'Home'
@@ -87,24 +89,26 @@ export function ScheduleDisplayMenu({display}: {display: ReturnType<typeof useSc
                         }
                     }}
                 >
-                    <p className="px-3 pt-2 pb-1 text-xs font-medium text-gray-3">{t('annualLeave.display.columns')}</p>
+                    <p className="px-3 pt-2 pb-1 text-xs font-medium text-gray-3">{t('annualLeave.display.title')}</p>
                     {(['rest', 'annualLeave'] as const).map((field) => (
-                        <button
-                            key={field}
-                            type="button"
-                            role="menuitemcheckbox"
-                            aria-checked={display.value[field]}
-                            className={`${dropdownItemClassName} min-h-11 justify-between gap-6 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:outline-none`}
-                            onClick={() => display.change(field, !display.value[field])}
-                        >
-                            <span>{t(`annualLeave.display.${field}`)}</span>
-                            <span
-                                aria-hidden="true"
-                                className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 ${display.value[field] ? 'bg-main-1' : 'bg-gray-5'}`}
+                        <div key={field} role="none">
+                            <button
+                                type="button"
+                                role="menuitemcheckbox"
+                                aria-checked={display.value[field]}
+                                className={`${dropdownItemClassName} min-h-11 justify-between gap-6 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:outline-none`}
+                                onClick={() => display.change(field, !display.value[field])}
                             >
-                                <span className={`size-4 rounded-full bg-white ${display.value[field] ? 'translate-x-4' : ''}`} />
-                            </span>
-                        </button>
+                                <span>{t(`annualLeave.display.${field}`)}</span>
+                                <span
+                                    aria-hidden="true"
+                                    className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 ${display.value[field] ? 'bg-main-1' : 'bg-gray-5'}`}
+                                >
+                                    <span className={`size-4 rounded-full bg-white ${display.value[field] ? 'translate-x-4' : ''}`} />
+                                </span>
+                            </button>
+                            {field === 'rest' && settings ? <div className="px-2 pb-1">{settings}</div> : null}
+                        </div>
                     ))}
                 </div>
             )}

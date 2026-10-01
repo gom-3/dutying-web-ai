@@ -22,6 +22,7 @@ export type TAnnualLeavePerson = {
     balanceBasis: TAnnualLeaveBasis;
     reviewOn: string | null;
     reconciledOn: string | null;
+    previousUsedDays?: number | null;
     usedDays: number;
     plannedDays: number;
     currentDays: number | null;
@@ -51,6 +52,7 @@ export type TAnnualLeaveOverview = {
     preview: boolean;
 };
 export type TAnnualLeaveInitialization = {
+    previousUsedDays?: number | null;
     nurseId: number;
     version: number;
     startedOn: string;
@@ -106,7 +108,10 @@ export interface IAnnualLeaveApi {
             unitRules: TAnnualLeaveUnitRule[];
         },
     ) => Promise<TAnnualLeaveSettings>;
-    initializeAnnualLeave: (wardId: number, request: {requestId: string; entries: TAnnualLeaveInitialization[]}) => Promise<void>;
+    initializeAnnualLeave: (
+        wardId: number,
+        request: {requestId: string; entries: TAnnualLeaveInitialization[]; renew?: boolean},
+    ) => Promise<void>;
     changeAnnualLeave: (wardId: number, nurseId: number, request: TAnnualLeaveCommand) => Promise<void>;
     getAnnualLeaveHistory: (wardId: number, nurseId: number, before?: number) => Promise<TAnnualLeaveHistory>;
     previewAnnualLeave: (wardId: number, request: TAnnualLeavePreview) => Promise<TAnnualLeaveOverview>;

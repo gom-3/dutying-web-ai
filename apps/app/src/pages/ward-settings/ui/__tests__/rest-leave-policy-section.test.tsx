@@ -4,12 +4,12 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {DEFAULT_REST_LEAVE_POLICY, restLeavePolicyQueryKey, type TRestLeavePolicyResponse} from '../../model/rest-leave-policy';
 import {RestLeavePolicySection} from '../rest-leave-policy-section';
 
-const {get, put, success} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn(), success: vi.fn()}));
+const {get, put, success, errorToast} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn(), success: vi.fn(), errorToast: vi.fn()}));
 
 vi.mock('@/shared/api/client', () => ({default: {get, put}}));
-vi.mock('react-hot-toast', () => ({default: {success}}));
+vi.mock('react-hot-toast', () => ({default: {success, error: errorToast}}));
 vi.mock('@/shared/hook/use-typed-translation', () => ({useTypedTranslation: () => ({t: (key: string) => key})}));
-vi.mock('@/i18n', () => ({default: {resolvedLanguage: 'en', language: 'en'}}));
+vi.mock('@/i18n', () => ({default: {resolvedLanguage: 'ko', language: 'ko'}}));
 
 const key = (suffix: string) => `page.wardSettings.restLeavePolicy.${suffix}`;
 
@@ -56,6 +56,14 @@ afterEach(() => {
 });
 
 describe('shared rest leave policy editor', () => {
+    it('defaults a missing holiday country from the display language', async () => {
+        shared = {...shared, holidayCountry: null, holidayRegion: null};
+        mount();
+
+        expect(await screen.findByLabelText(key('holiday.country'))).toHaveValue('KR');
+        expect(screen.getByRole('button', {name: key('save')})).toBeDisabled();
+    });
+
     it('resets region on country change and another device reads the saved policy', async () => {
         const first = mount();
         const country = await screen.findByLabelText(key('holiday.country'));
@@ -135,7 +143,9 @@ describe('shared rest leave policy editor', () => {
         mount();
         fireEvent.click(await screen.findByRole('button', {name: key('sync.importLegacy')}));
         fireEvent.change(screen.getByLabelText(key('holiday.country')), {target: {value: 'GB'}});
-        expect(screen.getByRole('button', {name: key('save')})).toBeDisabled();
+        fireEvent.click(screen.getByRole('button', {name: key('save')}));
+        expect(errorToast).toHaveBeenCalledWith(key('holiday.required'));
+        expect(put).not.toHaveBeenCalled();
         fireEvent.change(screen.getByLabelText(key('holiday.region')), {target: {value: 'SCT'}});
         expect(screen.getByRole('button', {name: key('save')})).toBeEnabled();
         expect(put).not.toHaveBeenCalled();

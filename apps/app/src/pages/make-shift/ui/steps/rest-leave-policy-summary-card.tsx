@@ -16,6 +16,7 @@ type TRestLeavePolicySummaryCardProps = {
     shiftTeamId: number | null;
     year: number;
     month: number;
+    variant?: 'icon' | 'menu';
 };
 
 type TRestLeavePolicySummaryState = ReturnType<typeof useRestLeavePolicySummary>;
@@ -171,6 +172,42 @@ export function RestLeavePolicySummaryButton(props: TRestLeavePolicySummaryCardP
     }, [open]);
 
     if (!summary.enabled) return null;
+
+    if (props.variant === 'menu') {
+        return (
+            <div className="flex min-h-12 items-center justify-between gap-2 rounded-[12px] bg-gray-7 px-3 py-2">
+                <span className="shrink-0 font-apple text-[13px] leading-5 font-medium whitespace-nowrap text-sub-2">
+                    {summary.targetLabel}
+                </span>
+                <div className="flex shrink-0 items-center gap-0.5">
+                    <button
+                        type="button"
+                        disabled={!summary.canDecrease}
+                        aria-label={summary.t('page.makeShift.workers.restPolicy.decreaseTarget')}
+                        className="grid size-8 place-items-center rounded-lg text-gray-3 transition-colors hover:bg-white hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-35"
+                        onClick={() => summary.patchAdjustment(summary.adjustmentDays - 1)}
+                    >
+                        <Minus className="size-3.5" aria-hidden="true" />
+                    </button>
+                    <span className="min-w-10 text-center font-poppins text-[14px] font-semibold text-sub-1 tabular-nums">
+                        {summary.adjustedTarget}
+                        <span className="ml-0.5 font-apple text-[11px] font-medium text-gray-3">
+                            {summary.t('page.makeShift.workers.restPolicy.dayUnit')}
+                        </span>
+                    </span>
+                    <button
+                        type="button"
+                        disabled={!summary.canIncrease}
+                        aria-label={summary.t('page.makeShift.workers.restPolicy.increaseTarget')}
+                        className="grid size-8 place-items-center rounded-lg text-gray-3 transition-colors hover:bg-white hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-35"
+                        onClick={() => summary.patchAdjustment(summary.adjustmentDays + 1)}
+                    >
+                        <Plus className="size-3.5" aria-hidden="true" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const title = `${summary.targetLabel} ${summary.adjustedTarget}${summary.t(
         'page.makeShift.workers.restPolicy.dayUnit',

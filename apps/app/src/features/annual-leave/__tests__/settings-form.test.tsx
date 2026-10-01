@@ -103,3 +103,21 @@ it('keeps saved optional types visible and removes only their deduction rule', a
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
     expect(save.mock.calls[0][1].unitRules).toEqual(settings.unitRules);
 });
+
+it('starts with annual leave defaults and continues only after a successful save', async () => {
+    const onDone = vi.fn();
+    const save = vi.spyOn(WardAPI, 'updateAnnualLeaveSettings').mockResolvedValue(settings);
+    render(
+        <SettingsForm
+            wardId={1}
+            settings={{...settings, enabled: false, startedOn: null, unitRules: []}}
+            shiftTypes={[types[0]]}
+            onDone={onDone}
+        />,
+    );
+    expect(screen.getByRole('spinbutton', {name: '연차 차감 일수'})).toHaveValue(1);
+    expect(screen.queryByText(i18n.t('annualLeave.settingsApplyHint'))).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', {name: '저장하고 잔여 연차 입력'}));
+    await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+    expect(save.mock.calls[0][1]).toMatchObject({enabled: true, startedOn: annualLeaveDate()});
+});

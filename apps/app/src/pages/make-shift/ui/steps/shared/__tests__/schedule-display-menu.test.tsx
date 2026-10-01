@@ -4,12 +4,12 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {useScheduleDisplay} from '../../../../model/use-schedule-display';
 import {ScheduleDisplayMenu} from '../schedule-display-menu';
 
-function Fixture({wardId = 1}: {wardId?: number}) {
+function Fixture({wardId = 1, withSettings = false}: {wardId?: number; withSettings?: boolean}) {
     const display = useScheduleDisplay(wardId);
 
     return (
         <>
-            <ScheduleDisplayMenu display={display} />
+            <ScheduleDisplayMenu display={display} settings={withSettings ? <button type="button">이번 달 목표 OFF</button> : undefined} />
             <output>{JSON.stringify(display.value)}</output>
         </>
     );
@@ -51,5 +51,13 @@ describe('schedule display preferences', () => {
         expect(screen.getByRole('status')).toHaveTextContent('{"rest":true,"annualLeave":false}');
         view.rerender(<Fixture wardId={1} />);
         expect(screen.getByRole('status')).toHaveTextContent('{"rest":true,"annualLeave":true}');
+    });
+    it('places the target OFF control inside the display settings menu', async () => {
+        render(<Fixture withSettings />);
+
+        await userEvent.click(screen.getByRole('button', {name: '표시 설정'}));
+
+        expect(screen.getByText('표시 설정')).toBeVisible();
+        expect(screen.getByRole('button', {name: '이번 달 목표 OFF'})).toBeVisible();
     });
 });

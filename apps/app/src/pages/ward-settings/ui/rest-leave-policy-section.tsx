@@ -1,11 +1,12 @@
 import {cn} from '@dutying/utils/style';
-import {Check, Minus, Plus} from 'lucide-react';
+import {Check, Info, Minus, Plus} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Switch} from '@/shared/ui/primitives/switch';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {HOLIDAY_COUNTRIES, getHolidayRegions, getHolidayCountryName, type THolidayCountry} from '../model/holiday-location';
 import {
     calculateBaseRestTarget,
@@ -75,6 +76,21 @@ function getCurrentYearMonth() {
     return {year: today.getFullYear(), month: today.getMonth() + 1};
 }
 
+const DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE: Record<string, THolidayCountry> = {
+    ko: 'KR',
+    ja: 'JP',
+    zh: 'CN',
+    th: 'TH',
+    vi: 'VN',
+    en: 'US',
+};
+
+function withDefaultHolidayCountry(policy: TRestLeavePolicy, language: string): TRestLeavePolicy {
+    if (!policy.includeHolidays || policy.holidayCountry) return policy;
+
+    return {...policy, holidayCountry: DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE[language.split('-')[0]] ?? 'US'};
+}
+
 function ChoiceCard({title, description, selected, onClick, children}: TChoiceCardProps) {
     return (
         <div
@@ -86,24 +102,35 @@ function ChoiceCard({title, description, selected, onClick, children}: TChoiceCa
             <button
                 type="button"
                 aria-pressed={selected}
+                aria-label={`${title}. ${description}`}
                 className={cn(
-                    'group flex min-h-[76px] w-full min-w-0 items-center justify-between gap-3 rounded-[16px] px-4 py-3.5 text-left focus-visible:outline-2 focus-visible:outline-main-1',
+                    'group flex min-h-[60px] w-full min-w-0 items-center justify-between gap-3 rounded-[16px] px-4 py-3 text-left focus-visible:outline-2 focus-visible:outline-main-1',
                     selected && children && 'pb-2.5',
                 )}
                 onClick={onClick}
             >
-                <span className="min-w-0">
-                    <span className="block font-apple text-[15px] leading-[21px] font-semibold [word-break:keep-all] text-sub-1">
-                        {title}
-                    </span>
-                    <span
-                        className={cn(
-                            'mt-1 block font-apple text-[12px] leading-[18px] [word-break:keep-all]',
-                            selected ? 'text-main-1' : 'text-gray-3',
-                        )}
-                    >
-                        {description}
-                    </span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="font-apple text-[15px] leading-[21px] font-semibold [word-break:keep-all] text-sub-1">{title}</span>
+                    <TooltipProvider delayDuration={120}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <span
+                                    className="group-hover:text-gray-2 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-gray-3 transition-colors"
+                                    aria-hidden="true"
+                                >
+                                    <Info className="size-3.5" strokeWidth={2.2} />
+                                </span>
+                            </TooltipTrigger>
+                            <TooltipContent
+                                side="top"
+                                align="start"
+                                sideOffset={6}
+                                className="max-w-[260px] rounded-[10px] bg-[#1C2331] px-3 py-2 font-apple text-[12px] leading-4 font-medium text-white"
+                            >
+                                {description}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </span>
                 <span
                     className={cn(
@@ -176,13 +203,11 @@ function NumberStepper({value, min, max, unit, ariaLabel, onChange}: TNumberStep
 function FeatureToggle({
     enabled,
     title,
-    description,
     preview,
     onCheckedChange,
 }: {
     enabled: boolean;
     title: string;
-    description: string;
     preview: TFeatureTogglePreview;
     onCheckedChange: (checked: boolean) => void;
 }) {
@@ -194,9 +219,6 @@ function FeatureToggle({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                         <div className="min-w-0">
                             <p className="font-apple text-[17px] leading-[24px] font-semibold [word-break:keep-all] text-sub-1">{title}</p>
-                            <p className="mt-1 max-w-[620px] font-apple text-[13px] leading-[20px] [word-break:keep-all] text-gray-3">
-                                {description}
-                            </p>
                         </div>
                         <Switch
                             checked={enabled}
@@ -230,15 +252,20 @@ function FeatureToggle({
 export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRestLeavePolicySectionProps) {
     const {t} = useTypedTranslation();
     const {policy, setPolicy, version, persisted, isLoading, isError, isSaving, refetch} = useRestLeavePolicy(wardId);
+    const language = i18n.resolvedLanguage ?? i18n.language;
+    const localizedPolicy = useMemo(() => withDefaultHolidayCountry(policy, language), [language, policy]);
     const [draftVersion, setDraftVersion] = useState(version);
     const [saveError, setSaveError] = useState<'failed' | 'conflict' | null>(null);
     const dirtyRef = useRef(false);
     const draftWardRef = useRef(wardId);
-    const legacyPolicy = useMemo(() => loadLegacyRestLeavePolicy(wardId), [wardId]);
-    const [draft, setDraft] = useState<TRestLeavePolicy>(policy);
-    const [draftBase, setDraftBase] = useState<TRestLeavePolicy>(policy);
+    const legacyPolicy = useMemo(() => {
+        const loaded = loadLegacyRestLeavePolicy(wardId);
+
+        return loaded ? withDefaultHolidayCountry(loaded, language) : null;
+    }, [language, wardId]);
+    const [draft, setDraft] = useState<TRestLeavePolicy>(localizedPolicy);
+    const [draftBase, setDraftBase] = useState<TRestLeavePolicy>(localizedPolicy);
     const {year, month} = useMemo(getCurrentYearMonth, []);
-    const language = i18n.resolvedLanguage ?? i18n.language;
     const publicHolidayDays = useMemo(() => getPublicHolidayDaysForPolicy(year, month, draft), [draft, month, year]);
     const holidayRegions = draft.holidayCountry ? getHolidayRegions(draft.holidayCountry) : {};
     const locationMissing =
@@ -275,13 +302,13 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
 
     useEffect(() => {
         if (draftWardRef.current !== wardId || !dirtyRef.current) {
-            setDraft(policy);
-            setDraftBase(policy);
+            setDraft(localizedPolicy);
+            setDraftBase(localizedPolicy);
             setDraftVersion(version);
             setSaveError(null);
             draftWardRef.current = wardId;
         }
-    }, [policy, version, wardId]);
+    }, [localizedPolicy, version, wardId]);
 
     useEffect(() => {
         onDirtyChange?.(hasChanges);
@@ -313,6 +340,11 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     const handleSave = async () => {
         setSaveError(null);
 
+        if (locationMissing) {
+            toast.error(t('page.wardSettings.restLeavePolicy.holiday.required'));
+            return;
+        }
+
         try {
             const saved = await setPolicy(draft, draftVersion);
 
@@ -333,8 +365,10 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
         const result = await refetch();
 
         if (result.data && !result.isError) {
-            setDraft(normalizeRestLeavePolicy(result.data));
-            setDraftBase(normalizeRestLeavePolicy(result.data));
+            const reloaded = withDefaultHolidayCountry(normalizeRestLeavePolicy(result.data), language);
+
+            setDraft(reloaded);
+            setDraftBase(reloaded);
             setDraftVersion(result.data.version);
             setSaveError(null);
         }
@@ -355,7 +389,6 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     return (
         <div className="w-full overflow-x-auto">
             <fieldset disabled={isSaving || !wardId} className="min-w-[860px]">
-                <p className="mb-4 text-sm text-gray-3">{t('page.wardSettings.restLeavePolicy.sync.shared')}</p>
                 {!persisted && legacyPolicy ? (
                     <div className="mb-4 rounded-xl bg-gray-7 p-4">
                         <p className="text-sm text-gray-3">{t('page.wardSettings.restLeavePolicy.sync.legacyHint')}</p>
@@ -367,7 +400,6 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                 <FeatureToggle
                     enabled={draft.enabled}
                     title={t('page.wardSettings.restLeavePolicy.availability.title')}
-                    description={t('page.wardSettings.restLeavePolicy.simpleSubtitle')}
                     preview={{
                         label: t('page.wardSettings.restLeavePolicy.previewLabel', {month}),
                         value: previewTarget,
@@ -422,7 +454,15 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                                             title={t('page.wardSettings.restLeavePolicy.holiday.include.title')}
                                             description={t('page.wardSettings.restLeavePolicy.holiday.include.description')}
                                             selected={draft.includeHolidays}
-                                            onClick={() => patchDraft({includeHolidays: true})}
+                                            onClick={() =>
+                                                patchDraft({
+                                                    includeHolidays: true,
+                                                    holidayCountry:
+                                                        draft.holidayCountry ??
+                                                        DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE[language.split('-')[0]] ??
+                                                        'US',
+                                                })
+                                            }
                                         />
                                         <ChoiceCard
                                             title={t('page.wardSettings.restLeavePolicy.holiday.exclude.title')}
@@ -484,22 +524,9 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                                                     </label>
                                                 ) : null}
                                             </div>
-                                            <p className="mt-3 text-xs leading-5 text-gray-3">
-                                                {t('page.wardSettings.restLeavePolicy.holiday.locationHint')}
-                                            </p>
                                             {locationMissing ? (
                                                 <p className="mt-2 text-sm text-main-1">
                                                     {t('page.wardSettings.restLeavePolicy.holiday.required')}
-                                                </p>
-                                            ) : draft.holidayCountry ? (
-                                                <p className="mt-2 text-sm text-sub-1">
-                                                    {t('page.wardSettings.restLeavePolicy.holiday.previewDates', {
-                                                        month,
-                                                        count: holidayCount,
-                                                    })}
-                                                    {publicHolidayDays.length > 0
-                                                        ? ` · ${publicHolidayDays.map(({day}) => day).join(', ')}`
-                                                        : ''}
                                                 </p>
                                             ) : null}
                                         </div>
@@ -607,7 +634,7 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                 <div className="mt-4 flex justify-end">
                     <button
                         type="button"
-                        disabled={!hasChanges || locationMissing || isSaving || !wardId}
+                        disabled={!hasChanges || isSaving || !wardId}
                         className={cn(SETTINGS_PRIMARY_BUTTON_CLASS, 'w-full justify-center sm:w-auto')}
                         onClick={handleSave}
                     >

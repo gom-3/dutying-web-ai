@@ -1,10 +1,4 @@
-import type {
-    TAnnualLeaveBasis,
-    TAnnualLeaveCommand,
-    TAnnualLeaveHistoryItem,
-    TAnnualLeavePerson,
-    TAnnualLeaveSettings,
-} from '@dutying/api/ward';
+import type {TAnnualLeaveCommand, TAnnualLeaveHistoryItem, TAnnualLeavePerson, TAnnualLeaveSettings} from '@dutying/api/ward';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {useState, type FormEvent} from 'react';
 import {WardAPI} from '@/shared/api';
@@ -48,9 +42,7 @@ export function AnnualLeavePersonDialog({
     const [action, setAction] = useState<TAction>(needsOpening ? 'INITIALIZE' : 'SET_BALANCE');
     const [quantity, setQuantity] = useState(needsOpening || person.currentDays == null ? '' : String(person.currentDays));
     const [revertDate, setRevertDate] = useState(today);
-    const [start, setStart] = useState(settings.startedOn ?? today);
-    const [basis, setBasis] = useState<TAnnualLeaveBasis>('PAST_ONLY');
-    const [includedDates, setIncludedDates] = useState('');
+    const [previousUsed, setPreviousUsed] = useState('');
     const [reason, setReason] = useState('');
     const [busy, setBusy] = useState(false);
     const [revertId, setRevertId] = useState<number | undefined>();
@@ -87,12 +79,13 @@ export function AnnualLeavePersonDialog({
                     {
                         nurseId: person.nurseId,
                         version: person.version,
-                        startedOn: start,
+                        startedOn: annualLeaveDate(),
                         remainingDays: quantity.trim() === '' ? null : Number(quantity),
-                        balanceBasis: basis,
-                        includedPlannedDates: basis === 'FUTURE_INCLUDED' ? includedDates.split(/[,\s]+/).filter(Boolean) : [],
+                        balanceBasis: 'TODAY_INCLUDED' as const,
+                        previousUsedDays: previousUsed.trim() === '' ? null : Number(previousUsed),
+                        includedPlannedDates: [],
                         reviewOn: null,
-                        reason,
+                        reason: reason.trim() || t('annualLeave.registerSingle'),
                     },
                 ];
 
@@ -152,7 +145,7 @@ export function AnnualLeavePersonDialog({
         >
             {!settings.enabled && <p className="mb-4 text-sm text-gray-3">{t('annualLeave.paused')}</p>}
             {view === 'edit' && action === 'INITIALIZE' && (
-                <p className="mb-4 text-sm leading-5 break-keep text-gray-3">{t('annualLeave.editHint')}</p>
+                <p className="mb-4 text-sm leading-5 break-keep text-gray-3">{t('annualLeave.registerSingleHint')}</p>
             )}
             <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl bg-gray-7 p-4 text-sm">
                 <div>
@@ -228,44 +221,7 @@ export function AnnualLeavePersonDialog({
                                 )}
                         </section>
                     )}
-                    {action === 'INITIALIZE' && (
-                        <>
-                            <AnnualLeaveField label={t('annualLeave.startDate')} hint={t('annualLeave.startDateHint')}>
-                                <input
-                                    type="date"
-                                    required
-                                    value={start}
-                                    min={settings.startedOn ?? undefined}
-                                    max={today}
-                                    onChange={(e) => setStart(e.target.value)}
-                                    className={annualInputClass}
-                                />
-                            </AnnualLeaveField>
-                            <AnnualLeaveField label={t('annualLeave.basis')}>
-                                <select
-                                    value={basis}
-                                    onChange={(e) => setBasis(e.target.value as TAnnualLeaveBasis)}
-                                    className={annualInputClass}
-                                >
-                                    {(['PAST_ONLY', 'FUTURE_INCLUDED', 'UNKNOWN'] as const).map((key) => (
-                                        <option key={key} value={key}>
-                                            {t(`annualLeave.${key}`)}
-                                        </option>
-                                    ))}
-                                </select>
-                            </AnnualLeaveField>
-                            {basis === 'FUTURE_INCLUDED' && (
-                                <AnnualLeaveField label={t('annualLeave.includedDates')} hint={t('annualLeave.includedHint')}>
-                                    <textarea
-                                        required
-                                        value={includedDates}
-                                        onChange={(e) => setIncludedDates(e.target.value)}
-                                        className={annualInputClass}
-                                    />
-                                </AnnualLeaveField>
-                            )}
-                        </>
-                    )}
+                    {action === 'INITIALIZE' && <p className="text-xs text-sub-2">{t('annualLeave.todayBasis', {date: today})}</p>}
                     {matchingBalance ? (
                         <AnnualLeaveBalanceControl
                             value={quantity}
@@ -281,12 +237,27 @@ export function AnnualLeavePersonDialog({
                                     step="0.001"
                                     min={-99999}
                                     max={99999}
+                                    required={action === 'INITIALIZE'}
                                     value={quantity}
                                     onChange={(e) => setQuantity(e.target.value)}
                                     className={annualInputClass}
                                 />
                             </AnnualLeaveField>
                         )
+                    )}
+                    {action === 'INITIALIZE' && (
+                        <AnnualLeaveField label={t('annualLeave.previousUsed')} hint={t('annualLeave.previousUsedHint')}>
+                            <input
+                                type="number"
+                                min="0"
+                                max="99999"
+                                step="0.001"
+                                aria-label={t('annualLeave.previousUsed')}
+                                value={previousUsed}
+                                onChange={(e) => setPreviousUsed(e.target.value)}
+                                className={`${annualInputClass} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                            />
+                        </AnnualLeaveField>
                     )}
                     <AnnualLeaveField
                         label={t(
@@ -298,7 +269,7 @@ export function AnnualLeavePersonDialog({
                         )}
                     >
                         <textarea
-                            required={!matchingBalance}
+                            required={action === 'REVERT'}
                             maxLength={500}
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
