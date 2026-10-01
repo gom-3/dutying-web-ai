@@ -19,7 +19,7 @@ export function useAnnualLeaveScheduleColumns(state: ReturnType<typeof useAnnual
               header: (
                   <span
                       data-private-annual-leave
-                      className="text-center font-apple text-[clamp(10px,0.78cqw,13px)] leading-tight font-semibold whitespace-pre-line text-main-1"
+                      className="text-center font-apple text-[clamp(10px,0.78cqw,13px)] leading-none font-medium whitespace-pre-line text-sub-3"
                   >
                       {t('annualLeave.display.balanceHeader')}
                   </span>

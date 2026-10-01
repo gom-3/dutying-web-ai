@@ -153,7 +153,7 @@ const DRAG_HANDLE_COL = '24px';
 const COMPACT_NAME_COL = 'clamp(84px,5.4cqw,96px)';
 const COMFORTABLE_NAME_COL = 'clamp(112px,8cqw,132px)';
 const CARRY_COL = 'clamp(22px,1.55cqw,28px)';
-const REST_CHECK_COL = 'clamp(48px,3.1cqw,56px)';
+const REST_CHECK_COL = 'clamp(20px,1.35cqw,24px)';
 const LAST_COL = 'clamp(58px,4.05cqw,76px)';
 /**
  * 행의 좌측(카드 안에 들어가는) 그리드.
@@ -194,7 +194,7 @@ const SUMMARY_GAP = 'clamp(2px,0.22cqw,6px)';
 const SUMMARY_CELL_HEIGHT = 'h-[clamp(16px,1.4cqw,22px)]';
 const SUMMARY_CELL_WIDTH = 'w-full';
 const SUMMARY_CELL_SIZE = 'clamp(14px,1.05cqw,18px)';
-const ANNUAL_LEAVE_COL = 'clamp(28px,2.1cqw,34px)';
+const ANNUAL_LEAVE_COL = 'clamp(20px,1.35cqw,24px)';
 const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boolean, annualLeaveColumnCount = 0) =>
     [
         count > 0 ? `repeat(${count}, minmax(${SUMMARY_CELL_SIZE}, 1fr))` : null,

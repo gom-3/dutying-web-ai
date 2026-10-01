@@ -2125,7 +2125,20 @@ export function AiAutofill() {
                     </div>
                 )}
                 <AiAutofillToolbar
-                    displaySettings={<ScheduleDisplayMenu display={display} />}
+                    displaySettings={
+                        <ScheduleDisplayMenu
+                            display={display}
+                            settings={
+                                <RestLeavePolicySummaryButton
+                                    wardId={wardId}
+                                    shiftTeamId={currentShiftTeamId}
+                                    year={year}
+                                    month={month}
+                                    variant="menu"
+                                />
+                            }
+                        />
+                    }
                     onFixedShiftsAttentionStart={() => showCellAttention('fixed')}
                     onFixedShiftsAttentionEnd={clearCellAttention}
                     onRequestShiftsAttentionStart={() => showCellAttention('request')}
@@ -2249,9 +2262,6 @@ export function AiAutofill() {
                         showDivisionStatistics
                         divisionLabelByNum={divisionLabelByNum}
                         stickyHeader
-                        restPolicyControl={
-                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
-                        }
                     />
                 )}
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
