@@ -272,3 +272,28 @@ describe('annual leave edit and history views', () => {
         expect(screen.getAllByRole('dialog')).toHaveLength(1);
     });
 });
+
+it('initializes today with separate previous usage and no basis selector', async () => {
+    const save = vi.spyOn(WardAPI, 'initializeAnnualLeave').mockResolvedValue(undefined);
+    render(
+        <AnnualLeavePersonDialog
+            wardId={1}
+            person={{...person, openingDays: null, currentDays: null, checks: []}}
+            settings={settings}
+            onClose={vi.fn()}
+        />,
+    );
+    expect(screen.queryByText('입력한 일수의 기준')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('집계 시작일')).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole('spinbutton', {name: '현재 잔여 연차'}), '12');
+    await userEvent.type(screen.getByRole('spinbutton', {name: '(선택) 이전에 사용한 연차'}), '3');
+    await userEvent.click(screen.getByRole('button', {name: '변경 내용 저장'}));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0][1].entries[0]).toMatchObject({
+        remainingDays: 12,
+        previousUsedDays: 3,
+        balanceBasis: 'TODAY_INCLUDED',
+        startedOn: annualLeaveModel.annualLeaveDate(),
+        includedPlannedDates: [],
+    });
+});

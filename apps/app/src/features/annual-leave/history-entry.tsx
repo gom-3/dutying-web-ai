@@ -8,6 +8,7 @@ const tones = {
     SETTLEMENT: {badge: 'bg-orange-100 text-orange-800', value: 'text-orange-700'},
     CORRECTION: {badge: 'bg-violet-100 text-violet-800', value: 'text-violet-700'},
     SET_BALANCE: {badge: 'bg-violet-100 text-violet-800', value: 'text-violet-700'},
+    PREVIOUS_USAGE: {badge: 'bg-blue-100 text-blue-800', value: 'text-blue-700'},
     OPENING: {badge: 'bg-violet-100 text-violet-800', value: 'text-violet-700'},
     SCHEDULE: {badge: 'bg-blue-100 text-blue-800', value: 'text-blue-700'},
     DAY_USAGE: {badge: 'bg-blue-100 text-blue-800', value: 'text-blue-700'},
@@ -36,7 +37,7 @@ export function AnnualLeaveHistoryEntry({entry, today, onUndo}: {entry: TAnnualL
           : (tones[entry.kind as keyof typeof tones] ?? neutralTone);
     const bulkGroup = ['GRANT', 'SETTLEMENT'].includes(entry.kind) ? grantGroup(entry.detailsJson) : null;
     const adjustment = ['GRANT', 'SETTLEMENT', 'CORRECTION', 'SET_BALANCE'].includes(entry.kind);
-    const usage = entry.kind === 'SCHEDULE' || entry.kind === 'DAY_USAGE';
+    const usage = entry.kind === 'PREVIOUS_USAGE' || entry.kind === 'SCHEDULE' || entry.kind === 'DAY_USAGE';
     const unknownOpening = isOpeningUnknown(entry);
     const kindLabel = t(`annualLeave.historyKinds.${entry.kind in tones ? entry.kind : entry.kind === 'CONTROL' ? 'CONTROL' : 'OTHER'}`);
     const valueLabel = adjustment

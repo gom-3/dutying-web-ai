@@ -47,7 +47,7 @@ export function groupAnnualLeaveHistory(entries: TAnnualLeaveHistoryItem[]): TAn
     const seen = new Set<number>();
 
     for (const entry of entries) {
-        if (seen.has(entry.id)) continue;
+        if (seen.has(entry.id) || (entry.kind === 'PREVIOUS_USAGE' && entry.voided)) continue;
 
         seen.add(entry.id);
 

@@ -22,6 +22,7 @@ export type TAnnualLeavePerson = {
     balanceBasis: TAnnualLeaveBasis;
     reviewOn: string | null;
     reconciledOn: string | null;
+    previousUsedDays?: number | null;
     usedDays: number;
     plannedDays: number;
     currentDays: number | null;
@@ -51,6 +52,7 @@ export type TAnnualLeaveOverview = {
     preview: boolean;
 };
 export type TAnnualLeaveInitialization = {
+    previousUsedDays?: number | null;
     nurseId: number;
     version: number;
     startedOn: string;

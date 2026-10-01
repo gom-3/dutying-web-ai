@@ -71,3 +71,34 @@ it('shows selection feedback for both bulk actions and removes the static menu h
     expect(feedbackSpy).toHaveBeenCalledTimes(2);
     feedbackSpy.mockRestore();
 });
+
+it('opens registration for just the clicked person and submits only that person', async () => {
+    const save = vi.spyOn(WardAPI, 'initializeAnnualLeave').mockResolvedValue(undefined);
+    save.mockClear();
+    render(<AnnualLeaveSettingsSection wardId={1} shiftTypes={[]} shiftTeams={[]} />);
+    await userEvent.click(screen.getByRole('button', {name: '간호사 2 잔여 연차 입력'}));
+    expect(screen.getByRole('dialog', {name: '간호사 2님의 연차 입력'})).toBeInTheDocument();
+    expect(screen.queryByRole('spinbutton', {name: '간호사 1 현재 잔여 연차'})).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole('spinbutton', {name: '간호사 2 현재 잔여 연차'}), '7.5');
+    await userEvent.click(screen.getByRole('button', {name: '등록'}));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0][1].entries).toEqual([expect.objectContaining({nurseId: 2, remainingDays: 7.5})]);
+    await userEvent.click(screen.getByRole('button', {name: '연차 관리 더보기'}));
+    await userEvent.click(screen.getByRole('menuitem', {name: '잔여 연차 등록'}));
+    expect(screen.getByRole('spinbutton', {name: '간호사 1 현재 잔여 연차'})).toBeInTheDocument();
+    expect(screen.getByRole('spinbutton', {name: '간호사 2 현재 잔여 연차'})).toHaveValue(null);
+});
+
+it('sends previous usage separately from remaining leave', async () => {
+    const save = vi.spyOn(WardAPI, 'initializeAnnualLeave').mockResolvedValue(undefined);
+    save.mockClear();
+    render(<AnnualLeaveSettingsSection wardId={1} shiftTypes={[]} shiftTeams={[]} />);
+    await userEvent.click(screen.getByRole('button', {name: '간호사 1 잔여 연차 입력'}));
+    await userEvent.type(screen.getByRole('spinbutton', {name: '간호사 1 현재 잔여 연차'}), '12');
+    await userEvent.type(screen.getByRole('spinbutton', {name: '간호사 1 (선택) 이전에 사용한 연차'}), '3');
+    await userEvent.click(screen.getByRole('button', {name: '등록'}));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0][1].entries).toEqual([
+        expect.objectContaining({nurseId: 1, remainingDays: 12, previousUsedDays: 3, balanceBasis: 'TODAY_INCLUDED'}),
+    ]);
+});

@@ -97,17 +97,65 @@ export function SettingsForm({
             onBusyChange?.(false);
         }
     };
+    const addTypeDropdown = remainingTypes.length > 0 && (
+        <ShiftClassificationDropdown
+            value=""
+            ariaLabel={t('annualLeave.addLeaveType')}
+            disabled={busy}
+            portalled={false}
+            options={[
+                {value: '', label: t('annualLeave.addLeaveType')},
+                ...remainingTypes.map((type) => ({
+                    value: String(type.wardShiftTypeId),
+                    label: `${type.name} · ${t(type.classification === 'OFF' ? 'feature.createShiftModal.classification.off' : 'feature.createShiftModal.classification.otherLeave')}`,
+                })),
+            ]}
+            onChange={(value) => {
+                if (!value) return;
+
+                const id = Number(value);
+
+                setShownIds((ids) => [...ids, id]);
+                setValues((previous) => ({
+                    ...previous,
+                    [id]: String(
+                        annualLeaveUnits(
+                            availableTypes.find((type) => type.wardShiftTypeId === id),
+                            today,
+                            settings.unitRules,
+                        ),
+                    ),
+                }));
+            }}
+            className="min-h-11 bg-transparent text-sm text-sub-2 ring-0 transition-colors hover:bg-transparent hover:text-main-1 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:ring-0 motion-reduce:transition-none"
+        />
+    );
 
     return (
         <form onSubmit={(e) => void save(e)} className="flex flex-col">
-            <p className="text-sm leading-5 break-keep text-sub-2">{t('annualLeave.settingsIntro')}</p>
-            <section aria-label={t('annualLeave.units')} className="mt-6">
-                <div className="mb-2 flex items-center justify-between px-3 text-xs text-gray-3" aria-hidden="true">
-                    <span>{t('annualLeave.settingsTypeLabel')}</span>
-                    <span className="mr-9">{t('annualLeave.deductionDays')}</span>
+            {!settings.startedOn && (
+                <div className="mb-7">
+                    <h2 className="text-xl font-bold tracking-tight text-sub-1">{t('annualLeave.setupTitle')}</h2>
+                    <p className="mt-2 text-sm leading-5 break-keep text-sub-2">{t('annualLeave.setupHint')}</p>
                 </div>
+            )}
+            {settings.startedOn && <p className="text-sm leading-5 break-keep text-sub-2">{t('annualLeave.settingsIntro')}</p>}
+            <section aria-label={t('annualLeave.units')} className={settings.startedOn ? 'mt-6' : ''}>
+                {!!annualTypes.length && (
+                    <div
+                        className="mx-auto mb-2 grid w-full max-w-[520px] grid-cols-[minmax(0,1fr)_11rem] items-center gap-6 text-xs text-gray-3"
+                        aria-hidden="true"
+                    >
+                        <span>{t('annualLeave.settingsTypeLabel')}</span>
+                        <span className="text-center">{t('annualLeave.deductionDays')}</span>
+                    </div>
+                )}
                 <div className="flex max-h-[40dvh] flex-col gap-2 overflow-y-auto">
-                    {!annualTypes.length && <p className="py-4 text-center text-sm text-sub-2">{t('annualLeave.addTypeEmpty')}</p>}
+                    {!annualTypes.length && (
+                        <div className="flex flex-col items-center rounded-xl bg-gray-7 px-5 py-8 text-center">
+                            <p className="text-sm font-semibold text-sub-1">{t('annualLeave.setupEmptyTitle')}</p>
+                        </div>
+                    )}
                     {annualTypes.map((type) => {
                         const scheduled = settings.unitRules.some(
                             (rule) =>
@@ -117,9 +165,9 @@ export function SettingsForm({
                         const invalid = value !== undefined && (!/^\d+(?:\.\d{1,3})?$/.test(value) || Number(value) > 10);
 
                         return (
-                            <div key={type.wardShiftTypeId} className="rounded-xl bg-gray-7 px-3 py-2">
-                                <div className="flex min-h-11 items-center gap-2">
-                                    <label htmlFor={`deduct-${type.wardShiftTypeId}`} className="min-w-0 flex-1">
+                            <div key={type.wardShiftTypeId} className="rounded-xl bg-gray-7 px-4 py-2">
+                                <div className="mx-auto grid min-h-11 w-full max-w-[520px] grid-cols-[minmax(0,1fr)_11rem] items-center gap-6">
+                                    <label htmlFor={`deduct-${type.wardShiftTypeId}`} className="min-w-0 pr-3">
                                         <span className="block truncate text-sm font-medium text-sub-1">{type.name}</span>
                                         <span className="text-[11px] text-gray-3">
                                             {t(
@@ -131,50 +179,55 @@ export function SettingsForm({
                                             )}
                                         </span>
                                     </label>
-                                    <div
-                                        className={`flex h-11 w-24 shrink-0 items-center gap-1 rounded-lg px-2 focus-within:bg-main-4 focus-within:text-main-1 ${invalid ? 'bg-red/10 text-red' : 'bg-white text-sub-1'}`}
-                                    >
-                                        <input
-                                            id={`deduct-${type.wardShiftTypeId}`}
-                                            aria-label={`${type.name} ${t('annualLeave.deductionDays')}`}
-                                            type="number"
-                                            min="0"
-                                            max="10"
-                                            step="0.001"
-                                            required
-                                            disabled={busy}
-                                            aria-invalid={invalid}
-                                            aria-describedby={invalid ? `annual-rule-error-${type.wardShiftTypeId}` : undefined}
-                                            value={value ?? annualLeaveUnits(type, today, settings.unitRules)}
-                                            onChange={(event) =>
-                                                setValues((previous) => ({...previous, [type.wardShiftTypeId]: event.target.value}))
-                                            }
-                                            className="h-full min-w-0 flex-1 appearance-none bg-transparent text-right text-base font-semibold tabular-nums outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                                        />
-                                        <span className="text-xs">{t('annualLeave.dayUnit')}</span>
-                                    </div>
-                                    {type.classification !== 'ANNUAL_LEAVE' ? (
-                                        <button
-                                            type="button"
-                                            aria-label={`${type.name} ${t('annualLeave.remove')}`}
-                                            disabled={busy}
-                                            onClick={() => {
-                                                setShownIds((ids) => ids.filter((id) => id !== type.wardShiftTypeId));
-                                                setValues((previous) => {
-                                                    const next = {...previous};
-
-                                                    delete next[type.wardShiftTypeId];
-
-                                                    return next;
-                                                });
-                                            }}
-                                            className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-gray-3 hover:text-red focus-visible:bg-red/10 focus-visible:text-red focus-visible:outline-none"
+                                    <div className="flex min-w-0 items-center justify-center gap-2">
+                                        <span aria-hidden="true" className="flex w-8 shrink-0 justify-center text-sm text-gray-3">
+                                            →
+                                        </span>
+                                        <div
+                                            className={`flex h-11 w-24 shrink-0 items-center gap-1 rounded-lg px-2 focus-within:bg-main-4 focus-within:text-main-1 ${invalid ? 'bg-red/10 text-red' : 'bg-white text-sub-1'}`}
                                         >
-                                            <X aria-hidden size={16} />
-                                        </button>
-                                    ) : (
-                                        <span className="w-8 shrink-0" />
-                                    )}
+                                            <input
+                                                id={`deduct-${type.wardShiftTypeId}`}
+                                                aria-label={`${type.name} ${t('annualLeave.deductionDays')}`}
+                                                type="number"
+                                                min="0"
+                                                max="10"
+                                                step="0.001"
+                                                required
+                                                disabled={busy}
+                                                aria-invalid={invalid}
+                                                aria-describedby={invalid ? `annual-rule-error-${type.wardShiftTypeId}` : undefined}
+                                                value={value ?? annualLeaveUnits(type, today, settings.unitRules)}
+                                                onChange={(event) =>
+                                                    setValues((previous) => ({...previous, [type.wardShiftTypeId]: event.target.value}))
+                                                }
+                                                className="h-full min-w-0 flex-1 appearance-none bg-transparent text-right text-base font-semibold tabular-nums outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                            />
+                                            <span className="text-xs">{t('annualLeave.dayUnit')}</span>
+                                        </div>
+                                        {type.classification !== 'ANNUAL_LEAVE' ? (
+                                            <button
+                                                type="button"
+                                                aria-label={`${type.name} ${t('annualLeave.remove')}`}
+                                                disabled={busy}
+                                                onClick={() => {
+                                                    setShownIds((ids) => ids.filter((id) => id !== type.wardShiftTypeId));
+                                                    setValues((previous) => {
+                                                        const next = {...previous};
+
+                                                        delete next[type.wardShiftTypeId];
+
+                                                        return next;
+                                                    });
+                                                }}
+                                                className="flex h-11 w-8 shrink-0 items-center justify-center rounded-lg text-gray-3 hover:text-red focus-visible:bg-red/10 focus-visible:text-red focus-visible:outline-none"
+                                            >
+                                                <X aria-hidden size={16} />
+                                            </button>
+                                        ) : (
+                                            <span className="w-8 shrink-0" />
+                                        )}
+                                    </div>
                                 </div>
                                 {invalid && (
                                     <p id={`annual-rule-error-${type.wardShiftTypeId}`} className="mt-1 text-xs leading-5 text-red">
@@ -186,52 +239,20 @@ export function SettingsForm({
                         );
                     })}
                 </div>
-                {remainingTypes.length > 0 && (
-                    <div className="mt-3">
-                        <ShiftClassificationDropdown
-                            value=""
-                            ariaLabel={t('annualLeave.addLeaveType')}
-                            disabled={busy}
-                            portalled={false}
-                            options={[
-                                {value: '', label: t('annualLeave.addLeaveType')},
-                                ...remainingTypes.map((type) => ({
-                                    value: String(type.wardShiftTypeId),
-                                    label: `${type.name} · ${t(type.classification === 'OFF' ? 'feature.createShiftModal.classification.off' : 'feature.createShiftModal.classification.otherLeave')}`,
-                                })),
-                            ]}
-                            onChange={(value) => {
-                                if (!value) return;
-
-                                const id = Number(value);
-
-                                setShownIds((ids) => [...ids, id]);
-                                setValues((previous) => ({
-                                    ...previous,
-                                    [id]: String(
-                                        annualLeaveUnits(
-                                            availableTypes.find((type) => type.wardShiftTypeId === id),
-                                            today,
-                                            settings.unitRules,
-                                        ),
-                                    ),
-                                }));
-                            }}
-                            className="bg-transparent text-sm text-main-1 hover:bg-main-4"
-                        />
-                    </div>
-                )}
+                {addTypeDropdown && <div className="mx-auto mt-3 w-52 max-w-full">{addTypeDropdown}</div>}
             </section>
-            <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-gray-7 px-3 py-3">
-                <span
-                    aria-hidden="true"
-                    className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-gray-3 font-serif text-xs font-bold text-white"
-                >
-                    i
-                </span>
-                <p className="text-xs leading-5 break-keep text-sub-2">{t('annualLeave.settingsApplyHint')}</p>
-            </div>
-            <div className="mt-6 flex items-center justify-between gap-3">
+            {settings.startedOn && (
+                <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-gray-7 px-3 py-3">
+                    <span
+                        aria-hidden="true"
+                        className="mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-gray-3 font-serif text-xs font-bold text-white"
+                    >
+                        i
+                    </span>
+                    <p className="text-xs leading-5 break-keep text-sub-2">{t('annualLeave.settingsApplyHint')}</p>
+                </div>
+            )}
+            <div className="mt-7 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     {onPause && settings.enabled && (
                         <button
@@ -249,7 +270,15 @@ export function SettingsForm({
                     disabled={busy || !valid || (settings.enabled && !changed)}
                     className={`${annualButtonClass} min-h-11 min-w-24 focus-visible:bg-sub-1 focus-visible:text-white focus-visible:outline-none`}
                 >
-                    {t(busy ? 'annualLeave.saving' : settings.enabled ? 'annualLeave.save' : 'annualLeave.start')}
+                    {t(
+                        busy
+                            ? 'annualLeave.saving'
+                            : settings.enabled
+                              ? 'annualLeave.save'
+                              : settings.startedOn
+                                ? 'annualLeave.resume'
+                                : 'annualLeave.setupContinue',
+                    )}
                 </button>
             </div>
         </form>
@@ -275,6 +304,7 @@ export function AnnualLeaveSettingsSection({
     const [showSettings, setShowSettings] = useState(false);
     const [settingsBusy, setSettingsBusy] = useState(false);
     const [showBulk, setShowBulk] = useState(false);
+    const [registrationNurseId, setRegistrationNurseId] = useState<number | null>(null);
     const [grantMode, setGrantMode] = useState<TGrantMode>('GRANT');
     const [showGrant, setShowGrant] = useState(false);
     const [grantSelected, setGrantSelected] = useState<number[]>([]);
@@ -282,11 +312,17 @@ export function AnnualLeaveSettingsSection({
     const [pause, setPause] = useState(false);
     const [busy, setBusy] = useState(false);
     const [bulkDays, setBulkDays] = useState<Record<number, string>>({});
+    const [bulkPreviousUsed, setBulkPreviousUsed] = useState<Record<number, string>>({});
     const requestId = useAnnualLeaveRequestId();
     const data = query.data;
     const selectedPerson = data?.people.find((person) => person.nurseId === selected?.nurseId);
     const eligible =
-        data?.people.filter((person) => person.active && (person.openingDays == null || person.checks.includes('RESTART_REQUIRED'))) ?? [];
+        data?.people.filter(
+            (person) =>
+                person.active &&
+                (registrationNurseId == null || person.nurseId === registrationNurseId) &&
+                (person.openingDays == null || person.checks.includes('RESTART_REQUIRED')),
+        ) ?? [];
 
     if (wardId == null) return null;
 
@@ -334,6 +370,7 @@ export function AnnualLeaveSettingsSection({
                 version: person.version,
                 startedOn: annualLeaveDate(),
                 remainingDays: Number(bulkDays[person.nurseId]),
+                previousUsedDays: (bulkPreviousUsed[person.nurseId] ?? '').trim() === '' ? null : Number(bulkPreviousUsed[person.nurseId]),
                 balanceBasis: 'TODAY_INCLUDED',
                 includedPlannedDates: [],
                 reviewOn: null,
@@ -343,7 +380,13 @@ export function AnnualLeaveSettingsSection({
         if (
             busy ||
             !entries.length ||
-            entries.some((entry) => !Number.isFinite(entry.remainingDays) || Math.abs(entry.remainingDays!) > 99999)
+            entries.some(
+                (entry) =>
+                    !Number.isFinite(entry.remainingDays) ||
+                    Math.abs(entry.remainingDays!) > 99999 ||
+                    (entry.previousUsedDays != null &&
+                        (!Number.isFinite(entry.previousUsedDays) || entry.previousUsedDays < 0 || entry.previousUsedDays > 99999)),
+            )
         )
             return;
 
@@ -353,7 +396,9 @@ export function AnnualLeaveSettingsSection({
             await WardAPI.initializeAnnualLeave(wardId, {requestId: requestId(entries), entries});
             await refresh();
             setShowBulk(false);
+            setRegistrationNurseId(null);
             setBulkDays({});
+            setBulkPreviousUsed({});
         } catch (error) {
             showActionErrorFeedback(error, t('annualLeave.saveError'));
             await refresh();
@@ -367,6 +412,9 @@ export function AnnualLeaveSettingsSection({
             (!team || person.shiftTeamId === Number(team)) &&
             person.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
     );
+    const registrationPerson = registrationNurseId == null ? null : eligible[0];
+    const registrationDays = registrationPerson ? (bulkDays[registrationPerson.nurseId] ?? '').trim() : '';
+    const registrationPreviousUsed = registrationPerson ? (bulkPreviousUsed[registrationPerson.nurseId] ?? '').trim() : '';
     const grantable = people.filter(canGrant);
     const allGrantedSelected = grantable.length > 0 && grantable.every((person) => grantSelected.includes(person.nurseId));
 
@@ -374,7 +422,7 @@ export function AnnualLeaveSettingsSection({
         <div className="flex w-full min-w-0 flex-col gap-4 font-apple">
             <div className="min-w-0 rounded-2xl bg-white p-4 sm:p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-sm text-gray-3">
+                    <p className={data.settings.startedOn ? 'text-sm text-gray-3' : 'hidden'}>
                         {t(
                             data.settings.enabled
                                 ? 'annualLeave.scope'
@@ -400,8 +448,10 @@ export function AnnualLeaveSettingsSection({
                                               {
                                                   label: t('annualLeave.bulk'),
                                                   onSelect: () => {
+                                                      setRegistrationNurseId(null);
                                                       setShowBulk(true);
                                                       setBulkDays({});
+                                                      setBulkPreviousUsed({});
                                                   },
                                               },
                                               ...(grantPending
@@ -443,10 +493,9 @@ export function AnnualLeaveSettingsSection({
                     )}
                 </div>
                 {!data.settings.startedOn ? (
-                    <>
-                        <p className="mt-2 mb-6 text-sm leading-6 text-gray-3">{t('annualLeave.startHint')}</p>
-                        <SettingsForm wardId={wardId} settings={data.settings} shiftTypes={shiftTypes} onDone={() => {}} />
-                    </>
+                    <div className="w-full py-2 sm:py-4">
+                        <SettingsForm wardId={wardId} settings={data.settings} shiftTypes={shiftTypes} onDone={() => setShowBulk(true)} />
+                    </div>
                 ) : (
                     <>
                         <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -537,9 +586,28 @@ export function AnnualLeaveSettingsSection({
                                                         className={`px-3 py-1 text-right whitespace-nowrap tabular-nums ${index === 0 ? 'pr-12 text-base font-bold' : ''} ${value != null && value < 0 ? 'text-red' : index === 0 && value != null ? 'text-main-1' : 'text-sub-2'}`}
                                                     >
                                                         <span className="relative inline-block">
-                                                            {value == null
-                                                                ? t('annualLeave.notEntered')
-                                                                : t('annualLeave.days', {count: value})}
+                                                            {value == null &&
+                                                            index === 0 &&
+                                                            data.settings.enabled &&
+                                                            (person.openingDays == null || person.checks.includes('RESTART_REQUIRED')) ? (
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label={t('annualLeave.registerPerson', {name: person.name})}
+                                                                    onClick={() => {
+                                                                        setRegistrationNurseId(person.nurseId);
+                                                                        setBulkDays({});
+                                                                        setBulkPreviousUsed({});
+                                                                        setShowBulk(true);
+                                                                    }}
+                                                                    className="min-h-11 rounded-md font-semibold text-sub-2 underline decoration-gray-4 underline-offset-4 hover:text-main-1 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:outline-none"
+                                                                >
+                                                                    {t('annualLeave.notEntered')}
+                                                                </button>
+                                                            ) : value == null ? (
+                                                                t('annualLeave.notEntered')
+                                                            ) : (
+                                                                t('annualLeave.days', {count: value})
+                                                            )}
                                                             {index === 0 &&
                                                                 !selected &&
                                                                 !showSettings &&
@@ -551,6 +619,11 @@ export function AnnualLeaveSettingsSection({
                                                                     </span>
                                                                 )}
                                                         </span>
+                                                        {index === 1 && person.openingDays != null && person.previousUsedDays == null && (
+                                                            <span className="block text-[11px] font-normal text-gray-3">
+                                                                {t('annualLeave.usageSinceStart')}
+                                                            </span>
+                                                        )}
                                                     </td>
                                                 ),
                                             )}
@@ -611,7 +684,14 @@ export function AnnualLeaveSettingsSection({
                 />
             )}
             {showBulk && (
-                <AnnualLeaveDialog title={t('annualLeave.bulk')} onClose={() => setShowBulk(false)} busy={busy}>
+                <AnnualLeaveDialog
+                    compact={registrationNurseId != null}
+                    title={
+                        registrationPerson ? t('annualLeave.registerSingleTitle', {name: registrationPerson.name}) : t('annualLeave.bulk')
+                    }
+                    onClose={() => setShowBulk(false)}
+                    busy={busy}
+                >
                     <form
                         className="flex flex-col gap-4"
                         onSubmit={(event) => {
@@ -619,44 +699,170 @@ export function AnnualLeaveSettingsSection({
                             void applyBulk();
                         }}
                     >
-                        {eligible.length > 0 && (
+                        {registrationPerson ? (
                             <>
-                                <p className="text-sm leading-5 break-keep text-sub-2">{t('annualLeave.bulkHint')}</p>
-                                <p className="text-xs text-gray-3">{t('annualLeave.todayBasis', {date: today})}</p>
-                            </>
-                        )}
-                        <div className="max-h-80 overflow-y-auto py-1">
-                            {eligible.length === 0 && (
-                                <div role="status" className="flex flex-col items-center px-4 py-7 text-center">
-                                    <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-main-4 text-main-1">
-                                        <Check size={24} aria-hidden="true" />
-                                    </span>
-                                    <h3 className="text-base font-semibold text-sub-1">{t('annualLeave.bulkEmptyTitle')}</h3>
-                                    <p className="mt-2 text-sm leading-5 break-keep text-sub-2">{t('annualLeave.bulkEmpty')}</p>
+                                <p className="text-sm text-sub-2">{t('annualLeave.todayBasis', {date: today})}</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <label className="min-w-0 rounded-xl bg-main-4 p-4">
+                                        <span className="inline-flex items-start gap-0.5 text-sm font-semibold text-sub-1">
+                                            {t('annualLeave.current')}
+                                            <span aria-hidden="true" className="mt-px text-[10px] leading-none text-red">
+                                                *
+                                            </span>
+                                        </span>
+                                        <span className="mt-1 block min-h-10 text-xs leading-5 break-keep text-sub-2">
+                                            {t('annualLeave.currentInputHint')}
+                                        </span>
+                                        <span className="mt-3 flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 focus-within:bg-main-light focus-within:text-main-1">
+                                            <input
+                                                autoFocus
+                                                type="number"
+                                                aria-label={`${registrationPerson.name} ${t('annualLeave.current')}`}
+                                                min="-99999"
+                                                max="99999"
+                                                step="0.001"
+                                                disabled={busy}
+                                                value={bulkDays[registrationPerson.nurseId] ?? ''}
+                                                onChange={(event) =>
+                                                    setBulkDays((previous) => ({
+                                                        ...previous,
+                                                        [registrationPerson.nurseId]: event.target.value,
+                                                    }))
+                                                }
+                                                className="h-12 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-xl font-bold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                            />
+                                            <span className="text-sm text-sub-2">{t('annualLeave.dayUnit')}</span>
+                                        </span>
+                                    </label>
+                                    <label className="min-w-0 rounded-xl bg-gray-7 p-4">
+                                        <span className="block text-sm font-semibold text-sub-1">{t('annualLeave.previousUsed')}</span>
+                                        <span className="mt-1 block min-h-10 text-xs leading-5 break-keep text-sub-2">
+                                            {t('annualLeave.previousUsedInputHint')}
+                                        </span>
+                                        <span className="mt-3 flex min-w-0 items-center gap-2 rounded-lg bg-white px-3 focus-within:bg-main-light focus-within:text-main-1">
+                                            <input
+                                                type="number"
+                                                aria-label={`${registrationPerson.name} ${t('annualLeave.previousUsed')}`}
+                                                min="0"
+                                                max="99999"
+                                                step="0.001"
+                                                disabled={busy}
+                                                value={bulkPreviousUsed[registrationPerson.nurseId] ?? ''}
+                                                onChange={(event) =>
+                                                    setBulkPreviousUsed((previous) => ({
+                                                        ...previous,
+                                                        [registrationPerson.nurseId]: event.target.value,
+                                                    }))
+                                                }
+                                                className="h-12 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-xl font-bold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                            />
+                                            <span className="text-sm text-sub-2">{t('annualLeave.dayUnit')}</span>
+                                        </span>
+                                    </label>
                                 </div>
-                            )}
-                            {eligible.map((person) => (
-                                <label key={person.nurseId} className="flex items-center justify-between gap-4 px-2 py-2 text-sm">
-                                    <span>{person.name}</span>
-                                    <span className="flex items-center gap-2">
-                                        <input
-                                            type="number"
-                                            aria-label={`${person.name} ${t('annualLeave.current')}`}
-                                            min="-99999"
-                                            max="99999"
-                                            step="0.001"
-                                            disabled={busy}
-                                            value={bulkDays[person.nurseId] ?? ''}
-                                            onChange={(event) =>
-                                                setBulkDays((previous) => ({...previous, [person.nurseId]: event.target.value}))
-                                            }
-                                            className="h-11 w-28 rounded-lg bg-main-4 px-3 text-right text-base font-semibold text-sub-1 tabular-nums transition-colors hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-50 motion-reduce:transition-none"
-                                        />
-                                        <span className="text-sub-2">{t('annualLeave.dayUnit')}</span>
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
+                                {registrationDays && (
+                                    <p role="status" className="rounded-xl bg-gray-7 px-4 py-3 text-sm leading-5 break-keep text-sub-1">
+                                        {registrationPreviousUsed
+                                            ? t('annualLeave.registrationPreview', {
+                                                  remaining: Number(registrationDays),
+                                                  used: Number(registrationPreviousUsed),
+                                              })
+                                            : t('annualLeave.registrationPreviewWithoutUsage', {
+                                                  remaining: Number(registrationDays),
+                                              })}
+                                    </p>
+                                )}
+                            </>
+                        ) : eligible.length > 0 ? (
+                            <div className="flex items-start justify-between gap-4 px-1">
+                                <p className="text-sm leading-5 break-keep text-sub-2">{t('annualLeave.bulkHint')}</p>
+                                <p className="shrink-0 pt-0.5 text-xs font-medium text-gray-3">
+                                    {t('annualLeave.todayBasis', {date: today})}
+                                </p>
+                            </div>
+                        ) : null}
+                        {!registrationPerson && (
+                            <div role="table" aria-label={t('annualLeave.registerSingle')} className="max-h-80 overflow-y-auto">
+                                {eligible.length === 0 && (
+                                    <div role="status" className="flex flex-col items-center px-4 py-7 text-center">
+                                        <span className="mb-4 flex size-12 items-center justify-center rounded-full bg-main-4 text-main-1">
+                                            <Check size={24} aria-hidden="true" />
+                                        </span>
+                                        <h3 className="text-base font-semibold text-sub-1">{t('annualLeave.bulkEmptyTitle')}</h3>
+                                        <p className="mt-2 text-sm leading-5 break-keep text-sub-2">{t('annualLeave.bulkEmpty')}</p>
+                                    </div>
+                                )}
+                                {eligible.length > 0 && (
+                                    <div
+                                        role="row"
+                                        className="mx-auto grid w-full max-w-[640px] grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] items-end gap-3 px-4 pb-2 text-xs leading-4 font-medium text-sub-2"
+                                    >
+                                        <span role="columnheader">{t('annualLeave.name')}</span>
+                                        <span role="columnheader" className="flex items-start justify-center gap-0.5 text-center">
+                                            <span>{t('annualLeave.current')}</span>
+                                            <span aria-hidden="true" className="mt-px text-[10px] leading-none text-red">
+                                                *
+                                            </span>
+                                        </span>
+                                        <span role="columnheader" className="text-center">
+                                            {t('annualLeave.previousUsed')}
+                                        </span>
+                                    </div>
+                                )}
+                                {eligible.map((person) => (
+                                    <div
+                                        key={person.nurseId}
+                                        role="row"
+                                        className="mx-auto mb-2 grid min-h-14 w-full max-w-[640px] grid-cols-[7.5rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 rounded-xl bg-gray-7 px-4 py-1.5 text-sm last:mb-0"
+                                    >
+                                        <strong role="rowheader" className="min-w-0 truncate font-semibold text-sub-1">
+                                            {person.name}
+                                        </strong>
+                                        <label role="cell" className="min-w-0">
+                                            <span className="sr-only">{t('annualLeave.current')}</span>
+                                            <span className="mx-auto flex w-full max-w-48 min-w-0 items-center gap-1 rounded-lg bg-white px-3 focus-within:bg-main-light">
+                                                <input
+                                                    type="number"
+                                                    aria-label={`${person.name} ${t('annualLeave.current')}`}
+                                                    min="-99999"
+                                                    max="99999"
+                                                    step="0.001"
+                                                    disabled={busy}
+                                                    value={bulkDays[person.nurseId] ?? ''}
+                                                    onChange={(event) =>
+                                                        setBulkDays((previous) => ({...previous, [person.nurseId]: event.target.value}))
+                                                    }
+                                                    className="h-11 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-base font-bold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                />
+                                                <span className="shrink-0 text-sub-2">{t('annualLeave.dayUnit')}</span>
+                                            </span>
+                                        </label>
+                                        <label role="cell" className="min-w-0 text-sub-2">
+                                            <span className="sr-only">{t('annualLeave.previousUsed')}</span>
+                                            <span className="mx-auto flex w-full max-w-48 min-w-0 items-center gap-1 rounded-lg bg-white px-3 focus-within:bg-main-light">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="99999"
+                                                    step="0.001"
+                                                    disabled={busy}
+                                                    aria-label={`${person.name} ${t('annualLeave.previousUsed')}`}
+                                                    value={bulkPreviousUsed[person.nurseId] ?? ''}
+                                                    onChange={(e) =>
+                                                        setBulkPreviousUsed((previous) => ({
+                                                            ...previous,
+                                                            [person.nurseId]: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="h-11 min-w-0 flex-1 [appearance:textfield] appearance-none bg-transparent text-right text-base font-semibold text-sub-1 tabular-nums focus-visible:outline-none disabled:opacity-50 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                                />
+                                                <span className="shrink-0">{t('annualLeave.dayUnit')}</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         <div className="flex justify-end gap-2">
                             <button type="button" className={annualSecondaryClass} disabled={busy} onClick={() => setShowBulk(false)}>
                                 {t('annualLeave.close')}
