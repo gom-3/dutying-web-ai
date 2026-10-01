@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import {Download, Info} from 'lucide-react';
+import {Info} from 'lucide-react';
 import {Component, useMemo, useRef, useState, type ReactNode} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TShift} from '@/entities';
@@ -7,7 +7,7 @@ import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entit
 import {useAnnualLeaveSchedule} from '@/features/annual-leave/queries';
 import {useAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import useAuth from '@/features/auth';
-import {shiftToDoc, type TViolation, useShiftImageExport} from '@/features/shift-editor';
+import {shiftToDoc, type TViolation, useShiftExcelExport, useShiftImageExport} from '@/features/shift-editor';
 import i18n from '@/i18n';
 import {useScheduleDisplay} from '@/pages/make-shift/model/use-schedule-display';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
@@ -22,10 +22,11 @@ import {sortScheduleByTeamNurseOrder} from '../../model/nurse-order-sync';
 import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
+import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
 import {ScheduleDisplayMenu} from './shared/schedule-display-menu';
-import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
+import {ScheduleDownloadMenu} from './shared/schedule-download-menu';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
@@ -102,7 +103,7 @@ export function ConfirmedShifts() {
                 : undefined,
         [annualLeave.data?.days, annualLeave.overview.data?.days, adjustmentDays, doc, language, month, orderedShift, policy, year],
     );
-    const {isExporting, downloadImage} = useShiftImageExport({
+    const {isExporting: isExportingImage, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,
         year,
         month,
@@ -111,10 +112,18 @@ export function ConfirmedShifts() {
         wardName: wardQuery.data?.name ?? null,
         disabled: !orderedShift || !doc,
     });
+    const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({
+        month,
+        shift: orderedShift ?? null,
+        disabled: !doc || isExportingImage,
+    });
+    const isExporting = isExportingImage || isExportingExcel;
     const calendarResetKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}:${orderedShift ? 'ready' : 'empty'}`;
-    const imageActionLabel = isExporting
+    const downloadActionLabel = isExportingImage
         ? t('page.makeShift.confirmedShifts.imageActionLoading')
-        : t('page.makeShift.confirmedShifts.imageAction');
+        : isExportingExcel
+          ? t('feature.shiftEditor.toolbar.savingExcel')
+          : t('page.makeShift.confirmedShifts.downloadAction');
     const wardCodeGuideLabel = t('page.makeShift.confirmedShifts.wardCodeGuideAction');
 
     return (
@@ -172,37 +181,19 @@ export function ConfirmedShifts() {
                                 />
                             }
                         />
-                        <TooltipProvider delayDuration={120}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="secondary"
-                                        size="md"
-                                        type="button"
-                                        aria-label={imageActionLabel}
-                                        title={imageActionLabel}
-                                        className="size-10 cursor-pointer rounded-[12px] border border-gray-6 bg-white p-0 text-gray-3 shadow-none hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-1 focus-visible:ring-main-1 focus-visible:ring-offset-0 disabled:bg-gray-7 disabled:text-gray-4"
-                                        onClick={() => {
-                                            void downloadImage();
-                                            sendEvent(events.makePage.toolbar.downloadImage);
-                                        }}
-                                        disabled={!orderedShift || !doc || isExporting}
-                                    >
-                                        <Download
-                                            className={`size-5 ${isExporting ? 'animate-pulse' : ''}`}
-                                            strokeWidth={1.8}
-                                            aria-hidden="true"
-                                        />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                    side="top"
-                                    className="rounded-full bg-[#1C2331] px-3 py-1.5 text-[12px] font-semibold text-white"
-                                >
-                                    {imageActionLabel}
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <ScheduleDownloadMenu
+                            label={downloadActionLabel}
+                            disabled={!orderedShift || !doc || isExporting}
+                            isExporting={isExporting}
+                            onDownloadImage={() => {
+                                void downloadImage();
+                                sendEvent(events.makePage.toolbar.downloadImage);
+                            }}
+                            onDownloadExcel={() => {
+                                void exportExcel();
+                                sendEvent(events.makePage.toolbar.downloadExcel);
+                            }}
+                        />
                         <Button
                             variant="secondary"
                             size="md"
