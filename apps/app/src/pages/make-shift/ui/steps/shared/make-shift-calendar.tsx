@@ -1627,7 +1627,7 @@ export function MakeShiftCalendar({
         showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
     const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn || annualLeaveColumnCount > 0;
     const showDragHandleColumn = canReorderRows;
-    const nameColumnWidth = nameColumnDensity === 'comfortable' ? COMFORTABLE_NAME_COL : COMPACT_NAME_COL;
+    const nameColumnWidth = `var(--make-shift-name-column-width, ${nameColumnDensity === 'comfortable' ? COMFORTABLE_NAME_COL : COMPACT_NAME_COL})`;
     const leftGridTemplateColumns = isSimplified
         ? getLeftGridTemplateColumnsSimplified(nameColumnWidth, showDragHandleColumn)
         : getLeftGridTemplateColumns(nameColumnWidth, showCarryColumn, showDragHandleColumn);

@@ -1,4 +1,5 @@
 import i18n from '@/i18n';
+import {createShiftImageCapture} from './shift-image-capture';
 
 type TBuildShiftImageFileNameOptions = {
     year: number;
@@ -179,14 +180,26 @@ async function createA4ShiftImageBlob({sourceBlob, title}: {sourceBlob: Blob; ti
 
 export async function shiftToImage({element, year, month, teamName, hospitalName, wardName}: TShiftToImageOptions) {
     const {toBlob} = await import('html-to-image');
-    const blob = await toBlob(element, {
-        backgroundColor: A4_PAGE_BACKGROUND_COLOR,
-        filter: (node) => !(node instanceof Element && node.hasAttribute('data-private-annual-leave')),
-        cacheBust: true,
-        pixelRatio: 2,
-        width: Math.max(element.scrollWidth, element.clientWidth),
-        height: Math.max(element.scrollHeight, element.clientHeight),
-    });
+
+    await document.fonts?.ready;
+
+    const capture = createShiftImageCapture(element);
+
+    let blob: Blob | null;
+
+    try {
+        blob = await toBlob(capture.element, {
+            backgroundColor: A4_PAGE_BACKGROUND_COLOR,
+            filter: (node) => !(node instanceof Element && node.hasAttribute('data-private-annual-leave')),
+            cacheBust: true,
+            pixelRatio: 2,
+            width: Math.max(capture.element.scrollWidth, capture.element.clientWidth),
+            height: Math.max(capture.element.scrollHeight, capture.element.clientHeight),
+            style: {position: 'static', left: 'auto', top: 'auto'},
+        });
+    } finally {
+        capture.dispose();
+    }
 
     if (!blob) {
         throw new Error('SHIFT_IMAGE_EXPORT_FAILED');

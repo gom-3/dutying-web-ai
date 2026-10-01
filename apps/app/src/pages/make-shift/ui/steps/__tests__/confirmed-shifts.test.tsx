@@ -8,6 +8,13 @@ import type * as MakeShiftStoreModule from '../../../model/make-shift-store';
 import {ConfirmedShifts} from '../confirmed-shifts';
 
 const editConfirmedMock = vi.fn();
+const exportMocks = vi.hoisted(() => ({
+    downloadImage: vi.fn(),
+    exportExcel: vi.fn(),
+    imageBusy: false,
+    excelBusy: false,
+    excelOptions: null as {month: number; shift: TShift | null; disabled?: boolean} | null,
+}));
 const confirmedCalendarMock = vi.hoisted(() => ({
     props: null as {
         showDivisionHeaders?: boolean;
@@ -66,9 +73,14 @@ vi.mock('@/features/auth', () => ({
 vi.mock('@/features/shift-editor', () => ({
     shiftToDoc: vi.fn(),
     useShiftImageExport: () => ({
-        isExporting: false,
-        downloadImage: vi.fn(),
+        isExporting: exportMocks.imageBusy,
+        downloadImage: exportMocks.downloadImage,
     }),
+    useShiftExcelExport: (options: {month: number; shift: TShift | null; disabled?: boolean}) => {
+        exportMocks.excelOptions = options;
+
+        return {isExporting: exportMocks.excelBusy, exportExcel: exportMocks.exportExcel};
+    },
 }));
 
 vi.mock('../shared/make-shift-calendar', () => ({
@@ -113,6 +125,10 @@ const mockedUseQuery = vi.mocked(useQuery);
 describe('ConfirmedShifts', () => {
     beforeEach(() => {
         editConfirmedMock.mockReset();
+        exportMocks.downloadImage.mockReset();
+        exportMocks.exportExcel.mockReset();
+        exportMocks.imageBusy = false;
+        exportMocks.excelBusy = false;
         confirmedCalendarMock.props = null;
         vi.mocked(shiftToDoc).mockReset();
         mockedUseQuery.mockImplementation((options: {queryKey?: readonly unknown[]}) => {
@@ -153,7 +169,7 @@ describe('ConfirmedShifts', () => {
         expect(within(dialog).getByText('ABC123')).toBeInTheDocument();
     });
 
-    it('확정 근무표에도 그룹명과 그룹 구분선을 표시한다', () => {
+    it('확정 근무표의 그룹을 표시하고 다운로드 메뉴에서 이미지 또는 엑셀을 저장한다', async () => {
         const confirmedShift = {
             lastDays: [],
             days: [],
@@ -208,6 +224,22 @@ describe('ConfirmedShifts', () => {
         expect(confirmedCalendarMock.props?.showDivisionHeaders).toBe(true);
         expect(confirmedCalendarMock.props?.showDivisionStatistics).toBe(true);
         expect(confirmedCalendarMock.props?.divisionLabelByNum?.get(1)).toBe('나이트 전담');
+
+        const trigger = screen.getByRole('button', {name: '다운로드'});
+
+        await userEvent.click(trigger);
+        expect(exportMocks.downloadImage).not.toHaveBeenCalled();
+        expect(exportMocks.exportExcel).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('menuitem', {name: '이미지 다운로드'}));
+        expect(exportMocks.downloadImage).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+        await userEvent.click(trigger);
+        await userEvent.click(screen.getByRole('menuitem', {name: '엑셀 다운로드'}));
+        expect(exportMocks.exportExcel).toHaveBeenCalledTimes(1);
+        expect(exportMocks.excelOptions?.month).toBe(7);
+        expect(exportMocks.excelOptions?.shift).toEqual(confirmedShift);
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
     it('확정 근무표를 불러오는 동안 캘린더 스켈레톤을 보여준다', () => {
@@ -243,5 +275,6 @@ describe('ConfirmedShifts', () => {
             'make-shift-calendar-skeleton',
         );
         expect(screen.queryByText('잠시만 기다려 주세요.')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '다운로드'})).toBeDisabled();
     });
 });

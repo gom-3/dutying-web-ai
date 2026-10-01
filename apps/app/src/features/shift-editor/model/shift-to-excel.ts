@@ -35,9 +35,15 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
     const flatRows = shift.divisionShiftNurses.flatMap((row) => row);
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet(buildShiftExcelSheetName(month));
+    const nameWidth = Math.max(
+        12,
+        ...flatRows.map(({shiftNurse}) =>
+            Array.from(shiftNurse.name).reduce((width, char) => width + (char.charCodeAt(0) > 255 ? 2 : 1), 2),
+        ),
+    );
 
     worksheet.columns = [
-        {key: 'name', width: 8, style: {alignment: {horizontal: 'center', vertical: 'middle'}}},
+        {key: 'name', width: nameWidth, style: {alignment: {horizontal: 'center', vertical: 'middle'}}},
         {
             key: 'lastShift',
             width: 10,
@@ -64,6 +70,9 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
 
     title.font = {bold: true, size: 16};
     title.alignment = {horizontal: 'left'};
+    title.height = 30;
+    worksheet.mergeCells(1, 1, 1, worksheet.columnCount);
+    worksheet.views = [{state: 'frozen', xSplit: 2, ySplit: 2}];
 
     const header = worksheet.addRow({
         name: i18n.t('feature.shiftEditor.export.excel.nameHeader'),

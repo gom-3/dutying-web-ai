@@ -23,6 +23,23 @@ describe('shift-to-image', () => {
         expect(buildShiftImageFileName({year: 2026, month: 3, teamName: null})).toBe('2026년 3월 근무표.png');
     });
 
+    it('이미지 생성 실패 시에도 임시 캡처를 제거하고 화면의 이름을 보존한다', async () => {
+        const element = document.createElement('div');
+
+        element.innerHTML = '<div class="make-shift-calendar__row-name" title="Alexandra Montgomery"><span>Alex…</span></div>';
+        document.body.append(element);
+        vi.mocked(toBlob).mockRejectedValueOnce(new Error('capture failed'));
+
+        try {
+            await expect(shiftToImage({element, year: 2026, month: 10})).rejects.toThrow('capture failed');
+            expect(document.querySelectorAll('.make-shift-calendar__row-name')).toHaveLength(1);
+            expect(element.textContent).toBe('Alex…');
+            expect(vi.mocked(toBlob).mock.calls[0]?.[0].textContent).toBe('Alexandra Montgomery');
+        } finally {
+            element.remove();
+        }
+    });
+
     it('연월, 병원명, 병동명으로 이미지 제목을 만든다', () => {
         expect(buildShiftImageTitle({year: 2027, month: 1, hospitalName: '듀팅병원', wardName: '7A'})).toBe(
             '2027년 1월 듀팅병원 7A 근무표',
