@@ -3,7 +3,6 @@ import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
     TAutofillResponse,
-    TScheduleMonthRequestItem,
     TScheduleMonthRequestRes,
     TScheduleRequestRuleResult,
 } from '@dutying/api/ward';
@@ -47,6 +46,7 @@ import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
+import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc, type TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
@@ -59,7 +59,6 @@ import {
     promotableRuleRequests,
     toTextRequestItems,
     type TInterpretCardItem,
-    type TInterpretCell,
     toInterpretCells,
 } from '../../../model/schedule-month-requests';
 import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-success-store';
@@ -407,6 +406,10 @@ export function AiAutofill() {
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+    const [hasGeneratedSchedule, setHasGeneratedSchedule] = useState(false);
+    const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
+    const generationNoticeShownRef = useRef(false);
+    const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
     const [disablingRequestId, setDisablingRequestId] = useState<number | null>(null);
     const [isCarryingOver, setIsCarryingOver] = useState(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
@@ -447,7 +450,12 @@ export function AiAutofill() {
         month,
         enabled: isSnapshotSidebarOpen && isCurrentShiftTeamReady,
     });
-    const {requests: monthRequests, refetch: refetchMonthRequests} = useScheduleMonthRequests({
+    const {
+        requests: monthRequests,
+        refetch: refetchMonthRequests,
+        isLoading: monthRequestsLoading,
+        isError: monthRequestsError,
+    } = useScheduleMonthRequests({
         wardId,
         shiftTeamId: currentShiftTeamId,
         year,
@@ -498,8 +506,20 @@ export function AiAutofill() {
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const promotableRules = useMemo(() => promotableRuleRequests(monthRequests), [monthRequests]);
     const aiRequestSeqRef = useRef(0);
-    // 예시 문장과 unmapped 의 대안 문장이 같은 입력창을 채운다. 되묻기 경로가 그 하나뿐이다.
+    // The conversation keeps examples and revisions in the same input.
     const adjustTextInputRef = useRef<TAdjustTextInputHandle>(null);
+    const adjustActionRef = useRef<{fingerprint: string; key: string} | null>(null);
+    const interpretedRevisionRef = useRef<number | null>(null);
+    const interpretSeqRef = useRef(0);
+    useEffect(() => {
+        if (!isAdjustDialogOpen || !isAdjustEnabled) return;
+
+        collapseNavigationBar();
+        setIsSnapshotSidebarOpen(false);
+    }, [isAdjustDialogOpen, isAdjustEnabled, collapseNavigationBar]);
+    useEffect(() => {
+        if (isAdjustDialogOpen) void refetchMonthRequests();
+    }, [isAdjustDialogOpen, refetchMonthRequests]);
     const aiAbortControllerRef = useRef<AbortController | null>(null);
     const aiEffectDismissTimerRef = useRef<number | null>(null);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -653,6 +673,11 @@ export function AiAutofill() {
 
     useEffect(() => {
         setHasCompletedAiFill(false);
+        setHasGeneratedSchedule(false);
+        setHasGenerationNotice(false);
+        generationNoticeShownRef.current = false;
+        setRegenerateConfirmOpen(false);
+        setIsAdjustDialogOpen(false);
         setIsSnapshotSidebarOpen(false);
         setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
@@ -736,20 +761,8 @@ export function AiAutofill() {
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
     const hasFilledCells = useMemo(() => hasFilledScheduleCells(editorDoc), [editorDoc]);
-    // 조절(예시·문장 입력·이번 달 요청 목록)은 "조절할 것이 있는지"로 연다. 예전에는 이번 세션에서
-    // 자동 채우기를 돌렸는지(hasCompletedAiFill)만 봤고, 그 값은 화면을 나갔다 들어오면 초기화된다.
-    // 그래서 재진입하면 이미 걸어 둔 요청이 화면에서 사라졌는데, 서버는 자동 채우기(GENERATE)에도
-    // 이 달의 요청을 그대로 싣는다 — 보이지 않는 채로 적용되는 상태가 됐다.
-    //
-    // 이제 이것은 상시 노출이 아니라 조절 결과 한 줄을 표 옆에 남길지를 정한다.
+    // 재진입해도 근무표나 저장된 요청이 있으면 조절 버튼으로 사이드바를 다시 열 수 있다.
     const isAdjustAvailable = isAdjustEnabled && (hasCompletedAiFill || hasFilledCells || monthRequests.length > 0);
-    /**
-     * 첫 자동 채우기는 조절을 묻지 않는다 — 아직 조절할 표가 없고, 신청 근무만 들어 있는 새 달도
-     * "칸이 차 있는 표"로 보이기 때문에 hasFilledCells 로는 첫 채우기와 다시 생성을 구분할 수 없다.
-     * 대신 이번 세션에서 한 번 채웠거나(=버튼이 "다시 생성"·"다시 시도"), 이미 걸어 둔 요청이 있어
-     * 재진입해도 보여 줘야 할 때 연다.
-     */
-    const shouldOpenAdjustDialog = isAdjustEnabled && (hasCompletedAiFill || monthRequests.length > 0);
     const clearableUnlockedCellCount = unprotectedFilledCells.length;
     const editedFilledCellsSinceLastAi = useMemo(
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
@@ -1023,6 +1036,7 @@ export function AiAutofill() {
             markLastAiGeneratedDoc(null);
             resetAiStatus();
             setHasCompletedAiFill(false);
+            setHasGeneratedSchedule(false);
 
             const stateAfterInit = useShiftEditorStore.getState();
 
@@ -1260,7 +1274,12 @@ export function AiAutofill() {
             wardId,
         };
     };
-    const runAiFill = async (readyContext = getAiFillReadyContext(), adjust?: TAutofillAdjustDto, prompt?: string) => {
+    const runAiFill = async (
+        readyContext = getAiFillReadyContext(),
+        adjust?: TAutofillAdjustDto,
+        prompt?: string,
+        action?: {doc: TDutyDoc; idempotencyKey: string},
+    ) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
 
@@ -1288,20 +1307,19 @@ export function AiAutofill() {
 
         try {
             const stateBeforeRequest = useShiftEditorStore.getState();
+            const requestDoc = action?.doc ?? stateBeforeRequest.doc;
             // 조절은 고정·신청 셀에 더해 **마지막 자동완성 이후 사용자가 고친 칸**도 잠근다.
             // 손으로 맞춰 놓은 칸을 칩 하나가 다시 옮기면, 사용자는 방금 한 일이 사라지는 것을 본다.
             const adjustLocked = adjust
-                ? adjustLockedCellKeys(
-                      stateBeforeRequest.doc,
-                      getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
-                  )
+                ? adjustLockedCellKeys(requestDoc, getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current))
                 : undefined;
             const result = await requestAiSchedule({
                 wardId: requestContext.wardId,
                 shiftTeamId: requestContext.shiftTeamId,
                 year: requestContext.year,
                 month: requestContext.month,
-                doc: stateBeforeRequest.doc,
+                doc: requestDoc,
+                ...(action ? {idempotencyKey: action.idempotencyKey} : {}),
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
@@ -1355,10 +1373,28 @@ export function AiAutofill() {
                     );
                 }
 
-                return;
+                if (result.conflict) {
+                    await queryClient.invalidateQueries({
+                        queryKey: [
+                            'ward',
+                            requestContext.wardId,
+                            'shift-team',
+                            requestContext.shiftTeamId,
+                            'schedule-workspace',
+                            requestContext.year,
+                            requestContext.month,
+                        ],
+                    });
+                }
+                return {
+                    error: result.conflict ? t('aiAdjust.conflict') : result.message || t('page.makeShift.aiRefill.adjust.notAllowed'),
+                    requiresReinterpret: result.conflict,
+                };
             }
 
-            if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
+            if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision)
+                return {error: t('aiAdjust.stale'), requiresReinterpret: true};
+            if (adjust && result.response.operationType !== 'ADJUST') return {error: t('aiAdjust.unexpectedOperation')};
 
             if (adjust && isRejectedAdjustResponse(result.response)) {
                 const message = adjustFailureMessage(result.response);
@@ -1368,8 +1404,8 @@ export function AiAutofill() {
                 setAiStatus('error');
                 setIsAdjustDialogOpen(true);
                 toast.error(message);
-
-                return;
+                void refetchMonthRequests();
+                return {error: message};
             }
 
             const goalResult = result.response.goalResults?.[0];
@@ -1393,8 +1429,8 @@ export function AiAutofill() {
                 setIsAdjustDialogOpen(true);
                 setLastGoalResult(goalResult);
                 setAiStatus('success');
-
-                return;
+                void refetchMonthRequests();
+                return {response: result.response, applied: false};
             }
 
             if (adjust && goalResult) {
@@ -1410,25 +1446,33 @@ export function AiAutofill() {
                         : '시간 안에 적용 가능한 목표 조절 후보를 확정하지 못했어요.',
                 );
 
-                return;
+                void refetchMonthRequests();
+                return {error: t('aiAdjust.reviewCandidate')};
             }
 
-            commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
+            if (adjust) {
+                const nextDoc = mergeAdjustPatch(
+                    requestDoc,
+                    result.response.changedCells,
+                    new Map(readyContext.originalShift.wardShiftTypes.map((type) => [type.wardShiftTypeId, type.shortName])),
+                );
+                commands.applyAdjustedDoc(nextDoc);
+            } else {
+                commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
+            }
 
             const docAfterApply = useShiftEditorStore.getState().doc;
 
             markLastAiGeneratedDoc(docAfterApply);
-            setHasAiGeneratedUnsavedChanges(result.response.changedCells.length > 0);
+            setHasAiGeneratedUnsavedChanges(describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length > 0);
             commands.setScheduleValidationFromApi(result.validation);
             // 월간 요청은 일반 자동완성에도 다시 적용된다. 병동 규칙 shadow 안내 역시
             // 조절 직후뿐 아니라 재생성 결과에서 계속 보여야 한다.
             setLastAdjustmentNotices(result.response.adjustmentNotices ?? []);
 
             if (adjust) {
-                // 응답의 changedCells 를 그대로 센다. 서버가 고정·신청 칸을 이미 걸러 낸 "적용된
-                // 칸"이고, 어드민 이력의 변경 칸 수도 같은 값이다 — 토스트와 지표가 어긋나면
-                // "몇 칸 바뀌었나"를 두 숫자로 이야기하게 된다.
-                const movedCount = result.response.changedCells.length;
+                // Include accepted explicit cells and count only changes actually committed to the draft.
+                const movedCount = describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length;
 
                 setLastAdjustChangedCount(movedCount);
                 setLastAdjustFailure(null);
@@ -1440,18 +1484,33 @@ export function AiAutofill() {
                 void syncMonthRequests();
             }
 
-            shouldKeepAiEffectVisible = true;
-            scheduleAiEffectDismiss();
+            shouldKeepAiEffectVisible = !adjust;
+            if (!adjust) scheduleAiEffectDismiss();
             setAiStatus('success');
             setHasCompletedAiFill(true);
 
             if (!adjust) {
+                const generationSucceeded =
+                    result.response.operationType === 'GENERATE' &&
+                    ['ACCEPTED', 'REPAIRED'].includes(result.response.engineResult?.status ?? '');
+
+                if (generationSucceeded) {
+                    setHasGeneratedSchedule(true);
+
+                    if (isAdjustEnabled && !generationNoticeShownRef.current) {
+                        generationNoticeShownRef.current = true;
+                        setHasGenerationNotice(true);
+                        setIsAdjustDialogOpen(true);
+                    }
+                }
+
                 // 요청은 서버 상태라 새로 생성해도 남는다(목록 문구로 그렇게 안내한다).
                 // 바뀐 칸 수와 잔여 위반만 지난 조절의 것이므로 지운다.
                 setLastAdjustChangedCount(null);
                 setLastRuleResults([]);
                 setLastOffGoal(null);
             }
+            return {response: result.response, applied: true};
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
@@ -1509,6 +1568,7 @@ export function AiAutofill() {
         setIsAiBlankPreviewVisible(false);
         markLastAiGeneratedDoc(null);
         setHasCompletedAiFill(false);
+        setHasGeneratedSchedule(false);
         resetAiStatus();
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
     };
@@ -1549,88 +1609,91 @@ export function AiAutofill() {
         void disableMonthRequests([request], readyContext);
     };
     const interpretAdjustText = async (text: string) => {
-        if (wardId == null || currentShiftTeamId == null) throw new Error('not ready');
-
-        return WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
-            text,
-            language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
-            year,
-            month,
-        });
+        if (wardId == null || currentShiftTeamId == null) throw new Error(t('aiAdjust.failed'));
+        const seq = ++interpretSeqRef.current;
+        const revision = useShiftEditorStore.getState().draftRevision;
+        const [result] = await Promise.all([
+            WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
+                text,
+                language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
+                year,
+                month,
+            }),
+            refetchMonthRequests(),
+        ]);
+        if (seq === interpretSeqRef.current) interpretedRevisionRef.current = revision;
+        return result;
     };
-    /**
-     * 카드가 지정한 칸을 표에 직접 반영하고 고정한다.
-     *
-     * 고정까지 하는 이유: 사용자가 "15일은 오프" 라고 말한 칸을 다음 조절이 다시 옮기면
-     * 말한 대로 된 것이 아니다. 고정하면 `adjustLockedCellKeys` 가 그 칸을 잠긴 목록에
-     * 실어 보내므로 엔진도 건드리지 않는다.
-     *
-     * 반영한 칸 수를 돌려준다 — 표에 없는 간호사·날짜는 조용히 건너뛰므로, 호출부가
-     * "하나도 반영되지 않았다"를 사용자에게 말할 수 있어야 한다.
-     */
-    const applyInterpretCells = (cells: TInterpretCell[]): number => {
-        if (cells.length === 0) return 0;
-
-        const {doc} = useShiftEditorStore.getState();
-        const positions: TCellPos[] = [];
-        const byShiftCode = new Map<string, TCellPos[]>();
-
-        for (const {nurseId, date, shiftCode} of cells) {
-            const workerId = Object.keys(doc.workerMeta).find((id) => doc.workerMeta[id]?.nurseId === nurseId);
-
-            if (workerId === undefined) continue;
-
-            const row = doc.rows.findIndex((entry) => entry.workerId === workerId);
-            const col = doc.columns.indexOf(date);
-
-            if (row < 0 || col < 0) continue;
-
-            const position = {row, col};
-
-            positions.push(position);
-            byShiftCode.set(shiftCode, [...(byShiftCode.get(shiftCode) ?? []), position]);
-        }
-
-        if (positions.length === 0) return 0;
-
-        // 근무 코드마다 한 번씩 — setCells 는 한 값만 받는다.
-        byShiftCode.forEach((cellPositions, shiftCode) => commands.setCells(cellPositions, shiftCode, 'user'));
-        commands.setCellsFixed(positions, true, 'user');
-
-        return positions.length;
-    };
-    const handleApplyTextRequests = (
+    const handleApplyTextRequests = async (
         items: TInterpretCardItem[],
         requestText: string,
         strength: TAutofillAdjustStrength,
         llmPrompt?: string,
-    ) => {
-        const requests: TScheduleMonthRequestItem[] = toTextRequestItems(items, requestText);
-        const cells = toInterpretCells(items);
-        // 칸 지정을 먼저 반영한다. 그래야 이어지는 조절이 그 칸을 잠긴 것으로 보고 피해 간다.
-        const appliedCells = applyInterpretCells(cells);
-
-        if (cells.length > 0 && appliedCells === 0) {
-            toast.error(t('page.makeShift.aiRefill.adjust.card.cellNotApplied'));
-        } else if (appliedCells > 0) {
-            toast.success(t('page.makeShift.aiRefill.adjust.card.cellApplied', {count: appliedCells}));
-        }
-
-        if (requests.length === 0 && !llmPrompt) {
-            // 칸 지정만 있었다면 표는 이미 바뀌었다. 다시 풀지 않는다 — 사용자가 부탁한 것은
-            // 그 칸이지 근무표 전체가 아니고, 재해결은 "조절"을 다시 누르면 된다.
-            if (appliedCells > 0) setIsAdjustDialogOpen(false);
-
-            return;
-        }
-
+        actionKey?: string,
+    ): Promise<TAdjustApplyResult> => {
         const readyContext = getAiFillReadyContext();
-
-        if (!readyContext) return;
-
-        setIsAdjustDialogOpen(false);
+        if (!readyContext) throw new Error(t('page.makeShift.aiRefill.cannotAutofillYet'));
+        const before = useShiftEditorStore.getState();
+        if (interpretedRevisionRef.current !== before.draftRevision)
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+        const latestRequests = await refetchMonthRequests();
+        if (!latestRequests) throw new Error(t('aiAdjust.requestsFailed'));
+        const activeFingerprint = (requests: TScheduleMonthRequestRes[]) =>
+            JSON.stringify(requests.filter((entry) => entry.status === 'ACTIVE'));
+        if (activeFingerprint(latestRequests) !== activeFingerprint(monthRequests)) throw new Error(t('aiAdjust.requestsChanged'));
+        if (useShiftEditorStore.getState().draftRevision !== before.draftRevision)
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+        const currentScope = currentAiContextRef.current;
+        if (
+            currentScope.wardId !== readyContext.wardId ||
+            currentScope.shiftTeamId !== readyContext.shiftTeamId ||
+            currentScope.year !== year ||
+            currentScope.month !== month
+        )
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+        if (
+            items.some(({item}) =>
+                item.kind === 'CELL'
+                    ? item.nurseId == null || !item.date || !item.shiftCode
+                    : item.kind === 'CELL_SET' && (!item.nurseIds?.length || !item.dates?.length || !item.shiftCode),
+            )
+        )
+            throw new Error(t('aiAdjust.invalidCell'));
+        const requests = toTextRequestItems(items, requestText);
+        let prepared: TDutyDoc;
+        try {
+            prepared = prepareAdjustDoc(
+                before.doc,
+                toInterpretCells(items),
+                readyContext.originalShift.wardShiftTypes.map((type) => type.shortName),
+            );
+        } catch (error) {
+            throw new Error(t(error instanceof Error && error.message === 'LOCKED_CELL' ? 'aiAdjust.lockedCell' : 'aiAdjust.invalidCell'));
+        }
+        const fingerprint = JSON.stringify({
+            actionKey,
+            requests,
+            strength,
+            llmPrompt,
+            doc: prepared,
+            revision: before.draftRevision,
+            rulesHash: readyContext.rulesHash,
+        });
+        if (adjustActionRef.current?.fingerprint !== fingerprint) adjustActionRef.current = {fingerprint, key: crypto.randomUUID()};
         setLastAdjustChangedCount(null);
-        void runAiFill(readyContext, {strength, ...(requests.length > 0 ? {requests} : {})}, llmPrompt);
+        const result = await runAiFill(readyContext, {strength, requests}, llmPrompt, {
+            doc: prepared,
+            idempotencyKey: adjustActionRef.current.key,
+        });
+        if (!result || 'error' in result)
+            throw Object.assign(new Error(result?.error ?? t('aiAdjust.failed')), {requiresReinterpret: result?.requiresReinterpret});
+        const after = useShiftEditorStore.getState();
+        return {
+            response: result.response,
+            applied: result.applied,
+            changes: result.applied ? describeAdjustChanges(before.doc, after.doc) : [],
+            ...(result.applied && before.history !== after.history ? {undoRevision: after.draftRevision} : {}),
+        };
     };
     const applyGoalCandidate = async () => {
         if (!goalCandidateReview?.response.goalCandidate || !goalCandidateReview.originalShift) return;
@@ -1846,29 +1909,25 @@ export function AiAutofill() {
 
         runAiFillWithDecision(readyContext, forceFixedDecision);
     };
-    /**
-     * 빈 표의 첫 채우기는 곧장 돌린다. 조절할 것이 생긴 뒤부터는 대화상자를 먼저 연다 —
-     * 같은 조건으로 한 번 더 돌리는 것만이 답인 경우는 드물고, 그때 사용자가 하고 싶은
-     * 말("오프를 더 공평하게")을 받을 자리가 여기다. 대화상자의 "다시 생성"이 예전 동작 그대로다.
-     */
+    // Generation and adjustment have separate entry points; an empty adjustment never regenerates.
     const handleAiFill = () => {
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
 
-        if (shouldOpenAdjustDialog) {
-            setIsAdjustDialogOpen(true);
-
-            return;
-        }
-
         startAiFill(readyContext);
     };
-    const handleAdjustDialogRegenerate = () => {
+    const handleRequestRegenerate = () => {
+        if (!getAiFillReadyContext()) return;
+
+        setRegenerateConfirmOpen(true);
+    };
+    const handleConfirmRegenerate = () => {
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
 
+        setRegenerateConfirmOpen(false);
         setIsAdjustDialogOpen(false);
         startAiFill(readyContext, true);
     };
@@ -2157,6 +2216,17 @@ export function AiAutofill() {
                     onRedo={() => commands.redo()}
                     onOpenSnapshotHistory={openSnapshotSidebar}
                     onAiFill={handleAiFill}
+                    onRegenerate={handleRequestRegenerate}
+                    isAdjustEnabled={isAdjustEnabled}
+                    hasGeneratedSchedule={hasGeneratedSchedule}
+                    onAdjust={
+                        isAdjustAvailable
+                            ? () => {
+                                  setIsSnapshotSidebarOpen(false);
+                                  setIsAdjustDialogOpen(true);
+                              }
+                            : undefined
+                    }
                     isAiGenerating={isAiGenerating}
                     aiStatus={aiStatus}
                     hasCompletedAiFill={hasCompletedAiFill}
@@ -2177,8 +2247,7 @@ export function AiAutofill() {
                     />
                 )}
 
-                {/* 조절 도구는 대화상자로 옮겼지만 결과 한 줄은 표 옆에 남긴다 — 무엇이 바뀌었는지는
-                    표를 보는 동안 읽어야 하고, 대화상자는 조절이 실행되는 순간 닫히기 때문이다. */}
+                {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
                     <AiAdjustResultNote
                         changedCount={lastAdjustChangedCount}
@@ -2270,9 +2339,12 @@ export function AiAutofill() {
             </div>
 
             <AiAdjustDialog
-                open={isAdjustDialogOpen}
+                key={`${wardId}:${currentShiftTeamId}:${year}:${month}`}
+                open={isAdjustDialogOpen && isAdjustEnabled}
                 onClose={() => setIsAdjustDialogOpen(false)}
-                onRegenerate={handleAdjustDialogRegenerate}
+                onRegenerate={handleRequestRegenerate}
+                hasGeneratedSchedule={hasGeneratedSchedule}
+                generationCompleted={hasGenerationNotice}
                 disabled={isAiGenerating || disablingRequestId !== null}
                 textInputRef={adjustTextInputRef}
                 onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
@@ -2280,6 +2352,18 @@ export function AiAutofill() {
                 onApply={handleApplyTextRequests}
                 goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
                 requests={monthRequests}
+                requestsLoading={monthRequestsLoading}
+                requestsError={monthRequestsError}
+                onRetryRequests={() => void refetchMonthRequests()}
+                currentRevision={useShiftEditorStore.getState().draftRevision}
+                shiftCodes={orderedShift?.wardShiftTypes.map((type) => type.shortName)}
+                onUndo={(revision) => {
+                    if (useShiftEditorStore.getState().draftRevision !== revision || isAiGenerating) return false;
+                    commands.undo();
+                    commands.clearScheduleValidationFromApi();
+                    setLastAdjustChangedCount(null);
+                    return true;
+                }}
                 disablingRequestId={disablingRequestId}
                 onDisableRequest={handleDisableMonthRequest}
             />
@@ -2295,6 +2379,15 @@ export function AiAutofill() {
                 onRenameSnapshot={handleRenameSnapshot}
                 onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
+            />
+            <ConfirmActionDialog
+                open={regenerateConfirmOpen}
+                title={t('aiAdjust.regenerateTitle')}
+                description={t('aiAdjust.regenerateDescription')}
+                confirmLabel={t('aiAdjust.regenerating')}
+                onClose={() => setRegenerateConfirmOpen(false)}
+                onConfirm={handleConfirmRegenerate}
+                zIndex={1500}
             />
             <AiFillDecisionDialog
                 open={isAiFillDecisionPreviewOpen}
@@ -2398,7 +2491,7 @@ export function AiAutofill() {
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
-            {isAiGenerating || isAiLoadingOverlayFinishing ? (
+            {(isAiGenerating || isAiLoadingOverlayFinishing) && !isAdjusting ? (
                 <AiAutofillLoadingOverlay
                     isAdjusting={isAdjusting}
                     isFinishing={isAiLoadingOverlayFinishing}

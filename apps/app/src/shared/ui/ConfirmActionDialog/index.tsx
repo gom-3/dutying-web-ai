@@ -22,6 +22,7 @@ interface IConfirmActionDialogProps {
     icon?: ReactNode;
     /** 선택한 영역은 보여주되, 모달 뒤의 입력은 막는다. */
     spotlightSelector?: string;
+    zIndex?: number;
 }
 
 type TSpotlightRect = {
@@ -52,7 +53,7 @@ function getSpotlightRect(selector: string): TSpotlightRect | null {
     return right > left && bottom > top ? {left, top, right, bottom} : null;
 }
 
-function ConfirmActionDialogOverlay({spotlightSelector}: Pick<IConfirmActionDialogProps, 'spotlightSelector'>) {
+function ConfirmActionDialogOverlay({spotlightSelector, zIndex}: Pick<IConfirmActionDialogProps, 'spotlightSelector' | 'zIndex'>) {
     const [spotlightRect, setSpotlightRect] = useState<TSpotlightRect | null>(null);
     const measureSpotlight = useCallback(() => {
         if (!spotlightSelector) {
@@ -104,7 +105,10 @@ function ConfirmActionDialogOverlay({spotlightSelector}: Pick<IConfirmActionDial
     };
 
     return (
-        <Dialog.Overlay className="fixed inset-0 z-[1100] overflow-hidden bg-transparent">
+        <Dialog.Overlay
+            className="fixed inset-0 z-[1100] overflow-hidden bg-transparent"
+            style={zIndex === undefined ? undefined : {zIndex}}
+        >
             {spotlightRect ? (
                 <div
                     aria-hidden="true"
@@ -142,6 +146,7 @@ function ConfirmActionDialog({
     confirmButtonVariant = 'default',
     icon,
     spotlightSelector,
+    zIndex,
 }: IConfirmActionDialogProps) {
     const {t} = useTypedTranslation();
     const resolvedCancelLabel = cancelLabel ?? t('shared.confirmActionDialog.cancel');
@@ -151,8 +156,11 @@ function ConfirmActionDialog({
     return (
         <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
             <Dialog.Portal container={portalContainer}>
-                <ConfirmActionDialogOverlay spotlightSelector={spotlightSelector} />
-                <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]">
+                <ConfirmActionDialogOverlay spotlightSelector={spotlightSelector} zIndex={zIndex} />
+                <Dialog.Content
+                    style={zIndex === undefined ? undefined : {zIndex: zIndex + 1}}
+                    className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]"
+                >
                     <div className="flex items-start justify-between gap-4">
                         {icon ? (
                             <div className="shrink-0" aria-hidden="true">

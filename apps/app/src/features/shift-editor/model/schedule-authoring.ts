@@ -59,11 +59,12 @@ export function buildAutofillDTO(params: {
     doc: TDutyDoc;
     originalShift: TShift;
     prompt?: string;
+    idempotencyKey?: string;
     lockedCellKeys?: string[];
     target?: TAutofillDTO['target'];
     adjust?: TAutofillDTO['adjust'];
 }): TAutofillDTO {
-    const {year, month, draftRevision, rulesHash, doc, originalShift, prompt, lockedCellKeys, target, adjust} = params;
+    const {year, month, draftRevision, rulesHash, doc, originalShift, prompt, lockedCellKeys, target, adjust, idempotencyKey} = params;
 
     return {
         year,
@@ -75,8 +76,8 @@ export function buildAutofillDTO(params: {
         cells: docToSnapshotCellsDTO(doc, originalShift),
         carryOverCells: docToCarryOverCellsDTO(doc, originalShift, year, month),
         lockedCellKeys: lockedCellKeys ?? docToLockedCellKeys(doc),
-        target,
-        adjust,
+        ...(adjust ? {adjust} : {target}),
+        ...(idempotencyKey ? {idempotencyKey} : {}),
         returnMode: 'PATCH',
     };
 }

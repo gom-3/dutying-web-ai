@@ -159,13 +159,14 @@ describe('MakeShiftPageView layout', () => {
         expect(pageRoot).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(pageFrame).toHaveClass('min-w-0');
         expect(pageFrame).toHaveClass(
-            'transition-[padding-right]',
+            'make-shift-page-frame',
             'pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)]',
             'lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)]',
             'min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)]',
         );
         expect(pageFrame).not.toHaveClass('min-w-[1510px]');
-        expect(contentCard).toHaveClass('overflow-visible');
+        expect(contentCard).toHaveClass('make-shift-content-card', 'overflow-visible');
+        expect(contentCard).not.toHaveClass('transition-[margin-right]');
         expect(contentCard).not.toHaveClass('transition-[padding-right]');
         expect(contentCard).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(contentCard).not.toHaveClass('overflow-hidden');

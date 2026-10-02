@@ -51,13 +51,19 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
     try {
         const response = await getAiScheduleProvider().generate(request);
 
-        if (response.changedCells.length === 0) {
-            // 조절에서 바뀐 칸이 없는 것은 "이미 그 방향으로 최적"이라는 뜻이지 실패가 아니다.
-            // 실패로 처리하면 사용자는 칩을 누를 때마다 빨간 토스트를 보게 된다.
-            if (isAdjustNoChange(request, response)) {
-                return {ok: true, response, validation: response.validation, noChange: true};
-            }
+        if (request.adjust && response.operationType !== 'ADJUST') {
+            return {ok: false, message: i18n.t('aiAdjust.unexpectedOperation')};
+        }
 
+        if (request.adjust && response.engineResult?.solver?.reason === 'time_limit_no_solution' && !response.goalCandidate) {
+            return {ok: false, message: firstUnmetInstruction(response)!};
+        }
+
+        if (response.changedCells.length === 0 && isAdjustNoChange(request, response)) {
+            return {ok: true, response, validation: response.validation, noChange: true};
+        }
+
+        if (response.changedCells.length === 0 && !request.adjust) {
             const message = firstUnmetInstruction(response);
 
             if (message) return {ok: false, message};
@@ -69,6 +75,6 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
 
         if (isAdjustNotAllowed(error)) return {ok: false, message: '', notAllowed: true};
 
-        return {ok: false, message: toErrorMessage(error)};
+        return {ok: false, message: toErrorMessage(error), ...((error as {code?: number})?.code === 409 ? {conflict: true} : {})};
     }
 }

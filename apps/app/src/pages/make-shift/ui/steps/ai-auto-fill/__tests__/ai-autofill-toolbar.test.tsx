@@ -1,3 +1,4 @@
+import type {ComponentProps} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {AiAutofillToolbar} from '../ai-autofill-toolbar';
@@ -6,6 +7,9 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
         t: (key: string) =>
             ({
+                'aiAdjust.autofill': '자동채우기',
+                'aiAdjust.regenerating': '다시 자동채우기',
+                'aiAdjust.title': 'AI 근무 수정하기',
                 'page.makeShift.aiRefill.action': 'Refill',
                 'page.makeShift.aiRefill.confirm': 'Confirm',
                 'page.makeShift.aiRefill.firstFill': 'Autofill',
@@ -54,6 +58,7 @@ function renderToolbar({
     onToggleFaults = vi.fn(),
     onRequestClearUnlockedCells = vi.fn(),
     canClearUnlockedCells = true,
+    overrides = {},
 }: {
     showFaults?: boolean;
     onFixedShiftsAttentionStart?: () => void;
@@ -63,6 +68,7 @@ function renderToolbar({
     onToggleFaults?: () => void;
     onRequestClearUnlockedCells?: () => void;
     canClearUnlockedCells?: boolean;
+    overrides?: Partial<ComponentProps<typeof AiAutofillToolbar>>;
 } = {}) {
     render(
         <AiAutofillToolbar
@@ -93,11 +99,44 @@ function renderToolbar({
             canConfirm
             onSaveSnapshot={vi.fn()}
             isSavingSnapshot={false}
+            {...overrides}
         />,
     );
 }
 
 describe('AiAutofillToolbar', () => {
+    it('labels the first generation for enabled accounts and separates regeneration from adjustment', async () => {
+        const user = userEvent.setup();
+        const onAiFill = vi.fn();
+        renderToolbar({overrides: {isAdjustEnabled: true, onAiFill}});
+
+        await user.click(screen.getByRole('button', {name: '자동채우기'}));
+        expect(onAiFill).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
+    });
+
+    it('offers a secondary regeneration action after generation that invokes the confirmation entry point', async () => {
+        const user = userEvent.setup();
+        const onAiFill = vi.fn();
+        const onRegenerate = vi.fn();
+        const onAdjust = vi.fn();
+        renderToolbar({overrides: {isAdjustEnabled: true, hasGeneratedSchedule: true, onAiFill, onRegenerate, onAdjust}});
+
+        expect(screen.queryByRole('button', {name: '자동채우기'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '다시 자동채우기'}));
+        expect(onRegenerate).toHaveBeenCalledTimes(1);
+        expect(onAiFill).not.toHaveBeenCalled();
+        expect(onAdjust).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'AI 근무 수정하기'}));
+        expect(onAdjust).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps the existing generation action for accounts without adjustment access', () => {
+        renderToolbar({overrides: {isAdjustEnabled: false, hasGeneratedSchedule: true, hasCompletedAiFill: true, onRegenerate: vi.fn()}});
+        expect(screen.getByRole('button', {name: 'Refill'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
+    });
+
     it('renders compact support tools', () => {
         renderToolbar();
 

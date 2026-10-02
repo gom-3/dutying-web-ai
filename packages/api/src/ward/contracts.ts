@@ -525,7 +525,7 @@ export type TAutofillTargetDto = {
 };
 
 /** 조절 축과 값. 가중치가 아니라 축이다 — 숫자의 의미는 엔진만 안다. */
-export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX';
+export type TAutofillAdjustKnob = 'OFF_BALANCE' | 'CLUSTERING' | 'SENIORITY_MIX' | 'TWO_DAY_OFF_BALANCE';
 
 /** 얼마나 바꿔도 되는지. 전체 셀의 10/20/40%가 하드 상한이다. */
 export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
@@ -534,7 +534,7 @@ export type TAutofillAdjustStrength = 'LIGHT' | 'NORMAL' | 'STRONG';
  * KNOB(방향 축) / RULE(이번 달 제약조건) / OFF_GOAL(월 오프 목표) / CELL(표의 한 칸 지정).
  *
  * CELL 은 규칙이 아니라 표의 한 자리라 이번 달 요청으로 **저장되지 않는다** — 카드에서
- * 수락하면 그 칸을 그 근무로 두고 고정하는 것으로 끝난다. `adjust.requests` 로 보내면
+ * 수락하면 실행용 draft에서 지정·고정하고 ADJUST 성공 후 표에 반영한다. `adjust.requests` 로 보내면
  * 서버가 거절한다.
  */
 export type TScheduleMonthRequestKind = 'KNOB' | 'RULE' | 'OFF_GOAL' | 'GOAL' | 'CELL' | 'CELL_SET';
@@ -606,6 +606,8 @@ export type TScheduleMonthRequestItem = {
      * "내가 안 한 말이 규칙이 됐다"가 되고, 그게 이 기능의 신뢰를 깎는다.
      */
     assumedSlots?: string[];
+    requiresConfirmation?: boolean;
+    confirmationReasons?: ('ASSUMED_VALUE' | 'RECURRING_SCOPE' | 'MULTI_MONTH_SCOPE')[];
 };
 
 /** 저장된 이번 달 요청 한 건. */
@@ -776,10 +778,14 @@ export type TAutofillDTO = {
     adjust?: TAutofillAdjustDto;
     lockedCellKeys?: string[];
     returnMode?: 'PATCH';
+    /** 동일한 사용자 액션의 네트워크 재시도에는 같은 키를 보낸다. */
+    idempotencyKey?: string;
 };
 
 export type TAutofillResponse = {
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
+    approvable?: boolean;
+    blockingViolations?: TScheduleViolationDto[];
     draftRevision: number;
     resultType: 'PATCH';
     changedCells: TSnapshotCellDTO[];
