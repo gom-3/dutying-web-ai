@@ -70,6 +70,7 @@ describe('apiAiScheduleProvider', () => {
             draftRevision: 3,
             rulesHash: 'sha256:rules-v1',
             prompt: '야간 줄여줘',
+            idempotencyKey: 'same-user-action',
         });
 
         expect(autofillSchedule).toHaveBeenCalledWith(
@@ -78,6 +79,7 @@ describe('apiAiScheduleProvider', () => {
             expect.objectContaining({
                 year: 2026,
                 month: 6,
+                idempotencyKey: 'same-user-action',
                 draftRevision: 3,
                 rulesHash: 'sha256:rules-v1',
                 prompt: '야간 줄여줘',

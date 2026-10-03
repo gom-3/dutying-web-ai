@@ -12,6 +12,7 @@ export type TAiScheduleRequest = {
     draftRevision: number;
     rulesHash: string;
     prompt?: string;
+    idempotencyKey?: string;
     /** 값이 있으면 조절이다. doc 이 곧 시드이므로 재생성처럼 칸을 비우지 않고 그대로 보낸다. */
     adjust?: TAutofillAdjustDto;
     /** 조절에서만 넘긴다. 고정·신청 셀에 더해 마지막 자동완성 이후 사용자가 고친 칸까지 포함. */
@@ -35,6 +36,7 @@ export type TAiScheduleResult =
           ok: false;
           message: string;
           canceled?: boolean;
+          conflict?: boolean;
           /** 서버가 이 계정에 조절을 열어 주지 않았다. 사용자 잘못이 아니므로 문구를 가른다. */
           notAllowed?: boolean;
       };

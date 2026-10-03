@@ -440,6 +440,30 @@ export function useShiftEditorCommands() {
         resetAutofilled: (source: TTxSource = 'user') => {
             cmdClearUnlockedCells(source);
         },
+        /** Commit accepted explicit cells and the server patch as one undoable adjustment. */
+        applyAdjustedDoc: (nextDoc: TDutyDoc) => {
+            const {doc, history, selection} = getState();
+            const changed: TSetCellsOp['cells'] = [];
+            const fixedDelta: NonNullable<TSetCellsOp['fixedDelta']> = [];
+            doc.rows.forEach((row, rowIndex) => {
+                const nextRow = nextDoc.rows.find((entry) => entry.workerId === row.workerId);
+                if (!nextRow) return;
+                doc.columns.forEach((date, col) => {
+                    const key = `${row.workerId}|${date}`;
+                    const prev = row.cells[col] ?? null;
+                    const next = nextRow.cells[nextDoc.columns.indexOf(date)] ?? null;
+                    if (prev !== next) changed.push({row: rowIndex, col, prev, next});
+                    if (Boolean(doc.fixedCells[key]) !== Boolean(nextDoc.fixedCells[key])) fixedDelta.push({key, prev: Boolean(doc.fixedCells[key]), next: Boolean(nextDoc.fixedCells[key])});
+                });
+            });
+            if (!changed.length && !fixedDelta.length) return;
+            // Separate operations let undo remove these pins before restoring the cells.
+            const tx: TTransaction<TOperation> = {ops: [{kind: 'setCells', cells: changed}, {kind: 'setCells', cells: [], fixedDelta}], source: 'ai', timestamp: Date.now()};
+            const nextHistory = pushHistory(history, {tx, inverseOps: invertOps(tx.ops), selectionBefore: selection, selectionAfter: selection});
+            setDoc(nextDoc);
+            setHistory(nextHistory);
+            persistDocImmediate(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
+        },
         applyChangedCells: (changedCells: TSnapshotCellDTO[], originalShift: TShift, source: TTxSource = 'ai') => {
             const {doc, history, selection} = getState();
             const {idToType} = buildWardShiftTypeMaps(originalShift);

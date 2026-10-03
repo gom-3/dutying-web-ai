@@ -1,120 +1,162 @@
-import type {TAutofillAdjustStrength, TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutying/api/ward';
-import * as Dialog from '@radix-ui/react-dialog';
+import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutying/api/ward';
 import {X} from 'lucide-react';
-import type {Ref} from 'react';
-import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
+import {useEffect, useLayoutEffect, useRef, type Ref} from 'react';
+import {createPortal} from 'react-dom';
+import divider from '@/shared/assets/images/ai-adjust/divider.svg';
+import headerIcon from '@/shared/assets/images/ai-adjust/header.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
-import AiAdjustExamples from './ai-adjust-examples';
-import AiAdjustTextInput, {type TAdjustTextInputHandle} from './ai-adjust-text-input';
+import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
 import AiMonthRequestList from './ai-month-request-list';
 
 type TProps = {
     open: boolean;
     onClose: () => void;
-    /** 조절 없이 그대로 다시 생성한다. 방향을 말하지 않고 한 번 더 돌려 보는 것이 가장 흔한 경로다. */
     onRegenerate: () => void;
+    hasGeneratedSchedule?: boolean;
+    generationCompleted?: boolean;
     disabled: boolean;
     textInputRef: Ref<TAdjustTextInputHandle>;
-    /** 예시를 누르면 입력창에 채워질 뿐 바로 실행되지 않는다. */
     onPickExample: (sentence: string) => void;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
-    onApply: (items: TInterpretCardItem[], requestText: string, strength: TAutofillAdjustStrength, llmPrompt?: string) => void;
+    onApply: TAdjustApply;
     goalNurses: {nurseId: number; name: string}[];
+    shiftCodes?: string[];
     requests: TScheduleMonthRequestRes[];
+    requestsLoading?: boolean;
+    requestsError?: boolean;
+    onRetryRequests?: () => void;
+    onUndo?: (revision: number) => Promise<boolean> | boolean;
+    currentRevision?: number;
     disablingRequestId: number | null;
     onDisableRequest: (request: TScheduleMonthRequestRes) => void;
 };
 
-/**
- * "다시 생성"을 누르면 먼저 여기부터 묻는다 — 그냥 한 번 더 돌릴지, 방향을 말하고 돌릴지.
- *
- * 조절은 근무표를 다시 만드는 순간에만 쓰는 도구인데, 예시·입력창·요청 목록을 표 위에
- * 늘 펼쳐 두면 정작 봐야 할 표가 밀린다. 그래서 상시 노출을 걷어내고 이 대화상자로 모았다.
- * 실제로 다시 푸는 순간에는 대화상자를 닫는다 — 결과는 표에서 봐야 하고, 무엇이 바뀌었는지는
- * 표 위의 결과 한 줄(AiAdjustResultNote)이 이어서 말해 준다.
- */
+// Reserve the sheet width once in the page frame, leaving the schedule the remaining viewport.
+const AI_ADJUST_SIDEBAR_WIDTH_PX = 407;
+
+/** Non-modal: the schedule stays visible and usable while the conversation is open. */
 export default function AiAdjustDialog({
     open,
     onClose,
     onRegenerate,
+    hasGeneratedSchedule = false,
+    generationCompleted = false,
     disabled,
     textInputRef,
-    onPickExample,
     interpret,
     onApply,
     goalNurses,
+    shiftCodes,
     requests,
+    requestsLoading,
+    requestsError,
+    onRetryRequests,
+    onUndo,
+    currentRevision,
     disablingRequestId,
     onDisableRequest,
 }: TProps) {
     const {t} = useTypedTranslation();
-    const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
+    const panel = useRef<HTMLElement>(null);
 
-    return (
-        <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-            <Dialog.Portal container={portalContainer}>
-                <Dialog.Overlay className="fixed inset-0 z-[1100] bg-[#111827]/58 p-3 sm:p-5" />
-                <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] flex max-h-[calc(100vh-24px)] w-[calc(100vw-24px)] max-w-[720px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[26px] bg-white sm:max-h-[calc(100vh-40px)] sm:rounded-[30px]">
-                    <div className="shrink-0 bg-[#FAF8FF] px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-5">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <Dialog.Title className="font-apple text-[22px] leading-7 font-semibold tracking-[-0.025em] text-sub-1 sm:text-[25px] sm:leading-8">
-                                    {t('page.makeShift.aiRefill.adjust.dialog.title')}
-                                </Dialog.Title>
-                                <Dialog.Description className="mt-1.5 font-apple text-[14px] leading-5.5 whitespace-pre-line text-gray-3 sm:text-[15px] sm:leading-6">
-                                    {t('page.makeShift.aiRefill.adjust.dialog.description')}
-                                </Dialog.Description>
-                            </div>
-                            <Dialog.Close asChild>
-                                <button
-                                    type="button"
-                                    className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none"
-                                    aria-label={t('shared.confirmActionDialog.close')}
-                                >
-                                    <X className="size-4" strokeWidth={2.2} />
-                                </button>
-                            </Dialog.Close>
-                        </div>
-                    </div>
+    useLayoutEffect(() => {
+        const root = document.documentElement;
 
-                    <div className="min-h-0 flex-1 overflow-y-auto bg-white py-4">
-                        <AiAdjustExamples disabled={disabled} onPick={onPickExample} />
-                        <AiAdjustTextInput
-                            ref={textInputRef}
-                            disabled={disabled}
-                            interpret={interpret}
-                            onApply={onApply}
-                            goalNurses={goalNurses}
-                        />
+        root.dataset.makeAiAdjustOpen = String(open);
+        if (open) root.style.setProperty('--make-ai-adjust-sidebar-width', `${AI_ADJUST_SIDEBAR_WIDTH_PX}px`);
+        else root.style.removeProperty('--make-ai-adjust-sidebar-width');
+
+        return () => {
+            delete root.dataset.makeAiAdjustOpen;
+            root.style.removeProperty('--make-ai-adjust-sidebar-width');
+        };
+    }, [open]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const previous = document.activeElement;
+
+        panel.current?.focus();
+
+        return () => {
+            if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+        };
+    }, [open]);
+
+    // Keep the sheet above notification and ward-chat layers, outside page stacking contexts.
+    return createPortal(
+        <div className="pointer-events-none fixed inset-0 z-[1400] overflow-hidden">
+            <aside
+                ref={panel}
+                data-state={open ? 'open' : 'closed'}
+                aria-hidden={!open}
+                inert={!open}
+                role="dialog"
+                aria-modal="false"
+                aria-label={t('aiAdjust.title')}
+                tabIndex={-1}
+                onKeyDown={(event) => {
+                    event.stopPropagation();
+
+                    if (event.key === 'Escape') onClose();
+                }}
+                onPaste={(event) => event.stopPropagation()}
+                className="ai-adjust-sidebar pointer-events-auto absolute top-0 right-0 flex h-dvh w-[407px] max-w-full flex-col overflow-hidden border-l-[1.5px] border-gray-6 bg-white shadow-[-5px_0_30px_#ede9f5] outline-none"
+            >
+                <header className="relative flex h-24 shrink-0 items-center gap-3 px-[28px]">
+                    <img src={headerIcon} alt="" width={36} height={36} className="shrink-0" />
+                    <h2 className="text-[20px] leading-6 font-semibold text-gray-3">{t('aiAdjust.title')}</h2>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label={t('aiAdjust.close')}
+                        className="ml-auto grid size-8 shrink-0 place-items-center rounded-lg text-gray-4 hover:bg-gray-7 hover:text-main-1"
+                    >
+                        <X className="size-[18px]" />
+                    </button>
+                    <img src={divider} alt="" className="absolute bottom-0 left-0 max-w-none" />
+                </header>
+                <AiAdjustTextInput
+                    ref={textInputRef}
+                    disabled={disabled}
+                    generationCompleted={generationCompleted}
+                    interpret={interpret}
+                    onApply={onApply}
+                    goalNurses={goalNurses}
+                    shiftCodes={shiftCodes}
+                    requests={requests}
+                    requestsLoading={requestsLoading}
+                    requestsError={requestsError}
+                    onRetryRequests={onRetryRequests}
+                    onUndo={onUndo}
+                    currentRevision={currentRevision}
+                    requestList={
                         <AiMonthRequestList
                             requests={requests}
                             disabled={disabled}
                             disablingRequestId={disablingRequestId}
                             onDisable={onDisableRequest}
+                            isLoading={requestsLoading}
+                            isError={requestsError}
+                            onRetry={onRetryRequests}
                         />
-                    </div>
-
-                    <div className="flex shrink-0 items-center justify-end gap-2 bg-[#F8F7FB] px-5 py-4 sm:px-7 sm:py-5">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="text-gray-2 inline-flex min-h-11 cursor-pointer items-center rounded-[11px] bg-gray-7 px-4 font-apple text-[14px] font-semibold transition-colors hover:bg-gray-6"
-                        >
-                            {t('page.makeShift.aiRefill.adjust.dialog.close')}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={disabled}
-                            onClick={onRegenerate}
-                            className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[13px] bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] px-6 font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white transition-[filter] hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                            <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="size-4 shrink-0 object-contain" />
-                            {t('page.makeShift.aiRefill.adjust.dialog.regenerate')}
-                        </button>
-                    </div>
-                </Dialog.Content>
-            </Dialog.Portal>
-        </Dialog.Root>
+                    }
+                    conversationActions={
+                        hasGeneratedSchedule && (
+                            <button
+                                type="button"
+                                disabled={disabled}
+                                onClick={onRegenerate}
+                                className="px-4 text-[12px] text-gray-4 underline disabled:opacity-50"
+                            >
+                                {t('aiAdjust.regenerating')}
+                            </button>
+                        )
+                    }
+                />
+            </aside>
+        </div>,
+        document.body,
     );
 }

@@ -11,6 +11,7 @@ import {
     vi as generatedVi,
     zh as generatedZh,
 } from '@/shared/i18n/resources.generated';
+import {aiAdjustKo, aiAdjustEn} from '@/shared/locales/ai-adjust';
 import {annualLeaveKo, annualLeaveEn} from '@/shared/locales/annual-leave';
 import {en} from '@/shared/locales/en';
 import {ja} from '@/shared/locales/ja';
@@ -125,12 +126,12 @@ const supplementalKo = {
     },
 } as const;
 const resources = {
-    ko: {translation: {...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo), annualLeave: annualLeaveKo}},
-    en: {translation: {...fillMissingTranslations(generatedEn, en), annualLeave: annualLeaveEn}},
-    ja: {translation: {...fillMissingTranslations(generatedJa, ja), annualLeave: annualLeaveEn}},
-    zh: {translation: {...fillMissingTranslations(generatedZh, zh), annualLeave: annualLeaveEn}},
-    th: {translation: {...fillMissingTranslations(generatedTh, th), annualLeave: annualLeaveEn}},
-    vi: {translation: {...fillMissingTranslations(generatedVi, vi), annualLeave: annualLeaveEn}},
+    ko: {translation: {...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo), annualLeave: annualLeaveKo, aiAdjust: aiAdjustKo}},
+    en: {translation: {...fillMissingTranslations(generatedEn, en), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
+    ja: {translation: {...fillMissingTranslations(generatedJa, ja), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
+    zh: {translation: {...fillMissingTranslations(generatedZh, zh), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
+    th: {translation: {...fillMissingTranslations(generatedTh, th), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
+    vi: {translation: {...fillMissingTranslations(generatedVi, vi), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
 } as const;
 const syncDocumentLocale = (lng?: string) => {
     const language = normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;

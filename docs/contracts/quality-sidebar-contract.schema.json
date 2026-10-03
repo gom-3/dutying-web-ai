@@ -1,0 +1,382 @@
+{
+  "$defs": {
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "KNOWN",
+            "UNKNOWN"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Value"
+        },
+        "reasons": {
+          "items": {
+            "enum": [
+              "BASELINE_INCOMPLETE",
+              "BASELINE_CONTEXT_UNAVAILABLE",
+              "CANDIDATE_UNAVAILABLE",
+              "CANDIDATE_CONTEXT_UNAVAILABLE",
+              "OFF_TARGET_UNAVAILABLE",
+              "NO_COMPARABLE_NIGHT_GROUP",
+              "NO_FRAGMENTATION_OPPORTUNITIES",
+              "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE",
+              "NO_VALID_PREFERENCE_REQUESTS",
+              "RULE_VALIDATION_INCOMPLETE",
+              "NEXT_MONTH_RECOVERY_UNKNOWN",
+              "PRIOR_MONTH_RECOVERY_UNKNOWN",
+              "BASELINE_HARD_VIOLATIONS"
+            ],
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "state",
+        "value"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "MetricChange": {
+      "additionalProperties": false,
+      "properties": {
+        "metricId": {
+          "enum": [
+            "offTargetDeviation",
+            "nightDeviation",
+            "fragmentationRate",
+            "minimumRecoveryHours",
+            "preferenceSatisfactionRate",
+            "changedCells"
+          ],
+          "title": "Metricid",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "days",
+            "shifts",
+            "ratio",
+            "hours",
+            "cells"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "QUALITY",
+            "CHANGE_COST"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "betterDirection": {
+          "enum": [
+            "LOWER",
+            "HIGHER"
+          ],
+          "title": "Betterdirection",
+          "type": "string"
+        },
+        "before": {
+          "$ref": "#/$defs/Measurement"
+        },
+        "after": {
+          "$ref": "#/$defs/Measurement"
+        },
+        "delta": {
+          "$ref": "#/$defs/Measurement"
+        },
+        "change": {
+          "enum": [
+            "IMPROVED",
+            "WORSENED",
+            "UNCHANGED",
+            "UNKNOWN"
+          ],
+          "title": "Change",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metricId",
+        "unit",
+        "kind",
+        "betterDirection",
+        "before",
+        "after",
+        "delta",
+        "change"
+      ],
+      "title": "MetricChange",
+      "type": "object"
+    },
+    "MetricHarm": {
+      "additionalProperties": false,
+      "properties": {
+        "metricId": {
+          "enum": [
+            "offTargetDeviation",
+            "nightDeviation",
+            "fragmentationRate",
+            "minimumRecoveryHours",
+            "preferenceSatisfactionRate",
+            "changedCells"
+          ],
+          "title": "Metricid",
+          "type": "string"
+        },
+        "comparableNurseCount": {
+          "title": "Comparablenursecount",
+          "type": "integer"
+        },
+        "unknownNurseIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unknownnurseids",
+          "type": "array"
+        },
+        "worsenedNurseIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Worsenednurseids",
+          "type": "array"
+        },
+        "worsenedNurseCount": {
+          "title": "Worsenednursecount",
+          "type": "integer"
+        },
+        "maxWorsening": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Maxworsening"
+        },
+        "netDelta": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Netdelta"
+        }
+      },
+      "required": [
+        "metricId",
+        "comparableNurseCount",
+        "unknownNurseIds",
+        "worsenedNurseIds",
+        "worsenedNurseCount",
+        "maxWorsening",
+        "netDelta"
+      ],
+      "title": "MetricHarm",
+      "type": "object"
+    },
+    "NurseQualityChange": {
+      "additionalProperties": false,
+      "properties": {
+        "shiftNurseId": {
+          "title": "Shiftnurseid",
+          "type": "string"
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/MetricChange"
+          },
+          "title": "Metrics",
+          "type": "array"
+        }
+      },
+      "required": [
+        "shiftNurseId",
+        "metrics"
+      ],
+      "title": "NurseQualityChange",
+      "type": "object"
+    },
+    "SidebarSafety": {
+      "additionalProperties": false,
+      "properties": {
+        "candidateValidationStatus": {
+          "enum": [
+            "VALIDATED",
+            "INVALID",
+            "UNVERIFIED",
+            "UNKNOWN"
+          ],
+          "title": "Candidatevalidationstatus",
+          "type": "string"
+        },
+        "hardViolationCount": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Hardviolationcount"
+        },
+        "preexistingLockedViolationCount": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Preexistinglockedviolationcount"
+        },
+        "isApprovalDecision": {
+          "const": false,
+          "default": false,
+          "title": "Isapprovaldecision",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "candidateValidationStatus",
+        "hardViolationCount",
+        "preexistingLockedViolationCount"
+      ],
+      "title": "SidebarSafety",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contractVersion": {
+      "const": "quality-sidebar-v1",
+      "default": "quality-sidebar-v1",
+      "title": "Contractversion",
+      "type": "string"
+    },
+    "evidenceVersion": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Evidenceversion"
+    },
+    "comparisonTarget": {
+      "const": "CANDIDATE",
+      "default": "CANDIDATE",
+      "title": "Comparisontarget",
+      "type": "string"
+    },
+    "engineStatus": {
+      "title": "Enginestatus",
+      "type": "string"
+    },
+    "candidateAccepted": {
+      "title": "Candidateaccepted",
+      "type": "boolean"
+    },
+    "comparisonState": {
+      "enum": [
+        "KNOWN",
+        "PARTIAL",
+        "UNKNOWN",
+        "BLOCKED"
+      ],
+      "title": "Comparisonstate",
+      "type": "string"
+    },
+    "observedRelation": {
+      "enum": [
+        "CANDIDATE_BETTER",
+        "BASELINE_BETTER",
+        "TRADEOFF",
+        "TIE",
+        "UNKNOWN"
+      ],
+      "title": "Observedrelation",
+      "type": "string"
+    },
+    "byNurse": {
+      "items": {
+        "$ref": "#/$defs/NurseQualityChange"
+      },
+      "title": "Bynurse",
+      "type": "array"
+    },
+    "harm": {
+      "items": {
+        "$ref": "#/$defs/MetricHarm"
+      },
+      "title": "Harm",
+      "type": "array"
+    },
+    "unknownReasons": {
+      "items": {
+        "enum": [
+          "BASELINE_INCOMPLETE",
+          "BASELINE_CONTEXT_UNAVAILABLE",
+          "CANDIDATE_UNAVAILABLE",
+          "CANDIDATE_CONTEXT_UNAVAILABLE",
+          "OFF_TARGET_UNAVAILABLE",
+          "NO_COMPARABLE_NIGHT_GROUP",
+          "NO_FRAGMENTATION_OPPORTUNITIES",
+          "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "RULE_VALIDATION_INCOMPLETE",
+          "NEXT_MONTH_RECOVERY_UNKNOWN",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN",
+          "BASELINE_HARD_VIOLATIONS"
+        ],
+        "type": "string"
+      },
+      "title": "Unknownreasons",
+      "type": "array"
+    },
+    "safety": {
+      "$ref": "#/$defs/SidebarSafety"
+    }
+  },
+  "required": [
+    "evidenceVersion",
+    "engineStatus",
+    "candidateAccepted",
+    "comparisonState",
+    "observedRelation",
+    "byNurse",
+    "harm",
+    "unknownReasons",
+    "safety"
+  ],
+  "title": "QualitySidebarSummary",
+  "type": "object"
+}

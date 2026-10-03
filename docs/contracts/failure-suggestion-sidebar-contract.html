@@ -1,0 +1,189 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>실패 제안 사이드바 API 계약</title><style>body{max-width:1000px;margin:40px auto;padding:0 20px;font:16px/1.65 system-ui;color:#172b4d}pre{background:#f3f6fa;padding:16px;overflow:auto;font-size:13px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccd5df;padding:8px;text-align:left}</style></head><body><h1>failure-suggestion-sidebar-contract</h1><p>2026-10-03. 실제 DTO·컨트롤러·솔버·저장 서비스 기준 계약. 아래 JSON은 필드 모양을 보여 주는 합성 예시이며 실제 운영 응답이 아니다. cells는 예시 한 칸만 표시했으며 호출 시 현재 편집 월의 전체 원본과 현재 행 순서, 고정 셀, 이전 달 문맥을 보낸다. 식별자·해시는 응답 값을 그대로 사용한다.</p><h2>조회·선택 endpoint</h2><p>POST /wards/280/shift-teams/491/schedule/autofill. 인증된 현재 병동 관리자 경로이며 기존 인증 수단을 사용한다. adjust가 있어야 ADJUST이며 target과 동시에 보내지 않는다. 실패 제안 전용 GET·선택 POST·operation polling endpoint는 없다. 첫 조절 실패 응답의 failure.suggestions로 조회하고, 같은 API에 새 idempotencyKey와 선택 식별자를 보내 재계산한다. engineResult.suggestions는 동일 후보의 엔진 부가 정보다. 화면은 failure.suggestions를 한 번만 표시한다.</p><h2>첫 요청과 실패 응답</h2><pre>{
+  &quot;year&quot;: 2026,
+  &quot;month&quot;: 10,
+  &quot;draftRevision&quot;: 8,
+  &quot;idempotencyKey&quot;: &quot;adjust-original-001&quot;,
+  &quot;returnMode&quot;: &quot;PATCH&quot;,
+  &quot;cells&quot;: [
+    {
+      &quot;shiftNurseId&quot;: 101,
+      &quot;date&quot;: &quot;2026-10-01&quot;,
+      &quot;wardShiftTypeId&quot;: 4,
+      &quot;shiftCode&quot;: &quot;O&quot;,
+      &quot;fixed&quot;: false
+    }
+  ],
+  &quot;rowOrder&quot;: [
+    {
+      &quot;shiftNurseId&quot;: 101,
+      &quot;displayOrder&quot;: 0
+    }
+  ],
+  &quot;lockedCellKeys&quot;: [],
+  &quot;carryOverCells&quot;: [],
+  &quot;adjust&quot;: {
+    &quot;requests&quot;: [
+      {
+        &quot;type&quot;: &quot;OFF_GOAL&quot;,
+        &quot;operation&quot;: &quot;SET_TARGET&quot;,
+        &quot;source&quot;: &quot;USER_INPUT&quot;,
+        &quot;targetOff&quot;: 12,
+        &quot;lifetime&quot;: &quot;MONTH&quot;,
+        &quot;origin&quot;: &quot;CHIP&quot;
+      }
+    ],
+    &quot;knobs&quot;: {},
+    &quot;strength&quot;: &quot;NORMAL&quot;
+  }
+}</pre><pre>{
+  &quot;operationType&quot;: &quot;ADJUST&quot;,
+  &quot;draftRevision&quot;: 8,
+  &quot;resultType&quot;: &quot;PATCH&quot;,
+  &quot;applicable&quot;: false,
+  &quot;approvable&quot;: false,
+  &quot;changedCells&quot;: [],
+  &quot;validationTarget&quot;: &quot;BASELINE&quot;,
+  &quot;failure&quot;: {
+    &quot;reasonCode&quot;: &quot;HARD_RULE_CONFLICT&quot;,
+    &quot;certainty&quot;: &quot;KNOWN&quot;,
+    &quot;message&quot;: &quot;현재 입력과 필수 조건으로는 요청한 변경이 불가능한 것으로 확인됐어요. 원인을 특정한 것은 아니에요.&quot;,
+    &quot;suggestions&quot;: [
+      {
+        &quot;suggestionId&quot;: &quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;,
+        &quot;baseRevision&quot;: 8,
+        &quot;inputDigest&quot;: &quot;bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;kind&quot;: &quot;NUMERIC_GOAL&quot;,
+            &quot;ruleId&quot;: &quot;adjust.offGoal&quot;,
+            &quot;path&quot;: &quot;adjust.offGoal.targetOff&quot;,
+            &quot;oldValue&quot;: 12,
+            &quot;proposedValue&quot;: 11,
+            &quot;reason&quot;: &quot;사용자가 지정한 오프 목표를 낮춰 필수 규칙을 유지한 대안을 확인합니다.&quot;
+          }
+        ],
+        &quot;verificationStatus&quot;: &quot;VERIFIED_FEASIBLE&quot;,
+        &quot;constraintEvidence&quot;: {
+          &quot;inputDigest&quot;: &quot;cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc&quot;,
+          &quot;originalVerdict&quot;: &quot;INFEASIBLE&quot;,
+          &quot;verifiedConstraintIds&quot;: [],
+          &quot;minimalConflict&quot;: false,
+          &quot;independentHardValidationPassed&quot;: true
+        },
+        &quot;impact&quot;: {
+          &quot;affectedNurseCount&quot;: 1,
+          &quot;changedCellCount&quot;: 1,
+          &quot;changesByNurse&quot;: {
+            &quot;101&quot;: 1
+          },
+          &quot;maxIndividualChangedCells&quot;: 1,
+          &quot;individualDeterioration&quot;: {
+            &quot;101&quot;: {
+              &quot;offDaysLost&quot;: 1,
+              &quot;nightDaysAdded&quot;: 0,
+              &quot;newUnmetPreferences&quot;: 0,
+              &quot;total&quot;: 1
+            }
+          },
+          &quot;maxIndividualDeterioration&quot;: 1,
+          &quot;unmetPreferences&quot;: 0,
+          &quot;metricDefinitionVersion&quot;: &quot;failure-impact-v1-off-night-preference&quot;,
+          &quot;evaluationStatus&quot;: &quot;OFF_NIGHT_REQUEST_DELTA&quot;
+        },
+        &quot;expiresAt&quot;: &quot;2026-10-03T05:15:00+00:00&quot;,
+        &quot;rankingPolicyVersion&quot;: &quot;failure-suggestions-v2-individual-impact&quot;,
+        &quot;applyEnabled&quot;: true
+      }
+    ]
+  },
+  &quot;engineResult&quot;: {
+    &quot;status&quot;: &quot;INFEASIBLE&quot;,
+    &quot;suggestions&quot;: [
+      {
+        &quot;suggestionId&quot;: &quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;,
+        &quot;baseRevision&quot;: 8,
+        &quot;inputDigest&quot;: &quot;bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&quot;,
+        &quot;changes&quot;: [
+          {
+            &quot;kind&quot;: &quot;NUMERIC_GOAL&quot;,
+            &quot;ruleId&quot;: &quot;adjust.offGoal&quot;,
+            &quot;path&quot;: &quot;adjust.offGoal.targetOff&quot;,
+            &quot;oldValue&quot;: 12,
+            &quot;proposedValue&quot;: 11,
+            &quot;reason&quot;: &quot;사용자가 지정한 오프 목표를 낮춰 필수 규칙을 유지한 대안을 확인합니다.&quot;
+          }
+        ],
+        &quot;verificationStatus&quot;: &quot;VERIFIED_FEASIBLE&quot;,
+        &quot;constraintEvidence&quot;: {
+          &quot;inputDigest&quot;: &quot;cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc&quot;,
+          &quot;originalVerdict&quot;: &quot;INFEASIBLE&quot;,
+          &quot;verifiedConstraintIds&quot;: [],
+          &quot;minimalConflict&quot;: false,
+          &quot;independentHardValidationPassed&quot;: true
+        },
+        &quot;impact&quot;: {
+          &quot;affectedNurseCount&quot;: 1,
+          &quot;changedCellCount&quot;: 1,
+          &quot;changesByNurse&quot;: {
+            &quot;101&quot;: 1
+          },
+          &quot;maxIndividualChangedCells&quot;: 1,
+          &quot;individualDeterioration&quot;: {
+            &quot;101&quot;: {
+              &quot;offDaysLost&quot;: 1,
+              &quot;nightDaysAdded&quot;: 0,
+              &quot;newUnmetPreferences&quot;: 0,
+              &quot;total&quot;: 1
+            }
+          },
+          &quot;maxIndividualDeterioration&quot;: 1,
+          &quot;unmetPreferences&quot;: 0,
+          &quot;metricDefinitionVersion&quot;: &quot;failure-impact-v1-off-night-preference&quot;,
+          &quot;evaluationStatus&quot;: &quot;OFF_NIGHT_REQUEST_DELTA&quot;
+        },
+        &quot;expiresAt&quot;: &quot;2026-10-03T05:15:00+00:00&quot;,
+        &quot;rankingPolicyVersion&quot;: &quot;failure-suggestions-v2-individual-impact&quot;,
+        &quot;applyEnabled&quot;: true
+      }
+    ]
+  }
+}</pre><p>HTTP 200이라도 applicable=false이면 변경 셀을 적용하지 않는다. certainty=KNOWN은 불가능 판정의 확실성이며 개별 원인을 찾았다는 뜻이 아니다. TIME_LIMIT은 가능한지 미확정이다. suggestions가 없거나 빈 배열이면 대안 없음의 증명이 아니다.</p><h2>선택 요청</h2><pre>{
+  &quot;year&quot;: 2026,
+  &quot;month&quot;: 10,
+  &quot;draftRevision&quot;: 8,
+  &quot;idempotencyKey&quot;: &quot;adjust-selection-001&quot;,
+  &quot;returnMode&quot;: &quot;PATCH&quot;,
+  &quot;cells&quot;: [
+    {
+      &quot;shiftNurseId&quot;: 101,
+      &quot;date&quot;: &quot;2026-10-01&quot;,
+      &quot;wardShiftTypeId&quot;: 4,
+      &quot;shiftCode&quot;: &quot;O&quot;,
+      &quot;fixed&quot;: false
+    }
+  ],
+  &quot;rowOrder&quot;: [
+    {
+      &quot;shiftNurseId&quot;: 101,
+      &quot;displayOrder&quot;: 0
+    }
+  ],
+  &quot;lockedCellKeys&quot;: [],
+  &quot;carryOverCells&quot;: [],
+  &quot;adjust&quot;: {
+    &quot;requests&quot;: [
+      {
+        &quot;type&quot;: &quot;OFF_GOAL&quot;,
+        &quot;operation&quot;: &quot;SET_TARGET&quot;,
+        &quot;source&quot;: &quot;USER_INPUT&quot;,
+        &quot;targetOff&quot;: 12,
+        &quot;lifetime&quot;: &quot;MONTH&quot;,
+        &quot;origin&quot;: &quot;CHIP&quot;
+      }
+    ],
+    &quot;knobs&quot;: {},
+    &quot;strength&quot;: &quot;NORMAL&quot;
+  },
+  &quot;failureSuggestionId&quot;: &quot;aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&quot;,
+  &quot;failureSuggestionDigest&quot;: &quot;bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb&quot;
+}</pre><p>실패 요청의 모든 필드를 유지하고 idempotencyKey만 새 값으로 바꾼 뒤 failureSuggestionId·failureSuggestionDigest를 추가한다. changes·proposedValue·applyEnabled를 요청에 보내지 않는다. 사용자가 표나 요청을 수정했으면 이전 후보 선택을 중단하고 최신 표로 새 조절을 실행한다. USER_INPUT 목표의 targetOff=12는 선택 본문에서도 12로 유지하며 서버가 저장된 변경으로 11을 계산한다.</p><h2>선택 활성화 조건</h2><p>verificationStatus=VERIFIED_FEASIBLE AND applyEnabled=true AND 현재 revision=baseRevision AND 현재 시각&lt;expiresAt일 때만 선택 버튼을 활성화한다. 최종 권한 판단은 서버가 한다. 미검증·REJECTED 후보는 설명만 표시하고 선택하지 않는다. 엔진 단독 응답의 applyEnabled=false는 정상이며 Spring의 계정별 Redis 등록 후에만 true다. null 영향값은 평가 안 됨으로 표시한다.</p><h2>성공·실패와 operation 연결</h2><p>선택은 원본 실패 작업과 별개인 새 ADJUST operation이다. 클라이언트 카드에 원본 액션 키·suggestionId·선택 액션 키를 함께 보관한다. 서버 operation ID를 요청하거나 polling하지 않는다. 내부 durable operation은 계정·범위·새 idempotencyKey로 식별되고 선택 trace에는 selectedSuggestionId가 남는다.</p><p>성공은 HTTP 200, operationType=ADJUST, resultType=PATCH, applicable=true, approvable=true, failure=null이다. changedCells를 응답 draftRevision과 현재 revision이 같은 경우만 반영한다. 응답이 늦게 도착했는데 표가 바뀌었으면 반영하지 않는다. 서버의 월 요청 변경은 검증 성공 시 이미 커밋되므로 최신 월 요청 목록을 다시 읽는다. 선택 자체는 근무표 확정·게시가 아니다.</p><p>goalCandidate가 제공되는 목표 조절은 기존 GET /goal-candidates/{candidateId}, POST /goal-candidates/{candidateId}/apply·undo 흐름을 유지한다. 모든 실패 제안에 goalCandidate가 생기는 것은 아니다. numeric OFF_GOAL 제안과 목표 후보 ID를 혼동하지 않는다. 최종 저장·확정은 기존 /snapshots·/confirm 경로를 사용한다.</p><p>재검증 결과가 REJECTED·INFEASIBLE·TIME_LIMIT 또는 Spring HARD 실패이면 HTTP 200 실패 결과이며 applicable=false, changedCells=[]이다. 요청 변경·새 AI 초안은 저장하지 않는다. 선택 중 스냅샷·병동 규칙·행 순서·근무 분류·ACTIVE 월 요청이 바뀌면 저장 직전에 차단한다. 저장 및 operation 완료 영수증은 같은 트랜잭션이고 오류 시 함께 롤백된다.</p><h2>오류와 재시도</h2><table><tr><th>HTTP / code</th><th>처리</th></tr><tr><td>400 INVALID_PARAMETER</td><td>만료·제안 누락·revision/digest 불일치·이미 다른 키로 선택·후보 저장소 읽기 실패. message를 표시하고 최신 입력으로 제안을 다시 생성한다. 현재 계약은 세부 제안 오류 코드를 별도로 제공하지 않는다.</td></tr><tr><td>403 SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED 또는 권한 오류</td><td>조절 허용 대상 및 현재 병동 권한을 다시 확인한다. 후보와 완료 replay에도 권한 검사를 수행한다.</td></tr><tr><td>409 IDEMPOTENCY_KEY_REUSED</td><td>같은 액션 키로 다른 본문을 보냈다. 기존 키에 본문을 바꾸지 않는다.</td></tr><tr><td>409 SCHEDULE_AUTOFILL_IN_PROGRESS</td><td>진행 표시를 유지하고 잠시 뒤 동일 선택 키·동일 본문으로 재시도한다.</td></tr><tr><td>409 SCHEDULE_ADJUST_CONTEXT_CHANGED</td><td>오래된 카드의 선택을 중단하고 최신 표·요청을 다시 읽는다.</td></tr><tr><td>429 SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED</td><td>기존 사용량 안내를 사용하고 제한 해제 후 새 액션을 실행한다.</td></tr><tr><td>503 SCHEDULE_AUTOFILL_COORDINATION_UNAVAILABLE</td><td>중복 방어 또는 durable operation이 중단됐다. 자동으로 새 키를 만들어 재실행하지 않는다. 동일 키 조회에서 ABORTED이면 최신 상태 확인 후 새 실패 제안을 생성한다.</td></tr></table><p>네트워크 응답 유실은 동일 선택 키·동일 본문으로 POST를 재시도한다. 성공 완료 결과는 중복 쓰기 없이 복원된다. 후보는 한 선택 키에 결합되므로 같은 후보를 다른 키로 재선택하지 않는다. 만료 뒤에는 동일 키도 후보 사전검사에서 거절될 수 있으므로 최신 상태를 다시 조회한다. 새로고침 후 저장한 실패 카드 역시 만료·권한·revision을 확인한다. 후보 저장소 유실 시 다시 조절해 후보를 생성한다.</p><pre>{"code":"INVALID_PARAMETER","message":"만료되었거나 입력이 변경된 제안입니다. 현재 표에서 다시 계산해 주세요."}</pre><p>오류 공통 응답에는 messageKey/displayPolicy/locale/requestId/traceId가 추가될 수 있다. 위 예시는 code·message 최소 모양이며 message 문자열에 분기 로직을 의존하지 않는다.</p><h2>설정·제한</h2><p>LLM FAILURE_SUGGESTIONS_ENABLED와 Spring SCHEDULE_FAILURE_SUGGESTIONS_APPLY_ENABLED는 기본 false. 후보 최대 3개, 추가 탐색 최대 5초(최종 검증 지연 별도), TTL 최대 15분. 단일 월·구조화 요청만 적용 후보를 등록하며 원문 prompt·새 다중 월 적용은 지원하지 않는다. 법적/필수·인원·고정 셀·기존 병동 규칙을 가리는 요청은 수정하지 않는다. 추가 LLM 호출·실패 제안 전용 DDL 없음. 선행 조절 operation migration은 통합 브랜치에서 V58이다.</p><h2>최신 develop 통합 검증</h2><p>Spring develop 42d19ec2와 선행 조절 ceb8e620, LLM develop 16473f9를 병합했다. 서버 충돌은 현재 문맥 재검사·원자적 최종 저장·제안 전용 재검증을 모두 유지해 해결했다. 최신 develop에는 V56 Java 널톡 보정과 V56 사진 가져오기 SQL이 함께 있어 migration 유일성 검사 실패가 남는다. 배포 이력이 있는 다른 작업의 migration은 임의 변경하지 않았다. 근무표 관련 테스트 319개가 통과했고 migration 유일성 검사 1개만 위 develop 중복으로 실패했다. 최초 엔진 병렬 검사에서는 시간 제한 기반 목적함수 테스트 3개가 실패해 단독 재검증했고, LOW 우선순위 검사는 제한 시간 내 우연한 동일 결과 대신 실제 모델 페널티 가중치와 위반 보고를 검증하도록 수정했다. 최종 엔진 전체 실행은 144개 통과·시간 제한 기반 목적함수 3개 실패였고, 실패한 3개는 개별 재실행에서 모두 통과했다(25.35초). 제안 안전성·계약 123개도 별도 실행에서 모두 통과했다(29.29초). 로컬 전체 실행의 시간 민감성은 남아 있으므로 무조건 전체 통과로 기록하지 않는다. 최신 SHA의 CI 상태는 PR 본문에 기록한다. 운영 배포·Web 화면 수정 없음.</p></body></html>

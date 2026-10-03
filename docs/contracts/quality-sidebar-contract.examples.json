@@ -1,0 +1,3031 @@
+{
+  "contractVersion": "quality-sidebar-v1",
+  "examples": [
+    {
+      "id": "individual-harm-tradeoff",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "ACCEPTED",
+        "candidateAccepted": true,
+        "comparisonState": "PARTIAL",
+        "observedRelation": "TRADEOFF",
+        "byNurse": [
+          {
+            "shiftNurseId": "a",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": -3.0,
+                  "reasons": []
+                },
+                "change": "IMPROVED"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "b",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": -3.0,
+                  "reasons": []
+                },
+                "change": "IMPROVED"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "c",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": -3.0,
+                  "reasons": []
+                },
+                "change": "IMPROVED"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "d",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 6.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 6.0,
+                  "reasons": []
+                },
+                "change": "WORSENED"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 4,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [
+              "d"
+            ],
+            "worsenedNurseCount": 1,
+            "maxWorsening": 6.0,
+            "netDelta": -3.0
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 4,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 0.0
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 4,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 0.0
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 3,
+            "unknownNurseIds": [
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 0.0
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          }
+        ],
+        "unknownReasons": [
+          "BASELINE_INCOMPLETE",
+          "NEXT_MONTH_RECOVERY_UNKNOWN",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN",
+          "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+        ],
+        "safety": {
+          "candidateValidationStatus": "VALIDATED",
+          "hardViolationCount": 0,
+          "preexistingLockedViolationCount": 0,
+          "isApprovalDecision": false
+        }
+      }
+    },
+    {
+      "id": "generation-with-empty-baseline",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "ACCEPTED",
+        "candidateAccepted": true,
+        "comparisonState": "UNKNOWN",
+        "observedRelation": "UNKNOWN",
+        "byNurse": [
+          {
+            "shiftNurseId": "a",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "b",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "c",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "d",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 6.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          }
+        ],
+        "unknownReasons": [
+          "BASELINE_INCOMPLETE",
+          "NEXT_MONTH_RECOVERY_UNKNOWN",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN"
+        ],
+        "safety": {
+          "candidateValidationStatus": "VALIDATED",
+          "hardViolationCount": 0,
+          "preexistingLockedViolationCount": 0,
+          "isApprovalDecision": false
+        }
+      }
+    },
+    {
+      "id": "rejected-visible-candidate",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "REJECTED",
+        "candidateAccepted": false,
+        "comparisonState": "BLOCKED",
+        "observedRelation": "CANDIDATE_BETTER",
+        "byNurse": [
+          {
+            "shiftNurseId": "n",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 1.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 15.0,
+                  "reasons": []
+                },
+                "change": "IMPROVED"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 1,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 15.0
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          }
+        ],
+        "unknownReasons": [
+          "BASELINE_INCOMPLETE",
+          "NO_COMPARABLE_NIGHT_GROUP",
+          "NO_FRAGMENTATION_OPPORTUNITIES",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "OFF_TARGET_UNAVAILABLE",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN"
+        ],
+        "safety": {
+          "candidateValidationStatus": "VALIDATED",
+          "hardViolationCount": 0,
+          "preexistingLockedViolationCount": 0,
+          "isApprovalDecision": false
+        }
+      }
+    },
+    {
+      "id": "preference-and-change-cost",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "REPAIRED",
+        "candidateAccepted": true,
+        "comparisonState": "PARTIAL",
+        "observedRelation": "TRADEOFF",
+        "byNurse": [
+          {
+            "shiftNurseId": "n",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 0.5,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.5,
+                  "reasons": []
+                },
+                "change": "WORSENED"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 1.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 1.0,
+                  "reasons": []
+                },
+                "change": "IMPROVED"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "change": "WORSENED"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 1,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [
+              "n"
+            ],
+            "worsenedNurseCount": 1,
+            "maxWorsening": 0.5,
+            "netDelta": 0.5
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 1,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 1.0
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 1,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [
+              "n"
+            ],
+            "worsenedNurseCount": 1,
+            "maxWorsening": 3.0,
+            "netDelta": 3.0
+          }
+        ],
+        "unknownReasons": [
+          "NEXT_MONTH_RECOVERY_UNKNOWN",
+          "NO_COMPARABLE_NIGHT_GROUP",
+          "OFF_TARGET_UNAVAILABLE",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN",
+          "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+        ],
+        "safety": {
+          "candidateValidationStatus": "VALIDATED",
+          "hardViolationCount": 0,
+          "preexistingLockedViolationCount": 0,
+          "isApprovalDecision": false
+        }
+      }
+    },
+    {
+      "id": "accepted-no-change",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "ACCEPTED",
+        "candidateAccepted": true,
+        "comparisonState": "PARTIAL",
+        "observedRelation": "TIE",
+        "byNurse": [
+          {
+            "shiftNurseId": "n",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "OFF_TARGET_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_COMPARABLE_NIGHT_GROUP"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_FRAGMENTATION_OPPORTUNITIES"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 1.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "KNOWN",
+                  "value": 1.0,
+                  "reasons": []
+                },
+                "delta": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "change": "UNCHANGED"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 1,
+            "unknownNurseIds": [],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": 0.0,
+            "netDelta": 0.0
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "n"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          }
+        ],
+        "unknownReasons": [
+          "BASELINE_INCOMPLETE",
+          "NO_COMPARABLE_NIGHT_GROUP",
+          "NO_FRAGMENTATION_OPPORTUNITIES",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "OFF_TARGET_UNAVAILABLE",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN"
+        ],
+        "safety": {
+          "candidateValidationStatus": "VALIDATED",
+          "hardViolationCount": 0,
+          "preexistingLockedViolationCount": 0,
+          "isApprovalDecision": false
+        }
+      }
+    },
+    {
+      "id": "invisible-rejected-candidate",
+      "qualitySidebar": {
+        "contractVersion": "quality-sidebar-v1",
+        "evidenceVersion": "schedule-quality-v3",
+        "comparisonTarget": "CANDIDATE",
+        "engineStatus": "REJECTED",
+        "candidateAccepted": false,
+        "comparisonState": "BLOCKED",
+        "observedRelation": "UNKNOWN",
+        "byNurse": [
+          {
+            "shiftNurseId": "a",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "b",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "c",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 3.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 16.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          },
+          {
+            "shiftNurseId": "d",
+            "metrics": [
+              {
+                "metricId": "offTargetDeviation",
+                "unit": "days",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "nightDeviation",
+                "unit": "shifts",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "fragmentationRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "KNOWN",
+                  "value": 0.0,
+                  "reasons": []
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "minimumRecoveryHours",
+                "unit": "hours",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE",
+                    "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "preferenceSatisfactionRate",
+                "unit": "ratio",
+                "kind": "QUALITY",
+                "betterDirection": "HIGHER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE",
+                    "NO_VALID_PREFERENCE_REQUESTS"
+                  ]
+                },
+                "change": "UNKNOWN"
+              },
+              {
+                "metricId": "changedCells",
+                "unit": "cells",
+                "kind": "CHANGE_COST",
+                "betterDirection": "LOWER",
+                "before": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE"
+                  ]
+                },
+                "after": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "delta": {
+                  "state": "UNKNOWN",
+                  "value": null,
+                  "reasons": [
+                    "BASELINE_INCOMPLETE",
+                    "CANDIDATE_UNAVAILABLE"
+                  ]
+                },
+                "change": "UNKNOWN"
+              }
+            ]
+          }
+        ],
+        "harm": [
+          {
+            "metricId": "offTargetDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "nightDeviation",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "fragmentationRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "minimumRecoveryHours",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "preferenceSatisfactionRate",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          },
+          {
+            "metricId": "changedCells",
+            "comparableNurseCount": 0,
+            "unknownNurseIds": [
+              "a",
+              "b",
+              "c",
+              "d"
+            ],
+            "worsenedNurseIds": [],
+            "worsenedNurseCount": 0,
+            "maxWorsening": null,
+            "netDelta": null
+          }
+        ],
+        "unknownReasons": [
+          "BASELINE_INCOMPLETE",
+          "CANDIDATE_UNAVAILABLE",
+          "NEXT_MONTH_RECOVERY_UNKNOWN",
+          "NO_VALID_PREFERENCE_REQUESTS",
+          "PRIOR_MONTH_RECOVERY_UNKNOWN",
+          "RECOVERY_TIMES_OR_TRANSITIONS_UNAVAILABLE"
+        ],
+        "safety": {
+          "candidateValidationStatus": "UNKNOWN",
+          "hardViolationCount": null,
+          "preexistingLockedViolationCount": null,
+          "isApprovalDecision": false
+        }
+      }
+    }
+  ]
+}

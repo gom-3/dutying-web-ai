@@ -16,6 +16,7 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         draftRevision,
         rulesHash,
         prompt,
+        idempotencyKey,
         adjust,
         lockedCellKeys,
         signal,
@@ -28,6 +29,7 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
             doc,
             originalShift,
             prompt,
+            idempotencyKey,
             adjust,
             lockedCellKeys,
         });
@@ -60,7 +62,7 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
                 if (e.code !== 404 && e.serverCode !== 'COMMERCIAL_NOT_ENABLED') throw error;
             }
         }
-        const key = pending?.fingerprint === fingerprint ? pending.key : crypto.randomUUID();
+        const key = idempotencyKey ?? (pending?.fingerprint === fingerprint ? pending.key : crypto.randomUUID());
         sessionStorage.setItem(storageKey, JSON.stringify({key, fingerprint}));
         try {
             const result = await WardAPI.autofillSchedule(wardId, shiftTeamId, {...dto, idempotencyKey: key}, {signal});

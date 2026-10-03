@@ -13,6 +13,7 @@ const KNOB_RANGES: Record<TAutofillAdjustKnob, [number, number]> = {
     OFF_BALANCE: [0, 2],
     CLUSTERING: [-1, 1],
     SENIORITY_MIX: [0, 1],
+    TWO_DAY_OFF_BALANCE: [0, 1],
 };
 
 function isKnob(value: unknown): value is TAutofillAdjustKnob {

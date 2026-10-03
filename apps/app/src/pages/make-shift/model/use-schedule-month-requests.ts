@@ -18,6 +18,7 @@ type TScope = {
 export function useScheduleMonthRequests({wardId, shiftTeamId, year, month, enabled}: TScope) {
     const [requests, setRequests] = useState<TScheduleMonthRequestRes[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isError, setIsError] = useState(false);
     const seqRef = useRef(0);
     const scopeKey = `${wardId ?? 'none'}:${shiftTeamId ?? 'none'}:${year}:${month}`;
     const refetch = useCallback(async () => {
@@ -27,6 +28,7 @@ export function useScheduleMonthRequests({wardId, shiftTeamId, year, month, enab
 
         seqRef.current = seq;
         setIsLoading(true);
+        setIsError(false);
 
         try {
             const result = await WardAPI.getScheduleMonthRequests(wardId, shiftTeamId, year, month);
@@ -34,8 +36,10 @@ export function useScheduleMonthRequests({wardId, shiftTeamId, year, month, enab
             if (seqRef.current !== seq) return;
 
             setRequests(result.requests ?? []);
+
+            return result.requests ?? [];
         } catch {
-            // 목록을 못 읽어도 조절 자체는 된다. 칩은 서버 상태를 모르는 채로 남을 뿐이다.
+            if (seqRef.current === seq) setIsError(true);
         } finally {
             if (seqRef.current === seq) setIsLoading(false);
         }
@@ -46,10 +50,14 @@ export function useScheduleMonthRequests({wardId, shiftTeamId, year, month, enab
         setRequests([]);
 
         void refetch();
+
+        return () => {
+            seqRef.current += 1;
+        };
         // scopeKey 가 바뀔 때만 새로 읽는다. refetch 는 그 값들로 만들어지므로 같은 조건이다.
     }, [scopeKey, enabled]);
 
-    return {requests, isLoading, refetch};
+    return {requests, isLoading, isError, refetch};
 }
 
 /**

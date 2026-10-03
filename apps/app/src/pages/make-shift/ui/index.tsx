@@ -137,12 +137,12 @@ export const MakeShiftPageView = ({wardCode = ''}: TMakeShiftPageViewProps) => {
 
     return (
         <div className={cn('min-h-full w-full', isStepping ? 'overflow-visible' : 'overflow-x-hidden')}>
-            <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 transition-[padding-right] duration-300 ease-out min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10 lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4">
+            <div className="make-shift-page-frame mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10 lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4">
                 <MakeShiftHeader onBeforeContextChange={runWithAiAutofillExitGuard} />
 
                 <div
                     className={cn(
-                        'mt-2 flex flex-1 flex-col rounded-[18px] bg-white',
+                        'make-shift-content-card mt-2 flex min-w-0 flex-1 flex-col rounded-[18px] bg-white',
                         isStepping ? 'overflow-visible' : 'min-h-0 overflow-hidden',
                     )}
                 >

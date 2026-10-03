@@ -1,5 +1,19 @@
 # @dutying/app
 
+## 1.2.0
+
+### Minor Changes
+
+- c0027c2: 랜딩 페이지를 사전 렌더링하고 다국어 모바일 이미지와 미리보기를 개선합니다. 근무표 생성·조정 흐름, 병동 설정, 프로필 및 간호사 관리 화면을 업데이트합니다.
+
+### Patch Changes
+
+- 5634787: 온보딩 제약 후보의 확인 상태와 원본 강도 권고를 서버에 전달해, 확인 전 안전 규칙이 HARD로 저장되지 않도록 개선합니다.
+- Updated dependencies [5634787]
+    - @dutying/api@1.2.0
+    - @dutying/domain@1.2.0
+    - @dutying/utils@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes
