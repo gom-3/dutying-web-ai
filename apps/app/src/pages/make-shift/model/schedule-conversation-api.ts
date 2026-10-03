@@ -77,6 +77,10 @@ export type TConversationExecute = {
     fillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     rebuildConfirmed?: boolean;
     interpretationId?: string;
+    failureSourceOperationId?: string;
+    failureSuggestionId?: string;
+    failureSuggestionDigest?: string;
+    suggestionConfirmed?: boolean;
 };
 export function conversationApi(wardId: number, teamId: number) {
     const base = `/wards/${wardId}/shift-teams/${teamId}/schedule`;

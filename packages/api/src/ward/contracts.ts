@@ -1,3 +1,4 @@
+import type {TFailureSuggestion, TQualitySidebar} from './schedule-evidence';
 import type {IAnnualLeaveApi} from './annual-leave';
 import type {
     TDay,
@@ -784,6 +785,8 @@ export type TAutofillDTO = {
 
 export type TAutofillResponse = {
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
+    failure?: {reasonCode: string; message: string; suggestions?: TFailureSuggestion[]};
+    applicable?: boolean;
     approvable?: boolean;
     blockingViolations?: TScheduleViolationDto[];
     draftRevision: number;
@@ -794,6 +797,7 @@ export type TAutofillResponse = {
     sameAsPrevious: boolean;
     /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
+        qualitySidebar?: TQualitySidebar;
         status?: string;
         offGoal?: {
             operation: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';

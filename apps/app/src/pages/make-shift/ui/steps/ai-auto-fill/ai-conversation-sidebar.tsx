@@ -18,6 +18,7 @@ import {
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
+import {ConversationEvidence, type TFailureSuggestion} from './ai-conversation-evidence';
 
 type TProps = {
     open: boolean;
@@ -77,6 +78,7 @@ export default function AiConversationSidebar({
     const [preferences, setPreferences] = useState<TConversationPreference[]>([]);
     const [editingPreferenceId, setEditingPreferenceId] = useState<number>();
     const [rebuild, setRebuild] = useState(false);
+    const [selectedSuggestion, setSelectedSuggestion] = useState<{op: TConversationOperation; suggestion: TFailureSuggestion}>();
     const [newEvents, setNewEvents] = useState(false);
     const scroll = useRef<HTMLDivElement>(null);
     const atBottom = useRef(true);
@@ -220,6 +222,7 @@ export default function AiConversationSidebar({
         operationType: 'GENERATE' | 'ADJUST',
         fillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED',
         interpretationId?: string,
+        selection?: {op: TConversationOperation; suggestion: TFailureSuggestion},
     ) => {
         await run(async () => {
             const current = await sync();
@@ -238,6 +241,14 @@ export default function AiConversationSidebar({
                 operationType,
                 ...(fillPolicy ? {fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'} : {}),
                 ...(interpretationId ? {interpretationId} : {}),
+                ...(selection
+                    ? {
+                          failureSourceOperationId: selection.op.operationId,
+                          failureSuggestionId: selection.suggestion.suggestionId,
+                          failureSuggestionDigest: selection.suggestion.inputDigest,
+                          suggestionConfirmed: true,
+                      }
+                    : {}),
             };
 
             sessionStorage.setItem(pendingKey, JSON.stringify({conversationId: current.conversation.conversationId, request, uiRevision}));
@@ -546,6 +557,7 @@ export default function AiConversationSidebar({
 
     return createPortal(
         <aside
+            data-state={open ? 'open' : 'closed'}
             aria-label={copy('근무표 작성', 'Schedule authoring')}
             aria-hidden={!open}
             inert={!open}
@@ -685,6 +697,26 @@ export default function AiConversationSidebar({
                                         {goal.goalStatus}: {goal.beforeSingleNightRuns} → {goal.afterSingleNightRuns}
                                     </p>
                                 ))}
+                                {event.operation.result && (
+                                    <ConversationEvidence
+                                        result={event.operation.result}
+                                        nurseName={(id) => doc.workerMeta[id]?.name ?? id}
+                                        disabled={busy || running}
+                                        suggestionsCurrent={
+                                            !localDirty &&
+                                            event.operation.baseRevision === detail.conversation.revision &&
+                                            event.operation.interpretationId === detail.conversation.latestInterpretationId &&
+                                            Boolean(
+                                                detail.turns.find(
+                                                    (turn) =>
+                                                        turn.interpretationId === event.operation.interpretationId &&
+                                                        turn.contextHash === detail.contextHash,
+                                                ),
+                                            )
+                                        }
+                                        onSelect={(suggestion) => setSelectedSuggestion({op: event.operation, suggestion})}
+                                    />
+                                )}
                                 {event.operation.resultVersionId && (
                                     <div className="mt-2 flex flex-wrap gap-2">
                                         <button className={buttonClass} onClick={() => void view(event.operation)}>
@@ -699,6 +731,31 @@ export default function AiConversationSidebar({
                         ),
                     )}
             </div>
+            {selectedSuggestion && (
+                <section className="border-t p-3" aria-label="제안 확인">
+                    <p>이 변경 내용을 이번 실행에 적용할까요?</p>
+                    {selectedSuggestion.suggestion.changes.map((c, i) => (
+                        <p key={i}>
+                            {c.reason} · {String(c.oldValue)} → {String(c.proposedValue)}
+                        </p>
+                    ))}
+                    <button className={buttonClass} onClick={() => setSelectedSuggestion(undefined)}>
+                        취소
+                    </button>
+                    <button
+                        className={buttonClass}
+                        disabled={busy || running || localDirty}
+                        onClick={() => {
+                            const selected = selectedSuggestion;
+
+                            setSelectedSuggestion(undefined);
+                            void execute('ADJUST', undefined, selected.op.interpretationId ?? undefined, selected);
+                        }}
+                    >
+                        변경 확인하고 조절 실행
+                    </button>
+                </section>
+            )}
             {preview && (
                 <section
                     className="max-h-[45vh] shrink-0 overflow-auto border-t border-gray-5 py-2"
