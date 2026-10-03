@@ -765,8 +765,8 @@ export function AiAutofill() {
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
     const hasFilledCells = useMemo(() => hasFilledScheduleCells(editorDoc), [editorDoc]);
-    // 재진입해도 근무표나 저장된 요청이 있으면 조절 버튼으로 사이드바를 다시 열 수 있다.
-    const isAdjustAvailable = isAdjustEnabled && (hasCompletedAiFill || hasFilledCells || monthRequests.length > 0);
+    // 생성 전후 모두 같은 진입점에서 사이드바를 열고 실행 종류를 고른다.
+    const isAdjustAvailable = isAdjustEnabled || conversationEnabled;
     const clearableUnlockedCellCount = unprotectedFilledCells.length;
     const editedFilledCellsSinceLastAi = useMemo(
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
@@ -2380,6 +2380,7 @@ export function AiAutofill() {
                     open={isAdjustDialogOpen && isAdjustEnabled}
                     onClose={() => setIsAdjustDialogOpen(false)}
                     onRegenerate={handleRequestRegenerate}
+                    onGenerate={handleAiFill}
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     generationCompleted={hasGenerationNotice}
                     disabled={isAiGenerating || disablingRequestId !== null}

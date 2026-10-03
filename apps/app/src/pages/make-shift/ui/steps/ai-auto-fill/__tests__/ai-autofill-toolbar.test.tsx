@@ -115,7 +115,7 @@ describe('AiAutofillToolbar', () => {
         expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
     });
 
-    it('offers a secondary regeneration action after generation that invokes the confirmation entry point', async () => {
+    it('uses one sidebar entry without running generation or adjustment immediately', async () => {
         const user = userEvent.setup();
         const onAiFill = vi.fn();
         const onRegenerate = vi.fn();
@@ -123,12 +123,11 @@ describe('AiAutofillToolbar', () => {
         renderToolbar({overrides: {isAdjustEnabled: true, hasGeneratedSchedule: true, onAiFill, onRegenerate, onAdjust}});
 
         expect(screen.queryByRole('button', {name: '자동채우기'})).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: '다시 자동채우기'}));
-        expect(onRegenerate).toHaveBeenCalledTimes(1);
-        expect(onAiFill).not.toHaveBeenCalled();
-        expect(onAdjust).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'AI 근무 수정하기'}));
         expect(onAdjust).toHaveBeenCalledTimes(1);
+        expect(onRegenerate).not.toHaveBeenCalled();
+        expect(onAiFill).not.toHaveBeenCalled();
     });
 
     it('keeps the existing generation action for accounts without adjustment access', () => {

@@ -259,9 +259,10 @@ export function AiAutofillToolbar({
                 </div>
 
                 <div className="ai-autofill-toolbar__primary-actions flex shrink-0 flex-nowrap items-center gap-2">
-                    {onAdjust && (
+                    {onAdjust ? (
                         <button
                             type="button"
+                            id="make_ai_fill_button"
                             onClick={onAdjust}
                             disabled={isAiGenerating || isConfirming}
                             className={cn(
@@ -271,8 +272,7 @@ export function AiAutofillToolbar({
                         >
                             {t('aiAdjust.title')}
                         </button>
-                    )}
-                    {showRegenerate ? (
+                    ) : showRegenerate ? (
                         <button
                             id="make_ai_fill_button"
                             type="button"

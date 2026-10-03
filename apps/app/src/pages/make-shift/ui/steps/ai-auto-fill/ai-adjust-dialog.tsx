@@ -1,6 +1,6 @@
 import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutying/api/ward';
 import {X} from 'lucide-react';
-import {useEffect, useLayoutEffect, useRef, type Ref} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState, type Ref} from 'react';
 import {createPortal} from 'react-dom';
 import divider from '@/shared/assets/images/ai-adjust/divider.svg';
 import headerIcon from '@/shared/assets/images/ai-adjust/header.svg';
@@ -12,6 +12,7 @@ type TProps = {
     open: boolean;
     onClose: () => void;
     onRegenerate: () => void;
+    onGenerate?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
     disabled: boolean;
@@ -39,6 +40,7 @@ export default function AiAdjustDialog({
     open,
     onClose,
     onRegenerate,
+    onGenerate,
     hasGeneratedSchedule = false,
     generationCompleted = false,
     disabled,
@@ -58,6 +60,7 @@ export default function AiAdjustDialog({
 }: TProps) {
     const {t} = useTypedTranslation();
     const panel = useRef<HTMLElement>(null);
+    const [conversationBusy, setConversationBusy] = useState(false);
 
     useLayoutEffect(() => {
         const root = document.documentElement;
@@ -106,7 +109,7 @@ export default function AiAdjustDialog({
             >
                 <header className="relative flex h-24 shrink-0 items-center gap-3 px-[28px]">
                     <img src={headerIcon} alt="" width={36} height={36} className="shrink-0" />
-                    <h2 className="text-[20px] leading-6 font-semibold text-gray-3">{t('aiAdjust.title')}</h2>
+                    <h2 className="text-[20px] leading-6 font-semibold text-[#242B36]">{t('aiAdjust.title')}</h2>
                     <button
                         type="button"
                         onClick={onClose}
@@ -117,8 +120,20 @@ export default function AiAdjustDialog({
                     </button>
                     <img src={divider} alt="" className="absolute bottom-0 left-0 max-w-none" />
                 </header>
+                <div className="shrink-0 border-y border-gray-6 px-7 py-4">
+                    <button
+                        type="button"
+                        disabled={disabled || conversationBusy}
+                        onClick={hasGeneratedSchedule ? onRegenerate : onGenerate}
+                        className="min-h-11 w-full rounded-xl bg-main-light px-4 py-3 text-[16px] font-semibold text-[#5931B9] disabled:opacity-50"
+                    >
+                        {t(hasGeneratedSchedule ? 'aiAdjust.regenerating' : 'aiAdjust.autofill')}
+                    </button>
+                    <p className="mt-2 text-[14px] leading-6 text-[#475467]">{t('aiAdjust.generateOrAdjust')}</p>
+                </div>
                 <AiAdjustTextInput
                     ref={textInputRef}
+                    onBusyChange={setConversationBusy}
                     disabled={disabled}
                     generationCompleted={generationCompleted}
                     interpret={interpret}
@@ -141,18 +156,6 @@ export default function AiAdjustDialog({
                             isError={requestsError}
                             onRetry={onRetryRequests}
                         />
-                    }
-                    conversationActions={
-                        hasGeneratedSchedule && (
-                            <button
-                                type="button"
-                                disabled={disabled}
-                                onClick={onRegenerate}
-                                className="px-4 text-[12px] text-gray-4 underline disabled:opacity-50"
-                            >
-                                {t('aiAdjust.regenerating')}
-                            </button>
-                        )
                     }
                 />
             </aside>
