@@ -81,6 +81,7 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
+import AiConversationSidebar from './ai-conversation-sidebar';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
@@ -382,6 +383,9 @@ export function AiAutofill() {
     // 프론트는 그것을 그대로 따른다(`isAiAdjustEnabled` 참고).
     const autofillAdjustEnabled = useShiftEditorStore((s) => s.autofillAdjustEnabled);
     const isAdjustEnabled = isAiAdjustEnabled(autofillAdjustEnabled);
+    const conversationEnabled = useShiftEditorStore((s) => s.conversationEnabled);
+    const [conversationGenerationRequest, setConversationGenerationRequest] = useState(0);
+    const [conversationRebuildRequest, setConversationRebuildRequest] = useState(0);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const divisionLabelByNum = useMemo(
@@ -1911,6 +1915,12 @@ export function AiAutofill() {
     };
     // Generation and adjustment have separate entry points; an empty adjustment never regenerates.
     const handleAiFill = () => {
+        if (conversationEnabled) {
+            setIsSnapshotSidebarOpen(false);
+            setIsAdjustDialogOpen(true);
+            setConversationGenerationRequest((count) => count + 1);
+            return;
+        }
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
@@ -1918,6 +1928,12 @@ export function AiAutofill() {
         startAiFill(readyContext);
     };
     const handleRequestRegenerate = () => {
+        if (conversationEnabled) {
+            setIsSnapshotSidebarOpen(false);
+            setIsAdjustDialogOpen(true);
+            setConversationRebuildRequest((count) => count + 1);
+            return;
+        }
         if (!getAiFillReadyContext()) return;
 
         setRegenerateConfirmOpen(true);
@@ -2338,35 +2354,57 @@ export function AiAutofill() {
                 )}
             </div>
 
-            <AiAdjustDialog
-                key={`${wardId}:${currentShiftTeamId}:${year}:${month}`}
-                open={isAdjustDialogOpen && isAdjustEnabled}
-                onClose={() => setIsAdjustDialogOpen(false)}
-                onRegenerate={handleRequestRegenerate}
-                hasGeneratedSchedule={hasGeneratedSchedule}
-                generationCompleted={hasGenerationNotice}
-                disabled={isAiGenerating || disablingRequestId !== null}
-                textInputRef={adjustTextInputRef}
-                onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
-                interpret={interpretAdjustText}
-                onApply={handleApplyTextRequests}
-                goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
-                requests={monthRequests}
-                requestsLoading={monthRequestsLoading}
-                requestsError={monthRequestsError}
-                onRetryRequests={() => void refetchMonthRequests()}
-                currentRevision={useShiftEditorStore.getState().draftRevision}
-                shiftCodes={orderedShift?.wardShiftTypes.map((type) => type.shortName)}
-                onUndo={(revision) => {
-                    if (useShiftEditorStore.getState().draftRevision !== revision || isAiGenerating) return false;
-                    commands.undo();
-                    commands.clearScheduleValidationFromApi();
-                    setLastAdjustChangedCount(null);
-                    return true;
-                }}
-                disablingRequestId={disablingRequestId}
-                onDisableRequest={handleDisableMonthRequest}
-            />
+            {conversationEnabled && wardId && currentShiftTeamId && orderedShift ? (
+                <AiConversationSidebar
+                    key={`conversation:${wardId}:${currentShiftTeamId}:${year}:${month}`}
+                    open={isAdjustDialogOpen}
+                    onClose={() => setIsAdjustDialogOpen(false)}
+                    wardId={wardId}
+                    teamId={currentShiftTeamId}
+                    year={year}
+                    month={month}
+                    shift={orderedShift}
+                    adjustEnabled={isAdjustEnabled}
+                    generationRequest={conversationGenerationRequest}
+                    rebuildRequest={conversationRebuildRequest}
+                    onApplied={() => {
+                        setHasAiGeneratedUnsavedChanges(true);
+                        setHasCompletedAiFill(true);
+                        setHasGeneratedSchedule(true);
+                        setAiStatus('success');
+                    }}
+                />
+            ) : (
+                <AiAdjustDialog
+                    key={`${wardId}:${currentShiftTeamId}:${year}:${month}`}
+                    open={isAdjustDialogOpen && isAdjustEnabled}
+                    onClose={() => setIsAdjustDialogOpen(false)}
+                    onRegenerate={handleRequestRegenerate}
+                    hasGeneratedSchedule={hasGeneratedSchedule}
+                    generationCompleted={hasGenerationNotice}
+                    disabled={isAiGenerating || disablingRequestId !== null}
+                    textInputRef={adjustTextInputRef}
+                    onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
+                    interpret={interpretAdjustText}
+                    onApply={handleApplyTextRequests}
+                    goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
+                    requests={monthRequests}
+                    requestsLoading={monthRequestsLoading}
+                    requestsError={monthRequestsError}
+                    onRetryRequests={() => void refetchMonthRequests()}
+                    currentRevision={useShiftEditorStore.getState().draftRevision}
+                    shiftCodes={orderedShift?.wardShiftTypes.map((type) => type.shortName)}
+                    onUndo={(revision) => {
+                        if (useShiftEditorStore.getState().draftRevision !== revision || isAiGenerating) return false;
+                        commands.undo();
+                        commands.clearScheduleValidationFromApi();
+                        setLastAdjustChangedCount(null);
+                        return true;
+                    }}
+                    disablingRequestId={disablingRequestId}
+                    onDisableRequest={handleDisableMonthRequest}
+                />
+            )}
             <AiSnapshotSidebar
                 open={isSnapshotSidebarOpen}
                 onClose={() => setIsSnapshotSidebarOpen(false)}

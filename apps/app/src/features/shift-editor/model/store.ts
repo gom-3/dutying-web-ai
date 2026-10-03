@@ -18,6 +18,7 @@ export type TShiftEditorStore = {
      * 되돌리면 workspace 를 다시 받을 때까지 칩이 깜빡인다.
      */
     autofillAdjustEnabled: boolean;
+    conversationEnabled: boolean;
     selection: TSelection | null;
     /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
     scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
@@ -38,6 +39,7 @@ export type TShiftEditorStore = {
     setDutyRuleBoard: (board: TDutyRuleBoard | null) => void;
     setEditorMode: (mode: TEditorMode) => void;
     setRulesHash: (rulesHash: string | null) => void;
+    setConversationEnabled: (enabled: boolean) => void;
     setAutofillAdjustEnabled: (autofillAdjustEnabled: boolean) => void;
 
     reset: (opts?: {maxHistoryDepth?: number}) => void;
@@ -52,6 +54,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         draftRevision: 0,
         rulesHash: null,
         autofillAdjustEnabled: false,
+        conversationEnabled: false,
         selection: null,
         scheduleValidationSnapshot: null,
         legacyDisplayViolations: [],
@@ -69,6 +72,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         setDutyRuleBoard: (dutyRuleBoard) => set(() => ({dutyRuleBoard})),
         setEditorMode: (editorMode) => set(() => ({editorMode})),
         setRulesHash: (rulesHash) => set(() => ({rulesHash})),
+        setConversationEnabled: (conversationEnabled) => set(() => ({conversationEnabled})),
         setAutofillAdjustEnabled: (autofillAdjustEnabled) => set(() => ({autofillAdjustEnabled})),
 
         reset: (opts) => {
@@ -78,6 +82,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
                 doc: emptyDoc,
                 draftRevision: 0,
                 rulesHash: null,
+                conversationEnabled: false,
                 selection: null,
                 scheduleValidationSnapshot: null,
                 legacyDisplayViolations: [],
