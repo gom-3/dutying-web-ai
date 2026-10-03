@@ -19,6 +19,7 @@ import {
 } from '../../../model/schedule-conversation-api';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {ConversationEvidence, type TFailureSuggestion} from './ai-conversation-evidence';
+import AiConversationSnapshot from './ai-conversation-snapshot';
 
 type TProps = {
     open: boolean;
@@ -757,52 +758,15 @@ export default function AiConversationSidebar({
                 </section>
             )}
             {preview && (
-                <section
-                    className="max-h-[45vh] shrink-0 overflow-auto border-t border-gray-5 py-2"
-                    aria-label={copy('읽기 전용 결과', 'Read-only result')}
-                >
-                    <div className="mb-2 flex flex-wrap gap-2">
-                        <button className={buttonClass} onClick={() => setPreview(null)}>
-                            {copy('미리보기 닫기', 'Close preview')}
-                        </button>
-                        <button className={buttonClass} disabled={busy || running} onClick={() => void branch(preview.version)}>
-                            {copy('이 표에서 이어서 작성', 'Continue from this result')}
-                        </button>
-                    </div>
-                    <table className="w-full text-xs">
-                        <thead>
-                            <tr>
-                                <th>{copy('간호사', 'Nurse')}</th>
-                                <th>{copy('날짜', 'Date')}</th>
-                                {preview.before && <th>{copy('이전', 'Before')}</th>}
-                                <th>{copy('근무', 'Shift')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {preview.version.cells
-                                .filter(
-                                    (cell) =>
-                                        !preview.before ||
-                                        preview.before.cells.find((old) => old.shiftNurseId === cell.shiftNurseId && old.date === cell.date)
-                                            ?.wardShiftTypeId !== cell.wardShiftTypeId,
-                                )
-                                .map((cell) => (
-                                    <tr key={`${cell.shiftNurseId}:${cell.date}`}>
-                                        <td>{doc.workerMeta[String(cell.shiftNurseId)]?.name ?? cell.shiftNurseId}</td>
-                                        <td>{cell.date.slice(5)}</td>
-                                        {preview.before && (
-                                            <td>
-                                                {preview.before.cells.find(
-                                                    (old) => old.shiftNurseId === cell.shiftNurseId && old.date === cell.date,
-                                                )?.shiftCode ?? '—'}
-                                            </td>
-                                        )}
-                                        <td>{cell.shiftCode ?? '—'}</td>
-                                    </tr>
-                                ))}
-                        </tbody>
-                    </table>
-                </section>
+                <AiConversationSnapshot
+                    key={preview.version.versionId}
+                    shift={shift}
+                    version={preview.version}
+                    before={preview.before}
+                    disabled={busy || running}
+                    onClose={() => setPreview(null)}
+                    onContinue={(version) => void branch(version)}
+                />
             )}
             <footer className="shrink-0 space-y-2 border-t border-gray-5 pt-3">
                 {detail && (
