@@ -79,7 +79,7 @@ export default function AiMonthRequestList({
                 role="status"
             >
                 <SavedRequestIcon active={false} />
-                <p className="text-[13px] leading-5 font-medium text-[#626D7A]">{t('aiAdjust.savedRequests.loading')}</p>
+                <p className="text-[14px] leading-5 font-medium text-[#475467]">{t('aiAdjust.savedRequests.loading')}</p>
             </div>
         );
     }
@@ -110,14 +110,14 @@ export default function AiMonthRequestList({
                 >
                     <SavedRequestIcon active />
                     <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5 text-[13px] leading-5 font-medium">
+                        <span className="flex items-center gap-1.5 text-[14px] leading-5 font-medium">
                             {t('aiAdjust.savedRequests.title')}
                             <span className="text-main-1 tabular-nums">{active.length}</span>
                         </span>
                     </span>
                     <svg
                         viewBox="0 0 20 20"
-                        className={cn('size-5 shrink-0 text-[#626D7A]', !isOpen && 'rotate-180')}
+                        className={cn('size-5 shrink-0 text-[#475467]', !isOpen && 'rotate-180')}
                         fill="currentColor"
                         aria-hidden="true"
                     >
@@ -128,14 +128,14 @@ export default function AiMonthRequestList({
 
             {isError && (
                 <div className="flex items-center gap-2 px-4 py-3">
-                    <p role="alert" className="flex-1 text-[13px] leading-5 text-[#626D7A]">
+                    <p role="alert" className="flex-1 text-[14px] leading-5 text-[#475467]">
                         {t('aiAdjust.savedRequests.error')}
                     </p>
                     <button
                         type="button"
                         onClick={onRetry}
                         disabled={isLoading || !onRetry}
-                        className="min-h-11 shrink-0 rounded-lg px-3 text-[13px] font-semibold text-main-1 hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
+                        className="min-h-11 shrink-0 rounded-lg px-3 text-[14px] font-semibold text-main-1 hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
                     >
                         {t('aiAdjust.savedRequests.retry')}
                     </button>
@@ -163,19 +163,19 @@ export default function AiMonthRequestList({
                                                 <p className="text-[14px] leading-5 font-medium break-words text-[#333D4B]">
                                                     {request.displayLabel}
                                                 </p>
-                                                <p className="mt-0.5 flex flex-wrap gap-x-1 text-[12px] leading-[18px] text-[#626D7A]">
+                                                <p className="mt-0.5 flex flex-wrap gap-x-1 text-[14px] leading-[18px] text-[#475467]">
                                                     <span>{t(`aiAdjust.savedRequests.lifetime.${request.lifetime}`)}</span>
                                                     {request.origin === 'CARRIED_OVER' && (
                                                         <span>· {t('page.makeShift.aiRefill.adjust.requests.carriedOver')}</span>
                                                     )}
                                                 </p>
                                                 {request.kind === 'RULE' && (
-                                                    <p className="mt-2 text-[12px] leading-[18px] text-[#626D7A]">
+                                                    <p className="mt-2 text-[14px] leading-[18px] text-[#475467]">
                                                         {t('page.makeShift.aiRefill.adjust.card.ruleNote')}
                                                     </p>
                                                 )}
                                                 {request.conditionStatus && request.conditionStatus !== 'ACTIVE' && (
-                                                    <p className="mt-2 flex items-center gap-1.5 text-[12px] leading-[18px] text-[#9A5B13]">
+                                                    <p className="mt-2 flex items-center gap-1.5 text-[14px] leading-[18px] text-[#9A5B13]">
                                                         <span className="size-1.5 shrink-0 rounded-full bg-[#C7852D]" aria-hidden="true" />
                                                         {t(`page.makeShift.aiRefill.adjust.conditionStatus.${request.conditionStatus}`)}
                                                     </p>
@@ -189,7 +189,7 @@ export default function AiMonthRequestList({
                                                 })}
                                                 aria-busy={isDisabling}
                                                 onClick={() => onDisable(request)}
-                                                className="min-h-11 min-w-11 shrink-0 rounded-lg px-2 text-[12px] font-medium text-[#626D7A] hover:bg-[#FFF0F0] hover:text-[#B93B3B] focus-visible:bg-[#FFF0F0] focus-visible:text-[#B93B3B] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+                                                className="min-h-11 min-w-11 shrink-0 rounded-lg px-2 text-[14px] font-medium text-[#475467] hover:bg-[#FFF0F0] hover:text-[#B93B3B] focus-visible:bg-[#FFF0F0] focus-visible:text-[#B93B3B] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                                             >
                                                 {t(isDisabling ? 'aiAdjust.savedRequests.removing' : 'aiAdjust.savedRequests.remove')}
                                             </button>

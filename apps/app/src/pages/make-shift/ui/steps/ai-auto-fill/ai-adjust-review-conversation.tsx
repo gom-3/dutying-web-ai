@@ -11,17 +11,17 @@ import {
 import {AiAdjustInterpretCard, type TAdjustCard} from './ai-adjust-interpret-card';
 
 const choiceClass =
-    'min-h-11 rounded-xl bg-white px-3 py-2 text-[14px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
+    'min-h-11 rounded-xl bg-white px-3 py-2 text-[16px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
 
 export function AssistantMessage({children}: {children: ReactNode}) {
     const {t} = useTypedTranslation();
     return (
         <div className="flex min-w-0 flex-col items-start gap-2">
-            <span className="flex items-center gap-1.5 text-[12px] font-medium text-main-1">
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-main-1">
                 <img src={assistantIcon} width={18} height={18} alt="" />
                 {t('aiAdjust.assistant')}
             </span>
-            <div className="max-w-full min-w-0 rounded-2xl rounded-tl-sm bg-[#F2F4F6] px-4 py-3 text-[14px] leading-6 break-words text-[#333D4B]">
+            <div className="max-w-full min-w-0 rounded-2xl rounded-tl-sm bg-[#F2F4F6] px-4 py-3 text-[16px] leading-7 break-words text-[#333D4B]">
                 {children}
             </div>
         </div>
@@ -30,7 +30,7 @@ export function AssistantMessage({children}: {children: ReactNode}) {
 
 export function UserMessage({children}: {children: ReactNode}) {
     return (
-        <div className="ml-auto w-fit max-w-full min-w-0 rounded-2xl rounded-tr-sm bg-main-light px-4 py-3 text-[14px] leading-6 break-words text-[#5931B9]">
+        <div className="ml-auto w-fit max-w-full min-w-0 rounded-2xl rounded-tr-sm bg-main-light px-4 py-3 text-[16px] leading-7 break-words text-[#5931B9]">
             {children}
         </div>
     );
@@ -92,7 +92,7 @@ export function AiAdjustReviewConversation({
                     <div key={question.id} className="flex min-w-0 flex-col gap-3">
                         <AssistantMessage>
                             {card.items.length > 1 && (
-                                <p className="mb-1 text-[12px] text-[#626D7A]">{entry.item.displayLabel || card.requestText}</p>
+                                <p className="mb-1 text-[14px] text-[#475467]">{entry.item.displayLabel || card.requestText}</p>
                             )}
                             <p>{questionText}</p>
                         </AssistantMessage>
@@ -105,7 +105,7 @@ export function AiAdjustReviewConversation({
                                             type="button"
                                             disabled={disabled}
                                             onClick={() => onEditReply(index)}
-                                            className="min-h-11 rounded-lg px-2 text-[12px] text-[#626D7A] hover:bg-white hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
+                                            className="min-h-11 rounded-lg px-2 text-[14px] text-[#475467] hover:bg-white hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
                                         >
                                             {t('aiAdjust.chat.changeAnswer')}
                                         </button>
@@ -150,7 +150,7 @@ export function AiAdjustReviewConversation({
                                                     {t('aiAdjust.chat.withinDays', {count: value})}
                                                 </button>
                                             ))}
-                                            <p className="w-full text-[12px]">{t('aiAdjust.chat.typeDays')}</p>
+                                            <p className="w-full text-[14px]">{t('aiAdjust.chat.typeDays')}</p>
                                         </>
                                     )}
                                     {(question.kind === 'targetNurses' || question.kind === 'comparisonNurses') && (
@@ -186,7 +186,7 @@ export function AiAdjustReviewConversation({
                                     type="button"
                                     disabled={disabled || applyDisabled}
                                     onClick={onApply}
-                                    className="min-h-11 rounded-xl bg-main-1 px-4 py-2 text-[14px] font-semibold text-white hover:bg-[#5931D9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40"
+                                    className="min-h-11 rounded-xl bg-main-1 px-4 py-2 text-[16px] font-semibold text-white hover:bg-[#5931D9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40"
                                 >
                                     {t('aiAdjust.chat.applyReply')}
                                 </button>
@@ -247,7 +247,7 @@ function NurseReplyChoices({
                     </button>
                 ))}
             </div>
-            <p className="text-[12px]">{t('aiAdjust.chat.minimumNurses', {count: minimum})}</p>
+            <p className="text-[14px]">{t('aiAdjust.chat.minimumNurses', {count: minimum})}</p>
             <button
                 type="button"
                 disabled={disabled || selected.length < minimum}

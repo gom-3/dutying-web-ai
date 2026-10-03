@@ -48,7 +48,7 @@ export function AiAdjustInterpretCard({card, nurses}: TProps) {
         return String(value ?? '—');
     };
     return (
-        <section aria-label={t('aiAdjust.understood')} className="min-w-0 space-y-3 text-[14px] leading-6">
+        <section aria-label={t('aiAdjust.understood')} className="min-w-0 space-y-3 text-[16px] leading-7">
             <h3 className="font-semibold">{t('aiAdjust.understood')}</h3>
             <ul className="space-y-2">
                 {card.items.map(({item}, index) => (
@@ -58,7 +58,7 @@ export function AiAdjustInterpretCard({card, nurses}: TProps) {
                             {item.displayLabel || (item.knob ? t(`aiAdjust.knob.${item.knob}`) : card.requestText)}
                         </p>
                         {(item.kind === 'CELL' || item.kind === 'CELL_SET') && (
-                            <p className="text-[13px] text-[#626D7A]">
+                            <p className="text-[14px] text-[#475467]">
                                 {(item.kind === 'CELL' ? [item.nurseId] : (item.nurseIds ?? []))
                                     .filter((id): id is number => id !== undefined)
                                     .map(nurseName)
@@ -70,13 +70,13 @@ export function AiAdjustInterpretCard({card, nurses}: TProps) {
                             </p>
                         )}
                         {!!item.applyMonths?.length && (
-                            <p className="text-[13px] text-[#626D7A]">
+                            <p className="text-[14px] text-[#475467]">
                                 {t('aiAdjust.review.months')} ·{' '}
                                 <span>{item.applyMonths.map(({year, month}) => `${year}.${month}`).join(', ')}</span>
                             </p>
                         )}
                         {(item.requiresConfirmation || item.assumedSlots?.length || item.lifetimeHint === 'TEAM') && (
-                            <div className="space-y-1 text-[13px] text-[#86540E]">
+                            <div className="space-y-1 text-[14px] text-[#86540E]">
                                 {item.confirmationReasons?.map((reason) => <p key={reason}>{t(`aiAdjust.${reason}`)}</p>)}
                                 {item.lifetimeHint === 'TEAM' && !item.confirmationReasons?.includes('RECURRING_SCOPE') && (
                                     <p>{t('aiAdjust.RECURRING_SCOPE')}</p>
@@ -94,7 +94,7 @@ export function AiAdjustInterpretCard({card, nurses}: TProps) {
             </ul>
             {card.llmPrompt && <p className="break-words whitespace-pre-wrap">{card.llmPrompt}</p>}
             {card.unmapped.length > 0 && (
-                <div className="space-y-2 text-[13px] text-[#86540E]">
+                <div className="space-y-2 text-[14px] text-[#86540E]">
                     <p className="font-medium">{t('aiAdjust.unmapped')}</p>
                     <p>{t('aiAdjust.partial')}</p>
                     {card.unmapped.map((entry, index) => (
@@ -105,7 +105,7 @@ export function AiAdjustInterpretCard({card, nurses}: TProps) {
                     ))}
                 </div>
             )}
-            <details className="group text-[12px] leading-5 text-[#626D7A]">
+            <details className="group text-[14px] leading-5 text-[#475467]">
                 <summary className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 font-medium hover:bg-white focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none">
                     {t('aiAdjust.review.details')}
                     <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 group-open:rotate-180" fill="currentColor">

@@ -36,6 +36,7 @@ export type TAdjustApply = (
 ) => Promise<TAdjustApplyResult | void> | void;
 type TProps = {
     disabled: boolean;
+    onBusyChange?: (busy: boolean) => void;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
     onApply: TAdjustApply;
     goalNurses: {nurseId: number; name: string}[];
@@ -81,6 +82,7 @@ export function toCardItems(items: TScheduleMonthRequestItem[], goalNurseIds: nu
 
 export default function AiAdjustTextInput({
     disabled,
+    onBusyChange,
     interpret,
     onApply,
     goalNurses,
@@ -115,6 +117,19 @@ export default function AiAdjustTextInput({
     const lastFollowupCount = lastTurn?.followups?.length ?? 0;
     const active = lastTurn?.group === group ? lastTurn : undefined;
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
+    useEffect(() => {
+        onBusyChange?.(isBusy);
+        return () => onBusyChange?.(false);
+    }, [isBusy, onBusyChange]);
+    const [interpretSeconds, setInterpretSeconds] = useState(0);
+    useEffect(() => {
+        setInterpretSeconds(0);
+        if (active?.status !== 'interpreting') return;
+        const started = Date.now();
+        const timer = window.setInterval(() => setInterpretSeconds(Math.floor((Date.now() - started) / 1000)), 1000);
+        return () => window.clearInterval(timer);
+    }, [active?.id, active?.status]);
+
     const isConfirming = active?.status === 'confirm';
     const activeRequests = requests.filter((request) => request.status === 'ACTIVE');
     const hasRequestList = Boolean(requestList && (activeRequests.length || requestsLoading || requestsError));
@@ -375,7 +390,7 @@ export default function AiAdjustTextInput({
                 {turns.length === 0 && !generationCompleted && (
                     <div>
                         <h3 className="text-[28px] leading-[1.62] font-bold whitespace-pre-line text-black">{t('aiAdjust.welcome')}</h3>
-                        <div className="mt-6 space-y-2 text-[14px] leading-6 break-keep text-gray-4">
+                        <div className="mt-6 space-y-2 text-[14px] leading-6 break-keep text-[#475467]">
                             <p>{t('aiAdjust.intro')}</p>
                             <p>{t('aiAdjust.introDetail')}</p>
                         </div>
@@ -386,7 +401,7 @@ export default function AiAdjustTextInput({
                         {turns.map((turn, index) => (
                             <div key={turn.id} className="flex min-w-0 flex-col gap-4">
                                 {index > 0 && turn.group !== turns[index - 1]?.group && (
-                                    <p className="text-center text-[12px] text-[#626D7A]">{t('aiAdjust.newConversation')}</p>
+                                    <p className="text-center text-[14px] text-[#475467]">{t('aiAdjust.newConversation')}</p>
                                 )}
                                 <UserMessage>
                                     <p className="whitespace-pre-wrap">{turn.text}</p>
@@ -412,7 +427,7 @@ export default function AiAdjustTextInput({
                                         beforeApply={
                                             <>
                                                 {(turn.status === 'confirm' ? activeRequests : (turn.reviewRequests ?? [])).length > 0 && (
-                                                    <div className="mb-3 space-y-1 text-[12px] text-[#626D7A]">
+                                                    <div className="mb-3 space-y-1 text-[14px] text-[#475467]">
                                                         <p>
                                                             {t('aiAdjust.existing', {
                                                                 count: (turn.status === 'confirm'
@@ -458,8 +473,13 @@ export default function AiAdjustTextInput({
                                                 <span className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
                                                 <span className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
                                             </span>
-                                            <span>{t('aiAdjust.reviewing')}</span>
+                                            <span>
+                                                {t('aiAdjust.reviewing')} · {t('aiAdjust.elapsed', {seconds: interpretSeconds})}
+                                            </span>
                                         </p>
+                                        {interpretSeconds >= 8 && (
+                                            <p className="mt-2 text-[14px] leading-6 text-[#475467]">{t('aiAdjust.reviewingSlow')}</p>
+                                        )}
                                     </AssistantMessage>
                                 )}
                                 {turn.status === 'applying' && (
@@ -491,7 +511,7 @@ export default function AiAdjustTextInput({
                                 {turn.status === 'undone' && (
                                     <AssistantMessage>
                                         <p>{t('aiAdjust.undone')}</p>
-                                        <p className="mt-2 text-[12px] text-[#626D7A]">{t('aiAdjust.undoNote')}</p>
+                                        <p className="mt-2 text-[14px] text-[#475467]">{t('aiAdjust.undoNote')}</p>
                                     </AssistantMessage>
                                 )}
                                 {turn.error && turn.status !== 'error' && turn.status !== 'confirm' && (
@@ -509,7 +529,7 @@ export default function AiAdjustTextInput({
                                         onClick={async () => {
                                             if (await onUndo?.(turn.result!.undoRevision!)) updateTurn(turn.id, {status: 'undone'});
                                         }}
-                                        className="min-h-11 self-start rounded-lg bg-[#F2F4F6] px-3 text-[13px] text-[#626D7A] hover:bg-main-light hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:opacity-40"
+                                        className="min-h-11 self-start rounded-lg bg-[#F2F4F6] px-3 text-[14px] text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:opacity-40"
                                     >
                                         {t('aiAdjust.undo')}
                                     </button>
@@ -525,7 +545,7 @@ export default function AiAdjustTextInput({
                             type="button"
                             disabled={disabled || isBusy}
                             onClick={newConversation}
-                            className="min-h-11 rounded-lg px-3 text-[12px] text-[#626D7A] hover:bg-[#F2F4F6] hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:opacity-40"
+                            className="min-h-11 rounded-lg px-3 text-[14px] text-[#475467] hover:bg-[#F2F4F6] hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:opacity-40"
                         >
                             {t('aiAdjust.chat.restart')}
                         </button>
@@ -536,14 +556,14 @@ export default function AiAdjustTextInput({
             <div className="relative z-10 flex max-h-[60%] min-h-0 shrink-0 flex-col px-6 pt-3 pb-12">
                 {turns.length === 0 && (
                     <div className="mb-10 flex min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain">
-                        <p className="px-1.5 text-[12px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
+                        <p className="px-1.5 text-[14px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
                         {examples.map((sentence) => (
                             <button
                                 key={sentence}
                                 type="button"
                                 disabled={disabled || isBusy}
                                 onClick={() => fill(sentence)}
-                                className="flex min-h-10 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-gray-4 hover:bg-main-light hover:text-main-1 disabled:opacity-50"
+                                className="flex min-h-10 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[14px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 disabled:opacity-50"
                             >
                                 <span>{sentence}</span>
                                 <img src={nextIcon} alt="" width={24} height={24} className="shrink-0" />
@@ -553,7 +573,7 @@ export default function AiAdjustTextInput({
                 )}
 
                 {error && (
-                    <p role="alert" className="mb-2 text-[13px] text-red">
+                    <p role="alert" className="mb-2 text-[14px] text-red">
                         {error}
                     </p>
                 )}
@@ -580,10 +600,12 @@ export default function AiAdjustTextInput({
                             maxLength={MAX_TEXT_LENGTH}
                             aria-label={t('page.makeShift.aiRefill.adjust.textInput.label')}
                             placeholder={t(turns.length ? 'aiAdjust.chat.replyPlaceholder' : 'aiAdjust.placeholder')}
-                            className="text-gray-1 w-full resize-none bg-transparent text-[14px] leading-5 outline-none placeholder:text-gray-4 disabled:opacity-50"
+                            className="text-gray-1 w-full resize-none bg-transparent text-[16px] leading-6 outline-none placeholder:text-[#475467] disabled:opacity-50"
                         />
                         <div className="flex items-center justify-between gap-2">
-                            <span className="text-[10px] text-gray-4">{text.length > 400 ? `${text.length}/${MAX_TEXT_LENGTH}` : ''}</span>
+                            <span className="text-[10px] text-[#475467]">
+                                {text.length > 400 ? `${text.length}/${MAX_TEXT_LENGTH}` : ''}
+                            </span>
                             <button
                                 type="button"
                                 aria-label={t('aiAdjust.send')}
@@ -618,7 +640,7 @@ function AdjustResult({result}: {result?: TAdjustApplyResult}) {
             <p className="font-medium">{t(changes.length ? 'aiAdjust.result' : 'aiAdjust.noChange')}</p>
             {changes.length > 0 && (
                 <details open={changes.length <= 8}>
-                    <summary className="cursor-pointer text-[13px] text-gray-3">{t('aiAdjust.changes', {count: changes.length})}</summary>
+                    <summary className="cursor-pointer text-[14px] text-gray-3">{t('aiAdjust.changes', {count: changes.length})}</summary>
                     <ul className="mt-2 space-y-1 text-[14px]">
                         {changes.map((change, index) => (
                             <li key={index}>
@@ -630,7 +652,7 @@ function AdjustResult({result}: {result?: TAdjustApplyResult}) {
                     </ul>
                 </details>
             )}
-            <div className="text-[13px] leading-5">
+            <div className="text-[14px] leading-5">
                 <p className="font-semibold">{t('aiAdjust.validation')}</p>
                 <p>{t((response.approvable ?? response.validation?.summary.valid) ? 'aiAdjust.approvable' : 'aiAdjust.notApprovable')}</p>
                 <ul>
@@ -640,7 +662,7 @@ function AdjustResult({result}: {result?: TAdjustApplyResult}) {
                 </ul>
             </div>
             {blocking.length > 0 && (
-                <div className="text-[13px]">
+                <div className="text-[14px]">
                     <p className="font-semibold">{t('aiAdjust.blocked')}</p>
                     <ul>
                         {blocking.map((entry) => (
@@ -650,7 +672,7 @@ function AdjustResult({result}: {result?: TAdjustApplyResult}) {
                 </div>
             )}
             {(unmet.length > 0 || response.unmetInstructions?.length > 0) && (
-                <div className="text-[13px]">
+                <div className="text-[14px]">
                     <p className="font-semibold">{t('aiAdjust.unmet')}</p>
                     <ul>
                         {unmet.map((entry) => (
@@ -663,7 +685,7 @@ function AdjustResult({result}: {result?: TAdjustApplyResult}) {
                 </div>
             )}
             {!!response.adjustmentNotices?.length && (
-                <div className="text-[13px]">
+                <div className="text-[14px]">
                     <p className="font-semibold">{t('aiAdjust.notice')}</p>
                     <ul>
                         {response.adjustmentNotices.map((notice, index) => (

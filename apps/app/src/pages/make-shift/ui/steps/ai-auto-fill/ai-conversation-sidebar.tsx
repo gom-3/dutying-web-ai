@@ -471,7 +471,7 @@ export default function AiConversationSidebar({
             {turn.interpretation && (
                 <>
                     <p className="font-semibold">{copy('이렇게 이해했어요', 'Here is how I understood it')}</p>
-                    <p className="text-xs text-gray-4">
+                    <p className="text-xs text-[#475467]">
                         {copy('이번 실행에 적용 · 고정 배치 유지', 'This execution only · fixed cells preserved')}
                     </p>
                     <ul className="mt-2 space-y-1">
@@ -538,7 +538,7 @@ export default function AiConversationSidebar({
                             </button>
                         </div>
                     ) : (
-                        <p className="mt-2 text-xs text-gray-4">
+                        <p className="mt-2 text-xs text-[#475467]">
                             {copy('이전 해석 · 실행할 수 없음', 'Previous interpretation · unavailable for execution')}
                         </p>
                     )}
@@ -581,7 +581,7 @@ export default function AiConversationSidebar({
                 {month}
                 {copy('월', '')} · {teamId}
             </p>
-            <p className="mb-2 text-sm text-gray-4">
+            <p className="mb-2 text-sm text-[#475467]">
                 {preview ? copy('과거 결과 미리보기', 'Historical preview') : copy('현재 작업표', 'Current draft')} ·{' '}
                 {copy('작업 판본', 'Revision')} {detail?.conversation.revision ?? '—'}
             </p>
@@ -659,7 +659,7 @@ export default function AiConversationSidebar({
                                         event.operation.executionStatus,
                                     )}
                                 </p>
-                                <p className="text-xs text-gray-4">
+                                <p className="text-xs text-[#475467]">
                                     {stamp(event.operation.createdAt)} · {copy('대상', 'Target')}: {year}-{String(month).padStart(2, '0')}
                                 </p>
                                 {event.operation.executionStatus === 'FAILED' && (

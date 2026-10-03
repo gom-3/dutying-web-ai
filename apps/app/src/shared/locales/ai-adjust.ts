@@ -1,10 +1,10 @@
 export const aiAdjustKo = {
-    title: 'AI 근무 수정하기',
+    title: 'AI 근무표 도우미',
     autofill: '자동채우기',
     generationCompleted: '근무표를 채웠어요. 바꾸고 싶은 점이 있으면 말씀해 주세요.',
     regenerateTitle: '다시 자동채우기 할까요?',
     regenerateDescription: '현재 화면의 근무표가 새 결과로 바뀔 수 있어요. 계속할까요?',
-    close: 'AI 근무 수정 닫기',
+    close: 'AI 근무표 도우미 닫기',
     assistant: '듀팅 AI',
     welcome: '원하는 수정을\n편하게 알려주세요',
     intro: '근무표를 보면서 요청해 주세요',
@@ -17,7 +17,10 @@ export const aiAdjustKo = {
     twoDayExample: '이틀 연속 쉬는 기회를 공평하게 해줘',
     placeholder: '어떤 작업을 진행할까요?',
     send: '요청 보내기',
-    reviewing: '요청을 살펴보고 있어요',
+    reviewing: '요청을 해석하고 있어요',
+    elapsed: '{{seconds}}초',
+    reviewingSlow: '해석이 지연되고 있어요. 아직 근무표는 바뀌지 않았어요.',
+    generateOrAdjust: '자동으로 채우거나, 아래에 원하는 수정을 적어 주세요.',
     applying: '근무표를 수정하고 있어요...',
     understood: '이렇게 이해했어요',
     chat: {
@@ -139,7 +142,7 @@ export const aiAdjustKo = {
     value: '값',
 };
 export const aiAdjustEn = {
-    title: 'Edit shifts with AI',
+    title: 'AI schedule assistant',
     autofill: 'Autofill',
     generationCompleted: 'The schedule is filled. Tell us if you would like to change anything.',
     regenerateTitle: 'Autofill again?',
@@ -157,7 +160,10 @@ export const aiAdjustEn = {
     twoDayExample: 'Distribute two consecutive days off fairly',
     placeholder: 'What would you like to change?',
     send: 'Send request',
-    reviewing: 'Reviewing your request',
+    reviewing: 'Interpreting your request',
+    elapsed: '{{seconds}}s',
+    reviewingSlow: 'Interpretation is taking longer. Your schedule has not changed.',
+    generateOrAdjust: 'Fill the schedule automatically, or describe a change below.',
     applying: 'Updating the schedule...',
     understood: 'Here is what I understood',
     chat: {
