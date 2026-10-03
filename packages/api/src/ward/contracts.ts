@@ -448,6 +448,7 @@ export type TWorkspaceScheduleResponse = {
      * 없으면(구 서버) 꺼진 것으로 본다.
      */
     autofillAdjustEnabled?: boolean;
+    conversationEnabled?: boolean;
 };
 
 export type TUpdateShiftWorkflowDTO = {
@@ -759,7 +760,6 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
-    idempotencyKey?: string;
     year: number;
     month: number;
     prompt?: string;

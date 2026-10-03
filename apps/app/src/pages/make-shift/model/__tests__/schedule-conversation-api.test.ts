@@ -1,0 +1,89 @@
+import {describe, expect, it} from 'vitest';
+import {
+    conversationEvents,
+    isConversationConfirmationCurrent,
+    type TConversationDetail,
+    type TConversationOperation,
+    type TConversationTurn,
+} from '../schedule-conversation-api';
+
+const turn: TConversationTurn = {
+    eventId: 10,
+    sequence: 2,
+    actor: 'ASSISTANT',
+    type: 'INTERPRETATION',
+    text: null,
+    interpretationId: 'interpretation:1',
+    baseRevision: 3,
+    contextHash: 'rules:1',
+    interpretation: null,
+    createdAt: '2026-10-03T10:01:00',
+};
+const operation: TConversationOperation = {
+    operationId: 'operation:1',
+    sequence: 1,
+    operationType: 'GENERATE',
+    fillPolicy: 'EMPTY_ONLY',
+    sourceVersionId: 'source:1',
+    resultVersionId: 'result:1',
+    interpretationId: null,
+    baseRevision: 2,
+    executionStatus: 'SUCCEEDED',
+    applyStatus: 'APPLIED',
+    failureReason: null,
+    result: null,
+    createdAt: '2026-10-03T10:10:00',
+};
+const detail = {
+    contextHash: 'rules:1',
+    activeConditionLabels: [],
+    conversation: {
+        conversationId: 1,
+        year: 2026,
+        month: 11,
+        revision: 3,
+        currentVersionId: 'result:1',
+        latestInterpretationId: 'interpretation:1',
+        createdAt: '',
+    },
+    draft: {
+        versionId: 'result:1',
+        parentVersionId: null,
+        year: 2026,
+        month: 11,
+        cells: [],
+        rowOrder: [],
+        carryOverCells: [],
+        constraintsJson: '{}',
+        inputDigest: 'a',
+        createdAt: '',
+    },
+    turns: [turn],
+    operations: [operation],
+} as TConversationDetail;
+
+describe('conversation state', () => {
+    it('uses server sequence rather than client clock or request arrival order', () => {
+        expect(conversationEvents(detail).map((event) => event.id)).toEqual(['operation:1', 'turn:10']);
+    });
+    it('keeps the same card identity when an execution status is refreshed', () => {
+        const running = {...detail, operations: [{...operation, executionStatus: 'RUNNING' as const, resultVersionId: null}]};
+
+        expect(conversationEvents(running)[0]?.id).toBe(conversationEvents(detail)[0]?.id);
+    });
+    it('invalidates confirmation on manual edits, server revision, rules, and newer proposals', () => {
+        expect(isConversationConfirmationCurrent(detail, turn, false)).toBe(true);
+        expect(isConversationConfirmationCurrent(detail, turn, true)).toBe(false);
+        expect(isConversationConfirmationCurrent({...detail, contextHash: 'rules:2'}, turn, false)).toBe(false);
+        expect(isConversationConfirmationCurrent({...detail, conversation: {...detail.conversation, revision: 4}}, turn, false)).toBe(
+            false,
+        );
+        expect(
+            isConversationConfirmationCurrent(
+                {...detail, conversation: {...detail.conversation, latestInterpretationId: 'new'}},
+                turn,
+                false,
+            ),
+        ).toBe(false);
+    });
+});
