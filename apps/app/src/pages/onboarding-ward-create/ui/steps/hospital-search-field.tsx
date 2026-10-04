@@ -1,4 +1,5 @@
 import type {THospitalResponse} from '@dutying/api/hospital';
+import type {TServiceRegion} from '@dutying/domain';
 import {useEffect, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useHospitalSearch} from '../../model/use-hospital-search';
@@ -9,6 +10,7 @@ export type THospitalSelection = {
 };
 
 interface IHospitalSearchFieldProps {
+    serviceRegion: TServiceRegion;
     hospitalName: string;
     hospitalId?: number;
     hasError?: boolean;
@@ -19,16 +21,24 @@ interface IHospitalSearchFieldProps {
 const NAME_FIELD_MAX_LENGTH = 50;
 
 /**
- * 병원을 카탈로그에서 고르게 한다. 자유 입력이던 시절에는 같은 병원이 여러 표기로 들어와
- * 동일 병원 판별이 불가능했다.
+ * 한국 서비스 지역에서는 병원을 카탈로그에서 고르게 한다. 자유 입력이던 시절에는 같은 병원이
+ * 여러 표기로 들어와 동일 병원 판별이 불가능했다. 해외 지역에서는 병원명을 직접 입력한다.
  *
  * <p>목록에 없는 병원은 입력한 그대로 쓸 수 있게 남겨둔다. 신규 개원이나 표기 누락으로
  * 온보딩이 막히면 안 된다.
  */
-function HospitalSearchField({hospitalName, hospitalId, hasError = false, fieldClassName, onChange}: IHospitalSearchFieldProps) {
+function HospitalSearchField({
+    serviceRegion,
+    hospitalName,
+    hospitalId,
+    hasError = false,
+    fieldClassName,
+    onChange,
+}: IHospitalSearchFieldProps) {
     const {t} = useTypedTranslation();
+    const isKoreanRegion = serviceRegion === 'KR';
     // 고른 병원이 있으면 검색창을 접는다. 다시 고치려면 '다시 검색'을 누른다.
-    const [isSearching, setIsSearching] = useState(typeof hospitalId !== 'number');
+    const [isSearching, setIsSearching] = useState(!isKoreanRegion || typeof hospitalId !== 'number');
     const [keyword, setKeyword] = useState(hospitalName);
     // 이어하기 초안은 서버에서 늦게 도착한다. 그때 밖에서 들어온 값으로 입력칸을 맞춘다.
     // 사용자가 친 글자를 덮지 않도록, 밖의 값이 실제로 바뀐 순간에만 따라간다.
@@ -39,10 +49,21 @@ function HospitalSearchField({hospitalName, hospitalId, hasError = false, fieldC
 
         lastExternalHospitalName.current = hospitalName;
         setKeyword(hospitalName);
-        setIsSearching(typeof hospitalId !== 'number');
-    }, [hospitalName, hospitalId]);
+        setIsSearching(!isKoreanRegion || typeof hospitalId !== 'number');
+    }, [hospitalName, hospitalId, isKoreanRegion]);
 
-    const {results, isLoading, hasError: hasSearchError} = useHospitalSearch(isSearching ? keyword : '');
+    useEffect(() => {
+        if (isKoreanRegion) return;
+
+        setIsSearching(true);
+
+        // 지역이 바뀐 초안에 한국 병원 카탈로그 ID가 남지 않게 한다.
+        if (typeof hospitalId === 'number') {
+            onChange({hospitalId: undefined, hospitalName});
+        }
+    }, [isKoreanRegion, hospitalId, hospitalName, onChange]);
+
+    const {results, isLoading, hasError: hasSearchError} = useHospitalSearch(isKoreanRegion && isSearching ? keyword : '');
     const trimmedKeyword = keyword.trim();
     const selectHospital = (hospital: THospitalResponse) => {
         setKeyword(hospital.name);
@@ -60,7 +81,7 @@ function HospitalSearchField({hospitalName, hospitalId, hasError = false, fieldC
         setKeyword(hospitalName);
     };
 
-    if (!isSearching) {
+    if (isKoreanRegion && !isSearching) {
         return (
             <div className={`${fieldClassName} flex items-center justify-between gap-3`}>
                 <span className="truncate">{hospitalName}</span>
@@ -79,14 +100,18 @@ function HospitalSearchField({hospitalName, hospitalId, hasError = false, fieldC
         <div className="space-y-2">
             <input
                 id="onboarding-hospital-name"
-                type="search"
-                role="combobox"
-                aria-expanded={trimmedKeyword.length > 0}
+                type={isKoreanRegion ? 'search' : 'text'}
+                role={isKoreanRegion ? 'combobox' : undefined}
+                aria-expanded={isKoreanRegion ? trimmedKeyword.length > 0 : undefined}
                 aria-label={t('page.onboardingWardCreate.identity.hospitalName')}
                 aria-invalid={hasError}
                 autoComplete="off"
                 value={keyword}
-                placeholder={t('page.onboardingWardCreate.identity.hospitalSearchPlaceholder')}
+                placeholder={t(
+                    isKoreanRegion
+                        ? 'page.onboardingWardCreate.identity.hospitalSearchPlaceholder'
+                        : 'page.onboardingWardCreate.identity.hospitalNamePlaceholder',
+                )}
                 maxLength={NAME_FIELD_MAX_LENGTH}
                 className={fieldClassName}
                 onChange={(event) => {
@@ -96,7 +121,7 @@ function HospitalSearchField({hospitalName, hospitalId, hasError = false, fieldC
                     onChange({hospitalId: undefined, hospitalName: event.target.value});
                 }}
             />
-            {trimmedKeyword.length > 0 && (
+            {isKoreanRegion && trimmedKeyword.length > 0 && (
                 <ul className="max-h-64 overflow-y-auto rounded-[14px] bg-gray-7" role="listbox">
                     {results.map((hospital) => {
                         // 같은 이름의 다른 병원을 구분하려면 종별과 지역이 함께 보여야 한다.

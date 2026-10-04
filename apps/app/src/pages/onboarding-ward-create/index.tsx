@@ -3,12 +3,14 @@ import {ArrowLeft, Trash2} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
+import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDefaultServiceRegionForLanguage, getStoredServiceRegion, normalizeServiceRegion} from '@/shared/i18n/locale';
 import {getRequiredRotationClassificationCounts} from '@/shared/lib/shift-rotation-selection';
 import {
     getOnboardingInitialScheduleTargets,
@@ -34,10 +36,16 @@ const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
 
 function OnboardingWardCreatePage() {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const navigate = useNavigate();
     const {
         state: {accountMe},
     } = useAuth();
+    const serviceRegion =
+        normalizeServiceRegion(accountMe?.serviceRegion) ??
+        normalizeServiceRegion(accountMe?.resolvedRegion) ??
+        getStoredServiceRegion() ??
+        getDefaultServiceRegionForLanguage(accountMe?.preferredLanguage ?? i18n.resolvedLanguage ?? i18n.language);
     const {
         draft,
         activeTeamId,
@@ -366,6 +374,7 @@ function OnboardingWardCreatePage() {
 
                 return (
                     <WardIdentityStep
+                        serviceRegion={serviceRegion}
                         hospitalName={draft.hospitalName}
                         hospitalId={draft.hospitalId}
                         wardName={draft.wardName}

@@ -19,7 +19,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
 
 const HOSPITAL = {hospitalId: 7, name: '세브란스병원', categoryName: '상급종합', region: '서울 서대문구'};
 const renderField = (onChange = vi.fn(), props: Partial<Parameters<typeof HospitalSearchField>[0]> = {}) => {
-    render(<HospitalSearchField fieldClassName="field" hospitalName="" onChange={onChange} {...props} />);
+    render(<HospitalSearchField serviceRegion="KR" fieldClassName="field" hospitalName="" onChange={onChange} {...props} />);
 
     return onChange;
 };
@@ -94,18 +94,18 @@ describe('HospitalSearchField', () => {
 
     it('이어하기 초안이 늦게 도착해도 입력칸이 그 값으로 채워진다', async () => {
         // 서버 초안은 첫 렌더 뒤에 온다. 이걸 놓치면 이름이 있는데도 빈 검색창이 남는다.
-        const {rerender} = render(<HospitalSearchField fieldClassName="field" hospitalName="" onChange={vi.fn()} />);
+        const {rerender} = render(<HospitalSearchField serviceRegion="KR" fieldClassName="field" hospitalName="" onChange={vi.fn()} />);
 
         expect(screen.getByRole('combobox')).toHaveValue('');
 
-        rerender(<HospitalSearchField fieldClassName="field" hospitalName="듀팅병원" onChange={vi.fn()} />);
+        rerender(<HospitalSearchField serviceRegion="KR" fieldClassName="field" hospitalName="듀팅병원" onChange={vi.fn()} />);
 
         await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('듀팅병원'));
     });
 
     it('카탈로그 없이 이름만 있던 예전 초안도 그대로 이어간다', async () => {
         // 카탈로그 도입 전에 만든 초안은 hospitalId 가 없다. 검색 모드로 열려야 한다.
-        render(<HospitalSearchField fieldClassName="field" hospitalName="예전에직접입력한병원" onChange={vi.fn()} />);
+        render(<HospitalSearchField serviceRegion="KR" fieldClassName="field" hospitalName="예전에직접입력한병원" onChange={vi.fn()} />);
 
         expect(screen.getByRole('combobox')).toHaveValue('예전에직접입력한병원');
     });
@@ -121,5 +121,44 @@ describe('HospitalSearchField', () => {
         await user.click(screen.getByRole('button', {name: 'page.onboardingWardCreate.identity.hospitalChange'}));
 
         expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    it('해외 지역에서는 병원명을 직접 입력하고 한국 병원 API를 부르지 않는다', async () => {
+        const user = userEvent.setup();
+        const onChange = renderField(vi.fn(), {serviceRegion: 'JP'});
+
+        await user.type(screen.getByRole('textbox'), '東京病院');
+
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(onChange).toHaveBeenLastCalledWith({hospitalId: undefined, hospitalName: '東京病院'});
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        expect(mockSearchHospitals).not.toHaveBeenCalled();
+    });
+
+    it('한국 병원 선택 후 지역이 해외로 바뀌면 카탈로그 ID를 지운다', async () => {
+        const onChange = vi.fn();
+        const {rerender} = render(
+            <HospitalSearchField
+                serviceRegion="KR"
+                fieldClassName="field"
+                hospitalId={7}
+                hospitalName="세브란스병원"
+                onChange={onChange}
+            />,
+        );
+
+        rerender(
+            <HospitalSearchField
+                serviceRegion="JP"
+                fieldClassName="field"
+                hospitalId={7}
+                hospitalName="세브란스병원"
+                onChange={onChange}
+            />,
+        );
+
+        expect(screen.getByRole('textbox')).toHaveValue('세브란스병원');
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith({hospitalId: undefined, hospitalName: '세브란스병원'}));
     });
 });
