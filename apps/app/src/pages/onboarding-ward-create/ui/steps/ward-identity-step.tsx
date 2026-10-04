@@ -1,8 +1,10 @@
+import type {TServiceRegion} from '@dutying/domain';
 import type {KeyboardEvent} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import HospitalSearchField, {type THospitalSelection} from './hospital-search-field';
 
 interface IWardIdentityStepProps {
+    serviceRegion: TServiceRegion;
     hospitalName: string;
     hospitalId?: number;
     wardName: string;
@@ -19,6 +21,7 @@ const FIELD_CLASS =
 const FIELD_LABEL_CLASS = 'font-apple text-[15px] font-semibold text-sub-2';
 
 function WardIdentityStep({
+    serviceRegion,
     hospitalName,
     hospitalId,
     wardName,
@@ -55,6 +58,7 @@ function WardIdentityStep({
                             <span aria-hidden="true" className="absolute top-0 -right-2 size-[5px] rounded-full bg-[#E55C6E]" />
                         </span>
                         <HospitalSearchField
+                            serviceRegion={serviceRegion}
                             hospitalName={hospitalName}
                             hospitalId={hospitalId}
                             hasError={hasHospitalNameError}
