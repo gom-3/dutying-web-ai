@@ -31,6 +31,7 @@ export const normalizeInviteSearch = (search: string | undefined) => {
     if (!search) return '';
 
     const trimmedSearch = search.trim();
+
     if (!trimmedSearch) return '';
 
     return trimmedSearch.startsWith('?') ? trimmedSearch : `?${trimmedSearch}`;
@@ -54,6 +55,7 @@ export const resolveIosAppStoreUrl = (languages: readonly string[]) => {
     const normalizedLanguages = languages.map((language) => language.toLowerCase());
 
     if (normalizedLanguages.some((language) => language.startsWith('ja'))) return IOS_APP_STORE_URL_JA;
+
     if (normalizedLanguages.some((language) => language.startsWith('ko'))) return IOS_APP_STORE_URL_KO;
 
     return IOS_APP_STORE_URL_DEFAULT;
@@ -63,6 +65,7 @@ export const resolveAndroidPlayStoreUrl = (languages: readonly string[]) => {
     const normalizedLanguages = languages.map((language) => language.toLowerCase());
 
     if (normalizedLanguages.some((language) => language.startsWith('ja'))) return ANDROID_PLAY_STORE_URL_JA;
+
     if (normalizedLanguages.some((language) => language.startsWith('ko'))) return ANDROID_PLAY_STORE_URL_KO;
 
     return ANDROID_PLAY_STORE_URL_DEFAULT;

@@ -1287,7 +1287,7 @@ export const en: TLocale = {
                     downgraded: "'{{label}}' was set as required but could not be fully met this month.",
                     useSuggestion: 'Use this sentence',
                     applied: 'Changed {{count}} cells.',
-                    noChange: 'Already optimal in that direction.',
+                    noChange: 'No applicable change was found in this run.',
                     failed: 'Could not adjust. Please try again shortly.',
                     notAllowed: 'This feature is not open for your account yet.',
                     textInput: {

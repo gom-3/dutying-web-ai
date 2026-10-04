@@ -61,10 +61,9 @@ describe('HospitalSearchField', () => {
 
         await user.type(screen.getByRole('combobox'), '새로연병원');
 
-        // 신규 개원이나 표기 누락으로 온보딩이 막히면 안 된다.
-        await user.click(await screen.findByRole('button', {name: /hospitalUseTypedName/}));
-
+        // 신규 개원이나 표기 누락으로 온보딩이 막히지 않는다. 목록을 고르지 않아도 입력값이 곧 값이다.
         expect(onChange).toHaveBeenLastCalledWith({hospitalId: undefined, hospitalName: '새로연병원'});
+        await waitFor(() => expect(screen.queryByRole('listbox')).not.toBeInTheDocument());
     });
 
     it('검색이 실패해도 직접 입력 길은 남는다', async () => {
@@ -77,8 +76,6 @@ describe('HospitalSearchField', () => {
         await user.type(screen.getByRole('combobox'), '세브란스');
 
         await waitFor(() => expect(screen.getByText('page.onboardingWardCreate.identity.hospitalSearchError')).toBeInTheDocument());
-
-        await user.click(screen.getByRole('button', {name: /hospitalUseTypedName/}));
 
         expect(onChange).toHaveBeenLastCalledWith({hospitalId: undefined, hospitalName: '세브란스'});
     });
@@ -110,17 +107,36 @@ describe('HospitalSearchField', () => {
         expect(screen.getByRole('combobox')).toHaveValue('예전에직접입력한병원');
     });
 
-    it('이미 고른 병원이 있으면 검색창을 접고 다시 검색할 수 있게 한다', async () => {
-        const user = userEvent.setup();
-
+    it('고른 병원은 입력칸에 남고 확인 표시가 붙는다', async () => {
         renderField(vi.fn(), {hospitalId: 7, hospitalName: '세브란스병원'});
 
-        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-        expect(screen.getByText('세브란스병원')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toHaveValue('세브란스병원');
+        expect(screen.getByRole('img', {name: 'page.onboardingWardCreate.identity.hospitalMatched'})).toBeInTheDocument();
+    });
 
-        await user.click(screen.getByRole('button', {name: 'page.onboardingWardCreate.identity.hospitalChange'}));
+    it('고른 뒤 글자를 고치면 카탈로그 선택이 풀린다', async () => {
+        const user = userEvent.setup();
+        const onChange = renderField(vi.fn(), {hospitalId: 7, hospitalName: '세브란스병원'});
 
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        await user.type(screen.getByRole('combobox'), '동');
+
+        expect(onChange).toHaveBeenLastCalledWith({hospitalId: undefined, hospitalName: '세브란스병원동'});
+    });
+
+    it('Esc 로 추천 목록을 닫아도 입력한 이름은 남는다', async () => {
+        const user = userEvent.setup();
+
+        renderField();
+
+        const input = screen.getByRole('combobox');
+
+        await user.type(input, '세브란스');
+        expect(await screen.findByRole('listbox')).toBeInTheDocument();
+
+        await user.keyboard('{Escape}');
+
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(input).toHaveValue('세브란스');
     });
 
     it('해외 지역에서는 병원명을 직접 입력하고 한국 병원 API를 부르지 않는다', async () => {

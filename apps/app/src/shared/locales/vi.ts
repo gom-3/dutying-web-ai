@@ -136,7 +136,7 @@ export const vi = {
                     downgraded: '"{{label}}" đặt là bắt buộc nhưng tháng này chưa đạt hết.',
                     useSuggestion: 'Dùng câu này',
                     applied: 'Đã đổi {{count}} ô.',
-                    noChange: 'Theo hướng này đã là tối ưu.',
+                    noChange: 'Không tìm thấy thay đổi phù hợp trong lần chạy này.',
                     failed: 'Không điều chỉnh được. Vui lòng thử lại sau.',
                     notAllowed: 'Tính năng này chưa mở cho tài khoản của bạn.',
                     textInput: {

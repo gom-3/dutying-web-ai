@@ -16,6 +16,7 @@ const getRuntimeUrl = (envValue: string | undefined, fallback: string) => {
     return trimTrailingSlash(normalized ?? fallback);
 };
 const INTERNAL_PATH_PATTERN = /^\/(?![\\/])/;
+
 export const DEFAULT_SERVER_URL = 'https://api.dutying.ai';
 
 export const RUNTIME_CONFIG = {
@@ -28,14 +29,8 @@ export const RUNTIME_CONFIG = {
     profileImageBaseUrl: () =>
         getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-ai-prod.s3.ap-northeast-2.amazonaws.com'),
     docs: {
-        termsOfService: getRuntimeUrl(
-            import.meta.env.VITE_TERMS_OF_SERVICE_URL,
-            'https://www.dutying.ai/terms',
-        ),
-        privacyPolicy: getRuntimeUrl(
-            import.meta.env.VITE_PRIVACY_POLICY_URL,
-            'https://www.dutying.ai/privacy',
-        ),
+        termsOfService: getRuntimeUrl(import.meta.env.VITE_TERMS_OF_SERVICE_URL, 'https://www.dutying.ai/terms'),
+        privacyPolicy: getRuntimeUrl(import.meta.env.VITE_PRIVACY_POLICY_URL, 'https://www.dutying.ai/privacy'),
         memberTutorial: import.meta.env.VITE_MEMBER_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
         requestTutorial: import.meta.env.VITE_REQUEST_TUTORIAL_URL ?? 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
         makeTutorial: import.meta.env.VITE_MAKE_TUTORIAL_URL ?? 'https://gom3.notion.site/68d3ad01e68d4d6a8b4cb8c2409353a3?pvs=4',

@@ -357,8 +357,7 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
-                    displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate: '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -385,9 +384,7 @@ describe('Constraints', () => {
         await userEvent.click(addButton);
 
         const continuationCard = await waitFor(() => {
-            const card = document.querySelector<HTMLElement>(
-                '[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]',
-            );
+            const card = document.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
 
             expect(card).toBeInTheDocument();
 
@@ -519,7 +516,9 @@ describe('Constraints', () => {
 
         const dialog = screen.getByRole('dialog');
         const sequenceCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
-        const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]');
+        const minOffCard = dialog.querySelector<HTMLElement>(
+            '[data-constraint-template-card="TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF"]',
+        );
 
         expect(sequenceCard).not.toBeNull();
         expect(minOffCard).not.toBeNull();
@@ -602,8 +601,7 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
-                    displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate: '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD',
                     allowedSeverities: ['HARD', 'SOFT'],
                     supportedInGenerator: true,
@@ -727,7 +725,9 @@ describe('Constraints', () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
         expect(
-            await screen.findByText('같은 간호사의 같은 근무에 선호와 회피가 동시에 설정되어 있어요. 둘 중 하나를 삭제하거나 서로 다른 근무로 바꿔 주세요.'),
+            await screen.findByText(
+                '같은 간호사의 같은 근무에 선호와 회피가 동시에 설정되어 있어요. 둘 중 하나를 삭제하거나 서로 다른 근무로 바꿔 주세요.',
+            ),
         ).toHaveAttribute('data-warning-code', 'NURSE_SHIFT_PREFER_AVOID_CONFLICT');
         expect(screen.queryByText('shiftConstraintRule.warning.NURSE_SHIFT_PREFER_AVOID_CONFLICT')).not.toBeInTheDocument();
     });
@@ -929,8 +929,7 @@ describe('Constraints', () => {
                 {
                     templateCode: 'TWO_SHIFT_NIGHT_PAIR_MIN_OFF',
                     category: 'CORE',
-                    displayTemplate:
-                        '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
+                    displayTemplate: '모든 간호사는 연속 {nightShift} 근무 후 최소 {count}일의 {offShift}가 필요해요.',
                     severity: 'HARD' as const,
                     allowedSeverities: ['HARD' as const, 'SOFT' as const],
                     supportedInGenerator: true,
@@ -1047,7 +1046,9 @@ describe('Constraints', () => {
 
         const row = await waitFor(() => {
             const element = document.getElementById('constraint-rule-saved-70');
+
             expect(element).not.toBeNull();
+
             return element as HTMLElement;
         });
 
@@ -1120,14 +1121,12 @@ describe('Constraints', () => {
             expect(screen.getByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /제약 조건 추가:.*N 근무 후 최소.*휴무/})).toBeInTheDocument();
         }
+
         expect(screen.getAllByRole('button', {name: '모든 간호사'}).length).toBeGreaterThan(0);
 
         await userEvent.click(
             screen.getByRole('button', {
-                name:
-                    rotationMode === 'MIXED'
-                        ? /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/
-                        : /제약 조건 추가:.*N.*다음 날.*D/,
+                name: rotationMode === 'MIXED' ? /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/ : /제약 조건 추가:.*N.*다음 날.*D/,
             }),
         );
 
@@ -1230,12 +1229,7 @@ describe('Constraints', () => {
             'CORE_MIN_OFF_AFTER_NIGHT',
             'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
         ];
-        const oldRecommendedCodes = [
-            'CORE_MAX_CONTINUOUS_WORK',
-            'CORE_MIN_NIGHT_INTERVAL',
-            'FORBID_E_THEN_N',
-            'CORE_MAX_CONTINUOUS_NIGHT',
-        ];
+        const oldRecommendedCodes = ['CORE_MAX_CONTINUOUS_WORK', 'CORE_MIN_NIGHT_INTERVAL', 'FORBID_E_THEN_N', 'CORE_MAX_CONTINUOUS_NIGHT'];
         const categoryByCode: Record<string, string> = {
             FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
             FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
@@ -1393,6 +1387,7 @@ describe('Constraints', () => {
         recommendedOrder.slice(0, -1).forEach((template, index) => {
             expect(template.compareDocumentPosition(recommendedOrder[index + 1]!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
         });
+
         for (const removedRecommendedCode of [
             'STAFF_COUNT_BY_SHIFT',
             'CORE_MAX_CONTINUOUS_WORK',
@@ -1411,13 +1406,11 @@ describe('Constraints', () => {
         expect(dialog.querySelector('[data-constraint-template-card="CORE_MAX_CONTINUOUS_WORK"]')).toBeInTheDocument();
         expect(dialog.querySelector('[data-constraint-template-card="MIN_MONTHLY_OFF"]')).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '야간·전환'}));
-        for (const normalCategoryCode of [
-            'CORE_MIN_NIGHT_INTERVAL',
-            'CORE_MAX_CONTINUOUS_NIGHT',
-            'FORBID_E_THEN_N',
-        ]) {
+
+        for (const normalCategoryCode of ['CORE_MIN_NIGHT_INTERVAL', 'CORE_MAX_CONTINUOUS_NIGHT', 'FORBID_E_THEN_N']) {
             expect(dialog.querySelector(`[data-constraint-template-card="${normalCategoryCode}"]`)).toBeInTheDocument();
         }
+
         expect(dialog.querySelector('[data-constraint-template-card="MAX_MONTHLY_NIGHT_COUNT"]')).not.toBeInTheDocument();
 
         let normalRuleCount = 0;

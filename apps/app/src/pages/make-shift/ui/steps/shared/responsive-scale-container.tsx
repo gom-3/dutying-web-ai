@@ -45,25 +45,27 @@ export function ResponsiveScaleContainer({
         if (disabled) {
             setScale(1);
             setScaledHeight(null);
+
             return;
         }
 
         const outer = outerRef.current;
         const content = contentRef.current;
         const scaleEl = scaleRef.current;
+
         if (!outer || !content || !scaleEl) return;
 
         const compute = () => {
             const available = outer.clientWidth;
             const contentW = designWidth ?? content.scrollWidth;
             const contentH = content.scrollHeight;
+
             if (!available || !contentW) return;
 
             // Below the supported width, don't scale down further. Let the page scroll horizontally instead.
             const nextScale =
-                minSupportedWidth && available < minSupportedWidth
-                    ? 1
-                    : Math.min(maxScale, Math.max(minScale, available / contentW));
+                minSupportedWidth && available < minSupportedWidth ? 1 : Math.min(maxScale, Math.max(minScale, available / contentW));
+
             setScale(nextScale);
             setScaledHeight(contentH * nextScale);
         };
@@ -71,10 +73,12 @@ export function ResponsiveScaleContainer({
         compute();
 
         const ro = new ResizeObserver(() => compute());
+
         ro.observe(outer);
         ro.observe(content);
 
         window.addEventListener('resize', compute);
+
         return () => {
             ro.disconnect();
             window.removeEventListener('resize', compute);
@@ -106,4 +110,3 @@ export function ResponsiveScaleContainer({
         </div>
     );
 }
-

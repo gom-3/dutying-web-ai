@@ -1283,7 +1283,7 @@ export const ko = {
                     downgraded: "'{{label}}'은 꼭으로 걸었지만 이번 표에서는 다 못 지켰어요.",
                     useSuggestion: '이 문장으로 바꾸기',
                     applied: '{{count}}칸을 바꿨어요.',
-                    noChange: '이미 그 방향으로는 최적이에요.',
+                    noChange: '이번 실행에서는 적용할 변경을 찾지 못했어요.',
                     failed: '조절하지 못했어요. 잠시 후 다시 시도해 주세요.',
                     notAllowed: '이 계정에는 아직 열리지 않은 기능이에요.',
                     textInput: {

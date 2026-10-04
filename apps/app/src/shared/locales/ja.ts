@@ -1409,7 +1409,7 @@ export const ja: TLocale = {
                     downgraded: '「{{label}}」は必須にしましたが、今月の表では守りきれませんでした。',
                     useSuggestion: 'この文にする',
                     applied: '{{count}}セルを変更しました。',
-                    noChange: 'その方向ではすでに最適です。',
+                    noChange: '今回の実行では適用できる変更が見つかりませんでした。',
                     failed: '調整できませんでした。しばらくしてからもう一度お試しください。',
                     notAllowed: 'この機能はまだこのアカウントでは利用できません。',
                     textInput: {
