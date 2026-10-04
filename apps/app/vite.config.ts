@@ -272,6 +272,12 @@ export default defineConfig(({mode}) => {
                 async closeBundle() {
                     if (!shouldEmitStaticRoutes) return;
 
+                    // Advanced Pages Function is emitted only for this app build, not the docs project.
+                    writeFileSync(
+                        resolve(resolvedOutDir, '_worker.js'),
+                        readFileSync(resolve(workspaceRoot, 'apps/app/edge/worker.mjs')),
+                    );
+
                     const indexHtml = readFileSync(resolve(resolvedOutDir, 'index.html'), 'utf8');
                     writeFileSync(
                         resolve(resolvedOutDir, 'app-shell.html'),

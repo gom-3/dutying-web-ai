@@ -1,13 +1,16 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {
     buildApiLocaleHeaders,
     getDefaultServiceRegionForLanguage,
     getLocaleForLanguage,
+    getSavedLanguagePreferenceCookie,
     normalizePreferredLanguage,
     normalizeServiceRegion,
+    saveLanguagePreferenceCookie,
 } from '../locale';
 
 describe('locale helpers', () => {
+    beforeEach(() => window.sessionStorage.clear());
     it('normalizes browser language tags to supported service languages', () => {
         expect(normalizePreferredLanguage('ko-KR')).toBe('ko');
         expect(normalizePreferredLanguage('ja-JP')).toBe('ja');
@@ -49,17 +52,28 @@ describe('locale helpers', () => {
         });
     });
 
-    it('falls back to language-based service region when no region is stored', () => {
+    it('does not turn the display language into a service region', () => {
         expect(buildApiLocaleHeaders('ko-KR')).toEqual({
             'Accept-Language': 'ko-KR',
-            'X-Service-Region': 'KR',
         });
     });
 
-    it('defaults API locale headers to Korean when no locale signal exists', () => {
+    it('uses the visitor country independently of display language', () => {
+        window.sessionStorage.setItem('dutying.visitorCountry', 'JP');
+        expect(buildApiLocaleHeaders('ko-KR')).toEqual({
+            'Accept-Language': 'ko-KR',
+            'X-Service-Region': 'JP',
+        });
+    });
+
+    it('does not guess a service region when there is no country signal', () => {
         expect(buildApiLocaleHeaders()).toEqual({
             'Accept-Language': 'ko-KR',
-            'X-Service-Region': 'KR',
         });
+    });
+
+    it('preserves an explicit language choice in a cookie', () => {
+        saveLanguagePreferenceCookie('ja-JP');
+        expect(getSavedLanguagePreferenceCookie()).toBe('ja');
     });
 });

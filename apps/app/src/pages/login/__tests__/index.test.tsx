@@ -297,7 +297,7 @@ describe('LoginPage', () => {
                     agreedAt: expect.any(String),
                     preferredLanguage: 'ko',
                     locale: 'ko-KR',
-                    serviceRegion: 'KR',
+                    serviceRegion: 'EN',
                 }),
             ],
         });

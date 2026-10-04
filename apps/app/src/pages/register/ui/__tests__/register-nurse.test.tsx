@@ -67,10 +67,10 @@ describe('RegisterNurse', () => {
                     name: '홍길동',
                     phoneNum: '01012345678',
                     preferredLanguage: 'ko',
-                    serviceRegion: 'KR',
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );
+            expect(mocks.registerAccountProfile.mock.calls[0]?.[0]).not.toHaveProperty('serviceRegion');
         });
 
         expect(screen.queryByText('성별')).not.toBeInTheDocument();

@@ -1,4 +1,4 @@
-﻿import type {TPreferredLanguage} from '@dutying/domain';
+﻿import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown, Languages, UserRound} from 'lucide-react';
@@ -17,11 +17,12 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     DEFAULT_PREFERRED_LANGUAGE,
-    getDefaultServiceRegionForLanguage,
+    getStoredServiceRegion,
+    normalizeServiceRegion,
     normalizePreferredLanguage,
-    setStoredServiceRegion,
     SUPPORTED_LANGUAGES,
 } from '@/shared/i18n/locale';
+import {getCountryServiceRegion, getVisitorCountry} from '@/shared/i18n/visitor-country';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
 import {
     CONTACT_PHONE_MAX_LENGTH,
@@ -62,7 +63,7 @@ const validateName = (value: string, messages: {required: string; invalid: strin
 };
 const validatePhoneNum = (
     value: string,
-    serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>,
+    serviceRegion: TServiceRegion,
     messages: {required: string; invalid: string},
 ) => {
     const normalizedValue = normalizeContactPhoneForStorage(value);
@@ -220,7 +221,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         normalizePreferredLanguage(accountMe?.resolvedLanguage) ??
         normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
         DEFAULT_PREFERRED_LANGUAGE;
-    const phoneValidationRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
+    const phoneValidationRegion =
+        getCountryServiceRegion(getVisitorCountry()) ??
+        normalizeServiceRegion(accountMe?.serviceRegion) ??
+        getStoredServiceRegion() ??
+        'EN';
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
@@ -314,10 +319,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         try {
             setIsSavingPreferences(true);
 
-            const nextServiceRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
             const isSaved = await updateAccountPreferences({
                 preferredLanguage: draftPreferredLanguage,
-                serviceRegion: nextServiceRegion,
             });
 
             if (!isSaved) {
@@ -326,7 +329,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 return false;
             }
 
-            setStoredServiceRegion(nextServiceRegion);
             await i18n.changeLanguage(draftPreferredLanguage);
             toast.success(t('page.profile.preferencesSaved'));
 

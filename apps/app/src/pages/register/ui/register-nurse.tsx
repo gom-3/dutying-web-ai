@@ -1,3 +1,4 @@
+import type {TServiceRegion} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {Camera} from 'lucide-react';
@@ -11,12 +12,8 @@ import {type TCreateAccountProfileDTO, useCreateAccount} from '@/features/accoun
 import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {
-    DEFAULT_PREFERRED_LANGUAGE,
-    getDefaultServiceRegionForLanguage,
-    normalizePreferredLanguage,
-    normalizeServiceRegion,
-} from '@/shared/i18n/locale';
+import {DEFAULT_PREFERRED_LANGUAGE, normalizePreferredLanguage, normalizeServiceRegion} from '@/shared/i18n/locale';
+import {getCountryServiceRegion, getVisitorCountry} from '@/shared/i18n/visitor-country';
 import {
     CONTACT_PHONE_MAX_LENGTH,
     isValidContactPhone,
@@ -57,7 +54,7 @@ const isDuplicatePhoneNumError = (error: unknown) => {
 
     return code === 409 ? hasPhoneHint || hasAlreadyUsedHint : hasPhoneHint && hasAlreadyUsedHint;
 };
-const createSchema = (serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>) =>
+const createSchema = (serviceRegion: TServiceRegion) =>
     yup
         .object()
         .shape({
@@ -100,10 +97,10 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
         DEFAULT_PREFERRED_LANGUAGE;
     const serviceRegion =
+        getCountryServiceRegion(getVisitorCountry()) ??
         normalizeServiceRegion(accountMe?.serviceRegion) ??
-        normalizeServiceRegion(accountMe?.resolvedRegion) ??
-        getDefaultServiceRegionForLanguage(preferredLanguage);
-    const schema = useMemo(() => createSchema(serviceRegion), [serviceRegion]);
+        normalizeServiceRegion(accountMe?.resolvedRegion);
+    const schema = useMemo(() => createSchema(serviceRegion ?? 'EN'), [serviceRegion]);
     const {
         formState: {errors},
         watch,
@@ -132,7 +129,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                     await registerAccountProfile({
                         ...accountProfileDTO,
                         preferredLanguage,
-                        serviceRegion,
+                        ...(serviceRegion ? {serviceRegion} : {}),
                     });
                     onCompleted?.();
                 } catch (error) {

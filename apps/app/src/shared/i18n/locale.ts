@@ -1,4 +1,5 @@
 import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
+import {getCountryServiceRegion, getVisitorCountry} from './visitor-country';
 
 export const SUPPORTED_LANGUAGES = ['ko', 'ja', 'en', 'zh', 'th', 'vi'] as const satisfies readonly TPreferredLanguage[];
 export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TH', 'VN'] as const satisfies readonly TServiceRegion[];
@@ -6,6 +7,7 @@ export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TH', 'VN'] as
 export const DEFAULT_PREFERRED_LANGUAGE = 'ko' as const satisfies TPreferredLanguage;
 export const DEFAULT_SERVICE_REGION = 'KR' as const satisfies TServiceRegion;
 export const SERVICE_REGION_STORAGE_KEY = 'dutying.serviceRegion';
+export const LANGUAGE_PREFERENCE_COOKIE = 'dutying.locale';
 
 type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN';
 
@@ -68,12 +70,36 @@ export const setStoredServiceRegion = (value: TServiceRegion) => {
     window.localStorage.setItem(SERVICE_REGION_STORAGE_KEY, value);
 };
 
+export const getSavedLanguagePreferenceCookie = (): TPreferredLanguage | undefined => {
+    if (typeof document === 'undefined') return undefined;
+
+    const value = document.cookie
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(`${LANGUAGE_PREFERENCE_COOKIE}=`))
+        ?.slice(LANGUAGE_PREFERENCE_COOKIE.length + 1);
+
+    return normalizePreferredLanguage(value);
+};
+
+export const saveLanguagePreferenceCookie = (value: string) => {
+    if (typeof document === 'undefined') return;
+
+    const language = normalizePreferredLanguage(value);
+
+    if (!language) return;
+
+    const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+
+    document.cookie = `${LANGUAGE_PREFERENCE_COOKIE}=${language}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+};
+
 export const buildApiLocaleHeaders = (language?: string | null, serviceRegion?: string | null): Record<string, string> => {
     const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
-    const normalizedRegion = normalizeServiceRegion(serviceRegion) ?? getDefaultServiceRegionForLanguage(normalizedLanguage);
+    const normalizedRegion = normalizeServiceRegion(serviceRegion) ?? getCountryServiceRegion(getVisitorCountry());
 
     return {
         'Accept-Language': getLocaleForLanguage(normalizedLanguage),
-        'X-Service-Region': normalizedRegion,
+        ...(normalizedRegion ? {'X-Service-Region': normalizedRegion} : {}),
     };
 };

@@ -12,7 +12,8 @@ import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
 import {buildAuthAuthorizeUrl, buildLineAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {getVisitorCountry} from '@/shared/i18n/visitor-country';
 import {createMarketingAgreementRecord, createTermsAgreementRecord} from '@/shared/legal/agreements';
 import './index.css';
 
@@ -212,7 +213,7 @@ function LoginPage() {
     const isPasswordResetDisabled = isPasswordResetBusy;
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
     const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language);
-    const isJapaneseLoginContext = getStoredServiceRegion() === 'JP' || currentLanguage === 'ja';
+    const isJapaneseLoginContext = getVisitorCountry() === 'JP' || currentLanguage === 'ja';
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const lineAuthorizeUrl = buildLineAuthAuthorizeUrl(socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);

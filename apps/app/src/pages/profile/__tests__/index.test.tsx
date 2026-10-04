@@ -199,7 +199,6 @@ describe('ProfilePage account actions', () => {
         await waitFor(() => {
             expect(mockUpdateAccountPreferences).toHaveBeenCalledWith({
                 preferredLanguage: 'ja',
-                serviceRegion: 'JP',
             });
         });
         expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();

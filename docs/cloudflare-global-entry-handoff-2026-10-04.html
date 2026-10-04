@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Dutying 글로벌 첫 방문 현지화 · Cloudflare 인계</title>
+        <style>
+            :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17212f; background: #f4f6fa; }
+            * { box-sizing: border-box; }
+            body { margin: 0; line-height: 1.65; }
+            main { max-width: 980px; margin: 0 auto; padding: 56px 28px 80px; }
+            header { padding-bottom: 30px; border-bottom: 2px solid #17212f; }
+            .eyebrow { color: #4454a0; font-size: 13px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+            h1 { margin: 10px 0 12px; font-size: clamp(30px, 4vw, 44px); line-height: 1.18; letter-spacing: -.04em; }
+            h2 { margin: 0 0 18px; font-size: 23px; letter-spacing: -.025em; }
+            h3 { margin: 24px 0 8px; font-size: 17px; }
+            p { margin: 8px 0 14px; }
+            .lead { max-width: 760px; color: #465469; font-size: 17px; }
+            .meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; color: #546172; font-size: 13px; }
+            .meta span { padding: 5px 10px; background: #e7ebf4; border-radius: 5px; }
+            section { margin-top: 38px; padding: 28px; background: white; border-radius: 10px; }
+            .summary { border-left: 5px solid #5264c4; }
+            ul, ol { padding-left: 22px; margin: 10px 0 0; }
+            li + li { margin-top: 8px; }
+            table { width: 100%; border-collapse: collapse; margin: 14px 0 4px; font-size: 14px; }
+            th { color: #344057; background: #eef1f7; text-align: left; }
+            th, td { padding: 10px 12px; border-bottom: 1px solid #dfe5ed; vertical-align: top; }
+            code { background: #eef1f7; padding: 2px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+            pre { overflow-x: auto; padding: 16px; background: #17212f; color: white; border-radius: 7px; font-size: 13px; }
+            pre code { background: transparent; padding: 0; }
+            a { color: #3a4eaa; }
+            .note { padding: 14px 17px; background: #edf3ff; border-radius: 6px; }
+            .risk { padding: 14px 17px; background: #fff4e8; border-radius: 6px; }
+            footer { color: #617085; font-size: 13px; margin-top: 30px; }
+            @media (max-width: 620px) { main { padding: 28px 14px 48px; } section { padding: 19px; } table { display: block; overflow-x: auto; } }
+            @media print { :root { background: white; } main { max-width: none; padding: 0; } section { break-inside: avoid; border: 1px solid #dfe5ed; } a { color: #17212f; } }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <div class="eyebrow">Cloudflare Pages · 운영 인계 문서</div>
+                <h1>Dutying 글로벌 첫 방문 현지화</h1>
+                <p class="lead">방문자가 기본 주소로 들어오면 접속 국가에 맞는 언어 페이지를 바로 보여줍니다. 기존 언어별 페이지와 한국어 기본 주소의 검색 색인은 유지합니다.</p>
+                <div class="meta"><span>작성일 2026-10-04</span><span>대상 www.dutying.ai</span><span>대상 빌드 pnpm build:app</span><span>DB 변경 없음</span></div>
+            </header>
+
+            <section class="summary">
+                <h2>담당자에게 필요한 작업</h2>
+                <ol>
+                    <li>웹 코드가 반영된 배포에서 <code>apps/app/dist/_worker.js</code>와 <code>apps/app/dist/_routes.json</code>이 함께 게시되는지 확인합니다. Pages 프로젝트의 빌드 명령은 <code>pnpm build:app</code>, 출력 경로는 <code>apps/app/dist</code>입니다.</li>
+                    <li>Pages Functions가 <code>/</code>와 <code>/__visitor-country</code>에서만 실행되는지 확인합니다. <code>/ja</code>, <code>/en</code>, 이미지·JS·CSS는 정적 자산으로 제공되어야 합니다.</li>
+                    <li>기본 주소에 별도의 Cloudflare Redirect Rule 또는 캐시 규칙을 중복 추가하지 않습니다. 리디렉션은 배포된 Worker가 처리합니다.</li>
+                    <li>무료 한도 초과 시 정적 페이지를 계속 제공하도록 Pages의 <strong>Settings → Runtime → Fail open / closed</strong>를 <strong>Fail open</strong>으로 설정하고, Functions 사용량 알림을 확인합니다.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>동작 정책</h2>
+                <p>언어 선택 우선순위는 <strong>명시한 <code>?lng</code> → 저장된 언어 → 접속 IP 국가 → 브라우저 언어 → 영어</strong>입니다. 자동 이동은 기본 주소 <code>/</code>에서만 임시 302 응답으로 실행하고, 리디렉션 응답은 <code>private, no-store</code>로 반환합니다.</p>
+                <table>
+                    <thead><tr><th>IP 국가</th><th>첫 방문 주소</th><th>병원명 입력</th></tr></thead>
+                    <tbody>
+                        <tr><td>KR</td><td><code>/</code> (한국어)</td><td>한국 병원 목록 + 직접 입력</td></tr>
+                        <tr><td>JP</td><td><code>/ja</code></td><td>직접 입력</td></tr>
+                        <tr><td>CN / TH / VN</td><td><code>/zh</code> / <code>/th</code> / <code>/vi</code></td><td>직접 입력</td></tr>
+                        <tr><td>그 외 국가</td><td>지원되는 브라우저 언어, 없으면 <code>/en</code></td><td>직접 입력</td></tr>
+                        <tr><td>국가 확인 실패</td><td>지원되는 브라우저 언어, 없으면 <code>/en</code></td><td>한국 전화번호가 확인된 경우에만 목록</td></tr>
+                    </tbody>
+                </table>
+                <p class="note">현재 중국어 페이지는 간체입니다. 대만의 번체 현지화는 별도 번역 작업이 있어야 하므로 IP 국가 TW를 간체 페이지로 자동 연결하지 않습니다.</p>
+                <p>사용자가 <code>/ja</code>처럼 언어 주소를 직접 방문하면 IP 국가와 관계없이 그 페이지를 그대로 제공합니다. 언어 선택은 쿠키에 보관하며, 로그인 후 계정의 선호 언어도 기존처럼 적용합니다. 화면 언어 변경은 계정의 서비스 지역을 변경하지 않습니다.</p>
+                <p>알려진 검색 크롤러가 기본 주소에 접근하면 한국어 정적 페이지를 반환합니다. 일반 방문자는 브라우저 언어 헤더가 없어도 IP 국가를 우선 적용합니다.</p>
+                <p>국가 선택 질문은 추가하지 않습니다. 계정에 서비스 지역이 아직 없을 때 웹이 접속 국가에서 추정한 지역을 API 헤더로 보내고, 기존 서버가 이를 최초 지역으로 저장할 수 있습니다. 이미 저장된 계정 지역은 IP가 바뀌어도 유지됩니다. 한국 병원 목록만 현재 방문 국가를 기준으로 판단하므로 여행·VPN으로 추정이 틀린 경우에도 병원명 직접 입력은 가능합니다.</p>
+            </section>
+
+            <section>
+                <h2>기술 구성</h2>
+                <ul>
+                    <li>Cloudflare Pages의 배포 산출물 <code>_worker.js</code>가 <code>request.cf.country</code>를 읽습니다. 별도 GeoIP API, GPS 권한 또는 IP 주소 저장은 사용하지 않습니다.</li>
+                    <li><code>_routes.json</code>의 include는 <code>/</code>와 <code>/__visitor-country</code>뿐입니다. 정적 페이지·이미지·번들은 Function 요청 한도를 사용하지 않습니다.</li>
+                    <li><code>/__visitor-country</code>는 브라우저에 두 글자 국가 코드 또는 <code>null</code>만 반환하고 캐시하지 않습니다. 제품 화면은 한 번 조회한 국가를 탭 세션에 보관합니다.</li>
+                    <li>기존 <code>www.dutying.ai</code>가 정식 사이트입니다. <code>app.dutying.ai</code>는 동일 앱의 호환 주소이며, <code>dev.dutying.ai</code>는 별도 Pages 프로젝트입니다.</li>
+                    <li>Java API 서버나 DB 스키마 변경 없이 이 동작을 적용합니다. 웹의 언어→서비스 지역 자동 매핑을 제거했고, 병원 목록은 계정의 과거 지역값 대신 방문 국가를 사용합니다.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>배포 후 확인 항목</h2>
+                <table>
+                    <thead><tr><th>시험</th><th>기대 결과</th></tr></thead>
+                    <tbody>
+                        <tr><td>일본 IP, 새 브라우저에서 <code>/</code></td><td>302 → <code>/ja</code>, 첫 화면 일본어</td></tr>
+                        <tr><td>한국 IP, 새 브라우저에서 <code>/</code></td><td>한국어 페이지 200</td></tr>
+                        <tr><td>한국 IP에서 <code>/ja</code> 직접 방문</td><td>일본어 페이지 200, 자동 이동 없음</td></tr>
+                        <tr><td>일본 IP에서 영어 선택 후 <code>/</code> 재방문</td><td>저장된 선택에 따라 <code>/en</code></td></tr>
+                        <tr><td><code>/__visitor-country</code> 호출</td><td>국가 코드만 담긴 JSON, <code>Cache-Control: private, no-store</code></td></tr>
+                        <tr><td>한국·일본 IP에서 병원명 입력</td><td>한국에서만 한국 병원 API 호출, 양쪽 모두 직접 입력 가능</td></tr>
+                        <tr><td>일본 IP에서 한국어로 언어 변경 후 병원명 입력</td><td>한국 병원 API 호출 없음, 직접 입력 가능</td></tr>
+                        <tr><td>검색엔진의 <code>/ja</code>, <code>/en</code> 접근</td><td>각 언어의 정적 HTML 200, canonical·hreflang 유지</td></tr>
+                    </tbody>
+                </table>
+                <p class="risk">검색엔진은 언어별 고정 주소를 직접 읽어야 합니다. 국가별 리디렉션을 <code>/*</code> 전체에 적용하거나 <code>/ja</code>를 다른 언어로 보내지 마세요. 운영 반영 후 Search Console에서 국가별 색인과 검색 노출을 확인합니다.</p>
+            </section>
+
+            <section>
+                <h2>요금·장애 대응</h2>
+                <p>Cloudflare 공식 문서 기준 Pages Function은 Workers 무료 한도에 포함되며, 무료 한도는 두 기능을 합쳐 하루 10만 호출입니다. 정적 자산 요청은 무료입니다. 이 구현은 두 경로만 Function을 사용하므로 유료 전환은 필수가 아닙니다. 한도 초과로 Function이 실행되지 않으면 Fail open 설정에 따라 정적 한국어 기본 페이지와 언어별 직접 주소는 계속 제공됩니다.</p>
+                <p>문제 발생 시 배포 이전 버전으로 Pages 롤백하면 됩니다. 대시보드에 별도 리디렉션 규칙을 만들지 않았으므로 별도 규칙 삭제 작업은 없습니다.</p>
+            </section>
+
+            <section>
+                <h2>검토 근거</h2>
+                <ul>
+                    <li><a href="https://help.shopify.com/en/manual/markets/getting-started/localization">Shopify: IP 국가와 브라우저 언어 기반 첫 방문 현지화, 사용자 선택 유지</a></li>
+                    <li><a href="https://developers.google.com/search/docs/specialty/international/managing-multi-regional-sites">Google Search Central: 언어별 고정 URL, hreflang, 다른 언어 URL의 접근성</a></li>
+                    <li><a href="https://developers.cloudflare.com/workers/runtime-apis/request/">Cloudflare: request.cf.country</a></li>
+                    <li><a href="https://developers.cloudflare.com/pages/functions/routing/">Cloudflare: _routes.json으로 Function 실행 경로 제한</a></li>
+                    <li><a href="https://developers.cloudflare.com/pages/functions/pricing/">Cloudflare: Pages Functions 요금과 무료 한도</a></li>
+                </ul>
+            </section>
+            <footer>담당 범위: Pages 배포 산출물·Function 라우팅·운영 확인. 앱 코드와 계정 데이터는 기존 웹 배포 절차에서 관리합니다.</footer>
+        </main>
+    </body>
+</html>

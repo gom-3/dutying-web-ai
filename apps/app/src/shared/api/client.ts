@@ -5,6 +5,7 @@ import {match} from 'ts-pattern';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {buildApiLocaleHeaders, getStoredServiceRegion} from '@/shared/i18n/locale';
+import {getCountryServiceRegion, getVisitorCountry} from '@/shared/i18n/visitor-country';
 import {emitScheduleRosterChanged, normalizeApiErrorResponse, resolveApiErrorMessage, type TApiClientError} from './error';
 
 declare module 'axios' {
@@ -48,7 +49,10 @@ export const shouldRedirectToRefreshOnUnauthorized = (requestUrl: string | undef
 const applyRequestInterceptor = (instance: ReturnType<typeof createAxiosInstance>) => {
     instance.interceptors.request.use((config) => {
         const headers = AxiosHeaders.from(config.headers);
-        const localeHeaders = buildApiLocaleHeaders(i18n.resolvedLanguage ?? i18n.language, getStoredServiceRegion());
+        const localeHeaders = buildApiLocaleHeaders(
+            i18n.resolvedLanguage ?? i18n.language,
+            getCountryServiceRegion(getVisitorCountry()) ?? getStoredServiceRegion(),
+        );
 
         Object.entries(localeHeaders).forEach(([key, value]) => {
             headers.set(key, value);

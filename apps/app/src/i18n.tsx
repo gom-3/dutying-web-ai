@@ -2,7 +2,13 @@ import {DateUtil} from '@dutying/utils/date';
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import {initReactI18next} from 'react-i18next';
-import {DEFAULT_PREFERRED_LANGUAGE, getLocaleForLanguage, normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {
+    DEFAULT_PREFERRED_LANGUAGE,
+    getLocaleForLanguage,
+    normalizePreferredLanguage,
+    saveLanguagePreferenceCookie,
+    SUPPORTED_LANGUAGES,
+} from '@/shared/i18n/locale';
 import {
     en as generatedEn,
     ja as generatedJa,
@@ -167,8 +173,10 @@ i18n.use(LanguageDetector)
 
 i18n.on('languageChanged', (lng) => {
     syncDocumentLocale(lng);
+    saveLanguagePreferenceCookie(lng);
 });
 
 syncDocumentLocale(i18n.resolvedLanguage ?? i18n.language);
+saveLanguagePreferenceCookie(i18n.resolvedLanguage ?? i18n.language);
 
 export default i18n;

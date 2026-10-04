@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import {hydrateRoot} from 'react-dom/client';
 import {I18nextProvider} from 'react-i18next';
 import {createPath, Router, type Navigator} from 'react-router';
+import {saveLanguagePreferenceCookie} from '@/shared/i18n/locale';
 import {createLandingI18n} from './landing-i18n';
 import LandingPageView, {guestSession, type TLandingSession} from './landing-page-view';
 import type {LandingSessionBridge} from './landing-session';
@@ -51,6 +52,8 @@ function LandingClient() {
         } catch {
             // The static page and its links also work when browser storage is unavailable.
         }
+
+        saveLanguagePreferenceCookie(data.language);
 
         container.dataset.hydrated = 'true';
 

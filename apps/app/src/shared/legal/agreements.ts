@@ -2,12 +2,12 @@ import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {
     DEFAULT_PREFERRED_LANGUAGE,
-    getDefaultServiceRegionForLanguage,
     getLocaleForLanguage,
     getStoredServiceRegion,
     normalizePreferredLanguage,
     normalizeServiceRegion,
 } from '@/shared/i18n/locale';
+import {getCountryServiceRegion, getVisitorCountry} from '@/shared/i18n/visitor-country';
 
 export const TERMS_OF_SERVICE_DOCUMENT_VERSION = '2026-06-20';
 export const MARKETING_COMMUNICATIONS_DOCUMENT_VERSION = '2026-06-20';
@@ -30,7 +30,7 @@ const createAgreementBase = (
 ) => {
     const preferredLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
     const resolvedServiceRegion =
-        normalizeServiceRegion(serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(preferredLanguage);
+        normalizeServiceRegion(serviceRegion) ?? getCountryServiceRegion(getVisitorCountry()) ?? getStoredServiceRegion() ?? 'EN';
 
     return {
         agreed: true,
