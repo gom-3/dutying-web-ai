@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.2.1
+
+### Patch Changes
+
+- 한국 서비스 지역에서만 병원명 자동완성을 표시하고, 해외에서는 병원명을 직접 입력하도록 변경합니다.
+    - @dutying/api@1.2.1
+    - @dutying/domain@1.2.1
+    - @dutying/utils@1.2.1
+
 ## 1.2.0
 
 ### Minor Changes
