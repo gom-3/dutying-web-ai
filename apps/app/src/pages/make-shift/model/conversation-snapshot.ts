@@ -17,14 +17,11 @@ export function buildConversationSnapshot(version: TResultVersion) {
 
     const metadata = Array.isArray(context.rows) ? context.rows : [];
     const types = Array.isArray(context.shiftTypes) ? context.shiftTypes : [];
-    const cellTypes = new Map(
-        [...version.cells, ...version.carryOverCells]
-            .filter((cell) => cell.wardShiftTypeId != null)
-            .map((cell) => [cell.wardShiftTypeId!, cell.shiftCode]),
-    );
+    const cellTypes = new Map(types.filter((type) => type?.wardShiftTypeId != null).map((type) => [type.wardShiftTypeId, type.code]));
 
-    for (const type of types) {
-        if (type?.wardShiftTypeId != null && !cellTypes.has(type.wardShiftTypeId)) cellTypes.set(type.wardShiftTypeId, type.code);
+    for (const cell of [...version.cells, ...version.carryOverCells]) {
+        if (cell.wardShiftTypeId != null)
+            cellTypes.set(cell.wardShiftTypeId, cell.shiftCode ?? cellTypes.get(cell.wardShiftTypeId) ?? `#${cell.wardShiftTypeId}`);
     }
 
     const holidays = new Set(

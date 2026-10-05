@@ -43,6 +43,17 @@ describe('immutable conversation snapshot rendering', () => {
         expect(shift.days[0]?.dayType).toBe('holiday');
         expect(shift.wardShiftTypes[0]?.color).toBe('#44c4b0');
     });
+    it('preserves the saved shift-type column order even when the first assigned cell uses another type', () => {
+        const context = JSON.parse(version.constraintsJson);
+        const snapshot = {
+            ...version,
+            constraintsJson: JSON.stringify({
+                ...context,
+                shiftTypes: [{wardShiftTypeId: 2, code: 'E', name: 'Evening'}, ...context.shiftTypes],
+            }),
+        };
+        expect(buildConversationSnapshot(snapshot).shift.wardShiftTypes.map((type) => type.shortName)).toEqual(['E', 'D']);
+    });
     it('keeps unknown historical metadata explicit instead of substituting current data', () => {
         const {shift, doc} = buildConversationSnapshot({...version, constraintsJson: '{}'});
         expect(shift.divisionShiftNurses.flat().map((row) => row.shiftNurse.name)).toEqual(['#1', '#2']);
