@@ -14,6 +14,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import {useAnnualLeaveSchedule} from '@/features/annual-leave/queries';
 import {useAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import useAuth from '@/features/auth';
+import useAuthStore from '@/features/auth/model/store';
 import {commercialGet} from '@/features/commercial/api';
 import {batchCellsForReview, type CommercialBatchResult} from '@/features/commercial/batch-result';
 import {AiPlanNotice} from '@/features/commercial/entry';
@@ -45,8 +46,18 @@ import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
-import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc, type TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
+import {
+    autofillCompletionKey,
+    readAutofillCompletion,
+    writeAutofillCompletion,
+    canConfirmAiAutofill,
+    isScheduleFullyProtected,
+    type TAiAutofillStatus,
+} from '../../../model/ai-autofill-state';
+import {carryOverOptions} from '../../../model/ai-carry-over';
+import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import {aiExecutionFailure} from '../../../model/ai-execution-failure';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
@@ -85,9 +96,9 @@ import AiConversationSidebar from './ai-conversation-sidebar';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
+import {AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
-import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
@@ -102,7 +113,7 @@ type TSnapshotLimitContext = {
     intent: 'save' | 'confirm';
 };
 type TLastShiftBlankWarningIntent = 'aiFill' | 'confirm';
-type TAiFillDecisionContext = {kind: 'initial'; cellCount: number} | {kind: 'regenerate'; cellCount: number};
+type TAiFillDecisionContext = {cellCount: number};
 
 type TSelectionFixedStats = {
     fixableFilledCount: number;
@@ -229,28 +240,6 @@ function getUnprotectedFilledCells(doc: TDutyDoc): TCellPos[] {
     return cells;
 }
 
-// 표에 이미 채워진 칸이 있는지. 사전 신청 칸은 표가 아니라 입력이므로 세지 않는다.
-// 채워진 표가 있으면 이번 세션에서 자동 채우기를 돌렸는지와 무관하게 조절할 대상이 있는 것이다.
-function hasFilledScheduleCells(doc: TDutyDoc): boolean {
-    for (let row = 0; row < doc.rows.length; row += 1) {
-        const dutyRow = doc.rows[row];
-
-        if (!dutyRow) continue;
-
-        for (let col = 0; col < doc.columns.length; col += 1) {
-            const key = getDocCellKey(doc, row, col);
-
-            if (key === null) continue;
-
-            if (doc.requestCells[key] === true) continue;
-
-            if (dutyRow.cells[col] != null) return true;
-        }
-    }
-
-    return false;
-}
-
 function getSelectionFixedStats(doc: TDutyDoc, selectionCells: TCellPos[]): TSelectionFixedStats {
     let fixableFilledCount = 0;
     let fixedCount = 0;
@@ -336,20 +325,6 @@ function resolveSnapshotDisplayTitle(params: {
     return resolveHistoryTitle(detailTitle, fallbackTitle);
 }
 
-function adjustFailureMessage(response: TAutofillResponse): string {
-    const reason = response.engineResult?.solver?.reason;
-
-    if (reason === 'invalid_adjustment_goal_selector') {
-        return '조절 대상을 현재 근무표와 연결하지 못했어요. 표를 새로고침한 뒤 다시 시도해 주세요.';
-    }
-
-    return response.unmetInstructions[0] ?? '조절 요청을 처리하지 못했어요. 요청 내용을 확인한 뒤 다시 시도해 주세요.';
-}
-
-function isRejectedAdjustResponse(response: TAutofillResponse): boolean {
-    return ['REJECTED', 'ERROR', 'INFEASIBLE'].includes(response.engineResult?.status ?? '');
-}
-
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
@@ -374,6 +349,9 @@ export function AiAutofill() {
         wardId,
         currentShiftTeamId,
     );
+    const accountId = useAuthStore((state) => state.accountId);
+    const completionStorageKey =
+        wardId != null && currentShiftTeamId != null ? autofillCompletionKey(accountId, wardId, currentShiftTeamId, year, month) : null;
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const selection = useShiftEditorStore((s) => s.selection);
@@ -385,7 +363,6 @@ export function AiAutofill() {
     const isAdjustEnabled = isAiAdjustEnabled(autofillAdjustEnabled);
     const conversationEnabled = useShiftEditorStore((s) => s.conversationEnabled);
     const [conversationGenerationRequest, setConversationGenerationRequest] = useState(0);
-    const [conversationRebuildRequest, setConversationRebuildRequest] = useState(0);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const divisionLabelByNum = useMemo(
@@ -411,11 +388,40 @@ export function AiAutofill() {
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
     const [hasGeneratedSchedule, setHasGeneratedSchedule] = useState(false);
+    const rememberGeneratedSchedule = useCallback(() => {
+        setHasGeneratedSchedule(true);
+        writeAutofillCompletion(completionStorageKey, true);
+    }, [completionStorageKey]);
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
+    const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
     const generationNoticeShownRef = useRef(false);
-    const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
+    const autofillSequence = useRef(0);
+    const conversationSequence = useRef(0);
+    const pendingAdjustmentPreparation = useRef<{resolve: () => void; reject: (reason: Error) => void} | null>(null);
+    const cancelPendingAdjustmentPreparation = () => {
+        pendingAdjustmentPreparation.current?.reject(Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true}));
+        pendingAdjustmentPreparation.current = null;
+    };
+    const autofillContext = useRef<string | null>(null);
+    const [autofillFlow, setAutofillFlow] = useState<TAutofillFlow | null>(null);
+    const appendAutofillMessage = (message: TAutofillMessage) =>
+        setAutofillFlow((flow) => (flow ? {...flow, messages: [...flow.messages, message]} : flow));
+    const appendAutofillPrompt = (message: TAutofillMessage) =>
+        setAutofillFlow((flow) => {
+            if (!flow) return flow;
+
+            const last = flow.messages[flow.messages.length - 1];
+
+            return last?.role === 'assistant' && last.text === message.text ? flow : {...flow, messages: [...flow.messages, message]};
+        });
     const [disablingRequestId, setDisablingRequestId] = useState<number | null>(null);
     const [isCarryingOver, setIsCarryingOver] = useState(false);
+    const [isReviewingCarryOver, setIsReviewingCarryOver] = useState(false);
+    const [carryOverSelection, setCarryOverSelection] = useState<number[] | null>(null);
+    const [carryOverError, setCarryOverError] = useState<string | null>(null);
+    const carryingOver = useRef(false);
+    const carryOverMounted = useRef(true);
+    const preparationPaused = useRef(false);
     const [lastAdjustChangedCount, setLastAdjustChangedCount] = useState<number | null>(null);
     const [lastAdjustFailure, setLastAdjustFailure] = useState<string | null>(null);
     const [lastRuleResults, setLastRuleResults] = useState<TScheduleRequestRuleResult[]>([]);
@@ -445,6 +451,8 @@ export function AiAutofill() {
     const [pendingGoalCandidateApplyEventId, setPendingGoalCandidateApplyEventId] = useState<string | null>(null);
     const restoringGoalCandidateKeyRef = useRef<string | null>(null);
     const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
+    const aiFillDecisionCellKeysRef = useRef<Set<string> | null>(null);
+    const [bulkFixEntry, setBulkFixEntry] = useState<(typeof history.past)[number] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -467,12 +475,20 @@ export function AiAutofill() {
         enabled: isAdjustEnabled && isCurrentShiftTeamReady,
     });
     const carryOver = useScheduleCarryOverCandidates({
+        accountId,
         wardId,
         shiftTeamId: currentShiftTeamId,
         year,
         month,
         enabled: isAdjustEnabled && isCurrentShiftTeamReady,
     });
+    const carryOptions = useMemo(
+        () => carryOverOptions(carryOver.candidates, monthRequests, editorDoc, year, month),
+        [carryOver.candidates, monthRequests, editorDoc, year, month],
+    );
+    const carrySelectedIds = carryOptions
+        .filter(({request, unavailable}) => !unavailable && (carryOverSelection === null || carryOverSelection.includes(request.id)))
+        .map(({request}) => request.id);
     const syncMonthRequests = useCallback(async () => {
         await refetchMonthRequests();
     }, [refetchMonthRequests]);
@@ -531,9 +547,7 @@ export function AiAutofill() {
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
     // 마지막 근무 공란 경고를 거친 뒤에도, 조절에서 시작한 "고정 근무 확인" 단계를 잃지 않는다.
-    const pendingAiFillAfterLastShiftWarningRef = useRef<(() => void) | null>(null);
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
-    const [lastAiGeneratedDocVersion, setLastAiGeneratedDocVersion] = useState(0);
     const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
     const setExitGuard = useAiAutofillExitGuardStore((s) => s.setExitGuard);
     const resetExitGuard = useAiAutofillExitGuardStore((s) => s.resetExitGuard);
@@ -614,7 +628,6 @@ export function AiAutofill() {
     }, []);
     const markLastAiGeneratedDoc = useCallback((doc: TDutyDoc | null) => {
         lastAiGeneratedDocRef.current = doc;
-        setLastAiGeneratedDocVersion((version) => version + 1);
     }, []);
     const clearAiEffectDismissTimer = useCallback(() => {
         if (aiEffectDismissTimerRef.current === null) return;
@@ -643,6 +656,7 @@ export function AiAutofill() {
 
     const isStepNavigationBusy =
         isWorking ||
+        isCarryingOver ||
         isSavingSnapshot ||
         isAiGenerating ||
         isAiLoadingOverlayFinishing ||
@@ -677,10 +691,19 @@ export function AiAutofill() {
 
     useEffect(() => {
         setHasCompletedAiFill(false);
-        setHasGeneratedSchedule(false);
+        setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
+        setGenerationFailure(null);
+        setAutofillFlow(null);
         generationNoticeShownRef.current = false;
-        setRegenerateConfirmOpen(false);
+        conversationSequence.current += 1;
+        cancelPendingAdjustmentPreparation();
+        setConversationGenerationRequest(0);
+        setIsReviewingCarryOver(false);
+        setCarryOverSelection(null);
+        setCarryOverError(null);
+        setIsCarryingOver(false);
+        preparationPaused.current = false;
         setIsAdjustDialogOpen(false);
         setIsSnapshotSidebarOpen(false);
         setSnapshotLoadTarget(null);
@@ -692,6 +715,7 @@ export function AiAutofill() {
         setLastShiftBlankWarningAcknowledgedKey(null);
         setAiFillDecisionContext(null);
         aiFillDecisionFixedCellsRef.current = null;
+        aiFillDecisionCellKeysRef.current = null;
         markLastAiGeneratedDoc(null);
         aiAbortControllerRef.current?.abort();
         aiAbortControllerRef.current = null;
@@ -702,7 +726,7 @@ export function AiAutofill() {
         setIsAiBlankPreviewVisible(false);
         hideAiEffect();
         resetAiStatus();
-    }, [wardId, currentShiftTeamId, year, month, hideAiEffect, markLastAiGeneratedDoc, resetAiStatus]);
+    }, [wardId, currentShiftTeamId, year, month, completionStorageKey, hideAiEffect, markLastAiGeneratedDoc, resetAiStatus]);
 
     useEffect(() => {
         savedEditableContextKeyRef.current = null;
@@ -764,15 +788,11 @@ export function AiAutofill() {
     const selectedCells = useMemo(() => (selection ? getCellsInSelection(selection) : []), [selection]);
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
-    const hasFilledCells = useMemo(() => hasFilledScheduleCells(editorDoc), [editorDoc]);
-    // 생성 전후 모두 같은 진입점에서 사이드바를 열고 실행 종류를 고른다.
+    const isAutofillBlocked = isScheduleFullyProtected(editorDoc);
     const isAdjustAvailable = isAdjustEnabled || conversationEnabled;
     const clearableUnlockedCellCount = unprotectedFilledCells.length;
-    const editedFilledCellsSinceLastAi = useMemo(
-        () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
-        [editorDoc, lastAiGeneratedDocVersion],
-    );
-    const aiFillDecisionFixableCells = aiFillDecisionContext?.kind === 'regenerate' ? editedFilledCellsSinceLastAi : unprotectedFilledCells;
+    const aiFillDecisionFixableCells = unprotectedFilledCells;
+    const hasFilledPreparationCells = editorDoc.rows.some((row) => row.cells.some((cell) => cell != null));
     const isAiFillDecisionPreviewOpen = aiFillDecisionContext !== null;
     const hasUnsavedEditableChanges = useMemo(
         () => hasAiGeneratedUnsavedChanges || hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
@@ -1041,6 +1061,7 @@ export function AiAutofill() {
             resetAiStatus();
             setHasCompletedAiFill(false);
             setHasGeneratedSchedule(false);
+            writeAutofillCompletion(completionStorageKey, false);
 
             const stateAfterInit = useShiftEditorStore.getState();
 
@@ -1290,6 +1311,8 @@ export function AiAutofill() {
             return;
         }
 
+        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return {error: t('aiAdjust.allFixed')};
+
         const requestSeq = aiRequestSeqRef.current + 1;
         const requestContext = {wardId: readyContext.wardId, shiftTeamId: readyContext.shiftTeamId, year, month};
         const abortController = new AbortController();
@@ -1305,6 +1328,8 @@ export function AiAutofill() {
         setIsAdjusting(Boolean(adjust));
         setAiStatus('loading');
 
+        if (!adjust) setGenerationFailure(null);
+
         if (adjust) setLastAdjustFailure(null);
 
         let shouldKeepAiEffectVisible = false;
@@ -1312,10 +1337,12 @@ export function AiAutofill() {
         try {
             const stateBeforeRequest = useShiftEditorStore.getState();
             const requestDoc = action?.doc ?? stateBeforeRequest.doc;
-            // 조절은 고정·신청 셀에 더해 **마지막 자동완성 이후 사용자가 고친 칸**도 잠근다.
-            // 손으로 맞춰 놓은 칸을 칩 하나가 다시 옮기면, 사용자는 방금 한 일이 사라지는 것을 본다.
+            // 전체 다시 만들기는 고정·신청 근무만 보호한다. 기존 부분 조절은 수동 편집도 보호한다.
             const adjustLocked = adjust
-                ? adjustLockedCellKeys(requestDoc, getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current))
+                ? adjustLockedCellKeys(
+                      requestDoc,
+                      adjust.rebuild ? [] : getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
+                  )
                 : undefined;
             const result = await requestAiSchedule({
                 wardId: requestContext.wardId,
@@ -1355,7 +1382,18 @@ export function AiAutofill() {
             }
 
             if (!result.ok) {
+                const failure =
+                    result.failure ??
+                    aiConversationFailure(
+                        result.notAllowed ? {serverCode: 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED'} : {message: result.message},
+                        t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
+                    );
+
                 setAiStatus('error');
+
+                if (!adjust) setGenerationFailure(failure);
+
+                setIsAdjustDialogOpen(true);
 
                 // 실패했는데 결과 문구가 남으면, 사용자는 그 방향이 반영된 표를 보고 있다고
                 // 믿는다. 서버 목록을 다시 읽는다 — 쿼터에 걸린 조절도 요청 행은 남으므로
@@ -1371,7 +1409,7 @@ export function AiAutofill() {
                 if (result.notAllowed) {
                     // 게이트에 막힌 것은 장애가 아니다. 빨간 토스트로 말하면 사용자는 다시 눌러 본다.
                     toast(t('page.makeShift.aiRefill.adjust.notAllowed'));
-                } else {
+                } else if (!failure.recovery) {
                     toast.error(
                         result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
                     );
@@ -1391,25 +1429,34 @@ export function AiAutofill() {
                     });
                 }
                 return {
-                    error: result.conflict ? t('aiAdjust.conflict') : result.message || t('page.makeShift.aiRefill.adjust.notAllowed'),
+                    error: result.conflict ? t('aiAdjust.conflict') : failure.message,
+                    failure,
                     requiresReinterpret: result.conflict,
                 };
             }
 
-            if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision)
-                return {error: t('aiAdjust.stale'), requiresReinterpret: true};
+            if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) {
+                const failure = {message: t('aiAdjust.stale'), blocked: false};
+
+                if (!adjust) setGenerationFailure(failure);
+
+                setIsAdjustDialogOpen(true);
+                setAiStatus('error');
+
+                return {error: failure.message, failure, requiresReinterpret: true};
+            }
             if (adjust && result.response.operationType !== 'ADJUST') return {error: t('aiAdjust.unexpectedOperation')};
 
-            if (adjust && isRejectedAdjustResponse(result.response)) {
-                const message = adjustFailureMessage(result.response);
+            const executionFailure = aiExecutionFailure(result.response);
 
+            if (executionFailure) {
                 setLastAdjustChangedCount(null);
-                setLastAdjustFailure(message);
+                if (adjust) setLastAdjustFailure(executionFailure.message);
+                else setGenerationFailure(executionFailure);
                 setAiStatus('error');
                 setIsAdjustDialogOpen(true);
-                toast.error(message);
                 void refetchMonthRequests();
-                return {error: message};
+                return {error: executionFailure.message, failure: executionFailure};
             }
 
             const goalResult = result.response.goalResults?.[0];
@@ -1454,7 +1501,7 @@ export function AiAutofill() {
                 return {error: t('aiAdjust.reviewCandidate')};
             }
 
-            if (adjust) {
+            if (adjust || action) {
                 const nextDoc = mergeAdjustPatch(
                     requestDoc,
                     result.response.changedCells,
@@ -1499,7 +1546,7 @@ export function AiAutofill() {
                     ['ACCEPTED', 'REPAIRED'].includes(result.response.engineResult?.status ?? '');
 
                 if (generationSucceeded) {
-                    setHasGeneratedSchedule(true);
+                    rememberGeneratedSchedule();
 
                     if (isAdjustEnabled && !generationNoticeShownRef.current) {
                         generationNoticeShownRef.current = true;
@@ -1515,6 +1562,17 @@ export function AiAutofill() {
                 setLastOffGoal(null);
             }
             return {response: result.response, applied: true};
+        } catch (error) {
+            if (abortController.signal.aborted || aiRequestSeqRef.current !== requestSeq) return;
+
+            const failure = aiConversationFailure(error);
+
+            setAiStatus('error');
+            setIsAdjustDialogOpen(true);
+
+            if (!adjust) setGenerationFailure(failure);
+
+            return {error: failure.message, failure};
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
@@ -1573,6 +1631,7 @@ export function AiAutofill() {
         markLastAiGeneratedDoc(null);
         setHasCompletedAiFill(false);
         setHasGeneratedSchedule(false);
+        writeAutofillCompletion(completionStorageKey, false);
         resetAiStatus();
         toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
     };
@@ -1635,16 +1694,21 @@ export function AiAutofill() {
         llmPrompt?: string,
         actionKey?: string,
     ): Promise<TAdjustApplyResult> => {
-        const readyContext = getAiFillReadyContext();
+        const conversation = conversationSequence.current;
+        let readyContext = getAiFillReadyContext();
         if (!readyContext) throw new Error(t('page.makeShift.aiRefill.cannotAutofillYet'));
-        const before = useShiftEditorStore.getState();
+
+        let before = useShiftEditorStore.getState();
         if (interpretedRevisionRef.current !== before.draftRevision)
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
         const latestRequests = await refetchMonthRequests();
+        if (conversationSequence.current !== conversation)
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
         if (!latestRequests) throw new Error(t('aiAdjust.requestsFailed'));
         const activeFingerprint = (requests: TScheduleMonthRequestRes[]) =>
             JSON.stringify(requests.filter((entry) => entry.status === 'ACTIVE'));
-        if (activeFingerprint(latestRequests) !== activeFingerprint(monthRequests)) throw new Error(t('aiAdjust.requestsChanged'));
+        if (activeFingerprint(latestRequests) !== activeFingerprint(monthRequests))
+            throw Object.assign(new Error(t('aiAdjust.requestsChanged')), {requiresConfirmation: true});
         if (useShiftEditorStore.getState().draftRevision !== before.draftRevision)
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
         const currentScope = currentAiContextRef.current;
@@ -1663,6 +1727,40 @@ export function AiAutofill() {
             )
         )
             throw new Error(t('aiAdjust.invalidCell'));
+
+        await prepareAdjustment();
+
+        if (conversationSequence.current !== conversation)
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
+        const attempt = autofillSequence.current;
+
+        before = useShiftEditorStore.getState();
+
+        const checkedRequests = await refetchMonthRequests();
+
+        if (!checkedRequests || activeFingerprint(checkedRequests) !== activeFingerprint(latestRequests))
+            throw Object.assign(new Error(t('aiAdjust.requestsChanged')), {requiresConfirmation: true});
+
+        const scope = currentAiContextRef.current;
+
+        if (
+            attempt !== autofillSequence.current ||
+            conversationSequence.current !== conversation ||
+            scope.wardId !== readyContext.wardId ||
+            scope.shiftTeamId !== readyContext.shiftTeamId ||
+            scope.year !== year ||
+            scope.month !== month ||
+            before.draftRevision !== useShiftEditorStore.getState().draftRevision
+        )
+            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
+        readyContext = getAiFillReadyContext();
+
+        if (!readyContext) throw new Error(t('page.makeShift.aiRefill.cannotAutofillYet'));
+
+        // The user has now reviewed the current previous-month cells and fixed shifts.
+        interpretedRevisionRef.current = before.draftRevision;
         const requests = toTextRequestItems(items, requestText);
         let prepared: TDutyDoc;
         try {
@@ -1685,12 +1783,16 @@ export function AiAutofill() {
         });
         if (adjustActionRef.current?.fingerprint !== fingerprint) adjustActionRef.current = {fingerprint, key: crypto.randomUUID()};
         setLastAdjustChangedCount(null);
-        const result = await runAiFill(readyContext, {strength, requests}, llmPrompt, {
+
+        const result = await runAiFill(readyContext, {strength, requests, rebuild: true}, llmPrompt, {
             doc: prepared,
             idempotencyKey: adjustActionRef.current.key,
         });
         if (!result || 'error' in result)
-            throw Object.assign(new Error(result?.error ?? t('aiAdjust.failed')), {requiresReinterpret: result?.requiresReinterpret});
+            throw Object.assign(new Error(result?.error ?? t('aiAdjust.failed')), {
+                requiresReinterpret: result?.requiresReinterpret,
+                failure: result && 'failure' in result ? result.failure : undefined,
+            });
         const after = useShiftEditorStore.getState();
         return {
             response: result.response,
@@ -1812,40 +1914,22 @@ export function AiAutofill() {
 
         commands.undo();
     };
-    const handleCarryOverApply = async (requestIds: number[]) => {
-        if (wardId == null || currentShiftTeamId == null || requestIds.length === 0) return;
-
-        setIsCarryingOver(true);
-
-        try {
-            await WardAPI.carryOverScheduleMonthRequests(wardId, currentShiftTeamId, {year, month, requestIds});
-            markCarryOverAnswered({wardId, shiftTeamId: currentShiftTeamId, year, month});
-            carryOver.dismiss();
-            toast.success(t('page.makeShift.aiRefill.adjust.carryOver.applied', {count: requestIds.length}));
-            void refetchMonthRequests();
-        } catch {
-            toast.error(t('page.makeShift.aiRefill.adjust.carryOver.failed'));
-        } finally {
-            setIsCarryingOver(false);
-        }
-    };
-    const handleCarryOverSkip = () => {
-        if (wardId != null && currentShiftTeamId != null) {
-            markCarryOverAnswered({wardId, shiftTeamId: currentShiftTeamId, year, month});
-        }
-
-        carryOver.dismiss();
-    };
     const openAiFillDecision = (context: TAiFillDecisionContext) => {
-        aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
+        const doc = useShiftEditorStore.getState().doc;
+
+        setBulkFixEntry(null);
+        aiFillDecisionFixedCellsRef.current = {...doc.fixedCells};
+        aiFillDecisionCellKeysRef.current = new Set(doc.rows.flatMap((row) => doc.columns.map((column) => `${row.workerId}|${column}`)));
         setAiFillDecisionContext(context);
     };
     const restoreAiFillDecisionFixedCells = () => {
         const snapshot = aiFillDecisionFixedCellsRef.current;
+        const cellKeys = aiFillDecisionCellKeysRef.current;
 
         aiFillDecisionFixedCellsRef.current = null;
+        aiFillDecisionCellKeysRef.current = null;
 
-        if (!snapshot) return;
+        if (!snapshot || !cellKeys) return;
 
         const currentDoc = useShiftEditorStore.getState().doc;
         const cellsToFix: TCellPos[] = [];
@@ -1855,7 +1939,7 @@ export function AiAutofill() {
             for (let col = 0; col < currentDoc.columns.length; col += 1) {
                 const key = getDocCellKey(currentDoc, row, col);
 
-                if (key === null) continue;
+                if (key === null || !cellKeys.has(key)) continue;
 
                 const wasFixed = snapshot[key] === true;
                 const isFixed = currentDoc.fixedCells[key] === true;
@@ -1874,119 +1958,322 @@ export function AiAutofill() {
 
         if (cellsToUnfix.length > 0) commands.setCellsFixed(cellsToUnfix, false);
     };
-    const runAiFillWithDecision = (readyContext = getAiFillReadyContext(), forceFixedDecision = false) => {
+    const rollbackPreparationRef = useRef(restoreAiFillDecisionFixedCells);
+
+    const resetAutofillConversation = () => {
+        // Invalidate asynchronous work before returning to the entry choices. Keep the
+        // current schedule and saved requests; only unconfirmed preparation is undone.
+        conversationSequence.current += 1;
+        autofillSequence.current += 1;
+        autofillContext.current = null;
+        interpretSeqRef.current += 1;
+        interpretedRevisionRef.current = null;
+        aiRequestSeqRef.current += 1;
+        aiAbortControllerRef.current?.abort();
+        aiAbortControllerRef.current = null;
+        cancelPendingAdjustmentPreparation();
+        restoreAiFillDecisionFixedCells();
+        preparationPaused.current = false;
+        setBulkFixEntry(null);
+        setAiFillDecisionContext(null);
+        setLastShiftBlankWarningIntent((intent) => (intent === 'aiFill' ? null : intent));
+        setAutofillFlow(null);
+        setIsReviewingCarryOver(false);
+        setCarryOverSelection(null);
+        setCarryOverError(null);
+        setHasGenerationNotice(false);
+        setGenerationFailure(null);
+        generationNoticeShownRef.current = false;
+        setIsAiGenerating(false);
+        setIsAdjusting(false);
+        setIsAiLoadingOverlayFinishing(false);
+        setAiStartedAt(null);
+        setIsAiBlankPreviewVisible(false);
+        hideAiEffect();
+        resetAiStatus();
+    };
+
+    rollbackPreparationRef.current = restoreAiFillDecisionFixedCells;
+    useEffect(() => {
+        carryOverMounted.current = true;
+
+        return () => {
+            carryOverMounted.current = false;
+            rollbackPreparationRef.current();
+            pendingAdjustmentPreparation.current?.reject(Object.assign(new Error('Conversation closed'), {requiresReinterpret: true}));
+            pendingAdjustmentPreparation.current = null;
+        };
+    }, []);
+
+    const startPreparedFill = () => {
+        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
+        const readyContext = getAiFillReadyContext();
+
         if (!readyContext) return;
 
-        // 조절 대화상자에서 다시 생성할 때도, 현재 표의 근무 중 지켜야 할 것을 고를 기회를
-        // 준다. 이전에는 이미 AI를 한 번 돌렸다는 이유로 이 단계를 건너뛰어 바로 덮어썼다.
-        if (forceFixedDecision || !hasCompletedAiFill) {
-            if (unprotectedFilledCells.length > 0) {
-                openAiFillDecision({kind: 'initial', cellCount: unprotectedFilledCells.length});
+        setAutofillFlow((flow) => (flow ? {...flow, status: 'running'} : flow));
+
+        // Consume the attempt before dispatch so a second click cannot run it twice.
+        aiFillDecisionFixedCellsRef.current = null;
+        aiFillDecisionCellKeysRef.current = null;
+        setAiFillDecisionContext(null);
+
+        if (pendingAdjustmentPreparation.current) {
+            const pending = pendingAdjustmentPreparation.current;
+
+            pendingAdjustmentPreparation.current = null;
+            pending.resolve();
+        } else if (conversationEnabled) {
+            setConversationGenerationRequest((count) => count + 1);
+        } else {
+            // Keep the visible draft intact until a new result succeeds.
+            void runAiFill(readyContext, undefined, undefined, {
+                doc: maskDutyDocCells(useShiftEditorStore.getState().doc, {hideUnlocked: true}),
+                idempotencyKey: crypto.randomUUID(),
+            });
+        }
+    };
+    const showPreviousPreparation = () => {
+        const hasBlanks = getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null;
+
+        appendAutofillPrompt({
+            role: 'assistant',
+            text: t(hasBlanks ? 'aiAdjust.preparation.previous' : 'aiAdjust.preparation.previousReady'),
+            ...(hasBlanks ? {help: t('aiAdjust.preparation.previousHelp')} : {}),
+        });
+        setLastShiftBlankWarningIntent('aiFill');
+    };
+    const showFixedPreparation = (skipWhenEmpty = true) => {
+        const doc = useShiftEditorStore.getState().doc;
+        const hasFilledCells = doc.rows.some((row) => row.cells.some((cell) => cell != null));
+
+        if (!hasFilledCells && skipWhenEmpty) {
+            startPreparedFill();
+            return;
+        }
+
+        appendAutofillPrompt({
+            role: 'assistant',
+            text: t(hasFilledCells ? 'aiAdjust.preparation.fixed' : 'aiAdjust.preparation.empty'),
+            ...(hasFilledCells ? {help: t('aiAdjust.preparation.fixedHelp')} : {}),
+        });
+        openAiFillDecision({cellCount: getUnprotectedFilledCells(doc).length});
+    };
+    const continueAfterCarryOver = () => {
+        setIsReviewingCarryOver(false);
+        setCarryOverError(null);
+
+        const previous = getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null;
+
+        if (preparationPaused.current) {
+            setAutofillFlow((flow) => (flow ? {...flow, status: 'paused', resumeStep: previous ? 'previous' : 'fixed'} : flow));
+        } else if (previous) showPreviousPreparation();
+        else showFixedPreparation();
+    };
+    const confirmCarryOver = async () => {
+        if (carryingOver.current || !isReviewingCarryOver || wardId == null || currentShiftTeamId == null) return;
+
+        const flowId = autofillSequence.current;
+        const scope = currentContextKey;
+        const selected = carryOver.isError || monthRequestsError ? [] : carrySelectedIds;
+        const labels = carryOptions.filter(({request}) => selected.includes(request.id)).map(({request}) => request.displayLabel);
+        const isSameScope = () => {
+            const current = currentAiContextRef.current;
+
+            return (
+                carryOverMounted.current &&
+                current.wardId === wardId &&
+                current.shiftTeamId === currentShiftTeamId &&
+                current.year === year &&
+                current.month === month
+            );
+        };
+        const isCurrent = () => isSameScope() && autofillContext.current === scope && autofillSequence.current === flowId;
+
+        carryingOver.current = true;
+        setIsCarryingOver(true);
+        setCarryOverError(null);
+
+        try {
+            if (selected.length) {
+                await WardAPI.carryOverScheduleMonthRequests(wardId, currentShiftTeamId, {year, month, requestIds: selected});
+                if (!isSameScope()) return;
+                // A confirmed save can finish after a chat reset. Refresh the saved
+                // requests without resuming that old preparation flow.
+                await refetchMonthRequests();
+            }
+
+            if (!isCurrent()) return;
+
+            markCarryOverAnswered({accountId, wardId, shiftTeamId: currentShiftTeamId, year, month});
+            carryOver.dismiss();
+            appendAutofillMessage({
+                role: 'user',
+                text: selected.length
+                    ? `${t('aiAdjust.carryOver.thisMonth')}\n${labels.map((label) => `• ${label}`).join('\n')}\n${t('aiAdjust.carryOver.confirm')}`
+                    : t('aiAdjust.carryOver.skip'),
+            });
+            continueAfterCarryOver();
+        } catch {
+            if (isCurrent()) setCarryOverError(t('aiAdjust.carryOver.failed'));
+        } finally {
+            carryingOver.current = false;
+
+            if (isSameScope()) setIsCarryingOver(false);
+        }
+    };
+
+    useEffect(() => {
+        if (
+            !isReviewingCarryOver ||
+            !isAdjustDialogOpen ||
+            isCarryingOver ||
+            carryOver.isLoading ||
+            monthRequestsLoading ||
+            carryOver.isError ||
+            monthRequestsError
+        )
+            return;
+
+        if (!carryOptions.some((option) => !option.unavailable)) {
+            carryOver.dismiss();
+            continueAfterCarryOver();
+
+            return;
+        }
+
+        if (carryOverSelection === null)
+            setCarryOverSelection(carryOptions.filter((option) => !option.unavailable).map(({request}) => request.id));
+
+        appendAutofillPrompt({role: 'assistant', text: t('aiAdjust.carryOver.question')});
+    }, [
+        isReviewingCarryOver,
+        isAdjustDialogOpen,
+        isCarryingOver,
+        carryOver.isLoading,
+        monthRequestsLoading,
+        carryOver.isError,
+        monthRequestsError,
+        carryOptions,
+    ]);
+
+    const beginAutofillPreparation = (kind: 'generation' | 'adjustment') => {
+        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
+
+        if (!getAiFillReadyContext()) return;
+
+        if (carryingOver.current) return;
+
+        if (kind === 'generation') cancelPendingAdjustmentPreparation();
+
+        preparationPaused.current = false;
+        setCarryOverSelection(null);
+        setCarryOverError(null);
+
+        // Explicitly starting another generation creates a new attempt using the current draft.
+        // An acknowledgement from a previous attempt must never skip this one.
+        restoreAiFillDecisionFixedCells();
+        setAiFillDecisionContext(null);
+        setLastShiftBlankWarningIntent(null);
+        setHasGenerationNotice(false);
+        setGenerationFailure(null);
+        generationNoticeShownRef.current = false;
+        autofillContext.current = currentContextKey;
+        setAutofillFlow({id: ++autofillSequence.current, kind, messages: [], status: 'preparing'});
+        setIsSnapshotSidebarOpen(false);
+        setIsAdjustDialogOpen(true);
+        setIsAiBlankPreviewVisible(true);
+
+        if (carryOver.needsReview) {
+            setIsReviewingCarryOver(true);
+        } else if (getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null) {
+            showPreviousPreparation();
+        } else {
+            showFixedPreparation();
+        }
+    };
+    const handleAiFill = () => beginAutofillPreparation('generation');
+    const prepareAdjustment = () =>
+        new Promise<void>((resolve, reject) => {
+            if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) {
+                reject(new Error(t('aiAdjust.allFixed')));
+                return;
+            }
+
+            if (!getAiFillReadyContext()) {
+                reject(new Error(t('page.makeShift.aiRefill.cannotAutofillYet')));
 
                 return;
             }
 
-            void runAiFill(readyContext);
+            cancelPendingAdjustmentPreparation();
+            pendingAdjustmentPreparation.current = {resolve, reject};
+            beginAutofillPreparation('adjustment');
+        });
+    const resumeAutofillPreparation = () => {
+        if (autofillContext.current !== currentContextKey || autofillFlow?.status !== 'paused') return false;
 
-            return;
-        }
+        preparationPaused.current = false;
 
-        if (editedFilledCellsSinceLastAi.length > 0) {
-            openAiFillDecision({kind: 'regenerate', cellCount: editedFilledCellsSinceLastAi.length});
+        const previousWarningKey = getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc);
+        const needsPreviousReview =
+            autofillFlow.resumeStep === 'previous' ||
+            (previousWarningKey !== null && previousWarningKey !== autofillFlow.previousWarningKey);
 
-            return;
-        }
-
-        commands.resetAutofilled('user');
-        void runAiFill(readyContext);
-    };
-    const startAiFill = (readyContext: NonNullable<ReturnType<typeof getAiFillReadyContext>>, forceFixedDecision = false) => {
+        setAutofillFlow((flow) => (flow ? {...flow, status: 'preparing', resumeStep: undefined} : flow));
+        setIsSnapshotSidebarOpen(false);
+        setIsAdjustDialogOpen(true);
         setIsAiBlankPreviewVisible(true);
 
-        pendingAiFillAfterLastShiftWarningRef.current = null;
+        if (autofillFlow.resumeStep === 'carryOver') setIsReviewingCarryOver(true);
+        else if (needsPreviousReview) showPreviousPreparation();
+        // Reopening the sheet is never permission to start a generation by itself.
+        else showFixedPreparation(false);
 
-        if (requestLastShiftBlankWarning('aiFill')) {
-            pendingAiFillAfterLastShiftWarningRef.current = () => runAiFillWithDecision(readyContext, forceFixedDecision);
-
-            return;
-        }
-
-        runAiFillWithDecision(readyContext, forceFixedDecision);
+        return true;
     };
-    // Generation and adjustment have separate entry points; an empty adjustment never regenerates.
-    const handleAiFill = () => {
-        if (conversationEnabled) {
-            setIsSnapshotSidebarOpen(false);
-            setIsAdjustDialogOpen(true);
-            setConversationGenerationRequest((count) => count + 1);
+    const handleOpenAutofill = () => {
+        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) {
+            toast(t('aiAdjust.allFixed'), {id: 'ai-autofill-all-fixed'});
+
             return;
         }
-        const readyContext = getAiFillReadyContext();
 
-        if (!readyContext) return;
-
-        startAiFill(readyContext);
-    };
-    const handleRequestRegenerate = () => {
-        if (conversationEnabled) {
-            setIsSnapshotSidebarOpen(false);
-            setIsAdjustDialogOpen(true);
-            setConversationRebuildRequest((count) => count + 1);
-            return;
-        }
         if (!getAiFillReadyContext()) return;
 
-        setRegenerateConfirmOpen(true);
-    };
-    const handleConfirmRegenerate = () => {
-        const readyContext = getAiFillReadyContext();
+        if (resumeAutofillPreparation()) return;
 
-        if (!readyContext) return;
+        const currentDoc = useShiftEditorStore.getState().doc;
+        const hasResultCells = currentDoc.rows.some((row) =>
+            row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
+        );
 
-        setRegenerateConfirmOpen(false);
-        setIsAdjustDialogOpen(false);
-        startAiFill(readyContext, true);
+        if (isAdjustAvailable && hasGeneratedSchedule && hasResultCells) {
+            setIsSnapshotSidebarOpen(false);
+            setIsAdjustDialogOpen(true);
+
+            return;
+        }
+
+        handleAiFill();
     };
+    const handleRequestRegenerate = handleAiFill;
     const handleConfirmAiFillDecision = () => {
-        const decisionContext = aiFillDecisionContext;
+        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
 
-        aiFillDecisionFixedCellsRef.current = null;
-        setAiFillDecisionContext(null);
+        if (!aiFillDecisionContext || aiFillDecisionFixedCellsRef.current === null) return;
 
-        if (!decisionContext) return;
-
-        if (decisionContext.kind === 'initial') {
-            commands.resetAutofilled('user');
-            void runAiFill();
-
-            return;
-        }
-
-        commands.setCellsFixed(getEditedFilledCellsSinceBaseline(useShiftEditorStore.getState().doc, lastAiGeneratedDocRef.current), true);
-        commands.resetAutofilled('user');
-        void runAiFill();
-    };
-    const handleCancelAiFillDecision = () => {
-        const decisionContext = aiFillDecisionContext;
-
-        aiFillDecisionFixedCellsRef.current = null;
-        setAiFillDecisionContext(null);
-
-        if (!decisionContext) return;
-
-        if (decisionContext.kind === 'initial') {
-            setIsAiBlankPreviewVisible(false);
-
-            return;
-        }
-
-        commands.resetAutofilled('user');
-        void runAiFill();
+        appendAutofillMessage({
+            role: 'user',
+            text: t(aiFillDecisionFixableCells.length === 0 ? 'aiAdjust.autofill' : 'aiAdjust.preparation.fill'),
+        });
+        startPreparedFill();
     };
     const handleEditAiFillDecision = () => {
         restoreAiFillDecisionFixedCells();
         setAiFillDecisionContext(null);
         setIsAiBlankPreviewVisible(false);
+        setIsAdjustDialogOpen(false);
     };
     const handleToggleAiFillDecisionCell = (rowIndex: number, colIndex: number) => {
         const currentDoc = useShiftEditorStore.getState().doc;
@@ -2014,32 +2301,41 @@ export function AiAutofill() {
         const changedCount = commands.setCellsFixed(aiFillDecisionFixableCells, true);
 
         if (changedCount > 0) {
+            const {past} = useShiftEditorStore.getState().history;
+
+            setBulkFixEntry(past[past.length - 1] ?? null);
             toast.success(t('page.makeShift.aiRefill.prefillDecision.fixAllSuccess', {count: changedCount}));
         }
+    };
+    const handleUndoFixAllAiFillDecisionCells = () => {
+        const {past} = useShiftEditorStore.getState().history;
+
+        // This action belongs to bulk fixing; never undo a later, unrelated edit.
+        if (!aiFillDecisionContext || !bulkFixEntry || past[past.length - 1] !== bulkFixEntry) return;
+
+        commands.undo();
     };
     const handleConfirmLastShiftBlankWarning = () => {
         const warningIntent = lastShiftBlankWarningIntent;
 
         setLastShiftBlankWarningIntent(null);
 
-        if (lastShiftBlankWarningKey !== null) {
-            setLastShiftBlankWarningAcknowledgedKey(lastShiftBlankWarningKey);
-        }
-
         if (warningIntent === 'aiFill') {
-            const continueAiFill = pendingAiFillAfterLastShiftWarningRef.current;
-
-            pendingAiFillAfterLastShiftWarningRef.current = null;
-
-            if (continueAiFill) {
-                continueAiFill();
-
-                return;
-            }
-
-            runAiFillWithDecision();
+            appendAutofillMessage({
+                role: 'user',
+                text: t(
+                    getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null
+                        ? 'aiAdjust.preparation.continue'
+                        : 'aiAdjust.preparation.next',
+                ),
+            });
+            showFixedPreparation();
 
             return;
+        }
+
+        if (lastShiftBlankWarningKey !== null) {
+            setLastShiftBlankWarningAcknowledgedKey(lastShiftBlankWarningKey);
         }
 
         if (warningIntent === 'confirm') {
@@ -2061,10 +2357,16 @@ export function AiAutofill() {
         void confirmCurrentSchedule();
     };
     const handleCancelLastShiftBlankWarning = () => {
+        if (lastShiftBlankWarningIntent === 'aiFill') {
+            appendAutofillMessage({role: 'user', text: t('aiAdjust.preparation.editPrevious')});
+            setAutofillFlow((flow) => (flow ? {...flow, status: 'paused', resumeStep: 'previous'} : flow));
+        }
+
         const firstBlankLastShiftCell = findFirstBlankLastShiftCell(useShiftEditorStore.getState().doc);
 
         setLastShiftBlankWarningIntent(null);
-        pendingAiFillAfterLastShiftWarningRef.current = null;
+        setIsAiBlankPreviewVisible(false);
+        setIsAdjustDialogOpen(false);
 
         if (!firstBlankLastShiftCell) return;
 
@@ -2166,18 +2468,101 @@ export function AiAutofill() {
             setLoadingBatch(false);
         }
     };
+    const preparationStep = isReviewingCarryOver
+        ? 'carryOver'
+        : lastShiftBlankWarningIntent === 'aiFill'
+          ? 'previous'
+          : aiFillDecisionContext
+            ? 'fixed'
+            : null;
+    const closePreparation = () => {
+        preparationPaused.current = true;
+        setIsReviewingCarryOver(false);
+        setAutofillFlow((flow) =>
+            flow
+                ? {
+                      ...flow,
+                      status: 'paused',
+                      resumeStep: preparationStep ?? undefined,
+                      previousWarningKey: getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc),
+                  }
+                : flow,
+        );
+
+        if (aiFillDecisionContext) handleEditAiFillDecision();
+
+        setLastShiftBlankWarningIntent((intent) => (intent === 'aiFill' ? null : intent));
+        setIsAiBlankPreviewVisible(false);
+        setIsAdjustDialogOpen(false);
+    };
+    const preparation =
+        preparationStep === 'carryOver' ? (
+            <AiCarryOverCard
+                options={carryOptions}
+                selectedIds={carrySelectedIds}
+                isLoading={carryOver.isLoading || monthRequestsLoading}
+                loadFailed={carryOver.isError || monthRequestsError}
+                isApplying={isCarryingOver}
+                error={carryOverError}
+                onToggle={(id) => {
+                    setCarryOverSelection(
+                        carrySelectedIds.includes(id) ? carrySelectedIds.filter((selected) => selected !== id) : [...carrySelectedIds, id],
+                    );
+                    setCarryOverError(null);
+                }}
+                onConfirm={() => void confirmCarryOver()}
+                onRetry={() => {
+                    void carryOver.retry();
+                    void refetchMonthRequests();
+                }}
+            />
+        ) : preparationStep ? (
+            <AiAutofillPreparation
+                step={preparationStep}
+                fixableCount={aiFillDecisionFixableCells.length}
+                hasFilledCells={hasFilledPreparationCells}
+                canAutofill={!isAutofillBlocked}
+                previousHasBlanks={lastShiftBlankWarningKey !== null}
+                disabled={isAiGenerating || isAiLoadingOverlayFinishing}
+                onFixAll={handleFixAllAiFillDecisionCells}
+                onUndoFixAll={
+                    bulkFixEntry && history.past[history.past.length - 1] === bulkFixEntry ? handleUndoFixAllAiFillDecisionCells : undefined
+                }
+                onCancel={preparationStep === 'previous' ? handleCancelLastShiftBlankWarning : closePreparation}
+                onConfirm={preparationStep === 'previous' ? handleConfirmLastShiftBlankWarning : handleConfirmAiFillDecision}
+            />
+        ) : undefined;
+    const preparationSpotlight =
+        preparationStep === 'previous'
+            ? '.make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shifts'
+            : preparationStep === 'fixed'
+              ? '.ai-autofill-toolbar, .ai-autofill-preparation-calendar'
+              : undefined;
+    const isConversationOpen =
+        isAdjustDialogOpen &&
+        (conversationEnabled || isAdjustEnabled || Boolean(preparationStep) || Boolean(generationFailure) || autofillFlow === null);
     const publishConfirmDescription =
         connectedNurseCount > 0
             ? t('page.makeShift.aiRefill.publishConfirm.description', {count: connectedNurseCount})
             : t('page.makeShift.aiRefill.publishConfirm.noConnectedDescription');
+    const scheduleActions = {
+        canConfirm,
+        disabled: isAiGenerating || isWorking || disablingRequestId !== null,
+        onConfirm: () => {
+            if (!canConfirm) return;
+
+            setIsAdjustDialogOpen(false);
+            handleConfirm();
+        },
+    };
 
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex w-full min-w-0">
             <div
                 className="ai-autofill-root__main flex min-w-0 flex-1 flex-col gap-3 pt-3 outline-none"
                 ref={editorRef}
-                onKeyDown={onKeyDown}
-                onPasteCapture={onPasteCapture}
+                onKeyDown={preparationStep ? undefined : onKeyDown}
+                onPasteCapture={preparationStep ? undefined : onPasteCapture}
                 tabIndex={0}
             >
                 <AiPlanNotice hasResult={hasCompletedAiFill} />
@@ -2228,22 +2613,28 @@ export function AiAutofill() {
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
                     canRedo={history.future.length > 0}
-                    onUndo={() => void undoWithGoalCandidate()}
+                    onUndo={() => (preparationStep === 'fixed' ? commands.undo() : void undoWithGoalCandidate())}
                     onRedo={() => commands.redo()}
                     onOpenSnapshotHistory={openSnapshotSidebar}
-                    onAiFill={handleAiFill}
+                    onAiFill={handleOpenAutofill}
                     onRegenerate={handleRequestRegenerate}
                     isAdjustEnabled={isAdjustEnabled}
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     onAdjust={
                         isAdjustAvailable
                             ? () => {
+                                  if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
+
+                                  if (resumeAutofillPreparation()) return;
+
                                   setIsSnapshotSidebarOpen(false);
                                   setIsAdjustDialogOpen(true);
                               }
                             : undefined
                     }
                     isAiGenerating={isAiGenerating}
+                    isPreparing={Boolean(preparationStep)}
+                    isAutofillBlocked={isAutofillBlocked}
                     aiStatus={aiStatus}
                     hasCompletedAiFill={hasCompletedAiFill}
                     scheduleValidationStatus={scheduleValidation.status}
@@ -2254,26 +2645,18 @@ export function AiAutofill() {
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
-                {isAdjustEnabled && carryOver.isVisible && (
-                    <AiCarryOverCard
-                        candidates={carryOver.candidates}
-                        isApplying={isCarryingOver}
-                        onApply={(requestIds) => void handleCarryOverApply(requestIds)}
-                        onSkip={handleCarryOverSkip}
-                    />
-                )}
-
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
                     <AiAdjustResultNote
                         changedCount={lastAdjustChangedCount}
-                        failure={lastAdjustFailure}
+                        failure={isAdjustDialogOpen ? null : lastAdjustFailure}
+                        onReviewFailure={() => setIsAdjustDialogOpen(true)}
                         ruleResults={lastRuleResults}
                         notices={lastAdjustmentNotices}
                         goalResult={lastGoalResult}
                         offGoal={lastOffGoal}
                         isStrongest={lastAdjustStrength === 'STRONG'}
-                        disabled={isAiGenerating || disablingRequestId !== null}
+                        disabled={isAiGenerating || disablingRequestId !== null || isAutofillBlocked}
                         onAdjustHarder={() => {
                             const readyContext = getAiFillReadyContext();
 
@@ -2318,36 +2701,48 @@ export function AiAutofill() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && !isAiFillDecisionPreviewOpen && (
-                    <MakeShiftCalendar
-                        shift={orderedShift}
-                        doc={visibleCalendarDoc}
-                        annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
-                        annualLeaveColumns={annualColumns.columns}
-                        showRestCheck={display.value.rest}
-                        violationMap={violationMap}
-                        teamViolations={teamViolations}
-                        showFaults={showFaults}
-                        nurseNameMaxChars={5}
-                        onCellClick={isCalendarReadonly ? undefined : focusEditor}
-                        readonly={isCalendarReadonly}
-                        editableLastShifts={!isCalendarReadonly}
-                        isShimmering={isAiEffectVisible}
-                        showCellStatusPins
-                        fixCellOnContextMenu
-                        cellAttention={cellAttention}
-                        tutorialCellId="make_fixed_shift_sample_cell"
-                        restCheckByShiftNurseId={restCheckByShiftNurseId}
-                        canReorderRows
-                        rowReorderDisabled={isCalendarReadonly || isReorderingRows}
-                        onRowDragEnd={(result) => {
-                            void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
-                        }}
-                        showDivisionHeaders
-                        showDivisionStatistics
-                        divisionLabelByNum={divisionLabelByNum}
-                        stickyHeader
-                    />
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
+                    <div className="ai-autofill-preparation-calendar">
+                        <MakeShiftCalendar
+                            shift={orderedShift}
+                            doc={isAiFillDecisionPreviewOpen ? editorDoc : visibleCalendarDoc}
+                            annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
+                            annualLeaveColumns={annualColumns.columns}
+                            showRestCheck={display.value.rest}
+                            violationMap={violationMap}
+                            teamViolations={teamViolations}
+                            showFaults={showFaults}
+                            nurseNameMaxChars={5}
+                            onCellClick={
+                                isAiFillDecisionPreviewOpen
+                                    ? handleToggleAiFillDecisionCell
+                                    : isCalendarReadonly || preparationStep
+                                      ? undefined
+                                      : focusEditor
+                            }
+                            readonly={isCalendarReadonly || Boolean(preparationStep)}
+                            editableLastShifts={!isCalendarReadonly && !preparationStep}
+                            staticPreview={isAiFillDecisionPreviewOpen}
+                            interactivePreview={isAiFillDecisionPreviewOpen}
+                            fixedCellPreview={isAiFillDecisionPreviewOpen}
+                            disableInitialSelection={isAiFillDecisionPreviewOpen}
+                            isShimmering={isAiEffectVisible}
+                            showCellStatusPins
+                            fixCellOnContextMenu
+                            cellAttention={cellAttention}
+                            tutorialCellId="make_fixed_shift_sample_cell"
+                            restCheckByShiftNurseId={restCheckByShiftNurseId}
+                            canReorderRows
+                            rowReorderDisabled={isCalendarReadonly || isReorderingRows || Boolean(preparationStep)}
+                            onRowDragEnd={(result) => {
+                                void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
+                            }}
+                            showDivisionHeaders
+                            showDivisionStatistics
+                            divisionLabelByNum={divisionLabelByNum}
+                            stickyHeader
+                        />
+                    </div>
                 )}
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
@@ -2357,8 +2752,8 @@ export function AiAutofill() {
             {conversationEnabled && wardId && currentShiftTeamId && orderedShift ? (
                 <AiConversationSidebar
                     key={`conversation:${wardId}:${currentShiftTeamId}:${year}:${month}`}
-                    open={isAdjustDialogOpen}
-                    onClose={() => setIsAdjustDialogOpen(false)}
+                    open={isConversationOpen}
+                    onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
                     wardId={wardId}
                     teamId={currentShiftTeamId}
                     year={year}
@@ -2366,24 +2761,43 @@ export function AiAutofill() {
                     shift={orderedShift}
                     adjustEnabled={isAdjustEnabled}
                     generationRequest={conversationGenerationRequest}
-                    rebuildRequest={conversationRebuildRequest}
+                    rebuildRequest={0}
+                    generationFillPolicy="REBUILD_UNLOCKED"
+                    onPrepareGeneration={handleAiFill}
+                    onPrepareAdjustment={prepareAdjustment}
+                    preparation={preparation}
+                    autofillFlow={autofillContext.current === currentContextKey ? autofillFlow : null}
+                    onNewConversation={resetAutofillConversation}
+                    spotlightSelector={preparationSpotlight}
+                    spotlightInteractive={preparationStep === 'fixed'}
+                    onGenerated={rememberGeneratedSchedule}
+                    onBusyChange={setIsAiGenerating}
+                    resultActions={scheduleActions}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
                         setHasCompletedAiFill(true);
-                        setHasGeneratedSchedule(true);
+                        rememberGeneratedSchedule();
                         setAiStatus('success');
                     }}
                 />
             ) : (
                 <AiAdjustDialog
                     key={`${wardId}:${currentShiftTeamId}:${year}:${month}`}
-                    open={isAdjustDialogOpen && isAdjustEnabled}
-                    onClose={() => setIsAdjustDialogOpen(false)}
+                    open={isConversationOpen}
+                    onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
+                    preparation={preparation}
+                    autofillFlow={autofillContext.current === currentContextKey ? autofillFlow : null}
+                    onNewConversation={resetAutofillConversation}
+                    spotlightSelector={preparationSpotlight}
+                    spotlightInteractive={preparationStep === 'fixed'}
                     onRegenerate={handleRequestRegenerate}
                     onGenerate={handleAiFill}
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     generationCompleted={hasGenerationNotice}
-                    disabled={isAiGenerating || disablingRequestId !== null}
+                    generationFailure={generationFailure}
+                    onDismissFailure={() => setGenerationFailure(null)}
+                    disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
+                    modifyDisabled={!isAdjustEnabled}
                     textInputRef={adjustTextInputRef}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
                     interpret={interpretAdjustText}
@@ -2395,11 +2809,13 @@ export function AiAutofill() {
                     onRetryRequests={() => void refetchMonthRequests()}
                     currentRevision={useShiftEditorStore.getState().draftRevision}
                     shiftCodes={orderedShift?.wardShiftTypes.map((type) => type.shortName)}
+                    resultActions={scheduleActions}
                     onUndo={(revision) => {
                         if (useShiftEditorStore.getState().draftRevision !== revision || isAiGenerating) return false;
                         commands.undo();
                         commands.clearScheduleValidationFromApi();
                         setLastAdjustChangedCount(null);
+
                         return true;
                     }}
                     disablingRequestId={disablingRequestId}
@@ -2418,35 +2834,6 @@ export function AiAutofill() {
                 onRenameSnapshot={handleRenameSnapshot}
                 onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
-            />
-            <ConfirmActionDialog
-                open={regenerateConfirmOpen}
-                title={t('aiAdjust.regenerateTitle')}
-                description={t('aiAdjust.regenerateDescription')}
-                confirmLabel={t('aiAdjust.regenerating')}
-                onClose={() => setRegenerateConfirmOpen(false)}
-                onConfirm={handleConfirmRegenerate}
-                zIndex={1500}
-            />
-            <AiFillDecisionDialog
-                open={isAiFillDecisionPreviewOpen}
-                kind={aiFillDecisionContext?.kind ?? 'initial'}
-                shift={orderedShift ?? null}
-                doc={editorDoc}
-                violationMap={violationMap}
-                teamViolations={teamViolations}
-                onClose={handleEditAiFillDecision}
-                onToggleCellFixed={handleToggleAiFillDecisionCell}
-                onFixAll={handleFixAllAiFillDecisionCells}
-                onEdit={handleEditAiFillDecision}
-                onConfirm={aiFillDecisionContext?.kind === 'regenerate' ? handleCancelAiFillDecision : handleConfirmAiFillDecision}
-                fixableCellCount={aiFillDecisionFixableCells.length}
-                cancelLabel={t('shared.confirmActionDialog.cancel')}
-                confirmLabel={
-                    aiFillDecisionContext?.kind === 'regenerate'
-                        ? t('page.makeShift.aiRefill.regenerateDecision.cancel')
-                        : t('page.makeShift.aiRefill.prefillDecision.confirm')
-                }
             />
             <ConfirmActionDialog
                 open={clearUnlockedCellsConfirmOpen}
@@ -2480,7 +2867,7 @@ export function AiAutofill() {
                 icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
             />
             <ConfirmActionDialog
-                open={lastShiftBlankWarningIntent !== null}
+                open={lastShiftBlankWarningIntent === 'confirm'}
                 title={t('page.makeShift.aiRefill.lastShiftBlankDialog.title')}
                 description={lastShiftBlankDialogDescription}
                 confirmLabel={t(
@@ -2494,7 +2881,7 @@ export function AiAutofill() {
                 onConfirm={handleConfirmLastShiftBlankWarning}
                 confirmButtonVariant={lastShiftBlankWarningIntent === 'aiFill' ? 'ai' : 'default'}
                 icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
-                spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shift-cell"
+                spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shifts"
             />
             <ConfirmActionDialog
                 open={snapshotLoadTarget != null}
@@ -2532,6 +2919,7 @@ export function AiAutofill() {
             />
             {(isAiGenerating || isAiLoadingOverlayFinishing) && !isAdjusting ? (
                 <AiAutofillLoadingOverlay
+                    sidebarOpen={isConversationOpen}
                     isAdjusting={isAdjusting}
                     isFinishing={isAiLoadingOverlayFinishing}
                     startedAt={aiStartedAt}

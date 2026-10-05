@@ -222,10 +222,10 @@ describe('request item builders', () => {
 });
 
 describe('carry-over answered flag', () => {
-    beforeEach(() => window.sessionStorage.clear());
+    beforeEach(() => window.localStorage.clear());
 
-    it('is scoped to ward, team and month', () => {
-        const key = {wardId: 1, shiftTeamId: 10, year: 2026, month: 7};
+    it('persists across sessions and is scoped to account, ward, team and month', () => {
+        const key = {accountId: 20, wardId: 1, shiftTeamId: 10, year: 2026, month: 7};
 
         expect(isCarryOverAnswered(key)).toBe(false);
 
@@ -233,5 +233,8 @@ describe('carry-over answered flag', () => {
 
         expect(isCarryOverAnswered(key)).toBe(true);
         expect(isCarryOverAnswered({...key, month: 8})).toBe(false);
+        expect(isCarryOverAnswered({...key, accountId: 21})).toBe(false);
+        window.sessionStorage.clear();
+        expect(isCarryOverAnswered(key)).toBe(true);
     });
 });

@@ -8,7 +8,7 @@ import type {TAsyncScheduleValidationStatus} from '@/features/shift-editor';
 import constraintValidationDotsAnimation from '@/shared/assets/animation/constraint-validation-dots.json';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getAiAutofillActionLabel, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
+import type {TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {
     MAKE_SHIFT_STEP_HEADING_PADDING_CLASS,
     MAKE_SHIFT_STEP_SUBTITLE_CLASS,
@@ -40,6 +40,8 @@ type TAiAutofillToolbarProps = {
     isAdjustEnabled?: boolean;
     hasGeneratedSchedule?: boolean;
     isAiGenerating: boolean;
+    isPreparing?: boolean;
+    isAutofillBlocked?: boolean;
     aiStatus: TAiAutofillStatus;
     hasCompletedAiFill: boolean;
     scheduleValidationStatus: TAsyncScheduleValidationStatus;
@@ -49,13 +51,6 @@ type TAiAutofillToolbarProps = {
     onSaveSnapshot: () => void;
     isSavingSnapshot: boolean;
 };
-
-const AI_ACTION_LABEL_KEYS = {
-    action: 'page.makeShift.aiRefill.action',
-    firstFill: 'page.makeShift.aiRefill.firstFill',
-    generating: 'page.makeShift.aiRefill.generating',
-    retry: 'page.makeShift.aiRefill.retry',
-} as const;
 
 export function AiAutofillToolbar({
     displaySettings,
@@ -77,13 +72,9 @@ export function AiAutofillToolbar({
     onRedo,
     onOpenSnapshotHistory,
     onAiFill,
-    onAdjust,
-    onRegenerate,
-    isAdjustEnabled = false,
-    hasGeneratedSchedule = false,
     isAiGenerating,
-    aiStatus,
-    hasCompletedAiFill,
+    isPreparing = false,
+    isAutofillBlocked = false,
     scheduleValidationStatus,
     onConfirm,
     isConfirming,
@@ -92,12 +83,7 @@ export function AiAutofillToolbar({
     isSavingSnapshot,
 }: TAiAutofillToolbarProps) {
     const {t} = useTypedTranslation();
-    const actionLabel = getAiAutofillActionLabel(aiStatus, hasCompletedAiFill);
-    const actionLabelKey =
-        isAdjustEnabled && (actionLabel === 'firstFill' || actionLabel === 'action')
-            ? 'aiAdjust.autofill'
-            : AI_ACTION_LABEL_KEYS[actionLabel];
-    const showRegenerate = isAdjustEnabled && hasGeneratedSchedule && !!onRegenerate;
+    const actionLabelKey = isAiGenerating ? 'page.makeShift.aiRefill.generating' : 'aiAdjust.autofill';
     const isValidationChecking = scheduleValidationStatus === 'validating';
 
     return (
@@ -259,82 +245,56 @@ export function AiAutofillToolbar({
                 </div>
 
                 <div className="ai-autofill-toolbar__primary-actions flex shrink-0 flex-nowrap items-center gap-2">
-                    {onAdjust ? (
-                        <button
-                            type="button"
-                            id="make_ai_fill_button"
-                            onClick={onAdjust}
-                            disabled={isAiGenerating || isConfirming}
-                            className={cn(
-                                'inline-flex min-h-[43px] items-center gap-2 rounded-[13px] px-4 text-[14px] font-semibold whitespace-nowrap disabled:opacity-50',
-                                showRegenerate ? 'bg-main-1 text-white' : 'bg-main-light text-main-1',
-                            )}
-                        >
-                            {t('aiAdjust.title')}
-                        </button>
-                    ) : showRegenerate ? (
-                        <button
-                            id="make_ai_fill_button"
-                            type="button"
-                            onClick={onRegenerate}
-                            disabled={isAiGenerating || isConfirming}
-                            aria-busy={isAiGenerating}
-                            className="text-gray-2 inline-flex min-h-[43px] items-center gap-2 rounded-[13px] bg-gray-7 px-3 text-[13px] font-medium whitespace-nowrap hover:bg-gray-6 disabled:opacity-50"
-                        >
-                            <BouncingDotsSlot active={isAiGenerating} className="w-5 shrink-0 text-main-1" />
-                            {t(isAiGenerating ? 'page.makeShift.aiRefill.generating' : 'aiAdjust.regenerating')}
-                        </button>
-                    ) : (
-                        <button
-                            id="make_ai_fill_button"
-                            type="button"
-                            onClick={onAiFill}
-                            disabled={isAiGenerating}
-                            aria-busy={isAiGenerating}
-                            className={cn(
-                                'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill group isolate',
-                                'relative inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[13px] px-4 py-0',
-                                'bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white',
-                                'shadow-[0_8px_22px_rgba(107,69,244,0.2)] transition-[box-shadow,filter,transform] duration-300 ease-out',
-                                'enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_14px_34px_rgba(107,69,244,0.32),0_0_0_1px_rgba(255,255,255,0.16)_inset] enabled:hover:brightness-105',
-                                'focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
-                                'disabled:cursor-wait disabled:opacity-100',
-                                isAiGenerating && 'shadow-[0_0_0_3px_rgba(169,120,255,0.24),0_8px_22px_rgba(107,69,244,0.2)]',
-                            )}
-                        >
-                            {!isAiGenerating && (
-                                <>
-                                    <span
-                                        aria-hidden
-                                        className="pointer-events-none absolute -inset-6 z-0 translate-y-3 scale-90 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.52),rgba(216,180,254,0.2)_34%,transparent_62%)] opacity-0 blur-xl transition-[opacity,transform] duration-500 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
-                                    />
-                                    <span
-                                        aria-hidden
-                                        className="pointer-events-none absolute top-[-60%] bottom-[-60%] left-[-30%] z-0 w-10 -translate-x-[180%] rotate-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] opacity-0 blur-[6px] transition-[opacity,transform] duration-700 ease-out group-hover:translate-x-[520%] group-hover:opacity-100 motion-reduce:transition-none"
-                                    />
-                                </>
-                            )}
-                            {isAiGenerating && (
+                    <button
+                        id="make_ai_fill_button"
+                        type="button"
+                        onClick={onAiFill}
+                        disabled={isAiGenerating || isConfirming || isPreparing}
+                        title={isAutofillBlocked ? t('aiAdjust.allFixed') : undefined}
+                        aria-busy={isAiGenerating}
+                        className={cn(
+                            'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill group isolate',
+                            'relative inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[13px] px-4 py-0',
+                            'bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white',
+                            'shadow-[0_8px_22px_rgba(107,69,244,0.2)] transition-[box-shadow,filter,transform] duration-300 ease-out',
+                            'enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_14px_34px_rgba(107,69,244,0.32),0_0_0_1px_rgba(255,255,255,0.16)_inset] enabled:hover:brightness-105',
+                            'focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
+                            'disabled:cursor-wait disabled:opacity-100',
+                            isAiGenerating && 'shadow-[0_0_0_3px_rgba(169,120,255,0.24),0_8px_22px_rgba(107,69,244,0.2)]',
+                        )}
+                    >
+                        {!isAiGenerating && (
+                            <>
                                 <span
                                     aria-hidden
-                                    className="pointer-events-none absolute inset-0 z-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
+                                    className="pointer-events-none absolute -inset-6 z-0 translate-y-3 scale-90 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.52),rgba(216,180,254,0.2)_34%,transparent_62%)] opacity-0 blur-xl transition-[opacity,transform] duration-500 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
                                 />
-                            )}
-                            <BouncingDotsSlot active={isAiGenerating} className="relative z-10 w-5 shrink-0 text-white" />
-                            <img
-                                src={aiAutofillSparkleIcon}
-                                alt=""
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute top-[-60%] bottom-[-60%] left-[-30%] z-0 w-10 -translate-x-[180%] rotate-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] opacity-0 blur-[6px] transition-[opacity,transform] duration-700 ease-out group-hover:translate-x-[520%] group-hover:opacity-100 motion-reduce:transition-none"
+                                />
+                            </>
+                        )}
+                        {isAiGenerating && (
+                            <span
                                 aria-hidden
-                                className={cn('relative z-10 size-4 shrink-0 object-contain', isAiGenerating && 'hidden')}
+                                className="pointer-events-none absolute inset-0 z-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
                             />
-                            <span className="relative z-10 truncate">{t(actionLabelKey)}</span>
-                        </button>
-                    )}
+                        )}
+                        <BouncingDotsSlot active={isAiGenerating} className="relative z-10 w-5 shrink-0 text-white" />
+                        <img
+                            src={aiAutofillSparkleIcon}
+                            alt=""
+                            aria-hidden
+                            className={cn('relative z-10 size-4 shrink-0 object-contain', isAiGenerating && 'hidden')}
+                        />
+                        <span className="relative z-10 truncate">{t(actionLabelKey)}</span>
+                    </button>
 
                     <button
                         type="button"
                         onClick={onConfirm}
-                        disabled={!canConfirm}
+                        disabled={!canConfirm || isPreparing}
                         aria-busy={isConfirming}
                         className={cn(
                             'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--confirm',

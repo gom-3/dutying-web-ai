@@ -1,7 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {X} from 'lucide-react';
-import {type ReactNode, type SyntheticEvent, useCallback, useLayoutEffect, useState} from 'react';
+import {type ReactNode, type SyntheticEvent, useLayoutEffect, useState} from 'react';
 import redWarnIcon from '@/shared/assets/images/red-warn-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
@@ -53,17 +53,14 @@ function getSpotlightRect(selector: string): TSpotlightRect | null {
     return right > left && bottom > top ? {left, top, right, bottom} : null;
 }
 
-function ConfirmActionDialogOverlay({spotlightSelector, zIndex}: Pick<IConfirmActionDialogProps, 'spotlightSelector' | 'zIndex'>) {
+export function ConfirmationSpotlight({
+    spotlightSelector,
+    zIndex,
+    interactive = false,
+    modal = false,
+}: Pick<IConfirmActionDialogProps, 'spotlightSelector' | 'zIndex'> & {interactive?: boolean; modal?: boolean}) {
+    const Overlay = modal ? Dialog.Overlay : 'div';
     const [spotlightRect, setSpotlightRect] = useState<TSpotlightRect | null>(null);
-    const measureSpotlight = useCallback(() => {
-        if (!spotlightSelector) {
-            setSpotlightRect(null);
-
-            return;
-        }
-
-        setSpotlightRect(getSpotlightRect(spotlightSelector));
-    }, [spotlightSelector]);
 
     useLayoutEffect(() => {
         if (!spotlightSelector) {
@@ -72,32 +69,33 @@ function ConfirmActionDialogOverlay({spotlightSelector, zIndex}: Pick<IConfirmAc
             return undefined;
         }
 
-        let animationFrameId: number | null = null;
+        let animationFrameId: number;
 
-        const scheduleMeasure = () => {
-            if (animationFrameId !== null) window.cancelAnimationFrame(animationFrameId);
+        const measureSpotlight = () => {
+            const next = getSpotlightRect(spotlightSelector);
 
-            animationFrameId = window.requestAnimationFrame(() => {
-                animationFrameId = null;
-                measureSpotlight();
+            setSpotlightRect((previous) => {
+                if (
+                    previous?.left === next?.left &&
+                    previous?.top === next?.top &&
+                    previous?.right === next?.right &&
+                    previous?.bottom === next?.bottom
+                )
+                    return previous;
+
+                return next;
             });
+            // Opening the sheet also collapses navigation over 300ms. Track actual
+            // positions while visible, including layout shifts without resize/scroll events.
+            animationFrameId = window.requestAnimationFrame(measureSpotlight);
         };
 
-        scheduleMeasure();
-
-        const retryTimerId = window.setTimeout(scheduleMeasure, 100);
-
-        window.addEventListener('resize', scheduleMeasure);
-        window.addEventListener('scroll', scheduleMeasure, true);
+        measureSpotlight();
 
         return () => {
-            if (animationFrameId !== null) window.cancelAnimationFrame(animationFrameId);
-
-            window.clearTimeout(retryTimerId);
-            window.removeEventListener('resize', scheduleMeasure);
-            window.removeEventListener('scroll', scheduleMeasure, true);
+            window.cancelAnimationFrame(animationFrameId);
         };
-    }, [measureSpotlight, spotlightSelector]);
+    }, [spotlightSelector]);
 
     const blockSpotlightInteraction = (event: SyntheticEvent<HTMLDivElement>) => {
         event.preventDefault();
@@ -105,15 +103,17 @@ function ConfirmActionDialogOverlay({spotlightSelector, zIndex}: Pick<IConfirmAc
     };
 
     return (
-        <Dialog.Overlay
-            className="fixed inset-0 z-[1100] overflow-hidden bg-transparent"
+        <Overlay
+            aria-hidden="true"
+            data-confirmation-spotlight="true"
+            className="pointer-events-none fixed inset-0 z-[1100] overflow-hidden bg-transparent"
             style={zIndex === undefined ? undefined : {zIndex}}
         >
             {spotlightRect ? (
                 <div
                     aria-hidden="true"
                     data-spotlight-blocker="true"
-                    className="absolute z-[1] cursor-default touch-none bg-transparent"
+                    className={cn('absolute z-[1] cursor-default touch-none bg-transparent', !interactive && 'pointer-events-auto')}
                     style={{
                         top: spotlightRect.top,
                         left: spotlightRect.left,
@@ -127,9 +127,23 @@ function ConfirmActionDialogOverlay({spotlightSelector, zIndex}: Pick<IConfirmAc
                     onContextMenu={blockSpotlightInteraction}
                 />
             ) : (
-                <div aria-hidden="true" className="absolute inset-0 bg-[#121726]/55 backdrop-blur-[2px]" />
+                <div aria-hidden="true" className="pointer-events-auto absolute inset-0 bg-[#121726]/55 backdrop-blur-[2px]" />
             )}
-        </Dialog.Overlay>
+            {spotlightRect && (
+                <>
+                    <div className="pointer-events-auto absolute inset-x-0 top-0" style={{height: spotlightRect.top}} />
+                    <div className="pointer-events-auto absolute inset-x-0 bottom-0" style={{top: spotlightRect.bottom}} />
+                    <div
+                        className="pointer-events-auto absolute left-0"
+                        style={{top: spotlightRect.top, height: spotlightRect.bottom - spotlightRect.top, width: spotlightRect.left}}
+                    />
+                    <div
+                        className="pointer-events-auto absolute right-0"
+                        style={{top: spotlightRect.top, height: spotlightRect.bottom - spotlightRect.top, left: spotlightRect.right}}
+                    />
+                </>
+            )}
+        </Overlay>
     );
 }
 
@@ -156,7 +170,7 @@ function ConfirmActionDialog({
     return (
         <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
             <Dialog.Portal container={portalContainer}>
-                <ConfirmActionDialogOverlay spotlightSelector={spotlightSelector} zIndex={zIndex} />
+                <ConfirmationSpotlight modal spotlightSelector={spotlightSelector} zIndex={zIndex} />
                 <Dialog.Content
                     style={zIndex === undefined ? undefined : {zIndex: zIndex + 1}}
                     className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]"

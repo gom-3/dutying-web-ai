@@ -29,18 +29,30 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                     (item.comparisonNurseIds?.length ?? 0) >= 2)),
     );
 
+    if (
+        !items.some(
+            (item) =>
+                item.kind === 'RULE' ||
+                item.kind === 'GOAL' ||
+                item.requiresConfirmation === true ||
+                (item.assumedSlots?.length ?? 0) > 0 ||
+                item.lifetimeHint === 'TEAM',
+        )
+    )
+        return null;
+
     return (
         <details className="mt-2 text-sm">
-            <summary>{copy('조건 카드 수정·확인', 'Edit and confirm the card')}</summary>
+            <summary>{copy('조건 수정하기', 'Edit conditions')}</summary>
             {edited.map((item, index) => (
-                <fieldset key={index} className="my-2 space-y-2 rounded border border-gray-5 p-2" disabled={disabled}>
+                <fieldset key={index} className="my-2 space-y-2 rounded-lg bg-white p-3" disabled={disabled}>
                     <legend>{item.displayLabel}</legend>
                     {item.kind === 'GOAL' && (
                         <>
                             <label className="block">
-                                {copy('휴무 수 차이 허용치', 'Allowed off-day difference')}
+                                {copy('오프 개수 차이', 'Allowed off-day difference')}
                                 <input
-                                    className="ml-2 w-16 rounded border p-1"
+                                    className="ml-2 w-16 rounded bg-gray-7 p-2 focus:bg-main-light focus:text-main-1 focus:outline-none"
                                     type="number"
                                     min={0}
                                     max={31}
@@ -56,7 +68,7 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                                 <div key={field}>
                                     <p>
                                         {copy(
-                                            field === 'targetNurseIds' ? '조절 대상' : '휴무 수 비교 대상',
+                                            field === 'targetNurseIds' ? '근무를 바꿀 사람' : '오프 개수를 비교할 사람',
                                             field === 'targetNurseIds' ? 'Target nurses' : 'Off-day comparison group',
                                         )}
                                     </p>
@@ -84,7 +96,7 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                                     checked={item.required ?? false}
                                     onChange={(event) => update(index, {required: event.target.checked})}
                                 />
-                                {copy('목표를 충족한 결과만 허용', 'Require the goal to be satisfied')}
+                                {copy('꼭 지켜주세요', 'Require the goal to be satisfied')}
                             </label>
                         </>
                     )}
@@ -95,7 +107,7 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                                 <label className="block" key={key}>
                                     {copy('조건 수치', 'Condition value')}
                                     <input
-                                        className="ml-2 w-16 rounded border p-1"
+                                        className="ml-2 w-16 rounded bg-gray-7 p-2 focus:bg-main-light focus:text-main-1 focus:outline-none"
                                         type="number"
                                         value={String(value)}
                                         onChange={(event) => update(index, {params: {...item.params, [key]: Number(event.target.value)}})}
@@ -106,7 +118,7 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                         <label className="block">
                             {copy('적용 강도', 'Strength')}
                             <select
-                                className="ml-2 rounded border p-1"
+                                className="ml-2 rounded bg-gray-7 p-2 focus:bg-main-light focus:text-main-1 focus:outline-none"
                                 value={item.severity ?? 'SOFT'}
                                 onChange={(event) => update(index, {severity: event.target.value as 'SOFT' | 'HARD'})}
                             >
@@ -125,12 +137,12 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                                 )
                             }
                         />
-                        {copy('대상과 수치를 확인했어요 · 이번 실행에 적용', 'I confirmed the values and group · this execution only')}
+                        {copy('이 내용으로 할게요', 'I confirmed the values and group · this execution only')}
                     </label>
                 </fieldset>
             ))}
             <button
-                className="rounded-lg border border-gray-5 px-3 py-2 disabled:opacity-40"
+                className="min-h-11 rounded-lg bg-main-light px-3 py-2 text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
                 disabled={disabled || !valid || reviewed.length !== edited.length}
                 onClick={() =>
                     void onConfirm(
@@ -146,7 +158,7 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                     )
                 }
             >
-                {copy('확인한 내용으로 새 카드 저장', 'Save a new confirmed card')}
+                {copy('이 내용으로 정하기', 'Confirm these details')}
             </button>
         </details>
     );
