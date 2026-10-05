@@ -27,7 +27,10 @@ const version: TResultVersion = {
         shiftTypes: [
             {wardShiftTypeId: 1, code: 'D', name: '저장 당시 Day', color: '#44c4b0', isOff: false, isCounted: true, classification: 'DAY'},
         ],
-        calendarDays: [{date: '2026-10-01', isHoliday: true}],
+        calendarDays: [
+            {date: '2026-10-01', isHoliday: true},
+            {date: '2026-10-03', isHoliday: true},
+        ],
     }),
 };
 
@@ -41,6 +44,7 @@ describe('immutable conversation snapshot rendering', () => {
         expect(doc.rows[0]?.lastCells).toEqual([null]);
         expect(doc.rows[1]?.lastCells).toEqual(['D']);
         expect(shift.days[0]?.dayType).toBe('holiday');
+        expect(shift.days[2]?.dayType).toBe('saturday');
         expect(shift.wardShiftTypes[0]?.color).toBe('#44c4b0');
     });
     it('preserves the saved shift-type column order even when the first assigned cell uses another type', () => {

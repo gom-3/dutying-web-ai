@@ -36,6 +36,8 @@ export function buildConversationSnapshot(version: TResultVersion) {
             wardShiftTypeId: id,
             name: saved?.name ?? code,
             shortName: code,
+            startTime: saved?.startTime,
+            endTime: saved?.endTime,
             color: saved?.color ?? '#626D7A',
             isDefault: true,
             isOff: off,
@@ -48,13 +50,8 @@ export function buildConversationSnapshot(version: TResultVersion) {
 
         return {
             day: parsed.getUTCDate(),
-            dayType: holidays.has(date)
-                ? 'holiday'
-                : parsed.getUTCDay() === 0
-                  ? 'sunday'
-                  : parsed.getUTCDay() === 6
-                    ? 'saturday'
-                    : 'workday',
+            dayType:
+                parsed.getUTCDay() === 0 ? 'sunday' : parsed.getUTCDay() === 6 ? 'saturday' : holidays.has(date) ? 'holiday' : 'workday',
         };
     };
     const prefix = `${version.year}-${String(version.month).padStart(2, '0')}-`;
