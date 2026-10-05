@@ -46,7 +46,10 @@ const version: TResultVersion = {
     year: 2026,
     month: 10,
     createdAt: '2026-10-03T19:00:00',
-    constraintsJson: '{}',
+    constraintsJson: JSON.stringify({
+        rows: shift.divisionShiftNurses.flat().map((row) => row.shiftNurse),
+        shiftTypes: shift.wardShiftTypes.map((type) => ({...type, code: type.shortName})),
+    }),
     inputDigest: 'synthetic',
     rowOrder: shift.divisionShiftNurses[0]!.map((row, i) => ({shiftNurseId: row.shiftNurse.shiftNurseId, displayOrder: i})),
     carryOverCells: shift.divisionShiftNurses[0]!.flatMap((r) =>
@@ -87,7 +90,6 @@ function Preview() {
             </button>
             {open && (
                 <AiConversationSnapshot
-                    shift={shift}
                     version={version}
                     before={before}
                     disabled={false}

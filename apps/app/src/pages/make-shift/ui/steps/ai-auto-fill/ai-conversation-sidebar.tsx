@@ -760,7 +760,6 @@ export default function AiConversationSidebar({
             {preview && (
                 <AiConversationSnapshot
                     key={preview.version.versionId}
-                    shift={shift}
                     version={preview.version}
                     before={preview.before}
                     disabled={busy || running}

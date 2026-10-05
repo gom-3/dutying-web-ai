@@ -1,27 +1,10 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import type {TShift} from '@/entities/shift';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
 import i18n from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import type {TResultVersion} from '../../../../model/schedule-conversation-api';
 import AiConversationSnapshot from '../ai-conversation-snapshot';
 
-const shift = {
-    lastDays: [],
-    days: [{day: 1, dayType: 'workday'}],
-    wardShiftTypes: [{wardShiftTypeId: 1, name: 'Day', shortName: 'D', color: '#44c4b0', isOff: false, isDefault: true, isCounted: true}],
-    divisionShiftNurses: [
-        [
-            {
-                shiftNurse: {shiftNurseId: 1, name: '합성 간호사', isWorker: true, divisionNum: 0, priority: 0, carried: 0, nurseId: 1},
-                lastWardShiftList: [],
-                lastWardReqShiftList: [],
-                wardShiftList: [null],
-                wardReqShiftList: [null],
-            },
-        ],
-    ],
-} as TShift;
 const result: TResultVersion = {
     versionId: 'result',
     parentVersionId: 'before',
@@ -39,31 +22,20 @@ const before = {...result, versionId: 'before', cells: [{...result.cells[0]!, wa
 beforeEach(async () => {
     await i18n.changeLanguage('ko');
     useShiftEditorStore.getState().reset();
-    useShiftEditorStore
-        .getState()
-        .setDoc({
-            columns: ['2026-10-01'],
-            rows: [{workerId: '1', cells: ['E']}],
-            workerMeta: {'1': {name: '현재 표'}},
-            fixedCells: {},
-            requestCells: {},
-        });
+    useShiftEditorStore.getState().setDoc({
+        columns: ['2026-10-01'],
+        rows: [{workerId: '1', cells: ['E']}],
+        workerMeta: {'1': {name: '현재 표'}},
+        fixedCells: {},
+        requestCells: {},
+    });
 });
 
 describe('conversation snapshot screen', () => {
     it('renders the existing calendar and switches immutable versions without changing the editor or its selection', async () => {
         const current = useShiftEditorStore.getState();
         const onContinue = vi.fn();
-        render(
-            <AiConversationSnapshot
-                shift={shift}
-                version={result}
-                before={before}
-                disabled={false}
-                onClose={vi.fn()}
-                onContinue={onContinue}
-            />,
-        );
+        render(<AiConversationSnapshot version={result} before={before} disabled={false} onClose={vi.fn()} onContinue={onContinue} />);
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(screen.getByText('읽기 전용 스냅샷', {exact: false})).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '실행 전', exact: true}));
@@ -76,10 +48,39 @@ describe('conversation snapshot screen', () => {
         expect(useShiftEditorStore.getState().selection).toEqual(current.selection);
         expect(useShiftEditorStore.getState().draftRevision).toEqual(current.draftRevision);
     });
+    it('renders saved and removed nurses instead of the live editor roster', () => {
+        useShiftEditorStore
+            .getState()
+            .setDoc({
+                columns: ['2026-10-01'],
+                rows: [{workerId: '99', cells: ['E']}],
+                workerMeta: {'99': {name: '새로 추가된 간호사'}},
+                fixedCells: {},
+                requestCells: {},
+            });
+        const historical = {
+            ...result,
+            rowOrder: [
+                {shiftNurseId: 1, displayOrder: 0, divisionNum: 1},
+                {shiftNurseId: 2, displayOrder: 1, divisionNum: 1},
+            ],
+            constraintsJson: JSON.stringify({
+                rows: [
+                    {shiftNurseId: 1, name: '과거 이름'},
+                    {shiftNurseId: 2, name: '삭제된 간호사'},
+                ],
+            }),
+        };
+        render(<AiConversationSnapshot version={historical} disabled={false} onClose={vi.fn()} onContinue={vi.fn()} />);
+        expect(screen.getByText('과거 이름')).toBeInTheDocument();
+        expect(screen.getByTitle('삭제된 간호사')).toBeInTheDocument();
+        expect(screen.queryByText('새로 추가된 간호사')).not.toBeInTheDocument();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.workerId).toBe('99');
+    });
     it('closes on Escape without branching', async () => {
         const onClose = vi.fn(),
             onContinue = vi.fn();
-        render(<AiConversationSnapshot shift={shift} version={result} disabled={false} onClose={onClose} onContinue={onContinue} />);
+        render(<AiConversationSnapshot version={result} disabled={false} onClose={onClose} onContinue={onContinue} />);
         await userEvent.keyboard('{Escape}');
         expect(onClose).toHaveBeenCalledOnce();
         expect(onContinue).not.toHaveBeenCalled();

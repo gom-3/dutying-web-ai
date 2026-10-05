@@ -1,13 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import {useMemo, useState} from 'react';
-import type {TShift} from '@/entities/shift';
-import {snapshotDetailToDoc} from '@/features/shift-editor';
 import i18n from '@/i18n';
+import {buildConversationSnapshot} from '../../../model/conversation-snapshot';
 import type {TResultVersion} from '../../../model/schedule-conversation-api';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 
 type TProps = {
-    shift: TShift;
     version: TResultVersion;
     before?: TResultVersion;
     disabled: boolean;
@@ -15,32 +13,12 @@ type TProps = {
     onContinue: (version: TResultVersion) => void;
 };
 
-export default function AiConversationSnapshot({shift, version, before, disabled, onClose, onContinue}: TProps) {
+export default function AiConversationSnapshot({version, before, disabled, onClose, onContinue}: TProps) {
     const [showBefore, setShowBefore] = useState(false);
     const ko = i18n.language.startsWith('ko');
     const copy = (korean: string, english: string) => (ko ? korean : english);
     const selected = showBefore && before ? before : version;
-    const doc = useMemo(() => {
-        const lastCellsByWorkerId: Record<string, (string | null)[]> = {};
-
-        for (const row of selected.rowOrder) {
-            lastCellsByWorkerId[String(row.shiftNurseId)] = selected.carryOverCells
-                .filter((cell) => cell.shiftNurseId === row.shiftNurseId)
-                .sort((a, b) => a.date.localeCompare(b.date))
-                .map(
-                    (cell) =>
-                        cell.shiftCode ??
-                        shift.wardShiftTypes.find((type) => type.wardShiftTypeId === cell.wardShiftTypeId)?.shortName ??
-                        null,
-                );
-        }
-
-        return snapshotDetailToDoc(selected, shift, selected.year, selected.month, {
-            fixedCells: {},
-            requestCells: {},
-            lastCellsByWorkerId,
-        });
-    }, [selected, shift]);
+    const {shift, doc} = useMemo(() => buildConversationSnapshot(selected), [selected]);
     const violations = useMemo(() => new Map(), []);
 
     return (
