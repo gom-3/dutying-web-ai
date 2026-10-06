@@ -29,20 +29,8 @@ export function ConversationConfirmation({items, nurses, disabled, onConfirm, co
                     (item.comparisonNurseIds?.length ?? 0) >= 2)),
     );
 
-    if (
-        !items.some(
-            (item) =>
-                item.kind === 'RULE' ||
-                item.kind === 'GOAL' ||
-                item.requiresConfirmation === true ||
-                (item.assumedSlots?.length ?? 0) > 0 ||
-                item.lifetimeHint === 'TEAM',
-        )
-    )
-        return null;
-
     return (
-        <details className="mt-2 text-sm">
+        <details className="mt-2 text-sm" open>
             <summary>{copy('조건 수정하기', 'Edit conditions')}</summary>
             {edited.map((item, index) => (
                 <fieldset key={index} className="my-2 space-y-2 rounded-lg bg-white p-3" disabled={disabled}>

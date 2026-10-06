@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
     applyAdjustedDoc: vi.fn(),
     clearScheduleValidationFromApi: vi.fn(),
     confirm: vi.fn(),
+    confirmPlan: vi.fn(),
+    report: vi.fn(),
     draftFixed: false,
 }));
 
@@ -141,21 +143,28 @@ describe('persistent schedule sidebar', () => {
             const onGenerated = vi.fn();
             const onPrepareGeneration = vi.fn();
 
-            current.operations = [{
-                ...operation,
-                applyStatus: 'NOT_APPLIED',
-                result: {
-                    operationType: 'GENERATE',
-                    applicable: false,
-                    draftRevision: 0,
-                    resultType: 'PATCH',
-                    changedCells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: 2}],
-                    validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
-                    unmetInstructions: ['승인 조건을 충족하지 못한 근무표 후보를 검토용으로 반환합니다.'],
-                    sameAsPrevious: false,
-                    engineResult: {status: 'REJECTED', solver: {reason}},
+            current.operations = [
+                {
+                    ...operation,
+                    applyStatus: 'NOT_APPLIED',
+                    result: {
+                        operationType: 'GENERATE',
+                        applicable: false,
+                        draftRevision: 0,
+                        resultType: 'PATCH',
+                        changedCells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: 2}],
+                        validation: {
+                            draftRevision: 0,
+                            rulesHash: 'rules:1',
+                            summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                            violations: [],
+                        },
+                        unmetInstructions: ['승인 조건을 충족하지 못한 근무표 후보를 검토용으로 반환합니다.'],
+                        sameAsPrevious: false,
+                        engineResult: {status: 'REJECTED', solver: {reason}},
+                    },
                 },
-            }];
+            ];
             renderSidebar({onGenerated, onPrepareGeneration});
             expect(await screen.findByRole('alert')).toHaveTextContent(/기존 근무표는 그대로|previous schedule is unchanged/);
             expect(screen.queryByText(/근무표를 채웠어요!|Your schedule is ready/)).not.toBeInTheDocument();
@@ -393,7 +402,7 @@ describe('persistent schedule sidebar', () => {
                 eventId: 2,
                 sequence: 2,
                 actor: 'ASSISTANT',
-                type: 'INTERPRETATION',
+                type: 'INTERPRETATION_CONFIRMED',
                 text: null,
                 interpretationId: 'i:1',
                 baseRevision: 0,
@@ -476,6 +485,21 @@ describe('persistent schedule sidebar', () => {
             return turn;
         });
 
+        mocks.confirm.mockImplementation(async () => {
+            const confirmed = {
+                ...current.turns[0]!,
+                eventId: 3,
+                sequence: 3,
+                type: 'INTERPRETATION_CONFIRMED',
+                interpretationId: 'confirmed:1',
+            };
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: 'confirmed:1'},
+            };
+            return confirmed;
+        });
         let finishPreparation!: () => void;
 
         const prepare = vi.fn(
@@ -493,15 +517,18 @@ describe('persistent schedule sidebar', () => {
 
         const apply = await screen.findByRole('button', {name: /수정 내용 반영하기|Apply changes/});
 
+        expect(apply).toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: /이 내용으로 정하기|Confirm these details/}));
+        await waitFor(() => expect(screen.getByRole('button', {name: /수정 내용 반영하기|Apply changes/})).toBeEnabled());
         expect(mocks.execute).not.toHaveBeenCalled();
-        await userEvent.click(apply);
+        await userEvent.click(screen.getByRole('button', {name: /수정 내용 반영하기|Apply changes/}));
         expect(prepare).toHaveBeenCalledOnce();
         expect(mocks.execute).not.toHaveBeenCalled();
         await act(async () => finishPreparation());
         await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
         expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
             operationType: 'ADJUST',
-            interpretationId: 'i:1',
+            interpretationId: 'confirmed:1',
         });
         expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('fillPolicy');
         expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('rebuildConfirmed');
@@ -514,7 +541,7 @@ describe('persistent schedule sidebar', () => {
                 eventId: 2,
                 sequence: 2,
                 actor: 'ASSISTANT',
-                type: 'INTERPRETATION',
+                type: 'INTERPRETATION_CONFIRMED',
                 text: null,
                 interpretationId: 'i:1',
                 baseRevision: 0,
@@ -561,6 +588,7 @@ describe('persistent schedule sidebar', () => {
                     eventId: 4,
                     sequence: 4,
                     interpretationId: 'i:3',
+                    type: 'INTERPRETATION_CONFIRMED',
                     interpretation: {...current.turns[current.turns.length - 1]!.interpretation!, items: confirmedItems},
                 };
 
@@ -652,6 +680,112 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
         await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
         expect(mocks.interpret.mock.calls[0]?.[1]).toMatchObject({previousInterpretationId: 'i:1', change: 'ADD'});
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('binds semantic confirmation and calculation to the reviewed plan without raw items', async () => {
+        const proposal = {
+            eventId: 2,
+            sequence: 2,
+            actor: 'ASSISTANT',
+            type: 'SEMANTIC_PLAN',
+            text: null,
+            interpretationId: 'plan:proposal',
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            interpretation: null,
+            createdAt: source.createdAt,
+            semanticPlan: {
+                planId: 'plan:1',
+                planHash: 'a'.repeat(64),
+                sourceVersionId: source.versionId,
+                state: 'PREVIEW_READY',
+                summary: '대상·기간·조건을 확인한 뒤 진행해 주세요.',
+                confirmationAllowed: true,
+                reasonCodes: [],
+                conditions: [
+                    {
+                        intentId: 'i:1',
+                        action: 'FORBID' as const,
+                        nurseIds: [1],
+                        dates: ['2026-11-01', '2026-11-02'],
+                        shiftCodes: ['N'],
+                        quantifier: 'EACH' as const,
+                        modality: 'HARD' as const,
+                        operator: null,
+                        count: null,
+                        sourceSpan: {quote: '김 간호사 1~2일 N 금지'},
+                    },
+                ],
+            },
+        };
+        current = {
+            ...current,
+            turns: [proposal],
+            conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
+        };
+        mocks.confirmPlan.mockImplementation(async () => {
+            const confirmed = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'plan:confirmed',
+                semanticPlan: {...proposal.semanticPlan, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+            current = {
+                ...current,
+                turns: [proposal, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
+            };
+            return confirmed;
+        });
+        renderSidebar();
+        expect(await screen.findByText('2026-11-01 ~ 2026-11-02', {exact: false})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /확인한 조건으로 계산|Calculate confirmed conditions/})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: /이 조건으로 확인|Confirm these conditions/}));
+        expect(mocks.confirmPlan).toHaveBeenCalledWith(1, 'plan:proposal', 0, 'a'.repeat(64));
+        expect(mocks.confirm).not.toHaveBeenCalled();
+        await userEvent.click(await screen.findByRole('button', {name: /확인한 조건으로 계산|Calculate confirmed conditions/}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            operationType: 'ADJUST',
+            interpretationId: 'plan:confirmed',
+            planHash: 'a'.repeat(64),
+            sourceVersionId: source.versionId,
+        });
+    });
+    it('keeps unsupported semantic conditions visible and disables confirmation', async () => {
+        const proposal = {
+            eventId: 2,
+            sequence: 2,
+            actor: 'ASSISTANT',
+            type: 'SEMANTIC_PLAN',
+            text: null,
+            interpretationId: 'plan:unsupported',
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            interpretation: null,
+            createdAt: source.createdAt,
+            semanticPlan: {
+                planId: 'p1',
+                planHash: 'a'.repeat(64),
+                sourceVersionId: source.versionId,
+                state: 'UNSUPPORTED',
+                summary: '요청에 아직 처리할 수 없는 조건이 있어요.',
+                confirmationAllowed: false,
+                reasonCodes: ['UNSUPPORTED_CAPABILITY'],
+                conditions: [],
+            },
+        };
+        current = {
+            ...current,
+            turns: [proposal],
+            conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
+        };
+        renderSidebar();
+        expect(await screen.findByText(proposal.semanticPlan.summary)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /이 조건으로 확인|Confirm these conditions/})).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 });

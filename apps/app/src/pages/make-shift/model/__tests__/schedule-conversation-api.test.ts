@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {
     conversationEvents,
     isConversationConfirmationCurrent,
+    isSemanticExecutionCurrent,
     type TConversationDetail,
     type TConversationOperation,
     type TConversationTurn,
@@ -86,4 +87,28 @@ describe('conversation state', () => {
             ),
         ).toBe(false);
     });
+});
+
+it('requires a confirmed immutable semantic plan bound to the current source', () => {
+    const proposal = {
+        ...turn,
+        type: 'SEMANTIC_PLAN',
+        semanticPlan: {
+            planId: 'p1',
+            planHash: 'a'.repeat(64),
+            sourceVersionId: 'result:1',
+            state: 'PREVIEW_READY',
+            summary: '조건 확인',
+            conditions: [],
+            reasonCodes: [],
+            confirmationAllowed: true,
+        },
+    };
+    expect(isSemanticExecutionCurrent(detail, proposal, false)).toBe(false);
+    const confirmed = {...proposal, type: 'SEMANTIC_PLAN_CONFIRMED', semanticPlan: {...proposal.semanticPlan, state: 'CONFIRMED'}};
+    expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(true);
+    expect(isSemanticExecutionCurrent(detail, confirmed, true)).toBe(false);
+    expect(
+        isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, currentVersionId: 'edited'}}, confirmed, false),
+    ).toBe(false);
 });
