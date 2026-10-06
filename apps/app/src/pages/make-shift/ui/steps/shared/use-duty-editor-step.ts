@@ -345,6 +345,7 @@ export function useDutyEditorStep({
 
         setAutofillAdjustEnabled(workspaceQuery.data.autofillAdjustEnabled === true);
         useShiftEditorStore.getState().setConversationEnabled(workspaceQuery.data.conversationEnabled === true);
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(workspaceQuery.data.semanticExecutionEnabled === true);
     }, [workspaceQuery.data, setAutofillAdjustEnabled]);
 
     useEffect(() => {

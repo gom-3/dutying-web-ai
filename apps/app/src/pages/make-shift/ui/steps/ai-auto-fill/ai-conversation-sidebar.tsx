@@ -15,6 +15,7 @@ import {
     conversationApi,
     conversationEvents,
     isConversationConfirmationCurrent,
+    isSemanticExecutionCurrent,
     type TConversationDetail,
     type TConversationExecute,
     type TConversationOperation,
@@ -116,6 +117,7 @@ export default function AiConversationSidebar({
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
+    const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
     const [detail, setDetail] = useState<TConversationDetail | null>(null);
@@ -125,6 +127,8 @@ export default function AiConversationSidebar({
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [text, setText] = useState('');
+    const [reportOperation, setReportOperation] = useState<string | null>(null);
+    const [reportNote, setReportNote] = useState('');
     const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
     const [previousId, setPreviousId] = useState<string>();
     const [preview, setPreview] = useState<TPreview | null>(null);
@@ -309,6 +313,12 @@ export default function AiConversationSidebar({
                 operationType,
                 ...(fillPolicy ? {fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'} : {}),
                 ...(interpretationId ? {interpretationId} : {}),
+                ...(() => {
+                    const turn = current.turns.find((entry) => entry.interpretationId === interpretationId);
+                    if (!turn?.semanticPlan) return {};
+                    if (!isSemanticExecutionCurrent(current, turn, localDirty)) throw new Error(t('aiAdjust.stale'));
+                    return {planHash: turn.semanticPlan.planHash, sourceVersionId: turn.semanticPlan.sourceVersionId};
+                })(),
                 ...(selection
                     ? {
                           failureSourceOperationId: selection.op.operationId,
@@ -463,6 +473,7 @@ export default function AiConversationSidebar({
         if (!message) return;
 
         await run(async () => {
+            if (useShiftEditorStore.getState().semanticExecutionEnabled && onPrepareAdjustment) await onPrepareAdjustment();
             const current = await sync();
 
             if (previousId && current.conversation.latestInterpretationId !== previousId) {
@@ -486,7 +497,12 @@ export default function AiConversationSidebar({
                 text: message,
                 language: i18n.language,
                 ...(previous && current.conversation.latestInterpretationId === previous
-                    ? {previousInterpretationId: previous, change}
+                    ? {
+                          previousInterpretationId: previous,
+                          change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
+                              ? 'REPLACE'
+                              : change,
+                      }
                     : {}),
             });
 
@@ -701,7 +717,13 @@ export default function AiConversationSidebar({
         Boolean(activeCard?.unmapped?.length) ||
         Boolean(activeCard?.items?.some((item) => Boolean(item.requiresConfirmation) || item.kind === 'CELL' || item.kind === 'CELL_SET'));
     const canConfirm = Boolean(
-        !preparing && active && activeCard && detail && isConversationConfirmationCurrent(detail, active, localDirty) && !incomplete,
+        !preparing &&
+            active &&
+            activeCard &&
+            detail &&
+            active.type === 'INTERPRETATION_CONFIRMED' &&
+            isConversationConfirmationCurrent(detail, active, localDirty) &&
+            !incomplete,
     );
     const stamp = (date: string) => new Date(date).toLocaleString(i18n.language, {dateStyle: 'short', timeStyle: 'short'});
     const renderTurn = (turn: TConversationTurn) => {
@@ -711,6 +733,117 @@ export default function AiConversationSidebar({
             <div key={turn.eventId}>
                 <Message>
                     {turn.text && <p className="whitespace-pre-wrap">{turn.text}</p>}
+                    {turn.semanticPlan && (
+                        <section aria-label={copy('요청 조건 확인', 'Review request conditions')}>
+                            <p>{turn.semanticPlan.summary}</p>
+                            {turn.semanticPlan.conditions.map((condition) => {
+                                const names = condition.nurseIds.map(
+                                    (id) => Object.values(doc.workerMeta).find((meta) => meta.nurseId === id)?.name ?? String(id),
+                                );
+                                const dates = [...condition.dates].sort();
+                                const continuous = dates.every(
+                                    (date, index) => index === 0 || Date.parse(date) - Date.parse(dates[index - 1]) === 86400000,
+                                );
+                                const period =
+                                    continuous && dates.length > 1 ? `${dates[0]} ~ ${dates[dates.length - 1]}` : dates.join(', ');
+                                const bound =
+                                    condition.operator === 'MIN'
+                                        ? copy('이상', 'or more')
+                                        : condition.operator === 'MAX'
+                                          ? copy('이하', 'or fewer')
+                                          : copy('정확히', 'exactly');
+                                return (
+                                    <div key={condition.intentId} className="my-3 rounded-lg bg-gray-7 p-3">
+                                        <p>
+                                            {names.join(', ')} · {period}
+                                        </p>
+                                        <p>
+                                            {condition.shiftCodes.join(', ')} ·{' '}
+                                            {condition.action === 'ASSIGN'
+                                                ? copy('배정', 'Assign')
+                                                : condition.action === 'FORBID'
+                                                  ? copy('배정하지 않음', 'Exclude')
+                                                  : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'Group total') : copy('각자', 'Each')} ${condition.count} ${bound}`}
+                                        </p>
+                                        <p>
+                                            {condition.modality === 'HARD'
+                                                ? copy('반드시 충족', 'Required')
+                                                : copy('가능하면 반영', 'Preferred')}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                            {turn.interpretationId === detail?.conversation.latestInterpretationId && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {turn.semanticPlan.confirmationAllowed && (
+                                        <button
+                                            className={buttonClass}
+                                            disabled={
+                                                busy ||
+                                                running ||
+                                                localDirty ||
+                                                !adjustEnabled ||
+                                                !detail ||
+                                                !isConversationConfirmationCurrent(detail, turn, localDirty)
+                                            }
+                                            onClick={() =>
+                                                void run(async () => {
+                                                    const current = detailRef.current;
+                                                    if (!current || !turn.interpretationId || !turn.semanticPlan) return;
+                                                    await api.confirmPlan(
+                                                        current.conversation.conversationId,
+                                                        turn.interpretationId,
+                                                        current.conversation.revision,
+                                                        turn.semanticPlan.planHash,
+                                                    );
+                                                    await refresh();
+                                                })
+                                            }
+                                        >
+                                            {copy('이 조건으로 확인', 'Confirm these conditions')}
+                                        </button>
+                                    )}
+                                    {turn.semanticPlan.state === 'CONFIRMED' && (
+                                        <button
+                                            className={buttonClass}
+                                            disabled={
+                                                busy ||
+                                                running ||
+                                                isAutofillBlocked ||
+                                                !adjustEnabled ||
+                                                !detail ||
+                                                !isSemanticExecutionCurrent(detail, turn, localDirty)
+                                            }
+                                            onClick={() => void execute('ADJUST', undefined, turn.interpretationId ?? undefined)}
+                                        >
+                                            {copy('확인한 조건으로 계산', 'Calculate confirmed conditions')}
+                                        </button>
+                                    )}
+                                    <button
+                                        className={buttonClass}
+                                        disabled={busy || running}
+                                        onClick={() => {
+                                            setEntryChoice('modify');
+                                            setPreviousId(turn.interpretationId ?? undefined);
+                                            setChange('REPLACE');
+                                            setText('');
+                                            textarea.current?.focus();
+                                        }}
+                                    >
+                                        {copy('전체 요청 다시 입력', 'Restate the full request')}
+                                    </button>
+                                </div>
+                            )}
+                            {localDirty && (
+                                <p role="status">
+                                    {copy(
+                                        '표가 바뀌었어요. 최신 표 기준으로 다시 확인해 주세요.',
+                                        'The draft changed. Review the request again.',
+                                    )}
+                                </p>
+                            )}
+                        </section>
+                    )}
                     {turn.interpretation && (
                         <>
                             <AiAdjustInterpretCard
@@ -745,7 +878,14 @@ export default function AiConversationSidebar({
                                     nurses={Object.values(doc.workerMeta)
                                         .filter((meta) => meta.nurseId !== undefined)
                                         .map((meta) => ({nurseId: meta.nurseId!, name: meta.name}))}
-                                    disabled={busy || running || awaitingAdjustment || localDirty || !adjustEnabled}
+                                    disabled={
+                                        busy ||
+                                        running ||
+                                        awaitingAdjustment ||
+                                        localDirty ||
+                                        !adjustEnabled ||
+                                        Boolean(turn.interpretation.unmapped?.length)
+                                    }
                                     copy={copy}
                                     onConfirm={async (items) =>
                                         run(async () => {
@@ -1106,6 +1246,58 @@ export default function AiConversationSidebar({
                             </AiFailureMessage>
                         )}
                     </AiChatScroll>
+                    {reportOperation && (
+                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('처리 결과 신고', 'Report outcome')}>
+                            <label htmlFor="ai-report-note">
+                                {copy('예상한 조건과 다른 점을 적어 주세요.', 'Describe how the outcome differs from your request.')}
+                            </label>
+                            <textarea
+                                id="ai-report-note"
+                                value={reportNote}
+                                maxLength={500}
+                                onChange={(event) => setReportNote(event.target.value)}
+                            />
+                            <button
+                                className={buttonClass}
+                                disabled={busy || !reportNote.trim()}
+                                onClick={() =>
+                                    void run(async () => {
+                                        const current = detailRef.current;
+                                        if (!current) return;
+                                        const saved = await api.report(
+                                            current.conversation.conversationId,
+                                            reportOperation,
+                                            reportNote.trim(),
+                                        );
+                                        setNotice(
+                                            `${copy('신고가 저장됐어요. 사건 번호:', 'Report saved. Reference:')} ${saved.incidentId}`,
+                                        );
+                                        setReportOperation(null);
+                                        setReportNote('');
+                                    })
+                                }
+                            >
+                                {copy('신고 저장', 'Save report')}
+                            </button>
+                            <button className={buttonClass} onClick={() => setReportOperation(null)}>
+                                {copy('취소', 'Cancel')}
+                            </button>
+                        </section>
+                    )}
+                    {detail?.operations.some((op) => op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED') && (
+                        <button
+                            className={buttonClass}
+                            disabled={busy}
+                            onClick={() => {
+                                const completed = [...(detail?.operations ?? [])]
+                                    .reverse()
+                                    .find((op) => op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED');
+                                if (completed) setReportOperation(completed.operationId);
+                            }}
+                        >
+                            {copy('최근 처리 결과 신고', 'Report the latest outcome')}
+                        </button>
+                    )}
                     {selectedSuggestion && (
                         <section className="rounded-xl bg-gray-7 p-3" aria-label="제안 확인">
                             <p>이 변경 내용을 이번 실행에 적용할까요?</p>
@@ -1196,7 +1388,7 @@ export default function AiConversationSidebar({
                                     ))}
                                 </details>
                             )}
-                            {previousId && (
+                            {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select
                                     aria-label={copy('조건 수정 방식', 'Revision mode')}
                                     value={change}
@@ -1207,6 +1399,14 @@ export default function AiConversationSidebar({
                                     <option value="ADD">{copy('이전 제안에 추가', 'Add to the previous proposal')}</option>
                                     <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
                                 </select>
+                            )}
+                            {(semanticExecutionEnabled || active?.semanticPlan) && (
+                                <p className="text-sm">
+                                    {copy(
+                                        '대상·기간·조건을 모두 포함한 전체 요청을 적어 주세요. 이전 조건을 유지하려면 함께 적어 주세요.',
+                                        'Restate the full request, including every target, date and condition you want to keep.',
+                                    )}
+                                </p>
                             )}
                             <label className="block text-sm">
                                 {copy('수정할 내용', 'Your changes')}

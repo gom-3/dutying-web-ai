@@ -450,6 +450,7 @@ export type TWorkspaceScheduleResponse = {
      */
     autofillAdjustEnabled?: boolean;
     conversationEnabled?: boolean;
+    semanticExecutionEnabled?: boolean;
 };
 
 export type TUpdateShiftWorkflowDTO = {

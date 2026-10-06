@@ -28,6 +28,27 @@ export type TResultVersion = {
     inputDigest: string;
     createdAt: string;
 };
+export type TSemanticPlan = {
+    planId: string;
+    planHash: string;
+    sourceVersionId: string;
+    state: string;
+    summary: string;
+    confirmationAllowed: boolean;
+    reasonCodes: string[];
+    conditions: {
+        intentId: string;
+        action: 'ASSIGN' | 'FORBID' | 'COUNT';
+        nurseIds: number[];
+        dates: string[];
+        shiftCodes: string[];
+        quantifier: 'EACH' | 'GROUP_TOTAL';
+        modality: 'HARD' | 'SOFT';
+        operator: 'MIN' | 'MAX' | 'EXACT' | null;
+        count: number | null;
+        sourceSpan: {quote: string};
+    }[];
+};
 export type TConversationTurn = {
     eventId: number;
     sequence: number;
@@ -38,6 +59,7 @@ export type TConversationTurn = {
     baseRevision: number;
     contextHash: string | null;
     interpretation: TScheduleAdjustInterpretRes | null;
+    semanticPlan?: TSemanticPlan | null;
     createdAt: string;
 };
 export type TConversationOperation = {
@@ -77,6 +99,8 @@ export type TConversationExecute = {
     fillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     rebuildConfirmed?: boolean;
     interpretationId?: string;
+    planHash?: string;
+    sourceVersionId?: string;
     failureSourceOperationId?: string;
     failureSuggestionId?: string;
     failureSuggestionDigest?: string;
@@ -118,6 +142,13 @@ export function conversationApi(wardId: number, teamId: number) {
                 expectedRevision,
                 items,
             }),
+        confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
+            put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+            }),
+        report: (id: number, operationId: string, note: string) =>
+            post<{incidentId: string}>(`/conversations/${id}/reports`, {operationId, note}),
         execute: (id: number, request: TConversationExecute) => post<TConversationOperation>(`/conversations/${id}/operations`, request),
         operation: (id: string) => get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`),
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),
@@ -154,5 +185,14 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
         turn.interpretationId === detail.conversation.latestInterpretationId &&
         turn.baseRevision === detail.conversation.revision &&
         turn.contextHash === detail.contextHash
+    );
+}
+
+export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+    return (
+        isConversationConfirmationCurrent(detail, turn, localDirty) &&
+        turn.type === 'SEMANTIC_PLAN_CONFIRMED' &&
+        turn.semanticPlan?.state === 'CONFIRMED' &&
+        turn.semanticPlan.sourceVersionId === detail.conversation.currentVersionId
     );
 }

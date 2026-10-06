@@ -263,6 +263,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 // 조절 칩 노출 여부는 서버 판정이다. 에디터 스텝의 workspace 쿼리와 같은 규칙으로 스토어에 싣는다.
                 setAutofillAdjustEnabled(workspace?.autofillAdjustEnabled === true);
                 useShiftEditorStore.getState().setConversationEnabled(workspace?.conversationEnabled === true);
+                useShiftEditorStore.getState().setSemanticExecutionEnabled(workspace?.semanticExecutionEnabled === true);
 
                 const rosterReconciliation = workspace?.rosterReconciliation;
                 const requiresRosterReview = rosterReconciliation?.requiresReview === true;
