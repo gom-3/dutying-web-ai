@@ -3,9 +3,14 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift} from '@/entities/shift';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
-import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import type * as ConversationApiModule from '../../../../model/schedule-conversation-api';
-import type {TConversationDetail, TConversationOperation, TResultVersion} from '../../../../model/schedule-conversation-api';
+import type {
+    TConversationDetail,
+    TConversationOperation,
+    TConversationTurn,
+    TResultVersion,
+} from '../../../../model/schedule-conversation-api';
 import AiConversationSidebar from '../ai-conversation-sidebar';
 
 const mocks = vi.hoisted(() => ({
@@ -94,8 +99,30 @@ const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSi
                     lastDays: [],
                     days: [{day: 1, dayType: 'workday'}],
                     wardShiftTypes: [
-                        {wardShiftTypeId: 1, shortName: 'D', name: 'Day', color: '#44c4b0', isDefault: true, isOff: false, isCounted: true, startTime: '07:00', endTime: '15:00', classification: 'DAY'},
-                        {wardShiftTypeId: 4, shortName: 'O', name: 'Off', color: '#455a7a', isDefault: true, isOff: true, isCounted: true, startTime: '', endTime: '', classification: 'OFF'},
+                        {
+                            wardShiftTypeId: 1,
+                            shortName: 'D',
+                            name: 'Day',
+                            color: '#44c4b0',
+                            isDefault: true,
+                            isOff: false,
+                            isCounted: true,
+                            startTime: '07:00',
+                            endTime: '15:00',
+                            classification: 'DAY',
+                        },
+                        {
+                            wardShiftTypeId: 4,
+                            shortName: 'O',
+                            name: 'Off',
+                            color: '#455a7a',
+                            isDefault: true,
+                            isOff: true,
+                            isCounted: true,
+                            startTime: '',
+                            endTime: '',
+                            classification: 'OFF',
+                        },
                     ],
                     divisionShiftNurses: [
                         [
@@ -208,6 +235,7 @@ describe('persistent schedule sidebar', () => {
                 expect(screen.getByRole('textbox')).toHaveValue('');
                 expect(screen.getByRole('textbox')).toHaveFocus();
             }
+
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
@@ -484,6 +512,7 @@ describe('persistent schedule sidebar', () => {
 
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
+        expect(screen.queryByRole('region', {name: /이렇게 요청해 보세요|Try a request/})).not.toBeInTheDocument();
         expect(screen.queryByText(/현재 조건으로 전체|Rebuild the whole schedule with/)).not.toBeInTheDocument();
         await userEvent.click(modify);
         await screen.findByText(/어떤 점을 바꾸고 싶나요|What would you like to change/);
@@ -492,6 +521,14 @@ describe('persistent schedule sidebar', () => {
         ).not.toBeInTheDocument();
         expect(screen.getByRole('textbox')).toHaveFocus();
         expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
+
+        const examples = screen.getByRole('region', {name: /이렇게 요청해 보세요|Try a request/});
+
+        expect(within(examples).getAllByRole('button')).toHaveLength(3);
+        await userEvent.click(within(examples).getAllByRole('button')[0]);
+        expect(screen.getByRole('textbox')).toHaveValue('김 간호사 1일 D 근무 없게 해줘');
+        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('adjusts only after confirmation and carries the interpretation into the request', async () => {
@@ -522,13 +559,16 @@ describe('persistent schedule sidebar', () => {
                 type: 'INTERPRETATION_CONFIRMED',
                 interpretationId: 'confirmed:1',
             };
+
             current = {
                 ...current,
                 turns: [...current.turns, confirmed],
                 conversation: {...current.conversation, latestInterpretationId: 'confirmed:1'},
             };
+
             return confirmed;
         });
+
         let finishPreparation!: () => void;
 
         const prepare = vi.fn(
@@ -673,7 +713,25 @@ describe('persistent schedule sidebar', () => {
             ],
         };
         mocks.branch.mockImplementation(async () => {
-            current = {...current, turns: [], operations: [], conversation: {...current.conversation, conversationId: 2}};
+            current = {
+                ...current,
+                turns: [
+                    {
+                        eventId: 90,
+                        sequence: 1,
+                        actor: 'SYSTEM',
+                        type: 'BRANCH',
+                        text: '8cb64676-c3dc-4cc3-8053-953ae349c630에서 이어서 작성',
+                        interpretationId: null,
+                        interpretation: null,
+                        baseRevision: 0,
+                        contextHash: null,
+                        createdAt: source.createdAt,
+                    },
+                ],
+                operations: [],
+                conversation: {...current.conversation, conversationId: 2},
+            };
 
             return current.conversation;
         });
@@ -683,6 +741,8 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(screen.getByRole('button', {name: /새 채팅|New chat/}));
         await screen.findByRole('button', {name: /^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/});
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(screen.queryByText(/8cb64676/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
         expect(mocks.branch).toHaveBeenCalledWith(1, 'source:1', 0);
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -748,6 +808,7 @@ describe('persistent schedule sidebar', () => {
                 ],
             },
         };
+
         current = {
             ...current,
             turns: [proposal],
@@ -762,21 +823,22 @@ describe('persistent schedule sidebar', () => {
                 interpretationId: 'plan:confirmed',
                 semanticPlan: {...proposal.semanticPlan, state: 'CONFIRMED', confirmationAllowed: false},
             };
+
             current = {
                 ...current,
                 turns: [proposal, confirmed],
                 conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
             };
+
             return confirmed;
         });
         renderSidebar();
-        expect(await screen.findByText('2026-11-01 ~ 2026-11-02', {exact: false})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /확인한 조건으로 계산|Calculate confirmed conditions/})).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: /이 조건으로 확인|Confirm these conditions/}));
-        expect(mocks.confirmPlan).toHaveBeenCalledWith(1, 'plan:proposal', 0, 'a'.repeat(64));
-        expect(mocks.confirm).not.toHaveBeenCalled();
-        await userEvent.click(await screen.findByRole('button', {name: /확인한 조건으로 계산|Calculate confirmed conditions/}));
+        expect(await screen.findByText('11월 1~2일', {exact: false})).toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: /이 조건으로 조절|Adjust with these conditions/}));
+        await waitFor(() => expect(mocks.confirmPlan).toHaveBeenCalledWith(1, 'plan:proposal', 0, 'a'.repeat(64)));
         await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(screen.getAllByRole('region', {name: /요청 조건 확인|Review request conditions/})).toHaveLength(1);
         expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
             operationType: 'ADJUST',
             interpretationId: 'plan:confirmed',
@@ -807,14 +869,215 @@ describe('persistent schedule sidebar', () => {
                 conditions: [],
             },
         };
+
         current = {
             ...current,
             turns: [proposal],
             conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
         };
         renderSidebar();
-        expect(await screen.findByText(proposal.semanticPlan.summary)).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /이 조건으로 확인|Confirm these conditions/})).not.toBeInTheDocument();
+        expect(await screen.findByText(/이 요청은 아직 자동으로 반영하기 어려워요|This request is not supported yet/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /이 조건으로 조절|Adjust with these conditions/})).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    const semanticRequest = (state = 'PREVIEW_READY', reasonCodes: string[] = []) => {
+        const raw = '김 간호사 1~2일 N 금지. 12일 O 배정';
+        const user: TConversationTurn = {
+            eventId: 1,
+            sequence: 1,
+            actor: 'USER',
+            type: 'MESSAGE',
+            text: raw,
+            interpretationId: null,
+            interpretation: null,
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            createdAt: source.createdAt,
+        };
+        const proposal: TConversationTurn = {
+            eventId: 2,
+            sequence: 2,
+            actor: 'ASSISTANT',
+            type: 'SEMANTIC_PLAN',
+            text: null,
+            interpretationId: 'proposal:1',
+            interpretation: null,
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            createdAt: source.createdAt,
+            semanticPlan: {
+                planId: 'p1',
+                planHash: 'a'.repeat(64),
+                sourceVersionId: source.versionId,
+                state,
+                summary: '요청을 더 확인해야 해요.',
+                confirmationAllowed: state === 'PREVIEW_READY',
+                reasonCodes,
+                conditions: [
+                    {
+                        intentId: 'i1',
+                        action: 'FORBID',
+                        nurseIds: [1],
+                        dates: ['2026-11-01', '2026-11-02'],
+                        shiftCodes: ['N'],
+                        quantifier: 'EACH',
+                        modality: 'HARD',
+                        operator: null,
+                        count: null,
+                        sourceSpan: {quote: raw},
+                    },
+                ],
+            },
+        };
+
+        current = {
+            ...current,
+            turns: [user, proposal],
+            conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
+        };
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+
+        return {raw, proposal};
+    };
+
+    it('lets the user edit just the date while retaining every other original condition', async () => {
+        const {raw, proposal} = semanticRequest();
+
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        await screen.findByRole('button', {name: '요청 수정'});
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '요청 수정'}));
+
+        const input = screen.getByRole('textbox', {name: '바꾸고 싶은 내용'});
+
+        expect(input).toHaveValue(raw);
+        expect(screen.getByRole('button', {name: '이 조건으로 조절'})).toBeDisabled();
+        await userEvent.clear(input);
+        await userEvent.type(input, raw.replace('1~2일', '1~5일'));
+        await userEvent.click(screen.getByRole('button', {name: '수정한 요청 확인'}));
+        await waitFor(() =>
+            expect(mocks.interpret).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({
+                    text: '김 간호사 1~5일 N 금지. 12일 O 배정',
+                    previousInterpretationId: 'proposal:1',
+                    change: 'REPLACE',
+                }),
+            ),
+        );
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('answers a clarification with the original request retained and without calculating', async () => {
+        const {raw, proposal} = semanticRequest();
+
+        proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
+        proposal.semanticPlan!.confirmationAllowed = false;
+        proposal.semanticPlan!.summary = '빈칸으로 지울까요, O 근무를 배정할까요?';
+        proposal.semanticPlan!.conditions = [];
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        await screen.findByText('빈칸으로 지울까요, O 근무를 배정할까요?');
+        await userEvent.type(screen.getByRole('textbox'), 'O로 배정해줘.');
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+            text: `${raw}\n추가 답변: O로 배정해줘.`,
+            previousInterpretationId: proposal.interpretationId,
+            change: 'REPLACE',
+        });
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('cancels an edit without changing the plan or executing', async () => {
+        semanticRequest();
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '요청 수정'}));
+        await userEvent.clear(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}));
+        await userEvent.click(screen.getByRole('button', {name: '취소'}));
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '이 조건으로 조절'})).toBeEnabled();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('retries a technical extraction failure with the exact original request', async () => {
+        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION', ['INVALID_SOURCE_SPAN']);
+
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '다시 시도하기'}));
+        await waitFor(() =>
+            expect(mocks.interpret).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({text: raw, previousInterpretationId: 'proposal:1', change: 'REPLACE'}),
+            ),
+        );
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it.each(['lost-confirmation', 'changed-revision'])('does not calculate when confirmation is unsafe: %s', async (failure) => {
+        const {proposal} = semanticRequest();
+
+        mocks.confirmPlan.mockImplementation(async () => {
+            if (failure === 'lost-confirmation') throw new Error('응답이 지연됐어요.');
+
+            const confirmed = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'confirmed:1',
+                semanticPlan: {...proposal.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, revision: 1, latestInterpretationId: 'confirmed:1'},
+            };
+
+            return confirmed;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '이 조건으로 조절'}));
+        await waitFor(() => expect(mocks.confirmPlan).toHaveBeenCalledOnce());
+        await waitFor(() => expect(screen.getByRole('button', {name: '요청 수정'})).toBeEnabled());
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('confirms and calculates only once when the action is double-clicked', async () => {
+        const {proposal} = semanticRequest();
+
+        let finish!: (turn: TConversationTurn) => void;
+
+        mocks.confirmPlan.mockImplementation(
+            () =>
+                new Promise<TConversationTurn>((resolve) => {
+                    finish = resolve;
+                }),
+        );
+        renderSidebar();
+        await userEvent.dblClick(await screen.findByRole('button', {name: '이 조건으로 조절'}));
+        expect(mocks.confirmPlan).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: '요청 수정'})).toBeDisabled();
+        await act(async () => {
+            const confirmed = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'confirmed:1',
+                semanticPlan: {...proposal.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: 'confirmed:1'},
+            };
+            finish(confirmed);
+        });
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
     });
 });
