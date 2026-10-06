@@ -1,4 +1,4 @@
-/** Local visual review only. Every API request is handled in memory; no server or LLM calls. */
+/** Synthetic local draft; every entered request uses the native dev semantic preview. */
 import {useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import type {AxiosAdapter} from 'axios';
