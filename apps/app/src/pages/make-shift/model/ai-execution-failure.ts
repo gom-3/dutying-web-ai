@@ -8,7 +8,8 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
         response.operationType === 'GENERATE' &&
         response.applicable === true &&
         response.validationTarget === 'RESULT' &&
-        response.engineResult?.status === 'REJECTED' &&
+        ['REJECTED', 'ACCEPTED', 'REPAIRED'].includes(response.engineResult?.status ?? '') &&
+        response.approvable === false &&
         response.engineResult?.candidateVisible === true &&
         response.engineResult?.reviewRequired === true &&
         response.changedCells.length > 0 &&
@@ -21,10 +22,15 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     if (isGenerateReviewDraft(response)) return null;
 
     const status = response.engineResult?.status?.toUpperCase();
-    const reason = (response.failure?.reasonCode ?? response.engineResult?.solver?.reason ?? '').toUpperCase();
+    const reason = (
+        response.failure?.reasonCode ??
+        response.engineResult?.solver?.reason ??
+        (response.engineResult?.reviewRequired === true ? 'SPRING_HARD_VALIDATION' : '')
+    ).toUpperCase();
 
     if (
         response.applicable !== false &&
+        response.engineResult?.reviewRequired !== true &&
         !['REJECTED', 'ERROR', 'INFEASIBLE', 'TIME_LIMIT'].includes(status ?? '') &&
         reason !== 'TIME_LIMIT_NO_SOLUTION'
     )

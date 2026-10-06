@@ -121,7 +121,7 @@ describe('requestAiSchedule', () => {
         }
     });
 
-    it('applies an explicitly verified GENERATE review draft without treating it as approval', async () => {
+    it.each(['REJECTED', 'ACCEPTED'])('applies a verified GENERATE review draft with %s while approval stays blocked', async (status) => {
         const review = {
             ...response,
             applicable: true,
@@ -130,7 +130,7 @@ describe('requestAiSchedule', () => {
             changedCells: [{shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 2}],
             validation: {...response.validation, summary: {...response.validation.summary, valid: false, hardCount: 1}},
             unmetInstructions: ['초안을 만들었어요. 기존 고정표에 D가 부족해요.'],
-            engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
+            engineResult: {status, candidateVisible: true, reviewRequired: true},
         };
 
         apiGenerate.mockResolvedValue(review);
