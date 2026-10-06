@@ -110,12 +110,51 @@ describe('requestAiSchedule', () => {
                 engineResult: {status, solver: {reason}},
             });
 
-            const result = await requestAiSchedule({...request, ...(operationType === 'ADJUST' ? {adjust: {strength: 'NORMAL' as const}} : {})});
+            const result = await requestAiSchedule({
+                ...request,
+                ...(operationType === 'ADJUST' ? {adjust: {strength: 'NORMAL' as const}} : {}),
+            });
 
             expect(result).toMatchObject({ok: false, failure: {recovery, blocked: false}});
             expect(!result.ok && result.message).not.toMatch(/검토용|승인 조건|unrecognized_reason/);
             expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
         }
+    });
+
+    it('applies an explicitly verified GENERATE review draft without treating it as approval', async () => {
+        const review = {
+            ...response,
+            applicable: true,
+            approvable: false,
+            validationTarget: 'RESULT',
+            changedCells: [{shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 2}],
+            validation: {...response.validation, summary: {...response.validation.summary, valid: false, hardCount: 1}},
+            unmetInstructions: ['초안을 만들었어요. 기존 고정표에 D가 부족해요.'],
+            engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
+        };
+
+        apiGenerate.mockResolvedValue(review);
+
+        const result = await requestAiSchedule(request);
+
+        expect(result).toMatchObject({ok: true, response: {approvable: false, changedCells: review.changedCells}});
+
+        apiGenerate.mockResolvedValue({...review, operationType: 'ADJUST'});
+
+        const adjustResult = await requestAiSchedule({...request, adjust: {strength: 'NORMAL'}});
+
+        expect(adjustResult.ok).toBe(false);
+    });
+
+    it.each([undefined, false])('keeps rejected drafts blocked without explicit reviewRequired=%s', async (reviewRequired) => {
+        apiGenerate.mockResolvedValue({
+            ...response,
+            applicable: true,
+            validationTarget: 'RESULT',
+            changedCells: [{shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 2}],
+            engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired},
+        });
+        expect((await requestAiSchedule(request)).ok).toBe(false);
     });
 
     it.each(['AI_QUOTA_EXCEEDED', 'AI_QUOTA_EXHAUSTED'])('keeps %s separate from draft conflicts', async (serverCode) => {

@@ -2,8 +2,24 @@ import type {TAutofillResponse} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import type {TAiConversationFailure} from './ai-conversation-failure';
 
+/** Only explicit, revalidated GENERATE review drafts may bypass the approval verdict. */
+export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
+    return (
+        response.operationType === 'GENERATE' &&
+        response.applicable === true &&
+        response.validationTarget === 'RESULT' &&
+        response.engineResult?.status === 'REJECTED' &&
+        response.engineResult?.candidateVisible === true &&
+        response.engineResult?.reviewRequired === true &&
+        response.changedCells.length > 0 &&
+        response.changedCells.every((cell) => cell.wardShiftTypeId != null)
+    );
+}
+
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    if (isGenerateReviewDraft(response)) return null;
+
     const status = response.engineResult?.status?.toUpperCase();
     const reason = (response.failure?.reasonCode ?? response.engineResult?.solver?.reason ?? '').toUpperCase();
 
