@@ -203,7 +203,6 @@ describe('persistent schedule sidebar', () => {
         expect(await screen.findByText(/^(자동완성 1회차|Autofill 1 attempt) ·/)).toBeVisible();
         expect(screen.getByText(/^(조절 1회차|Adjustment 1 attempt) ·/)).toBeVisible();
         expect(screen.getByText(/^(자동완성 2회차|Autofill 2 attempt) ·/)).toHaveTextContent(/실패|FAILED/);
-        expect(screen.getByText(/여기까지 조절 1회차|End of adjustment 1 attempt/)).toBeVisible();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('keeps older monthly conversations reachable without changing the current plan or schedule', async () => {
@@ -806,6 +805,38 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.branch).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('retains manual edits during a saved-result transition and resumes with the current server revision', async () => {
+        mocks.startSegment.mockImplementation(async () => {
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+            mocks.draftFixed = true;
+            current = {
+                ...current,
+                conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
+                draft: {...source, versionId: 'result:1', cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]},
+            };
+
+            return current;
+        });
+        mocks.sync.mockImplementation(async (_id: number, request: {expectedRevision: number; cells: typeof source.cells}) => {
+            expect(request.expectedRevision).toBe(1);
+            current = {...current, conversation: {...current.conversation, revision: 2}, draft: {...current.draft, cells: request.cells}};
+
+            return current;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: /그때 표 보기|View this result/}));
+        await userEvent.click(await screen.findByRole('button', {name: /이 표에서 이어서 작성|Continue from this result/}));
+
+        const pending = await screen.findByRole('button', {name: /저장된 새 작업 열기|Open the saved new branch/});
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        await userEvent.click(pending);
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalled();
+        expect(current.conversation.revision).toBe(2);
+        expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('retains the latest interpretation when continuing an existing conversation', async () => {
         const turn = {

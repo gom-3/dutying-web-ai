@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {currentConversationTurns, operationAttempt, visibleConversationTurns} from '../conversation-presentation';
+import {
+    currentConversationTurns,
+    operationAttempt,
+    precedingCompletedOperation,
+    visibleConversationTurns,
+} from '../conversation-presentation';
 import {
     conversationEvents,
     isConversationConfirmationCurrent,
@@ -73,6 +78,18 @@ describe('conversation state', () => {
         expect(visibleConversationTurns(monthly)).toEqual([turn, start, next]);
         expect(currentConversationTurns(monthly)).toEqual([next]);
         expect(operationAttempt({...monthly, operations: [operation, {...operation, operationId: 'a2', sequence: 5}]}, 'a2')).toBe(2);
+    });
+    it('places each follow-up boundary before the next user request and avoids duplicate new-section boundaries', () => {
+        const next = {...turn, sequence: 3, actor: 'USER'};
+        const monthly = {...detail, turns: [next]};
+
+        expect(precedingCompletedOperation(monthly, next)).toEqual(operation);
+
+        const boundary = {...turn, sequence: 2, type: 'SEGMENT_START', actor: 'SYSTEM'};
+
+        expect(precedingCompletedOperation({...monthly, turns: [boundary, next]}, next)).toBeUndefined();
+        expect(precedingCompletedOperation({...monthly, turns: [{...next, sequence: 2}, next]}, next)).toBeUndefined();
+        expect(precedingCompletedOperation({...monthly, operations: [{...operation, executionStatus: 'RUNNING'}]}, next)).toBeUndefined();
     });
     it('uses server sequence rather than client clock or request arrival order', () => {
         expect(conversationEvents(detail).map((event) => event.id)).toEqual(['operation:1', 'turn:10']);

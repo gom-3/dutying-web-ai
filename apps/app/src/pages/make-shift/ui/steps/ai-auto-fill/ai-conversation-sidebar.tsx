@@ -17,6 +17,7 @@ import {
     conversationTurnText,
     currentConversationTurns,
     operationAttempt,
+    precedingCompletedOperation,
     requestTextForTurn,
     visibleConversationTurns,
 } from '../../../model/conversation-presentation';
@@ -631,6 +632,17 @@ export default function AiConversationSidebar({
 
             setPreview({version, ...(compare ? {before: await api.version(op.sourceVersionId)} : {})});
         });
+    const resetSectionUi = () => {
+        onNewConversation?.();
+        setEntryChoice(null);
+        setPreviousId(undefined);
+        setChange('ADD');
+        setText('');
+        setEditingRequest(null);
+        setRebuild(false);
+        setPreview(null);
+        setNotice(null);
+    };
     const branch = async (version: TResultVersion) =>
         run(async () => {
             if (sessionStorage.getItem(pendingKey))
@@ -645,7 +657,9 @@ export default function AiConversationSidebar({
             );
 
             if (useShiftEditorStore.getState().draftRevision !== uiRevision) {
+                install(nextDetail); // Keep the advanced server revision without overwriting manual edits.
                 setPendingBranch(nextDetail);
+                setPreview(null);
                 setNotice(
                     copy(
                         '작성 중인 표가 바뀌어 전환하지 않았어요. 새 작업은 저장되어 있어요.',
@@ -657,9 +671,8 @@ export default function AiConversationSidebar({
             }
 
             install(nextDetail);
+            resetSectionUi();
             restore(nextDetail.draft);
-            setPreview(null);
-            setPreviousId(undefined);
         });
     const newConversation = () =>
         run(async () => {
@@ -674,15 +687,7 @@ export default function AiConversationSidebar({
             );
 
             install(next);
-            onNewConversation?.();
-            setEntryChoice(null);
-            setPreviousId(undefined);
-            setChange('ADD');
-            setText('');
-            setEditingRequest(null);
-            setRebuild(false);
-            setPreview(null);
-            setNotice(null);
+            resetSectionUi();
         });
 
     useEffect(() => {
@@ -913,6 +918,7 @@ export default function AiConversationSidebar({
                 </div>
             );
 
+        const previousRun = detail && precedingCompletedOperation(detail, turn);
         const Message = turn.actor === 'USER' ? UserMessage : AssistantMessage;
         const completed = detail?.operations.some(
             (op) => op.interpretationId === turn.interpretationId && op.executionStatus === 'SUCCEEDED',
@@ -924,6 +930,17 @@ export default function AiConversationSidebar({
 
         return (
             <div key={turn.eventId}>
+                {previousRun && detail && (
+                    <div role="separator" className="my-5 flex items-center gap-3 text-xs text-[#667085]">
+                        <span className="h-px flex-1 bg-gray-6" />
+                        <span>
+                            {previousRun.operationType === 'GENERATE' ? copy('자동완성', 'Autofill') : copy('조절', 'Adjustment')}{' '}
+                            {operationAttempt(detail, previousRun.operationId)}
+                            {copy('회차 이후 · 추가 요청', ' · follow-up request')}
+                        </span>
+                        <span className="h-px flex-1 bg-gray-6" />
+                    </div>
+                )}
                 <Message>
                     {turn.text && detail && <p className="whitespace-pre-wrap">{conversationTurnText(detail, turn)}</p>}
                     {turn.semanticPlan && (
@@ -1256,20 +1273,6 @@ export default function AiConversationSidebar({
                                                     </div>
                                                 )}
                                             </article>
-                                            {['SUCCEEDED', 'FAILED'].includes(event.operation.executionStatus) && (
-                                                <div role="separator" className="my-4 flex items-center gap-2 text-xs text-[#667085]">
-                                                    <span className="h-px flex-1 bg-gray-6" />
-                                                    <span>
-                                                        {copy('여기까지', 'End of')}{' '}
-                                                        {event.operation.operationType === 'GENERATE'
-                                                            ? copy('자동완성', 'autofill')
-                                                            : copy('조절', 'adjustment')}{' '}
-                                                        {operationAttempt(detail, event.operation.operationId)}
-                                                        {copy('회차', ' attempt')}
-                                                    </span>
-                                                    <span className="h-px flex-1 bg-gray-6" />
-                                                </div>
-                                            )}
                                             {operationFailure(event.operation) && (
                                                 <AiExecutionFailure
                                                     failure={operationFailure(event.operation)!}
@@ -1532,7 +1535,7 @@ export default function AiConversationSidebar({
                                 onClick={() =>
                                     void run(async () => {
                                         await sync();
-                                        install(pendingBranch);
+                                        resetSectionUi(); // sync already installed the current revision of this same conversation.
                                         restore(pendingBranch.draft);
                                         setPendingBranch(null);
                                         setPreview(null);
