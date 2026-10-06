@@ -772,6 +772,50 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
+    it('uses the first visible nurse and the ward night code in examples and the input hint', async () => {
+        useShiftEditorStore.getState().setDoc({
+            columns: ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'],
+            rows: [
+                {workerId: '2', cells: ['O', 'O', 'O', 'O', 'O']},
+                {workerId: '1', cells: ['O', 'O', 'O', 'O', 'O']},
+            ],
+            workerMeta: {'1': {name: '김 간호사', nurseId: 1}, '2': {name: '첫 행 간호사', nurseId: 2}},
+            fixedCells: {},
+            requestCells: {},
+        });
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+        renderSidebar({
+            shift: {
+                lastDays: [],
+                days: [{day: 1, dayType: 'workday'}],
+                divisionShiftNurses: [],
+                wardShiftTypes: [
+                    {
+                        wardShiftTypeId: 13,
+                        shortName: 'N12',
+                        name: '2교대 야간',
+                        color: '#397dff',
+                        isDefault: true,
+                        isOff: false,
+                        isCounted: true,
+                        startTime: '19:00',
+                        endTime: '07:00',
+                        classification: 'NIGHT',
+                    },
+                ],
+            } as TShift,
+        });
+        await userEvent.click(await screen.findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
+        const example = screen.getByRole('button', {name: '첫 행 간호사 1~5일 N12 근무 없게 해줘'});
+        const input = screen.getByRole('textbox');
+
+        expect(input).toHaveAttribute('placeholder', '예: 첫 행 간호사 1~5일 N12 근무 없게 해줘');
+        await userEvent.click(example);
+        expect(input).toHaveValue('첫 행 간호사 1~5일 N12 근무 없게 해줘');
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('binds semantic confirmation and calculation to the reviewed plan without raw items', async () => {
         const proposal = {
             eventId: 2,
