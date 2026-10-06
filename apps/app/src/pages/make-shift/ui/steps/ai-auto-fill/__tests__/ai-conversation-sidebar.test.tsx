@@ -87,7 +87,35 @@ const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSi
             teamId={2}
             year={2026}
             month={11}
-            shift={{} as TShift}
+            shift={
+                {
+                    lastDays: [],
+                    days: [{day: 1, dayType: 'workday'}],
+                    wardShiftTypes: [
+                        {wardShiftTypeId: 1, shortName: 'D', name: 'Day', color: '#44c4b0', isDefault: true, isOff: false, isCounted: true},
+                        {wardShiftTypeId: 4, shortName: 'O', name: 'Off', color: '#455a7a', isDefault: true, isOff: true, isCounted: true},
+                    ],
+                    divisionShiftNurses: [
+                        [
+                            {
+                                shiftNurse: {
+                                    shiftNurseId: 1,
+                                    name: '김 간호사',
+                                    nurseId: 1,
+                                    isWorker: true,
+                                    divisionNum: 0,
+                                    priority: 0,
+                                    carried: 0,
+                                },
+                                lastWardShiftList: [],
+                                lastWardReqShiftList: [],
+                                wardShiftList: [4],
+                                wardReqShiftList: [null],
+                            },
+                        ],
+                    ],
+                } as TShift
+            }
             adjustEnabled
             generationRequest={0}
             rebuildRequest={0}
@@ -381,7 +409,8 @@ describe('persistent schedule sidebar', () => {
     it('loads records without re-executing and previews a result without mutating the editor', async () => {
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: /그때 표 보기|View this result/}));
-        await screen.findByRole('table');
+        await screen.findByRole('dialog');
+        expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
