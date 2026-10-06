@@ -170,13 +170,44 @@ if (scene !== 'start')
                 : 'PREVIEW_READY',
     );
 
+const initialDetail = structuredClone(detail);
+export function resetReviewFixture() {
+    detail = structuredClone(initialDetail);
+    sequence = Math.max(1, ...detail.turns.map((turn) => turn.sequence));
+    versions.clear();
+    versions.set(source.versionId, source);
+    useShiftEditorStore.getState().reset();
+    useShiftEditorStore.getState().setDoc(structuredClone(doc));
+    useShiftEditorStore.getState().setRulesHash('local-rules');
+    useShiftEditorStore.getState().setAutofillAdjustEnabled(true);
+    useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+}
+
 const adapter: AxiosAdapter = async (config) => {
     const url = config.url ?? '';
     const request = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
     let data: unknown;
     if (url.includes('/conversation-preferences')) data = [];
     else if (url.includes('/reports')) data = {incidentId: 'local-admin-only-reference'};
-    else if (url.endsWith('/branches')) {
+    else if (url.endsWith('/segments')) {
+        const selected = versions.get(request.versionId) ?? detail.draft;
+        const isCurrent = selected.versionId === detail.draft.versionId;
+        const next = {...selected, versionId: `local-segment-${++sequence}`, parentVersionId: selected.versionId};
+        versions.set(next.versionId, next);
+        detail.draft = next;
+        detail.conversation.revision++;
+        detail.conversation.currentVersionId = next.versionId;
+        detail.conversation.latestInterpretationId = null;
+        detail.turns.push({
+            ...branch,
+            eventId: ++sequence,
+            sequence,
+            type: 'SEGMENT_START',
+            text: isCurrent ? 'CURRENT_DRAFT' : 'SAVED_RESULT',
+            baseRevision: detail.conversation.revision,
+        });
+        data = detail;
+    } else if (url.endsWith('/branches')) {
         const selected = versions.get(request.versionId) ?? detail.draft;
         const next = {...selected, versionId: `local-branch-${++sequence}`, parentVersionId: selected.versionId};
         versions.set(next.versionId, next);

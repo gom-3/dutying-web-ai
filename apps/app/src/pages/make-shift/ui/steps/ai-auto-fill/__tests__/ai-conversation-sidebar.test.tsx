@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => ({
     execute: vi.fn(),
     version: vi.fn(),
     branch: vi.fn(),
+    startSegment: vi.fn(),
     preferences: vi.fn(),
     savePreference: vi.fn(),
     deletePreference: vi.fn(),
@@ -192,6 +193,61 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('distinguishes autofill and adjustment attempt boundaries without calling a solver', async () => {
+        current.operations = [
+            operation,
+            {...operation, operationId: 'adjust:1', sequence: 2, operationType: 'ADJUST'},
+            {...operation, operationId: 'generate:2', sequence: 3, executionStatus: 'FAILED', resultVersionId: null},
+        ];
+        renderSidebar();
+        expect(await screen.findByText(/^(자동완성 1회차|Autofill 1 attempt) ·/)).toBeVisible();
+        expect(screen.getByText(/^(조절 1회차|Adjustment 1 attempt) ·/)).toBeVisible();
+        expect(screen.getByText(/^(자동완성 2회차|Autofill 2 attempt) ·/)).toHaveTextContent(/실패|FAILED/);
+        expect(screen.getByText(/여기까지 조절 1회차|End of adjustment 1 attempt/)).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('keeps older monthly conversations reachable without changing the current plan or schedule', async () => {
+        const older = {
+            ...current,
+            conversation: {...current.conversation, conversationId: 9},
+            turns: [
+                {
+                    eventId: 91,
+                    sequence: 1,
+                    actor: 'USER',
+                    type: 'MESSAGE',
+                    text: '지난 대화 요청',
+                    interpretationId: null,
+                    baseRevision: 0,
+                    contextHash: null,
+                    interpretation: null,
+                    createdAt: source.createdAt,
+                },
+            ],
+            operations: [{...operation, operationId: 'older:result', sequence: 2}],
+        };
+
+        mocks.list.mockResolvedValue([current.conversation, older.conversation]);
+        mocks.detail.mockImplementation(async (id: number) => (id === 9 ? older : current));
+
+        const docBefore = useShiftEditorStore.getState().doc;
+
+        renderSidebar();
+
+        const summary = await screen.findByText(/이전 대화 기록|Earlier conversation/);
+
+        await userEvent.click(summary);
+        expect(await screen.findByText('지난 대화 요청')).toBeVisible();
+
+        const history = within(summary.closest('details')!);
+
+        await userEvent.click(history.getByRole('button', {name: /전후 비교|Compare/}));
+        await screen.findByRole('dialog');
+        expect(mocks.version).toHaveBeenCalledWith('source:1');
+        expect(useShiftEditorStore.getState().doc).toEqual(docBefore);
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
     it.each(['solver_result_failed_final_gate', 'solver_result_validation_unavailable'])(
         'shows a rejected result as a failure with recovery choices: %s',
         async (reason) => {
@@ -694,7 +750,7 @@ describe('persistent schedule sidebar', () => {
         },
     );
 
-    it('starts a fresh chat from the current draft without regenerating or restoring the editor', async () => {
+    it('starts a new section while retaining the monthly request and execution history', async () => {
         current = {
             ...current,
             turns: [
@@ -712,38 +768,42 @@ describe('persistent schedule sidebar', () => {
                 },
             ],
         };
-        mocks.branch.mockImplementation(async () => {
+        mocks.startSegment.mockImplementation(async () => {
             current = {
                 ...current,
                 turns: [
+                    ...current.turns,
                     {
                         eventId: 90,
-                        sequence: 1,
+                        sequence: 90,
                         actor: 'SYSTEM',
-                        type: 'BRANCH',
-                        text: '8cb64676-c3dc-4cc3-8053-953ae349c630에서 이어서 작성',
+                        type: 'SEGMENT_START',
+                        text: 'CURRENT_DRAFT',
                         interpretationId: null,
                         interpretation: null,
-                        baseRevision: 0,
+                        baseRevision: 1,
                         contextHash: null,
                         createdAt: source.createdAt,
                     },
                 ],
-                operations: [],
-                conversation: {...current.conversation, conversationId: 2},
+                conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
             };
 
-            return current.conversation;
+            return current;
         });
         renderSidebar();
         await screen.findByText('이전 요청');
         expect(screen.queryByRole('button', {name: /^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/})).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: /새 채팅|New chat/}));
+        await userEvent.click(screen.getByRole('button', {name: /새 요청|New request/}));
         await screen.findByRole('button', {name: /^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/});
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.queryByText(/8cb64676/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
-        expect(mocks.branch).toHaveBeenCalledWith(1, 'source:1', 0);
+        expect(mocks.startSegment).toHaveBeenCalledWith(1, 'source:1', 0);
+        expect(screen.getByText('이전 요청')).toBeVisible();
+        expect(screen.getByText(/여기서부터 새 요청|New requests/)).toBeVisible();
+        expect(screen.getByRole('button', {name: /전후 비교|Compare/})).toBeVisible();
+        expect(mocks.branch).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
@@ -806,6 +866,7 @@ describe('persistent schedule sidebar', () => {
             } as TShift,
         });
         await userEvent.click(await screen.findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
+
         const example = screen.getByRole('button', {name: '첫 행 간호사 1~5일 N12 근무 없게 해줘'});
         const input = screen.getByRole('textbox');
 
@@ -1046,6 +1107,7 @@ describe('persistent schedule sidebar', () => {
         };
         mocks.interpret.mockResolvedValue({...proposal, semanticPlan: {...proposal.semanticPlan!, state: 'PREVIEW_READY'}});
         renderSidebar();
+
         const input = await screen.findByRole('textbox');
 
         await userEvent.type(input, '기간만 7일까지로 바꿔줘.');

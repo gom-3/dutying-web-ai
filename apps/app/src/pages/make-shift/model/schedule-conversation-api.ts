@@ -154,6 +154,8 @@ export function conversationApi(wardId: number, teamId: number) {
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),
         branch: (id: number, versionId: string, expectedRevision: number) =>
             post<TConversation>(`/conversations/${id}/branches`, {versionId, expectedRevision}),
+        startSegment: (id: number, versionId: string, expectedRevision: number) =>
+            post<TConversationDetail>(`/conversations/${id}/segments`, {versionId, expectedRevision}),
         preferences: () => get<TConversationPreference[]>('/conversation-preferences'),
         savePreference: (value: string, provenance: string) =>
             post<TConversationPreference>('/conversation-preferences', {category: 'REQUEST_TEXT', value, provenance, confirmed: true}),

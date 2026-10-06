@@ -10,8 +10,26 @@ export function visibleConversationTurns(detail: TConversationDetail): TConversa
     }
 
     return detail.turns.filter(
-        (turn) => turn.actor !== 'SYSTEM' && (!turn.semanticPlan || turn.sequence === latestPlan.get(turn.semanticPlan.planId)),
+        (turn) =>
+            (turn.actor !== 'SYSTEM' || turn.type === 'SEGMENT_START') &&
+            (!turn.semanticPlan || turn.sequence === latestPlan.get(turn.semanticPlan.planId)),
     );
+}
+
+/** Previous segments remain visible; only the latest one supplies active UI state. */
+export function currentConversationTurns(detail: TConversationDetail): TConversationTurn[] {
+    const start = Math.max(0, ...detail.turns.filter((turn) => turn.type === 'SEGMENT_START').map((turn) => turn.sequence));
+
+    return visibleConversationTurns(detail).filter((turn) => turn.sequence > start);
+}
+
+export function operationAttempt(detail: TConversationDetail, operationId: string): number {
+    const operation = detail.operations.find((entry) => entry.operationId === operationId);
+
+    return operation
+        ? detail.operations.filter((entry) => entry.operationType === operation.operationType && entry.sequence <= operation.sequence)
+              .length
+        : 0;
 }
 
 /** Recover the original message, including conditions not represented by a ready artifact. */
