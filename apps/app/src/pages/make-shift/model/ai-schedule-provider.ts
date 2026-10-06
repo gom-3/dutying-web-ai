@@ -1,4 +1,6 @@
 import i18n from '@/i18n';
+import {aiConversationFailure} from './ai-conversation-failure';
+import {aiExecutionFailure} from './ai-execution-failure';
 import {apiAiScheduleProvider} from './ai-schedule-api-provider';
 import {type TAiScheduleProvider, type TAiScheduleRequest, type TAiScheduleResult} from './ai-schedule-contract';
 import {mockAiScheduleProvider} from './ai-schedule-mock';
@@ -32,10 +34,6 @@ function toErrorMessage(error: unknown): string {
 }
 
 function firstUnmetInstruction(response: Awaited<ReturnType<TAiScheduleProvider['generate']>>): string | null {
-    if (response.engineResult?.solver?.reason === 'time_limit_no_solution') {
-        return '기존 조건과 요청을 함께 계산했지만 시간 안에 적용 가능한 조절안을 찾지 못했어요. 표는 바뀌지 않았습니다. 요청을 나누거나 조건을 줄여 다시 시도해 주세요.';
-    }
-
     const message = response.unmetInstructions?.find((instruction) => instruction.trim().length > 0)?.trim();
 
     return message ?? null;
@@ -55,9 +53,9 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
             return {ok: false, message: i18n.t('aiAdjust.unexpectedOperation')};
         }
 
-        if (request.adjust && response.engineResult?.solver?.reason === 'time_limit_no_solution' && !response.goalCandidate) {
-            return {ok: false, message: firstUnmetInstruction(response)!};
-        }
+        const failure = aiExecutionFailure(response);
+
+        if (failure) return {ok: false, message: failure.message, failure};
 
         if (response.changedCells.length === 0 && isAdjustNoChange(request, response)) {
             return {ok: true, response, validation: response.validation, noChange: true};
@@ -73,8 +71,15 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
     } catch (error) {
         if (request.signal?.aborted) return {ok: false, message: '', canceled: true};
 
-        if (isAdjustNotAllowed(error)) return {ok: false, message: '', notAllowed: true};
+        const failure = aiConversationFailure(error, toErrorMessage(error));
+        const apiError = error as {code?: number; serverCode?: string};
 
-        return {ok: false, message: toErrorMessage(error), ...((error as {code?: number})?.code === 409 ? {conflict: true} : {})};
+        return {
+            ok: false,
+            message: failure.message,
+            failure,
+            ...(isAdjustNotAllowed(error) ? {notAllowed: true} : {}),
+            ...(apiError?.code === 409 && !failure.blocked && !apiError.serverCode?.startsWith('AI_') ? {conflict: true} : {}),
+        };
     }
 }

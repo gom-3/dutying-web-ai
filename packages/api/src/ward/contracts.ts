@@ -740,6 +740,15 @@ export type TScheduleAdjustInterpretDTO = {
 export type TScheduleAdjustInterpretUnmapped = {
     text: string;
     hint?: string | null;
+    reasonCode?:
+        | 'NURSE_NOT_RESOLVED'
+        | 'SHIFT_NOT_RESOLVED'
+        | 'INVALID_DATE'
+        | 'INVALID_VALUE'
+        | 'UNSUPPORTED_REQUEST'
+        | 'INTERPRETATION_FAILED'
+        | 'NEEDS_CLARIFICATION'
+        | null;
 };
 
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */

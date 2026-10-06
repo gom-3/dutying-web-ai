@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
@@ -7,6 +8,7 @@ import {useSchedulePublishSuccessStore} from '../../../../model/schedule-publish
 import {AiAutofill} from '../index';
 
 const mocks = vi.hoisted(() => ({
+    previousBlank: false,
     calendarDocs: [] as TDutyDoc[],
     calendarProps: [] as Array<{
         doc: TDutyDoc;
@@ -30,6 +32,10 @@ const mocks = vi.hoisted(() => ({
         divisionShiftNurses: [],
     },
     dutyDoc: null as TDutyDoc | null,
+}));
+
+vi.mock('react-hot-toast', () => ({
+    default: Object.assign(vi.fn(), {success: vi.fn(), error: vi.fn(), loading: vi.fn(), dismiss: vi.fn()}),
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
@@ -175,6 +181,10 @@ vi.mock('../../shared/make-shift-calendar', () => ({
 
         return (
             <div data-testid="calendar">
+                <span className="make-shift-calendar__header-label--last" data-testid="last-shift-header" />
+                <div className="make-shift-calendar__row-last-shifts" data-testid="last-shift-row">
+                    <span className="make-shift-calendar__row-last-shift-badge" />
+                </div>
                 {doc.rows[0]?.cells.map((cell, index) => (
                     <button key={index} type="button" data-testid={`cell-${index}`} onClick={() => props.onCellClick?.(0, index)}>
                         {cell ?? ''}
@@ -190,12 +200,28 @@ vi.mock('../ai-autofill-toolbar', () => ({
         onAiFill,
         onConfirm,
         onRequestClearUnlockedCells,
+        onUndo,
+        onRedo,
+        canUndo,
+        canRedo,
     }: {
         onAiFill: () => void;
         onConfirm: () => void;
         onRequestClearUnlockedCells: () => void;
+        onUndo: () => void;
+        onRedo: () => void;
+        canUndo: boolean;
+        canRedo: boolean;
     }) => (
         <>
+            <div className="ai-autofill-toolbar" data-testid="preparation-tools">
+                <button onClick={onUndo} disabled={!canUndo}>
+                    undo
+                </button>
+                <button onClick={onRedo} disabled={!canRedo}>
+                    redo
+                </button>
+            </div>
             <button type="button" onClick={onAiFill}>
                 auto fill
             </button>
@@ -219,7 +245,7 @@ vi.mock('../ai-snapshot-sidebar', () => ({
 
 vi.mock('../last-shift-warning', () => ({
     findFirstBlankLastShiftCell: () => null,
-    getBlankLastShiftCellsWarningKey: () => null,
+    getBlankLastShiftCellsWarningKey: () => (mocks.previousBlank ? 'previous:blank' : null),
 }));
 
 function makeDoc(): TDutyDoc {
@@ -249,6 +275,8 @@ function seedEditor(doc = makeDoc()) {
 
 describe('AiAutofill blank preview', () => {
     beforeEach(() => {
+        mocks.previousBlank = false;
+        localStorage.clear();
         mocks.calendarDocs.length = 0;
         mocks.calendarProps.length = 0;
         mocks.requestAiSchedule.mockReset();
@@ -363,7 +391,87 @@ describe('AiAutofill blank preview', () => {
         );
     });
 
-    it('shows every shift cell in the decision dialog before autofill starts', async () => {
+    it('checks previous shifts before skipping fixed preparation for an empty table', async () => {
+        mocks.previousBlank = true;
+
+        const doc = makeDoc();
+
+        seedEditor({...doc, rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})), fixedCells: {}, requestCells: {}});
+        mocks.requestAiSchedule.mockImplementation(() => new Promise(() => {}));
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).toBeVisible();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.continue'}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
+        expect(screen.queryByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument();
+    });
+
+    it('checks previous shifts in chat before choosing fixed shifts and keeps the grey spotlight', async () => {
+        mocks.previousBlank = true;
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        // Read-only previous shifts render badges, not editable cell buttons.
+        const headerRect = vi
+            .spyOn(screen.getByTestId('last-shift-header'), 'getBoundingClientRect')
+            .mockReturnValue(new DOMRect(150, 60, 60, 24));
+        const rowRect = vi
+            .spyOn(screen.getByTestId('last-shift-row'), 'getBoundingClientRect')
+            .mockReturnValue(new DOMRect(150, 360, 60, 32));
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).toBeVisible();
+        expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).not.toBeInTheDocument();
+        expect(document.querySelector('[data-confirmation-spotlight]')).toBeInTheDocument();
+        await waitFor(() => expect(document.querySelector('[data-spotlight-blocker]')).toHaveStyle({top: '52px', height: '348px'}));
+        // Navigation keeps moving after the old 100ms retry, without a resize/scroll event.
+        await act(async () => new Promise((resolve) => window.setTimeout(resolve, 150)));
+        headerRect.mockReturnValue(new DOMRect(100, 60, 60, 24));
+        rowRect.mockReturnValue(new DOMRect(100, 380, 60, 32));
+        await waitFor(() =>
+            expect(document.querySelector('[data-spotlight-blocker]')).toHaveStyle({left: '92px', width: '76px', height: '368px'}),
+        );
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.continue'}));
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeVisible();
+        expect(screen.getByText('aiAdjust.preparation.continue')).toBeVisible();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        expect(document.querySelector('[data-confirmation-spotlight]')).not.toBeInTheDocument();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeVisible();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+    });
+
+    it('keeps the previous-month question and selected reply after preparation finishes', async () => {
+        mocks.previousBlank = true;
+        mocks.requestAiSchedule.mockRejectedValue({serverCode: 'AI_QUOTA_EXCEEDED'});
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.continue'}));
+        await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.fill'}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledOnce());
+        await screen.findByRole('alert');
+        expect(screen.getByRole('log').textContent).toMatch(
+            /aiAdjust.preparation.previous[\s\S]*aiAdjust.preparation.continue[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.fill/,
+        );
+        expect(screen.getByText('aiAdjust.preparation.continue')).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.continue'})).not.toBeInTheDocument();
+    });
+
+    it('shows every shift cell in the preparation chat before autofill starts', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
@@ -374,20 +482,20 @@ describe('AiAutofill blank preview', () => {
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
 
-        expect(await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeInTheDocument();
+        expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeInTheDocument();
         expect(screen.getByTestId('cell-0')).toHaveTextContent('D');
         expect(screen.getByTestId('cell-1')).toHaveTextContent('E');
         expect(screen.getByTestId('cell-2')).toHaveTextContent('N');
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
     });
 
-    it('toggles a non-empty decision-dialog cell between fixed and unfixed', async () => {
+    it('toggles a non-empty preparation cell between fixed and unfixed', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
 
@@ -398,47 +506,135 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
     });
 
-    it('fixes every editable filled shift from the decision dialog at once', async () => {
+    it.each([false, true])('blocks entry only when the protected schedule has no blanks (blank: %s)', async (hasBlank) => {
+        const doc = makeDoc();
+
+        seedEditor({
+            ...doc,
+            fixedCells: {...doc.fixedCells, '10|2026-07-03': true},
+            rows: doc.rows.map((row) => ({...row, cells: hasBlank ? ['D', 'E', null] : row.cells})),
+        });
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        const entry = screen.getByRole('button', {name: 'auto fill'});
+
+        if (hasBlank) {
+            expect(entry).toBeEnabled();
+            await user.click(entry);
+            expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeVisible();
+            expect(screen.getByRole('button', {name: 'aiAdjust.autofill'})).toBeEnabled();
+        } else {
+            expect(entry).toBeEnabled();
+            await user.click(entry);
+            expect(toast).toHaveBeenCalledWith('aiAdjust.allFixed', {id: 'ai-autofill-all-fixed'});
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        }
+
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+    });
+
+    it('fixes every editable filled shift from the preparation chat at once', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
-        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAll'}));
+        expect(screen.queryByRole('button', {name: 'aiAdjust.undo'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'}));
 
         expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({
             '10|2026-07-01': true,
             '10|2026-07-03': true,
         });
         expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'10|2026-07-02': true});
-        expect(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAllDone'})).toBeDisabled();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.fixAll'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'aiAdjust.autofill'})).toBeDisabled();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.autofill'}));
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        expect(screen.queryByText('aiAdjust.preparation.fixAll')).not.toBeInTheDocument();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+
+        const undo = screen.getByRole('button', {name: 'aiAdjust.undo'});
+
+        expect(undo).toHaveClass('bg-transparent');
+        expect(undo.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+        await user.click(undo);
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
+        expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'10|2026-07-02': true});
+        expect(screen.queryByRole('button', {name: 'aiAdjust.undo'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'})).toBeEnabled();
+        await user.click(screen.getByRole('button', {name: 'redo'}));
+        expect(screen.getByRole('button', {name: 'aiAdjust.undo'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'aiAdjust.autofill'})).toBeDisabled();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.autofill'}));
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        await user.click(screen.getByTestId('cell-2'));
+        expect(screen.queryByRole('button', {name: 'aiAdjust.undo'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'})).toBeEnabled();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
-    it('restores bulk-fixed shifts when the decision dialog is canceled', async () => {
+    it('opens the toolbar and calendar in the fixed-shift spotlight', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        vi.spyOn(screen.getByTestId('preparation-tools'), 'getBoundingClientRect').mockReturnValue(new DOMRect(80, 40, 600, 84));
+        vi.spyOn(document.querySelector('.ai-autofill-preparation-calendar')!, 'getBoundingClientRect').mockReturnValue(
+            new DOMRect(80, 160, 600, 350),
+        );
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await waitFor(() =>
+            expect(document.querySelector('[data-spotlight-blocker]')).toHaveStyle({
+                top: '32px',
+                left: '72px',
+                height: '486px',
+                width: '616px',
+            }),
+        );
+        expect(document.querySelector('[data-spotlight-blocker]')).not.toHaveClass('pointer-events-auto');
+    });
+
+    it('restores bulk-fixed shifts when the preparation chat is canceled', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
-        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.fixAll'}));
-        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.cancel'}));
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
 
         await waitFor(() =>
-            expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
+            expect(screen.queryByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
         );
         expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
     });
 
-    it('does not change a requested shift when it is clicked in the decision dialog', async () => {
+    it('rolls back unfinished fixed choices when leaving the page', async () => {
+        const user = userEvent.setup();
+        const view = render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'}));
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
+        view.unmount();
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+    });
+
+    it('does not change a requested shift when it is clicked in the preparation chat', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
         await user.click(screen.getByTestId('cell-1'));
 
@@ -452,15 +648,15 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
         await user.click(screen.getByTestId('cell-2'));
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
 
-        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.cancel'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
 
         await waitFor(() =>
-            expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
+            expect(screen.queryByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
         );
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         expect(screen.getByTestId('cell-2')).toHaveTextContent('N');
@@ -483,9 +679,9 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+        await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
-        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.confirm'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
         expect(screen.getByTestId('ai-loading-overlay')).toBeInTheDocument();

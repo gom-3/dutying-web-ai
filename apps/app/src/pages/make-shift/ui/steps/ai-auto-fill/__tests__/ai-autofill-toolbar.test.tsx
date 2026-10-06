@@ -9,7 +9,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
             ({
                 'aiAdjust.autofill': '자동채우기',
                 'aiAdjust.regenerating': '다시 자동채우기',
-                'aiAdjust.title': 'AI 근무 수정하기',
+                'aiAdjust.title': 'AI 수정하기',
                 'page.makeShift.aiRefill.action': 'Refill',
                 'page.makeShift.aiRefill.confirm': 'Confirm',
                 'page.makeShift.aiRefill.firstFill': 'Autofill',
@@ -105,7 +105,30 @@ function renderToolbar({
 }
 
 describe('AiAutofillToolbar', () => {
-    it('labels the first generation for enabled accounts and separates regeneration from adjustment', async () => {
+    it('allows clicking autofill for feedback when every shift is protected', async () => {
+        const onAiFill = vi.fn();
+
+        renderToolbar({overrides: {isAutofillBlocked: true, onAiFill}});
+        expect(document.getElementById('make_ai_fill_button')).toBeEnabled();
+        await userEvent.click(document.getElementById('make_ai_fill_button')!);
+        expect(onAiFill).toHaveBeenCalledOnce();
+        expect(document.getElementById('make_ai_fill_button')).toHaveAttribute('title', 'aiAdjust.allFixed');
+    });
+
+    it('keeps undo and redo available while preparation blocks competing primary actions', async () => {
+        const onUndo = vi.fn();
+        const onRedo = vi.fn();
+
+        renderToolbar({overrides: {isPreparing: true, canUndo: true, canRedo: true, onUndo, onRedo}});
+        await userEvent.click(screen.getByRole('button', {name: 'Undo'}));
+        await userEvent.click(screen.getByRole('button', {name: 'Redo'}));
+        expect(onUndo).toHaveBeenCalledOnce();
+        expect(onRedo).toHaveBeenCalledOnce();
+        expect(document.getElementById('make_ai_fill_button')).toBeDisabled();
+        expect(screen.getByRole('button', {name: 'Confirm'})).toBeDisabled();
+    });
+
+    it('labels the first generation as autofill', async () => {
         const user = userEvent.setup();
         const onAiFill = vi.fn();
         renderToolbar({overrides: {isAdjustEnabled: true, onAiFill}});
@@ -115,24 +138,34 @@ describe('AiAutofillToolbar', () => {
         expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
     });
 
-    it('uses one sidebar entry without running generation or adjustment immediately', async () => {
+    it.each(['idle', 'error'] as const)('fills directly before a successful generation (%s)', async (aiStatus) => {
+        const onAiFill = vi.fn();
+        const onAdjust = vi.fn();
+
+        renderToolbar({overrides: {isAdjustEnabled: true, onAiFill, onAdjust, aiStatus}});
+        await userEvent.click(screen.getByRole('button', {name: '자동채우기'}));
+        expect(onAiFill).toHaveBeenCalledOnce();
+        expect(onAdjust).not.toHaveBeenCalled();
+    });
+
+    it('starts the same preparation flow even after a successful generation', async () => {
         const user = userEvent.setup();
         const onAiFill = vi.fn();
         const onRegenerate = vi.fn();
         const onAdjust = vi.fn();
         renderToolbar({overrides: {isAdjustEnabled: true, hasGeneratedSchedule: true, onAiFill, onRegenerate, onAdjust}});
 
-        expect(screen.queryByRole('button', {name: '자동채우기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'AI 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: 'AI 근무 수정하기'}));
-        expect(onAdjust).toHaveBeenCalledTimes(1);
+        await user.click(screen.getByRole('button', {name: '자동채우기'}));
+        expect(onAiFill).toHaveBeenCalledTimes(1);
         expect(onRegenerate).not.toHaveBeenCalled();
-        expect(onAiFill).not.toHaveBeenCalled();
+        expect(onAdjust).not.toHaveBeenCalled();
     });
 
     it('keeps the existing generation action for accounts without adjustment access', () => {
         renderToolbar({overrides: {isAdjustEnabled: false, hasGeneratedSchedule: true, hasCompletedAiFill: true, onRegenerate: vi.fn()}});
-        expect(screen.getByRole('button', {name: 'Refill'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '자동채우기'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '다시 자동채우기'})).not.toBeInTheDocument();
     });
 
@@ -170,7 +203,7 @@ describe('AiAutofillToolbar', () => {
                 .getAllByRole('button')
                 .map((button) => button.textContent)
                 .filter(Boolean),
-        ).toEqual(['Autofill', 'Confirm']);
+        ).toEqual(['자동채우기', 'Confirm']);
         expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('');
     });
 

@@ -220,9 +220,100 @@
 }
 
 /* The adjustment sheet appears immediately to keep the large schedule responsive. */
+@media (max-width: 767px) {
+    .ai-adjust-sidebar[data-preparing='true'] {
+        width: 100%;
+        top: auto;
+        bottom: 0;
+        height: 50dvh;
+    }
+    .ai-adjust-sidebar[data-preparing='true'] > header {
+        height: 64px;
+    }
+    html[data-make-ai-preparing='true'] .ai-autofill-root__main {
+        padding-bottom: 52dvh;
+    }
+}
+
 .ai-adjust-sidebar {
+    --spacing: 0.225rem;
+    --text-sm: 0.8125rem;
+    --text-base: 0.90625rem;
+    --text-xl: 1.125rem;
+    container: ai-chat / size;
+    font-size: var(--text-base);
     visibility: hidden;
     transform: translate3d(calc(100% + 40px), 0, 0);
+}
+
+/* Keep the last reply above a comfortable gap when the composer is hidden. */
+.ai-adjust-chat-scroll {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #d6dbe3 transparent;
+    scrollbar-gutter: stable;
+}
+
+.ai-adjust-chat-scroll::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+}
+
+.ai-adjust-chat-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ai-adjust-chat-scroll::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #d6dbe3;
+}
+
+.ai-adjust-chat-scroll::-webkit-scrollbar-thumb:hover {
+    background: #c7ced8;
+}
+
+.ai-adjust-chat-scroll[data-composer-hidden='true'] {
+    padding-bottom: calc(clamp(48px, 8dvh, 72px) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ai-adjust-chat-scroll {
+        scroll-behavior: auto;
+    }
+}
+
+.ai-adjust-sidebar button {
+    min-height: 44px;
+}
+
+/* Suggestions yield space to the conversation and composer instead of scrolling. */
+@container ai-chat (max-height: 820px) {
+    .ai-adjust-examples > button:nth-of-type(n + 3) {
+        display: none;
+    }
+}
+
+@container ai-chat (max-height: 680px) {
+    .ai-adjust-examples > button:nth-of-type(n + 2) {
+        display: none;
+    }
+}
+
+@container ai-chat (max-height: 560px) {
+    .ai-adjust-examples {
+        display: none;
+    }
+}
+
+/* Keep mobile text entry readable without triggering focus zoom. */
+.ai-adjust-sidebar textarea {
+    font-size: 16px;
+}
+
+@media (min-width: 768px) {
+    .ai-adjust-sidebar textarea {
+        font-size: 14.5px;
+    }
 }
 
 .ai-adjust-sidebar[data-state='open'] {

@@ -1,6 +1,7 @@
 import type {TAutofillAdjustDto, TAutofillResponse, TValidationRes} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
 import type {TDutyDoc} from '@/features/shift-editor';
+import type {TAiConversationFailure} from './ai-conversation-failure';
 
 export type TAiScheduleRequest = {
     wardId: number;
@@ -35,6 +36,7 @@ export type TAiScheduleResult =
     | {
           ok: false;
           message: string;
+          failure?: TAiConversationFailure;
           canceled?: boolean;
           conflict?: boolean;
           /** 서버가 이 계정에 조절을 열어 주지 않았다. 사용자 잘못이 아니므로 문구를 가른다. */

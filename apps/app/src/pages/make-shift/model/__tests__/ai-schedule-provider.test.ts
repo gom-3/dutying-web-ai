@@ -87,7 +87,59 @@ describe('requestAiSchedule', () => {
 
         const result = await requestAiSchedule(request);
 
-        expect(result).toEqual({ok: false, message: 'AI 생성 실패'});
+        expect(result).toMatchObject({ok: false, message: 'AI 생성 실패', failure: {blocked: false}});
+    });
+
+    it.each([
+        ['INFEASIBLE', 'HARD_RULE_CONFLICT', 'revise'],
+        ['REJECTED', 'solver_result_failed_final_gate', 'revise'],
+        ['REJECTED', 'solver_result_validation_unavailable', 'retry'],
+        ['REJECTED', 'solver_result_incomplete', 'retry'],
+        ['REJECTED', 'contract_locked_empty_cell', 'review'],
+        ['REJECTED', 'unsupported_hard_rule', 'revise'],
+        ['ACCEPTED', 'SPRING_HARD_VALIDATION', 'revise'],
+        ['REJECTED', 'unrecognized_reason', 'retry'],
+    ])('does not apply a candidate rejected by %s / %s and gives a relevant next step', async (status, reason, recovery) => {
+        for (const operationType of ['GENERATE', 'ADJUST'] as const) {
+            apiGenerate.mockResolvedValue({
+                ...response,
+                operationType,
+                applicable: false,
+                changedCells: [{shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 2}],
+                unmetInstructions: ['승인 조건을 충족하지 못한 근무표 후보를 검토용으로 반환합니다.'],
+                engineResult: {status, solver: {reason}},
+            });
+
+            const result = await requestAiSchedule({...request, ...(operationType === 'ADJUST' ? {adjust: {strength: 'NORMAL' as const}} : {})});
+
+            expect(result).toMatchObject({ok: false, failure: {recovery, blocked: false}});
+            expect(!result.ok && result.message).not.toMatch(/검토용|승인 조건|unrecognized_reason/);
+            expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+        }
+    });
+
+    it.each(['AI_QUOTA_EXCEEDED', 'AI_QUOTA_EXHAUSTED'])('keeps %s separate from draft conflicts', async (serverCode) => {
+        apiGenerate.mockRejectedValue(Object.assign(new Error('quota'), {code: 409, serverCode}));
+
+        const result = await requestAiSchedule(request);
+
+        expect(result).toMatchObject({ok: false, failure: {blocked: true}});
+        expect(result).not.toHaveProperty('conflict');
+        expect(!result.ok && result.message).not.toBe('quota');
+    });
+
+    it('preserves the server wait time for usage limits', async () => {
+        apiGenerate.mockRejectedValue(
+            Object.assign(new Error('약 25분 후 다시 시도해 주세요.'), {
+                code: 429,
+                serverCode: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+            }),
+        );
+        expect(await requestAiSchedule(request)).toMatchObject({
+            ok: false,
+            message: '약 25분 후 다시 시도해 주세요.',
+            failure: {blocked: true},
+        });
     });
 
     it('marks aborted requests as canceled', async () => {
@@ -157,7 +209,8 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
             adjust: {knobs: {OFF_BALANCE: 1}, strength: 'NORMAL'},
         });
 
-        expect(result).toEqual({ok: false, message: '', notAllowed: true});
+        expect(result).toMatchObject({ok: false, notAllowed: true, failure: {blocked: true}});
+        expect(!result.ok && result.message).not.toBe('forbidden');
     });
 
     it('시간 안에 해를 찾지 못한 조절은 원인과 표 미변경을 안내한다', async () => {
@@ -177,10 +230,8 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
             adjust: {knobs: {OFF_BALANCE: 1}, strength: 'NORMAL'},
         });
 
-        expect(result).toEqual({
-            ok: false,
-            message: '기존 조건과 요청을 함께 계산했지만 시간 안에 적용 가능한 조절안을 찾지 못했어요. 표는 바뀌지 않았습니다. 요청을 나누거나 조건을 줄여 다시 시도해 주세요.',
-        });
+        expect(result).toMatchObject({ok: false, failure: {blocked: false, recovery: 'retry'}});
+        expect(!result.ok && result.message).toContain('시간 안에 근무표를 완성하지 못했어요.');
     });
 
     it('조절이 아닌 요청에서는 빈 결과가 여전히 실패다', async () => {

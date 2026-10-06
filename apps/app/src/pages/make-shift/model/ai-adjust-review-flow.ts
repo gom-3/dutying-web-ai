@@ -1,24 +1,38 @@
 import type {TScheduleMonthRequestItem} from '@dutying/api/ward';
 import type {TAdjustCard} from '../ui/steps/ai-auto-fill/ai-adjust-interpret-card';
 
-export type TReviewQuestionKind = 'lifetime' | 'severity' | 'offDifference' | 'targetNurses' | 'comparisonNurses';
+export type TReviewQuestionKind = 'proposal' | 'lifetime' | 'severity' | 'offDifference' | 'targetNurses' | 'comparisonNurses';
 export type TReviewQuestion = {id: string; kind: TReviewQuestionKind; itemIndex: number};
-export type TReviewValue = 'MONTH' | 'TEAM' | 'SOFT' | 'HARD' | number | number[];
+export type TReviewValue = 'CONFIRM' | 'MONTH' | 'TEAM' | 'SOFT' | 'HARD' | number | number[];
 export type TReviewReply = {questionId: string; value: TReviewValue};
 
 export function getReviewQuestions(card: TAdjustCard): TReviewQuestion[] {
-    return card.items.flatMap(({item}, itemIndex) => {
+    const questions = card.items.flatMap(({item}, itemIndex) => {
         const kinds: TReviewQuestionKind[] = [];
         if (item.kind === 'KNOB' || item.kind === 'RULE') kinds.push('lifetime');
         if (item.kind === 'RULE') kinds.push('severity');
         if (item.kind === 'GOAL') kinds.push('offDifference', 'targetNurses', 'comparisonNurses');
         return kinds.map((kind) => ({id: `${itemIndex}:${kind}`, kind, itemIndex}));
     });
+
+    // Simple cell requests already have a final apply choice. Confirm interpretations
+    // with follow-up questions before collecting their scope or priority.
+    return questions.length ? [{id: 'proposal', kind: 'proposal', itemIndex: -1}, ...questions] : questions;
 }
 
 export function answerReviewQuestion(card: TAdjustCard, question: TReviewQuestion, value: TReviewValue): TAdjustCard | null {
+    if (
+        !getReviewQuestions(card).some(
+            (current) => current.id === question.id && current.kind === question.kind && current.itemIndex === question.itemIndex,
+        )
+    )
+        return null;
+
+    if (question.kind === 'proposal') return value === 'CONFIRM' ? card : null;
+
     const entry = card.items[question.itemIndex];
-    if (!entry || !getReviewQuestions(card).some((current) => current.id === question.id && current.kind === question.kind)) return null;
+
+    if (!entry) return null;
     let updated = {...entry};
     if (question.kind === 'lifetime') {
         if (value !== 'MONTH' && value !== 'TEAM') return null;
@@ -62,6 +76,14 @@ export function parseReviewReply(question: TReviewQuestion | undefined, text: st
         .replace(/[.!?。！？]+$/, '')
         .replace(/\s+/g, ' ')
         .toLowerCase();
+
+    if (question.kind === 'proposal') {
+        return /^(네|예|응|좋아요|이대로좋아요|네이대로좋아요|네반영해주세요|반영해주세요|반영해줘|적용해주세요|yes|yesplease|yeslooksgood|looksgood)$/.test(
+            normalized.replace(/[,\s]/g, ''),
+        )
+            ? 'CONFIRM'
+            : null;
+    }
     if (question.kind === 'lifetime') {
         if (
             /^(이번 ?달(만|로)?|한 ?달(만)?)( ?(적용|반영)(해 ?줘|해 ?주세요)?)?$/.test(normalized) ||
