@@ -1544,10 +1544,9 @@ export default function AiConversationSidebar({
                                             active?.semanticPlan?.state === 'NEEDS_CLARIFICATION' && !editingRequest
                                                 ? t('aiAdjust.chat.replyPlaceholder')
                                                 : semanticExecutionEnabled
-                                                  ? copy(
-                                                        `예: ${Object.values(doc.workerMeta)[0]?.name ?? '간호사 이름'} 1~5일에 N 근무 없게 해줘`,
-                                                        'E.g. no N shifts for a nurse on the 1st–5th',
-                                                    )
+                                                  ? requestExamples[0]
+                                                      ? copy(`예: ${requestExamples[0]}`, `E.g. ${requestExamples[0]}`)
+                                                      : copy('바꾸고 싶은 내용을 적어 주세요.', 'Describe what you want to change.')
                                                   : t('aiAdjust.placeholder')
                                         }
                                     />
