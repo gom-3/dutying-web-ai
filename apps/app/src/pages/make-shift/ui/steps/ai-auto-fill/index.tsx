@@ -57,7 +57,7 @@ import {
 } from '../../../model/ai-autofill-state';
 import {carryOverOptions} from '../../../model/ai-carry-over';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
-import {aiExecutionFailure} from '../../../model/ai-execution-failure';
+import {aiExecutionFailure, isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
@@ -394,6 +394,7 @@ export function AiAutofill() {
     }, [completionStorageKey]);
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
     const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
+    const [generationReviewMessage, setGenerationReviewMessage] = useState<string | null>(null);
     const generationNoticeShownRef = useRef(false);
     const autofillSequence = useRef(0);
     const conversationSequence = useRef(0);
@@ -691,6 +692,7 @@ export function AiAutofill() {
 
     useEffect(() => {
         setHasCompletedAiFill(false);
+        setGenerationReviewMessage(null);
         setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
         setGenerationFailure(null);
@@ -1517,6 +1519,19 @@ export function AiAutofill() {
             markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length > 0);
             commands.setScheduleValidationFromApi(result.validation);
+
+            if (!adjust && result.response.operationType === 'GENERATE') {
+                const review = isGenerateReviewDraft(result.response);
+
+                setGenerationReviewMessage(review ? result.response.unmetInstructions[0] || '' : null);
+
+                if (review) {
+                    setShowFaults(true);
+                    setGenerationFailure(null);
+                    rememberGeneratedSchedule();
+                }
+            }
+
             // 월간 요청은 일반 자동완성에도 다시 적용된다. 병동 규칙 shadow 안내 역시
             // 조절 직후뿐 아니라 재생성 결과에서 계속 보여야 한다.
             setLastAdjustmentNotices(result.response.adjustmentNotices ?? []);
@@ -2644,6 +2659,27 @@ export function AiAutofill() {
                     onSaveSnapshot={handleSaveSnapshot}
                     isSavingSnapshot={isSavingSnapshot}
                 />
+
+                {generationReviewMessage !== null && (
+                    <div role="status" className="mx-4 my-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                        <p className="font-semibold">
+                            {batchCopy('초안을 만들었어요 · 확인할 규칙이 있어요', 'Draft created · some rules need review')}
+                        </p>
+                        <p className="mt-1">
+                            {generationReviewMessage ||
+                                batchCopy(
+                                    '못 지킨 규칙은 근무표에 표시했어요. 표시된 칸에서 내용을 확인하고 수정할 수 있어요.',
+                                    'Unmet rules are marked on the schedule. Review the marked cells and edit the draft.',
+                                )}
+                        </p>
+                        <button type="button" className="mt-2 underline" onClick={() => setShowFaults(true)}>
+                            {batchCopy('규칙 위반 표시 보기', 'Show rule violations')}
+                        </button>
+                        <button type="button" className="mt-2 ml-4 underline" onClick={() => setGenerationReviewMessage(null)}>
+                            {batchCopy('안내 닫기', 'Dismiss notice')}
+                        </button>
+                    </div>
+                )}
 
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
