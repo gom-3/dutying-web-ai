@@ -94,8 +94,8 @@ const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSi
                     lastDays: [],
                     days: [{day: 1, dayType: 'workday'}],
                     wardShiftTypes: [
-                        {wardShiftTypeId: 1, shortName: 'D', name: 'Day', color: '#44c4b0', isDefault: true, isOff: false, isCounted: true},
-                        {wardShiftTypeId: 4, shortName: 'O', name: 'Off', color: '#455a7a', isDefault: true, isOff: true, isCounted: true},
+                        {wardShiftTypeId: 1, shortName: 'D', name: 'Day', color: '#44c4b0', isDefault: true, isOff: false, isCounted: true, startTime: '07:00', endTime: '15:00', classification: 'DAY'},
+                        {wardShiftTypeId: 4, shortName: 'O', name: 'Off', color: '#455a7a', isDefault: true, isOff: true, isCounted: true, startTime: '', endTime: '', classification: 'OFF'},
                     ],
                     divisionShiftNurses: [
                         [
