@@ -402,7 +402,7 @@ describe('persistent schedule sidebar', () => {
                 eventId: 2,
                 sequence: 2,
                 actor: 'ASSISTANT',
-                type: 'INTERPRETATION_CONFIRMED',
+                type: 'INTERPRETATION',
                 text: null,
                 interpretationId: 'i:1',
                 baseRevision: 0,
