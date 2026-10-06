@@ -117,6 +117,7 @@ export default function AiConversationSidebar({
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
+    const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
     const [detail, setDetail] = useState<TConversationDetail | null>(null);
@@ -1425,7 +1426,7 @@ export default function AiConversationSidebar({
                                     ))}
                                 </details>
                             )}
-                            {previousId && (
+                            {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select
                                     aria-label={copy('조건 수정 방식', 'Revision mode')}
                                     value={change}
@@ -1436,6 +1437,14 @@ export default function AiConversationSidebar({
                                     <option value="ADD">{copy('이전 제안에 추가', 'Add to the previous proposal')}</option>
                                     <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
                                 </select>
+                            )}
+                            {(semanticExecutionEnabled || active?.semanticPlan) && (
+                                <p className="text-sm">
+                                    {copy(
+                                        '대상·기간·조건을 모두 포함한 전체 요청을 적어 주세요. 이전 조건을 유지하려면 함께 적어 주세요.',
+                                        'Restate the full request, including every target, date and condition you want to keep.',
+                                    )}
+                                </p>
                             )}
                             <label className="block text-sm">
                                 {copy('수정할 내용', 'Your changes')}
