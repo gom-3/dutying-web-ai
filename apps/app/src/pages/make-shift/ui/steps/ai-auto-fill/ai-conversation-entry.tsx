@@ -1,3 +1,4 @@
+import {ChevronRight, RotateCw, SlidersHorizontal} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -77,16 +78,26 @@ export function AiConversationEntry({
                     {choice === 'modify' && <AssistantMessage>{t('aiAdjust.chat.askChanges')}</AssistantMessage>}
                 </>
             ) : (
-                <div role="group" aria-label={t('aiAdjust.chat.welcome')} className="ml-auto flex max-w-full flex-col gap-2">
+                <div
+                    role="group"
+                    aria-label={t('aiAdjust.chat.welcome')}
+                    className="flex w-full min-w-0 flex-col gap-2 border-t border-gray-6 pt-4"
+                >
                     {(['regenerate', 'modify'] as const).map((value) => (
                         <button
                             key={value}
                             type="button"
                             disabled={disabled || (value === 'modify' && modifyDisabled)}
                             onClick={() => onChoose(value)}
-                            className="min-h-11 rounded-xl bg-main-light px-4 py-2 text-left text-[13.5px] font-medium text-[#5931B9] hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
+                            className="group flex min-h-14 w-full items-center gap-3 rounded-lg border border-gray-5 bg-white px-4 py-3 text-left text-[14px] font-medium text-[#333D4B] transition-colors hover:border-main-1 hover:bg-main-light focus-visible:border-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                            {t(`aiAdjust.chat.${value}`)}
+                            {value === 'regenerate' ? (
+                                <RotateCw aria-hidden className="size-5 shrink-0 text-main-1" />
+                            ) : (
+                                <SlidersHorizontal aria-hidden className="size-5 shrink-0 text-main-1" />
+                            )}
+                            <span className="flex-1">{t(`aiAdjust.chat.${value}`)}</span>
+                            <ChevronRight aria-hidden className="size-4 shrink-0 text-gray-3 group-hover:text-main-1" />
                         </button>
                     ))}
                     {confirmation && (
@@ -94,7 +105,7 @@ export function AiConversationEntry({
                             type="button"
                             disabled={!confirmation.canConfirm || confirmation.disabled}
                             onClick={confirmation.onConfirm}
-                            className="min-h-11 rounded-xl bg-main-light px-4 py-2 text-left text-[13.5px] font-medium text-[#5931B9] hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
+                            className="mt-2 min-h-11 w-full rounded-lg bg-main-1 px-4 py-2 text-center text-[14px] font-medium text-white hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             {t('aiAdjust.chat.confirmSchedule')}
                         </button>

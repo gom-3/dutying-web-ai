@@ -6,11 +6,14 @@ import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
+import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
+import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {aiExecutionFailure} from '../../../model/ai-execution-failure';
+import {conversationTurnText, requestTextForTurn, visibleConversationTurns} from '../../../model/conversation-presentation';
 import {
     conversationApi,
     conversationEvents,
@@ -34,6 +37,7 @@ import {ConversationEvidence, type TFailureSuggestion} from './ai-conversation-e
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
+import {AiSemanticReview} from './ai-semantic-review';
 
 type TProps = {
     open: boolean;
@@ -127,6 +131,8 @@ export default function AiConversationSidebar({
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const [text, setText] = useState('');
+    const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
+    const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
     const [reportNote, setReportNote] = useState('');
     const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
@@ -148,6 +154,8 @@ export default function AiConversationSidebar({
     const install = (next: TConversationDetail) => {
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             setLocalEvents([]);
+            setEditingRequest(null);
+            setRequestToolsOpen(false);
             onNewConversation?.();
         }
 
@@ -315,8 +323,11 @@ export default function AiConversationSidebar({
                 ...(interpretationId ? {interpretationId} : {}),
                 ...(() => {
                     const turn = current.turns.find((entry) => entry.interpretationId === interpretationId);
+
                     if (!turn?.semanticPlan) return {};
+
                     if (!isSemanticExecutionCurrent(current, turn, localDirty)) throw new Error(t('aiAdjust.stale'));
+
                     return {planHash: turn.semanticPlan.planHash, sourceVersionId: turn.semanticPlan.sourceVersionId};
                 })(),
                 ...(selection
@@ -338,6 +349,83 @@ export default function AiConversationSidebar({
             await applyCompleted(operation, uiRevision);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         });
+    };
+    const confirmAndAdjust = async (turn: TConversationTurn) => {
+        if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
+
+        awaitingAdjustmentRef.current = true;
+        setAwaitingAdjustment(true);
+
+        let confirmedId: string | undefined;
+
+        try {
+            await run(async () => {
+                const current = detailRef.current;
+
+                if (!current || !turn.semanticPlan || !turn.interpretationId) return;
+
+                if (turn.semanticPlan.state !== 'CONFIRMED' && !turn.semanticPlan.confirmationAllowed) throw new Error(t('aiAdjust.stale'));
+
+                const draft = dto();
+                const dirty = signature({...draft, carryOverCells: draft.carryOverCells ?? []}) !== signature(current.draft);
+
+                if (
+                    !isConversationConfirmationCurrent(current, turn, dirty) ||
+                    isScheduleFullyProtected(useShiftEditorStore.getState().doc)
+                )
+                    throw new Error(t('aiAdjust.stale'));
+
+                const confirmed =
+                    turn.semanticPlan.state === 'CONFIRMED'
+                        ? turn
+                        : await api.confirmPlan(
+                              current.conversation.conversationId,
+                              turn.interpretationId,
+                              current.conversation.revision,
+                              turn.semanticPlan.planHash,
+                          );
+
+                await refresh();
+
+                const next = detailRef.current;
+                const nextDraft = dto();
+
+                if (
+                    !next ||
+                    !isSemanticExecutionCurrent(
+                        next,
+                        confirmed,
+                        signature({...nextDraft, carryOverCells: nextDraft.carryOverCells ?? []}) !== signature(next.draft),
+                    ) ||
+                    confirmed.semanticPlan?.planHash !== turn.semanticPlan.planHash ||
+                    next.conversation.conversationId !== current.conversation.conversationId
+                )
+                    throw new Error(t('aiAdjust.stale'));
+
+                confirmedId = confirmed.interpretationId ?? undefined;
+            });
+
+            if (confirmedId) await execute('ADJUST', undefined, confirmedId);
+        } finally {
+            awaitingAdjustmentRef.current = false;
+
+            if (mounted.current) setAwaitingAdjustment(false);
+        }
+    };
+    const editRequest = (turn: TConversationTurn) => {
+        const current = detailRef.current;
+
+        if (!current) return;
+
+        const original = requestTextForTurn(current, turn);
+
+        setEditingRequest(turn);
+        setEntryChoice('modify');
+        setPreviousId(turn.interpretationId ?? undefined);
+        setChange('REPLACE');
+        setText(original);
+        setRequestToolsOpen(false);
+        textarea.current?.focus();
     };
     const prepareAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.interpretation || !detailRef.current) return;
@@ -467,34 +555,43 @@ export default function AiConversationSidebar({
                 ),
             );
         });
-    const interpret = async () => {
-        const message = text.trim();
+    const interpret = async (request = text, reference = previousId) => {
+        const message = request.trim();
 
         if (!message) return;
 
         await run(async () => {
             if (useShiftEditorStore.getState().semanticExecutionEnabled && onPrepareAdjustment) await onPrepareAdjustment();
+
             const current = await sync();
 
-            if (previousId && current.conversation.latestInterpretationId !== previousId) {
+            if (reference && current.conversation.latestInterpretationId !== reference) {
                 throw new Error(
                     copy(
-                        '표나 조건이 바뀌었어요. 바꾸고 싶은 내용을 완전한 문장으로 다시 적어 주세요.',
-                        'The source changed. Please restate the full request.',
+                        '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
+                        'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',
                     ),
                 );
             }
 
             const previous =
-                previousId ??
+                reference ??
                 current.turns.find(
                     (turn) =>
                         turn.interpretationId === current.conversation.latestInterpretationId &&
-                        isConversationConfirmationCurrent(current, turn, false),
+                        (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                 )?.interpretationId;
+            const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
+            const original = priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
+            const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
+            const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
+
+            if (interpretedText.length > 500)
+                throw new Error(copy('요청과 답변을 합쳐 500자 이내로 적어 주세요.', 'Keep the request and reply within 500 characters.'));
+
             const interpreted = await api.interpret(current.conversation.conversationId, {
                 expectedRevision: current.conversation.revision,
-                text: message,
+                text: interpretedText,
                 language: i18n.language,
                 ...(previous && current.conversation.latestInterpretationId === previous
                     ? {
@@ -507,6 +604,7 @@ export default function AiConversationSidebar({
             });
 
             setText('');
+            setEditingRequest(null);
             setPreviousId(interpreted.interpretationId ?? undefined);
             setChange('ADD');
             setEntryChoice('modify');
@@ -561,6 +659,7 @@ export default function AiConversationSidebar({
             setPreviousId(undefined);
             setChange('ADD');
             setText('');
+            setEditingRequest(null);
             setRebuild(false);
             setPreview(null);
             setNotice(null);
@@ -689,12 +788,13 @@ export default function AiConversationSidebar({
         setPreview(null);
     }, [preparing, autofillFlow?.id]);
 
+    const visibleTurns = detail ? visibleConversationTurns(detail) : [];
     const canChooseNextAction = Boolean(
         detail &&
-            (detail.turns.length === 0 ||
+            (visibleTurns.length === 0 ||
                 localEvents.some(
                     (event) =>
-                        event.id.startsWith('preparation:') && event.sequence > Math.max(0, ...detail.turns.map((turn) => turn.sequence)),
+                        event.id.startsWith('preparation:') && event.sequence > Math.max(0, ...visibleTurns.map((turn) => turn.sequence)),
                 )),
     );
     const latestOperation = detail?.operations[detail.operations.length - 1];
@@ -704,14 +804,61 @@ export default function AiConversationSidebar({
             dismissedFailureId !== latestOperation.operationId &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
+    const active = detail?.turns.find((turn) => turn.interpretationId === detail.conversation.latestInterpretationId);
+    const reviewingPlan = Boolean(active?.semanticPlan && detail && isConversationConfirmationCurrent(detail, active, localDirty));
     const composerHidden =
-        preparing || !detail || failureNeedsAction || entryChoice === 'regenerate' || (!entryChoice && canChooseNextAction);
+        preparing ||
+        !detail ||
+        failureNeedsAction ||
+        entryChoice === 'regenerate' ||
+        (!entryChoice && canChooseNextAction) ||
+        (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
+    const exampleNurses = doc.rows
+        .map((row) => doc.workerMeta[row.workerId])
+        .filter((nurse) => nurse?.nurseId !== undefined && nurse.name.trim());
+    const exampleShiftTypes = shift.wardShiftTypes ?? [];
+    const exampleWork =
+        exampleShiftTypes.find((type) => !type.isOff && type.classification === 'NIGHT') ?? exampleShiftTypes.find((type) => !type.isOff);
+    const exampleOff = exampleShiftTypes.find((type) => type.isOff);
+    const exampleDayWork = exampleShiftTypes.find((type) => !type.isOff && type !== exampleWork) ?? exampleWork;
+    const exampleFirst = exampleNurses[0]?.name;
+    const exampleSecond = exampleNurses[1]?.name ?? exampleFirst;
+    const dayOf = (index: number) => Number(doc.columns[Math.min(index, doc.columns.length - 1)]?.slice(-2));
+    const examplePeriod = dayOf(0) === dayOf(4) ? `${dayOf(0)}일` : `${dayOf(0)}~${dayOf(4)}일`;
+    const requestExamples =
+        exampleFirst && doc.columns.length
+            ? [
+                  ...(exampleWork
+                      ? [
+                            copy(
+                                `${exampleFirst} ${examplePeriod} ${exampleWork.shortName} 근무 없게 해줘`,
+                                `No ${exampleWork.shortName} shifts for ${exampleFirst} on days ${examplePeriod.replace('일', '')}`,
+                            ),
+                        ]
+                      : []),
+                  ...(exampleOff
+                      ? [
+                            copy(
+                                `${exampleSecond} ${dayOf(11)}일 ${exampleOff.shortName} 근무 배정해줘`,
+                                `Assign ${exampleOff.shortName} to ${exampleSecond} on day ${dayOf(11)}`,
+                            ),
+                        ]
+                      : []),
+                  ...(exampleDayWork
+                      ? [
+                            copy(
+                                `${exampleFirst} ${dayOf(14)}일 ${exampleDayWork.shortName} 근무 배정해줘`,
+                                `Assign ${exampleDayWork.shortName} to ${exampleFirst} on day ${dayOf(14)}`,
+                            ),
+                        ]
+                      : []),
+              ]
+            : [];
 
     useEffect(() => {
         if (entryChoice === 'modify' && !composerHidden) textarea.current?.focus();
     }, [entryChoice, composerHidden]);
 
-    const active = detail?.turns.find((turn) => turn.interpretationId === detail.conversation.latestInterpretationId);
     const activeCard = active?.interpretation;
     const incomplete =
         Boolean(activeCard?.unmapped?.length) ||
@@ -728,121 +875,51 @@ export default function AiConversationSidebar({
     const stamp = (date: string) => new Date(date).toLocaleString(i18n.language, {dateStyle: 'short', timeStyle: 'short'});
     const renderTurn = (turn: TConversationTurn) => {
         const Message = turn.actor === 'USER' ? UserMessage : AssistantMessage;
+        const completed = detail?.operations.some(
+            (op) => op.interpretationId === turn.interpretationId && op.executionStatus === 'SUCCEEDED',
+        );
+        const applied =
+            detail?.operations.some(
+                (op) => op.interpretationId === turn.interpretationId && op.executionStatus === 'SUCCEEDED' && op.applyStatus === 'APPLIED',
+            ) && !localDirty;
 
         return (
             <div key={turn.eventId}>
                 <Message>
-                    {turn.text && <p className="whitespace-pre-wrap">{turn.text}</p>}
+                    {turn.text && detail && <p className="whitespace-pre-wrap">{conversationTurnText(detail, turn)}</p>}
                     {turn.semanticPlan && (
-                        <section aria-label={copy('요청 조건 확인', 'Review request conditions')}>
-                            <p>{turn.semanticPlan.summary}</p>
-                            {turn.semanticPlan.conditions.map((condition) => {
-                                const names = condition.nurseIds.map(
-                                    (id) => Object.values(doc.workerMeta).find((meta) => meta.nurseId === id)?.name ?? String(id),
-                                );
-                                const dates = [...condition.dates].sort();
-                                const continuous = dates.every(
-                                    (date, index) => index === 0 || Date.parse(date) - Date.parse(dates[index - 1]) === 86400000,
-                                );
-                                const period =
-                                    continuous && dates.length > 1 ? `${dates[0]} ~ ${dates[dates.length - 1]}` : dates.join(', ');
-                                const bound =
-                                    condition.operator === 'MIN'
-                                        ? copy('이상', 'or more')
-                                        : condition.operator === 'MAX'
-                                          ? copy('이하', 'or fewer')
-                                          : copy('정확히', 'exactly');
-                                return (
-                                    <div key={condition.intentId} className="my-3 rounded-lg bg-gray-7 p-3">
-                                        <p>
-                                            {names.join(', ')} · {period}
-                                        </p>
-                                        <p>
-                                            {condition.shiftCodes.join(', ')} ·{' '}
-                                            {condition.action === 'ASSIGN'
-                                                ? copy('배정', 'Assign')
-                                                : condition.action === 'FORBID'
-                                                  ? copy('배정하지 않음', 'Exclude')
-                                                  : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'Group total') : copy('각자', 'Each')} ${condition.count} ${bound}`}
-                                        </p>
-                                        <p>
-                                            {condition.modality === 'HARD'
-                                                ? copy('반드시 충족', 'Required')
-                                                : copy('가능하면 반영', 'Preferred')}
-                                        </p>
-                                    </div>
-                                );
-                            })}
-                            {turn.interpretationId === detail?.conversation.latestInterpretationId && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {turn.semanticPlan.confirmationAllowed && (
-                                        <button
-                                            className={buttonClass}
-                                            disabled={
-                                                busy ||
-                                                running ||
-                                                localDirty ||
-                                                !adjustEnabled ||
-                                                !detail ||
-                                                !isConversationConfirmationCurrent(detail, turn, localDirty)
-                                            }
-                                            onClick={() =>
-                                                void run(async () => {
-                                                    const current = detailRef.current;
-                                                    if (!current || !turn.interpretationId || !turn.semanticPlan) return;
-                                                    await api.confirmPlan(
-                                                        current.conversation.conversationId,
-                                                        turn.interpretationId,
-                                                        current.conversation.revision,
-                                                        turn.semanticPlan.planHash,
-                                                    );
-                                                    await refresh();
-                                                })
-                                            }
-                                        >
-                                            {copy('이 조건으로 확인', 'Confirm these conditions')}
-                                        </button>
-                                    )}
-                                    {turn.semanticPlan.state === 'CONFIRMED' && (
-                                        <button
-                                            className={buttonClass}
-                                            disabled={
-                                                busy ||
-                                                running ||
-                                                isAutofillBlocked ||
-                                                !adjustEnabled ||
-                                                !detail ||
-                                                !isSemanticExecutionCurrent(detail, turn, localDirty)
-                                            }
-                                            onClick={() => void execute('ADJUST', undefined, turn.interpretationId ?? undefined)}
-                                        >
-                                            {copy('확인한 조건으로 계산', 'Calculate confirmed conditions')}
-                                        </button>
-                                    )}
-                                    <button
-                                        className={buttonClass}
-                                        disabled={busy || running}
-                                        onClick={() => {
-                                            setEntryChoice('modify');
-                                            setPreviousId(turn.interpretationId ?? undefined);
-                                            setChange('REPLACE');
-                                            setText('');
-                                            textarea.current?.focus();
-                                        }}
-                                    >
-                                        {copy('전체 요청 다시 입력', 'Restate the full request')}
-                                    </button>
-                                </div>
-                            )}
-                            {localDirty && (
-                                <p role="status">
-                                    {copy(
-                                        '표가 바뀌었어요. 최신 표 기준으로 다시 확인해 주세요.',
-                                        'The draft changed. Review the request again.',
-                                    )}
-                                </p>
-                            )}
-                        </section>
+                        <AiSemanticReview
+                            plan={turn.semanticPlan}
+                            current={turn.interpretationId === detail?.conversation.latestInterpretationId && !completed}
+                            disabled={
+                                busy || running || awaitingAdjustment || Boolean(editingRequest) || !adjustEnabled || isAutofillBlocked
+                            }
+                            applied={Boolean(applied)}
+                            processing={
+                                turn.interpretationId === detail?.conversation.latestInterpretationId
+                                    ? awaitingAdjustment
+                                        ? 'adjust'
+                                        : busy
+                                          ? 'review'
+                                          : null
+                                    : null
+                            }
+                            stale={!detail || !isConversationConfirmationCurrent(detail, turn, localDirty)}
+                            nurseName={(id) =>
+                                Object.values(doc.workerMeta).find((meta) => meta.nurseId === id)?.name ??
+                                copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
+                            }
+                            copy={copy}
+                            onApply={() => void confirmAndAdjust(turn)}
+                            onEdit={() => editRequest(turn)}
+                            onRetry={() => {
+                                const current = detailRef.current;
+                                const original = current ? requestTextForTurn(current, turn) : '';
+
+                                if (original) void interpret(original, turn.interpretationId ?? undefined);
+                                else editRequest(turn);
+                            }}
+                        />
                     )}
                     {turn.interpretation && (
                         <>
@@ -984,7 +1061,9 @@ export default function AiConversationSidebar({
                         </span>
                         <AiInfoTip label={copy('적용 조건 보기', 'View conditions')}>
                             <p>{copy('설정한 조건과 고정한 근무를 유지해요.', 'Your conditions and fixed shifts are preserved.')}</p>
-                            <ul>{detail?.activeConditionLabels.map((label, index) => <li key={index}>{label}</li>)}</ul>
+                            <ul className="mt-2 list-disc space-y-1 pl-4">
+                                {detail?.activeConditionLabels.map((label, index) => <li key={index}>{label}</li>)}
+                            </ul>
                         </AiInfoTip>
                     </div>
                     {notice && (
@@ -1028,7 +1107,7 @@ export default function AiConversationSidebar({
                             </AssistantMessage>
                         )}
                         {detail &&
-                            [...conversationEvents(detail), ...localEvents]
+                            [...conversationEvents({...detail, turns: visibleTurns}), ...localEvents]
                                 .sort((a, b) => a.sequence - b.sequence)
                                 .map((event) =>
                                     event.kind === 'local' ? (
@@ -1154,7 +1233,8 @@ export default function AiConversationSidebar({
                                                                               turn.interpretationId === event.operation.interpretationId,
                                                                       );
 
-                                                                      if (turn) void prepareAndAdjust(turn);
+                                                                      if (turn?.semanticPlan) void confirmAndAdjust(turn);
+                                                                      else if (turn) void prepareAndAdjust(turn);
                                                                   }
                                                               }
                                                             : undefined
@@ -1167,6 +1247,13 @@ export default function AiConversationSidebar({
                                                                   setPreviousId(event.operation.interpretationId ?? undefined);
                                                                   setChange('REPLACE');
                                                                   setText('');
+
+                                                                  const turn = detail.turns.find(
+                                                                      (entry) =>
+                                                                          entry.interpretationId === event.operation.interpretationId,
+                                                                  );
+
+                                                                  if (turn?.semanticPlan) editRequest(turn);
                                                               }
                                                             : undefined
                                                     }
@@ -1236,6 +1323,48 @@ export default function AiConversationSidebar({
                                     }}
                                 />
                             )}
+                        {!composerHidden &&
+                            entryChoice === 'modify' &&
+                            !editingRequest &&
+                            !visibleTurns.length &&
+                            !text.trim() &&
+                            !!requestExamples.length && (
+                                <section
+                                    aria-label={t('aiAdjust.examples')}
+                                    className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3"
+                                >
+                                    <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
+                                    {[...new Set(requestExamples)].map((sentence) => (
+                                        <button
+                                            key={sentence}
+                                            type="button"
+                                            disabled={busy || running || !adjustEnabled}
+                                            onClick={() => {
+                                                setText(sentence);
+                                                textarea.current?.focus();
+                                            }}
+                                            className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                        >
+                                            <span>{sentence}</span>
+                                            <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
+                                        </button>
+                                    ))}
+                                </section>
+                            )}
+                        {!preparing &&
+                            !busy &&
+                            !running &&
+                            !isAutofillBlocked &&
+                            adjustEnabled &&
+                            latestOperation?.operationType === 'ADJUST' &&
+                            latestOperation.executionStatus === 'SUCCEEDED' &&
+                            latestOperation.applyStatus === 'APPLIED' &&
+                            !operationFailure(latestOperation) &&
+                            !visibleTurns.some((turn) => turn.sequence > latestOperation.sequence) && (
+                                <AssistantMessage>
+                                    {copy('더 바꾸고 싶은 점이 있나요?', 'Would you like to change anything else?')}
+                                </AssistantMessage>
+                            )}
                         {error && (
                             <AiFailureMessage message={error.message}>
                                 {!error.blocked && (
@@ -1247,12 +1376,13 @@ export default function AiConversationSidebar({
                         )}
                     </AiChatScroll>
                     {reportOperation && (
-                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('처리 결과 신고', 'Report outcome')}>
+                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('결과 의견 보내기', 'Send feedback')}>
                             <label htmlFor="ai-report-note">
                                 {copy('예상한 조건과 다른 점을 적어 주세요.', 'Describe how the outcome differs from your request.')}
                             </label>
                             <textarea
                                 id="ai-report-note"
+                                className="my-2 w-full rounded-lg border border-gray-5 bg-white p-3 text-sm focus:border-main-1 focus:outline-none"
                                 value={reportNote}
                                 maxLength={500}
                                 onChange={(event) => setReportNote(event.target.value)}
@@ -1263,39 +1393,38 @@ export default function AiConversationSidebar({
                                 onClick={() =>
                                     void run(async () => {
                                         const current = detailRef.current;
+
                                         if (!current) return;
-                                        const saved = await api.report(
-                                            current.conversation.conversationId,
-                                            reportOperation,
-                                            reportNote.trim(),
-                                        );
-                                        setNotice(
-                                            `${copy('신고가 저장됐어요. 사건 번호:', 'Report saved. Reference:')} ${saved.incidentId}`,
-                                        );
+
+                                        await api.report(current.conversation.conversationId, reportOperation, reportNote.trim());
+                                        setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
                                         setReportOperation(null);
                                         setReportNote('');
                                     })
                                 }
                             >
-                                {copy('신고 저장', 'Save report')}
+                                {copy('의견 보내기', 'Send feedback')}
                             </button>
                             <button className={buttonClass} onClick={() => setReportOperation(null)}>
                                 {copy('취소', 'Cancel')}
                             </button>
                         </section>
                     )}
-                    {detail?.operations.some((op) => op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED') && (
+                    {detail?.operations.some(
+                        (op) => op.result && (op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED'),
+                    ) && (
                         <button
-                            className={buttonClass}
+                            className="min-h-11 self-start px-1 text-[13px] text-[#6B7280] hover:text-main-1"
                             disabled={busy}
                             onClick={() => {
                                 const completed = [...(detail?.operations ?? [])]
                                     .reverse()
                                     .find((op) => op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED');
+
                                 if (completed) setReportOperation(completed.operationId);
                             }}
                         >
-                            {copy('최근 처리 결과 신고', 'Report the latest outcome')}
+                            {copy('결과에 문제가 있나요?', 'Something wrong with the result?')}
                         </button>
                     )}
                     {selectedSuggestion && (
@@ -1333,11 +1462,6 @@ export default function AiConversationSidebar({
                         />
                     )}
                     <footer className={preparing ? 'hidden' : 'shrink-0 space-y-2 pt-3'} inert={preparing}>
-                        {detail && (
-                            <button className={buttonClass} disabled={busy || running} onClick={() => void branch(detail.draft)}>
-                                {copy('서버 작업표 불러오기', 'Load saved draft')}
-                            </button>
-                        )}
                         {pendingBranch && (
                             <button
                                 className={buttonClass}
@@ -1400,57 +1524,100 @@ export default function AiConversationSidebar({
                                     <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
                                 </select>
                             )}
-                            {(semanticExecutionEnabled || active?.semanticPlan) && (
-                                <p className="text-sm">
-                                    {copy(
-                                        '대상·기간·조건을 모두 포함한 전체 요청을 적어 주세요. 이전 조건을 유지하려면 함께 적어 주세요.',
-                                        'Restate the full request, including every target, date and condition you want to keep.',
-                                    )}
+                            {editingRequest && (
+                                <p className="text-[13px] text-[#6B7280]">
+                                    {copy('바꾸고 싶은 부분을 수정해 주세요.', 'Edit the part you want to change.')}
                                 </p>
                             )}
-                            <label className="block text-sm">
-                                {copy('수정할 내용', 'Your changes')}
-                                <textarea
-                                    ref={textarea}
-                                    className="mt-1 w-full resize-none rounded-lg border-[1.8px] border-gray-5 bg-gray-7 p-3 focus:border-main-1 focus:bg-main-light focus:text-main-1 focus:outline-none"
-                                    maxLength={500}
-                                    rows={2}
-                                    value={text}
-                                    onChange={(event) => setText(event.target.value)}
-                                    disabled={busy || running || !adjustEnabled}
-                                    placeholder={(semanticExecutionEnabled || active?.semanticPlan)
-                                        ? '대상·기간·조건을 포함한 전체 요청을 적어 주세요'
-                                        : t('aiAdjust.placeholder')}
-                                />
-                            </label>
-                            <div className="flex gap-2">
-                                <button
-                                    className={buttonClass}
-                                    disabled={busy || running || !text.trim() || !adjustEnabled}
-                                    onClick={() => void interpret()}
-                                >
-                                    {t('aiAdjust.send')}
-                                </button>
-                                <button
-                                    className={buttonClass}
-                                    disabled={busy || !text.trim()}
-                                    onClick={() =>
-                                        void run(async () => {
-                                            if (editingPreferenceId === undefined)
-                                                await api.savePreference(text.trim(), 'EXPLICIT_USER_CONFIRMATION');
-                                            else await api.replacePreference(editingPreferenceId, text.trim());
-
-                                            setEditingPreferenceId(undefined);
-                                            setPreferences(await api.preferences());
-                                        })
-                                    }
-                                >
-                                    {copy('요청 저장', 'Save request')}
-                                </button>
+                            <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
+                                <label className="block text-sm">
+                                    <span className="sr-only">{copy('바꾸고 싶은 내용', 'Your changes')}</span>
+                                    <textarea
+                                        ref={textarea}
+                                        className="text-gray-1 w-full resize-none bg-transparent text-[14.5px] leading-6 outline-none placeholder:text-[#475467] disabled:opacity-50"
+                                        maxLength={500}
+                                        rows={editingRequest ? 4 : 2}
+                                        value={text}
+                                        onChange={(event) => setText(event.target.value)}
+                                        disabled={busy || running || !adjustEnabled}
+                                        placeholder={
+                                            active?.semanticPlan?.state === 'NEEDS_CLARIFICATION' && !editingRequest
+                                                ? t('aiAdjust.chat.replyPlaceholder')
+                                                : semanticExecutionEnabled
+                                                  ? copy(
+                                                        `예: ${Object.values(doc.workerMeta)[0]?.name ?? '간호사 이름'} 1~5일에 N 근무 없게 해줘`,
+                                                        'E.g. no N shifts for a nurse on the 1st–5th',
+                                                    )
+                                                  : t('aiAdjust.placeholder')
+                                        }
+                                    />
+                                </label>
+                                <div className="mt-2 flex items-center justify-between gap-2">
+                                    {editingRequest && (
+                                        <button
+                                            className="min-h-11 px-3 text-sm text-[#6B7280] hover:text-main-1"
+                                            disabled={busy || running}
+                                            onClick={() => {
+                                                setEditingRequest(null);
+                                                setText('');
+                                                setEntryChoice(null);
+                                            }}
+                                        >
+                                            {copy('취소', 'Cancel')}
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        aria-label={editingRequest ? copy('수정한 요청 확인', 'Review changes') : t('aiAdjust.send')}
+                                        className="ml-auto grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:bg-gray-3"
+                                        disabled={busy || running || !text.trim() || !adjustEnabled}
+                                        onClick={() => void interpret()}
+                                    >
+                                        <img src={sendIcon} alt="" width={22} height={22} className="rotate-90" />
+                                    </button>
+                                </div>
                             </div>
+                            <div className="flex justify-end">
+                                {!editingRequest && !!text.trim() && (
+                                    <button
+                                        className="ml-auto min-h-11 px-2 text-[13px] text-[#6B7280] hover:text-main-1"
+                                        disabled={busy}
+                                        onClick={() => setRequestToolsOpen((value) => !value)}
+                                        aria-expanded={requestToolsOpen}
+                                    >
+                                        {copy('요청 저장', 'Save request')}
+                                    </button>
+                                )}
+                            </div>
+                            {requestToolsOpen && !!text.trim() && (
+                                <div className="rounded-xl bg-[#F7F8FA] p-3">
+                                    <p className="mb-2 text-[13px] text-[#6B7280]">
+                                        {copy('다음에도 쓰고 싶은 요청을 저장해 둘 수 있어요.', 'Save this request to use it again.')}
+                                    </p>
+                                    <button
+                                        className={buttonClass}
+                                        disabled={busy || !text.trim()}
+                                        onClick={() =>
+                                            void run(async () => {
+                                                if (editingPreferenceId === undefined)
+                                                    await api.savePreference(text.trim(), 'EXPLICIT_USER_CONFIRMATION');
+                                                else await api.replacePreference(editingPreferenceId, text.trim());
+
+                                                setEditingPreferenceId(undefined);
+                                                setRequestToolsOpen(false);
+                                                setPreferences(await api.preferences());
+                                            })
+                                        }
+                                    >
+                                        {copy('요청 저장', 'Save request')}
+                                    </button>
+                                </div>
+                            )}
                             {busy && (
                                 <p role="status" className="text-sm">
-                                    {copy('요청을 확인하고 있어요.', 'Working on your request.')}
+                                    {awaitingAdjustment
+                                        ? copy('근무표를 조절하고 있어요.', 'Adjusting your schedule.')
+                                        : copy('요청을 확인하고 있어요.', 'Reviewing your request.')}
                                 </p>
                             )}
                         </div>

@@ -10,6 +10,9 @@ export default defineConfig({
         host: '127.0.0.1',
         port: 4176,
         strictPort: true,
-        proxy: {'/api': {target: 'http://127.0.0.1:38082', rewrite: (path) => path.replace(/^\/api/, '')}},
+        proxy: {
+            '/__ai_ux': {target: 'http://127.0.0.1:38083', rewrite: (path) => path.replace(/^\/__ai_ux/, '')},
+            '/api': {target: 'http://127.0.0.1:38082', rewrite: (path) => path.replace(/^\/api/, '')},
+        },
     },
 });
