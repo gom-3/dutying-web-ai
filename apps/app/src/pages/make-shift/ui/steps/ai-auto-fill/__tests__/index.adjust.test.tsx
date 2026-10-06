@@ -836,7 +836,7 @@ describe('AiAutofill adjust panel', () => {
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({
             prompt: '자연스럽게 다듬어줘',
-            adjust: {strength: 'LIGHT', rebuild: true, requests: [{kind: 'KNOB', knob: 'CLUSTERING', value: 1}]},
+            adjust: {strength: 'LIGHT', requests: [{kind: 'KNOB', knob: 'CLUSTERING', value: 1}]},
             doc: {rows: [{lastCells: ['D', 'E', 'O']}, {lastCells: ['D', 'E', 'O']}]},
         });
 
@@ -1007,7 +1007,7 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByText('aiAdjust.generationCompleted')).toBeInTheDocument();
     });
 
-    it('rebuilds with the requested knob and protects only fixed and requested cells', async () => {
+    it('adjusts with the requested knob and preserves manually edited cells', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
@@ -1035,7 +1035,6 @@ describe('AiAutofill adjust panel', () => {
         // 문장 한 줄이 이번 달 요청 한 건이 된다. 서버가 저장한 뒤 ACTIVE 전부를 합산한다.
         expect(payload.adjust).toEqual({
             strength: 'NORMAL',
-            rebuild: true,
             requests: [
                 {
                     kind: 'KNOB',
@@ -1051,7 +1050,7 @@ describe('AiAutofill adjust panel', () => {
         await waitFor(() => expect(mocks.getScheduleMonthRequests).toHaveBeenCalled());
         expect(payload.lockedCellKeys).toEqual(expect.arrayContaining(['10:2026-07-01', '10:2026-07-02']));
         expect(payload.lockedCellKeys).not.toContain('11:2026-07-03');
-        expect(payload.lockedCellKeys).not.toContain('11:2026-07-04');
+        expect(payload.lockedCellKeys).toContain('11:2026-07-04');
     });
 
     it('reports only cells actually changed in the draft and skips fixed cells', async () => {
@@ -1402,7 +1401,6 @@ describe('AiAutofill adjust panel', () => {
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toEqual({
             strength: 'NORMAL',
-            rebuild: true,
             requests: [
                 {
                     kind: 'KNOB',

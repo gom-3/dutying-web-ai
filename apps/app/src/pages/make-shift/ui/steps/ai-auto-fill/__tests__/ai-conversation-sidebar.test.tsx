@@ -456,7 +456,7 @@ describe('persistent schedule sidebar', () => {
         expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('rebuilds only after confirmation and carries the interpretation into the request', async () => {
+    it('adjusts only after confirmation and carries the interpretation into the request', async () => {
         mocks.interpret.mockImplementation(async () => {
             const turn = {
                 eventId: 2,
@@ -491,7 +491,7 @@ describe('persistent schedule sidebar', () => {
         await userEvent.type(screen.getByRole('textbox'), '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
-        const apply = await screen.findByRole('button', {name: /반영해서 다시 만들기|Apply and rebuild/});
+        const apply = await screen.findByRole('button', {name: /수정 내용 반영하기|Apply changes/});
 
         expect(mocks.execute).not.toHaveBeenCalled();
         await userEvent.click(apply);
@@ -502,9 +502,9 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
             operationType: 'ADJUST',
             interpretationId: 'i:1',
-            fillPolicy: 'REBUILD_UNLOCKED',
-            rebuildConfirmed: true,
         });
+        expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('fillPolicy');
+        expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('rebuildConfirmed');
     });
     it.each([false, true])(
         'retains reviewed items after preparation edits and requires review if free text changes: %s',
@@ -578,13 +578,13 @@ describe('persistent schedule sidebar', () => {
             });
 
             renderSidebar({onPrepareAdjustment: prepare});
-            await userEvent.click(await screen.findByRole('button', {name: /반영해서 다시 만들기|Apply and rebuild/}));
+            await userEvent.click(await screen.findByRole('button', {name: /수정 내용 반영하기|Apply changes/}));
             await waitFor(() => expect(mocks.confirm).toHaveBeenCalledWith(1, 'i:2', 1, items));
 
             if (changedPrompt) {
                 await screen.findByText(/수정 조건을 한 번 더 확인|review the updated conditions/);
                 expect(mocks.execute).not.toHaveBeenCalled();
-                await userEvent.click(screen.getByRole('button', {name: /반영해서 다시 만들기|Apply and rebuild/}));
+                await userEvent.click(screen.getByRole('button', {name: /수정 내용 반영하기|Apply changes/}));
             }
 
             await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
@@ -593,7 +593,6 @@ describe('persistent schedule sidebar', () => {
                 expectedRevision: 1,
                 interpretationId: 'i:3',
                 operationType: 'ADJUST',
-                fillPolicy: 'REBUILD_UNLOCKED',
             });
         },
     );

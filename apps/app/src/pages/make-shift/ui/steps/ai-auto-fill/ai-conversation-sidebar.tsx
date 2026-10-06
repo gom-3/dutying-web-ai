@@ -411,7 +411,7 @@ export default function AiConversationSidebar({
 
             if (interpretationId && mounted.current) {
                 reviewedPreparation.current = null;
-                await execute('ADJUST', 'REBUILD_UNLOCKED', interpretationId);
+                await execute('ADJUST', undefined, interpretationId);
             }
         } catch (cause) {
             if (mounted.current) setError(aiConversationFailure(cause));

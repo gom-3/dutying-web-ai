@@ -762,8 +762,6 @@ export type TScheduleAdjustInterpretRes = {
 };
 
 export type TAutofillAdjustDto = {
-    /** Explicitly confirmed full recalculation; fixed/requested shifts remain protected. */
-    rebuild?: boolean;
     /** 옛 모양. requests 와 함께 오면 서버는 requests 를 우선한다. */
     knobs?: Partial<Record<TAutofillAdjustKnob, number>>;
     strength: TAutofillAdjustStrength;

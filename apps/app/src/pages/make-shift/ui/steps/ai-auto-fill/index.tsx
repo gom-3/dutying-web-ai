@@ -1337,11 +1337,11 @@ export function AiAutofill() {
         try {
             const stateBeforeRequest = useShiftEditorStore.getState();
             const requestDoc = action?.doc ?? stateBeforeRequest.doc;
-            // 전체 다시 만들기는 고정·신청 근무만 보호한다. 기존 부분 조절은 수동 편집도 보호한다.
+            // 조절은 고정·신청 근무와 자동완성 이후의 수동 편집을 보호한다.
             const adjustLocked = adjust
                 ? adjustLockedCellKeys(
                       requestDoc,
-                      adjust.rebuild ? [] : getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
+                      getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
                   )
                 : undefined;
             const result = await requestAiSchedule({
@@ -1784,7 +1784,7 @@ export function AiAutofill() {
         if (adjustActionRef.current?.fingerprint !== fingerprint) adjustActionRef.current = {fingerprint, key: crypto.randomUUID()};
         setLastAdjustChangedCount(null);
 
-        const result = await runAiFill(readyContext, {strength, requests, rebuild: true}, llmPrompt, {
+        const result = await runAiFill(readyContext, {strength, requests}, llmPrompt, {
             doc: prepared,
             idempotencyKey: adjustActionRef.current.key,
         });
