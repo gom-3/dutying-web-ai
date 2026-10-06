@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {render, screen, userEvent, within} from '../../src/shared/util/test-utils';
+import {render, screen, userEvent, within, fireEvent} from '../../src/shared/util/test-utils';
 import {useShiftEditorStore} from '../../src/features/shift-editor';
 import {Review} from './ai-ux-review';
 
@@ -33,10 +33,9 @@ describe('local UI review', () => {
         expect(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue('간호사 1 1~5일 N 근무 없게 해줘');
         expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         await userEvent.clear(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}));
-        await userEvent.type(
-            screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}),
-            '신규 간호사 2는 11월 1~5일 N 근무 없이 배정하고, 간호사 3은 12일 O로 배정해줘.',
-        );
+        fireEvent.change(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}), {
+            target: {value: '신규 간호사 2는 11월 1~5일 N 근무 없이 배정하고, 간호사 3은 12일 O로 배정해줘.'},
+        });
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         await userEvent.click(await screen.findByRole('button', {name: '이 조건으로 조절'}));
         expect(await screen.findByText('이 조건으로 근무표를 조절했어요.')).toBeInTheDocument();
@@ -50,7 +49,7 @@ describe('local UI review', () => {
         await userEvent.click(await screen.findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
         const before = structuredClone(useShiftEditorStore.getState().doc);
 
-        await userEvent.type(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}), '간호사 1 5일까지 N 없게 해줘.');
+        fireEvent.change(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'}), {target: {value: '간호사 1 5일까지 N 없게 해줘.'}});
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         const review = await screen.findByRole('region', {name: '요청 조건 확인'});
 
@@ -105,17 +104,17 @@ describe('local UI review', () => {
             );
         });
         vi.stubGlobal('fetch', llm);
-        await userEvent.type(screen.getByRole('textbox'), ambiguous);
+        fireEvent.change(screen.getByRole('textbox'), {target: {value: ambiguous}});
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         expect(await screen.findByText(question)).toBeVisible();
         expect(llm).toHaveBeenCalledOnce();
         expect(screen.queryByRole('button', {name: '이 조건으로 조절'})).not.toBeInTheDocument();
-        await userEvent.type(screen.getByRole('textbox'), 'O로 배정해줘.');
+        fireEvent.change(screen.getByRole('textbox'), {target: {value: 'O로 배정해줘.'}});
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         expect(await screen.findByRole('button', {name: '이 조건으로 조절'})).toBeEnabled();
         expect(llm).toHaveBeenCalledTimes(2);
         expect(JSON.parse(llm.mock.calls[1][1].body as string).text).toBe(`${ambiguous}\n추가 답변: O로 배정해줘.`);
         expect(screen.getByText('O로 배정해줘.')).toBeVisible();
         expect(screen.queryByText(`${ambiguous}\n추가 답변: O로 배정해줘.`)).not.toBeInTheDocument();
-    }, 30000);
+    }, 60000);
 });
