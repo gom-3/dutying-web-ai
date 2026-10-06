@@ -40,19 +40,20 @@ export function semanticRecovery(plan: TSemanticPlan): 'retry' | 'edit' {
         : 'edit';
 }
 
-/** The model receives full context; the dialogue shows only a new clarification reply. */
+/** The model receives the retained plan; the dialogue shows only the new reply. */
 export function conversationTurnText(detail: TConversationDetail, turn: TConversationTurn): string | null {
     if (turn.actor !== 'USER' || !turn.text) return turn.text;
 
-    const split = turn.text.lastIndexOf('\n추가 답변: ');
+    const marker = ['\n추가 답변: ', '\n추가 요청: '].sort((a, b) => turn.text!.lastIndexOf(b) - turn.text!.lastIndexOf(a))[0];
+    const split = turn.text.lastIndexOf(marker);
 
     if (split < 0) return turn.text;
 
     const previous = [...detail.turns]
         .sort((a, b) => b.sequence - a.sequence)
-        .find((entry) => entry.sequence < turn.sequence && entry.semanticPlan?.state === 'NEEDS_CLARIFICATION');
+        .find((entry) => entry.sequence < turn.sequence && entry.semanticPlan);
 
     if (!previous || requestTextForTurn(detail, previous) !== turn.text.slice(0, split)) return turn.text;
 
-    return turn.text.slice(split + '\n추가 답변: '.length);
+    return turn.text.slice(split + marker.length);
 }

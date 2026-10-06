@@ -579,13 +579,12 @@ export default function AiConversationSidebar({
                 current.turns.find(
                     (turn) =>
                         turn.interpretationId === current.conversation.latestInterpretationId &&
-                        isConversationConfirmationCurrent(current, turn, false),
+                        (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                 )?.interpretationId;
-            const question = current.turns.find(
-                (turn) => turn.interpretationId === previous && turn.semanticPlan?.state === 'NEEDS_CLARIFICATION',
-            );
-            const original = question && !editingRequest ? requestTextForTurn(current, question) : '';
-            const interpretedText = original && message !== original ? `${original}\n추가 답변: ${message}` : message;
+            const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
+            const original = priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
+            const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
+            const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
 
             if (interpretedText.length > 500)
                 throw new Error(copy('요청과 답변을 합쳐 500자 이내로 적어 주세요.', 'Keep the request and reply within 500 characters.'));

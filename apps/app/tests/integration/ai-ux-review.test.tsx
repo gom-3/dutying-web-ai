@@ -2,11 +2,40 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent, within, fireEvent} from '../../src/shared/util/test-utils';
 import {useShiftEditorStore} from '../../src/features/shift-editor';
 import {Review} from './ai-ux-review';
+import {reviewConditions} from './ai-ux-review-request';
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('local UI review', () => {
     it('keeps the schedule visible through regenerate, new chat, adjustment, close and reopen', async () => {
+        // Rendering/interaction tests mock the model; the visible review calls the native dev endpoint.
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (_url: string, options: RequestInit) => {
+                const request = JSON.parse(options.body as string);
+                const conditions = reviewConditions(
+                    request.text,
+                    request.context.nurses.map((nurse: {name: string}) => nurse.name),
+                    2026,
+                    11,
+                );
+                if (!conditions) throw new Error('Unexpected synthetic request');
+                return new Response(
+                    JSON.stringify({
+                        status: 'PREVIEW_READY',
+                        summary: '요청 조건을 확인했어요.',
+                        resolvedIntents: conditions,
+                        verificationReport: {
+                            reasonCodes: [],
+                            groundingStatus: 'CHECKED',
+                            coverageStatus: 'CHECKED',
+                            compileEquivalenceStatus: 'VERIFIED',
+                        },
+                    }),
+                    {status: 200, headers: {'Content-Type': 'application/json'}},
+                );
+            }),
+        );
         render(<Review />);
         expect(screen.queryByRole('navigation', {name: '검토 화면 선택'})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '시작'})).not.toBeInTheDocument();

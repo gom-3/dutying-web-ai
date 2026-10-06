@@ -208,9 +208,7 @@ const adapter: AxiosAdapter = async (config) => {
         detail.conversation.latestInterpretationId = confirmed.interpretationId;
         data = confirmed;
     } else if (url.endsWith('/interpretations')) {
-        if (reviewConditions(request.text, names, source.year, source.month)) {
-            data = propose(request.text);
-        } else {
+        {
             try {
                 const response = await fetch('/__ai_ux/semantic-preview', {
                     method: 'POST',

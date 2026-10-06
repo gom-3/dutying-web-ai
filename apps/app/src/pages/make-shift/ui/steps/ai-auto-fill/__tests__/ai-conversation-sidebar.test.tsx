@@ -990,6 +990,31 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it('retains the applied plan when the user changes only one period in a follow-up', async () => {
+        const {raw, proposal} = semanticRequest();
+
+        proposal.semanticPlan!.state = 'APPLIED';
+        proposal.semanticPlan!.confirmationAllowed = false;
+        current = {
+            ...current,
+            conversation: {...current.conversation, revision: 1},
+            operations: [{...operation, interpretationId: proposal.interpretationId, operationType: 'ADJUST', sequence: 3}],
+        };
+        mocks.interpret.mockResolvedValue({...proposal, semanticPlan: {...proposal.semanticPlan!, state: 'PREVIEW_READY'}});
+        renderSidebar();
+        const input = await screen.findByRole('textbox');
+
+        await userEvent.type(input, '기간만 7일까지로 바꿔줘.');
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+            text: `${raw}\n추가 요청: 기간만 7일까지로 바꿔줘.`,
+            previousInterpretationId: proposal.interpretationId,
+            change: 'REPLACE',
+        });
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('cancels an edit without changing the plan or executing', async () => {
         semanticRequest();
         renderSidebar();

@@ -11,58 +11,25 @@ from threading import BoundedSemaphore, Thread
 SLOTS = BoundedSemaphore(1)
 NAMES = ['간호사 1', '신규 간호사 2'] + [f'간호사 {i}' for i in range(3, 9)]
 REMOTE = r'''
-import asyncio, json, sys, time
-from pydantic import Field
-from src.services.adjust_interpreter import create_llm_service, parse_llm_json
-from src.services.intent_extractor import SYSTEM_PROMPT, user_prompt
-from src.services.intent_grounding import anchor_extraction
-from src.services.intent_pipeline import build_preview
-from src.services.intent_schema import Extraction, SemanticPreviewRequest
+import json, sys, time
+from urllib.request import Request, urlopen
 
-class ReviewExtraction(Extraction):
-    clarificationQuestion: str | None = Field(default=None, max_length=200)
-
-async def run(payload):
-    request = SemanticPreviewRequest.model_validate(payload)
-    prompt = json.loads(user_prompt(request))
-    prompt['outputSchema'] = ReviewExtraction.model_json_schema()
-    system = SYSTEM_PROMPT + ''' + repr('''
-For this conversational review, clarificationQuestion is a short Korean question
-only when an intent cannot be faithfully understood or represented. Ask the
-specific missing choice; do not say generically that the request is unsupported.
-If removing "근무" could mean clearing cells or assigning a rest/off shift, ask
-whether to leave those dates blank or assign the roster's OFF shift. Preserve the
-named nurse and dates in that question. Never equate clearing with assigning O,
-never turn unspecified work into N. Put every ambiguous clause in unresolved.
-For an unambiguous supported request return clarificationQuestion=null.
-''') + r'''
-    started = time.monotonic()
-    response = await asyncio.wait_for(SERVICE.call(
-        prompt=json.dumps(prompt, ensure_ascii=False), system_prompt=system,
-        json_mode=True), timeout=10)
-    output = ReviewExtraction.model_validate(parse_llm_json(response.result))
-    extraction = Extraction.model_validate(output.model_dump(exclude={'clarificationQuestion'}))
-    preview = build_preview(request, anchor_extraction(request.text, extraction))
-    result = preview.model_dump(mode='json')
-    if preview.status != 'PREVIEW_READY' and output.clarificationQuestion:
-        result['status'] = 'NEEDS_CLARIFICATION'
-        result['summary'] = output.clarificationQuestion
-    result['modelElapsedMs'] = round((time.monotonic() - started) * 1000)
-    return result
-
-SERVICE = create_llm_service()
-async def main():
-    for line in sys.stdin:
-        try:
-            result = await run(json.loads(line))
-        except Exception as exc:
-            result = {'status':'FAILED', 'resolvedIntents':[], 'executionAllowed':False,
-                      'summary':'요청을 확인하는 중 응답을 받지 못했어요. 다시 시도해 주세요.',
-                      'verificationReport':{'reasonCodes':['MODEL_TIMEOUT' if isinstance(exc, TimeoutError) else 'EXTRACTION_FAILED']}}
-        sys.stdout.write('\nREVIEW_RESULT:' + json.dumps(result, ensure_ascii=False) + '\n')
-        sys.stdout.flush()
-asyncio.run(main())
+for line in sys.stdin:
+    try:
+        started = time.monotonic()
+        request = Request('http://127.0.0.1:8000/schedule/adjust/semantic-preview',
+                          data=line.encode(), headers={'Content-Type':'application/json'}, method='POST')
+        with urlopen(request, timeout=15) as response:
+            result = json.load(response)
+        result['reviewElapsedMs'] = round((time.monotonic() - started) * 1000)
+    except Exception:
+        result = {'status':'FAILED', 'resolvedIntents':[], 'executionAllowed':False,
+                  'summary':'요청을 확인하는 중 응답을 받지 못했어요. 다시 시도해 주세요.',
+                  'verificationReport':{'reasonCodes':['EXTRACTION_FAILED']}}
+    sys.stdout.write('REVIEW_RESULT:' + json.dumps(result, ensure_ascii=False) + '\n')
+    sys.stdout.flush()
 '''
+
 
 
 class Worker:
