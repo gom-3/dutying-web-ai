@@ -36,8 +36,8 @@ export function buildConversationSnapshot(version: TResultVersion) {
             wardShiftTypeId: id,
             name: saved?.name ?? code,
             shortName: code,
-            startTime: saved?.startTime,
-            endTime: saved?.endTime,
+            startTime: saved?.startTime ?? '',
+            endTime: saved?.endTime ?? '',
             color: saved?.color ?? '#626D7A',
             isDefault: true,
             isOff: off,
@@ -80,7 +80,7 @@ export function buildConversationSnapshot(version: TResultVersion) {
             lastWardShiftList: carryDates.map(() => null),
             lastWardReqShiftList: carryDates.map(() => null),
         };
-        const last = divisionShiftNurses.at(-1);
+        const last = divisionShiftNurses[divisionShiftNurses.length - 1];
 
         if (last?.[0]?.shiftNurse.divisionNum === division) last.push(entry);
         else divisionShiftNurses.push([entry]);

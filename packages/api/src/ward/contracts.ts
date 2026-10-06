@@ -331,7 +331,7 @@ export type TSnapshotCellDTO = {
     nurseId?: number;
     date: string;
     wardShiftTypeId: number | null;
-    shiftCode?: string;
+    shiftCode?: string | null;
     source?: string;
     fixed?: boolean;
 };

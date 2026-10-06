@@ -11,7 +11,7 @@ const result: TResultVersion = {
     year: 2026,
     month: 10,
     cells: [{shiftNurseId: 1, date: '2026-10-01', wardShiftTypeId: 1, shiftCode: 'D', fixed: true}],
-    rowOrder: [{shiftNurseId: 1, displayOrder: 0}],
+    rowOrder: [{shiftNurseId: 1, displayOrder: 0, divisionNum: 0}],
     carryOverCells: [],
     constraintsJson: '{}',
     inputDigest: 'result',
@@ -38,10 +38,10 @@ describe('conversation snapshot screen', () => {
         render(<AiConversationSnapshot version={result} before={before} disabled={false} onClose={vi.fn()} onContinue={onContinue} />);
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(screen.getByText('읽기 전용 스냅샷', {exact: false})).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '실행 전', exact: true}));
+        await userEvent.click(screen.getByRole('button', {name: '실행 전'}));
         await userEvent.click(screen.getByRole('button', {name: '이 표에서 이어서 작성'}));
         expect(onContinue).toHaveBeenLastCalledWith(before);
-        await userEvent.click(screen.getByRole('button', {name: '실행 결과', exact: true}));
+        await userEvent.click(screen.getByRole('button', {name: '실행 결과'}));
         await userEvent.click(screen.getByRole('button', {name: '이 표에서 이어서 작성'}));
         expect(onContinue).toHaveBeenLastCalledWith(result);
         expect(useShiftEditorStore.getState().doc).toEqual(current.doc);

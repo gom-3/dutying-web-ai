@@ -1418,7 +1418,9 @@ export default function AiConversationSidebar({
                                     value={text}
                                     onChange={(event) => setText(event.target.value)}
                                     disabled={busy || running || !adjustEnabled}
-                                    placeholder={t('aiAdjust.placeholder')}
+                                    placeholder={(semanticExecutionEnabled || active?.semanticPlan)
+                                        ? '대상·기간·조건을 포함한 전체 요청을 적어 주세요'
+                                        : t('aiAdjust.placeholder')}
                                 />
                             </label>
                             <div className="flex gap-2">
