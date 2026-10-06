@@ -471,6 +471,47 @@ describe('AiAutofill blank preview', () => {
         expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.continue'})).not.toBeInTheDocument();
     });
 
+    it('applies a review draft and keeps its rule warning visible beside the schedule', async () => {
+        const doc = makeDoc();
+
+        seedEditor({...doc, rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})), fixedCells: {}, requestCells: {}});
+        mocks.requestAiSchedule.mockImplementation(async (request) => ({
+            ok: true,
+            response: {
+                operationType: 'GENERATE',
+                draftRevision: request.draftRevision,
+                applicable: true,
+                approvable: false,
+                validationTarget: 'RESULT',
+                changedCells: [{cellKey: '10:2026-07-01', shiftNurseId: 10, date: '2026-07-01', wardShiftTypeId: 1, shiftCode: 'D'}],
+                unmetInstructions: ['기존 고정표의 11일은 D가 1명씩 부족해요.'],
+                engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
+            },
+            validation: {
+                draftRevision: request.draftRevision,
+                rulesHash: 'sha256:test',
+                summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                violations: [],
+            },
+        }));
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        if (screen.queryByRole('button', {name: 'aiAdjust.preparation.fill'})) {
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
+        }
+
+        expect(await screen.findByText('초안을 만들었어요 · 확인할 규칙이 있어요')).toBeVisible();
+        expect(screen.getByText('기존 고정표의 11일은 D가 1명씩 부족해요.')).toBeVisible();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+        expect(toast.error).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: '안내 닫기'}));
+        expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
+    });
+
     it('shows every shift cell in the preparation chat before autofill starts', async () => {
         const user = userEvent.setup();
 
