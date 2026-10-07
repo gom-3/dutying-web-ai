@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent, within, fireEvent} from '../../src/shared/util/test-utils';
 import {useShiftEditorStore} from '../../src/features/shift-editor';
-import {Review, resetReviewFixture} from './ai-ux-review';
+import {Review, resetReviewFixture, restoreReviewFixture, saveReviewFixture} from './ai-ux-review';
 import {reviewConditions} from './ai-ux-review-request';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -39,6 +39,37 @@ beforeEach(() => {
 });
 
 describe('local UI review', () => {
+    it(
+        'restores an earlier autofill and its before/after tables after a page reload',
+        async () => {
+            const page = render(<Review />);
+            const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            const originalCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
+            await userEvent.click(await chat().findByRole('button', {name: '그대로 한 번 더 돌려볼래요'}));
+            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            expect(await chat().findByText(/근무표를 채웠어요!/)).toBeVisible();
+            const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
+            expect(generatedCells).not.toEqual(originalCells);
+            saveReviewFixture();
+            page.unmount();
+            useShiftEditorStore.getState().reset();
+
+            expect(restoreReviewFixture()).toBe(true);
+            render(<Review />);
+            expect(await chat().findByText(/^자동완성 1회차 · 완료$/)).toBeVisible();
+            expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
+            await userEvent.click(chat().getByRole('button', {name: '전후 비교'}));
+            const comparison = within(await screen.findByRole('dialog'));
+            await userEvent.click(comparison.getByRole('button', {name: '실행 전', exact: true}));
+            expect(comparison.getByRole('button', {name: '실행 전', exact: true})).toHaveAttribute('aria-pressed', 'true');
+            await userEvent.click(comparison.getByRole('button', {name: '실행 결과', exact: true}));
+            expect(comparison.getByRole('button', {name: '실행 결과', exact: true})).toHaveAttribute('aria-pressed', 'true');
+            await userEvent.click(comparison.getByRole('button', {name: '미리보기 닫기'}));
+            expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
+            expect(chat().getByText(/^자동완성 1회차 · 완료$/)).toBeVisible();
+        },
+        Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000),
+    );
     it('keeps the schedule visible through regenerate, new chat, adjustment, close and reopen', async () => {
         render(<Review />);
         // Query the chat only: role/name scans across the 240 calendar cells dominate JSDOM time.

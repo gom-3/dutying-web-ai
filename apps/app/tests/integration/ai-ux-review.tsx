@@ -171,7 +171,62 @@ if (scene !== 'start')
     );
 
 const initialDetail = structuredClone(detail);
+// This standalone review contains synthetic data only; product history stays on the server.
+const storageKey = `dutying.synthetic-ai-review.v1:${scene}`;
+export function saveReviewFixture() {
+    try {
+        localStorage.setItem(storageKey, JSON.stringify({detail, sequence, versions: [...versions.entries()]}));
+    } catch {
+        // Browser storage can be unavailable; retain the current in-memory review.
+    }
+}
+
+export function restoreReviewFixture() {
+    try {
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) return false;
+
+        const snapshot = JSON.parse(saved) as {detail: TConversationDetail; sequence: number; versions: [string, TResultVersion][]};
+        if (
+            snapshot.detail.conversation.year !== source.year ||
+            snapshot.detail.conversation.month !== source.month ||
+            !Array.isArray(snapshot.detail.turns) ||
+            !Array.isArray(snapshot.detail.operations) ||
+            !Array.isArray(snapshot.versions) ||
+            !Number.isSafeInteger(snapshot.sequence)
+        )
+            return false;
+
+        const restoredVersions = new Map(snapshot.versions);
+        // A history without its before/after snapshots cannot provide a trustworthy comparison.
+        if (
+            snapshot.detail.operations.some(
+                (operation) =>
+                    !restoredVersions.has(operation.sourceVersionId) ||
+                    (operation.resultVersionId && !restoredVersions.has(operation.resultVersionId)),
+            )
+        )
+            return false;
+
+        const restored = buildConversationSnapshot(snapshot.detail.draft);
+        detail = snapshot.detail;
+        sequence = snapshot.sequence;
+        versions.clear();
+        restoredVersions.forEach((version, id) => versions.set(id, version));
+        useShiftEditorStore.getState().reset();
+        useShiftEditorStore.getState().setDoc(restored.doc);
+        useShiftEditorStore.getState().setRulesHash('local-rules');
+        useShiftEditorStore.getState().setAutofillAdjustEnabled(true);
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+if (import.meta.env.MODE !== 'test') restoreReviewFixture();
 export function resetReviewFixture() {
+    localStorage.removeItem(storageKey);
     detail = structuredClone(initialDetail);
     sequence = Math.max(1, ...detail.turns.map((turn) => turn.sequence));
     versions.clear();
@@ -365,6 +420,7 @@ const adapter: AxiosAdapter = async (config) => {
     else if (/\/conversations\?/.test(url)) data = [detail.conversation];
     else if (/\/conversations\/\d+$/.test(url)) data = detail;
     else throw new Error('미리보기 밖의 요청은 차단됩니다.');
+    if (config.method !== 'get' && import.meta.env.MODE !== 'test') saveReviewFixture();
     return {data: structuredClone(data), status: 200, statusText: 'OK', headers: {}, config};
 };
 client.defaults.adapter = adapter;
