@@ -1,4 +1,4 @@
-import type {TConversationDetail, TConversationTurn, TSemanticPlan} from './schedule-conversation-api';
+import type {TConversationDetail, TConversationOperation, TConversationTurn, TSemanticPlan} from './schedule-conversation-api';
 
 /** Storage events are not dialogue. A confirmation replaces the proposal of the same plan. */
 export function visibleConversationTurns(detail: TConversationDetail): TConversationTurn[] {
@@ -10,8 +10,44 @@ export function visibleConversationTurns(detail: TConversationDetail): TConversa
     }
 
     return detail.turns.filter(
-        (turn) => turn.actor !== 'SYSTEM' && (!turn.semanticPlan || turn.sequence === latestPlan.get(turn.semanticPlan.planId)),
+        (turn) =>
+            (turn.actor !== 'SYSTEM' || turn.type === 'SEGMENT_START') &&
+            (!turn.semanticPlan || turn.sequence === latestPlan.get(turn.semanticPlan.planId)),
     );
+}
+
+/** Previous segments remain visible; only the latest one supplies active UI state. */
+export function currentConversationTurns(detail: TConversationDetail): TConversationTurn[] {
+    const start = Math.max(0, ...detail.turns.filter((turn) => turn.type === 'SEGMENT_START').map((turn) => turn.sequence));
+
+    return visibleConversationTurns(detail).filter((turn) => turn.sequence > start);
+}
+
+export function operationAttempt(detail: TConversationDetail, operationId: string): number {
+    const operation = detail.operations.find((entry) => entry.operationId === operationId);
+
+    return operation
+        ? detail.operations.filter((entry) => entry.operationType === operation.operationType && entry.sequence <= operation.sequence)
+              .length
+        : 0;
+}
+
+/** Place the boundary before the next request, after all prior result messages. */
+export function precedingCompletedOperation(detail: TConversationDetail, turn: TConversationTurn): TConversationOperation | undefined {
+    if (turn.actor !== 'USER') return;
+
+    const previous = detail.operations.filter((operation) => operation.sequence < turn.sequence).sort((a, b) => b.sequence - a.sequence)[0];
+
+    if (!previous || !['SUCCEEDED', 'FAILED'].includes(previous.executionStatus)) return;
+
+    return detail.turns.some(
+        (entry) =>
+            entry.sequence > previous.sequence &&
+            entry.sequence < turn.sequence &&
+            (entry.actor === 'USER' || entry.type === 'SEGMENT_START'),
+    )
+        ? undefined
+        : previous;
 }
 
 /** Recover the original message, including conditions not represented by a ready artifact. */

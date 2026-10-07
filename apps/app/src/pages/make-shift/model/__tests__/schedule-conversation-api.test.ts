@@ -1,5 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {
+    currentConversationTurns,
+    operationAttempt,
+    precedingCompletedOperation,
+    visibleConversationTurns,
+} from '../conversation-presentation';
+import {
     conversationEvents,
     isConversationConfirmationCurrent,
     isSemanticExecutionCurrent,
@@ -64,6 +70,27 @@ const detail = {
 } as TConversationDetail;
 
 describe('conversation state', () => {
+    it('retains historical messages but limits active UI state to the new request section', () => {
+        const start = {...turn, eventId: 11, sequence: 3, actor: 'SYSTEM', type: 'SEGMENT_START', text: 'CURRENT_DRAFT'};
+        const next = {...turn, eventId: 12, sequence: 4, actor: 'USER', type: 'MESSAGE', text: '새 요청'};
+        const monthly = {...detail, turns: [turn, start, next]};
+
+        expect(visibleConversationTurns(monthly)).toEqual([turn, start, next]);
+        expect(currentConversationTurns(monthly)).toEqual([next]);
+        expect(operationAttempt({...monthly, operations: [operation, {...operation, operationId: 'a2', sequence: 5}]}, 'a2')).toBe(2);
+    });
+    it('places each follow-up boundary before the next user request and avoids duplicate new-section boundaries', () => {
+        const next = {...turn, sequence: 3, actor: 'USER'};
+        const monthly = {...detail, turns: [next]};
+
+        expect(precedingCompletedOperation(monthly, next)).toEqual(operation);
+
+        const boundary = {...turn, sequence: 2, type: 'SEGMENT_START', actor: 'SYSTEM'};
+
+        expect(precedingCompletedOperation({...monthly, turns: [boundary, next]}, next)).toBeUndefined();
+        expect(precedingCompletedOperation({...monthly, turns: [{...next, sequence: 2}, next]}, next)).toBeUndefined();
+        expect(precedingCompletedOperation({...monthly, operations: [{...operation, executionStatus: 'RUNNING'}]}, next)).toBeUndefined();
+    });
     it('uses server sequence rather than client clock or request arrival order', () => {
         expect(conversationEvents(detail).map((event) => event.id)).toEqual(['operation:1', 'turn:10']);
     });
@@ -104,8 +131,11 @@ it('requires a confirmed immutable semantic plan bound to the current source', (
             confirmationAllowed: true,
         },
     };
+
     expect(isSemanticExecutionCurrent(detail, proposal, false)).toBe(false);
+
     const confirmed = {...proposal, type: 'SEMANTIC_PLAN_CONFIRMED', semanticPlan: {...proposal.semanticPlan, state: 'CONFIRMED'}};
+
     expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(true);
     expect(isSemanticExecutionCurrent(detail, confirmed, true)).toBe(false);
     expect(
