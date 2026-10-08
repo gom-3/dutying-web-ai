@@ -46,7 +46,8 @@
         "type-check": "pnpm run type-check:app",
         "type-check:app": "pnpm --dir ./apps/app type-check",
         "type-check:docs": "pnpm --dir ./apps/docs type-check",
-        "workspace:list": "pnpm ls -r --depth -1"
+        "workspace:list": "pnpm ls -r --depth -1",
+        "test:ai-scenarios": "node scripts/test-ai-scenarios.mjs"
     },
     "devDependencies": {
         "@changesets/cli": "^2.29.8",
