@@ -48,7 +48,7 @@ describe('local UI review', () => {
         await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
         const failure = await chat().findByRole('alert');
         expect(failure).toHaveTextContent('자동완성을 마치지 못했어요.');
-        expect(failure).toHaveTextContent('시간 안에 근무표를 완성하지 못했어요.');
+        expect(failure).toHaveTextContent('근무표 작성 중 문제가 생겼어요.');
         expect(failure.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
         expect(failure.parentElement).toHaveClass('bg-[#FFF5F5]', 'border-[#FECDCA]');
         expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);

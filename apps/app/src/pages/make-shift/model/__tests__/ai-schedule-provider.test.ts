@@ -252,7 +252,7 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         expect(!result.ok && result.message).not.toBe('forbidden');
     });
 
-    it('시간 안에 해를 찾지 못한 조절은 원인과 표 미변경을 안내한다', async () => {
+    it('중단된 조절은 내부 계산 사유를 노출하지 않고 표를 보존한다', async () => {
         apiGenerate.mockResolvedValue({
             operationType: 'ADJUST',
             draftRevision: 3,
@@ -270,7 +270,8 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         });
 
         expect(result).toMatchObject({ok: false, failure: {blocked: false, recovery: 'retry'}});
-        expect(!result.ok && result.message).toContain('시간 안에 근무표를 완성하지 못했어요.');
+        expect(!result.ok && result.message).toContain('근무표 작성 중 문제가 생겼어요.');
+        expect(!result.ok && result.message).not.toMatch(/시간|제한|타임아웃|솔버|엔진|TIME_LIMIT/);
     });
 
     it('조절이 아닌 요청에서는 빈 결과가 여전히 실패다', async () => {

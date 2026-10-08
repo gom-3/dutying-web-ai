@@ -22,7 +22,7 @@ export const aiAdjustKo = {
         autofillTitle: '자동완성을 마치지 못했어요.',
         adjustTitle: '근무표를 조절하지 못했어요.',
         infeasible: '지금 조건으로는 근무표를 만들 수 없어요.\n요청이나 고정한 근무를 바꿔 주세요. 기존 근무표는 그대로예요.',
-        timeLimit: '시간 안에 근무표를 완성하지 못했어요.\n기존 근무표는 그대로예요. 같은 조건으로 다시 시도할 수 있어요.',
+        unavailable: '근무표 작성 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         incomplete: '빈칸을 모두 채우지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         rules: '필수 조건을 모두 지킨 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 요청이나 고정한 근무를 확인해 주세요.',
@@ -257,8 +257,7 @@ export const aiAdjustEn = {
         adjustTitle: 'The schedule could not be adjusted.',
         infeasible:
             'A schedule cannot be made with these conditions.\nChange your requests or fixed shifts. Your previous schedule is unchanged.',
-        timeLimit:
-            'The schedule could not be completed in time.\nYour previous schedule is unchanged. You can retry with the same conditions.',
+        unavailable: 'There was a problem preparing your schedule.\nYour previous schedule is unchanged. Please try again.',
         validation: 'There was a problem checking the schedule.\nYour previous schedule is unchanged. Please try again.',
         incomplete: 'Some empty shifts could not be filled.\nYour previous schedule is unchanged. Please try again.',
         rules: 'We could not find a schedule meeting all required conditions.\nYour previous schedule is unchanged. Review your requests or fixed shifts.',

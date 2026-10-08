@@ -46,7 +46,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     )
         return null;
 
-    let key: 'infeasible' | 'timeLimit' | 'validation' | 'incomplete' | 'rules' | 'unsupported' | 'lockedEmpty' | 'input' | 'unknown' =
+    let key: 'infeasible' | 'unavailable' | 'validation' | 'incomplete' | 'rules' | 'unsupported' | 'lockedEmpty' | 'input' | 'unknown' =
         'unknown';
     let recovery: NonNullable<TAiConversationFailure['recovery']> = 'retry';
 
@@ -63,7 +63,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         key = 'infeasible';
         recovery = 'revise';
     } else if (status === 'TIME_LIMIT' || reason.includes('TIME_LIMIT')) {
-        key = 'timeLimit';
+        key = 'unavailable';
     } else if (reason === 'SOLVER_RESULT_VALIDATION_UNAVAILABLE') {
         key = 'validation';
     } else if (reason === 'SOLVER_RESULT_INCOMPLETE') {

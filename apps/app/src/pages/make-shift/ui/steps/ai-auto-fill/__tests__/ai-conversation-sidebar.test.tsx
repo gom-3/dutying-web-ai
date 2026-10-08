@@ -227,7 +227,7 @@ describe('persistent schedule sidebar', () => {
         const summary = await screen.findByText(/이전 대화 기록|Earlier conversation/);
         await userEvent.click(summary);
         const history = within(summary.closest('details')!);
-        expect(await history.findByRole('alert')).toHaveTextContent(/시간 안에 근무표를 완성하지 못했어요|completed in time/);
+        expect(await history.findByRole('alert')).toHaveTextContent(/근무표 작성 중 문제가 생겼어요|problem preparing your schedule/);
         expect(history.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
         expect(history.queryByRole('button', {name: /그때 표 보기|View this result/})).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
