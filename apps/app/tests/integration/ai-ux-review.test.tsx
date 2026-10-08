@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent, within, fireEvent} from '../../src/shared/util/test-utils';
 import {useShiftEditorStore} from '../../src/features/shift-editor';
-import {Review, resetReviewFixture, restoreReviewFixture, saveReviewFixture} from './ai-ux-review';
+import {Review, resetReviewFixture, restoreReviewFixture, saveReviewFixture, failNextReviewExecution} from './ai-ux-review';
 import {reviewConditions} from './ai-ux-review-request';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -39,6 +39,40 @@ beforeEach(() => {
 });
 
 describe('local UI review', () => {
+    it('[GEN-FAIL-RETRY] retains a failed autofill in chat after retry succeeds and the page reloads', async () => {
+        const page = render(<Review />);
+        const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        failNextReviewExecution('TIME_LIMIT', 'TIME_LIMIT_NO_SOLUTION');
+        await userEvent.click(await chat().findByRole('button', {name: '그대로 한 번 더 돌려볼래요'}));
+        await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+        const failure = await chat().findByRole('alert');
+        expect(failure).toHaveTextContent('자동완성을 마치지 못했어요.');
+        expect(failure).toHaveTextContent('시간 안에 근무표를 완성하지 못했어요.');
+        expect(failure.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+        expect(failure.parentElement).toHaveClass('bg-[#FFF5F5]', 'border-[#FECDCA]');
+        expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(chat().queryByText(/근무표를 채웠어요!/)).not.toBeInTheDocument();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
+        await userEvent.click(chat().getByRole('button', {name: '다시 시도하기'}));
+        const retryQuestion = chat().getByText('다시 자동채우기 할까요?');
+        expect(failure.compareDocumentPosition(retryQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(chat().queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+        await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+        expect(await chat().findByText(/^자동완성 2회차 · 완료$/)).toBeVisible();
+        expect(chat().getByText(/^자동완성 1회차 · 실패$/)).toBeVisible();
+        expect(chat().getByRole('alert')).toHaveTextContent('자동완성을 마치지 못했어요.');
+        expect(chat().getAllByRole('button', {name: '전후 비교'})).toHaveLength(1);
+        saveReviewFixture();
+        page.unmount();
+        expect(restoreReviewFixture()).toBe(true);
+        render(<Review />);
+        expect(await chat().findByText(/^자동완성 2회차 · 완료$/)).toBeVisible();
+        expect(chat().getByText(/^자동완성 1회차 · 실패$/)).toBeVisible();
+        expect(chat().getByRole('alert')).toHaveTextContent('기존 근무표는 그대로예요.');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    }, Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000));
     it(
         'restores an earlier autofill and its before/after tables after a page reload',
         async () => {

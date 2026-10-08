@@ -1408,14 +1408,7 @@ export function AiAutofill() {
                     void refetchMonthRequests();
                 }
 
-                if (result.notAllowed) {
-                    // 게이트에 막힌 것은 장애가 아니다. 빨간 토스트로 말하면 사용자는 다시 눌러 본다.
-                    toast(t('page.makeShift.aiRefill.adjust.notAllowed'));
-                } else if (!failure.recovery) {
-                    toast.error(
-                        result.message || t(adjust ? 'page.makeShift.aiRefill.adjust.failed' : 'page.makeShift.aiRefill.requestFailed'),
-                    );
-                }
+                // Failure details and recovery remain in the chat; do not duplicate them in a transient toast.
 
                 if (result.conflict) {
                     await queryClient.invalidateQueries({

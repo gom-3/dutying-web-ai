@@ -14,15 +14,18 @@ import {AiAdjustInterpretCard, type TAdjustCard} from './ai-adjust-interpret-car
 const choiceClass =
     'min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left leading-5 text-[13.5px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
 
-export function AssistantMessage({children}: {children: ReactNode}) {
+export function AssistantMessage({children, tone = 'default'}: {children: ReactNode; tone?: 'default' | 'error'}) {
     const {t} = useTypedTranslation();
+
     return (
         <div className="flex min-w-0 flex-col items-start gap-2">
             <span className="flex items-center gap-1.5 text-[13px] font-medium text-main-1">
                 <img src={assistantIcon} width={16} height={16} alt="" />
                 {t('aiAdjust.assistant')}
             </span>
-            <div className="max-w-full min-w-0 rounded-2xl rounded-tl-sm bg-[#F2F4F6] px-4 py-3 text-[14.5px] leading-7 break-words text-[#333D4B]">
+            <div
+                className={`max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${tone === 'error' ? 'w-full border border-[#FECDCA] bg-[#FFF5F5] text-[#7A271A]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
+            >
                 {children}
             </div>
         </div>

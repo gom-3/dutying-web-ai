@@ -158,7 +158,7 @@ function propose(text: string, state = 'PREVIEW_READY', live?: TLiveReview) {
     detail.conversation.latestInterpretationId = turn.interpretationId;
     return turn;
 }
-if (scene !== 'start')
+if (!['start', 'autofill-timeout', 'autofill-conflict'].includes(scene))
     propose(
         scene === 'unsupported' ? '오프를 더 공평하게 배치해줘' : original,
         scene === 'unsupported'
@@ -227,6 +227,7 @@ export function restoreReviewFixture() {
 if (import.meta.env.MODE !== 'test') restoreReviewFixture();
 export function resetReviewFixture() {
     localStorage.removeItem(storageKey);
+    nextExecutionFailure = null;
     detail = structuredClone(initialDetail);
     sequence = Math.max(1, ...detail.turns.map((turn) => turn.sequence));
     versions.clear();
@@ -236,6 +237,15 @@ export function resetReviewFixture() {
     useShiftEditorStore.getState().setRulesHash('local-rules');
     useShiftEditorStore.getState().setAutofillAdjustEnabled(true);
     useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+}
+
+let nextExecutionFailure: {status: string; reason: string} | null = null;
+export function failNextReviewExecution(status: string, reason: string) {
+    nextExecutionFailure = {status, reason};
+}
+if (!detail.operations.length) {
+    if (scene === 'autofill-timeout') failNextReviewExecution('TIME_LIMIT', 'TIME_LIMIT_NO_SOLUTION');
+    if (scene === 'autofill-conflict') failNextReviewExecution('INFEASIBLE', 'HARD_RULE_CONFLICT');
 }
 
 const adapter: AxiosAdapter = async (config) => {
@@ -345,6 +355,8 @@ const adapter: AxiosAdapter = async (config) => {
         data = detail;
     } else if (url.endsWith('/operations')) {
         const operationType = request.operationType as 'GENERATE' | 'ADJUST';
+        const failed = nextExecutionFailure;
+        nextExecutionFailure = null;
         const plan = detail.turns.find((turn) => turn.interpretationId === request.interpretationId)?.semanticPlan;
         if (operationType === 'ADJUST' && plan?.conditions.some((condition) => condition.action === 'COUNT')) {
             throw new Error('횟수 조건은 실제 LLM으로 확인했지만, 이 미리보기의 표 변경은 날짜별 배정·제외만 시연할 수 있어요.');
@@ -376,22 +388,22 @@ const adapter: AxiosAdapter = async (config) => {
                 (cell) => changed.find((value) => value.shiftNurseId === cell.shiftNurseId && value.date === cell.date) ?? cell,
             ),
         };
-        versions.set(resultVersion.versionId, resultVersion);
+        if (!failed) versions.set(resultVersion.versionId, resultVersion);
         const result: TAutofillResponse = {
             operationType,
-            applicable: true,
+            applicable: !failed,
             draftRevision: detail.conversation.revision,
             resultType: 'PATCH',
-            changedCells: changed,
+            changedCells: failed ? [] : changed,
             validation: {
                 draftRevision: detail.conversation.revision,
                 rulesHash: detail.contextHash,
-                summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+                summary: {valid: !failed, hardCount: 0, softCount: 0, totalCount: 0},
                 violations: [],
             },
             unmetInstructions: [],
             sameAsPrevious: false,
-            engineResult: {status: 'ACCEPTED'},
+            engineResult: failed ? {status: failed.status, solver: {reason: failed.reason}} : {status: 'ACCEPTED'},
         };
         const operation: TConversationOperation = {
             operationId: `local-operation-${sequence}`,
@@ -399,22 +411,24 @@ const adapter: AxiosAdapter = async (config) => {
             operationType,
             fillPolicy: operationType === 'GENERATE' ? request.fillPolicy : null,
             sourceVersionId: detail.draft.versionId,
-            resultVersionId: resultVersion.versionId,
+            resultVersionId: failed ? null : resultVersion.versionId,
             interpretationId: request.interpretationId,
             baseRevision: detail.conversation.revision,
-            executionStatus: 'SUCCEEDED',
-            applyStatus: 'APPLIED',
-            failureReason: null,
+            executionStatus: failed ? 'FAILED' : 'SUCCEEDED',
+            applyStatus: failed ? 'NOT_APPLIED' : 'APPLIED',
+            failureReason: failed?.reason ?? null,
             result,
             createdAt,
         };
         detail.operations.push(operation);
-        detail.draft = resultVersion;
-        detail.conversation = {
-            ...detail.conversation,
-            revision: detail.conversation.revision + 1,
-            currentVersionId: resultVersion.versionId,
-        };
+        if (!failed) {
+            detail.draft = resultVersion;
+            detail.conversation = {
+                ...detail.conversation,
+                revision: detail.conversation.revision + 1,
+                currentVersionId: resultVersion.versionId,
+            };
+        }
         data = operation;
     } else if (url.includes('/result-versions/')) data = versions.get(url.split('/').pop()!);
     else if (/\/conversations\?/.test(url)) data = [detail.conversation];

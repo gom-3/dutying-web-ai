@@ -8,6 +8,10 @@ export const aiAdjustKo = {
     close: 'AI 자동채우기 닫기',
     assistant: '듀팅 AI',
     failure: {
+        title: '요청을 처리하지 못했어요.',
+        waitSeconds: '약 {{count}}초 후 다시 시도해 주세요.',
+        waitMinutes: '약 {{count}}분 후 다시 시도해 주세요.',
+        waitHours: '약 {{count}}시간 후 다시 시도해 주세요.',
         access: '이 계정은 AI 기능을 사용할 권한이 없어요.\n병동 관리자에게 권한을 확인해 주세요.',
         adjustAccess: '이 계정은 아직 조건 수정 기능을 사용할 수 없어요.\n사용 권한을 확인해 주세요.',
         quota: 'AI 사용 횟수를 모두 썼어요.\n요금제와 남은 횟수를 확인해 주세요.',
@@ -15,6 +19,8 @@ export const aiAdjustKo = {
         retry: '다시 시도하기',
     },
     executionFailure: {
+        autofillTitle: '자동완성을 마치지 못했어요.',
+        adjustTitle: '근무표를 조절하지 못했어요.',
         infeasible: '지금 조건으로는 근무표를 만들 수 없어요.\n요청이나 고정한 근무를 바꿔 주세요. 기존 근무표는 그대로예요.',
         timeLimit: '시간 안에 근무표를 완성하지 못했어요.\n기존 근무표는 그대로예요. 같은 조건으로 다시 시도할 수 있어요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
@@ -247,6 +253,8 @@ export const aiAdjustKo = {
 };
 export const aiAdjustEn = {
     executionFailure: {
+        autofillTitle: 'Autofill could not be completed.',
+        adjustTitle: 'The schedule could not be adjusted.',
         infeasible:
             'A schedule cannot be made with these conditions.\nChange your requests or fixed shifts. Your previous schedule is unchanged.',
         timeLimit:
@@ -272,6 +280,10 @@ export const aiAdjustEn = {
     close: 'Close AI autofill',
     assistant: 'Dutying AI',
     failure: {
+        title: 'The request could not be completed.',
+        waitSeconds: 'Please try again in about {{count}} seconds.',
+        waitMinutes: 'Please try again in about {{count}} minutes.',
+        waitHours: 'Please try again in about {{count}} hours.',
         access: 'This account does not have access to AI.\nCheck your permissions with your ward administrator.',
         adjustAccess: 'Changing conditions is not available for this account yet.\nCheck your access permissions.',
         quota: 'You have used all your AI attempts.\nCheck your plan and remaining allowance.',

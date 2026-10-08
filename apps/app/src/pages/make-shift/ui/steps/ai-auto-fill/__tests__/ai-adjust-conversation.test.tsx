@@ -622,7 +622,8 @@ describe('AI adjustment conversation', () => {
         );
         await submit('오프 균형');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        expect(await screen.findByRole('alert')).toHaveTextContent('서버 연결 실패');
+        expect(await screen.findByRole('alert')).toHaveTextContent('aiAdjust.failed');
+        expect(screen.getByRole('alert')).not.toHaveTextContent('서버 연결 실패');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
         await waitFor(() => expect(apply).toHaveBeenCalledTimes(2));
         expect(apply.mock.calls[1]![4]).toBe(apply.mock.calls[0]![4]);

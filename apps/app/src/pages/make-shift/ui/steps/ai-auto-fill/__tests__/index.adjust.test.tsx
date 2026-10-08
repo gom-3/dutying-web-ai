@@ -5,6 +5,7 @@ import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
 import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import {AiAutofill} from '../index';
+import i18n from '@/i18n';
 
 // 칩 노출은 서버(workspace 응답)가 정하고, 로컬 override 만 그것을 덮는다.
 // 이 파일의 대부분은 칩이 열린 상태를 보므로 override 로 켜 둔다 —
@@ -54,7 +55,10 @@ vi.mock('@/shared/api/ward', () => ({
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, unknown>) => (values ? `${key} ${JSON.stringify(values)}` : key),
+        t: (key: string, values?: Record<string, unknown>) =>
+            ['aiAdjust.unexpectedOperation', 'aiAdjust.requestsChanged'].includes(key)
+                ? i18n.t(key)
+                : values ? `${key} ${JSON.stringify(values)}` : key,
     }),
 }));
 
@@ -1175,11 +1179,13 @@ describe('AiAutofill adjust panel', () => {
         expect(rowCells('11')).toEqual(['N', 'D', 'E', 'E']);
         // Keep the explanation in chat; the table only links back to it after the sheet closes.
         expect(await screen.findByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeInTheDocument();
-        expect(screen.getByRole('alert')).toHaveTextContent('rejected');
+        expect(screen.getByRole('alert')).toHaveTextContent('page.makeShift.aiRefill.adjust.failed');
+        expect(screen.getByRole('alert')).not.toHaveTextContent('rejected');
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
         expect(screen.getByText('aiAdjust.executionFailure.summary')).toBeVisible();
         await user.click(screen.getByRole('button', {name: 'aiAdjust.executionFailure.openChat'}));
-        expect(screen.getByRole('alert')).toHaveTextContent('rejected');
+        expect(screen.getByRole('alert')).toHaveTextContent('page.makeShift.aiRefill.adjust.failed');
+        expect(screen.getByRole('alert')).not.toHaveTextContent('rejected');
     });
 
     it.each(['solver_result_failed_final_gate', 'solver_result_validation_unavailable'])(
@@ -1534,7 +1540,7 @@ describe('AiAutofill adjust panel', () => {
         const originalDoc = useShiftEditorStore.getState().doc;
         mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-01', 'D')], 'GENERATE'));
         await adjustBySentence(user, [CLUSTER_ITEM]);
-        await screen.findByText('aiAdjust.unexpectedOperation');
+        await screen.findByText(i18n.t('aiAdjust.unexpectedOperation'));
         expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
     });
 
@@ -1552,7 +1558,7 @@ describe('AiAutofill adjust panel', () => {
         await answerDefaultQuestions(user);
         await user.click(screen.getByRole('button', {name: CARD_APPLY}));
         await finishAdjustmentPreparation(user);
-        await screen.findByText('aiAdjust.requestsChanged');
+        await screen.findByText(i18n.t('aiAdjust.requestsChanged'));
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
         expect(screen.getByText(/다른 창에서 추가한 요청/)).toBeVisible();
     });

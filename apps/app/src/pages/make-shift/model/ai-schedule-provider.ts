@@ -1,5 +1,5 @@
 import i18n from '@/i18n';
-import {aiConversationFailure} from './ai-conversation-failure';
+import {aiConversationFailure, type TAiConversationFailure} from './ai-conversation-failure';
 import {aiExecutionFailure} from './ai-execution-failure';
 import {apiAiScheduleProvider} from './ai-schedule-api-provider';
 import {type TAiScheduleProvider, type TAiScheduleRequest, type TAiScheduleResult} from './ai-schedule-contract';
@@ -27,18 +27,6 @@ function isAdjustNotAllowed(error: unknown): boolean {
     return apiError.serverCode === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED';
 }
 
-function toErrorMessage(error: unknown): string {
-    if (error instanceof Error && error.message) return error.message;
-
-    return i18n.t('page.makeShift.aiRefill.requestFailed');
-}
-
-function firstUnmetInstruction(response: Awaited<ReturnType<TAiScheduleProvider['generate']>>): string | null {
-    const message = response.unmetInstructions?.find((instruction) => instruction.trim().length > 0)?.trim();
-
-    return message ?? null;
-}
-
 function isAdjustNoChange(request: TAiScheduleRequest, response: Awaited<ReturnType<TAiScheduleProvider['generate']>>): boolean {
     if (!request.adjust) return false;
 
@@ -62,16 +50,22 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
         }
 
         if (response.changedCells.length === 0 && !request.adjust) {
-            const message = firstUnmetInstruction(response);
+            if (response.unmetInstructions?.some((instruction) => instruction.trim())) {
+                const failure: TAiConversationFailure = {
+                    message: i18n.t('aiAdjust.executionFailure.unknown'),
+                    blocked: false,
+                    recovery: 'retry',
+                };
 
-            if (message) return {ok: false, message};
+                return {ok: false, message: failure.message, failure};
+            }
         }
 
         return {ok: true, response, validation: response.validation};
     } catch (error) {
         if (request.signal?.aborted) return {ok: false, message: '', canceled: true};
 
-        const failure = aiConversationFailure(error, toErrorMessage(error));
+        const failure = aiConversationFailure(error, i18n.t('page.makeShift.aiRefill.requestFailed'));
         const apiError = error as {code?: number; serverCode?: string};
 
         return {

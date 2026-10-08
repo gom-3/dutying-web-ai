@@ -668,13 +668,14 @@ export default function AiAdjustTextInput({
                                 {turn.failedAttempts?.map((attempt, index) => (
                                     <div key={index} className="flex min-w-0 flex-col gap-4">
                                         <AiAutofillMessages messages={attempt.messages} />
-                                        <AiExecutionFailure failure={attempt.failure} />
+                                        <AiExecutionFailure operationType="ADJUST" failure={attempt.failure} />
                                         <UserMessage>{attempt.reply}</UserMessage>
                                     </div>
                                 ))}
                                 {turn.messages && <AiAutofillMessages messages={turn.messages} />}
                                 {turn.status === 'applyFailed' && turn.failure && (
                                     <AiExecutionFailure
+                                        operationType="ADJUST"
                                         failure={turn.failure}
                                         active={turn.id === active?.id}
                                         disabled={disabled || isBusy || requestsLoading || requestsError}
@@ -750,6 +751,7 @@ export default function AiAdjustTextInput({
                                 )}
                                 {turn.error && turn.status === 'messages' && (
                                     <AiExecutionFailure
+                                        operationType="GENERATE"
                                         failure={turn.failure ?? {message: turn.error, blocked: false}}
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
@@ -838,6 +840,7 @@ export default function AiAdjustTextInput({
                     ))}
                 {generationFailure && !autofillFlow && (
                     <AiExecutionFailure
+                        operationType="GENERATE"
                         failure={generationFailure}
                         active
                         disabled={disabled || isBusy}
