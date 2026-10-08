@@ -1489,7 +1489,7 @@ export function AiAutofill() {
                 toast.error(
                     goalResult.required
                         ? '필수 목표를 달성하지 못해 결과를 적용하지 않았어요.'
-                        : '시간 안에 적용 가능한 목표 조절 후보를 확정하지 못했어요.',
+                        : '요청한 방향으로 조절한 근무표를 제공하지 못했어요. 기존 근무표는 그대로예요.',
                 );
 
                 void refetchMonthRequests();
