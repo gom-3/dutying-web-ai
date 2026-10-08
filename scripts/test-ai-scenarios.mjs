@@ -29,6 +29,8 @@ if (process.exitCode === 0 && values['engine-repo']) {
     const check = spawnSync(`${engine}/venv/bin/python`, [
         '-m', 'pytest', '-q', '--tb=short',
         'tests/unit/test_two_shift_solver.py',
+        'tests/unit/test_cpsat_projection_repair.py',
+        'tests/unit/test_schedule_draft_patch_contract.py',
         'tests/unit/test_intent_pipeline.py',
         'tests/unit/test_model_normalized_intent.py',
         'tests/unit/test_semantic_clarification.py',
