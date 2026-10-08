@@ -205,6 +205,36 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getByText(/^(자동완성 2회차|Autofill 2 attempt) ·/)).toHaveTextContent(/실패|FAILED/);
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it('[HISTORY-FAILURE] keeps an earlier failure explanation in chat without offering another execution', async () => {
+        const older: TConversationDetail = {
+            ...current,
+            conversation: {...current.conversation, conversationId: 9},
+            operations: [{
+                ...operation, executionStatus: 'FAILED', applyStatus: 'NOT_APPLIED', resultVersionId: null,
+                failureReason: 'TIME_LIMIT_NO_SOLUTION',
+                result: {
+                    operationType: 'GENERATE', applicable: false, draftRevision: 0, resultType: 'PATCH',
+                    changedCells: [], unmetInstructions: [], sameAsPrevious: true,
+                    validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0}, violations: []},
+                    engineResult: {status: 'TIME_LIMIT', solver: {reason: 'TIME_LIMIT_NO_SOLUTION'}},
+                },
+            }],
+        };
+        mocks.list.mockResolvedValue([current.conversation, older.conversation]);
+        mocks.detail.mockImplementation(async (id: number) => id === 9 ? older : current);
+        const before = useShiftEditorStore.getState().doc;
+        renderSidebar();
+        const summary = await screen.findByText(/이전 대화 기록|Earlier conversation/);
+        await userEvent.click(summary);
+        const history = within(summary.closest('details')!);
+        expect(await history.findByRole('alert')).toHaveTextContent(/시간 안에 근무표를 완성하지 못했어요|completed in time/);
+        expect(history.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
+        expect(history.queryByRole('button', {name: /그때 표 보기|View this result/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('keeps older monthly conversations reachable without changing the current plan or schedule', async () => {
         const older = {
             ...current,

@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {conversationOperationFailure} from '../../../model/ai-execution-failure';
 import {conversationTurnText, operationAttempt, visibleConversationTurns} from '../../../model/conversation-presentation';
 import {
     conversationEvents,
@@ -6,6 +7,7 @@ import {
     type TConversationDetail,
     type TConversationOperation,
 } from '../../../model/schedule-conversation-api';
+import {AiExecutionFailure} from './ai-execution-failure';
 
 type TProps = {
     conversation: TConversation;
@@ -71,12 +73,22 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                         : copy('조절', 'Adjustment')}{' '}
                                     {operationAttempt(detail, event.operation.operationId)}
                                     {copy('회차', ' attempt')} ·{' '}
-                                    {event.operation.executionStatus === 'SUCCEEDED'
-                                        ? copy('완료', 'Completed')
-                                        : event.operation.executionStatus === 'FAILED'
-                                          ? copy('실패', 'Failed')
-                                          : copy('결과 확인 필요', 'Outcome needs checking')}
+                                    {conversationOperationFailure(event.operation)
+                                        ? copy('실패', 'Not completed')
+                                        : event.operation.executionStatus === 'SUCCEEDED'
+                                          ? copy('완료', 'Completed')
+                                          : event.operation.executionStatus === 'FAILED'
+                                            ? copy('실패', 'Failed')
+                                            : copy('결과 확인 필요', 'Outcome needs checking')}
                                 </p>
+                                {conversationOperationFailure(event.operation) && (
+                                    <div className="mt-3">
+                                        <AiExecutionFailure
+                                            operationType={event.operation.operationType}
+                                            failure={conversationOperationFailure(event.operation)!}
+                                        />
+                                    </div>
+                                )}
                                 {event.operation.resultVersionId && (
                                     <div className="mt-2 flex gap-3">
                                         <button type="button" onClick={() => onView(event.operation)}>

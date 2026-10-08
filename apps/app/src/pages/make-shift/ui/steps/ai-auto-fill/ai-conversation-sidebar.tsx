@@ -12,7 +12,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
-import {aiExecutionFailure} from '../../../model/ai-execution-failure';
+import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
 import {
     conversationTurnText,
     currentConversationTurns,
@@ -87,11 +87,6 @@ const signature = (version: Pick<TResultVersion, 'cells' | 'rowOrder' | 'carryOv
     ]);
 const buttonClass =
     'min-h-11 rounded-lg bg-gray-7 px-3 py-2 text-sm hover:bg-main-light hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40';
-const operationFailure = (operation: TConversationOperation): TAiConversationFailure | null =>
-    (operation.result && aiExecutionFailure(operation.result)) ??
-    (operation.executionStatus === 'FAILED'
-        ? aiConversationFailure({serverCode: operation.failureReason ?? undefined}, i18n.t('aiAdjust.executionFailure.unknown'))
-        : null);
 
 export default function AiConversationSidebar({
     open,
@@ -161,6 +156,14 @@ export default function AiConversationSidebar({
     const pendingKey = `dutying.conversation:${isWardAdminAccessToken(useAuthStore.getState().accessToken) ? 'admin' : 'account'}:${useAuthStore.getState().accountId}:${wardId}:${teamId}:${year}:${month}`;
     const ko = i18n.language.startsWith('ko');
     const copy = (korean: string, english: string) => (ko ? korean : english);
+    const operationStatusLabel = (operation: TConversationOperation) => {
+        if (operationFailure(operation)) return copy('실패', 'Not completed');
+        if (operation.executionStatus === 'RUNNING') return copy('실행 중', 'Working');
+        if (operation.executionStatus === 'RESULT_READY') return copy('결과 저장 중', 'Saving result');
+        if (operation.executionStatus === 'SUCCEEDED') return copy('완료', 'Completed');
+
+        return copy('결과 확인 필요', 'Check result');
+    };
     const install = (next: TConversationDetail) => {
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             setLocalEvents([]);
@@ -1143,34 +1146,6 @@ export default function AiConversationSidebar({
                                 copy={copy}
                             />
                         ))}
-                        {rebuild && (
-                            <AssistantMessage>
-                                <p>{t('aiAdjust.regenerateTitle')}</p>
-                                <p className="mt-2 text-sm text-[#475467]">{t('aiAdjust.regenerateDescription')}</p>
-                                <div className="mt-3 flex gap-2">
-                                    <button
-                                        className={buttonClass}
-                                        disabled={busy || running || !detail}
-                                        onClick={() => {
-                                            setRebuild(false);
-                                            void execute('GENERATE', 'REBUILD_UNLOCKED');
-                                        }}
-                                    >
-                                        {t('aiAdjust.regenerating')}
-                                    </button>
-                                    <button
-                                        className={buttonClass}
-                                        disabled={busy || running}
-                                        onClick={() => {
-                                            setRebuild(false);
-                                            setEntryChoice(null);
-                                        }}
-                                    >
-                                        {copy('취소', 'Cancel')}
-                                    </button>
-                                </div>
-                            </AssistantMessage>
-                        )}
                         {detail &&
                             [...conversationEvents({...detail, turns: visibleTurns}), ...localEvents]
                                 .sort((a, b) => a.sequence - b.sequence)
@@ -1190,19 +1165,7 @@ export default function AiConversationSidebar({
                                                         event.operation.operationType === 'GENERATE' ? 'Autofill' : 'Adjustment',
                                                     )}{' '}
                                                     {operationAttempt(detail, event.operation.operationId)}
-                                                    {copy('회차', ' attempt')} ·{' '}
-                                                    {copy(
-                                                        event.operation.executionStatus === 'RUNNING'
-                                                            ? '실행 중'
-                                                            : operationFailure(event.operation)
-                                                              ? '실패'
-                                                              : event.operation.executionStatus === 'UNKNOWN'
-                                                                ? '결과 확인 필요'
-                                                                : event.operation.executionStatus === 'RESULT_READY'
-                                                                  ? '결과 저장 중'
-                                                                  : '완료',
-                                                        event.operation.executionStatus,
-                                                    )}
+                                                    {copy('회차', ' attempt')} · {operationStatusLabel(event.operation)}
                                                 </p>
                                                 <p className="text-xs text-[#475467]">
                                                     {stamp(event.operation.createdAt)} · {copy('대상', 'Target')}: {year}-
@@ -1275,10 +1238,12 @@ export default function AiConversationSidebar({
                                             </article>
                                             {operationFailure(event.operation) && (
                                                 <AiExecutionFailure
+                                                    operationType={event.operation.operationType}
                                                     failure={operationFailure(event.operation)!}
                                                     active={
                                                         failureNeedsAction &&
                                                         event.operation === latestOperation &&
+                                                        !rebuild &&
                                                         !preparing &&
                                                         !awaitingAdjustment &&
                                                         !busy &&
@@ -1337,6 +1302,34 @@ export default function AiConversationSidebar({
                                         </div>
                                     ),
                                 )}
+                        {rebuild && (
+                            <AssistantMessage>
+                                <p>{t('aiAdjust.regenerateTitle')}</p>
+                                <p className="mt-2 text-sm text-[#475467]">{t('aiAdjust.regenerateDescription')}</p>
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        className={buttonClass}
+                                        disabled={busy || running || !detail}
+                                        onClick={() => {
+                                            setRebuild(false);
+                                            void execute('GENERATE', 'REBUILD_UNLOCKED');
+                                        }}
+                                    >
+                                        {t('aiAdjust.regenerating')}
+                                    </button>
+                                    <button
+                                        className={buttonClass}
+                                        disabled={busy || running}
+                                        onClick={() => {
+                                            setRebuild(false);
+                                            setEntryChoice(null);
+                                        }}
+                                    >
+                                        {copy('취소', 'Cancel')}
+                                    </button>
+                                </div>
+                            </AssistantMessage>
+                        )}
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {detail &&
                             canChooseNextAction &&

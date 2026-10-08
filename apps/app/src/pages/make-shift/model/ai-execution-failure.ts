@@ -1,6 +1,16 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import i18n from '@/i18n';
-import type {TAiConversationFailure} from './ai-conversation-failure';
+import {aiConversationFailure, type TAiConversationFailure} from './ai-conversation-failure';
+import type {TConversationOperation} from './schedule-conversation-api';
+
+export function conversationOperationFailure(operation: TConversationOperation): TAiConversationFailure | null {
+    return (
+        (operation.result ? aiExecutionFailure(operation.result) : null) ??
+        (operation.executionStatus === 'FAILED'
+            ? aiConversationFailure({serverCode: operation.failureReason ?? undefined}, i18n.t('aiAdjust.executionFailure.unknown'))
+            : null)
+    );
+}
 
 /** Only explicit, revalidated GENERATE review drafts may bypass the approval verdict. */
 export function isGenerateReviewDraft(response: TAutofillResponse): boolean {

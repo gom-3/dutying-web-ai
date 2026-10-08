@@ -10,6 +10,7 @@ export function AiExecutionFailure({
     onRetry,
     onRevise,
     onReview,
+    operationType,
 }: {
     failure: TAiConversationFailure;
     active?: boolean;
@@ -17,6 +18,7 @@ export function AiExecutionFailure({
     onRetry?: () => void;
     onRevise?: () => void;
     onReview?: () => void;
+    operationType?: 'GENERATE' | 'ADJUST';
 }) {
     const {t} = useTypedTranslation();
     const choiceClass =
@@ -25,7 +27,18 @@ export function AiExecutionFailure({
 
     return (
         <div className="flex min-w-0 flex-col gap-4">
-            <AiFailureMessage message={failure.message} />
+            <AiFailureMessage
+                message={failure.message}
+                title={
+                    operationType
+                        ? t(
+                              operationType === 'GENERATE'
+                                  ? 'aiAdjust.executionFailure.autofillTitle'
+                                  : 'aiAdjust.executionFailure.adjustTitle',
+                          )
+                        : undefined
+                }
+            />
             {active && (
                 <div className="ml-auto flex max-w-full flex-col items-end gap-2">
                     {retryable && onRetry && (

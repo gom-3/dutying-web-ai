@@ -82,12 +82,13 @@ describe('requestAiSchedule', () => {
         expect(result).toEqual({ok: true, response, validation: response.validation});
     });
 
-    it('returns the provider error message for retry UX', async () => {
+    it('replaces arbitrary provider errors with a user-facing retry message', async () => {
         apiGenerate.mockRejectedValue(new Error('AI 생성 실패'));
 
         const result = await requestAiSchedule(request);
 
-        expect(result).toMatchObject({ok: false, message: 'AI 생성 실패', failure: {blocked: false}});
+        expect(result).toMatchObject({ok: false, failure: {blocked: false}});
+        expect(!result.ok && result.message).not.toBe('AI 생성 실패');
     });
 
     it.each([
@@ -192,7 +193,7 @@ describe('requestAiSchedule', () => {
         expect(result).toEqual({ok: false, message: '', canceled: true});
     });
 
-    it('returns the first unmet instruction when the server applies no AI changes', async () => {
+    it('does not show an internal engine instruction when no AI changes were applied', async () => {
         apiGenerate.mockResolvedValue({
             ...response,
             changedCells: [],
@@ -202,10 +203,9 @@ describe('requestAiSchedule', () => {
 
         const result = await requestAiSchedule(request);
 
-        expect(result).toEqual({
-            ok: false,
-            message: 'AI 근무표 엔진 호출에 실패했습니다. 잠시 후 다시 시도해주세요.',
-        });
+        expect(result).toMatchObject({ok: false, failure: {recovery: 'retry'}});
+        expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+        expect(!result.ok && result.message).not.toMatch(/엔진|호출/);
     });
 });
 
