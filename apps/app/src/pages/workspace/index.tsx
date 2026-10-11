@@ -1841,36 +1841,62 @@ function BillingReturn() {
                     {t('이번 결제금액', 'Due now')}: {money(current.gross)} · {t('상태', 'Status')}: {current.status}
                 </p>
             )}
+            {current && ['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(current.status) && (
+                <Notice>
+                    {t(
+                        '기존 결제 결과를 확인 중입니다. 새로 결제하지 말고 결과 조회를 이용해 주세요.',
+                        'The existing payment is being reconciled. Check its status instead of paying again.',
+                    )}
+                </Notice>
+            )}
+            {current?.status === 'FAILED' && (
+                <Notice>
+                    {t(
+                        '결제가 완료되지 않았습니다. 결제내역을 확인한 뒤 병동 결제 메뉴에서 새로 시작해 주세요.',
+                        'The payment did not complete. Review payment history, then restart from ward billing.',
+                    )}
+                </Notice>
+            )}
             {params.current.get('code') && (
                 <p role="alert">
                     {t('카드 인증을 완료하지 못했습니다.', 'Card authorization was not completed.')} {params.current.get('message')}
                 </p>
             )}
-            {authorization && registration && !done && !applied && (!id || current?.status === 'AWAITING_PAYMENT') && (
-                <button
-                    disabled={action.busy || (!!id && !current)}
-                    onClick={() =>
-                        void action.run(async () => {
-                            const body = {customerKey: params.current.get('customerKey'), authKey: authorization};
-                            if (id) {
-                                const payment = await commercialPost<Order>(`/orders/${id}/confirm-subscription`, {
-                                    ...body,
-                                    registrationId: registration,
-                                });
-                                setResult(payment);
-                                if (payment.status === 'APPLIED') setDone(true);
-                            } else {
-                                await commercialPost(`/billing-registrations/${registration}/confirm`, body);
-                                setDone(true);
-                            }
-                        })
-                    }
-                >
-                    {id
-                        ? `${current ? money(current.gross) : ''} ${t('첫 결제하고 구독 시작', 'Pay & start subscription')}`
-                        : t('확인하고 등록 완료', 'Verify & finish registration')}
-                </button>
-            )}
+            {authorization &&
+                registration &&
+                !done &&
+                !applied &&
+                (!id || (current?.status === 'AWAITING_PAYMENT' && !current.provider)) && (
+                    <button
+                        disabled={action.busy || (!!id && !current)}
+                        onClick={() =>
+                            void action.run(async () => {
+                                const body = {customerKey: params.current.get('customerKey'), authKey: authorization};
+                                if (id) {
+                                    try {
+                                        const payment = await commercialPost<Order>(`/orders/${id}/confirm-subscription`, {
+                                            ...body,
+                                            registrationId: registration,
+                                        });
+                                        setResult(payment);
+                                        if (payment.status === 'APPLIED') setDone(true);
+                                    } finally {
+                                        // A failed HTTP response may still have submitted a charge.
+                                        // Refresh into reconciliation/declined state before another action.
+                                        await order.refetch();
+                                    }
+                                } else {
+                                    await commercialPost(`/billing-registrations/${registration}/confirm`, body);
+                                    setDone(true);
+                                }
+                            })
+                        }
+                    >
+                        {id
+                            ? `${current ? money(current.gross) : ''} ${t('첫 결제하고 구독 시작', 'Pay & start subscription')}`
+                            : t('확인하고 등록 완료', 'Verify & finish registration')}
+                    </button>
+                )}
             {id && (
                 <Link className="workspace-button secondary" to={`/workspace/payment-return?orderId=${encodeURIComponent(id)}`}>
                     {t('결제 결과 재조회·미결제 주문 취소', 'Check payment status or cancel an unsubmitted order')}
