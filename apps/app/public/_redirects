@@ -1,4 +1,5 @@
 # 동적 앱 경로는 검색용 랜딩이 없는 앱 셸로 프록시한다.
+/workspace/* /app-shell 200
 /dutying/notices/:noticeId /app-shell 200
 /app/friends/invite /app-shell 200
 /app/moim/invite /app-shell 200
