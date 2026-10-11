@@ -1,3 +1,4 @@
+import {SellerDetails} from '@/shared/business/profile';
 import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
 import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
@@ -1235,12 +1236,7 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                     </div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end">
-                        <source
-                            media="(max-width: 767px)"
-                            srcSet={mobileHeroImageSrc}
-                            width="1343"
-                            height="1171"
-                        />
+                        <source media="(max-width: 767px)" srcSet={mobileHeroImageSrc} width="1343" height="1171" />
                         <img
                             src={heroImageSrc}
                             width="1800"
@@ -1395,6 +1391,12 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                             {t('page.login.privacyPolicy')}
                         </a>
                     </div>
+                    <div className="flex flex-wrap gap-5">
+                        <a href="/pricing">Plus 요금제</a>
+                        <a href="/subscription-terms">정기결제 안내</a>
+                        <a href="/refund">환불정책</a>
+                    </div>
+                    <SellerDetails />
                     <p>{t('page.landing.common.copyright')}</p>
                 </div>
             </footer>

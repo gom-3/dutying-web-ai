@@ -1,0 +1,118 @@
+.subscription-info {
+    color: #20222b;
+    background: #fff;
+    min-height: 100vh;
+    font-family: inherit;
+}
+.subscription-info header,
+.subscription-info main,
+.subscription-info footer {
+    max-width: 1024px;
+    margin: auto;
+    padding: 28px 24px;
+}
+.subscription-info header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+.subscription-info header > a {
+    font-size: 26px;
+    font-weight: 800;
+    color: #6438ba;
+}
+.subscription-info nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.subscription-info main {
+    padding-top: 52px;
+    padding-bottom: 60px;
+}
+.subscription-info h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 750;
+    line-height: 1.3;
+    margin: 12px 0 24px;
+}
+.subscription-info h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 28px 0 12px;
+}
+.subscription-info p,
+.subscription-info li {
+    line-height: 1.8;
+    margin: 8px 0;
+}
+.subscription-info ul {
+    padding-left: 24px;
+    list-style: disc;
+}
+.subscription-info a {
+    color: #6438ba;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.subscription-info .eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6438ba;
+}
+.subscription-info .lead {
+    font-size: 19px;
+    max-width: 760px;
+}
+.subscription-info section {
+    margin: 32px 0;
+    padding: 28px;
+    background: #f5f3fa;
+    border-radius: 16px;
+}
+.subscription-info .offer {
+    background: #eee8fa;
+}
+.subscription-info input {
+    background: #fff;
+    padding: 10px;
+    width: 120px;
+    margin-left: 16px;
+    border-radius: 6px;
+}
+.subscription-info .price {
+    font-size: 24px;
+    font-weight: 700;
+}
+.subscription-info .primary,
+.subscription-info button {
+    display: inline-block;
+    background: #6438ba;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+.subscription-info footer {
+    background: #f5f3fa;
+    max-width: none;
+    padding-inline: max(24px, calc((100vw - 976px) / 2));
+}
+.subscription-info footer nav {
+    margin-top: 20px;
+}
+.subscription-info .version {
+    font-size: 12px;
+    color: #646773;
+    margin-top: 40px;
+}
+@media (max-width: 600px) {
+    .subscription-info section {
+        padding: 20px;
+    }
+    .subscription-info nav {
+        gap: 12px;
+        font-size: 14px;
+    }
+}

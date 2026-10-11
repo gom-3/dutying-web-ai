@@ -5,6 +5,7 @@ import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 
+const SubscriptionInfoPage = lazy(() => import('@/pages/subscription-info'));
 const WorkspacePage = lazy(() => import('@/pages/workspace'));
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
@@ -71,6 +72,9 @@ export const Router = () => {
                     <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                    <Route path="/pricing" element={<SubscriptionInfoPage />} />
+                    <Route path="/refund" element={<SubscriptionInfoPage />} />
+                    <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />
                     <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                     <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                     <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />
@@ -104,6 +108,9 @@ export const Router = () => {
                 <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                <Route path="/pricing" element={<SubscriptionInfoPage />} />
+                <Route path="/refund" element={<SubscriptionInfoPage />} />
+                <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />
                 <Route path={ROUTE.PRIVACY} element={<PrivacyPolicyPage />} />
                 <Route path={ROUTE.TERMS} element={<TermsOfServicePage />} />
                 <Route path={ROUTE.FRIEND_INVITE} element={<FriendInvitePage />} />

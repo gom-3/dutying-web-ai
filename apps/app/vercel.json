@@ -56,6 +56,10 @@
     "cleanUrls": true,
     "rewrites": [
         {
+            "source": "/workspace/:path*",
+            "destination": "/app-shell"
+        },
+        {
             "source": "/dutying/notices/:noticeId",
             "destination": "/app-shell"
         },
