@@ -69,8 +69,8 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                             <div key={event.id} className="rounded-lg border border-gray-6 p-3 text-sm">
                                 <p className="font-semibold">
                                     {event.operation.operationType === 'GENERATE'
-                                        ? copy('자동완성', 'Autofill')
-                                        : copy('조절', 'Adjustment')}{' '}
+                                        ? copy('자동채우기', 'Autofill')
+                                        : copy('수정', 'Adjustment')}{' '}
                                     {operationAttempt(detail, event.operation.operationId)}
                                     {copy('회차', ' attempt')} ·{' '}
                                     {conversationOperationFailure(event.operation)
@@ -92,7 +92,7 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                 {event.operation.resultVersionId && (
                                     <div className="mt-2 flex gap-3">
                                         <button type="button" onClick={() => onView(event.operation)}>
-                                            {copy('그때 표 보기', 'View this result')}
+                                            {copy('이 결과 보기', 'View this result')}
                                         </button>
                                         <button type="button" onClick={() => onView(event.operation, true)}>
                                             {copy('전후 비교', 'Compare')}

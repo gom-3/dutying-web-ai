@@ -65,9 +65,9 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
             <p className="font-medium">
                 {ready
                     ? applied
-                        ? copy('이 조건으로 근무표를 조절했어요.', 'The schedule was adjusted with these conditions.')
+                        ? copy('이 내용으로 근무표를 수정했어요.', 'The schedule was adjusted with these conditions.')
                         : current
-                          ? copy('이렇게 조절할까요?', 'Shall we adjust it this way?')
+                          ? copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
                           : copy('이전 요청 내용', 'Previous request')
                     : blockedMessage}
             </p>
@@ -77,15 +77,17 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
                         <li key={condition.intentId} className="border-l-2 border-main-1/25 pl-3">
                             <p className="text-[13px] text-[#6B7280]">{period(condition.dates, copy)}</p>
                             <p>
-                                <span className="font-medium">{condition.nurseIds.map(nurseName).join(', ')}</span>
-                                {copy('의 ', ': ')}
+                                <span className="font-medium">
+                                    {condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(copy(', ', ', '))}
+                                </span>
+                                {copy(' · ', ': ')}
                                 {condition.shiftCodes.join(', ')}
-                                {copy(' 근무', ' shifts')}{' '}
+                                {copy(' 근무를', ' shifts')}{' '}
                                 {condition.action === 'FORBID'
-                                    ? copy('배정하지 않기', 'will be excluded')
+                                    ? copy('배정하지 않아요.', 'will be excluded')
                                     : condition.action === 'ASSIGN'
-                                      ? copy('배정하기', 'will be assigned')
-                                      : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'combined') : copy('각자', 'each')} ${condition.operator === 'MIN' ? copy('최소', 'at least') : condition.operator === 'MAX' ? copy('최대', 'at most') : copy('정확히', 'exactly')} ${condition.count}${copy('회', ' times')}`}
+                                      ? copy('배정해요.', 'will be assigned')
+                                      : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'combined') : copy('각각', 'each')} ${condition.operator === 'MIN' ? copy('최소', 'at least') : condition.operator === 'MAX' ? copy('최대', 'at most') : copy('정확히', 'exactly')} ${condition.count}${copy('회 배정해요.', ' times')}`}
                             </p>
                             <p className="text-[13px] text-[#6B7280]">
                                 {condition.modality === 'HARD'
@@ -110,7 +112,7 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
                                 disabled={disabled || stale || (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)}
                                 onClick={onApply}
                             >
-                                {copy('이 조건으로 조절', 'Adjust with these conditions')}
+                                {copy('이대로 수정하기', 'Adjust with these conditions')}
                             </button>
                         )}
                         {!ready && retry && (
@@ -123,7 +125,7 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
                             disabled={disabled}
                             onClick={onEdit}
                         >
-                            {copy('요청 수정', 'Edit request')}
+                            {copy('요청 수정하기', 'Edit request')}
                         </button>
                     </div>
                 </>
@@ -131,7 +133,7 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
             {processing && (
                 <p role="status" className="text-[13px] text-[#6B7280]">
                     {processing === 'adjust'
-                        ? copy('요청한 조건으로 조절 중이에요.', 'Adjusting with your conditions.')
+                        ? copy('요청한 내용으로 근무표를 수정하고 있어요.', 'Adjusting with your conditions.')
                         : copy('요청을 확인하고 있어요.', 'Reviewing your request.')}
                 </p>
             )}

@@ -11,8 +11,9 @@ import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
-import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
-import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
+import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import {conversationOperationFailure as operationFailure, isGenerateReviewDraft} from '../../../model/ai-execution-failure';
+import {isExecutionFinished, readPendingExecution} from '../../../model/conversation-pending-execution';
 import {
     conversationTurnText,
     currentConversationTurns,
@@ -41,8 +42,9 @@ import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './a
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationEntry, AiInfoTip, type TConversationEntryChoice} from './ai-conversation-entry';
-import {ConversationEvidence, type TFailureSuggestion} from './ai-conversation-evidence';
+import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
 import {AiConversationHistory} from './ai-conversation-history';
+import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
@@ -158,9 +160,15 @@ export default function AiConversationSidebar({
     const copy = (korean: string, english: string) => (ko ? korean : english);
     const operationStatusLabel = (operation: TConversationOperation) => {
         if (operationFailure(operation)) return copy('실패', 'Not completed');
+
         if (operation.executionStatus === 'RUNNING') return copy('실행 중', 'Working');
+
         if (operation.executionStatus === 'RESULT_READY') return copy('결과 저장 중', 'Saving result');
-        if (operation.executionStatus === 'SUCCEEDED') return copy('완료', 'Completed');
+
+        if (operation.executionStatus === 'SUCCEEDED')
+            return t(
+                operation.result && isGenerateReviewDraft(operation.result) ? 'aiAdjust.reviewDraft.status' : 'aiAdjust.recovery.succeeded',
+            );
 
         return copy('결과 확인 필요', 'Check result');
     };
@@ -170,6 +178,21 @@ export default function AiConversationSidebar({
             setEditingRequest(null);
             setRequestToolsOpen(false);
             onNewConversation?.();
+        }
+
+        const pending = readPendingExecution(sessionStorage, pendingKey);
+
+        if (
+            pending &&
+            pending.conversationId === next.conversation.conversationId &&
+            next.operations.some((op) => op.operationId === pending.operationId && isExecutionFinished(op))
+        ) {
+            sessionStorage.removeItem(pendingKey);
+            setNotice((current) =>
+                current === t('aiAdjust.recovery.running') || current === t('aiAdjust.recovery.unknown')
+                    ? t('aiAdjust.recovery.complete')
+                    : current,
+            );
         }
 
         detailRef.current = next;
@@ -211,7 +234,7 @@ export default function AiConversationSidebar({
             .then(async () => {
                 const current = detailRef.current;
 
-                if (!current) throw new Error(copy('작성 대화를 불러오고 있어요.', 'Loading your conversation.'));
+                if (!current) throw new AiConversationInputError('loading');
 
                 const draft = dto();
 
@@ -291,7 +314,7 @@ export default function AiConversationSidebar({
         } else if (operation.executionStatus === 'SUCCEEDED' && !operationFailure(operation)) {
             setNotice(
                 copy(
-                    '현재 표가 바뀌어 결과를 덮어쓰지 않았어요. 그때 표 보기로 비교해 주세요.',
+                    '작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.',
                     'Your draft changed. The result is saved for comparison.',
                 ),
             );
@@ -301,7 +324,15 @@ export default function AiConversationSidebar({
     };
     const sendExecution = async (id: number, request: TConversationExecute) => {
         try {
-            return await api.execute(id, request);
+            const operation = await api.execute(id, request);
+            const pending = readPendingExecution(sessionStorage, pendingKey);
+
+            if (pending?.conversationId === id && pending.request.idempotencyKey === request.idempotencyKey) {
+                if (isExecutionFinished(operation)) sessionStorage.removeItem(pendingKey);
+                else sessionStorage.setItem(pendingKey, JSON.stringify({...pending, operationId: operation.operationId}));
+            }
+
+            return operation;
         } catch (e) {
             if ([400, 403, 422, 429].includes((e as {code?: number}).code ?? 0) || aiConversationFailure(e).blocked)
                 sessionStorage.removeItem(pendingKey);
@@ -321,12 +352,9 @@ export default function AiConversationSidebar({
             const current = await sync();
             const uiRevision = useShiftEditorStore.getState().draftRevision;
             // Preserve the exact request on response loss; retry never creates a second action.
-            const saved = sessionStorage.getItem(pendingKey);
+            const saved = readPendingExecution(sessionStorage, pendingKey);
 
-            if (saved)
-                throw new Error(
-                    copy('이전 실행의 결과를 먼저 다시 확인해 주세요.', 'Check the previous execution before starting another.'),
-                );
+            if (saved) throw new AiConversationInputError('pendingExecution');
 
             const request: TConversationExecute = {
                 expectedRevision: current.conversation.revision,
@@ -357,7 +385,7 @@ export default function AiConversationSidebar({
 
             const operation = await sendExecution(current.conversation.conversationId, request);
 
-            if (operation.executionStatus !== 'RUNNING') sessionStorage.removeItem(pendingKey);
+            if (isExecutionFinished(operation)) sessionStorage.removeItem(pendingKey);
 
             await applyCompleted(operation, uiRevision);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
@@ -534,10 +562,7 @@ export default function AiConversationSidebar({
     };
     const retryPending = async () =>
         run(async () => {
-            const saved = JSON.parse(sessionStorage.getItem(pendingKey) ?? 'null') as {
-                conversationId: number;
-                request: TConversationExecute;
-            } | null;
+            const saved = readPendingExecution(sessionStorage, pendingKey);
 
             if (!saved) {
                 if (!detailRef.current) {
@@ -561,13 +586,19 @@ export default function AiConversationSidebar({
             const operation = await sendExecution(saved.conversationId, saved.request);
 
             // After reload, show the recovered result without automatically replacing local edits.
-            if (operation.executionStatus !== 'RUNNING') sessionStorage.removeItem(pendingKey);
+            if (isExecutionFinished(operation)) sessionStorage.removeItem(pendingKey);
 
             await refresh();
+
+            const recovered = detailRef.current?.operations.find((op) => op.operationId === operation.operationId) ?? operation;
+
             setNotice(
-                copy(
-                    '실행 기록을 복구했어요. 결과를 확인하고 이어서 작성할 수 있어요.',
-                    'Execution recovered. Review its result to continue.',
+                t(
+                    isExecutionFinished(recovered)
+                        ? 'aiAdjust.recovery.complete'
+                        : recovered.executionStatus === 'UNKNOWN'
+                          ? 'aiAdjust.recovery.unknown'
+                          : 'aiAdjust.recovery.running',
                 ),
             );
         });
@@ -582,12 +613,7 @@ export default function AiConversationSidebar({
             const current = await sync();
 
             if (reference && current.conversation.latestInterpretationId !== reference) {
-                throw new Error(
-                    copy(
-                        '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
-                        'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',
-                    ),
-                );
+                throw new AiConversationInputError('staleRequest');
             }
 
             const previous =
@@ -602,8 +628,7 @@ export default function AiConversationSidebar({
             const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
             const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
 
-            if (interpretedText.length > 500)
-                throw new Error(copy('요청과 답변을 합쳐 500자 이내로 적어 주세요.', 'Keep the request and reply within 500 characters.'));
+            if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
 
             const interpreted = await api.interpret(current.conversation.conversationId, {
                 expectedRevision: current.conversation.revision,
@@ -648,8 +673,7 @@ export default function AiConversationSidebar({
     };
     const branch = async (version: TResultVersion) =>
         run(async () => {
-            if (sessionStorage.getItem(pendingKey))
-                throw new Error(copy('이전 실행 기록을 먼저 확인해 주세요.', 'Check the previous execution first.'));
+            if (sessionStorage.getItem(pendingKey)) throw new AiConversationInputError('pendingExecution');
 
             const current = await sync(); // Preserve every unsaved manual edit before branching.
             const uiRevision = useShiftEditorStore.getState().draftRevision;
@@ -665,7 +689,7 @@ export default function AiConversationSidebar({
                 setPreview(null);
                 setNotice(
                     copy(
-                        '작성 중인 표가 바뀌어 전환하지 않았어요. 새 작업은 저장되어 있어요.',
+                        '작성 중인 표가 바뀌어서 전환하지 않았어요. 선택한 표로 이어서 작성하려면 아래 버튼을 눌러 주세요.',
                         'The draft changed. The new branch is saved without replacing your edits.',
                     ),
                 );
@@ -679,8 +703,7 @@ export default function AiConversationSidebar({
         });
     const newConversation = () =>
         run(async () => {
-            if (sessionStorage.getItem(pendingKey))
-                throw new Error(copy('이전 결과를 먼저 확인해 주세요.', 'Check the previous result first.'));
+            if (sessionStorage.getItem(pendingKey)) throw new AiConversationInputError('pendingExecution');
 
             const current = await sync();
             const next = await api.startSegment(
@@ -937,7 +960,7 @@ export default function AiConversationSidebar({
                     <div role="separator" className="my-5 flex items-center gap-3 text-xs text-[#667085]">
                         <span className="h-px flex-1 bg-gray-6" />
                         <span>
-                            {previousRun.operationType === 'GENERATE' ? copy('자동완성', 'Autofill') : copy('조절', 'Adjustment')}{' '}
+                            {previousRun.operationType === 'GENERATE' ? copy('자동채우기', 'Autofill') : copy('수정', 'Adjustment')}{' '}
                             {operationAttempt(detail, previousRun.operationId)}
                             {copy('회차 이후 · 추가 요청', ' · follow-up request')}
                         </span>
@@ -1044,7 +1067,10 @@ export default function AiConversationSidebar({
                                 <p className="mt-3">{t('aiAdjust.chat.applyQuestion')}</p>
                             ) : (
                                 <p className="mt-2 text-xs text-[#475467]">
-                                    {copy('이전 해석 · 실행할 수 없음', 'Previous interpretation · unavailable for execution')}
+                                    {copy(
+                                        '이전 요청이에요. 새 요청에서 내용을 확인해 주세요.',
+                                        'Previous interpretation · unavailable for execution',
+                                    )}
                                 </p>
                             )}
                             {localDirty && turn.interpretationId === detail?.conversation.latestInterpretationId && (
@@ -1104,7 +1130,7 @@ export default function AiConversationSidebar({
                         disabled={busy || running || awaitingAdjustment || !detail || preparing}
                         onClick={() => void newConversation()}
                     >
-                        {copy('새 요청', 'New request')}
+                        {copy('새 요청 시작하기', 'New request')}
                     </button>
                     <button className={buttonClass} onClick={onClose}>
                         {copy('닫기', 'Close')}
@@ -1161,7 +1187,7 @@ export default function AiConversationSidebar({
                                             <article className="rounded-xl border border-gray-6 bg-white p-3" inert={preparing}>
                                                 <p className="font-semibold">
                                                     {copy(
-                                                        event.operation.operationType === 'GENERATE' ? '자동완성' : '조절',
+                                                        event.operation.operationType === 'GENERATE' ? '자동채우기' : '수정',
                                                         event.operation.operationType === 'GENERATE' ? 'Autofill' : 'Adjustment',
                                                     )}{' '}
                                                     {operationAttempt(detail, event.operation.operationId)}
@@ -1174,11 +1200,11 @@ export default function AiConversationSidebar({
                                                 {event.operation.executionStatus === 'UNKNOWN' && (
                                                     <p>
                                                         {copy(
-                                                            '서버에서 실행 결과를 확인해야 해요. 같은 요청은 다시 계산하지 않습니다.',
+                                                            '이전 요청의 결과를 아직 확인하지 못했어요. 새로 계산하지 않고 결과를 다시 확인할게요.',
                                                             'The server needs to confirm the outcome. This request will not run again.',
                                                         )}
                                                         <button className={buttonClass} onClick={() => void retryPending()}>
-                                                            {copy('결과 다시 확인', 'Check outcome')}
+                                                            {copy('결과 다시 확인하기', 'Check outcome')}
                                                         </button>
                                                     </p>
                                                 )}
@@ -1199,11 +1225,7 @@ export default function AiConversationSidebar({
                                                         )}
                                                     </p>
                                                 )}
-                                                {event.operation.result?.goalResults?.map((goal, index) => (
-                                                    <p key={index}>
-                                                        {goal.goalStatus}: {goal.beforeSingleNightRuns} → {goal.afterSingleNightRuns}
-                                                    </p>
-                                                ))}
+                                                {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
                                                 {event.operation.result && (
                                                     <ConversationEvidence
                                                         result={event.operation.result}
@@ -1228,7 +1250,7 @@ export default function AiConversationSidebar({
                                                 {event.operation.resultVersionId && (
                                                     <div className="mt-2 flex flex-wrap gap-2">
                                                         <button className={buttonClass} onClick={() => void view(event.operation)}>
-                                                            {copy('그때 표 보기', 'View this result')}
+                                                            {copy('이 결과 보기', 'View this result')}
                                                         </button>
                                                         <button className={buttonClass} onClick={() => void view(event.operation, true)}>
                                                             {copy('전후 비교', 'Compare')}
@@ -1296,7 +1318,13 @@ export default function AiConversationSidebar({
                                                 !operationFailure(event.operation) &&
                                                 event.operation.applyStatus === 'APPLIED' && (
                                                     <AssistantMessage>
-                                                        <span className="whitespace-pre-line">{t('aiAdjust.generationCompleted')}</span>
+                                                        <span className="whitespace-pre-line">
+                                                            {t(
+                                                                event.operation.result && isGenerateReviewDraft(event.operation.result)
+                                                                    ? 'aiAdjust.reviewDraft.completed'
+                                                                    : 'aiAdjust.generationCompleted',
+                                                            )}
+                                                        </span>
                                                     </AssistantMessage>
                                                 )}
                                         </div>
@@ -1428,7 +1456,7 @@ export default function AiConversationSidebar({
                             <AiFailureMessage message={error.message}>
                                 {!error.blocked && (
                                     <button className={buttonClass} disabled={busy || running} onClick={() => void retryPending()}>
-                                        {copy('실행 기록 다시 확인', 'Check execution history')}
+                                        {copy('결과 다시 확인하기', 'Check execution history')}
                                     </button>
                                 )}
                             </AiFailureMessage>
@@ -1488,12 +1516,8 @@ export default function AiConversationSidebar({
                     )}
                     {selectedSuggestion && (
                         <section className="rounded-xl bg-gray-7 p-3" aria-label="제안 확인">
-                            <p>이 변경 내용을 이번 실행에 적용할까요?</p>
-                            {selectedSuggestion.suggestion.changes.map((c, i) => (
-                                <p key={i}>
-                                    {c.reason} · {String(c.oldValue)} → {String(c.proposedValue)}
-                                </p>
-                            ))}
+                            <p>{t('aiAdjust.chat.applyQuestion')}</p>
+                            <ConversationSuggestionChanges suggestion={selectedSuggestion.suggestion} />
                             <button className={buttonClass} onClick={() => setSelectedSuggestion(undefined)}>
                                 취소
                             </button>
@@ -1507,7 +1531,7 @@ export default function AiConversationSidebar({
                                     void execute('ADJUST', undefined, selected.op.interpretationId ?? undefined, selected);
                                 }}
                             >
-                                변경 확인하고 조절 실행
+                                {copy('이 변경으로 수정하기', 'Apply these changes')}
                             </button>
                         </section>
                     )}
@@ -1535,13 +1559,13 @@ export default function AiConversationSidebar({
                                     })
                                 }
                             >
-                                {copy('저장된 새 작업 열기', 'Open the saved new branch')}
+                                {copy('이 표로 이어서 작성하기', 'Open the saved new branch')}
                             </button>
                         )}
                         <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
                             {!!preferences.length && (
                                 <details>
-                                    <summary className="text-sm">{copy('확인한 자주 쓰는 요청', 'Saved requests')}</summary>
+                                    <summary className="text-sm">{copy('자주 쓰는 요청', 'Saved requests')}</summary>
                                     {preferences.map((p) => (
                                         <div className="flex gap-2" key={p.id}>
                                             <button className="text-left text-sm underline" onClick={() => setText(p.value)}>
@@ -1643,7 +1667,7 @@ export default function AiConversationSidebar({
                                         onClick={() => setRequestToolsOpen((value) => !value)}
                                         aria-expanded={requestToolsOpen}
                                     >
-                                        {copy('요청 저장', 'Save request')}
+                                        {copy('자주 쓰는 요청으로 저장하기', 'Save request')}
                                     </button>
                                 )}
                             </div>
@@ -1667,14 +1691,14 @@ export default function AiConversationSidebar({
                                             })
                                         }
                                     >
-                                        {copy('요청 저장', 'Save request')}
+                                        {copy('자주 쓰는 요청으로 저장하기', 'Save request')}
                                     </button>
                                 </div>
                             )}
                             {busy && (
                                 <p role="status" className="text-sm">
                                     {awaitingAdjustment
-                                        ? copy('근무표를 조절하고 있어요.', 'Adjusting your schedule.')
+                                        ? copy('근무표를 수정하고 있어요.', 'Adjusting your schedule.')
                                         : copy('요청을 확인하고 있어요.', 'Reviewing your request.')}
                                 </p>
                             )}

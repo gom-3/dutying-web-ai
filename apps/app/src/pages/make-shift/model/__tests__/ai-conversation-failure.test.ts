@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
-import {aiConversationFailure} from '../ai-conversation-failure';
+import {AiConversationInputError, aiConversationFailure} from '../ai-conversation-failure';
 
 describe.each(['ko', 'en'])('user-facing AI errors (%s)', (language) => {
     beforeEach(async () => { await i18n.changeLanguage(language); });
@@ -17,6 +17,9 @@ describe.each(['ko', 'en'])('user-facing AI errors (%s)', (language) => {
     it('keeps local translated explanations for a changed schedule', () => {
         const explanation = i18n.t('aiAdjust.stale');
         expect(aiConversationFailure(new Error(explanation)).message).toBe(explanation);
+    });
+    it.each(['loading', 'pendingExecution', 'staleRequest', 'requestTooLong'] as const)('preserves actionable local guidance: %s', reason => {
+        expect(aiConversationFailure(new AiConversationInputError(reason))).toEqual({message: i18n.t(`aiAdjust.localError.${reason}`), blocked: false});
     });
     it('extracts only the wait duration from a rate limit response', () => {
         const failure = aiConversationFailure({code: 429, message: 'QuotaLimiter INTERNAL_TRACE: 약 25분 후 다시 시도해 주세요.'});

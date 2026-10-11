@@ -1018,7 +1018,7 @@ describe('AiAutofill adjust panel', () => {
 
         await completeFirstFill(user);
 
-        // 자동완성 뒤 사람이 한 칸 고친 상황을 만든다.
+        // 자동채우기 뒤 사람이 한 칸 고친 상황을 만든다.
         act(() => {
             const doc = useShiftEditorStore.getState().doc;
 

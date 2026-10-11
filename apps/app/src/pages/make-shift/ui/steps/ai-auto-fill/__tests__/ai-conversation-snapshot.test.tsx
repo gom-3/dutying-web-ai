@@ -37,12 +37,12 @@ describe('conversation snapshot screen', () => {
         const onContinue = vi.fn();
         render(<AiConversationSnapshot version={result} before={before} disabled={false} onClose={vi.fn()} onContinue={onContinue} />);
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
-        expect(screen.getByText('읽기 전용 스냅샷', {exact: false})).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '실행 전'}));
-        await userEvent.click(screen.getByRole('button', {name: '이 표에서 이어서 작성'}));
+        expect(screen.getByText('이전에 만든 근무표예요. 여기서는 수정할 수 없어요.', {exact: false})).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
+        await userEvent.click(screen.getByRole('button', {name: '이 표로 이어서 작성하기'}));
         expect(onContinue).toHaveBeenLastCalledWith(before);
-        await userEvent.click(screen.getByRole('button', {name: '실행 결과'}));
-        await userEvent.click(screen.getByRole('button', {name: '이 표에서 이어서 작성'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
+        await userEvent.click(screen.getByRole('button', {name: '이 표로 이어서 작성하기'}));
         expect(onContinue).toHaveBeenLastCalledWith(result);
         expect(useShiftEditorStore.getState().doc).toEqual(current.doc);
         expect(useShiftEditorStore.getState().selection).toEqual(current.selection);

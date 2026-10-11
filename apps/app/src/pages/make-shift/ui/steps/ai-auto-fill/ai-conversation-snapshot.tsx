@@ -44,8 +44,8 @@ export default function AiConversationSnapshot({version, before, disabled, onClo
                                 {copy('월 근무표', ' schedule')}
                             </Dialog.Title>
                             <Dialog.Description className="text-sm text-gray-4">
-                                {copy('읽기 전용 스냅샷', 'Read-only snapshot')} ·{' '}
-                                {showBefore ? copy('실행 전', 'Before') : copy('실행 결과', 'Result')}
+                                {copy('이전에 만든 근무표예요. 여기서는 수정할 수 없어요.', 'Read-only snapshot')} ·{' '}
+                                {showBefore ? copy('변경 전', 'Before') : copy('변경 후', 'Result')}
                             </Dialog.Description>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -57,7 +57,7 @@ export default function AiConversationSnapshot({version, before, disabled, onClo
                                         onClick={() => setShowBefore(true)}
                                         className="rounded-lg border border-gray-5 px-3 py-2 text-sm aria-pressed:bg-main-light"
                                     >
-                                        {copy('실행 전', 'Before')}
+                                        {copy('변경 전', 'Before')}
                                     </button>
                                     <button
                                         type="button"
@@ -65,7 +65,7 @@ export default function AiConversationSnapshot({version, before, disabled, onClo
                                         onClick={() => setShowBefore(false)}
                                         className="rounded-lg border border-gray-5 px-3 py-2 text-sm aria-pressed:bg-main-light"
                                     >
-                                        {copy('실행 결과', 'Result')}
+                                        {copy('변경 후', 'Result')}
                                     </button>
                                 </div>
                             )}
@@ -75,7 +75,7 @@ export default function AiConversationSnapshot({version, before, disabled, onClo
                                 onClick={() => onContinue(selected)}
                                 className="rounded-lg bg-main-1 px-4 py-2 text-sm text-white disabled:opacity-40"
                             >
-                                {copy('이 표에서 이어서 작성', 'Continue from this result')}
+                                {copy('이 표로 이어서 작성하기', 'Continue from this result')}
                             </button>
                             <button type="button" onClick={onClose} className="rounded-lg border border-gray-5 px-3 py-2 text-sm">
                                 {copy('미리보기 닫기', 'Close preview')}

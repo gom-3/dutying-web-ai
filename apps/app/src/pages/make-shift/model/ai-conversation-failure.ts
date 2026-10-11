@@ -7,6 +7,13 @@ export type TAiConversationFailure = {
     recovery?: 'retry' | 'revise' | 'review';
 };
 
+/** Trusted UI failures carry a fixed reason, never arbitrary server/exception text. */
+export class AiConversationInputError extends Error {
+    constructor(readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong') {
+        super(reason);
+    }
+}
+
 // Local, translated UI explanations may be shown; arbitrary API/exception text may not.
 function isUiExplanation(message: string, value: unknown): boolean {
     if (typeof value === 'string') return value === message;
@@ -27,6 +34,8 @@ function waitMessage(message?: string): string | undefined {
 
 /** Keep server wait times, but do not describe access/allowance limits as draft conflicts. */
 export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjust.failed')): TAiConversationFailure {
+    if (error instanceof AiConversationInputError) return {message: i18n.t(`aiAdjust.localError.${error.reason}`), blocked: false};
+
     const source = error as {message?: string; serverCode?: string; code?: number} | null;
     const code = source?.serverCode;
     const message = typeof source?.message === 'string' && source.message.trim().length > 0 ? source.message : undefined;
