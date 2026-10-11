@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     startSegment: vi.fn(),
     preferences: vi.fn(),
     savePreference: vi.fn(),
+    replacePreference: vi.fn(),
     deletePreference: vi.fn(),
     applyAdjustedDoc: vi.fn(),
     clearScheduleValidationFromApi: vi.fn(),
@@ -566,6 +567,65 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret).toHaveBeenCalledOnce();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it('does not overwrite a manual edit made while downloading the calculated result', async () => {
+        let finish!: (version: TResultVersion) => void;
+        mocks.execute.mockResolvedValue(operation);
+        mocks.version.mockImplementationOnce(() => new Promise<TResultVersion>(resolve => { finish = resolve; }));
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
+        act(() => {
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+        });
+        await act(async () => { finish({...source, versionId: 'result:1', cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]}); });
+        await screen.findByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.');
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
+    });
+    it('selecting another saved request stops editing the previous saved request', async () => {
+        mocks.preferences.mockResolvedValue([
+            {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
+            {id: 2, category: 'REQUEST_TEXT', value: '야간을 줄여줘', provenance: 'USER', confirmedAt: source.createdAt},
+        ]);
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: /^수정하고 싶은 부분이 있어요$/}));
+        await userEvent.click(screen.getAllByRole('button', {name: /^수정$/})[0]!);
+        await userEvent.click(screen.getByText('야간을 줄여줘'));
+        await userEvent.click(screen.getByRole('button', {name: '자주 쓰는 요청으로 저장하기'}));
+        await userEvent.click(screen.getAllByRole('button', {name: '자주 쓰는 요청으로 저장하기'})[1]!);
+        await waitFor(() => expect(mocks.savePreference).toHaveBeenCalledWith('야간을 줄여줘', 'EXPLICIT_USER_CONFIRMATION'));
+        expect(mocks.replacePreference).not.toHaveBeenCalled();
+    });
+    it.each(['expired', 'context', 'revision', 'current'] as const)('rechecks a selected suggestion before execution: %s', async (change) => {
+        const suggestion = {suggestionId: 'suggestion:1', inputDigest: 'digest:1', baseRevision: 0, expiresAt: '2099-01-01T00:00:00Z', verificationStatus: 'VERIFIED_FEASIBLE', applyEnabled: true, changes: [{kind: 'NUMERIC_GOAL', oldValue: 12, proposedValue: 11}]};
+        current.conversation.latestInterpretationId = 'interpretation:1';
+        current.turns = [{eventId: 1, sequence: 1, actor: 'ASSISTANT', type: 'INTERPRETATION', text: null, interpretationId: 'interpretation:1', baseRevision: 0, contextHash: current.contextHash, interpretation: null, createdAt: source.createdAt}];
+        current.operations = [{...operation, operationType: 'ADJUST', sequence: 2, executionStatus: 'FAILED', applyStatus: 'NOT_APPLIED', resultVersionId: null, interpretationId: 'interpretation:1', result: {operationType: 'ADJUST', applicable: false, draftRevision: 0, resultType: 'PATCH', changedCells: [], validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1}, violations: []}, unmetInstructions: [], sameAsPrevious: false, engineResult: {status: 'REJECTED'}, failure: {reasonCode: 'HARD_RULE_CONFLICT', message: '', suggestions: [suggestion]}}}];
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '변경 제안 보기'}));
+        if (change === 'expired') suggestion.expiresAt = '2000-01-01T00:00:00Z';
+        if (change === 'context') current = {...current, contextHash: 'rules:2'};
+        if (change === 'revision') current = {...current, conversation: {...current.conversation, revision: 1}};
+        await userEvent.click(screen.getByRole('button', {name: '이 변경으로 수정하기'}));
+        if (change === 'current') {
+            await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+            expect(mocks.execute.mock.calls[0]![1]).toMatchObject({failureSuggestionId: 'suggestion:1', suggestionConfirmed: true});
+        } else {
+            expect(await screen.findByText('표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요. 최신 요청으로 다시 수정해 주세요.')).toBeVisible();
+            expect(mocks.execute).not.toHaveBeenCalled();
+            expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
+        }
+    });
+    it('explicitly updates a saved request with an update label', async () => {
+        mocks.preferences.mockResolvedValue([{id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt}]);
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: /^수정하고 싶은 부분이 있어요$/}));
+        await userEvent.click(screen.getByRole('button', {name: /^수정$/}));
+        await userEvent.type(screen.getByRole('textbox'), ' 이번 달만');
+        await userEvent.click(screen.getByRole('button', {name: '저장한 요청 수정하기'}));
+        await userEvent.click(screen.getAllByRole('button', {name: '저장한 요청 수정하기'})[1]!);
+        await waitFor(() => expect(mocks.replacePreference).toHaveBeenCalledWith(1, '휴무 균형을 맞춰줘 이번 달만'));
+        expect(mocks.savePreference).not.toHaveBeenCalled();
+    });
     it('saved request suggestions only fill the composer', async () => {
         mocks.preferences.mockResolvedValue([
             {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
@@ -864,6 +924,41 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         await userEvent.click(pending);
         await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalled();
+        expect(current.conversation.revision).toBe(2);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('keeps newer manual edits when they occur while resuming a saved result', async () => {
+        mocks.startSegment.mockImplementation(async () => {
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+            mocks.draftFixed = true;
+            current = {
+                ...current,
+                conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
+                draft: {...source, versionId: 'result:1', cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]},
+            };
+
+            return current;
+        });
+        mocks.sync.mockImplementation(async (_id: number, request: {expectedRevision: number; cells: typeof source.cells}) => {
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['N']}]});
+            expect(request.expectedRevision).toBe(1);
+            current = {...current, conversation: {...current.conversation, revision: 2}, draft: {...current.draft, cells: request.cells}};
+
+            return current;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: /이 결과 보기|View this result/}));
+        await userEvent.click(await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Continue from this result/}));
+
+        const pending = await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Open the saved new branch/});
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        await userEvent.click(pending);
+        await screen.findByText('표가 바뀌어서 이전 결과로 전환하지 않았어요. 작성 중인 내용을 확인한 뒤 다시 눌러 주세요.');
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['N']);
         expect(mocks.sync).toHaveBeenCalled();
         expect(current.conversation.revision).toBe(2);
         expect(mocks.execute).not.toHaveBeenCalled();

@@ -3,13 +3,17 @@ import i18n from '@/i18n';
 export type TAiConversationFailure = {
     message: string;
     blocked: boolean;
+    /** A local input issue does not need an execution-history lookup. */
+    checkOutcome?: boolean;
     /** Present only for a completed execution that did not produce an applicable result. */
     recovery?: 'retry' | 'revise' | 'review';
 };
 
 /** Trusted UI failures carry a fixed reason, never arbitrary server/exception text. */
 export class AiConversationInputError extends Error {
-    constructor(readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong') {
+    constructor(
+        readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong' | 'expiredSuggestion' | 'draftChanged',
+    ) {
         super(reason);
     }
 }
@@ -34,7 +38,12 @@ function waitMessage(message?: string): string | undefined {
 
 /** Keep server wait times, but do not describe access/allowance limits as draft conflicts. */
 export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjust.failed')): TAiConversationFailure {
-    if (error instanceof AiConversationInputError) return {message: i18n.t(`aiAdjust.localError.${error.reason}`), blocked: false};
+    if (error instanceof AiConversationInputError)
+        return {
+            message: i18n.t(`aiAdjust.localError.${error.reason}`),
+            blocked: false,
+            checkOutcome: error.reason === 'pendingExecution' || error.reason === 'loading',
+        };
 
     const source = error as {message?: string; serverCode?: string; code?: number} | null;
     const code = source?.serverCode;

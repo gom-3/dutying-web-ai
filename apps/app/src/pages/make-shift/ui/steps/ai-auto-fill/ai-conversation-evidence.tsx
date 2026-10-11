@@ -1,5 +1,6 @@
 import type {TAutofillResponse, TFailureSuggestion, TQualityMeasurement} from '@dutying/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 export type {TFailureSuggestion} from '@dutying/api/ward';
 
 const metricUnits: Record<string, string> = {
@@ -142,7 +143,7 @@ export function ConversationEvidence({
                         </p>
                         <button
                             className="mt-1 rounded border px-2 py-1"
-                            disabled={disabled || expired || !s.applyEnabled || s.verificationStatus !== 'VERIFIED_FEASIBLE'}
+                            disabled={disabled || expired || !isFailureSuggestionAvailable(s)}
                             onClick={() => onSelect(s)}
                         >
                             {t('aiAdjust.evidence.select')}

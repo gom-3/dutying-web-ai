@@ -251,6 +251,8 @@ export const aiAdjustKo = {
     template: '규칙',
     value: '값',
     localError: {
+        draftChanged: '표가 바뀌어서 이전 결과로 전환하지 않았어요. 작성 중인 내용을 확인한 뒤 다시 눌러 주세요.',
+        expiredSuggestion: '표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요. 최신 요청으로 다시 수정해 주세요.',
         loading: '이전 대화를 불러오고 있어요. 잠시만 기다려 주세요.',
         pendingExecution: '이전 요청의 결과를 먼저 확인해 주세요. 아래에서 결과를 다시 확인할 수 있어요.',
         staleRequest: '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
@@ -626,6 +628,8 @@ export const aiAdjustEn = {
     template: 'Rule',
     value: 'Value',
     localError: {
+        draftChanged: 'Your draft changed, so the previous result was not restored. Review your edits before trying again.',
+        expiredSuggestion: 'The schedule or conditions changed, or the suggestion expired. Submit a new request with the current schedule.',
         loading: 'Loading your conversation. Please wait.',
         pendingExecution: 'Check the previous request before starting another. Use Check result below.',
         staleRequest: 'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',

@@ -22,6 +22,7 @@ import {
     requestTextForTurn,
     visibleConversationTurns,
 } from '../../../model/conversation-presentation';
+import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {
     conversationApi,
     conversationEvents,
@@ -158,6 +159,10 @@ export default function AiConversationSidebar({
     const pendingKey = `dutying.conversation:${isWardAdminAccessToken(useAuthStore.getState().accessToken) ? 'admin' : 'account'}:${useAuthStore.getState().accountId}:${wardId}:${teamId}:${year}:${month}`;
     const ko = i18n.language.startsWith('ko');
     const copy = (korean: string, english: string) => (ko ? korean : english);
+    const preferenceSaveLabel =
+        editingPreferenceId === undefined
+            ? copy('자주 쓰는 요청으로 저장하기', 'Save request')
+            : copy('저장한 요청 수정하기', 'Update saved request');
     const operationStatusLabel = (operation: TConversationOperation) => {
         if (operationFailure(operation)) return copy('실패', 'Not completed');
 
@@ -310,7 +315,16 @@ export default function AiConversationSidebar({
             operation.resultVersionId &&
             useShiftEditorStore.getState().draftRevision === uiRevision
         ) {
-            restore(await api.version(operation.resultVersionId));
+            const version = await api.version(operation.resultVersionId);
+
+            if (useShiftEditorStore.getState().draftRevision === uiRevision) restore(version);
+            else
+                setNotice(
+                    copy(
+                        '작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.',
+                        'Your draft changed. The result is saved for comparison.',
+                    ),
+                );
         } else if (operation.executionStatus === 'SUCCEEDED' && !operationFailure(operation)) {
             setNotice(
                 copy(
@@ -349,7 +363,18 @@ export default function AiConversationSidebar({
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
 
+            if (selection) await refresh();
+
             const current = await sync();
+
+            if (
+                selection &&
+                (!isConversationSuggestionCurrent(current, selection.op) || !isFailureSuggestionAvailable(selection.suggestion))
+            ) {
+                setSelectedSuggestion(undefined);
+                throw new AiConversationInputError('expiredSuggestion');
+            }
+
             const uiRevision = useShiftEditorStore.getState().draftRevision;
             // Preserve the exact request on response loss; retry never creates a second action.
             const saved = readPendingExecution(sessionStorage, pendingKey);
@@ -386,6 +411,8 @@ export default function AiConversationSidebar({
             const operation = await sendExecution(current.conversation.conversationId, request);
 
             if (isExecutionFinished(operation)) sessionStorage.removeItem(pendingKey);
+
+            if (selection) setSelectedSuggestion(undefined);
 
             await applyCompleted(operation, uiRevision);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
@@ -645,6 +672,8 @@ export default function AiConversationSidebar({
             });
 
             setText('');
+            setEditingPreferenceId(undefined);
+            setRequestToolsOpen(false);
             setEditingRequest(null);
             setPreviousId(interpreted.interpretationId ?? undefined);
             setChange('ADD');
@@ -670,6 +699,12 @@ export default function AiConversationSidebar({
         setRebuild(false);
         setPreview(null);
         setNotice(null);
+        setPendingBranch(null);
+        setReportOperation(null);
+        setReportNote('');
+        setSelectedSuggestion(undefined);
+        setEditingPreferenceId(undefined);
+        setRequestToolsOpen(false);
     };
     const branch = async (version: TResultVersion) =>
         run(async () => {
@@ -1232,17 +1267,7 @@ export default function AiConversationSidebar({
                                                         nurseName={(id) => doc.workerMeta[id]?.name ?? id}
                                                         disabled={busy || running}
                                                         suggestionsCurrent={
-                                                            !localDirty &&
-                                                            event.operation.baseRevision === detail.conversation.revision &&
-                                                            event.operation.interpretationId ===
-                                                                detail.conversation.latestInterpretationId &&
-                                                            Boolean(
-                                                                detail.turns.find(
-                                                                    (turn) =>
-                                                                        turn.interpretationId === event.operation.interpretationId &&
-                                                                        turn.contextHash === detail.contextHash,
-                                                                ),
-                                                            )
+                                                            !localDirty && isConversationSuggestionCurrent(detail, event.operation)
                                                         }
                                                         onSelect={(suggestion) => setSelectedSuggestion({op: event.operation, suggestion})}
                                                     />
@@ -1454,8 +1479,8 @@ export default function AiConversationSidebar({
                             )}
                         {error && (
                             <AiFailureMessage message={error.message}>
-                                {!error.blocked && (
-                                    <button className={buttonClass} disabled={busy || running} onClick={() => void retryPending()}>
+                                {!error.blocked && error.checkOutcome !== false && (
+                                    <button className={buttonClass} disabled={busy} onClick={() => void retryPending()}>
                                         {copy('결과 다시 확인하기', 'Check execution history')}
                                     </button>
                                 )}
@@ -1515,11 +1540,11 @@ export default function AiConversationSidebar({
                         </button>
                     )}
                     {selectedSuggestion && (
-                        <section className="rounded-xl bg-gray-7 p-3" aria-label="제안 확인">
+                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('제안 확인', 'Review suggestion')}>
                             <p>{t('aiAdjust.chat.applyQuestion')}</p>
                             <ConversationSuggestionChanges suggestion={selectedSuggestion.suggestion} />
-                            <button className={buttonClass} onClick={() => setSelectedSuggestion(undefined)}>
-                                취소
+                            <button className={buttonClass} disabled={busy} onClick={() => setSelectedSuggestion(undefined)}>
+                                {copy('취소', 'Cancel')}
                             </button>
                             <button
                                 className={buttonClass}
@@ -1527,7 +1552,6 @@ export default function AiConversationSidebar({
                                 onClick={() => {
                                     const selected = selectedSuggestion;
 
-                                    setSelectedSuggestion(undefined);
                                     void execute('ADJUST', undefined, selected.op.interpretationId ?? undefined, selected);
                                 }}
                             >
@@ -1551,7 +1575,14 @@ export default function AiConversationSidebar({
                                 disabled={busy || running}
                                 onClick={() =>
                                     void run(async () => {
+                                        const uiRevision = useShiftEditorStore.getState().draftRevision;
+
                                         await sync();
+
+                                        if (useShiftEditorStore.getState().draftRevision !== uiRevision) {
+                                            throw new AiConversationInputError('draftChanged');
+                                        }
+
                                         resetSectionUi(); // sync already installed the current revision of this same conversation.
                                         restore(pendingBranch.draft);
                                         setPendingBranch(null);
@@ -1568,11 +1599,20 @@ export default function AiConversationSidebar({
                                     <summary className="text-sm">{copy('자주 쓰는 요청', 'Saved requests')}</summary>
                                     {preferences.map((p) => (
                                         <div className="flex gap-2" key={p.id}>
-                                            <button className="text-left text-sm underline" onClick={() => setText(p.value)}>
+                                            <button
+                                                className="text-left text-sm underline"
+                                                disabled={busy || running}
+                                                onClick={() => {
+                                                    setText(p.value);
+                                                    setEditingPreferenceId(undefined);
+                                                    setRequestToolsOpen(false);
+                                                }}
+                                            >
                                                 {p.value}
                                             </button>
                                             <button
                                                 className="text-sm underline"
+                                                disabled={busy || running}
                                                 onClick={() => {
                                                     setText(p.value);
                                                     setEditingPreferenceId(p.id);
@@ -1582,9 +1622,13 @@ export default function AiConversationSidebar({
                                             </button>
                                             <button
                                                 className="text-sm"
+                                                disabled={busy || running}
                                                 onClick={() =>
                                                     void run(async () => {
                                                         await api.deletePreference(p.id);
+
+                                                        if (editingPreferenceId === p.id) setEditingPreferenceId(undefined);
+
                                                         setPreferences(await api.preferences());
                                                     })
                                                 }
@@ -1667,7 +1711,7 @@ export default function AiConversationSidebar({
                                         onClick={() => setRequestToolsOpen((value) => !value)}
                                         aria-expanded={requestToolsOpen}
                                     >
-                                        {copy('자주 쓰는 요청으로 저장하기', 'Save request')}
+                                        {preferenceSaveLabel}
                                     </button>
                                 )}
                             </div>
@@ -1691,7 +1735,7 @@ export default function AiConversationSidebar({
                                             })
                                         }
                                     >
-                                        {copy('자주 쓰는 요청으로 저장하기', 'Save request')}
+                                        {preferenceSaveLabel}
                                     </button>
                                 </div>
                             )}
