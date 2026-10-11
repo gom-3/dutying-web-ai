@@ -28,6 +28,8 @@
 
 ## 남은 순서 (사용자·서버 담당자)
 
+역할별 간단 안내와 배포 후 자동 점검 명령은 [dev 다음 작업 안내](toss-dev-next-steps-2026-10-11.md)를 참고하세요. CI/CD는 기존 담당자가 진행합니다.
+
 1. 서버·프런트 브랜치를 리뷰하고 dev에 함께 배포합니다. DBA는 서버 `docs/toss-billing-dba-handoff-2026-10-11.md`대로 선행 스키마를 확인합니다. 신규 DDL은 없습니다.
 2. 토스 개발자센터에서 **빌링용 테스트 clientKey/secretKey 및 해당 MID**를 서버 비밀 설정에 넣습니다. 실거래 MID는 `bill_dutyic46q`입니다. secretKey를 프런트 env나 문서에 넣지 마세요.
 3. 서버 설정을 아래처럼 맞추고, 실제 활성 Plus 정책·공개 정보 확인 후 `commercial.review-ready`를 true로 바꿉니다. 이 값의 기본값은 false입니다. 배포만으로 결제를 열지 않습니다.
