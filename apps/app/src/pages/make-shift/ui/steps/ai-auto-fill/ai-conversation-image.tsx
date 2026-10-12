@@ -31,7 +31,7 @@ export const AiConversationImage = memo(function AiConversationImage({
     const [actualSize, setActualSize] = useState(false);
     const snapshot = useMemo(() => (version ? buildConversationSnapshot(version) : null), [version]);
     const violations = useMemo(() => new Map(), []);
-    const title = copy('완성된 근무표 이미지', 'Completed schedule image');
+    const title = copy('근무표 결과 이미지', 'Schedule result image');
 
     useEffect(() => {
         if (!host.current) return;
@@ -188,8 +188,8 @@ export const AiConversationImage = memo(function AiConversationImage({
                         <>
                             <p>
                                 {copy(
-                                    '근무표 이미지를 불러오지 못했어요. 아래 ‘이 결과 보기’로 표를 확인할 수 있어요.',
-                                    'The image could not be loaded. Use View this result below.',
+                                    '근무표 이미지를 불러오지 못했어요. 아래 ‘근무표 열기’로 확인해 주세요.',
+                                    'The image could not be loaded. Use Open schedule below.',
                                 )}
                             </p>
                             <button type="button" className="rounded border px-3 py-2" onClick={() => setAttempt((value) => value + 1)}>

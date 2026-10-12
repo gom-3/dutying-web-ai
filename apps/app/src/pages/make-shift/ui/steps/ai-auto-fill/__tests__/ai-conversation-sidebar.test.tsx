@@ -207,7 +207,7 @@ describe('persistent schedule sidebar', () => {
                 }),
         );
         renderSidebar({onBusyChange});
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과 보기'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무표 열기'}));
         await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
         expect(onBusyChange.mock.calls.every(([value]) => value === false)).toBe(true);
         await act(async () => resolveVersion(source));
@@ -299,7 +299,7 @@ describe('persistent schedule sidebar', () => {
         const history = within(summary.closest('details')!);
         expect(await history.findByRole('alert')).toHaveTextContent(/정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요|within the time limit/);
         expect(history.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
-        expect(history.queryByRole('button', {name: /이 결과 보기|View this result/})).not.toBeInTheDocument();
+        expect(history.queryByRole('button', {name: /근무표 열기|View this result/})).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -340,7 +340,7 @@ describe('persistent schedule sidebar', () => {
 
         const history = within(summary.closest('details')!);
 
-        await userEvent.click(history.getByRole('button', {name: /전후 비교|이전 근무표와 비교|Compare/}));
+        await userEvent.click(history.getByRole('button', {name: /전후 비교|변경 전후 비교|Compare/}));
         await screen.findByRole('dialog');
         expect(mocks.version).toHaveBeenCalledWith('source:1');
         expect(useShiftEditorStore.getState().doc).toEqual(docBefore);
@@ -600,7 +600,7 @@ describe('persistent schedule sidebar', () => {
 
     it('loads records without re-executing and previews a result without mutating the editor', async () => {
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /이 결과 보기|View this result/}));
+        await userEvent.click(await screen.findByRole('button', {name: /근무표 열기|View this result/}));
         await screen.findByRole('dialog');
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
@@ -960,7 +960,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.startSegment).toHaveBeenCalledWith(1, 'source:1', 0);
         expect(screen.getByText('이전 요청')).toBeVisible();
         expect(screen.getByText(/여기서부터 새 요청|New requests/)).toBeVisible();
-        expect(screen.getByRole('button', {name: /전후 비교|이전 근무표와 비교|Compare/})).toBeVisible();
+        expect(screen.getByRole('button', {name: /전후 비교|변경 전후 비교|Compare/})).toBeVisible();
         expect(mocks.branch).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -984,7 +984,7 @@ describe('persistent schedule sidebar', () => {
             return current;
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /이 결과 보기|View this result/}));
+        await userEvent.click(await screen.findByRole('button', {name: /근무표 열기|View this result/}));
         await userEvent.click(await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Continue from this result/}));
 
         const pending = await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Open the saved new branch/});
@@ -1017,7 +1017,7 @@ describe('persistent schedule sidebar', () => {
             return current;
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /이 결과 보기|View this result/}));
+        await userEvent.click(await screen.findByRole('button', {name: /근무표 열기|View this result/}));
         await userEvent.click(await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Continue from this result/}));
 
         const pending = await screen.findByRole('button', {name: /이 표로 이어서 작성하기|Open the saved new branch/});

@@ -699,9 +699,12 @@ export default function AiConversationSidebar({
         run(async () => {
             if (!op.resultVersionId) return;
 
-            const version = await api.version(op.resultVersionId);
+            const [version, before] = await Promise.all([
+                api.version(op.resultVersionId),
+                compare && op.sourceVersionId !== op.resultVersionId ? api.version(op.sourceVersionId) : undefined,
+            ]);
 
-            setPreview({version, ...(compare ? {before: await api.version(op.sourceVersionId)} : {})});
+            setPreview({version, ...(before ? {before} : {})});
         });
     const resetSectionUi = () => {
         onNewConversation?.();
@@ -1285,12 +1288,22 @@ export default function AiConversationSidebar({
                                                 )}
                                                 {event.operation.resultVersionId && (
                                                     <div className="mt-2 flex flex-wrap gap-2">
-                                                        <button className={buttonClass} onClick={() => void view(event.operation)}>
-                                                            {copy('이 결과 보기', 'View this result')}
+                                                        <button
+                                                            className={buttonClass}
+                                                            disabled={busy}
+                                                            onClick={() => void view(event.operation)}
+                                                        >
+                                                            {copy('근무표 열기', 'Open schedule')}
                                                         </button>
-                                                        <button className={buttonClass} onClick={() => void view(event.operation, true)}>
-                                                            {copy('이전 근무표와 비교', 'Compare with previous schedule')}
-                                                        </button>
+                                                        {event.operation.sourceVersionId !== event.operation.resultVersionId && (
+                                                            <button
+                                                                className={buttonClass}
+                                                                disabled={busy}
+                                                                onClick={() => void view(event.operation, true)}
+                                                            >
+                                                                {copy('변경 전후 비교', 'Compare before and after')}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 )}
                                             </article>

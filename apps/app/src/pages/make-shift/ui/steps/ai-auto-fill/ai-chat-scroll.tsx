@@ -1,4 +1,6 @@
-import {useLayoutEffect, useRef, type ReactNode} from 'react';
+import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+
+import i18n from '@/i18n';
 
 type TProps = {
     children: ReactNode;
@@ -12,6 +14,9 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
     const viewport = useRef<HTMLDivElement>(null);
     const content = useRef<HTMLDivElement>(null);
 
+    const following = useRef(true);
+    const [showLatest, setShowLatest] = useState(false);
+
     useLayoutEffect(() => {
         const element = viewport.current;
         const messages = content.current;
@@ -21,12 +26,13 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
         let frame: number | undefined;
 
         const followLatestMessage = () => {
+            if (!following.current) return;
             if (frame !== undefined) cancelAnimationFrame(frame);
 
             // Measure after messages and the composer have finished changing the layout.
             frame = requestAnimationFrame(() => {
                 frame = undefined;
-                element.scrollTo?.({top: element.scrollHeight});
+                if (following.current) element.scrollTo?.({top: element.scrollHeight, behavior: 'instant'});
             });
         };
         const mutations = new MutationObserver(followLatestMessage);
@@ -43,13 +49,37 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
 
             if (frame !== undefined) cancelAnimationFrame(frame);
         };
-    }, [open, composerHidden]);
+    }, [open]);
 
     return (
-        <div ref={viewport} data-composer-hidden={composerHidden} className={`ai-adjust-chat-scroll ${className}`}>
+        <div
+            ref={viewport}
+            data-composer-hidden={composerHidden}
+            className={`ai-adjust-chat-scroll ${className}`}
+            onScroll={(event) => {
+                const element = event.currentTarget;
+                following.current = element.scrollHeight - element.scrollTop - element.clientHeight < 64;
+                setShowLatest(!following.current);
+            }}
+        >
             <div ref={content} className={`flow-root min-w-0 ${contentClassName}`}>
                 {children}
             </div>
+            {showLatest && (
+                <div className="pointer-events-none sticky bottom-2 flex justify-center">
+                    <button
+                        type="button"
+                        className="pointer-events-auto rounded-full border border-gray-6 bg-white px-4 py-2 text-sm shadow-sm focus-visible:outline-2 focus-visible:outline-main-1"
+                        onClick={() => {
+                            following.current = true;
+                            setShowLatest(false);
+                            viewport.current?.scrollTo({top: viewport.current.scrollHeight, behavior: 'instant'});
+                        }}
+                    >
+                        {i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

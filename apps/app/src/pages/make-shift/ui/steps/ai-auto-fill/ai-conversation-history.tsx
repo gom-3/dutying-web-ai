@@ -92,11 +92,13 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                 {event.operation.resultVersionId && (
                                     <div className="mt-2 flex gap-3">
                                         <button type="button" onClick={() => onView(event.operation)}>
-                                            {copy('이 결과 보기', 'View this result')}
+                                            {copy('근무표 열기', 'Open schedule')}
                                         </button>
-                                        <button type="button" onClick={() => onView(event.operation, true)}>
-                                            {copy('전후 비교', 'Compare')}
-                                        </button>
+                                        {event.operation.sourceVersionId !== event.operation.resultVersionId && (
+                                            <button type="button" onClick={() => onView(event.operation, true)}>
+                                                {copy('변경 전후 비교', 'Compare before and after')}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
                             </div>
