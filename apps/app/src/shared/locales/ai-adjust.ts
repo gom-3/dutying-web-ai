@@ -18,18 +18,34 @@ export const aiAdjustKo = {
         rateLimit: '지금은 AI 사용량 제한에 도달했어요.\n잠시 후 다시 시도해 주세요.',
         retry: '다시 시도하기',
     },
+    snapshot: {
+        title: '완료 당시 근무표',
+        name: '이름',
+        note: '일부만 미리 보여드려요. 전체 표에서 모든 날짜와 근무자를 확인할 수 있어요.',
+        open: '전체 근무표 보기',
+        readonly: '완료 당시의 결과예요. 이후 수정한 내용은 여기에 반영되지 않아요.',
+        close: '닫기',
+    },
     executionFailure: {
+        connection:
+            '자동채우기 서버와 연결이 끊겨 결과를 받지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 같은 조건으로 다시 시도해 주세요.',
+        busy: '지금은 자동채우기 요청이 많아 시작하지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 다시 시도해 주세요.',
+        timeout: '자동채우기 서버에서 정해진 시간 안에 결과를 받지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 다시 시도해 주세요.',
+        response:
+            '자동채우기 서버의 응답에 문제가 있어 결과를 적용하지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해도 같다면 고객지원에 알려 주세요.',
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
         infeasible: '지금 조건으로는 근무표를 만들 수 없어요.\n요청이나 고정한 근무를 바꿔 주세요. 기존 근무표는 그대로예요.',
-        unavailable: '근무표 작성 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
+        unavailable:
+            '정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 다시 시도하거나 근무 조건을 조절해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         incomplete: '빈칸을 모두 채우지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         rules: '필수 조건을 모두 지킨 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 요청이나 고정한 근무를 확인해 주세요.',
         unsupported: '이 요청은 아직 자동채우기로 반영할 수 없어요.\n요청을 바꾸거나 표에서 직접 수정해 주세요. 기존 근무표는 그대로예요.',
         lockedEmpty: '근무가 없는 빈칸이 고정돼 있어요.\n해당 칸의 고정을 풀고 다시 시도해 주세요. 기존 근무표는 그대로예요.',
         input: '근무표에 필요한 정보가 빠져 있거나 서로 맞지 않아요.\n표와 요청 내용을 확인해 주세요. 기존 근무표는 그대로예요.',
-        unknown: '근무표를 완성하지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
+        unknown:
+            '자동채우기가 중단됐지만 정확한 원인은 확인하지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해도 같다면 고객지원에 알려 주세요.',
         review: '표로 돌아가기',
         summary: '근무표를 바꾸지 못했어요.',
         openChat: '대화에서 확인하기',
@@ -258,6 +274,10 @@ export const aiAdjustKo = {
         staleRequest: '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
         requestTooLong: '요청과 답변을 합쳐 500자 이내로 줄여 주세요.',
     },
+    polling: {
+        connection: '결과를 불러오지 못했어요. 연결이 돌아오면 다시 확인할게요.',
+        timeout: '결과 확인이 오래 걸려 자동 확인을 멈췄어요. 새로 계산하지 않고 이전 요청의 결과를 다시 확인할 수 있어요.',
+    },
     recovery: {
         complete: '이전 요청의 결과를 확인했어요. 아래 결과를 확인해 주세요.',
         running: '아직 근무표를 작성하고 있어요. 잠시만 기다려 주세요.',
@@ -285,7 +305,16 @@ export const aiAdjustKo = {
         },
     },
     evidence: {
-        title: '이전 표와 비교',
+        title: '휴무·휴식·신청 반영 비교',
+        changedSummary: '{{people}}명 · {{count}}칸 변경 내역',
+        changedCount: '{{count}}칸 변경',
+        changedHelp: '이름을 누르면 바뀐 날짜를 볼 수 있어요. 근무 종류는 아래 ‘전후 비교’에서 확인해 주세요.',
+        changedDates: '바뀐 날짜: {{dates}}',
+        day: '{{day}}일',
+        noComparable: '이 결과에는 비교 기준이 되는 근무 정보가 없어, 휴무·휴식이 이전보다 나아졌는지는 판단할 수 없어요.',
+        comparedSummary: '{{count}}명 비교 · 확인이 필요한 변화 {{worse}}명',
+        qualityChanges: '달라진 항목 보기',
+        limits: '비교 범위와 제외된 항목',
         people: '간호사별 변경 내용',
         notMeasured: '확인할 수 없어요',
         metricUnknown: '기타 항목',
@@ -337,7 +366,7 @@ export const aiAdjustKo = {
         },
         change: {IMPROVED: '나아졌어요', WORSENED: '이전보다 불리해졌어요', UNCHANGED: '같아요', UNKNOWN: '비교할 수 없어요'},
         reasons: {
-            BASELINE_INCOMPLETE: '이전 표에 빈칸이 있어 일부 항목을 비교할 수 없어요.',
+            BASELINE_INCOMPLETE: '계산에 사용된 비교 기준에 빈칸이 있어 일부 항목은 제외했어요.',
             BASELINE_CONTEXT_UNAVAILABLE: '이전 표의 정보가 부족해요.',
             CANDIDATE_UNAVAILABLE: '수정 결과를 확인할 수 없어요.',
             CANDIDATE_CONTEXT_UNAVAILABLE: '수정 결과의 정보가 부족해요.',
@@ -355,12 +384,27 @@ export const aiAdjustKo = {
     },
 };
 export const aiAdjustEn = {
+    snapshot: {
+        title: 'Completed schedule',
+        name: 'Name',
+        note: 'This is a partial preview. Open the full schedule to see all dates and staff.',
+        open: 'View full schedule',
+        readonly: 'This is the result at completion. Later edits do not change this snapshot.',
+        close: 'Close',
+    },
     executionFailure: {
+        connection:
+            'The connection to the scheduling server was interrupted before a result arrived.\nYour schedule is unchanged. Wait a moment and retry with the same conditions.',
+        busy: 'The scheduling server is busy and could not start this request.\nYour schedule is unchanged. Please try again shortly.',
+        timeout: 'The scheduling server did not return a result in time.\nYour schedule is unchanged. Please try again shortly.',
+        response:
+            'The scheduling server returned an unusable response, so no changes were applied.\nYour schedule is unchanged. Contact support if retrying does not help.',
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
         infeasible:
             'A schedule cannot be made with these conditions.\nChange your requests or fixed shifts. Your previous schedule is unchanged.',
-        unavailable: 'There was a problem preparing your schedule.\nYour previous schedule is unchanged. Please try again.',
+        unavailable:
+            'No schedule meeting the conditions was found within the time limit.\nYour previous schedule is unchanged. Try again or adjust the conditions.',
         validation: 'There was a problem checking the schedule.\nYour previous schedule is unchanged. Please try again.',
         incomplete: 'Some empty shifts could not be filled.\nYour previous schedule is unchanged. Please try again.',
         rules: 'We could not find a schedule meeting all required conditions.\nYour previous schedule is unchanged. Review your requests or fixed shifts.',
@@ -368,7 +412,8 @@ export const aiAdjustEn = {
             'Autofill does not support this request yet.\nChange your request or edit the table directly. Your previous schedule is unchanged.',
         lockedEmpty: 'An empty shift is fixed.\nUnfix it and try again. Your previous schedule is unchanged.',
         input: 'Some schedule information is missing or inconsistent.\nReview the table and your request. Your previous schedule is unchanged.',
-        unknown: 'The schedule could not be completed.\nYour previous schedule is unchanged. Please try again.',
+        unknown:
+            'The schedule could not be completed, and the exact cause is not available.\nYour previous schedule is unchanged. Please try again.',
         review: 'Review schedule',
         summary: 'The schedule was not changed.',
         openChat: 'Open conversation',
@@ -635,6 +680,11 @@ export const aiAdjustEn = {
         staleRequest: 'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',
         requestTooLong: 'Keep the request and replies within 500 characters.',
     },
+    polling: {
+        connection: 'The result could not be loaded. We will check again when the connection returns.',
+        timeout:
+            'Automatic checks have paused because the result is taking longer. You can check the same request again without starting a new calculation.',
+    },
     recovery: {
         complete: 'The previous request has been checked. Review the result below.',
         running: 'Your schedule is still being prepared. Please wait.',
@@ -662,7 +712,16 @@ export const aiAdjustEn = {
         },
     },
     evidence: {
-        title: 'Compare with the previous schedule',
+        title: 'Days off, rest and requests',
+        changedSummary: '{{people}} nurses · {{count}} changed cells',
+        changedCount: '{{count}} changed cells',
+        changedHelp: 'Select a name to see changed dates. Use Compare below to see shift types before and after.',
+        changedDates: 'Changed dates: {{dates}}',
+        day: '{{day}}',
+        noComparable: 'This result lacks baseline measurements, so improvements in days off and rest cannot be determined.',
+        comparedSummary: '{{count}} nurses compared · {{worse}} with changes to review',
+        qualityChanges: 'View changed metrics',
+        limits: 'Comparison coverage and exclusions',
         people: 'Changes by nurse',
         notMeasured: 'Unavailable',
         metricUnknown: 'Other metric',

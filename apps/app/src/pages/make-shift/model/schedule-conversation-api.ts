@@ -108,7 +108,7 @@ export type TConversationExecute = {
 };
 export function conversationApi(wardId: number, teamId: number) {
     const base = `/wards/${wardId}/shift-teams/${teamId}/schedule`;
-    const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true})).data;
+    const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true, timeout: 15000})).data;
     const post = async <T>(path: string, data: unknown) =>
         (await client.post<T>(`${base}${path}`, data, {suppressErrorToast: true, timeout: 330000})).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;

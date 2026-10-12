@@ -6,6 +6,8 @@ import type {
 } from '@dutying/api/ward';
 import {useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref} from 'react';
 import {v4 as uuid} from 'uuid';
+import {useShiftEditorStore} from '@/features/shift-editor';
+import type {TDutyDoc} from '@/features/shift-editor/model/types';
 import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -30,6 +32,7 @@ import {AiChatScroll} from './ai-chat-scroll';
 import {AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
+import {AiResultSnapshot} from './ai-result-snapshot';
 
 const MAX_TEXT_LENGTH = 500;
 
@@ -89,6 +92,7 @@ type TTurn = {
         | 'undone'
         | 'error';
     result?: TAdjustApplyResult;
+    snapshot?: TDutyDoc;
     error?: string;
     failure?: TAiConversationFailure;
     failedAttempts?: {messages: TAutofillMessage[]; failure: TAiConversationFailure; reply: string}[];
@@ -170,6 +174,7 @@ export default function AiAdjustTextInput({
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
     const composerHidden =
         preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
+
     useEffect(() => {
         if (!autofillFlow) return;
 
@@ -201,7 +206,12 @@ export default function AiAdjustTextInput({
                 );
             }
 
-            if (existing && JSON.stringify(existing.messages) === JSON.stringify(messages) && existing.error === generationFailure?.message)
+            if (
+                existing &&
+                JSON.stringify(existing.messages) === JSON.stringify(messages) &&
+                existing.error === generationFailure?.message &&
+                (!generationCompleted || !!existing.snapshot)
+            )
                 return current;
 
             const event: TTurn = {
@@ -211,6 +221,9 @@ export default function AiAdjustTextInput({
                 status: 'messages',
                 autofillId: autofillFlow.id,
                 messages,
+                snapshot:
+                    existing?.snapshot ??
+                    (generationCompleted && !generationFailure ? structuredClone(useShiftEditorStore.getState().doc) : undefined),
                 error: generationFailure?.message,
                 failure: generationFailure ?? undefined,
             };
@@ -228,6 +241,7 @@ export default function AiAdjustTextInput({
 
     useEffect(() => {
         onBusyChange?.(isBusy);
+
         return () => onBusyChange?.(false);
     }, [isBusy, onBusyChange]);
 
@@ -270,11 +284,17 @@ export default function AiAdjustTextInput({
     };
     const replyToQuestion = (question: TReviewQuestion, value: TReviewValue) => {
         if (!active?.card || active.status !== 'confirm' || busy.current || disabled) return;
+
         const replies = active.replies ?? [];
+
         if (getReviewQuestions(active.card)[replies.length]?.id !== question.id) return;
+
         if (Array.isArray(value) && value.some((id) => !goalNurses.some((nurse) => nurse.nurseId === id))) return;
+
         const card = answerReviewQuestion(active.card, question, value);
+
         if (!card) return;
+
         action.current = null;
         updateTurn(active.id, {card, replies: [...replies, {questionId: question.id, value}], error: undefined});
         setText('');
@@ -300,6 +320,7 @@ export default function AiAdjustTextInput({
 
         if (requestText.length > MAX_TEXT_LENGTH) {
             setError(t('aiAdjust.issue.tooLong'));
+
             return;
         }
 
@@ -308,10 +329,13 @@ export default function AiAdjustTextInput({
         if (!retryText && !failedCard && isConfirming && active?.card) {
             const question = getReviewQuestions(active.card)[active.replies?.length ?? 0];
             const reply = parseReviewReply(question, requestText);
+
             if (question && reply !== null) {
                 replyToQuestion(question, reply);
+
                 return;
             }
+
             if (
                 question?.kind === 'proposal' &&
                 /^(아니요|아니오|수정할게요|수정할 게 있어요|아니요 수정할게요|no|no thanks)$/i.test(
@@ -319,8 +343,10 @@ export default function AiAdjustTextInput({
                 )
             ) {
                 revise();
+
                 return;
             }
+
             if (question?.kind === 'offDifference' && /^[+-]?\d+(?:\.\d+)?\s*(일)?\s*(이내|이내로|로)?[.!?\s]*$/.test(requestText)) {
                 updateTurn(active.id, {followups: [...(active.followups ?? []), {text: requestText, reply: t('aiAdjust.chat.typeDays')}]});
                 setText('');
@@ -360,6 +386,7 @@ export default function AiAdjustTextInput({
         if (!retryText && !shortClarification && (editing || active?.card) && isIncompleteRevision(requestText)) {
             if (active)
                 updateTurn(active.id, {followups: [...(active.followups ?? []), {text: requestText, reply: t('aiAdjust.chat.clarify')}]});
+
             setText('');
 
             return;
@@ -480,7 +507,7 @@ export default function AiAdjustTextInput({
 
             if (!mounted.current || sequence.current !== requestSequence) return;
 
-            updateTurn(id, {status: 'applied', result: result ?? undefined});
+            updateTurn(id, {status: 'applied', result: result ?? undefined, snapshot: structuredClone(useShiftEditorStore.getState().doc)});
         } catch (cause) {
             if (!mounted.current || sequence.current !== requestSequence) return;
 
@@ -618,6 +645,7 @@ export default function AiAdjustTextInput({
                                         onReply={replyToQuestion}
                                         onEditReply={(index) => {
                                             if (disabled || busy.current || turn.id !== active?.id) return;
+
                                             action.current = null;
                                             updateTurn(turn.id, {replies: (turn.replies ?? []).slice(0, index), error: undefined});
                                         }}
@@ -673,6 +701,7 @@ export default function AiAdjustTextInput({
                                     </div>
                                 ))}
                                 {turn.messages && <AiAutofillMessages messages={turn.messages} />}
+                                {turn.snapshot && turn.status === 'messages' && <AiResultSnapshot doc={turn.snapshot} />}
                                 {turn.status === 'applyFailed' && turn.failure && (
                                     <AiExecutionFailure
                                         operationType="ADJUST"
@@ -711,6 +740,7 @@ export default function AiAdjustTextInput({
                                         <AssistantMessage>{message.reply}</AssistantMessage>
                                     </div>
                                 ))}
+                                {turn.snapshot && turn.status === 'applied' && <AiResultSnapshot doc={turn.snapshot} />}
                                 {turn.status === 'applied' && (
                                     <AiAdjustResult
                                         result={turn.result}
@@ -789,7 +819,7 @@ export default function AiAdjustTextInput({
                                 modifyDisabled={modifyDisabled}
                                 hideIntro={flowCompleted}
                                 generationCompleted={generationCompleted && !noticeDismissed}
-                                confirmation={resultActions && {...resultActions, disabled: resultActions.disabled || isBusy}}
+                                confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
                                 onChoose={(choice) => {
                                     setEntryChoice(choice);
                                     setTurns((current) => [

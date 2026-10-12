@@ -36,6 +36,7 @@ import {
     type TConversationTurn,
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
+import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
@@ -47,6 +48,7 @@ import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSugges
 import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
+import {AiConversationImage} from './ai-conversation-image';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiSemanticReview} from './ai-semantic-review';
@@ -135,6 +137,7 @@ export default function AiConversationSidebar({
     const detailRef = useRef<TConversationDetail | null>(null);
     const [earlierConversations, setEarlierConversations] = useState<TConversation[]>([]);
     const [busy, setBusy] = useState(false);
+    const [executing, setExecuting] = useState(false);
     const busyRef = useRef(false);
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -178,6 +181,12 @@ export default function AiConversationSidebar({
         return copy('결과 확인 필요', 'Check result');
     };
     const install = (next: TConversationDetail) => {
+        if (
+            detailRef.current?.conversation.conversationId === next.conversation.conversationId &&
+            next.conversation.revision < detailRef.current.conversation.revision
+        )
+            return;
+
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             setLocalEvents([]);
             setEditingRequest(null);
@@ -264,15 +273,17 @@ export default function AiConversationSidebar({
     const refresh = async () => {
         if (!detailRef.current) return;
 
-        const next = await api.detail(detailRef.current.conversation.conversationId);
+        const conversationId = detailRef.current.conversation.conversationId;
+        const next = await api.detail(conversationId);
 
-        if (mounted.current) install(next);
+        if (mounted.current && detailRef.current?.conversation.conversationId === conversationId) install(next);
     };
-    const run = async (action: () => Promise<void>) => {
+    const run = async (action: () => Promise<void>, isExecution = false) => {
         if (busyRef.current) return;
 
         busyRef.current = true;
         setBusy(true);
+        setExecuting(isExecution);
         setError(null);
 
         try {
@@ -282,7 +293,10 @@ export default function AiConversationSidebar({
         } finally {
             busyRef.current = false;
 
-            if (mounted.current) setBusy(false);
+            if (mounted.current) {
+                setBusy(false);
+                setExecuting(false);
+            }
         }
     };
     const restore = (version: TResultVersion) => {
@@ -416,7 +430,7 @@ export default function AiConversationSidebar({
 
             await applyCompleted(operation, uiRevision);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
-        });
+        }, true);
     };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
@@ -796,39 +810,27 @@ export default function AiConversationSidebar({
         });
     }, [open]);
     useEffect(() => {
-        if (!detailRef.current) return;
+        // Result application advances the server revision before changing the editor.
+        // Wait for the action's refresh before saving the resulting local revision.
+        if (!detailRef.current || busy) return;
 
         const timer = window.setTimeout(() => {
+            if (busyRef.current) return;
+
             void sync().catch((e) => {
                 if (mounted.current) setError(aiConversationFailure(e));
             });
         }, 400);
 
         return () => window.clearTimeout(timer);
-    }, [revision]);
+    }, [revision, busy]);
 
     const running =
         detail?.operations.some(
             (op) => op.executionStatus === 'RUNNING' || op.executionStatus === 'RESULT_READY' || op.executionStatus === 'UNKNOWN',
         ) ?? false;
+    const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh);
 
-    useEffect(() => {
-        if (!detail || !(running || busy)) return;
-
-        let polls = 0;
-
-        const timer = window.setInterval(() => {
-            if (++polls > 100) {
-                window.clearInterval(timer);
-
-                return;
-            }
-
-            void refresh().catch(() => undefined);
-        }, 3000);
-
-        return () => window.clearInterval(timer);
-    }, [running, busy, detail?.conversation.conversationId]);
     useEffect(() => {
         if (!autofillFlow || !detail) return;
 
@@ -863,10 +865,10 @@ export default function AiConversationSidebar({
     }, [rebuildRequest]);
 
     useEffect(() => {
-        onBusyChange?.(busy || running);
+        onBusyChange?.(executing || running);
 
         return () => onBusyChange?.(false);
-    }, [busy, running, onBusyChange]);
+    }, [executing, running, onBusyChange]);
 
     useEffect(() => {
         if (autofillFlow?.kind === 'adjustment' || (!preparing && !autofillFlow)) return;
@@ -1186,6 +1188,13 @@ export default function AiConversationSidebar({
                             </ul>
                         </AiInfoTip>
                     </div>
+                    {polling.issue && (
+                        <AiFailureMessage message={t(`aiAdjust.polling.${polling.issue}`)}>
+                            <button className={buttonClass} onClick={polling.retry}>
+                                {copy('결과 다시 확인하기', 'Check outcome again')}
+                            </button>
+                        </AiFailureMessage>
+                    )}
                     {notice && (
                         <p role="status" className="mb-2 text-sm">
                             {notice}
@@ -1243,15 +1252,6 @@ export default function AiConversationSidebar({
                                                         </button>
                                                     </p>
                                                 )}
-                                                {event.operation.result &&
-                                                    event.operation.applyStatus === 'APPLIED' &&
-                                                    !operationFailure(event.operation) && (
-                                                        <p>
-                                                            {event.operation.result.sameAsPrevious
-                                                                ? copy('변화 없음', 'No changes')
-                                                                : `${event.operation.result.changedCells.length}${copy('칸 변경', ' changed cells')}`}
-                                                        </p>
-                                                    )}
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>
                                                         {copy(
@@ -1259,6 +1259,14 @@ export default function AiConversationSidebar({
                                                             'The source changed; result was not applied.',
                                                         )}
                                                     </p>
+                                                )}
+                                                {event.operation.resultVersionId && (
+                                                    <AiConversationImage
+                                                        key={event.operation.resultVersionId}
+                                                        cacheKey={`${wardId}:${teamId}`}
+                                                        versionId={event.operation.resultVersionId}
+                                                        loadVersion={api.version}
+                                                    />
                                                 )}
                                                 {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
                                                 {event.operation.result && (
@@ -1278,7 +1286,7 @@ export default function AiConversationSidebar({
                                                             {copy('이 결과 보기', 'View this result')}
                                                         </button>
                                                         <button className={buttonClass} onClick={() => void view(event.operation, true)}>
-                                                            {copy('전후 비교', 'Compare')}
+                                                            {copy('이전 근무표와 비교', 'Compare with previous schedule')}
                                                         </button>
                                                     </div>
                                                 )}

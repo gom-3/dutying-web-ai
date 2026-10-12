@@ -36,6 +36,7 @@ export function AiAutofillMessages({messages}: {messages: TAutofillMessage[]}) {
 
 export function AiAutofillPreparation({
     step,
+    kind = 'generation',
     fixableCount,
     hasFilledCells = true,
     previousHasBlanks = true,
@@ -47,6 +48,7 @@ export function AiAutofillPreparation({
     onUndoFixAll,
 }: {
     step: Exclude<TAutofillPreparationStep, 'carryOver'>;
+    kind?: 'generation' | 'adjustment';
     fixableCount: number;
     hasFilledCells?: boolean;
     previousHasBlanks?: boolean;
@@ -89,7 +91,9 @@ export function AiAutofillPreparation({
                             ? previousHasBlanks
                                 ? 'aiAdjust.preparation.continue'
                                 : 'aiAdjust.preparation.next'
-                            : fixableCount === 0
+                            : kind === 'adjustment'
+                              ? 'aiAdjust.preparation.next'
+                              : fixableCount === 0
                               ? 'aiAdjust.autofill'
                               : 'aiAdjust.preparation.fill',
                     )}

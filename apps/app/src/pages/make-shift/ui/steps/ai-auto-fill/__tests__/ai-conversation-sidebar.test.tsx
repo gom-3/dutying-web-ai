@@ -1,3 +1,4 @@
+vi.mock('../ai-conversation-image', () => ({AiConversationImage: () => null}));
 import type {ComponentProps} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift} from '@/entities/shift';
@@ -194,6 +195,59 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('does not show schedule generation progress when viewing a saved result', async () => {
+        const onBusyChange = vi.fn();
+
+        let resolveVersion!: (value: TResultVersion) => void;
+
+        mocks.version.mockImplementationOnce(
+            () =>
+                new Promise<TResultVersion>((resolve) => {
+                    resolveVersion = resolve;
+                }),
+        );
+        renderSidebar({onBusyChange});
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과 보기'}));
+        await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
+        expect(onBusyChange.mock.calls.every(([value]) => value === false)).toBe(true);
+        await act(async () => resolveVersion(source));
+        expect(await screen.findByRole('dialog')).toBeVisible();
+    });
+
+    it('waits for the completed operation revision before autosaving its restored result', async () => {
+        let finishRefresh!: (value: TConversationDetail) => void;
+
+        const refreshed = new Promise<TConversationDetail>((resolve) => {
+            finishRefresh = resolve;
+        });
+
+        mocks.detail.mockResolvedValueOnce(current).mockImplementation(() => refreshed);
+        mocks.execute.mockResolvedValueOnce(operation);
+        mocks.applyAdjustedDoc.mockImplementationOnce(() => {
+            mocks.draftFixed = true;
+            useShiftEditorStore.setState({draftRevision: useShiftEditorStore.getState().draftRevision + 1});
+        });
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        });
+        expect(mocks.sync).not.toHaveBeenCalled();
+        await act(async () =>
+            finishRefresh({
+                ...current,
+                conversation: {...current.conversation, revision: 1},
+                draft: {...source, cells: [{...cell, fixed: true}]},
+            }),
+        );
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        });
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
+    });
+
+
     it('distinguishes autofill and adjustment attempt boundaries without calling a solver', async () => {
         current.operations = [
             operation,
@@ -228,7 +282,7 @@ describe('persistent schedule sidebar', () => {
         const summary = await screen.findByText(/이전 대화 기록|Earlier conversation/);
         await userEvent.click(summary);
         const history = within(summary.closest('details')!);
-        expect(await history.findByRole('alert')).toHaveTextContent(/근무표 작성 중 문제가 생겼어요|problem preparing your schedule/);
+        expect(await history.findByRole('alert')).toHaveTextContent(/정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요|within the time limit/);
         expect(history.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
         expect(history.queryByRole('button', {name: /이 결과 보기|View this result/})).not.toBeInTheDocument();
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -271,7 +325,7 @@ describe('persistent schedule sidebar', () => {
 
         const history = within(summary.closest('details')!);
 
-        await userEvent.click(history.getByRole('button', {name: /전후 비교|Compare/}));
+        await userEvent.click(history.getByRole('button', {name: /전후 비교|이전 근무표와 비교|Compare/}));
         await screen.findByRole('dialog');
         expect(mocks.version).toHaveBeenCalledWith('source:1');
         expect(useShiftEditorStore.getState().doc).toEqual(docBefore);
@@ -891,7 +945,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.startSegment).toHaveBeenCalledWith(1, 'source:1', 0);
         expect(screen.getByText('이전 요청')).toBeVisible();
         expect(screen.getByText(/여기서부터 새 요청|New requests/)).toBeVisible();
-        expect(screen.getByRole('button', {name: /전후 비교|Compare/})).toBeVisible();
+        expect(screen.getByRole('button', {name: /전후 비교|이전 근무표와 비교|Compare/})).toBeVisible();
         expect(mocks.branch).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();

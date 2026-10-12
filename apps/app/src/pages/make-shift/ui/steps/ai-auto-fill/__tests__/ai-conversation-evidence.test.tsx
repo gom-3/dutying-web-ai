@@ -44,22 +44,11 @@ const response = (q: TQualitySidebar | undefined, s: TFailureSuggestion[] = []):
     }) as TAutofillResponse;
 
 describe('conversation result evidence', () => {
-    it('shows individual harm and unknown coverage together', async () => {
-        render(
-            <ConversationEvidence
-                result={response(quality)}
-                nurseName={(id) => id}
-                suggestionsCurrent
-                disabled={false}
-                onSelect={vi.fn()}
-            />,
-        );
-        await userEvent.click(screen.getByText(/이전 표와 비교/));
-        expect(screen.getByText(/비교 2명 · 이전보다 불리해진 1명 · 비교할 정보가 없는 1명/)).toBeInTheDocument();
-        expect(screen.getByText('가장 크게 불리해진 차이: 6일')).toBeInTheDocument();
-        expect(screen.queryByText(/NEXT_MONTH_RECOVERY_UNKNOWN/)).not.toBeInTheDocument();
-        expect(screen.getByText(/다음 달/)).toBeInTheDocument();
-        expect(screen.getByText('좋아진 항목과 나빠진 항목이 함께 있어요.')).toBeInTheDocument();
+    it('does not expose internal quality measurements or change counts', () => {
+        const r = response(quality);
+        r.changedCells = [{shiftNurseId: 1, date: '2026-10-02', wardShiftTypeId: 1}];
+        const {container} = render(<ConversationEvidence result={{...r, failure: undefined}} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
+        expect(container).toBeEmptyDOMElement();
     });
     it('selects a verified candidate without executing and preserves unknown impact', async () => {
         const select = vi.fn();
@@ -77,18 +66,36 @@ describe('conversation result evidence', () => {
         await userEvent.click(screen.getByRole('button', {name: '변경 제안 보기'}));
         expect(select).toHaveBeenCalledWith(candidate);
     });
-    it.each(['expired', 'invalid date'])('blocks a suggestion with an unusable expiration: %s', expiresAt => {
-        render(<ConversationEvidence result={response(undefined, [{...candidate, expiresAt}])} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
+    it.each(['expired', 'invalid date'])('blocks a suggestion with an unusable expiration: %s', (expiresAt) => {
+        render(
+            <ConversationEvidence
+                result={response(undefined, [{...candidate, expiresAt}])}
+                nurseName={(id) => id}
+                suggestionsCurrent
+                disabled={false}
+                onSelect={vi.fn()}
+            />,
+        );
         expect(screen.getByRole('button', {name: '변경 제안 보기'})).toBeDisabled();
     });
-    it('shows percentage point differences and hides unknown reason codes', async () => {
-        render(<ConversationEvidence result={response({...quality, unknownReasons: ['NEW_ENGINE_REASON'], harm: [{...quality.harm[0]!, metricId: 'fragmentationRate', maxWorsening: 0.125}]})} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
-        await userEvent.click(screen.getByText(/이전 표와 비교/));
-        expect(screen.getByText('가장 크게 불리해진 차이: 12.5%p')).toBeInTheDocument();
-        expect(screen.queryByText(/NEW_ENGINE_REASON/)).not.toBeInTheDocument();
-    });
     it('explains supported suggestion changes without object strings or priority codes', () => {
-        render(<ConversationEvidence result={response(undefined, [{...candidate, changes: [{kind: 'REQUEST_REMOVE', oldValue: {severity: 'SOFT'}, proposedValue: null}, {kind: 'REQUEST_PRIORITY', oldValue: 'NORMAL', proposedValue: 'LOW'}]}])} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
+        render(
+            <ConversationEvidence
+                result={response(undefined, [
+                    {
+                        ...candidate,
+                        changes: [
+                            {kind: 'REQUEST_REMOVE', oldValue: {severity: 'SOFT'}, proposedValue: null},
+                            {kind: 'REQUEST_PRIORITY', oldValue: 'NORMAL', proposedValue: 'LOW'},
+                        ],
+                    },
+                ])}
+                nurseName={(id) => id}
+                suggestionsCurrent
+                disabled={false}
+                onSelect={vi.fn()}
+            />,
+        );
         expect(screen.getByText('가능하면 맞추기로 한 요청을 이번 계산에서 제외해요.')).toBeInTheDocument();
         expect(screen.getByText('가능하면 맞추기로 한 요청의 우선순위를 보통에서 낮음으로 바꿔요.')).toBeInTheDocument();
         expect(screen.queryByText(/\[object Object\]|NORMAL|LOW|SOFT/)).not.toBeInTheDocument();

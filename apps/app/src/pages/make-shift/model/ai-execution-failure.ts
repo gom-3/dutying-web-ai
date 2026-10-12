@@ -46,11 +46,31 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     )
         return null;
 
-    let key: 'infeasible' | 'unavailable' | 'validation' | 'incomplete' | 'rules' | 'unsupported' | 'lockedEmpty' | 'input' | 'unknown' =
-        'unknown';
+    let key:
+        | 'connection'
+        | 'busy'
+        | 'response'
+        | 'timeout'
+        | 'infeasible'
+        | 'unavailable'
+        | 'validation'
+        | 'incomplete'
+        | 'rules'
+        | 'unsupported'
+        | 'lockedEmpty'
+        | 'input'
+        | 'unknown' = 'unknown';
     let recovery: NonNullable<TAiConversationFailure['recovery']> = 'retry';
 
-    if (reason.includes('UNSUPPORTED')) {
+    if (reason === 'ENGINE_CONNECTION_FAILED') {
+        key = 'connection';
+    } else if (reason === 'ENGINE_BUSY') {
+        key = 'busy';
+    } else if (reason === 'ENGINE_TIMEOUT') {
+        key = 'timeout';
+    } else if (['ENGINE_INVALID_RESPONSE', 'ENGINE_RESPONSE_ERROR'].includes(reason)) {
+        key = 'response';
+    } else if (reason.includes('UNSUPPORTED')) {
         key = 'unsupported';
         recovery = 'revise';
     } else if (reason === 'CONTRACT_LOCKED_EMPTY_CELL') {

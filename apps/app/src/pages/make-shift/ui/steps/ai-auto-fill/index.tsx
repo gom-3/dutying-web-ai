@@ -2273,7 +2273,7 @@ export function AiAutofill() {
 
         appendAutofillMessage({
             role: 'user',
-            text: t(aiFillDecisionFixableCells.length === 0 ? 'aiAdjust.autofill' : 'aiAdjust.preparation.fill'),
+            text: t(autofillFlow?.kind === 'adjustment' ? 'aiAdjust.preparation.next' : aiFillDecisionFixableCells.length === 0 ? 'aiAdjust.autofill' : 'aiAdjust.preparation.fill'),
         });
         startPreparedFill();
     };
@@ -2527,6 +2527,7 @@ export function AiAutofill() {
         ) : preparationStep ? (
             <AiAutofillPreparation
                 step={preparationStep}
+                kind={autofillFlow?.kind}
                 fixableCount={aiFillDecisionFixableCells.length}
                 hasFilledCells={hasFilledPreparationCells}
                 canAutofill={!isAutofillBlocked}

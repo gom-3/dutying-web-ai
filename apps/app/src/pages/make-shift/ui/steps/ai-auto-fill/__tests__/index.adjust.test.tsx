@@ -424,11 +424,11 @@ async function answerDefaultQuestions(user: ReturnType<typeof userEvent.setup>) 
 async function finishAdjustmentPreparation(user: ReturnType<typeof userEvent.setup>) {
     await waitFor(() => {
         expect(
-            screen.queryByRole('button', {name: DECISION_CONFIRM}) ?? screen.queryByRole('textbox', {name: TEXT_INPUT_LABEL}),
+            screen.queryByRole('button', {name: 'aiAdjust.preparation.next'}) ?? screen.queryByRole('textbox', {name: TEXT_INPUT_LABEL}),
         ).toBeEnabled();
     });
 
-    const confirm = screen.queryByRole('button', {name: DECISION_CONFIRM});
+    const confirm = screen.queryByRole('button', {name: 'aiAdjust.preparation.next'});
 
     if (confirm) await user.click(confirm);
 }
@@ -836,7 +836,8 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByRole('region', {name: DECISION_TITLE})).toBeVisible();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([]));
-        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        expect(screen.queryByRole('button', {name: DECISION_CONFIRM})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.next'}));
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({
             prompt: '자연스럽게 다듬어줘',
@@ -1215,7 +1216,7 @@ describe('AiAutofill adjust panel', () => {
             const log = screen.getByRole('log').textContent!;
 
             expect(message).toContain('기존 근무표는 그대로예요.');
-            expect(log.lastIndexOf('aiAdjust.preparation.fill')).toBeLessThan(log.indexOf(message));
+            expect(log.lastIndexOf('aiAdjust.preparation.next')).toBeLessThan(log.indexOf(message));
             expect(log).not.toContain('검토용');
             expect(screen.queryByRole('button', {name: CARD_APPLY})).not.toBeInTheDocument();
             expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -1240,7 +1241,7 @@ describe('AiAutofill adjust panel', () => {
                 await waitFor(() => expect(rowCells('11')?.[0]).toBe('O'));
                 expect(mocks.requestAiSchedule.mock.calls[2]?.[0].idempotencyKey).not.toBe(mocks.requestAiSchedule.mock.calls[1]?.[0].idempotencyKey);
                 expect(screen.getByRole('log').textContent).toContain(message);
-                expect(screen.getByRole('log').textContent).toMatch(/aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.fill[\s\S]*aiAdjust.completed/);
+                expect(screen.getByRole('log').textContent).toMatch(/aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*aiAdjust.completed/);
             }
         },
     );
