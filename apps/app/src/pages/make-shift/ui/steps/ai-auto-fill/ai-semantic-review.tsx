@@ -9,6 +9,7 @@ type TProps = {
     applied: boolean;
     processing: 'adjust' | 'review' | null;
     nurseName: (id: number) => string;
+    rosterNurseIds?: number[];
     copy: (ko: string, en: string) => string;
     onApply: () => void;
     onEdit: () => void;
@@ -45,7 +46,20 @@ function period(dates: string[], copy: TProps['copy']) {
     return sorted.map(format).join(', ');
 }
 
-export function AiSemanticReview({plan, current, disabled, stale, applied, processing, nurseName, copy, onApply, onEdit, onRetry}: TProps) {
+export function AiSemanticReview({
+    plan,
+    current,
+    disabled,
+    stale,
+    applied,
+    processing,
+    nurseName,
+    rosterNurseIds = [],
+    copy,
+    onApply,
+    onEdit,
+    onRetry,
+}: TProps) {
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
     const retry = semanticRecovery(plan) === 'retry';
     const blockedMessage = retry
@@ -65,7 +79,7 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
             <p className="font-medium">
                 {ready
                     ? applied
-                        ? copy('이 내용으로 근무표를 수정했어요.', 'The schedule was adjusted with these conditions.')
+                        ? copy('이 요청을 반영했어요.', 'These conditions have been applied.')
                         : current
                           ? copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
                           : copy('이전 요청 내용', 'Previous request')
@@ -78,16 +92,36 @@ export function AiSemanticReview({plan, current, disabled, stale, applied, proce
                             <p className="text-[13px] text-[#6B7280]">{period(condition.dates, copy)}</p>
                             <p>
                                 <span className="font-medium">
-                                    {condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(copy(', ', ', '))}
+                                    {rosterNurseIds.length > 0 &&
+                                    new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
+                                    rosterNurseIds.every((id) => condition.nurseIds.includes(id))
+                                        ? copy('전체 간호사', 'All nurses')
+                                        : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ')}
                                 </span>
                                 {copy(' · ', ': ')}
-                                {condition.shiftCodes.join(', ')}
-                                {copy(' 근무를', ' shifts')}{' '}
-                                {condition.action === 'FORBID'
-                                    ? copy('배정하지 않아요.', 'will be excluded')
-                                    : condition.action === 'ASSIGN'
-                                      ? copy('배정해요.', 'will be assigned')
-                                      : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'combined') : copy('각각', 'each')} ${condition.operator === 'MIN' ? copy('최소', 'at least') : condition.operator === 'MAX' ? copy('최대', 'at most') : copy('정확히', 'exactly')} ${condition.count}${copy('회 배정해요.', ' times')}`}
+                                {condition.action === 'COUNT' && condition.quantifier === 'GROUP_TOTAL' && condition.dates.length === 1 ? (
+                                    <>
+                                        {condition.shiftCodes.map((code) => (code === 'O' ? copy('휴무', 'off-duty') : code)).join(', ')}
+                                        {copy(' 인원을 ', ' headcount: ')}
+                                        {condition.operator === 'MIN'
+                                            ? copy('최소', 'at least')
+                                            : condition.operator === 'MAX'
+                                              ? copy('최대', 'at most')
+                                              : copy('정확히', 'exactly')}{' '}
+                                        {condition.count}
+                                        {copy('명으로 맞춰요.', ' nurses.')}
+                                    </>
+                                ) : (
+                                    <>
+                                        {condition.shiftCodes.join(', ')}
+                                        {copy(' 근무를', ' shifts')}{' '}
+                                        {condition.action === 'FORBID'
+                                            ? copy('배정하지 않아요.', 'will be excluded')
+                                            : condition.action === 'ASSIGN'
+                                              ? copy('배정해요.', 'will be assigned')
+                                              : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'combined') : copy('각각', 'each')} ${condition.operator === 'MIN' ? copy('최소', 'at least') : condition.operator === 'MAX' ? copy('최대', 'at most') : copy('정확히', 'exactly')} ${condition.count}${copy('회 배정해요.', ' times')}`}
+                                    </>
+                                )}
                             </p>
                             <p className="text-[13px] text-[#6B7280]">
                                 {condition.modality === 'HARD'

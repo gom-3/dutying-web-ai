@@ -1024,6 +1024,9 @@ export default function AiConversationSidebar({
                                     : null
                             }
                             stale={!detail || !isConversationConfirmationCurrent(detail, turn, localDirty)}
+                            rosterNurseIds={Object.values(doc.workerMeta).flatMap((meta) =>
+                                typeof meta.nurseId === 'number' ? [meta.nurseId] : [],
+                            )}
                             nurseName={(id) =>
                                 Object.values(doc.workerMeta).find((meta) => meta.nurseId === id)?.name ??
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
