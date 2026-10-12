@@ -209,19 +209,34 @@ describe('persistent schedule sidebar', () => {
         const older: TConversationDetail = {
             ...current,
             conversation: {...current.conversation, conversationId: 9},
-            operations: [{
-                ...operation, executionStatus: 'FAILED', applyStatus: 'NOT_APPLIED', resultVersionId: null,
-                failureReason: 'TIME_LIMIT_NO_SOLUTION',
-                result: {
-                    operationType: 'GENERATE', applicable: false, draftRevision: 0, resultType: 'PATCH',
-                    changedCells: [], unmetInstructions: [], sameAsPrevious: true,
-                    validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0}, violations: []},
-                    engineResult: {status: 'TIME_LIMIT', solver: {reason: 'TIME_LIMIT_NO_SOLUTION'}},
+            operations: [
+                {
+                    ...operation,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    resultVersionId: null,
+                    failureReason: 'TIME_LIMIT_NO_SOLUTION',
+                    result: {
+                        operationType: 'GENERATE',
+                        applicable: false,
+                        draftRevision: 0,
+                        resultType: 'PATCH',
+                        changedCells: [],
+                        unmetInstructions: [],
+                        sameAsPrevious: true,
+                        validation: {
+                            draftRevision: 0,
+                            rulesHash: 'rules:1',
+                            summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+                            violations: [],
+                        },
+                        engineResult: {status: 'TIME_LIMIT', solver: {reason: 'TIME_LIMIT_NO_SOLUTION'}},
+                    },
                 },
-            }],
+            ],
         };
         mocks.list.mockResolvedValue([current.conversation, older.conversation]);
-        mocks.detail.mockImplementation(async (id: number) => id === 9 ? older : current);
+        mocks.detail.mockImplementation(async (id: number) => (id === 9 ? older : current));
         const before = useShiftEditorStore.getState().doc;
         renderSidebar();
         const summary = await screen.findByText(/이전 대화 기록|Earlier conversation/);
@@ -1133,6 +1148,87 @@ describe('persistent schedule sidebar', () => {
                 }),
             ),
         );
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('sends only a new answer with the server state version and waiting condition ID', async () => {
+        const {raw, proposal} = semanticRequest();
+        proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
+        proposal.semanticPlan!.confirmationAllowed = false;
+        current.conversationState = {
+            version: 7,
+            sourceVersionId: current.conversation.currentVersionId,
+            contextHash: current.contextHash,
+            expiresAt: null,
+            conditions: [{conditionId: 'condition:waiting', text: raw, preview: {status: 'NEEDS_CLARIFICATION'}}],
+            pendingQuestion: {conditionId: 'condition:waiting', question: 'O로 배정할까요?'},
+        };
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        await screen.findByText('O로 배정할까요?');
+        await userEvent.type(screen.getByRole('textbox'), 'O로 배정해줘.');
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+            text: 'O로 배정해줘.',
+            expectedStateVersion: 7,
+            change: 'UPDATE',
+            targetConditionIds: ['condition:waiting'],
+        });
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('adds a separate condition while a question is waiting instead of treating it as an answer', async () => {
+        const {raw, proposal} = semanticRequest();
+        proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
+        proposal.semanticPlan!.confirmationAllowed = false;
+        current.conversationState = {
+            version: 7,
+            sourceVersionId: current.conversation.currentVersionId,
+            contextHash: current.contextHash,
+            expiresAt: null,
+            conditions: [{conditionId: 'condition:waiting', text: raw, preview: {status: 'NEEDS_CLARIFICATION'}}],
+            pendingQuestion: {conditionId: 'condition:waiting', question: 'O로 배정할까요?'},
+        };
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        await userEvent.selectOptions(await screen.findByRole('combobox', {name: '조건 수정 방식'}), 'ADD');
+        await userEvent.type(screen.getByRole('textbox'), '박 간호사 10일 N 금지');
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+            text: '박 간호사 10일 N 금지',
+            expectedStateVersion: 7,
+            change: 'ADD',
+            targetConditionIds: [],
+        });
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('uses explicitly selected condition IDs for removal and keeps the original clause visible', async () => {
+        const {raw, proposal} = semanticRequest();
+        proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
+        proposal.semanticPlan!.confirmationAllowed = false;
+        current.conversationState = {
+            version: 3,
+            sourceVersionId: current.conversation.currentVersionId,
+            contextHash: current.contextHash,
+            expiresAt: null,
+            conditions: [{conditionId: 'condition:1', text: raw, preview: {status: 'PREVIEW_READY'}}],
+            pendingQuestion: null,
+        };
+        mocks.interpret.mockResolvedValue(proposal);
+        renderSidebar();
+        const mode = await screen.findByRole('combobox', {name: '조건 수정 방식'});
+        await userEvent.selectOptions(mode, 'REMOVE');
+        await userEvent.click(screen.getByRole('checkbox', {name: raw}));
+        await userEvent.type(screen.getByRole('textbox'), '삭제해줘');
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+            text: '삭제해줘',
+            expectedStateVersion: 3,
+            change: 'REMOVE',
+            targetConditionIds: ['condition:1'],
+        });
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('answers a clarification with the original request retained and without calculating', async () => {
