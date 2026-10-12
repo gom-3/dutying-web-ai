@@ -158,8 +158,11 @@ export default function AiConversationSidebar({
     const copy = (korean: string, english: string) => (ko ? korean : english);
     const operationStatusLabel = (operation: TConversationOperation) => {
         if (operationFailure(operation)) return copy('실패', 'Not completed');
+
         if (operation.executionStatus === 'RUNNING') return copy('실행 중', 'Working');
+
         if (operation.executionStatus === 'RESULT_READY') return copy('결과 저장 중', 'Saving result');
+
         if (operation.executionStatus === 'SUCCEEDED') return copy('완료', 'Completed');
 
         return copy('결과 확인 필요', 'Check result');
@@ -361,6 +364,23 @@ export default function AiConversationSidebar({
 
             await applyCompleted(operation, uiRevision);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
+        });
+    };
+    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
+        await run(async () => {
+            const current = detailRef.current;
+
+            if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
+                throw new Error(t('aiAdjust.stale'));
+
+            await api.selectConditions(
+                current.conversation.conversationId,
+                turn.semanticPlan.planId,
+                current.conversation.revision,
+                turn.semanticPlan.planHash,
+                ids,
+            );
+            await refresh();
         });
     };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
@@ -969,6 +989,7 @@ export default function AiConversationSidebar({
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
                             }
                             copy={copy}
+                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
