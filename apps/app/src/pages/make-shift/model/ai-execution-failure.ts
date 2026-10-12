@@ -88,7 +88,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         key = 'validation';
     } else if (reason === 'SOLVER_RESULT_INCOMPLETE') {
         key = 'incomplete';
-    } else if (reason === 'SOLVER_RESULT_FAILED_FINAL_GATE' || reason === 'SPRING_HARD_VALIDATION') {
+    } else if (['SOLVER_RESULT_FAILED_FINAL_GATE', 'SPRING_HARD_VALIDATION', 'SEMANTIC_RESULT_UNSATISFIED'].includes(reason)) {
         key = 'rules';
         recovery = 'revise';
     }
