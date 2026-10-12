@@ -1346,6 +1346,13 @@ export default function AiConversationSidebar({
                                                     onReview={onClose}
                                                 />
                                             )}
+                                            {event.operation.operationType === 'ADJUST' &&
+                                                event.operation.executionStatus === 'SUCCEEDED' &&
+                                                !operationFailure(event.operation) &&
+                                                event.operation.applyStatus === 'APPLIED' &&
+                                                event.operation.result?.changedCells.length === 0 && (
+                                                    <AssistantMessage>{t('aiAdjust.noChange')}</AssistantMessage>
+                                                )}
                                             {event.operation.operationType === 'GENERATE' &&
                                                 event.operation.executionStatus === 'SUCCEEDED' &&
                                                 !operationFailure(event.operation) &&

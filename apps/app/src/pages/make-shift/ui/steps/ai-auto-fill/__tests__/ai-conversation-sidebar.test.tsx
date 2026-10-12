@@ -260,6 +260,21 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getByText(/^(자동채우기 2회차|Autofill 2 attempt) ·/)).toHaveTextContent(/실패|FAILED/);
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it.each([true, false])('explains an applied unchanged adjustment without claiming optimality: %s', async (unchanged) => {
+        current.operations = [{...operation, operationType: 'ADJUST', result: {
+            operationType: 'ADJUST', applicable: true, draftRevision: 0, resultType: 'PATCH',
+            changedCells: unchanged ? [] : [cell], unmetInstructions: [], sameAsPrevious: unchanged,
+            validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0}, violations: []},
+            engineResult: {status: 'ACCEPTED'},
+        }}];
+        renderSidebar();
+        await screen.findByText(/^(수정 1회차|Adjustment 1 attempt) ·/);
+        const message = screen.queryByText(/이번에는 바뀐 근무가 없어요|No shifts changed this time/);
+        if (unchanged) expect(message).toBeVisible();
+        else expect(message).not.toBeInTheDocument();
+        expect(screen.queryByText(/최적|optimal/i)).not.toBeInTheDocument();
+    });
+
     it('[HISTORY-FAILURE] keeps an earlier failure explanation in chat without offering another execution', async () => {
         const older: TConversationDetail = {
             ...current,
