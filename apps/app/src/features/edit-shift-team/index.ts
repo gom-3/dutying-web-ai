@@ -171,7 +171,7 @@ const mergeWardShiftTeams = (ward: TWard | undefined, shiftTeams: TWard['shiftTe
 const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean; originalName?: string} = {}) =>
     compactRequest({
         name:
-            nurse.name === undefined ||
+            nurse.name == null ||
             (options.originalName !== undefined &&
                 normalizeRosterNurseNameForRequest(nurse.name) === normalizeRosterNurseNameForRequest(options.originalName))
                 ? undefined

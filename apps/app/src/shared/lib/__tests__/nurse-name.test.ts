@@ -27,7 +27,7 @@ describe('nurse name helpers', () => {
     });
 
     it('rejects unsupported whitespace, emoji, special characters, and symbol-only values', () => {
-        expect(isValidNurseName('山田　花子')).toBe(false);
+        expect(isValidNurseName('山田\u00a0花子')).toBe(false);
         expect(isValidNurseName('山田\t花子')).toBe(false);
         expect(isValidNurseName('山田\n花子')).toBe(false);
         expect(isValidNurseName('🙂')).toBe(false);
@@ -40,15 +40,18 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('홍')).toBe(false);
     });
 
-    it('normalizes only ASCII edge spaces for requests', () => {
+    it('normalizes fullwidth separators without joining names and trims edge spaces', () => {
         expect(normalizeNurseNameForRequest('  山田 花子  ')).toBe('山田 花子');
-        expect(normalizeNurseNameForRequest('　山田 花子　')).toBe('　山田 花子　');
+        expect(normalizeNurseNameForRequest('　山田　花子　')).toBe('山田 花子');
+        expect(normalizeNurseNameForRequest('山田　　花子')).toBe('山田  花子');
+        expect(isValidNurseName('　山田　花子　')).toBe(true);
+        expect(isValidNurseName('　　')).toBe(false);
     });
 
     it('keeps Korean IME composition characters while sanitizing unsupported input', () => {
         expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
         expect(sanitizeNurseNameInput('홍')).toBe('홍');
-        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田花子Nurse1・ー ');
+        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田 花子Nurse1・ー ');
     });
 });
 
@@ -65,6 +68,7 @@ describe('roster nurse name policy', () => {
 
     it('normalizes Japanese spacing, middle dots and composed letters for older servers', () => {
         expect(normalizeRosterNurseNameForRequest('　佐藤･美咲　')).toBe('佐藤・美咲');
+        expect(normalizeRosterNurseNameForRequest('\u00a0山田　花子\u00a0')).toBe('山田 花子');
         expect(normalizeRosterNurseNameForRequest('  Cafe\u0301  ')).toBe('Café');
         expect(isValidRosterNurseName('　佐藤･美咲　')).toBe(true);
         expect(normalizeRosterNurseNameForRequest('QA_OFF_02')).toBe('QA_OFF_02');

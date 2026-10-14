@@ -670,13 +670,13 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(shortKoreanNameDraft)).toBe(false);
     });
 
-    it('allows ordinary internal spaces in nurse names', () => {
+    it('allows ordinary and normalized fullwidth spaces in nurse names', () => {
         const draft = {
             ...createInitialDraft(),
             currentStep: 5 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const validNames = ['신규 간호사 1', 'Nurse 1', '山田 花子', '佐藤・美咲', 'ジョン・スミス'];
+        const validNames = ['신규 간호사 1', 'Nurse 1', '山田 花子', '　山田　花子　', '김　길동', '佐藤・美咲', 'ジョン・スミス'];
 
         validNames.forEach((name) => {
             const validDraft = updateNurseDraft(draft, nurseId, {name});
@@ -693,7 +693,7 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 5 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김　길동', '🙂', '・'];
+        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김\u00a0길동', '🙂', '・'];
 
         invalidNames.forEach((name) => {
             const invalidDraft = updateNurseDraft(draft, nurseId, {name});
