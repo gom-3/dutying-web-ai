@@ -233,6 +233,77 @@ describe('Constraints', () => {
         await i18n.changeLanguage('ko');
     });
 
+    it.each(['TWO', 'THREE', 'MIXED'] as const)('exposes monthly shift counts and saves each comparison for %s', async (rotationMode) => {
+        const nightId = rotationMode === 'TWO' ? 5 : 3;
+        wardApiMocks.getShiftTypes.mockResolvedValue([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rotationMode,
+            options: {
+                targets: [{type: 'NURSE', nurseId: 1, label: 'Nurse A'}],
+                nurses: [{type: 'NURSE', nurseId: 1, label: 'Nurse A'}],
+                shiftsWithAll: [{type: 'SHIFT', wardShiftTypeId: nightId, label: 'N'}],
+                periods: [{type: 'MONTH', label: '한 달'}],
+                countOperators: [
+                    {type: 'MAX', label: '최대'},
+                    {type: 'MIN', label: '최소'},
+                    {type: 'EXACT', label: '정확히'},
+                ],
+                mixedAssignmentAggregations: [{type: 'EACH', label: '개인별'}],
+            },
+            templates: [
+                {
+                    templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'SOFT',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    defaultSeverity: 'SOFT',
+                    displayTemplate: '{target}의 {shift} 근무는 {period}에 {operator} {count}회예요.',
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'target', label: '대상', inputType: 'SELECT', optionGroup: 'targets'},
+                        {key: 'shift', label: '근무', inputType: 'SELECT', optionGroup: 'shiftsWithAll'},
+                        {key: 'period', label: '기간', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'operator', label: '조건', inputType: 'SELECT', optionGroup: 'countOperators'},
+                        {key: 'aggregation', label: '집계', inputType: 'SELECT', optionGroup: 'mixedAssignmentAggregations'},
+                        {key: 'count', label: '횟수', inputType: 'NUMBER', min: 0, max: 3100},
+                    ],
+                },
+            ],
+        } as never);
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
+        const card = document.querySelector<HTMLElement>('[data-constraint-template-card="SHIFT_COUNT_PER_PERIOD"]')!;
+        expect(card).toBeInTheDocument();
+        await userEvent.click(within(card).getByTitle('추가'));
+        await waitFor(() => expect(getLastUpdatePayload()?.rules?.some((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')).toBe(true));
+        await userEvent.click(screen.getAllByRole('button', {name: /모든 간호사|전체/})[0]!);
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: 'Nurse A'}));
+        await waitFor(() =>
+            expect(getLastUpdatePayload()?.rules?.find((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')?.params).toEqual(
+                expect.objectContaining({target: {type: 'NURSE', nurseId: 1}, shift: {type: 'SHIFT', wardShiftTypeId: nightId}}),
+            ),
+        );
+        for (const [label, type] of [
+            ['최소', 'MIN'],
+            ['정확히', 'EXACT'],
+            ['최대', 'MAX'],
+        ]) {
+            const current = screen.getAllByRole('button').find((b) => ['최대', '최소', '정확히'].includes(b.textContent || ''))!;
+            await userEvent.click(current);
+            await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: label}));
+            await waitFor(() =>
+                expect(getLastUpdatePayload()?.rules?.find((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')?.params).toEqual(
+                    expect.objectContaining({operator: {type}, period: {type: 'MONTH'}, aggregation: {type: 'EACH'}}),
+                ),
+            );
+        }
+    });
+
     it('shows a constraint-shaped skeleton while rules are loading', () => {
         wardApiMocks.getShiftConstraintRules.mockReturnValueOnce(new Promise(() => {}));
         wardApiMocks.getShiftConstraintRuleCandidates.mockReturnValueOnce(new Promise(() => {}));
@@ -1875,9 +1946,7 @@ describe('Constraints', () => {
         expect(within(targetListbox).getByRole('option', {name: /Nurse A/})).toBeInTheDocument();
         await userEvent.click(within(targetListbox).getByRole('option', {name: '신규 간호사 1'}));
 
-        const participationCard = document.querySelector<HTMLElement>(
-            '[data-constraint-template-card="MIXED_ROTATION_PARTICIPATION"]',
-        );
+        const participationCard = document.querySelector<HTMLElement>('[data-constraint-template-card="MIXED_ROTATION_PARTICIPATION"]');
         const helpTrigger = participationCard?.querySelector<HTMLButtonElement>('[data-constraint-help-trigger]');
 
         expect(helpTrigger).toBeInTheDocument();
