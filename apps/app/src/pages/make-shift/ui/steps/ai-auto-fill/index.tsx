@@ -39,7 +39,7 @@ import {useScheduleDisplay} from '@/pages/make-shift/model/use-schedule-display'
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {isScheduleRosterChangedApiError} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
-import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
+import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp?inline';
 import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
@@ -2904,7 +2904,7 @@ export function AiAutofill() {
                 )}
                 onClose={() => setPublishConfirmOpen(false)}
                 onConfirm={handlePublishConfirm}
-                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
+                icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
             />
             <ConfirmActionDialog
                 open={lastShiftBlankWarningIntent === 'confirm'}
@@ -2920,7 +2920,7 @@ export function AiAutofill() {
                 onCancel={handleCancelLastShiftBlankWarning}
                 onConfirm={handleConfirmLastShiftBlankWarning}
                 confirmButtonVariant={lastShiftBlankWarningIntent === 'aiFill' ? 'ai' : 'default'}
-                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
+                icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
                 spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shifts"
             />
             <ConfirmActionDialog
