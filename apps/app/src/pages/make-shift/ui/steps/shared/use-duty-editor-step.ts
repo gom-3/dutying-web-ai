@@ -9,7 +9,6 @@ import {
     buildDutyShiftTypeRefs,
     buildWorkKeyMap,
     getShiftEditorDraftStorageKey,
-    isDutyShiftFullyAssigned,
     shiftToDoc,
     workspaceCellsToFixedCells,
     type TCellValue,
@@ -21,6 +20,7 @@ import {
     useShiftEditorStore,
     useViolationMap,
 } from '@/features/shift-editor';
+import {mergePreviousShiftContext, mergePreviousShiftRow} from '@/features/shift-editor/model/previous-shift-context';
 import {onScheduleRosterChanged} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
@@ -47,14 +47,6 @@ function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
 
 function getPreviousYearMonth(year: number, month: number): {year: number; month: number} {
     return month === 1 ? {year: year - 1, month: 12} : {year, month: month - 1};
-}
-
-function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] | undefined): TCellValue[] | undefined {
-    if (!persisted) return base?.slice();
-
-    if (!base || base.length === 0) return persisted.slice();
-
-    return base.map((_cell, index) => persisted[index] ?? null);
 }
 
 type TShiftTypeRebaseContext = {
@@ -284,6 +276,7 @@ export function useDutyEditorStep({
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
+        refetchOnMount: 'always',
     });
     const workspaceQuery = useQuery({
         queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
@@ -296,10 +289,14 @@ export function useDutyEditorStep({
     const previousYearMonth = useMemo(() => getPreviousYearMonth(year, month), [year, month]);
     const previousDutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, previousYearMonth.year, previousYearMonth.month),
-        enabled: enabled && hydratePreviousLastShifts,
+        // New /duty responses already contain authoritative previous-month context.
+        enabled: enabled && hydratePreviousLastShifts && dutyQuery.data != null && dutyQuery.data.previousConfirmedSnapshotId === undefined,
+        refetchOnMount: 'always',
     });
     const previousConfirmedShift =
-        hydratePreviousLastShifts && previousDutyQuery.data && isDutyShiftFullyAssigned(previousDutyQuery.data)
+        hydratePreviousLastShifts &&
+        dutyQuery.data?.previousConfirmedSnapshotId === undefined &&
+        previousDutyQuery.data?.workflowStatus === 'CONFIRMED'
             ? previousDutyQuery.data
             : null;
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
@@ -316,12 +313,22 @@ export function useDutyEditorStep({
     const hydratedDraftRevisionRef = useRef<number | null>(null);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
     const [hydratedEditorContextKey, setHydratedEditorContextKey] = useState<string | null>(null);
-    const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
+    const needsLegacyPreviousQuery =
+        hydratePreviousLastShifts && dutyQuery.data != null && dutyQuery.data.previousConfirmedSnapshotId === undefined;
+    const isHydratingLastShifts =
+        hydratePreviousLastShifts && (dutyQuery.isFetching || (needsLegacyPreviousQuery && previousDutyQuery.isFetching));
     const isHydratingWorkspace = enabled && workspaceQuery.isFetching;
     const isWaitingForEditorSources = isHydratingLastShifts || isHydratingWorkspace;
+    const hasEditorSourceError = dutyQuery.isError || workspaceQuery.isError || (needsLegacyPreviousQuery && previousDutyQuery.isError);
     const isAwaitingEditorHydration =
-        enabled && dutyQuery.data !== undefined && !isWaitingForEditorSources && hydratedEditorContextKey !== currentContextKey;
+        enabled &&
+        dutyQuery.data !== undefined &&
+        !hasEditorSourceError &&
+        !isWaitingForEditorSources &&
+        hydratedEditorContextKey !== currentContextKey;
     const isHydratingEditor = isWaitingForEditorSources || isAwaitingEditorHydration;
+    const retryEditorSources = () =>
+        Promise.all([dutyQuery.refetch(), workspaceQuery.refetch(), ...(needsLegacyPreviousQuery ? [previousDutyQuery.refetch()] : [])]);
 
     useEffect(
         () =>
@@ -348,7 +355,7 @@ export function useDutyEditorStep({
     }, [workspaceQuery.data, setAutofillAdjustEnabled]);
 
     useEffect(() => {
-        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isWaitingForEditorSources) return;
+        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isWaitingForEditorSources || hasEditorSourceError) return;
 
         const nextPersistenceKey = getShiftEditorDraftStorageKey({wardId, shiftTeamId: currentShiftTeamId, year, month});
         const currentPersistenceKey = commands.getCurrentPersistenceKey();
@@ -371,10 +378,17 @@ export function useDutyEditorStep({
         };
         const currentTypeMaps = buildWardShiftTypeMaps(dutyQuery.data);
         const currentShortNames = new Set(currentTypeMaps.shortNameToType.keys());
+        const currentDoc =
+            !hasContextChanged && initialHydrationDoneRef.current ? mergePreviousShiftContext(editorDoc, baseDoc) : editorDoc;
+
+        if (currentDoc !== editorDoc) {
+            useShiftEditorStore.getState().setDoc(currentDoc);
+            commands.persistImmediate();
+        }
 
         if (!hasContextChanged && hasDutyDataChanged && hasLocalChangesSinceHydration && !isStoreEmpty) {
             const rebasedDoc = rebaseDocRowsToCurrentShiftTypes(
-                editorDoc,
+                currentDoc,
                 baseDoc,
                 JSON.stringify(useShiftEditorStore.getState().history),
                 {
@@ -446,8 +460,7 @@ export function useDutyEditorStep({
                 if (!row) return baseRow;
 
                 return {
-                    ...row,
-                    lastCells: mergeLastCells(row.lastCells, baseRow.lastCells),
+                    ...mergePreviousShiftRow(row, baseRow),
                     cells: row.cells.map((cell, colIdx) => {
                         const date = persisted.doc.columns[colIdx];
 
@@ -504,6 +517,7 @@ export function useDutyEditorStep({
         dutyQuery.data,
         workspaceQuery.data,
         isWaitingForEditorSources,
+        hasEditorSourceError,
         month,
         onContextChanged,
         previousConfirmedShift,
@@ -529,5 +543,7 @@ export function useDutyEditorStep({
         focusEditor,
         isHydratingLastShifts,
         isHydratingEditor,
+        hasEditorSourceError,
+        retryEditorSources,
     };
 }

@@ -3,6 +3,7 @@ import {QueryClient} from '@tanstack/react-query';
 import {describe, expect, it} from 'vitest';
 import {
     MAX_SCHEDULE_SNAPSHOT_COUNT,
+    invalidateConfirmedScheduleContext,
     normalizeScheduleSnapshots,
     prependSnapshotToListCache,
     removeSnapshotFromListCache,
@@ -93,5 +94,22 @@ describe('schedule snapshot list helpers', () => {
         const result = queryClient.getQueryData<TSnapshotSummaryDto[]>(key);
 
         expect(result?.map((snapshot) => snapshot.snapshotId)).toEqual([2]);
+    });
+});
+
+describe('confirmation context refresh', () => {
+    it.each([
+        [2026, 10, 2026, 11],
+        [2026, 12, 2027, 1],
+    ])('invalidates the next month after confirming %i/%i', async (year, month, nextYear, nextMonth) => {
+        const client = new QueryClient();
+        const current = ['ward', 'duty', 1, 10, year, month];
+        const next = ['ward', 'duty', 1, 10, nextYear, nextMonth];
+        const workspace = ['ward', 1, 'shift-team', 10, 'schedule-workspace', nextYear, nextMonth];
+        const other = ['ward', 'duty', 2, 10, nextYear, nextMonth];
+        [current, next, workspace, other].forEach((key) => client.setQueryData(key, {}));
+        await invalidateConfirmedScheduleContext(client, 1, 10, year, month);
+        [current, next, workspace].forEach((key) => expect(client.getQueryState(key)?.isInvalidated).toBe(true));
+        expect(client.getQueryState(other)?.isInvalidated).toBe(false);
     });
 });

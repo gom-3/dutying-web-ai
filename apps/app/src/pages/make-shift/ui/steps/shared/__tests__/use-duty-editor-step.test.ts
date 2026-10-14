@@ -175,6 +175,101 @@ describe('useDutyEditorStep', () => {
         useShiftEditorStore.getState().reset();
     });
 
+    it('hydrates confirmed previous cells over persisted blanks while preserving current-month edits', async () => {
+        window.localStorage.setItem(
+            'shift-editor:draft:1:10:2026:5',
+            JSON.stringify({
+                doc: {
+                    columns: ['2026-05-01'],
+                    rows: [{workerId: '2', cells: ['D'], lastCells: [null, null, null, null]}],
+                    workerMeta: {2: {name: 'Kim', nurseId: 100}},
+                    fixedCells: {},
+                    requestCells: {},
+                },
+                history: JSON.stringify({past: [], future: [], maxDepth: 100}),
+                savedAt: Date.now(),
+            }),
+        );
+        const shift = makeShift({wardShiftList: [null]});
+        shift.previousConfirmedSnapshotId = 88;
+        shift.divisionShiftNurses[0][0].lastWardShiftList = [10, null, 10, 10];
+        wardApiMocks.getShift.mockResolvedValue(shift);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+        renderHook(() => useDutyEditorStep({hydratePreviousLastShifts: true}), {wrapper: createQueryWrapper()});
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual(['D', null, 'D', 'D']));
+        expect(useShiftEditorStore.getState().doc.rows[0]?.lastCellLocks).toEqual([true, false, true, true]);
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D']);
+        expect(wardApiMocks.getShift).toHaveBeenCalledTimes(1);
+    });
+
+    it('refreshes previous context after reconfirmation without resetting current-month editing', async () => {
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        const shift = makeShift();
+        shift.previousConfirmedSnapshotId = 88;
+        shift.divisionShiftNurses[0][0].lastWardShiftList = [10, null, null, null];
+        wardApiMocks.getShift.mockResolvedValue(shift);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+        renderHook(() => useDutyEditorStep({hydratePreviousLastShifts: true}), {wrapper: createQueryWrapper(queryClient)});
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual(['D', null, null, null]));
+        act(() => {
+            const store = useShiftEditorStore.getState();
+            store.setDoc({...store.doc, rows: store.doc.rows.map((row) => ({...row, cells: [null]}))});
+        });
+        const refreshed = {
+            ...shift,
+            previousConfirmedSnapshotId: 89,
+            divisionShiftNurses: [
+                [
+                    {
+                        ...shift.divisionShiftNurses[0][0],
+                        lastWardShiftList: [null, 10, 10, 10],
+                    },
+                ],
+            ],
+        };
+        act(() => {
+            queryClient.setQueryData(['ward', 'duty', 1, 10, 2026, 5], refreshed);
+        });
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual([null, 'D', 'D', 'D']));
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual([null]);
+        const stored = JSON.parse(window.localStorage.getItem('shift-editor:draft:1:10:2026:5')!);
+        expect(stored.doc.rows[0].cells).toEqual([null]);
+        expect(stored.doc.rows[0].lastCells).toEqual([null, 'D', 'D', 'D']);
+    });
+
+    it('supports partially assigned confirmed schedules on older APIs using stable nurse IDs', async () => {
+        const previous = makeShift({wardShiftList: [null, 10, 10, 10, 10]});
+        previous.workflowStatus = 'CONFIRMED';
+        previous.days = Array.from({length: 5}, (_, i) => ({day: i + 1, dayType: 'workday' as const}));
+        previous.divisionShiftNurses[0][0].shiftNurse.shiftNurseId = 999;
+        wardApiMocks.getShift.mockImplementation((_ward: number, _team: number, _year: number, month: number) =>
+            Promise.resolve(month === 4 ? previous : makeShift()),
+        );
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+        renderHook(() => useDutyEditorStep({hydratePreviousLastShifts: true}), {wrapper: createQueryWrapper()});
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual(['D', 'D', 'D', 'D']));
+        expect(useShiftEditorStore.getState().doc.rows[0]?.lastCellLocks).toEqual([true, true, true, true]);
+    });
+
+    it('reports failed previous-month lookup and retries instead of treating it as missing data', async () => {
+        let fail = true;
+        const previous = {...makeShift(), workflowStatus: 'CONFIRMED' as const};
+        wardApiMocks.getShift.mockImplementation((_ward: number, _team: number, _year: number, month: number) => {
+            if (month === 4 && fail) return Promise.reject(new Error('lookup failed'));
+            return Promise.resolve(month === 4 ? previous : makeShift());
+        });
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+        const {result} = renderHook(() => useDutyEditorStep({hydratePreviousLastShifts: true}), {wrapper: createQueryWrapper()});
+        await waitFor(() => expect(result.current.hasEditorSourceError).toBe(true));
+        expect(useShiftEditorStore.getState().doc.columns).toEqual([]);
+        fail = false;
+        await act(async () => {
+            await result.current.retryEditorSources();
+        });
+        await waitFor(() => expect(result.current.hasEditorSourceError).toBe(false));
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual([null, null, null, 'D']));
+    });
+
     it('waits for workspace fixed cells before hydrating the editor document', async () => {
         const workspace = createDeferred<ReturnType<typeof makeWorkspaceSchedule>>();
 

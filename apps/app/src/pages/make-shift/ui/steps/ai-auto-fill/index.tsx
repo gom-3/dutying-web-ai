@@ -65,6 +65,7 @@ import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-su
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
+    invalidateConfirmedScheduleContext,
     MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
     prependSnapshotToListCache,
@@ -495,6 +496,8 @@ export function AiAutofill() {
         teamViolations,
         focusEditor,
         isHydratingEditor,
+        hasEditorSourceError,
+        retryEditorSources,
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
@@ -667,6 +670,7 @@ export function AiAutofill() {
             isCurrentShiftTeamReady &&
             Boolean(orderedShift) &&
             !isHydratingEditor &&
+            !hasEditorSourceError &&
             !isAiGenerating &&
             !isWorking &&
             !isSavingSnapshot &&
@@ -757,7 +761,7 @@ export function AiAutofill() {
         !isReorderingRows &&
         !dutyQuery.isLoading &&
         !isHydratingEditor &&
-        !dutyQuery.isError &&
+        !hasEditorSourceError &&
         Boolean(orderedShift) &&
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
@@ -957,7 +961,7 @@ export function AiAutofill() {
         useCase.confirm(nextShift);
         void queryClient.invalidateQueries({queryKey: ['annualLeave', wardId]});
         queryClient.setQueryData(queryKey, nextShift);
-        void queryClient.invalidateQueries({queryKey});
+        void invalidateConfirmedScheduleContext(queryClient, wardId, currentShiftTeamId, year, month);
 
         try {
             await syncNextMonthRestCarryOver({
@@ -1029,10 +1033,12 @@ export function AiAutofill() {
                 return;
             }
 
+            const latestDoc = useShiftEditorStore.getState().doc;
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
-                fixedCells: editorDoc.fixedCells,
-                requestCells: editorDoc.requestCells,
-                lastCellsByWorkerId: Object.fromEntries(editorDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
+                fixedCells: latestDoc.fixedCells,
+                requestCells: latestDoc.requestCells,
+                lastCellsByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
+                lastCellLocksByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCellLocks ?? []])),
             });
 
             commands.init(nextDoc);
@@ -1254,7 +1260,7 @@ export function AiAutofill() {
         }
     };
     const getAiFillReadyContext = () => {
-        if (isAiGenerating || isAiLoadingOverlayFinishing) return null;
+        if (isAiGenerating || isAiLoadingOverlayFinishing || isHydratingEditor || hasEditorSourceError) return null;
 
         if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !orderedShift) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
@@ -1555,7 +1561,7 @@ export function AiAutofill() {
         !isReorderingRows &&
         !dutyQuery.isLoading &&
         !isHydratingEditor &&
-        !dutyQuery.isError &&
+        !hasEditorSourceError &&
         Boolean(orderedShift);
     const handleRequestClearUnlockedCells = () => {
         if (!canClearUnlockedCells) return;
@@ -2191,7 +2197,9 @@ export function AiAutofill() {
                         </p>
                         <button
                             type="button"
-                            disabled={loadingBatch || isAiGenerating || !isCurrentShiftTeamReady || isHydratingEditor}
+                            disabled={
+                                loadingBatch || isAiGenerating || !isCurrentShiftTeamReady || isHydratingEditor || hasEditorSourceError
+                            }
                             onClick={() => void reviewBatchResult()}
                             className="mt-2 rounded-lg bg-purple-600 px-4 py-2 text-white disabled:opacity-50"
                         >
@@ -2310,15 +2318,15 @@ export function AiAutofill() {
                 {(dutyQuery.isLoading || isHydratingEditor) && (
                     <MakeShiftCalendarSkeleton ariaLabel={t('page.makeShift.aiRefill.loading')} />
                 )}
-                {dutyQuery.isError && (
+                {hasEditorSourceError && (
                     <PageState
                         tone="error"
                         title={t('page.makeShift.aiRefill.error')}
                         description={t('page.state.errorDescription')}
-                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                        action={{label: t('page.state.retry'), onClick: () => void retryEditorSources()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && !isAiFillDecisionPreviewOpen && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && orderedShift && !isAiFillDecisionPreviewOpen && (
                     <MakeShiftCalendar
                         shift={orderedShift}
                         doc={visibleCalendarDoc}
@@ -2349,7 +2357,7 @@ export function AiAutofill() {
                         stickyHeader
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && !orderedShift && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
                 )}
             </div>

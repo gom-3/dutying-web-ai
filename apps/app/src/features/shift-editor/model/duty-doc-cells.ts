@@ -48,13 +48,24 @@ export function readDutyCell(row: TDutyRow, colIndex: number): TCellValue {
     return row.cells[colIndex] ?? null;
 }
 
+export function isConfirmedPreviousCell(doc: TDutyDoc, rowIndex: number, colIndex: number): boolean {
+    const row = doc.rows[rowIndex];
+
+    if (!row || colIndex >= 0) return false;
+
+    const index = getLastCellIndex(row, colIndex);
+
+    return index !== null && row.lastCellLocks?.[index] === true;
+}
+
 export function writeDutyCell(row: TDutyRow, colIndex: number, value: TCellValue): TDutyRow {
     if (colIndex < 0) {
         const index = getLastCellIndex(row, colIndex);
 
-        if (index === null) return row;
+        if (index === null || row.lastCellLocks?.[index]) return row;
 
         const nextLastCells = (row.lastCells ?? []).slice();
+
         nextLastCells[index] = value;
 
         return {...row, lastCells: nextLastCells};
@@ -63,6 +74,7 @@ export function writeDutyCell(row: TDutyRow, colIndex: number, value: TCellValue
     if (colIndex >= row.cells.length) return row;
 
     const nextCells = row.cells.slice();
+
     nextCells[colIndex] = value;
 
     return {...row, cells: nextCells};

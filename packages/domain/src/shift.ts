@@ -24,6 +24,8 @@ export type TShift = {
     divisionShiftNurses: TRow[][];
     workflowStatus?: TShiftWorkflowStatus | null;
     workflowStep?: number | null;
+    /** Latest confirmed previous-month snapshot. Undefined denotes an older API. */
+    previousConfirmedSnapshotId?: number | null;
 };
 
 export type TRequestShift = {
