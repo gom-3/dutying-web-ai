@@ -1,5 +1,5 @@
+import {isDutyCellPositionInBounds, isConfirmedPreviousCell, readDutyCell} from './duty-doc-cells';
 import {normalizeSelection} from './selection';
-import {isDutyCellPositionInBounds, readDutyCell} from './duty-doc-cells';
 import type {TClipboardPayload, TDutyDoc, TSelection, TSetCellsOp} from './types';
 
 export function copySelection(doc: TDutyDoc, selection: TSelection | null): TClipboardPayload | null {
@@ -37,6 +37,8 @@ export function pastePayload(payload: TClipboardPayload, selection: TSelection, 
             const col = startCol + c;
 
             if (!isDutyCellPositionInBounds(doc, row, col)) continue; // Auto-trim out-of-bounds paste cells.
+
+            if (isConfirmedPreviousCell(doc, row, col)) continue;
 
             const docRow = doc.rows[row];
 

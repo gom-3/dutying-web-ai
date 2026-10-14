@@ -5,6 +5,10 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
+# Vite filenames include a content hash, so updates receive a new URL.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /.well-known/apple-app-site-association
   Content-Type: application/json
 

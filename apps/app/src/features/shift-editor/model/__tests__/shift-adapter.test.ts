@@ -170,6 +170,39 @@ describe('shift-adapter', () => {
         });
     });
 
+    it('matches confirmed previous rows by nurse ID after monthly row IDs and order change', () => {
+        const current = createShift();
+        current.divisionShiftNurses[0][0].shiftNurse.shiftNurseId = 201;
+        const previous: TShift = {
+            ...createShift(),
+            divisionShiftNurses: [
+                [
+                    {
+                        ...createShift().divisionShiftNurses[0][0],
+                        shiftNurse: {...createShift().divisionShiftNurses[0][0].shiftNurse, nurseId: 999},
+                        wardShiftList: [20, 20, 20, 20],
+                    },
+                    {...createShift().divisionShiftNurses[0][0], wardShiftList: [10, 20, 10, 20]},
+                ],
+            ],
+        };
+        const doc = shiftToDoc(current, 2026, 11, {previousConfirmedShift: previous});
+        expect(doc.rows[0]).toMatchObject({workerId: '201', lastCells: ['D', 'O', 'D', 'O'], lastCellLocks: [true, true, true, true]});
+    });
+
+    it.each([
+        [2026, 1, '2025-12-31'],
+        [2024, 3, '2024-02-29'],
+    ])('keeps actual previous dates for %i/%i', (year, month, lastDate) => {
+        const shift = createShift();
+        shift.previousConfirmedSnapshotId = 5;
+        shift.divisionShiftNurses[0][0].lastWardShiftList = [null, null, 10, 20];
+        const doc = shiftToDoc(shift, year, month);
+        const carry = docToCarryOverCellsDTO(doc, shift, year, month);
+        expect(carry.find((cell) => cell.shiftCode === 'O')?.date).toBe(lastDate);
+        expect(carry.every((cell) => cell.shiftNurseId === 1 && cell.nurseId === 100)).toBe(true);
+    });
+
     it('uses the previous confirmed schedule as the last-shift context', () => {
         const previousShift: TShift = {
             ...createShift(),

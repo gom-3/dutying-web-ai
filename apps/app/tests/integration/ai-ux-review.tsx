@@ -252,7 +252,12 @@ const adapter: AxiosAdapter = async (config) => {
     const url = config.url ?? '';
     const request = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
     let data: unknown;
-    if (url.includes('/conversation-preferences')) data = [];
+    if (url.endsWith('/rest-leave-policy')) data = {
+        wardId: 1, persisted: false, version: 0, enabled: false, targetMode: 'weekly', weeklyOffDays: 2,
+        fixedMonthlyOffDays: 6, includeHolidays: true, countedRestShiftTypeIds: null, leaveCountMode: 'allLeaves',
+        carryOverEnabled: false, holidayCountry: null, holidayRegion: null,
+    };
+    else if (url.includes('/conversation-preferences')) data = [];
     else if (url.includes('/reports')) data = {incidentId: 'local-admin-only-reference'};
     else if (url.endsWith('/segments')) {
         const selected = versions.get(request.versionId) ?? detail.draft;

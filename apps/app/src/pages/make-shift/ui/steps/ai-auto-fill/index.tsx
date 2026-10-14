@@ -39,7 +39,7 @@ import {useScheduleDisplay} from '@/pages/make-shift/model/use-schedule-display'
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {isScheduleRosterChangedApiError} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
-import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp';
+import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp?inline';
 import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
@@ -76,6 +76,7 @@ import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-su
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
+    invalidateConfirmedScheduleContext,
     MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
     prependSnapshotToListCache,
@@ -512,6 +513,8 @@ export function AiAutofill() {
         teamViolations,
         focusEditor,
         isHydratingEditor,
+        hasEditorSourceError,
+        retryEditorSources,
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
@@ -682,6 +685,7 @@ export function AiAutofill() {
             isCurrentShiftTeamReady &&
             Boolean(orderedShift) &&
             !isHydratingEditor &&
+            !hasEditorSourceError &&
             !isAiGenerating &&
             !isWorking &&
             !isSavingSnapshot &&
@@ -783,7 +787,7 @@ export function AiAutofill() {
         !isReorderingRows &&
         !dutyQuery.isLoading &&
         !isHydratingEditor &&
-        !dutyQuery.isError &&
+        !hasEditorSourceError &&
         Boolean(orderedShift) &&
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
@@ -979,7 +983,7 @@ export function AiAutofill() {
         useCase.confirm(nextShift);
         void queryClient.invalidateQueries({queryKey: ['annualLeave', wardId]});
         queryClient.setQueryData(queryKey, nextShift);
-        void queryClient.invalidateQueries({queryKey});
+        void invalidateConfirmedScheduleContext(queryClient, wardId, currentShiftTeamId, year, month);
 
         try {
             await syncNextMonthRestCarryOver({
@@ -1051,10 +1055,12 @@ export function AiAutofill() {
                 return;
             }
 
+            const latestDoc = useShiftEditorStore.getState().doc;
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
-                fixedCells: editorDoc.fixedCells,
-                requestCells: editorDoc.requestCells,
-                lastCellsByWorkerId: Object.fromEntries(editorDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
+                fixedCells: latestDoc.fixedCells,
+                requestCells: latestDoc.requestCells,
+                lastCellsByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
+                lastCellLocksByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCellLocks ?? []])),
             });
 
             commands.init(nextDoc);
@@ -1277,7 +1283,7 @@ export function AiAutofill() {
         }
     };
     const getAiFillReadyContext = () => {
-        if (isAiGenerating || isAiLoadingOverlayFinishing) return null;
+        if (isAiGenerating || isAiLoadingOverlayFinishing || isHydratingEditor || hasEditorSourceError) return null;
 
         if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !orderedShift) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
@@ -1341,10 +1347,7 @@ export function AiAutofill() {
             const requestDoc = action?.doc ?? stateBeforeRequest.doc;
             // 조절은 고정·신청 근무와 자동완성 이후의 수동 편집을 보호한다.
             const adjustLocked = adjust
-                ? adjustLockedCellKeys(
-                      requestDoc,
-                      getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current),
-                  )
+                ? adjustLockedCellKeys(requestDoc, getEditedFilledCellsSinceBaseline(stateBeforeRequest.doc, lastAiGeneratedDocRef.current))
                 : undefined;
             const result = await requestAiSchedule({
                 wardId: requestContext.wardId,
@@ -1621,7 +1624,7 @@ export function AiAutofill() {
         !isReorderingRows &&
         !dutyQuery.isLoading &&
         !isHydratingEditor &&
-        !dutyQuery.isError &&
+        !hasEditorSourceError &&
         Boolean(orderedShift);
     const handleRequestClearUnlockedCells = () => {
         if (!canClearUnlockedCells) return;
@@ -1710,8 +1713,8 @@ export function AiAutofill() {
         if (interpretedRevisionRef.current !== before.draftRevision)
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
         const latestRequests = await refetchMonthRequests();
-        if (conversationSequence.current !== conversation)
-            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
+        if (conversationSequence.current !== conversation) throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
         if (!latestRequests) throw new Error(t('aiAdjust.requestsFailed'));
         const activeFingerprint = (requests: TScheduleMonthRequestRes[]) =>
             JSON.stringify(requests.filter((entry) => entry.status === 'ACTIVE'));
@@ -1738,8 +1741,7 @@ export function AiAutofill() {
 
         await prepareAdjustment();
 
-        if (conversationSequence.current !== conversation)
-            throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+        if (conversationSequence.current !== conversation) throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
 
         const attempt = autofillSequence.current;
 
@@ -2273,7 +2275,13 @@ export function AiAutofill() {
 
         appendAutofillMessage({
             role: 'user',
-            text: t(autofillFlow?.kind === 'adjustment' ? 'aiAdjust.preparation.next' : aiFillDecisionFixableCells.length === 0 ? 'aiAdjust.autofill' : 'aiAdjust.preparation.fill'),
+            text: t(
+                autofillFlow?.kind === 'adjustment'
+                    ? 'aiAdjust.preparation.next'
+                    : aiFillDecisionFixableCells.length === 0
+                      ? 'aiAdjust.autofill'
+                      : 'aiAdjust.preparation.fill',
+            ),
         });
         startPreparedFill();
     };
@@ -2585,7 +2593,9 @@ export function AiAutofill() {
                         </p>
                         <button
                             type="button"
-                            disabled={loadingBatch || isAiGenerating || !isCurrentShiftTeamReady || isHydratingEditor}
+                            disabled={
+                                loadingBatch || isAiGenerating || !isCurrentShiftTeamReady || isHydratingEditor || hasEditorSourceError
+                            }
                             onClick={() => void reviewBatchResult()}
                             className="mt-2 rounded-lg bg-purple-600 px-4 py-2 text-white disabled:opacity-50"
                         >
@@ -2723,15 +2733,15 @@ export function AiAutofill() {
                 {(dutyQuery.isLoading || isHydratingEditor) && (
                     <MakeShiftCalendarSkeleton ariaLabel={t('page.makeShift.aiRefill.loading')} />
                 )}
-                {dutyQuery.isError && (
+                {hasEditorSourceError && (
                     <PageState
                         tone="error"
                         title={t('page.makeShift.aiRefill.error')}
                         description={t('page.state.errorDescription')}
-                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                        action={{label: t('page.state.retry'), onClick: () => void retryEditorSources()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && orderedShift && (
                     <div className="ai-autofill-preparation-calendar">
                         <MakeShiftCalendar
                             shift={orderedShift}
@@ -2774,7 +2784,7 @@ export function AiAutofill() {
                         />
                     </div>
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && !orderedShift && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
                 )}
             </div>
@@ -2894,7 +2904,7 @@ export function AiAutofill() {
                 )}
                 onClose={() => setPublishConfirmOpen(false)}
                 onConfirm={handlePublishConfirm}
-                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
+                icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
             />
             <ConfirmActionDialog
                 open={lastShiftBlankWarningIntent === 'confirm'}
@@ -2910,7 +2920,7 @@ export function AiAutofill() {
                 onCancel={handleCancelLastShiftBlankWarning}
                 onConfirm={handleConfirmLastShiftBlankWarning}
                 confirmButtonVariant={lastShiftBlankWarningIntent === 'aiFill' ? 'ai' : 'default'}
-                icon={<img src={purpleWarnIcon} alt="" className="h-12 w-12 object-contain" />}
+                icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
                 spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shifts"
             />
             <ConfirmActionDialog

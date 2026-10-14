@@ -270,8 +270,9 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         });
 
         expect(result).toMatchObject({ok: false, failure: {blocked: false, recovery: 'retry'}});
-        expect(!result.ok && result.message).toContain('근무표 작성 중 문제가 생겼어요.');
-        expect(!result.ok && result.message).not.toMatch(/시간|제한|타임아웃|솔버|엔진|TIME_LIMIT/);
+        expect(!result.ok && result.message).toContain('정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
+        expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+        expect(!result.ok && result.message).not.toMatch(/타임아웃|솔버|엔진|TIME_LIMIT|time_limit_no_solution/);
     });
 
     it('조절이 아닌 요청에서는 빈 결과가 여전히 실패다', async () => {
