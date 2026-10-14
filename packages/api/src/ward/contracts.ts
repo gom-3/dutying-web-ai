@@ -771,6 +771,7 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    monthlyRestRequirement?: TMonthlyRestRequirement;
     year: number;
     month: number;
     prompt?: string;
@@ -1258,4 +1259,10 @@ export type TCreateShiftTypeDTO = {
     paidMinutes?: number | null;
     isActive?: boolean;
     displayOrder?: number;
+};
+
+/** Same targets and accounting as the schedule's rest-check column. */
+export type TMonthlyRestRequirement = {
+    minimumDaysByShiftNurseId: Record<number, number>;
+    countedWardShiftTypeIds: number[];
 };

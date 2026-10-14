@@ -23,6 +23,7 @@ import {
     visibleConversationTurns,
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
+import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
 import {
     conversationApi,
     conversationEvents,
@@ -46,9 +47,9 @@ import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationEntry, AiInfoTip, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
 import {AiConversationHistory} from './ai-conversation-history';
+import {AiConversationImage} from './ai-conversation-image';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
-import {AiConversationImage} from './ai-conversation-image';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiSemanticReview} from './ai-semantic-review';
@@ -396,6 +397,7 @@ export default function AiConversationSidebar({
             if (saved) throw new AiConversationInputError('pendingExecution');
 
             const request: TConversationExecute = {
+                monthlyRestRequirement: await loadMonthlyRestRequirement(wardId, teamId, shift, year, month),
                 expectedRevision: current.conversation.revision,
                 idempotencyKey: crypto.randomUUID(),
                 operationType,
