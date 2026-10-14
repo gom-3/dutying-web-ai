@@ -2,6 +2,7 @@ import toast from 'react-hot-toast';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
+import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp?inline';
 import {ko} from '@/shared/i18n/resources.generated';
 import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import {useSchedulePublishSuccessStore} from '../../../../model/schedule-publish-success-store';
@@ -358,7 +359,8 @@ describe('AiAutofill blank preview', () => {
 
         const dialog = await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'});
 
-        expect(dialog.querySelector('img')).toHaveAttribute('src', expect.stringContaining('purple-warn-icon'));
+        expect(dialog.querySelector('img')).toHaveAttribute('src', purpleWarnIcon);
+        expect(purpleWarnIcon).toMatch(/^data:image\/webp;base64,/);
     });
 
     it('adds the connection hint to the animated success dialog when any nurse is unlinked', async () => {
