@@ -10,8 +10,9 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
-import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
+import {normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
@@ -169,7 +170,7 @@ const mergeWardShiftTeams = (ward: TWard | undefined, shiftTeams: TWard['shiftTe
 };
 const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean} = {}) =>
     compactRequest({
-        name: nurse.name?.trim(),
+        name: nurse.name == null ? undefined : normalizeNurseNameForRequest(nurse.name),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
         birthDate: toOptionalBirthDate(nurse.birthDate),
         isWorker: nurse.isWorker,
@@ -180,7 +181,7 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     }) as TUpdateNurseDTO;
 const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => ({
     ...toNursePayload(nurse),
-    name: (nurse.name ?? '').trim(),
+    name: normalizeNurseNameForRequest(nurse.name ?? ''),
 });
 const useEditShiftTeam = () => {
     const {t} = useTypedTranslation();

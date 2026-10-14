@@ -21,7 +21,7 @@ describe('nurse name helpers', () => {
     });
 
     it('rejects unsupported whitespace, emoji, special characters, and symbol-only values', () => {
-        expect(isValidNurseName('山田　花子')).toBe(false);
+        expect(isValidNurseName('山田\u00a0花子')).toBe(false);
         expect(isValidNurseName('山田\t花子')).toBe(false);
         expect(isValidNurseName('山田\n花子')).toBe(false);
         expect(isValidNurseName('🙂')).toBe(false);
@@ -34,14 +34,17 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('홍')).toBe(false);
     });
 
-    it('normalizes only ASCII edge spaces for requests', () => {
+    it('normalizes fullwidth separators without joining names and trims edge spaces', () => {
         expect(normalizeNurseNameForRequest('  山田 花子  ')).toBe('山田 花子');
-        expect(normalizeNurseNameForRequest('　山田 花子　')).toBe('　山田 花子　');
+        expect(normalizeNurseNameForRequest('　山田　花子　')).toBe('山田 花子');
+        expect(normalizeNurseNameForRequest('山田　　花子')).toBe('山田  花子');
+        expect(isValidNurseName('　山田　花子　')).toBe(true);
+        expect(isValidNurseName('　　')).toBe(false);
     });
 
     it('keeps Korean IME composition characters while sanitizing unsupported input', () => {
         expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
         expect(sanitizeNurseNameInput('홍')).toBe('홍');
-        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田花子Nurse1・ー ');
+        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田 花子Nurse1・ー ');
     });
 });

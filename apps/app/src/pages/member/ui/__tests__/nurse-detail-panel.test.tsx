@@ -119,13 +119,19 @@ describe('NurseDetailPanel', () => {
         const {rerender} = renderPanel(original);
         const refresh = (selectedNurse: TNurse) => {
             const current = mockUseEditShiftTeam.mock.results[mockUseEditShiftTeam.mock.results.length - 1]?.value;
+
             mockUseEditShiftTeam.mockReturnValue({
                 ...current,
                 state: {...current.state, selectedNurse},
             });
             rerender(
-                <NurseDetailPanel onClose={vi.fn()} onOpenWardCodeGuide={vi.fn()} shiftTeams={[]}
-                    onMoveShiftTeam={vi.fn()} wardShiftTypes={[]} />,
+                <NurseDetailPanel
+                    onClose={vi.fn()}
+                    onOpenWardCodeGuide={vi.fn()}
+                    shiftTeams={[]}
+                    onMoveShiftTeam={vi.fn()}
+                    wardShiftTypes={[]}
+                />,
             );
         };
 
@@ -138,19 +144,20 @@ describe('NurseDetailPanel', () => {
         expect(screen.getByRole('checkbox', {name: '수정 중 프리셉터'})).toHaveAttribute('aria-checked', 'true');
     });
 
-    it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full English name %s', async (name) => {
+    it.each([
+        ['emily sheparded', 'emily sheparded'],
+        ['Alexandria Elizabeth Montgomery', 'Alexandria Elizabeth Montgomery'],
+        ['　山田　花子　', '山田 花子'],
+    ])('saves the normalized name %s', async (input, name) => {
         const {saveNurseDetails} = renderPanel(createNurse());
         const nameInput = screen.getByDisplayValue('김듀티');
 
         expect(nameInput).toHaveAttribute('maxlength', '50');
-        fireEvent.change(nameInput, {target: {value: name}});
+        fireEvent.change(nameInput, {target: {value: input}});
         fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() =>
-            expect(saveNurseDetails).toHaveBeenCalledWith(
-                101,
-                expect.objectContaining({nurse: expect.objectContaining({name})}),
-            ),
+            expect(saveNurseDetails).toHaveBeenCalledWith(101, expect.objectContaining({nurse: expect.objectContaining({name})})),
         );
     });
 
