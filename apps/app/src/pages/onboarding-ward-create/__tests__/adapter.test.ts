@@ -445,12 +445,16 @@ describe('OnboardingWardCreatePage adapter', () => {
                     id: 'nurse-spaced-en',
                     name: 'Nurse 1',
                 }),
+                createNurseDraft(firstTeamId, {
+                    id: 'nurse-fullwidth-spaces',
+                    name: '　山田　花子　',
+                }),
             ],
         };
         const payload = buildCreateWardPayload(draft);
 
-        expect(payload.shiftTeams[0]?.nurseNames).toEqual(['신규 간호사 1', 'Nurse 1']);
-        expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1']);
+        expect(payload.shiftTeams[0]?.nurseNames).toEqual(['신규 간호사 1', 'Nurse 1', '山田 花子']);
+        expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1', '山田 花子']);
     });
 
     it('sends preceptor roles separately from nurse memo in the create payload', () => {
