@@ -297,6 +297,7 @@ export function useDutyEditorStep({
     const previousDutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, previousYearMonth.year, previousYearMonth.month),
         enabled: enabled && hydratePreviousLastShifts,
+        refetchOnMount: 'always',
     });
     const previousConfirmedShift =
         hydratePreviousLastShifts && previousDutyQuery.data && isDutyShiftFullyAssigned(previousDutyQuery.data)

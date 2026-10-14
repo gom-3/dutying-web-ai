@@ -70,7 +70,9 @@ function resolveLastShiftIds(
     row: TShift['divisionShiftNurses'][number][number],
     previousConfirmedShift?: TShift | null,
 ): (number | null)[] {
-    const previousRow = findShiftRowByShiftNurseId(previousConfirmedShift, row.shiftNurse.shiftNurseId);
+    const previousRow = previousConfirmedShift?.divisionShiftNurses
+        .flat()
+        .find((previous) => previous.shiftNurse.nurseId === row.shiftNurse.nurseId);
 
     if (previousRow?.wardShiftList) {
         return normalizeLastShiftIds(previousRow.wardShiftList);
