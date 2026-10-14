@@ -559,7 +559,7 @@ function NurseDetailPanel({
                 const originalBirthDate = normalizeBirthDateForStorage(savedNurseBaseline.birthDate);
 
                 nursePayload = {
-                    name: normalizeNurseNameForRequest(writeNurse.name),
+                    name: normalizeNurseNameForRequest(writeNurse.name.trim()),
                     phoneNum: writeNurse.phoneNum,
                     isWorker: writeNurse.isWorker,
                     isWardManager: writeNurse.isWardManager,

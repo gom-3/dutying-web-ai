@@ -170,7 +170,7 @@ const mergeWardShiftTeams = (ward: TWard | undefined, shiftTeams: TWard['shiftTe
 };
 const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean} = {}) =>
     compactRequest({
-        name: nurse.name == null ? undefined : normalizeNurseNameForRequest(nurse.name),
+        name: nurse.name == null ? undefined : normalizeNurseNameForRequest(nurse.name.trim()),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
         birthDate: toOptionalBirthDate(nurse.birthDate),
         isWorker: nurse.isWorker,
@@ -181,7 +181,7 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     }) as TUpdateNurseDTO;
 const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => ({
     ...toNursePayload(nurse),
-    name: normalizeNurseNameForRequest(nurse.name ?? ''),
+    name: normalizeNurseNameForRequest((nurse.name ?? '').trim()),
 });
 const useEditShiftTeam = () => {
     const {t} = useTypedTranslation();

@@ -148,6 +148,7 @@ describe('NurseDetailPanel', () => {
         ['emily sheparded', 'emily sheparded'],
         ['Alexandria Elizabeth Montgomery', 'Alexandria Elizabeth Montgomery'],
         ['　山田　花子　', '山田 花子'],
+        ['\u00a0山田　花子\u00a0', '山田 花子'],
     ])('saves the normalized name %s', async (input, name) => {
         const {saveNurseDetails} = renderPanel(createNurse());
         const nameInput = screen.getByDisplayValue('김듀티');

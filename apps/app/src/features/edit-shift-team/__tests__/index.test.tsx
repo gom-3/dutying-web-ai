@@ -128,6 +128,7 @@ describe('useEditShiftTeam', () => {
     it.each([
         ['김하나', '김하나'],
         ['　山田　花子　', '山田 花子'],
+        ['\u00a0山田　花子\u00a0', '山田 花子'],
     ])('patches nurse name %s with normalized spaces and without retired fields', async (input, name) => {
         const {result} = renderHook(() => useEditShiftTeam());
 
@@ -294,6 +295,7 @@ describe('useEditShiftTeam', () => {
     it.each([
         ['김신규', '김신규'],
         ['　山田　花子　', '山田 花子'],
+        ['\u00a0山田　花子\u00a0', '山田 花子'],
     ])('posts local draft name %s with normalized spaces', async (input, name) => {
         const tempWard = {
             ...ward,
