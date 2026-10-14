@@ -420,6 +420,7 @@ const MIXED_SHIFT_TEMPLATE_CODES = new Set([
 const TARGET_SOFT_ONLY_TEMPLATE_CODES = new Set(['TWO_SHIFT_DAILY_LINES', 'TWO_SHIFT_ASSIGNMENT_COUNT']);
 const NURSE_SHIFT_PREFERENCE_SOFT_ONLY_TEMPLATE_CODES = new Set(['NURSE_PREFER_SHIFT', 'NURSE_AVOID_SHIFT']);
 const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'SHIFT_COUNT_PER_PERIOD',
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
     'MIN_OFF_AFTER_CONSECUTIVE_WORK',
@@ -440,6 +441,7 @@ const TWO_SHIFT_VISIBLE_RULE_CODES = new Set([
     'NURSE_PAIR_PREFER_SAME_SHIFT',
 ]);
 const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'SHIFT_COUNT_PER_PERIOD',
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
     'MIN_OFF_AFTER_CONSECUTIVE_WORK',
@@ -462,6 +464,7 @@ const THREE_SHIFT_VISIBLE_RULE_CODES = new Set([
     'NURSE_PAIR_PREFER_SAME_SHIFT',
 ]);
 const MIXED_SHIFT_VISIBLE_RULE_CODES = new Set([
+    'SHIFT_COUNT_PER_PERIOD',
     'STAFF_COUNT_BY_SHIFT',
     'CORE_MAX_CONTINUOUS_WORK',
     'MIN_OFF_AFTER_CONSECUTIVE_WORK',
@@ -529,6 +532,7 @@ const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     TWO_SHIFT_NIGHT_THEN_CONTINUATION: 'FORBIDDEN_PATTERN',
     TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF: 'WORK_REST',
     MAX_MONTHLY_NIGHT_COUNT: 'FORBIDDEN_PATTERN',
+    SHIFT_COUNT_PER_PERIOD: 'NURSE_LIMIT',
     FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
     FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
@@ -1014,6 +1018,13 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     MIN_OFF_AFTER_CONSECUTIVE_WORK: {target: ALL_CONSTRAINT_TARGET_OPTION, workCount: 5, offCount: 2},
     AVOID_ISOLATED_WORK_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
     AVOID_ISOLATED_OFF_DAY: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    SHIFT_COUNT_PER_PERIOD: {
+        target: ALL_CONSTRAINT_TARGET_OPTION,
+        period: {type: 'MONTH'},
+        operator: {type: 'MAX'},
+        aggregation: {type: 'EACH'},
+        count: 6,
+    },
     MAX_DAY_NIGHT_TRANSITIONS: {target: ALL_CONSTRAINT_TARGET_OPTION, direction: {type: 'BOTH'}, period: {type: 'MONTH'}, count: 4},
     NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS: {
         target: ALL_CONSTRAINT_TARGET_OPTION,
@@ -1110,6 +1121,8 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     DATESCOPES: 'dateScope',
     operator: 'staffCountOperator',
     operators: 'staffCountOperator',
+    COUNT_OPERATOR: 'staffCountOperator',
+    countOperators: 'staffCountOperator',
     staffCountOperator: 'staffCountOperator',
     staffCountOperators: 'staffCountOperator',
     STAFF_COUNT_OPERATOR: 'staffCountOperator',
@@ -2735,7 +2748,7 @@ function mergeCandidateOptionMap(
         staffCountOperator: getCandidateOptions(
             candidates,
             'staffCountOperator',
-            ['staffCountOperators', 'staffCountOperator', 'STAFF_COUNT_OPERATORS', 'STAFF_COUNT_OPERATOR'],
+            ['staffCountOperators', 'staffCountOperator', 'STAFF_COUNT_OPERATORS', 'STAFF_COUNT_OPERATOR', 'countOperators'],
             fallback.staffCountOperator ?? [],
             shiftTypes,
             t,
