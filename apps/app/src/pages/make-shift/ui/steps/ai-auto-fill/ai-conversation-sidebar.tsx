@@ -6,6 +6,7 @@ import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
+import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
 import {
     conversationApi,
     conversationEvents,
@@ -236,6 +237,7 @@ export default function AiConversationSidebar({
                 );
 
             const request: TConversationExecute = {
+                monthlyRestRequirement: await loadMonthlyRestRequirement(wardId, teamId, shift, year, month),
                 expectedRevision: current.conversation.revision,
                 idempotencyKey: crypto.randomUUID(),
                 operationType,

@@ -7,6 +7,10 @@ vi.mock('@/shared/api/ward', () => ({
     default: {autofillSchedule},
 }));
 
+vi.mock('../monthly-rest-requirement', () => ({
+    loadMonthlyRestRequirement: vi.fn().mockResolvedValue({minimumDaysByShiftNurseId: {501: 9}, countedWardShiftTypeIds: [104]}),
+}));
+
 describe('apiAiScheduleProvider', () => {
     it('calls Spring /schedule/autofill with normalized draft payload', async () => {
         const response = {
@@ -77,6 +81,7 @@ describe('apiAiScheduleProvider', () => {
             1,
             10,
             expect.objectContaining({
+                monthlyRestRequirement: {minimumDaysByShiftNurseId: {501: 9}, countedWardShiftTypeIds: [104]},
                 year: 2026,
                 month: 6,
                 idempotencyKey: 'same-user-action',

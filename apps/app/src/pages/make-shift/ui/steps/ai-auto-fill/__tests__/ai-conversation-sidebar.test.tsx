@@ -1,3 +1,4 @@
+vi.mock('../../../../model/monthly-rest-requirement', () => ({loadMonthlyRestRequirement: vi.fn().mockResolvedValue(undefined)}));
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift} from '@/entities/shift';
 import type * as ShiftEditorModule from '@/features/shift-editor';

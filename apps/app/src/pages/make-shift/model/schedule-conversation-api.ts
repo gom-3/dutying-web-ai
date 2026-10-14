@@ -1,3 +1,4 @@
+import type {TMonthlyRestRequirement} from '@dutying/api/ward';
 import type {
     TAutofillResponse,
     TScheduleAdjustInterpretRes,
@@ -71,6 +72,7 @@ export type TConversationPreference = {
     confirmedAt: string;
 };
 export type TConversationExecute = {
+    monthlyRestRequirement?: TMonthlyRestRequirement;
     expectedRevision: number;
     idempotencyKey: string;
     operationType: 'GENERATE' | 'ADJUST';
