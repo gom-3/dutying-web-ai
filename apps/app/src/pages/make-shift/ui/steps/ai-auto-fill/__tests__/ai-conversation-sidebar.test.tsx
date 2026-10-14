@@ -1,3 +1,4 @@
+vi.mock('../../../../model/monthly-rest-requirement', () => ({loadMonthlyRestRequirement: vi.fn().mockResolvedValue(undefined)}));
 vi.mock('../ai-conversation-image', () => ({AiConversationImage: () => null}));
 import type {ComponentProps} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';

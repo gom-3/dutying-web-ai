@@ -217,6 +217,7 @@ describe('shift-adapter', () => {
                 [
                     {
                         ...createShift().divisionShiftNurses[0]![0]!,
+                        shiftNurse: {...createShift().divisionShiftNurses[0]![0]!.shiftNurse, shiftNurseId: 99999},
                         wardShiftList: [10, 20, 30, 10, 20],
                     },
                 ],

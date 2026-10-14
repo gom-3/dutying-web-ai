@@ -10,10 +10,13 @@ const NURSE_NAME_MEANINGFUL_REGEXP = /[\uAC00-\uD7A3A-Za-z0-9\u3040-\u309F\u30A1
 const NURSE_NAME_INPUT_SANITIZE_REGEXP =
     /[^\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uD7B0-\uD7FF\uAC00-\uD7A3A-Za-z0-9 \u3040-\u309F\u30A0-\u30FF\u3400-\u9FFF\u3005・ー]/gu;
 
-export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
+export const normalizeNurseNameForRequest = (name: string) => name.replace(/\u3000/g, ' ').replace(ASCII_SPACE_EDGE_REGEX, '');
 
 export const sanitizeNurseNameInput = (rawValue: string) =>
-    rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
+    rawValue
+        .replace(/\u3000/g, ' ')
+        .replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '')
+        .slice(0, NURSE_NAME_MAX_LENGTH);
 
 export function isValidNurseName(name: string): boolean {
     const requestName = normalizeNurseNameForRequest(name);
