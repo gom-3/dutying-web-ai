@@ -5218,9 +5218,10 @@ export function Constraints({
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
         const defaultSeverity =
-            template.id === 'STAFF_COUNT_BY_SHIFT' &&
-            getConstraintOptionType(normalizedParams.target) === 'NURSE' &&
-            Number(normalizedParams.count) === 0
+            template.id === 'SHIFT_COUNT_PER_PERIOD' ||
+            (template.id === 'STAFF_COUNT_BY_SHIFT' &&
+                getConstraintOptionType(normalizedParams.target) === 'NURSE' &&
+                Number(normalizedParams.count) === 0)
                 ? 'HARD'
                 : isNurseShiftPreferenceSoftOnlyRule(template.id)
                   ? 'SOFT'

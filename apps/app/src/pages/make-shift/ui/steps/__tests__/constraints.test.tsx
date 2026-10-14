@@ -281,6 +281,7 @@ describe('Constraints', () => {
         expect(card).toBeInTheDocument();
         await userEvent.click(within(card).getByTitle('추가'));
         await waitFor(() => expect(getLastUpdatePayload()?.rules?.some((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')).toBe(true));
+        expect(getLastUpdatePayload()?.rules?.find((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')?.severity).toBe('HARD');
         await userEvent.click(screen.getAllByRole('button', {name: /모든 간호사|전체/})[0]!);
         await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: 'Nurse A'}));
         await waitFor(() =>
