@@ -1,5 +1,12 @@
 # @dutying/api
 
+## 1.2.4
+
+### Patch Changes
+
+- Updated dependencies
+    - @dutying/domain@1.2.4
+
 ## 1.2.3
 
 ### Patch Changes
