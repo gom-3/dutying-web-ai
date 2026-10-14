@@ -1757,6 +1757,10 @@ function getNumberBounds(
         ).size;
 
         if (nurseCount > 0) max = nurseCount;
+        if (targetType === 'NURSE') {
+            min = 0;
+            max = 0;
+        }
     }
 
     return {min, max: Math.max(min, max)};
@@ -2833,11 +2837,19 @@ function getOptionsForControl(
             })
           : options;
 
+    if (template.id === 'STAFF_COUNT_BY_SHIFT' && control.key === 'operator' && getConstraintOptionType(params.target) === 'NURSE') {
+        return resolvedOptions.filter((option) => getConstraintOptionType(option.raw ?? option.value) !== 'MIN');
+    }
+
     if (template.id === 'STAFF_COUNT_BY_SHIFT' && control.optionsKey === 'target') {
         return resolvedOptions.filter((option) => {
             const type = getConstraintOptionType(option.raw ?? option.value);
 
-            return type === 'ALL' || type === 'DIVISION';
+            return (
+                type === 'ALL' ||
+                type === 'DIVISION' ||
+                (type === 'NURSE' && Number(params.count) === 0 && getConstraintOptionType(params.operator) !== 'MIN')
+            );
         });
     }
 
@@ -4216,6 +4228,8 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
         const normalCategories = Array.from(
             new Set(templates.map((template) => template.category).filter((category) => !isRecommendedOnlyCategory(category))),
         );
+        if (templates.some((template) => template.id === 'STAFF_COUNT_BY_SHIFT') && !normalCategories.includes('NURSE_LIMIT'))
+            normalCategories.push('NURSE_LIMIT');
         const categoryOrder = rotationMode === 'MIXED' ? MIXED_MODAL_CATEGORY_ORDER : ROTATION_MODAL_CATEGORY_ORDER;
         const orderedCategories = [...normalCategories].sort((left, right) => {
             const leftIndex = categoryOrder.indexOf(left);
@@ -4325,7 +4339,11 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
     const visibleTemplates =
         selectedCategory === RECOMMENDED_MODAL_CATEGORY
             ? recommendedTemplates
-            : templates.filter((template) => template.category === selectedCategory);
+            : templates.filter(
+                  (template) =>
+                      template.category === selectedCategory ||
+                      (selectedCategory === 'NURSE_LIMIT' && template.id === 'STAFF_COUNT_BY_SHIFT'),
+              );
 
     return (
         <ConstraintModalPortal>
@@ -4407,6 +4425,34 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                         className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
                                     >
                                         <div className="min-w-0 flex-1">
+                                            {template.id === 'STAFF_COUNT_BY_SHIFT' && (
+                                                <button
+                                                    type="button"
+                                                    className="mb-2 text-sm font-semibold text-main-1"
+                                                    onClick={() => {
+                                                        const nurse = (optionMap.target ?? []).find(
+                                                            (option) => option.raw?.type === 'NURSE',
+                                                        );
+                                                        const evening = (optionMap.dutyStrict ?? []).find(
+                                                            (option) => option.classification === 'EVENING',
+                                                        );
+                                                        if (!nurse) return;
+                                                        setDraftParams((prev) => ({
+                                                            ...prev,
+                                                            [template.id]: {
+                                                                ...(prev[template.id] ?? {}),
+                                                                target: nurse.raw,
+                                                                ...(evening?.raw ? {shift: evening.raw} : {}),
+                                                                dateScope: {type: 'WEDNESDAY'},
+                                                                operator: {type: 'EXACT'},
+                                                                count: 0,
+                                                            },
+                                                        }));
+                                                    }}
+                                                >
+                                                    {t('page.makeShift.constraints.personalExclusionPreset')}
+                                                </button>
+                                            )}
                                             <SoftSentence
                                                 template={template}
                                                 params={templateParams}
@@ -5171,11 +5217,16 @@ export function Constraints({
         const normalizedParams = clampNumberParams(template, normalizeCombinationParams(template, params, optionMap), optionMap);
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
-        const defaultSeverity = isNurseShiftPreferenceSoftOnlyRule(template.id)
-            ? 'SOFT'
-            : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
-              ? 'SOFT'
-              : (template.sourceTemplate?.severity ?? 'SOFT');
+        const defaultSeverity =
+            template.id === 'STAFF_COUNT_BY_SHIFT' &&
+            getConstraintOptionType(normalizedParams.target) === 'NURSE' &&
+            Number(normalizedParams.count) === 0
+                ? 'HARD'
+                : isNurseShiftPreferenceSoftOnlyRule(template.id)
+                  ? 'SOFT'
+                  : rotationMode === 'THREE' && THREE_SHIFT_NON_RECOMMENDED_RULE_CODES.has(template.id)
+                    ? 'SOFT'
+                    : (template.sourceTemplate?.severity ?? 'SOFT');
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
