@@ -1082,9 +1082,9 @@ describe('OnboardingWardCreatePage', () => {
         expect(dayShortNameInput).not.toHaveAttribute('readonly');
 
         await user.clear(dayShortNameInput);
-        await user.type(dayShortNameInput, 'A');
+        await user.type(dayShortNameInput, 'F');
 
-        expect(screen.getByDisplayValue('A')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('F')).toBeInTheDocument();
         expect(toastError).not.toHaveBeenCalled();
 
         await user.click(screen.getByRole('button', {name: '데이 삭제'}));
@@ -1119,7 +1119,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('combobox', {name: '2교대 주간 근무 의미 선택'}));
         await user.click(screen.getByRole('option', {name: '기타 근무'}));
 
-        expect(screen.getAllByPlaceholderText('-')).toHaveLength(6);
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(7);
 
         const nextButton = screen.getByRole('button', {name: '다음'});
 
@@ -1127,7 +1127,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(nextButton);
 
-        expect(screen.getAllByPlaceholderText('-')).toHaveLength(6);
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(7);
         expect(toastSuccess).not.toHaveBeenCalled();
         expect(toastError).toHaveBeenCalledWith(expect.stringContaining('다음 유형을 추가해 주세요'));
     });

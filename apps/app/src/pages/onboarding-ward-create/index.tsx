@@ -11,7 +11,7 @@ import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flag
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getDefaultServiceRegionForLanguage, getStoredServiceRegion, normalizeServiceRegion} from '@/shared/i18n/locale';
-import {getRequiredRotationClassificationCounts} from '@/shared/lib/shift-rotation-selection';
+import {getRequiredRotationClassificationCounts, isRequiredRotationClassificationSatisfied} from '@/shared/lib/shift-rotation-selection';
 import {
     getOnboardingInitialScheduleTargets,
     isOnboardingShiftMappingResolved,
@@ -174,7 +174,7 @@ function OnboardingWardCreatePage() {
                 classification: shiftType.classification,
                 rotationSystem: resolveOnboardingRotationSystem(shiftType),
             })),
-            {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'},
+            {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION', includeAnnualLeave: true},
         ).map((requiredShiftType) => ({
             ...requiredShiftType,
             label:
@@ -190,7 +190,9 @@ function OnboardingWardCreatePage() {
                         ? t('page.onboardingWardCreate.shiftType.classification.evening')
                         : requiredShiftType.classification === 'NIGHT'
                           ? t('page.onboardingWardCreate.shiftType.classification.night')
-                          : t('page.onboardingWardCreate.shiftType.classification.off'),
+                          : requiredShiftType.classification === 'ANNUAL_LEAVE'
+                            ? t('page.onboardingWardCreate.shiftType.classification.annualLeave')
+                            : t('page.onboardingWardCreate.shiftType.classification.off'),
         }));
     };
     const getMissingRequiredShiftTypeLabels = () =>
@@ -199,7 +201,7 @@ function OnboardingWardCreatePage() {
             .map(({label}) => label);
     const getDuplicateRequiredShiftTypeLabels = () =>
         getRequiredShiftTypeStatuses()
-            .filter(({count}) => count > 1)
+            .filter((requirement) => requirement.count > 1 && !isRequiredRotationClassificationSatisfied(requirement))
             .map(({label}) => label);
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {

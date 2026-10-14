@@ -4,6 +4,7 @@ import {type TOnboardingWardParseApiResponse, type TOnboardingWardParseOptions} 
 import {getDefaultTimeRangeForRotation} from '@/shared/lib/shift-rotation-selection';
 import {
     createEmptyShiftType,
+    ensureOnboardingAnnualLeave,
     DEFAULT_OFF_SHIFT_TYPE_COLOR,
     getDefaultTeamName,
     getDivisionFallbackLabel,
@@ -16,6 +17,7 @@ import {
     orderOnboardingShiftTypes,
     resolveOnboardingRotationSystem,
     type TOnboardingConstraintDraft,
+    type TOnboardingDraftLabels,
     type TOnboardingNurseDraft,
     type TOnboardingRotationMode,
     type TOnboardingTeamDraft,
@@ -381,7 +383,13 @@ const toDraftShiftType = (
                 ? 'CONFIRMED'
                 : 'AUTO_MATCHED'
             : (parsed.mappingStatus ??
-              (parsed.source === 'schedule-input' ? (automaticMapping ? 'AUTO_MATCHED' : 'UNASSIGNED') : 'CONFIRMED'));
+              (parsed.classification === 'ANNUAL_LEAVE'
+                  ? 'CONFIRMED'
+                  : parsed.source === 'schedule-input'
+                    ? automaticMapping
+                        ? 'AUTO_MATCHED'
+                        : 'UNASSIGNED'
+                    : 'CONFIRMED'));
     const resolvedAutomaticMapping =
         rotationModeCorrection && rotationModeCorrection.rotationSystem !== 'NONE' ? rotationModeCorrection : automaticMapping;
     const mappingStatus = requestedMappingStatus === 'AUTO_MATCHED' && !resolvedAutomaticMapping ? 'UNASSIGNED' : requestedMappingStatus;
@@ -394,7 +402,7 @@ const toDraftShiftType = (
               : mappingStatus === 'UNASSIGNED'
                 ? 'OTHER_WORK'
                 : (parsed.classification ?? inferClassificationFromShortName(shortName, parsed.isOff ?? false));
-    const isOff = isResolved && classification === 'OFF';
+    const isOff = isResolved && (classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE');
     const isNightContinuation = classification === 'NIGHT_CONTINUATION';
     const rotationSystem =
         rotationModeCorrection != null
@@ -438,14 +446,16 @@ const toDraftShiftType = (
             ? shortName
             : (trimToUndefined(parsed.name) ?? getShiftTypeNameFromShortName(shortName)),
         shortName,
-        startTime: shouldTreatAsPreviousScheduleOtherWork
-            ? ''
-            : (automaticTimeRange?.startTime ?? parsed.startTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.startTime)),
-        endTime: shouldTreatAsPreviousScheduleOtherWork
-            ? ''
-            : (automaticTimeRange?.endTime ?? parsed.endTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.endTime)),
+        startTime:
+            shouldTreatAsPreviousScheduleOtherWork || isOff
+                ? ''
+                : (automaticTimeRange?.startTime ?? parsed.startTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.startTime)),
+        endTime:
+            shouldTreatAsPreviousScheduleOtherWork || isOff
+                ? ''
+                : (automaticTimeRange?.endTime ?? parsed.endTime ?? (mappingStatus === 'UNASSIGNED' ? '' : base.endTime)),
         color: defaultColor,
-        isDefault: shouldTreatAsPreviousScheduleOtherWork ? false : isOff ? true : (parsed.isDefault ?? false),
+        isDefault: shouldTreatAsPreviousScheduleOtherWork ? false : classification === 'OFF' ? true : (parsed.isDefault ?? false),
         isOff,
         isCounted: isOff || isNightContinuation ? false : base.isCounted,
         classification,
@@ -473,6 +483,22 @@ const ensureCoreShiftTypes = (
     if (parsedShiftTypes.length === 0) {
         return normalizeUploadedShiftTypes(draftShiftTypes);
     }
+
+    // An uploaded A may mean any duty; the new annual-leave seed must not override it.
+    draftShiftTypes = draftShiftTypes.filter(
+        (shiftType) =>
+            !(
+                shiftType.autoSeeded === true &&
+                shiftType.classification === 'ANNUAL_LEAVE' &&
+                !shiftType.protectedByPreviousSchedule &&
+                !parsedShiftTypes.some(
+                    (parsed) =>
+                        parsed.autoSeeded === true &&
+                        parsed.source !== 'schedule-input' &&
+                        normalizeShiftShortName(parsed.shortName) === normalizeShiftShortName(shiftType.shortName),
+                )
+            ),
+    );
 
     const parsedByShortName = new Map(
         parsedShiftTypes
@@ -1339,7 +1365,11 @@ export const restoreParsedNursePossibleShiftTypes = (
     };
 };
 
-export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboardingParsedWardData): TOnboardingWardDraft => {
+export const applyParsedWardData = (
+    draft: TOnboardingWardDraft,
+    parsed: TOnboardingParsedWardData,
+    labels?: TOnboardingDraftLabels,
+): TOnboardingWardDraft => {
     const nextShiftTypes = parsed.shiftTypes
         ? ensureCoreShiftTypes(draft.shiftTypes, parsed.shiftTypes, draft.rotationMode)
         : normalizeUploadedShiftTypes(draft.shiftTypes);
@@ -1348,18 +1378,21 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
         ? buildParsedNurses(parsed.nurses, nextTeams, nextShiftTypes)
         : remapTeamIds(remapPossibleShiftTypeIds(draft.nurses, draft.shiftTypes, nextShiftTypes), draft.teams, nextTeams);
 
-    return {
-        ...draft,
-        uploadedFileName: parsed.fileName ?? draft.uploadedFileName,
-        wardName: parsed.wardName ?? draft.wardName,
-        hospitalName: parsed.hospitalName ?? draft.hospitalName,
-        shiftTypes: nextShiftTypes,
-        teams: nextTeams,
-        nurses: nextNurses,
-        constraintCandidates: parsed.constraintCandidates
-            ? parsed.constraintCandidates.map(toDraftConstraintCandidate)
-            : draft.constraintCandidates,
-    };
+    return ensureOnboardingAnnualLeave(
+        {
+            ...draft,
+            uploadedFileName: parsed.fileName ?? draft.uploadedFileName,
+            wardName: parsed.wardName ?? draft.wardName,
+            hospitalName: parsed.hospitalName ?? draft.hospitalName,
+            shiftTypes: nextShiftTypes,
+            teams: nextTeams,
+            nurses: nextNurses,
+            constraintCandidates: parsed.constraintCandidates
+                ? parsed.constraintCandidates.map(toDraftConstraintCandidate)
+                : draft.constraintCandidates,
+        },
+        labels,
+    );
 };
 
 export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWardDTO => {
