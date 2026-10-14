@@ -27,7 +27,7 @@ import {
     useShiftEditorCommands,
     useShiftEditorStore,
 } from '@/features/shift-editor/model';
-import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-editor/model/duty-doc-cells';
+import {getDutyCellLockKey, isDutyCellPositionInBounds, isConfirmedPreviousCell} from '@/features/shift-editor/model/duty-doc-cells';
 import {formatKnownScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import i18n from '@/i18n';
@@ -1014,7 +1014,7 @@ function canOpenShiftTypeDropdown(rowIndex: number, colIndex: number, readonly: 
 
     if (!isDutyCellPositionInBounds(doc, rowIndex, colIndex)) return false;
 
-    if (colIndex < 0) return true;
+    if (colIndex < 0) return !isConfirmedPreviousCell(doc, rowIndex, colIndex);
 
     const key = getDutyCellLockKey(doc, rowIndex, colIndex);
 
@@ -1034,7 +1034,7 @@ function isEditableDutyCell(rowIndex: number, colIndex: number, readonly: boolea
 
     if (!isDutyCellPositionInBounds(doc, rowIndex, colIndex)) return false;
 
-    if (colIndex < 0) return true;
+    if (colIndex < 0) return !isConfirmedPreviousCell(doc, rowIndex, colIndex);
 
     const key = getDutyCellLockKey(doc, rowIndex, colIndex);
 
@@ -1996,6 +1996,7 @@ export function MakeShiftCalendar({
                                                                             id != null ? (idToType.get(id) ?? null) : null,
                                                                         )}
                                                                         lastShiftCells={docEntry.row.lastCells}
+                                                                        lastCellLocks={docEntry.row.lastCellLocks}
                                                                         days={shift.days}
                                                                         columns={doc.columns}
                                                                         cells={docEntry.row.cells}
@@ -2156,6 +2157,7 @@ type TCalendarRowLeftProps = {
     carriedDays?: number;
     lastShifts: (TWardShiftType | null)[];
     lastShiftCells?: TCellValue[];
+    lastCellLocks?: boolean[];
     days: TShift['days'];
     columns: TDutyDoc['columns'];
     cells: TDutyDoc['rows'][number]['cells'];
@@ -2207,6 +2209,7 @@ function CalendarRowLeft({
     carriedDays,
     lastShifts,
     lastShiftCells,
+    lastCellLocks,
     days,
     columns,
     cells,
@@ -2425,7 +2428,7 @@ function CalendarRowLeft({
                                     colIndex >= selectionRect.left &&
                                     colIndex <= selectionRect.right;
 
-                                if (!editableLastShifts) {
+                                if (!editableLastShifts || lastCellLocks?.[i]) {
                                     return (
                                         <ShiftBadge
                                             key={i}

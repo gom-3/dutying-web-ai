@@ -28,7 +28,10 @@ export function snapshotDetailToDoc(
     shift: TShift,
     year: number,
     month: number,
-    locks: Pick<TDutyDoc, 'fixedCells' | 'requestCells'> & {lastCellsByWorkerId?: Record<string, TCellValue[]>},
+    locks: Pick<TDutyDoc, 'fixedCells' | 'requestCells'> & {
+        lastCellsByWorkerId?: Record<string, TCellValue[]>;
+        lastCellLocksByWorkerId?: Record<string, boolean[]>;
+    },
 ): TDutyDoc {
     const base = shiftToDoc(shift, year, month);
     const {idToType} = buildWardShiftTypeMaps(shift);
@@ -77,9 +80,11 @@ export function snapshotDetailToDoc(
 
             return baseRow?.cells[base.columns.indexOf(date)] ?? null;
         });
-        const lastCells = locks.lastCellsByWorkerId?.[workerId] ?? baseRow?.lastCells;
+        const persistedLastCells = locks.lastCellsByWorkerId?.[workerId];
+        const lastCellLocks = locks.lastCellLocksByWorkerId?.[workerId] ?? baseRow?.lastCellLocks;
+        const lastCells = (persistedLastCells ?? baseRow?.lastCells)?.slice();
 
-        return {workerId, lastCells: lastCells?.slice(), cells};
+        return {workerId, lastCells, lastCellLocks: lastCellLocks?.slice(), cells};
     });
 
     return {

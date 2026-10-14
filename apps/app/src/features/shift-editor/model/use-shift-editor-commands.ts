@@ -6,7 +6,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {copySelection, pastePayload} from './clipboard';
 import {useShiftEditorDraftStatusStore} from './draft-status-store';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
-import {getDutyCellLockKey, getDutyDocMinColumn, isDutyCellPositionInBounds, readDutyCell} from './duty-doc-cells';
+import {getDutyCellLockKey, getDutyDocMinColumn, isDutyCellPositionInBounds, isConfirmedPreviousCell, readDutyCell} from './duty-doc-cells';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
 import {pruneEmptyFixedCells} from './prune-empty-fixed-cells';
@@ -85,6 +85,8 @@ function filterOpAgainstLocks(op: TOperation, doc: TDutyDoc): TOperation {
     if (op.kind !== 'setCells') return op;
 
     const filteredCells = op.cells.filter(({row, col}) => {
+        if (isConfirmedPreviousCell(doc, row, col)) return false;
+
         const key = getDutyCellLockKey(doc, row, col);
 
         if (key === null) return isDutyCellPositionInBounds(doc, row, col);
@@ -151,6 +153,8 @@ export function useShiftEditorCommands() {
 
         for (const {row, col} of cells) {
             if (!isDutyCellPositionInBounds(doc, row, col)) continue;
+
+            if (isConfirmedPreviousCell(doc, row, col)) continue;
 
             const r = doc.rows[row];
 
@@ -445,21 +449,42 @@ export function useShiftEditorCommands() {
             const {doc, history, selection} = getState();
             const changed: TSetCellsOp['cells'] = [];
             const fixedDelta: NonNullable<TSetCellsOp['fixedDelta']> = [];
+
             doc.rows.forEach((row, rowIndex) => {
                 const nextRow = nextDoc.rows.find((entry) => entry.workerId === row.workerId);
+
                 if (!nextRow) return;
+
                 doc.columns.forEach((date, col) => {
                     const key = `${row.workerId}|${date}`;
                     const prev = row.cells[col] ?? null;
                     const next = nextRow.cells[nextDoc.columns.indexOf(date)] ?? null;
+
                     if (prev !== next) changed.push({row: rowIndex, col, prev, next});
-                    if (Boolean(doc.fixedCells[key]) !== Boolean(nextDoc.fixedCells[key])) fixedDelta.push({key, prev: Boolean(doc.fixedCells[key]), next: Boolean(nextDoc.fixedCells[key])});
+
+                    if (Boolean(doc.fixedCells[key]) !== Boolean(nextDoc.fixedCells[key]))
+                        fixedDelta.push({key, prev: Boolean(doc.fixedCells[key]), next: Boolean(nextDoc.fixedCells[key])});
                 });
             });
+
             if (!changed.length && !fixedDelta.length) return;
+
             // Separate operations let undo remove these pins before restoring the cells.
-            const tx: TTransaction<TOperation> = {ops: [{kind: 'setCells', cells: changed}, {kind: 'setCells', cells: [], fixedDelta}], source: 'ai', timestamp: Date.now()};
-            const nextHistory = pushHistory(history, {tx, inverseOps: invertOps(tx.ops), selectionBefore: selection, selectionAfter: selection});
+            const tx: TTransaction<TOperation> = {
+                ops: [
+                    {kind: 'setCells', cells: changed},
+                    {kind: 'setCells', cells: [], fixedDelta},
+                ],
+                source: 'ai',
+                timestamp: Date.now(),
+            };
+            const nextHistory = pushHistory(history, {
+                tx,
+                inverseOps: invertOps(tx.ops),
+                selectionBefore: selection,
+                selectionAfter: selection,
+            });
+
             setDoc(nextDoc);
             setHistory(nextHistory);
             persistDocImmediate(nextDoc, nextHistory, scheduleViolationsFromState(getState()));

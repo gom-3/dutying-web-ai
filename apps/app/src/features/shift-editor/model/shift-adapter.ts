@@ -70,7 +70,10 @@ function resolveLastShiftIds(
     row: TShift['divisionShiftNurses'][number][number],
     previousConfirmedShift?: TShift | null,
 ): (number | null)[] {
-    const previousRow = findShiftRowByShiftNurseId(previousConfirmedShift, row.shiftNurse.shiftNurseId);
+    const previousRow =
+        row.shiftNurse.nurseId == null
+            ? undefined
+            : previousConfirmedShift?.divisionShiftNurses.flat().find((previous) => previous.shiftNurse.nurseId === row.shiftNurse.nurseId);
 
     if (previousRow?.wardShiftList) {
         return normalizeLastShiftIds(previousRow.wardShiftList);
@@ -159,7 +162,14 @@ export function shiftToDoc(shift: TShift, year: number, month: number, options: 
                     ...(row.shiftNurse.divisionName != null ? {divisionName: row.shiftNurse.divisionName} : {}),
                 };
 
-                return {workerId, lastCells, cells};
+                const hasConfirmedContext = shift.previousConfirmedSnapshotId != null || options.previousConfirmedShift != null;
+
+                return {
+                    workerId,
+                    lastCells,
+                    cells,
+                    ...(hasConfirmedContext ? {lastCellLocks: lastCells.map((cell) => cell !== null)} : {}),
+                };
             }),
     );
 

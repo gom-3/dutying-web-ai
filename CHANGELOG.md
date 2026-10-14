@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.2.4 - 2026-10-15
+
+- `@dutying/app` (patch), `@dutying/domain` (patch): 확정한 전달 근무를 다음 달에 자동 연결하고 읽기 전용으로 보호합니다. 재확정 시 최신 전달 근무를 반영하면서 작성 중인 이번 달 근무와 고정값을 유지하며, 구 API 응답과 기존 저장 데이터의 호환성을 유지합니다.
+
 ## 1.2.3 - 2026-10-15
 
 - `@dutying/app` (patch): 경고·확인 모달의 작은 경고 아이콘을 번들에 포함해 추가 이미지 요청을 없애고, 내용 해시가 포함된 정적 자산에 장기 브라우저 캐시를 적용합니다.

@@ -74,7 +74,17 @@ export function FixedShifts() {
 
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingEditor} = useDutyEditorStep({
+    const {
+        dutyQuery,
+        editorDoc,
+        editorRef,
+        onKeyDown,
+        onPasteCapture,
+        focusEditor,
+        isHydratingEditor,
+        hasEditorSourceError,
+        retryEditorSources,
+    } = useDutyEditorStep({
         hydratePreviousLastShifts: true,
     });
     const orderedShift = useMemo(
@@ -114,7 +124,7 @@ export function FixedShifts() {
         isReorderingRows ||
         dutyQuery.isLoading ||
         isHydratingEditor ||
-        dutyQuery.isError ||
+        hasEditorSourceError ||
         !orderedShift;
     /**
      * 고정 근무 화면에서는 fixedCells / requestCells 로 마킹된 셀만 보여준다.
@@ -199,15 +209,15 @@ export function FixedShifts() {
             {(dutyQuery.isLoading || isHydratingEditor) && (
                 <MakeShiftCalendarSkeleton className="fixed-shifts-calendar-wrap" ariaLabel={t('page.makeShift.fixedShifts.loading')} />
             )}
-            {dutyQuery.isError && (
+            {hasEditorSourceError && (
                 <PageState
                     tone="error"
                     title={t('page.makeShift.fixedShifts.error')}
                     description={t('page.state.errorDescription')}
-                    action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                    action={{label: t('page.state.retry'), onClick: () => void retryEditorSources()}}
                 />
             )}
-            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && orderedShift && (
                 <div className="fixed-shifts-calendar-wrap w-full min-w-0">
                     <MakeShiftCalendar
                         shift={orderedShift}
@@ -232,7 +242,7 @@ export function FixedShifts() {
                     />
                 </div>
             )}
-            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && !orderedShift && (
                 <PageState tone="empty" title={t('page.makeShift.fixedShifts.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>
