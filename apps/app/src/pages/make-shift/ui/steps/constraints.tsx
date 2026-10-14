@@ -1816,6 +1816,14 @@ function getDefaultParams(
             return;
         }
 
+        if (template.id === 'SHIFT_COUNT_PER_PERIOD' && control.key === 'shift') {
+            const night = controlOptions.find((option) => option.classification === 'NIGHT');
+            if (night) {
+                params[control.key] = getSelectOptionParamValue(night);
+                return;
+            }
+        }
+
         params[control.key] = control.defaultValue ?? getSelectOptionParamValue(optionMap[control.optionsKey ?? '']?.[0]);
     });
 
