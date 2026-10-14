@@ -20,6 +20,8 @@ export type TDutyRow = {
     workerId: string;
     /** Current-month context from the previous schedule, shown as the "전달 근무" cells. */
     lastCells?: TCellValue[];
+    /** Per-cell authority from the previous month's confirmed schedule. */
+    lastCellLocks?: boolean[];
     cells: TCellValue[];
 };
 

@@ -9,6 +9,7 @@ import {AiAutofill} from '../index';
 
 const mocks = vi.hoisted(() => ({
     previousBlank: false,
+    editorSourceError: false,
     calendarDocs: [] as TDutyDoc[],
     calendarProps: [] as Array<{
         doc: TDutyDoc;
@@ -18,6 +19,7 @@ const mocks = vi.hoisted(() => ({
         stickyHeader?: boolean;
     }>,
     requestAiSchedule: vi.fn(),
+    invalidateConfirmedScheduleContext: vi.fn(() => Promise.resolve()),
     setStepNavigationBusy: vi.fn(),
     moveScheduleRow: vi.fn(),
     currentTeamNurses: [] as Array<{isConnected: boolean}>,
@@ -116,6 +118,7 @@ vi.mock('../../../../model/rest-target-days', () => ({
 }));
 
 vi.mock('../../../../model/use-schedule-snapshots', () => ({
+    invalidateConfirmedScheduleContext: mocks.invalidateConfirmedScheduleContext,
     MAX_SCHEDULE_SNAPSHOT_COUNT: 5,
     normalizeScheduleSnapshots: (snapshots: unknown) => snapshots,
     prependSnapshotToListCache: vi.fn(),
@@ -159,6 +162,8 @@ vi.mock('../../shared/use-duty-editor-step', () => ({
         teamViolations: [],
         focusEditor: vi.fn(),
         isHydratingEditor: false,
+        hasEditorSourceError: mocks.editorSourceError,
+        retryEditorSources: vi.fn(),
     }),
 }));
 
@@ -276,10 +281,12 @@ function seedEditor(doc = makeDoc()) {
 describe('AiAutofill blank preview', () => {
     beforeEach(() => {
         mocks.previousBlank = false;
+        mocks.editorSourceError = false;
         localStorage.clear();
         mocks.calendarDocs.length = 0;
         mocks.calendarProps.length = 0;
         mocks.requestAiSchedule.mockReset();
+        mocks.invalidateConfirmedScheduleContext.mockClear();
         mocks.setStepNavigationBusy.mockReset();
         mocks.moveScheduleRow.mockReset();
         mocks.currentTeamNurses = [];
@@ -294,6 +301,18 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.fixCellOnContextMenu).toBe(true);
+    });
+
+    it('does not start AI generation when previous-month context could not be loaded', async () => {
+        mocks.editorSourceError = true;
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        expect(screen.getByText('page.makeShift.aiRefill.error')).toBeVisible();
     });
 
     it('shows one more name character on the step 4 calendar', () => {
