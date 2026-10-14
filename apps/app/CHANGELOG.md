@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.2.3
+
+### Patch Changes
+
+- 44697f3: 경고·확인 모달의 작은 경고 아이콘을 번들에 포함해 추가 이미지 요청을 없애고, 내용 해시가 포함된 정적 자산에 장기 브라우저 캐시를 적용합니다.
+    - @dutying/api@1.2.3
+    - @dutying/domain@1.2.3
+    - @dutying/utils@1.2.3
+
 ## 1.2.2
 
 ### Patch Changes
