@@ -125,14 +125,18 @@ describe('useEditShiftTeam', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
 
-    it('patches an existing nurse with null blank phone and without retired nurse fields', async () => {
+    it.each([
+        ['김하나', '김하나'],
+        ['　山田　花子　', '山田 花子'],
+        ['\u00a0山田　花子\u00a0', '山田 花子'],
+    ])('patches nurse name %s with normalized spaces and without retired fields', async (input, name) => {
         const {result} = renderHook(() => useEditShiftTeam());
 
         let isSuccess: boolean | undefined;
 
         await act(async () => {
             isSuccess = await result.current.actions.updateNurse(11, {
-                name: '김하나',
+                name: input,
                 phoneNum: '',
                 birthDate: '1996-03-14',
                 gender: '남',
@@ -144,7 +148,7 @@ describe('useEditShiftTeam', () => {
         expect(isSuccess).toBe(true);
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
             phoneNum: null,
-            name: '김하나',
+            name,
             birthDate: '1996-03-14',
         });
     });
@@ -163,6 +167,15 @@ describe('useEditShiftTeam', () => {
             name: '김하나',
             phoneNum: null,
         });
+    });
+
+    it('keeps the name absent on a partial update', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            await result.current.actions.updateNurse(11, {phoneNum: ''});
+        });
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {phoneNum: null});
     });
 
     it('saves profile and shift-type edits in parallel and revalidates related data only once', async () => {
@@ -279,7 +292,11 @@ describe('useEditShiftTeam', () => {
         });
     });
 
-    it('posts the local draft without blank phone or retired nurse fields', async () => {
+    it.each([
+        ['김신규', '김신규'],
+        ['　山田　花子　', '山田 花子'],
+        ['\u00a0山田　花子\u00a0', '山田 花子'],
+    ])('posts local draft name %s with normalized spaces', async (input, name) => {
         const tempWard = {
             ...ward,
             shiftTeams: [
@@ -309,7 +326,7 @@ describe('useEditShiftTeam', () => {
             nurseId: 22,
             shiftTeamId: 10,
             wardId: 1,
-            name: '김신규',
+            name,
             phoneNum: '01012345678',
         });
 
@@ -318,13 +335,13 @@ describe('useEditShiftTeam', () => {
         await act(async () => {
             await result.current.actions.updateNurse(-1000000, {
                 ...tempWard.shiftTeams[0].nurses[1],
-                name: '김신규',
+                name: input,
                 phoneNum: '',
             });
         });
 
         expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
-            name: '김신규',
+            name,
             isWorker: true,
             isWardManager: false,
             memo: '',

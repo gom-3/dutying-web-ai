@@ -11,7 +11,7 @@ import useEditShiftTeam from '@/features/edit-shift-team';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
-import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
+import {NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -310,6 +310,7 @@ function NurseDetailPanel({
     // detail panel in step, but never replace an unsaved draft with a background update.
     useEffect(() => {
         if (!selectedNurse || !savedNurseBaseline || !writeNurse || isDirty || isSavingDraft) return;
+
         if (selectedNurse.nurseId !== savedNurseBaseline.nurseId) return;
 
         const nextNurse = normalizeNurseRoleFields(selectedNurse);
@@ -558,7 +559,7 @@ function NurseDetailPanel({
                 const originalBirthDate = normalizeBirthDateForStorage(savedNurseBaseline.birthDate);
 
                 nursePayload = {
-                    name: writeNurse.name,
+                    name: normalizeNurseNameForRequest(writeNurse.name.trim()),
                     phoneNum: writeNurse.phoneNum,
                     isWorker: writeNurse.isWorker,
                     isWardManager: writeNurse.isWardManager,
