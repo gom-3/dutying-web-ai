@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.2.2 - 2026-10-14
+
+- `@dutying/app` (patch): 모든 교대제의 온보딩에 연차 근무유형을 필수로 설정합니다. 기존 임시 저장·업로드 자료에 연차를 안전하게 보충하고, 마지막 연차의 삭제·비활성화·분류 변경을 방지합니다.
+
 ## 1.2.1 - 2026-10-04
 
 - `@dutying/app` (patch): 한국 서비스 지역에서만 병원명 자동완성을 표시하고, 해외에서는 병원명을 직접 입력하도록 변경합니다.

@@ -8,9 +8,20 @@ import {
     getSelectableRotationSystemsForClassification,
     getSelectableShiftRotationSystemsForWardMode,
     getRequiredRotationClassifications,
+    isRequiredRotationClassificationSatisfied,
 } from '../shift-rotation-selection';
 
 describe('shift rotation selection', () => {
+    it('requires at least one annual leave only when onboarding opts in', () => {
+        expect(getRequiredRotationClassifications('THREE').some((slot) => slot.classification === 'ANNUAL_LEAVE')).toBe(false);
+        expect(getRequiredRotationClassifications('THREE', {includeAnnualLeave: true})).toContainEqual({
+            rotationSystem: 'NONE',
+            classification: 'ANNUAL_LEAVE',
+        });
+        expect(isRequiredRotationClassificationSatisfied({classification: 'ANNUAL_LEAVE', count: 0})).toBe(false);
+        expect(isRequiredRotationClassificationSatisfied({classification: 'ANNUAL_LEAVE', count: 2})).toBe(true);
+        expect(isRequiredRotationClassificationSatisfied({classification: 'OFF', count: 2})).toBe(false);
+    });
     it('limits classifications by the selected rotation system', () => {
         expect(getSelectableClassificationsForRotation('THREE')).toEqual(['DAY', 'EVENING', 'NIGHT']);
         expect(getSelectableClassificationsForRotation('TWO')).toEqual(['DAY', 'NIGHT', 'NIGHT_CONTINUATION']);

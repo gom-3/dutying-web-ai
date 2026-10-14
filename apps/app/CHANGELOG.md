@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.2.2
+
+### Patch Changes
+
+- 모든 교대제의 온보딩에 연차 근무유형을 필수로 설정합니다. 기존 임시 저장·업로드 자료에 연차를 안전하게 보충하고, 마지막 연차의 삭제·비활성화·분류 변경을 방지합니다.
+    - @dutying/api@1.2.2
+    - @dutying/domain@1.2.2
+    - @dutying/utils@1.2.2
+
 ## 1.2.1
 
 ### Patch Changes

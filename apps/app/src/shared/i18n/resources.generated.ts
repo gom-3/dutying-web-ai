@@ -2192,7 +2192,8 @@ export const ko = {
                     "off": "박연우",
                     "second": "김하늘",
                     "skilled": "이서윤"
-                }
+                },
+                "annualLeave": "연차"
             },
             "deleteTeamAction": "팀 삭제하기",
             "fallback": {
@@ -2403,7 +2404,8 @@ export const ko = {
                 "reloadDraftError": "저장된 병동 생성 정보를 불러오지 못했어요.",
                 "saveDraftError": "병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.",
                 "saveScheduleError": "초기 근무표를 저장하지 못했어요.",
-                "uploadApplied": "근무표 파일을 반영했어요."
+                "uploadApplied": "근무표 파일을 반영했어요.",
+                "annualLeaveRequired": "연차 근무유형은 최소 1개 있어야 해요."
             },
             "upload": {
                 "dropHere": "근무표 파일을 여기에 놓아 주세요",
@@ -5333,7 +5335,8 @@ export const en: TLocale = {
                     "off": "Taylor Choi",
                     "second": "Jamie Lee",
                     "skilled": "Morgan Park"
-                }
+                },
+                "annualLeave": "Annual leave"
             },
             "deleteTeamAction": "Delete team",
             "fallback": {
@@ -5544,7 +5547,8 @@ export const en: TLocale = {
                 "reloadDraftError": "Could not load the saved ward setup draft.",
                 "saveDraftError": "Could not save the basic ward information. Please try again.",
                 "saveScheduleError": "Could not save the initial schedule.",
-                "uploadApplied": "Applied the schedule file."
+                "uploadApplied": "Applied the schedule file.",
+                "annualLeaveRequired": "Keep at least one annual leave shift type."
             },
             "upload": {
                 "dropHere": "Drop the schedule file here",
@@ -8472,7 +8476,8 @@ export const ja: TLocale = {
                     "off": "鈴木葵",
                     "second": "田中美咲",
                     "skilled": "高橋結衣"
-                }
+                },
+                "annualLeave": "年休"
             },
             "deleteTeamAction": "チームを削除",
             "fallback": {
@@ -8683,7 +8688,8 @@ export const ja: TLocale = {
                 "reloadDraftError": "保存済みの病棟作成情報を読み込めませんでした。",
                 "saveDraftError": "病棟の基本情報を保存できませんでした。もう一度お試しください。",
                 "saveScheduleError": "初期勤務表を保存できませんでした。",
-                "uploadApplied": "勤務表ファイルを反映しました。"
+                "uploadApplied": "勤務表ファイルを反映しました。",
+                "annualLeaveRequired": "年休の勤務区分は少なくとも1つ必要です。"
             },
             "upload": {
                 "dropHere": "勤務表ファイルをここにドロップしてください",
@@ -11611,7 +11617,8 @@ export const zh: TLocale = {
                     "off": "朴延宇",
                     "second": "金荷娜",
                     "skilled": "李瑞云"
-                }
+                },
+                "annualLeave": "年假"
             },
             "deleteTeamAction": "删除团队",
             "fallback": {
@@ -11822,7 +11829,8 @@ export const zh: TLocale = {
                 "reloadDraftError": "无法加载保存的病区创建信息。",
                 "saveDraftError": "病区基本信息无法保存。请再试一次。",
                 "saveScheduleError": "无法保存初始时间表。",
-                "uploadApplied": "反映了时间表文件。"
+                "uploadApplied": "反映了时间表文件。",
+                "annualLeaveRequired": "至少需要保留一个年假班次类型。"
             },
             "upload": {
                 "dropHere": "请将您的时间表文件放在这里",
@@ -14750,7 +14758,8 @@ export const th: TLocale = {
                     "off": "เทย์เลอร์ ชอย",
                     "second": "เจมี่ ลี",
                     "skilled": "มอร์แกน พาร์ค"
-                }
+                },
+                "annualLeave": "ลาพักร้อน"
             },
             "deleteTeamAction": "ลบทีม",
             "fallback": {
@@ -14961,7 +14970,8 @@ export const th: TLocale = {
                 "reloadDraftError": "ไม่สามารถโหลดแบบร่างการตั้งค่าวอร์ดที่บันทึกไว้ได้",
                 "saveDraftError": "ไม่สามารถบันทึกข้อมูลวอร์ดพื้นฐานได้ โปรดลองอีกครั้ง",
                 "saveScheduleError": "ไม่สามารถบันทึกกำหนดการเริ่มต้นได้",
-                "uploadApplied": "Appโกหกไฟล์กำหนดการ"
+                "uploadApplied": "Appโกหกไฟล์กำหนดการ",
+                "annualLeaveRequired": "ต้องมีประเภทกะลาพักร้อนอย่างน้อย 1 ประเภท"
             },
             "upload": {
                 "dropHere": "วางไฟล์กำหนดการที่นี่",
@@ -17889,7 +17899,8 @@ export const vi: TLocale = {
                     "off": "Taylor Choi",
                     "second": "Jamie Lee",
                     "skilled": "Công viên Morgan"
-                }
+                },
+                "annualLeave": "Nghỉ phép"
             },
             "deleteTeamAction": "Xóa đội",
             "fallback": {
@@ -18100,7 +18111,8 @@ export const vi: TLocale = {
                 "reloadDraftError": "Không thể tải bản nháp thiết lập khoa đã lưu.",
                 "saveDraftError": "Không thể lưu thông tin khoa cơ bản. Vui lòng thử lại.",
                 "saveScheduleError": "Không thể lưu lịch ban đầu.",
-                "uploadApplied": "Đã áp dụng tệp lịch."
+                "uploadApplied": "Đã áp dụng tệp lịch.",
+                "annualLeaveRequired": "Cần giữ ít nhất một loại ca nghỉ phép."
             },
             "upload": {
                 "dropHere": "Thả tập tin lịch ở đây",

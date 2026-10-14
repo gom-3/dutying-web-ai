@@ -39,6 +39,7 @@ const localizedLabels: TOnboardingDraftLabels = {
         evening: 'Swing',
         night: 'Overnight',
         off: 'Rest',
+        annualLeave: 'Annual leave',
         twoDay: 'Two-shift day',
         twoNight: 'Two-shift night',
         twoNightContinuation: 'Night finish',
@@ -70,7 +71,13 @@ describe('OnboardingWardCreatePage model', () => {
         const initialDraft = createInitialDraft(localizedLabels);
 
         expect(initialDraft.teams.map((team) => team.name)).toEqual(['Localized Team 1', 'Localized Team 2', 'Localized Team 3']);
-        expect(initialDraft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['Morning', 'Swing', 'Overnight', 'Rest']);
+        expect(initialDraft.shiftTypes.map((shiftType) => shiftType.name)).toEqual([
+            'Morning',
+            'Swing',
+            'Overnight',
+            'Rest',
+            'Annual leave',
+        ]);
         expect(initialDraft.nurses.map((nurse) => nurse.name)).toEqual(['Sample One', 'Sample Two', 'Sample Skilled', 'Sample Rest']);
 
         const {draft: teamDraft} = addTeamDraft(initialDraft, localizedLabels);
@@ -113,6 +120,7 @@ describe('OnboardingWardCreatePage model', () => {
                 endTime: '07:00',
             }),
             expect.objectContaining({classification: 'OFF', rotationSystem: 'NONE'}),
+            expect.objectContaining({classification: 'ANNUAL_LEAVE', rotationSystem: 'NONE'}),
         ]);
 
         const mixedDraft = updateRotationModeDraft(twoShiftDraft, 'MIXED', localizedLabels);
@@ -124,6 +132,7 @@ describe('OnboardingWardCreatePage model', () => {
             {classification: 'DAY', rotationSystem: 'TWO'},
             {classification: 'NIGHT', rotationSystem: 'TWO'},
             {classification: 'OFF', rotationSystem: 'NONE'},
+            {classification: 'ANNUAL_LEAVE', rotationSystem: 'NONE'},
         ]);
         expect(
             mixedDraft.shiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO').map((shiftType) => shiftType.shortName),
@@ -466,10 +475,13 @@ describe('OnboardingWardCreatePage model', () => {
         const draft = createInitialDraft();
         const withAdditionalShift = addShiftTypeDraft(draft);
 
-        expect(draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
-        expect(withAdditionalShift.shiftTypes[4]?.color).toBe(DEFAULT_SHIFT_TYPE_COLORS[4]);
+        expect(draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual([
+            ...DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4),
+            DEFAULT_SHIFT_TYPE_COLORS[8],
+        ]);
+        expect(withAdditionalShift.shiftTypes[5]?.color).toBe(DEFAULT_SHIFT_TYPE_COLORS[5]);
         expect(
-            withAdditionalShift.nurses.every((nurse) => nurse.possibleShiftTypeIds.includes(withAdditionalShift.shiftTypes[4]?.id ?? '')),
+            withAdditionalShift.nurses.every((nurse) => nurse.possibleShiftTypeIds.includes(withAdditionalShift.shiftTypes[5]?.id ?? '')),
         ).toBe(true);
     });
 
@@ -609,15 +621,15 @@ describe('OnboardingWardCreatePage model', () => {
             isOff: false,
             isCounted: true,
         });
-        const withRename = updateShiftTypeDraft(withClassification, previousShiftType.id, {shortName: 'A'});
+        const withRename = updateShiftTypeDraft(withClassification, previousShiftType.id, {shortName: 'F'});
         const withDeleteAttempt = deleteShiftTypeDraft(withRename, previousShiftType.id);
 
         expect(previousShiftType.protectedByPreviousSchedule).toBe(true);
         expect(withRename.shiftTypes.find((shiftType) => shiftType.id === previousShiftType.id)).toMatchObject({
-            shortName: 'A',
+            shortName: 'F',
             classification: 'DAY',
         });
-        expect(withRename.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'A'});
+        expect(withRename.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F'});
         expect(withDeleteAttempt.shiftTypes.some((shiftType) => shiftType.id === previousShiftType.id)).toBe(true);
     });
 
@@ -846,7 +858,7 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(reordered.shiftTypes[0]).toEqual(offShiftType);
         expect(reordered.shiftTypes.slice(1).map((shiftType) => shiftType.id)).toEqual(
-            draft.shiftTypes.slice(0, 3).map((shiftType) => shiftType.id),
+            draft.shiftTypes.filter((shiftType) => shiftType.id !== offShiftType.id).map((shiftType) => shiftType.id),
         );
     });
 
@@ -1191,7 +1203,7 @@ describe('OnboardingWardCreatePage model', () => {
         });
         const customShiftTypeId = withCustomShift.shiftTypes.find((shiftType) => shiftType.shortName === 'R')?.id ?? '';
         const renamedDraft = updateShiftTypeDraft(withCustomShift, customShiftTypeId, {
-            shortName: 'A',
+            shortName: 'F',
             startTime: '09:00',
             endTime: '18:00',
         });
@@ -1200,14 +1212,14 @@ describe('OnboardingWardCreatePage model', () => {
         expect(renamedDraft.shiftTypes.find((shiftType) => shiftType.id === customShiftTypeId)).toEqual(
             expect.objectContaining({
                 name: 'R',
-                shortName: 'A',
+                shortName: 'F',
                 startTime: '09:00',
                 endTime: '18:00',
             }),
         );
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'A', '2': 'D'});
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F', '2': 'D'});
         expect(nurse?.initialShifts).toEqual([
-            {date: '2026-05-01', shiftShortName: 'A'},
+            {date: '2026-05-01', shiftShortName: 'F'},
             {date: '2026-05-02', shiftShortName: 'D'},
         ]);
     });
@@ -1230,15 +1242,15 @@ describe('OnboardingWardCreatePage model', () => {
         const customShiftTypeId = withCustomShift.shiftTypes.find((shiftType) => shiftType.shortName === 'R')?.id ?? '';
         const temporarilyEmptyDraft = updateShiftTypeDraft(withCustomShift, customShiftTypeId, {shortName: ''});
         const renamedDraft = updateShiftTypeDraft(temporarilyEmptyDraft, customShiftTypeId, {
-            shortName: 'A',
+            shortName: 'F',
             startTime: '09:00',
             endTime: '18:00',
         });
         const nurse = renamedDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
 
         expect(temporarilyEmptyDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R'});
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'A'});
-        expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'A'}]);
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'F'});
+        expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'F'}]);
     });
 
     it('resolves the onboarding initial schedule target from the entered schedule month and created ward team', () => {

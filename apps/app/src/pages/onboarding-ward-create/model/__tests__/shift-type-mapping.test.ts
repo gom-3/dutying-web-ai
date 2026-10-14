@@ -147,6 +147,7 @@ describe('previous schedule shift-type mapping', () => {
         expect(importedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'ⓓ' || shiftType.shortName === 'ⓝ')).toBe(false);
         expect(importedDay.mappingStatus).toBe('AUTO_MATCHED');
         expect(importedNight.mappingStatus).toBe('AUTO_MATCHED');
+
         const payload = buildCreateWardPayload(importedDraft);
 
         expect(payload.wardShiftTypes.filter((shiftType) => shiftType.rotationSystem === 'TWO')).toEqual([
@@ -172,8 +173,8 @@ describe('previous schedule shift-type mapping', () => {
             ],
         });
 
-        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
-        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.rotationSystem)).toEqual(['TWO', 'TWO', 'NONE']);
+        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', 'A']);
+        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.rotationSystem)).toEqual(['TWO', 'TWO', 'NONE', 'NONE']);
         expect(getStepValidation({...importedDraft, currentStep: 4}, 4).isValid).toBe(true);
     });
 
@@ -193,7 +194,7 @@ describe('previous schedule shift-type mapping', () => {
             ],
         });
 
-        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
+        expect(importedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'A']);
     });
 
     it('keeps circled previous-schedule codes as other work instead of inferring two-shift types', () => {

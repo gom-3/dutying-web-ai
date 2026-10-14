@@ -84,11 +84,12 @@ export function getSelectableRotationSystemsForClassification(
 
 interface IRequiredRotationClassificationOptions {
     includeNightContinuation?: boolean;
+    includeAnnualLeave?: boolean;
 }
 
 export function getRequiredRotationClassifications(
     rotationMode: TSelectableWardRotationMode,
-    {includeNightContinuation = false}: IRequiredRotationClassificationOptions = {},
+    {includeNightContinuation = false, includeAnnualLeave = false}: IRequiredRotationClassificationOptions = {},
 ) {
     return [
         ...(rotationMode !== 'TWO'
@@ -108,7 +109,13 @@ export function getRequiredRotationClassifications(
             ? [{rotationSystem: 'TWO' as const, classification: 'NIGHT_CONTINUATION' as const}]
             : []),
         {rotationSystem: 'NONE' as const, classification: 'OFF' as const},
+        ...(includeAnnualLeave ? [{rotationSystem: 'NONE' as const, classification: 'ANNUAL_LEAVE' as const}] : []),
     ];
+}
+
+// OFF and core rotations are unique; full-day and half-day annual leave may coexist.
+export function isRequiredRotationClassificationSatisfied(requirement: {classification: TSelectableShiftClassification; count: number}) {
+    return requirement.classification === 'ANNUAL_LEAVE' ? requirement.count >= 1 : requirement.count === 1;
 }
 
 export function getRequiredRotationClassificationCounts(
