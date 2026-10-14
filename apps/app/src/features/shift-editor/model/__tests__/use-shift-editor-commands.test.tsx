@@ -21,6 +21,34 @@ function createDoc(): TDutyDoc {
 }
 
 describe('useShiftEditorCommands', () => {
+    it('keeps newly confirmed previous cells protected from older undo and redo entries', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const doc = createDoc();
+
+        doc.rows[0].lastCells = ['N', null];
+
+        act(() => {
+            result.current.init(doc);
+            result.current.setCells([{row: 0, col: -2}], 'D');
+        });
+
+        act(() => {
+            const store = useShiftEditorStore.getState();
+
+            store.setDoc({
+                ...store.doc,
+                rows: store.doc.rows.map((row, index) => (index === 0 ? {...row, lastCellLocks: [true, false]} : row)),
+            });
+            result.current.undo();
+        });
+
+        expect(useShiftEditorStore.getState().doc.rows[0].lastCells).toEqual(['D', null]);
+
+        act(() => result.current.redo());
+
+        expect(useShiftEditorStore.getState().doc.rows[0].lastCells).toEqual(['D', null]);
+    });
+
     beforeEach(() => {
         vi.useFakeTimers();
         window.localStorage.clear();

@@ -1,8 +1,25 @@
 import type {TSnapshotListRes, TSnapshotSaveRes, TSnapshotSummaryDto} from '@dutying/api/ward';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {type QueryClient, useQuery, useQueryClient} from '@tanstack/react-query';
+import {wardQueryKeys} from '@/entities/ward/model/queries';
 import WardAPI from '@/shared/api/ward';
 
 export const MAX_SCHEDULE_SNAPSHOT_COUNT = 10;
+
+export function invalidateConfirmedScheduleContext(
+    queryClient: QueryClient,
+    wardId: number,
+    shiftTeamId: number,
+    year: number,
+    month: number,
+) {
+    const next = month === 12 ? {year: year + 1, month: 1} : {year, month: month + 1};
+
+    return Promise.all([
+        queryClient.invalidateQueries({queryKey: wardQueryKeys.duty(wardId, shiftTeamId, year, month)}),
+        queryClient.invalidateQueries({queryKey: wardQueryKeys.duty(wardId, shiftTeamId, next.year, next.month)}),
+        queryClient.invalidateQueries({queryKey: ['ward', wardId, 'shift-team', shiftTeamId, 'schedule-workspace', next.year, next.month]}),
+    ]);
+}
 
 export const scheduleSnapshotsQueryKey = (wardId: number, shiftTeamId: number, year: number, month: number) =>
     ['schedule', 'snapshots', wardId, shiftTeamId, year, month] as const;
