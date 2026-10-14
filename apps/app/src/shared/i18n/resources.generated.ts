@@ -1625,7 +1625,8 @@ export const ko = {
                         "time": "시각",
                         "number": "숫자 값"
                     }
-                }
+                },
+                "personalExclusionPreset": "직원별 날짜·요일 근무 제외"
             },
             "fixedShifts": {
                 "empty": "이번 달 근무표가 아직 없어요",
@@ -4765,7 +4766,8 @@ export const en: TLocale = {
                         "time": "Time",
                         "number": "Numeric value"
                     }
-                }
+                },
+                "personalExclusionPreset": "Exclude a shift by nurse and day"
             },
             "fixedShifts": {
                 "empty": "No schedule exists for this month yet",
@@ -7903,7 +7905,8 @@ export const ja: TLocale = {
                         "time": "時刻",
                         "number": "数値"
                     }
-                }
+                },
+                "personalExclusionPreset": "看護師・日付・曜日別の勤務除外"
             },
             "fixedShifts": {
                 "empty": "今月の勤務表はまだありません",
@@ -11041,7 +11044,8 @@ export const zh: TLocale = {
                         "time": "时间",
                         "number": "数值"
                     }
-                }
+                },
+                "personalExclusionPreset": "按护士及日期排除班次"
             },
             "fixedShifts": {
                 "empty": "本月还没有排班表。",
@@ -14179,7 +14183,8 @@ export const th: TLocale = {
                         "time": "เวลา",
                         "number": "ค่าตัวเลข"
                     }
-                }
+                },
+                "personalExclusionPreset": "ยกเว้นเวรตามพยาบาลและวัน"
             },
             "fixedShifts": {
                 "empty": "ยังไม่มีกำหนดการสำหรับเดือนนี้",
@@ -17317,7 +17322,8 @@ export const vi: TLocale = {
                         "time": "Thời gian",
                         "number": "Giá trị số"
                     }
-                }
+                },
+                "personalExclusionPreset": "Loại ca theo nhân viên và ngày"
             },
             "fixedShifts": {
                 "empty": "Chưa có lịch nào cho tháng này",
