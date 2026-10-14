@@ -7,6 +7,7 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS} from '@/pages/ward-settings/model/ward-settings-hook';
 import {RequestReceptionContent, type TRequestReceptionStatus} from '@/pages/ward-settings/ui/request-reception-content';
+import {RequestCapacitySettings} from '@/pages/ward-settings/ui/request-capacity-settings';
 import {WardAPI} from '@/shared/api';
 import requestReceptionIcon from '@/shared/assets/images/request-reception-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -104,6 +105,7 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
                                 onSave={updateRequestReceptionSettings}
                                 onRetry={retryRequestReceptionSettings}
                             />
+                            <RequestCapacitySettings />
                         </div>
                     </Dialog.Content>
                 </Dialog.Overlay>

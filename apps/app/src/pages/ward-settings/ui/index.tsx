@@ -45,6 +45,7 @@ import {
     type TWardSettingsTab,
 } from '../model/ward-settings-hook';
 import {RequestReceptionContent} from './request-reception-content';
+import {RequestCapacitySettings} from './request-capacity-settings';
 import {RestLeavePolicySection} from './rest-leave-policy-section';
 
 type TWardSettingsPageViewProps = {
@@ -1542,12 +1543,15 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                 ) : state.currentTab === 'annualLeave' ? (
                     <AnnualLeaveSettingsSection wardId={state.wardId} shiftTypes={state.shiftTypes} shiftTeams={state.shiftTeams} />
                 ) : state.currentTab === 'requestReception' ? (
-                    <RequestReceptionContent
-                        settings={state.requestReceptionSettings}
-                        status={state.requestReceptionStatus}
-                        onSave={actions.updateRequestReceptionSettings}
-                        onRetry={actions.retryRequestReceptionSettings}
-                    />
+                    <>
+                        <RequestReceptionContent
+                            settings={state.requestReceptionSettings}
+                            status={state.requestReceptionStatus}
+                            onSave={actions.updateRequestReceptionSettings}
+                            onRetry={actions.retryRequestReceptionSettings}
+                        />
+                        <RequestCapacitySettings />
+                    </>
                 ) : (
                     <ConstraintsContent
                         state={{

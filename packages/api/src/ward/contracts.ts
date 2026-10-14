@@ -1,5 +1,6 @@
 import type {TFailureSuggestion, TQualitySidebar} from './schedule-evidence';
 import type {IAnnualLeaveApi} from './annual-leave';
+import type {IReqShiftCapacityApi} from './request-capacity';
 import type {
     TDay,
     TDutyRequest,
@@ -912,7 +913,7 @@ export type TPublishSnapshotRes = {
     publishedAt: string;
 };
 
-export interface IWardAPI extends IAnnualLeaveApi {
+export interface IWardAPI extends IAnnualLeaveApi, IReqShiftCapacityApi {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;

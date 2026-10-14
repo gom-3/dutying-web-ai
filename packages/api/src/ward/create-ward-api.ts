@@ -1,4 +1,5 @@
 import {createAnnualLeaveApi} from './annual-leave';
+import {createReqShiftCapacityApi} from './request-capacity';
 import type {IApiClient} from '../client';
 import type {
     IWardAPI,
@@ -234,6 +235,7 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
 
     return {
         ...createAnnualLeaveApi(client, basePath),
+        ...createReqShiftCapacityApi(client, basePath),
         getWard: async (wardId: number) => normalizeWardResponse((await client.get<TWardResponse>(wardPath(`/${wardId}`))).data),
         createWard: async (createWardDTO: TCreateWardDTO) =>
             normalizeWardResponse((await client.post<TWardResponse>(wardPath(), toCreateWardRequest(createWardDTO))).data),

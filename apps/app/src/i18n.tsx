@@ -13,6 +13,14 @@ import {
 } from '@/shared/i18n/resources.generated';
 import {aiAdjustKo, aiAdjustEn} from '@/shared/locales/ai-adjust';
 import {annualLeaveKo, annualLeaveEn} from '@/shared/locales/annual-leave';
+import {
+    requestCapacityKo,
+    requestCapacityEn,
+    requestCapacityJa,
+    requestCapacityZh,
+    requestCapacityTh,
+    requestCapacityVi,
+} from '@/shared/locales/request-capacity';
 import {en} from '@/shared/locales/en';
 import {ja} from '@/shared/locales/ja';
 import {ko} from '@/shared/locales/ko';
@@ -126,12 +134,54 @@ const supplementalKo = {
     },
 } as const;
 const resources = {
-    ko: {translation: {...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo), annualLeave: annualLeaveKo, aiAdjust: aiAdjustKo}},
-    en: {translation: {...fillMissingTranslations(generatedEn, en), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
-    ja: {translation: {...fillMissingTranslations(generatedJa, ja), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
-    zh: {translation: {...fillMissingTranslations(generatedZh, zh), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
-    th: {translation: {...fillMissingTranslations(generatedTh, th), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
-    vi: {translation: {...fillMissingTranslations(generatedVi, vi), annualLeave: annualLeaveEn, aiAdjust: aiAdjustEn}},
+    ko: {
+        translation: {
+            requestCapacity: requestCapacityKo,
+            ...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo),
+            annualLeave: annualLeaveKo,
+            aiAdjust: aiAdjustKo,
+        },
+    },
+    en: {
+        translation: {
+            requestCapacity: requestCapacityEn,
+            ...fillMissingTranslations(generatedEn, en),
+            annualLeave: annualLeaveEn,
+            aiAdjust: aiAdjustEn,
+        },
+    },
+    ja: {
+        translation: {
+            requestCapacity: requestCapacityJa,
+            ...fillMissingTranslations(generatedJa, ja),
+            annualLeave: annualLeaveEn,
+            aiAdjust: aiAdjustEn,
+        },
+    },
+    zh: {
+        translation: {
+            requestCapacity: requestCapacityZh,
+            ...fillMissingTranslations(generatedZh, zh),
+            annualLeave: annualLeaveEn,
+            aiAdjust: aiAdjustEn,
+        },
+    },
+    th: {
+        translation: {
+            requestCapacity: requestCapacityTh,
+            ...fillMissingTranslations(generatedTh, th),
+            annualLeave: annualLeaveEn,
+            aiAdjust: aiAdjustEn,
+        },
+    },
+    vi: {
+        translation: {
+            requestCapacity: requestCapacityVi,
+            ...fillMissingTranslations(generatedVi, vi),
+            annualLeave: annualLeaveEn,
+            aiAdjust: aiAdjustEn,
+        },
+    },
 } as const;
 const syncDocumentLocale = (lng?: string) => {
     const language = normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;
