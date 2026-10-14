@@ -120,10 +120,10 @@ describe('local UI review', () => {
         expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
         expect(chat().queryByText(/대상·기간·조건을 모두 포함/)).not.toBeInTheDocument();
         await userEvent.click(regenerate);
-        expect(screen.getByText('2026년 11월 근무표')).toBeVisible();
+        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
         await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
         expect(await chat().findByText(/근무표를 채웠어요\./)).toBeInTheDocument();
-        expect(screen.getByText('2026년 11월 근무표')).toBeVisible();
+        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
         await userEvent.click(chat().getByRole('button', {name: '새 요청 시작하기'}));
         expect(chat().getByText(/^자동채우기 1회차 · 완료$/)).toBeVisible();
         expect(chat().getAllByText('여기서부터 새 요청 · 현재 표 기준').at(-1)).toBeVisible();
@@ -146,7 +146,7 @@ describe('local UI review', () => {
         expect((await chat().findAllByText(/^수정 1회차 · 완료$/)).at(-1)).toBeInTheDocument();
         expect(chat().getByText('더 바꾸고 싶은 점이 있나요?')).toBeVisible();
         await userEvent.click(chat().getByRole('button', {name: '닫기'}));
-        expect(screen.getByText('2026년 11월 근무표')).toBeVisible();
+        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
         expect(screen.queryByRole('complementary', {name: 'AI 자동채우기'})).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: 'AI 자동채우기'}));
         expect(screen.getByRole('complementary', {name: 'AI 자동채우기'})).toBeVisible();
