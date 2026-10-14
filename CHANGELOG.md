@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.2.5 - 2026-10-15
+
+- `@dutying/app` (patch): 개인별 월간 근무 횟수와 날짜·요일별 근무 제외를 설정할 수 있고, 새 횟수 조건은 필수로 적용합니다.
+
 ## 1.2.4 - 2026-10-15
 
 - `@dutying/app` (patch), `@dutying/domain` (patch): 확정한 전달 근무를 다음 달에 자동 연결하고 읽기 전용으로 보호합니다. 재확정 시 최신 전달 근무를 반영하면서 작성 중인 이번 달 근무와 고정값을 유지하며, 구 API 응답과 기존 저장 데이터의 호환성을 유지합니다.

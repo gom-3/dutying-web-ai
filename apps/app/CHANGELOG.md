@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.2.5
+
+### Patch Changes
+
+- 7dd6c09: 개인별 월간 근무 횟수와 날짜·요일별 근무 제외를 설정할 수 있고, 새 횟수 조건은 필수로 적용합니다.
+    - @dutying/api@1.2.5
+    - @dutying/domain@1.2.5
+    - @dutying/utils@1.2.5
+
 ## 1.2.4
 
 ### Patch Changes
