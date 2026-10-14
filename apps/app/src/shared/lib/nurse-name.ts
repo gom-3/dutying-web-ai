@@ -12,6 +12,21 @@ const NURSE_NAME_INPUT_SANITIZE_REGEXP =
 
 export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
 
+// Roster names follow the server's NurseNamePolicy. Keep the stricter account
+// registration policy below unchanged, and normalize for older servers too.
+export const normalizeRosterNurseNameForRequest = (name: string) =>
+    normalizeNurseNameForRequest(name.replace(/　/g, ' ').replace(/･/g, '・').normalize('NFC'));
+
+export function isValidRosterNurseName(name: string): boolean {
+    const requestName = normalizeRosterNurseNameForRequest(name);
+
+    return (
+        Array.from(requestName).length <= NURSE_NAME_MAX_LENGTH &&
+        /^[\p{L}\p{N} ・ー]+$/u.test(requestName) &&
+        /[\p{L}\p{N}]/u.test(requestName.replace(/[・ー]/gu, ''))
+    );
+}
+
 export const sanitizeNurseNameInput = (rawValue: string) =>
     rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 

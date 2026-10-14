@@ -11,8 +11,9 @@ import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
 import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
+import {isValidRosterNurseName, normalizeRosterNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {showActionErrorFeedback} from '@/shared/util/feedback';
+import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const TEMP_NURSE_ID_BASE = -1_000_000;
@@ -167,9 +168,14 @@ const mergeWardShiftTeams = (ward: TWard | undefined, shiftTeams: TWard['shiftTe
         nurseCnt: getShiftTeamNurseCount(shiftTeams),
     };
 };
-const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean} = {}) =>
+const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean; originalName?: string} = {}) =>
     compactRequest({
-        name: nurse.name?.trim(),
+        name:
+            nurse.name === undefined ||
+            (options.originalName !== undefined &&
+                normalizeRosterNurseNameForRequest(nurse.name) === normalizeRosterNurseNameForRequest(options.originalName))
+                ? undefined
+                : normalizeRosterNurseNameForRequest(nurse.name),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
         birthDate: toOptionalBirthDate(nurse.birthDate),
         isWorker: nurse.isWorker,
@@ -180,7 +186,7 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     }) as TUpdateNurseDTO;
 const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => ({
     ...toNursePayload(nurse),
-    name: (nurse.name ?? '').trim(),
+    name: normalizeRosterNurseNameForRequest(nurse.name ?? ''),
 });
 const useEditShiftTeam = () => {
     const {t} = useTypedTranslation();
@@ -451,6 +457,17 @@ const useEditShiftTeam = () => {
                 return false;
             }
 
+            const originalName = isTempNurseId(nurseId)
+                ? undefined
+                : shiftTeams?.flatMap((team) => team.nurses).find((nurse) => nurse.nurseId === nurseId)?.name;
+            const nursePayload = toNursePayload(updateNurseDTO, {clearBlankPhoneNum: true, originalName});
+
+            if (nursePayload.name !== undefined && !isValidRosterNurseName(nursePayload.name)) {
+                showValidationFeedback(t('page.member.detail.nameInvalid'));
+
+                return false;
+            }
+
             beginSavingNurse();
 
             await queryClient.cancelQueries({queryKey: wardQueryKey});
@@ -508,7 +525,7 @@ const useEditShiftTeam = () => {
 
                     selectNurseState(createdNurse.nurseId, 'edit');
                 } else {
-                    await NurseAPI.updateNurse(nurseId, toNursePayload(updateNurseDTO, {clearBlankPhoneNum: true}));
+                    await NurseAPI.updateNurse(nurseId, nursePayload);
                 }
 
                 completeSavingNurse();
@@ -538,6 +555,7 @@ const useEditShiftTeam = () => {
             selectNurseState,
             queryClient,
             requestShiftQueryKey,
+            shiftTeams,
             shiftQueryKey,
             t,
             wardId,
@@ -634,6 +652,15 @@ const useEditShiftTeam = () => {
                 return details.nurse ? updateNurse(nurseId, details.nurse) : false;
             }
 
+            const originalName = shiftTeams?.flatMap((team) => team.nurses).find((nurse) => nurse.nurseId === nurseId)?.name;
+            const nursePayload = details.nurse ? toNursePayload(details.nurse, {clearBlankPhoneNum: true, originalName}) : undefined;
+
+            if (nursePayload?.name !== undefined && !isValidRosterNurseName(nursePayload.name)) {
+                showValidationFeedback(t('page.member.detail.nameInvalid'));
+
+                return false;
+            }
+
             beginSavingNurse();
 
             await Promise.allSettled([
@@ -656,27 +683,24 @@ const useEditShiftTeam = () => {
                 currentShiftTeams ? applyNurseDetailChanges(currentShiftTeams, nurseId, details) : currentShiftTeams,
             );
 
-            const saveRequests: Promise<unknown>[] = [];
+            try {
+                // A rejected profile must not still commit the possible-shift edits.
+                if (nursePayload) await NurseAPI.updateNurse(nurseId, nursePayload);
 
-            if (details.nurse) {
-                saveRequests.push(NurseAPI.updateNurse(nurseId, toNursePayload(details.nurse, {clearBlankPhoneNum: true})));
-            }
+                const results = await Promise.allSettled(
+                    shiftTypeChanges.map(({nurseShiftTypeId, change}) => NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change)),
+                );
+                const failedResult = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
 
-            shiftTypeChanges.forEach(({nurseShiftTypeId, change}) => {
-                saveRequests.push(NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change));
-            });
-
-            const results = await Promise.allSettled(saveRequests);
-            const failedResult = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
-
-            if (failedResult) {
+                if (failedResult) throw failedResult.reason;
+            } catch (error) {
                 if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
 
                 if (oldShiftTeams) queryClient.setQueryData(shiftTeamsQueryKey, oldShiftTeams);
 
                 failSavingNurse();
                 void invalidateWardShiftAndRequest().catch(() => undefined);
-                showActionErrorFeedback(failedResult.reason, t('feature.editShiftTeam.updateNurseFailed'));
+                showActionErrorFeedback(error, t('feature.editShiftTeam.updateNurseFailed'));
 
                 return false;
             }
@@ -692,6 +716,7 @@ const useEditShiftTeam = () => {
             failSavingNurse,
             invalidateWardShiftAndRequest,
             queryClient,
+            shiftTeams,
             shiftTeamsQueryKey,
             t,
             updateNurse,

@@ -1945,7 +1945,9 @@ export const ko = {
                 "shiftTypes": "가능 근무",
                 "shiftTypesHelpAria": "가능 근무 안내",
                 "shiftTypesHint": "가능한 근무를 모두 선택해 주세요",
-                "worker": "근무투입"
+                "worker": "근무투입",
+                "nameRequired": "이름을 입력해 주세요.",
+                "nameInvalid": "이름은 50자 이하의 문자, 숫자, 공백, '・', 'ー'로 입력해 주세요. '_' 등의 기호는 사용할 수 없어요."
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요."
@@ -5085,7 +5087,9 @@ export const en: TLocale = {
                 "shiftTypes": "Available shifts",
                 "shiftTypesHelpAria": "Available shifts guide",
                 "shiftTypesHint": "Select every shift this person can work",
-                "worker": "Included"
+                "worker": "Included",
+                "nameRequired": "Enter a name.",
+                "nameInvalid": "Use up to 50 letters, numbers, spaces, '・', or 'ー'. Symbols such as '_' are not allowed."
             },
             "drawer": {
                 "deleteConfirm": "Delete nurse {{nurseName}}? This cannot be undone."
@@ -8223,7 +8227,9 @@ export const ja: TLocale = {
                 "shiftTypes": "可能勤務",
                 "shiftTypesHelpAria": "可能勤務の案内",
                 "shiftTypesHint": "可能な勤務をすべて選択してください",
-                "worker": "勤務投入"
+                "worker": "勤務投入",
+                "nameRequired": "名前を入力してください。",
+                "nameInvalid": "名前は50文字以内の文字、数字、スペース、「・」「ー」で入力してください。「_」などの記号は使えません。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}}看護師を削除しますか？削除後は元に戻せません。"
@@ -11361,7 +11367,9 @@ export const zh: TLocale = {
                 "shiftTypes": "可用的工作",
                 "shiftTypesHelpAria": "可用工作信息",
                 "shiftTypesHint": "请选择所有空缺职位",
-                "worker": "投入工作"
+                "worker": "投入工作",
+                "nameRequired": "请输入姓名。",
+                "nameInvalid": "姓名最多50个字符，可使用文字、数字、空格、“・”和“ー”。不能使用“_”等符号。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要删除护士吗？一旦删除，就无法恢复。"
@@ -14499,7 +14507,9 @@ export const th: TLocale = {
                 "shiftTypes": "กะที่มีอยู่",
                 "shiftTypesHelpAria": "คู่มือกะที่มีอยู่",
                 "shiftTypesHint": "เลือกทุกกะที่บุคคลนี้สามารถทำงานได้",
-                "worker": "รวมอยู่ด้วย"
+                "worker": "รวมอยู่ด้วย",
+                "nameRequired": "กรุณาใส่ชื่อ",
+                "nameInvalid": "ใช้ตัวอักษร ตัวเลข ช่องว่าง '・' หรือ 'ー' ได้สูงสุด 50 ตัว ไม่อนุญาตสัญลักษณ์ เช่น '_'"
             },
             "drawer": {
                 "deleteConfirm": "ลบพยาบาล {{nurseName}} ใช่ไหม สิ่งนี้ไม่สามารถยกเลิกได้"
@@ -17637,7 +17647,9 @@ export const vi: TLocale = {
                 "shiftTypes": "ca có sẵn",
                 "shiftTypesHelpAria": "Hướng dẫn ca làm việc có sẵn",
                 "shiftTypesHint": "Chọn mọi ca mà người này có thể làm việc",
-                "worker": "Bao gồm"
+                "worker": "Bao gồm",
+                "nameRequired": "Vui lòng nhập tên.",
+                "nameInvalid": "Dùng tối đa 50 chữ cái, chữ số, dấu cách, '・' hoặc 'ー'. Không được dùng ký hiệu như '_'."
             },
             "drawer": {
                 "deleteConfirm": "Xóa điều dưỡng {{nurseName}}? Điều này không thể hoàn tác được."
