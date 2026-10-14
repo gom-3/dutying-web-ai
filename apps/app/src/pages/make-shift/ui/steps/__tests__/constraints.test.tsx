@@ -244,7 +244,11 @@ describe('Constraints', () => {
             options: {
                 targets: [{type: 'NURSE', nurseId: 1, label: 'Nurse A'}],
                 nurses: [{type: 'NURSE', nurseId: 1, label: 'Nurse A'}],
-                shiftsWithAll: [{type: 'SHIFT', wardShiftTypeId: nightId, label: 'N'}],
+                shiftsWithAll: [
+                    {type: 'ALL', label: '모든 근무'},
+                    {type: 'SHIFT', wardShiftTypeId: rotationMode === 'TWO' ? 4 : 1, label: 'D'},
+                    {type: 'SHIFT', wardShiftTypeId: nightId, label: 'N'},
+                ],
                 periods: [{type: 'MONTH', label: '한 달'}],
                 countOperators: [
                     {type: 'MAX', label: '최대'},
