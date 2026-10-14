@@ -1,10 +1,11 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
-import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {getNextNewNurseNumber} from '@/shared/lib/new-nurse-name';
+import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassificationCounts,
+    isRequiredRotationClassificationSatisfied,
     getSelectableRotationSystemsForClassification,
 } from '@/shared/lib/shift-rotation-selection';
 import {
@@ -246,6 +247,7 @@ const DEFAULT_SHIFT_NAMES = {
     evening: '\uC774\uBE0C\uB2DD',
     night: '\uB098\uC774\uD2B8',
     off: '\uC624\uD504',
+    annualLeave: '\uC5F0\uCC28',
     twoDay: '2\uAD50\uB300 \uC8FC\uAC04',
     twoNight: '2\uAD50\uB300 \uC57C\uAC04',
     twoNightContinuation: '\uD1F4\uADFC\uC77C \uADFC\uBB34',
@@ -524,7 +526,71 @@ const createBaseShiftTypes = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDIN
         paidMinutes: null,
         autoSeeded: true,
     }),
+    createAnnualLeaveShiftType('A', labels),
 ];
+const createAnnualLeaveShiftType = (shortName: string, labels: TOnboardingDraftLabels): TOnboardingWardShiftType =>
+    createShiftType({
+        name: labels.shiftNames.annualLeave,
+        shortName,
+        startTime: '',
+        endTime: '',
+        color: '#BFA7F3',
+        isDefault: false,
+        isOff: true,
+        isCounted: false,
+        classification: 'ANNUAL_LEAVE',
+        rotationSystem: 'NONE',
+        paidMinutes: null,
+        autoSeeded: true,
+    });
+const isActiveAnnualLeave = (shiftType: TOnboardingWardShiftType) =>
+    isOnboardingShiftTypeActive(shiftType) &&
+    shiftType.classification === 'ANNUAL_LEAVE' &&
+    isOnboardingShiftMappingResolved(shiftType.mappingStatus);
+
+export const isLastOnboardingAnnualLeave = (shiftTypes: TOnboardingWardShiftType[], shiftTypeId: string) =>
+    shiftTypes.some((shiftType) => shiftType.id === shiftTypeId && isActiveAnnualLeave(shiftType)) &&
+    shiftTypes.filter(isActiveAnnualLeave).length === 1;
+
+export const ensureOnboardingAnnualLeave = (
+    draft: TOnboardingWardDraft,
+    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
+): TOnboardingWardDraft => {
+    if (draft.shiftTypes.some(isActiveAnnualLeave)) return draft;
+
+    // Reserve archived codes and aliases too: old schedules must keep their meaning.
+    const usedKeys = new Set(
+        ['D', 'E', 'N', 'O', ...draft.shiftTypes.flatMap((shiftType) => [shiftType.shortName, ...(shiftType.shortNameAliases ?? [])])].map(
+            getShiftShortNameEntryKey,
+        ),
+    );
+    const candidates = [
+        'A',
+        'L',
+        'V',
+        ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        ...Array.from({length: 94}, (_, index) => String.fromCharCode(33 + index)),
+    ];
+    const shortName = candidates.find((code) => !usedKeys.has(getShiftShortNameEntryKey(code)));
+
+    if (!shortName) return draft;
+
+    const annualLeave = createAnnualLeaveShiftType(shortName, labels);
+
+    if (draft.shiftTypes.some((shiftType) => normalizeColor(shiftType.color) === normalizeColor(annualLeave.color))) {
+        annualLeave.color = getAvailableOnboardingShiftColor(draft.shiftTypes.map((shiftType) => shiftType.color));
+    }
+
+    return {
+        ...draft,
+        shiftTypes: orderOnboardingShiftTypes([...draft.shiftTypes, annualLeave]),
+        nurses: draft.nurses.map((nurse) => ({
+            ...nurse,
+            possibleShiftTypeIds: [...nurse.possibleShiftTypeIds, annualLeave.id],
+        })),
+    };
+};
+
 const createTwoShiftTypes = (
     labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
     rotationMode: Extract<TOnboardingRotationMode, 'TWO' | 'MIXED'> = 'MIXED',
@@ -1251,6 +1317,16 @@ const syncScheduleInputShiftTypes = (
     const existingShortNames = new Set<string>();
     const usedColors = new Set<string>();
     const nextShiftTypes = shiftTypes.flatMap((shiftType) => {
+        // Codes observed in a previous schedule take precedence over the new default A seed.
+        if (
+            observedScheduleShortNames.size > 0 &&
+            shiftType.autoSeeded === true &&
+            shiftType.classification === 'ANNUAL_LEAVE' &&
+            !shiftType.protectedByPreviousSchedule &&
+            shiftType.source !== 'schedule-input'
+        )
+            return [];
+
         const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
         const isUnselectedDefaultOff =
             offShortName !== DEFAULT_SCHEDULE_OFF_SHIFT_SHORT_NAME &&
@@ -1400,6 +1476,7 @@ export const applyScheduleInputDraft = (
     draft: TOnboardingWardDraft,
     teamId: string,
     schedule: TOnboardingTeamScheduleDraft,
+    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
 ): TOnboardingWardDraft => {
     if (!teamId) {
         return draft;
@@ -1527,16 +1604,19 @@ export const applyScheduleInputDraft = (
               ),
     );
 
-    return {
-        ...draft,
-        shiftTypes: nextShiftTypes,
-        teams: nextTeams,
-        nurses: nextNurses,
-        scheduleInputs: {
-            ...(draft.scheduleInputs ?? {}),
-            [teamId]: updatedTeamScheduleInputsWithNurseIds,
+    return ensureOnboardingAnnualLeave(
+        {
+            ...draft,
+            shiftTypes: nextShiftTypes,
+            teams: nextTeams,
+            nurses: nextNurses,
+            scheduleInputs: {
+                ...(draft.scheduleInputs ?? {}),
+                [teamId]: updatedTeamScheduleInputsWithNurseIds,
+            },
         },
-    };
+        labels,
+    );
 };
 
 const updateScheduleRowsAfterDivisionBoundary = (
@@ -1824,17 +1904,20 @@ export const applyUploadedScheduleTemplateDraft = (
     const nextPossibleShiftTypeIds = getActiveShiftTypeIds(nextShiftTypes);
 
     return {
-        draft: {
-            ...draft,
-            uploadedFileName: fileName,
-            shiftTypes: nextShiftTypes,
-            teams,
-            nurses: nurses.map((nurse) => ({
-                ...nurse,
-                possibleShiftTypeIds: nextPossibleShiftTypeIds,
-            })),
-            scheduleInputs,
-        },
+        draft: ensureOnboardingAnnualLeave(
+            {
+                ...draft,
+                uploadedFileName: fileName,
+                shiftTypes: nextShiftTypes,
+                teams,
+                nurses: nurses.map((nurse) => ({
+                    ...nurse,
+                    possibleShiftTypeIds: nextPossibleShiftTypeIds,
+                })),
+                scheduleInputs,
+            },
+            labels,
+        ),
         activeTeamId: teams[0]?.id ?? null,
     };
 };
@@ -1845,6 +1928,15 @@ export const updateShiftTypeDraft = (
     updater: Partial<TOnboardingWardShiftType>,
 ): TOnboardingWardDraft => {
     const targetShiftType = draft.shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
+
+    if (
+        isLastOnboardingAnnualLeave(draft.shiftTypes, shiftTypeId) &&
+        (updater.isActive === false ||
+            (updater.classification != null && updater.classification !== 'ANNUAL_LEAVE') ||
+            updater.mappingStatus === 'UNASSIGNED')
+    )
+        return draft;
+
     const effectiveUpdater = {...updater};
     const isSemanticUpdate =
         Object.prototype.hasOwnProperty.call(effectiveUpdater, 'classification') ||
@@ -2011,7 +2103,7 @@ export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardD
 export const deleteShiftTypeDraft = (draft: TOnboardingWardDraft, shiftTypeId: string): TOnboardingWardDraft => {
     const targetShiftType = draft.shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
 
-    if (targetShiftType?.protectedByPreviousSchedule) {
+    if (targetShiftType?.protectedByPreviousSchedule || isLastOnboardingAnnualLeave(draft.shiftTypes, shiftTypeId)) {
         return draft;
     }
 
@@ -2159,7 +2251,10 @@ export const addNurseDraft = (
         return draft;
     }
 
-    const nurseNumber = getNextNewNurseNumber(draft.nurses.map((nurse) => nurse.name), labels.newNurseName(1).replace(/\s*1$/, ''));
+    const nurseNumber = getNextNewNurseNumber(
+        draft.nurses.map((nurse) => nurse.name),
+        labels.newNurseName(1).replace(/\s*1$/, ''),
+    );
     const targetTeam = draft.teams.find((team) => team.id === teamId);
     const targetTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
     const lastDivisionNum =
@@ -2407,14 +2502,14 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
             classification: shiftType.classification,
             rotationSystem: getSelectedRotationSystem(shiftType),
         })),
-        {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION'},
+        {includeNightContinuation: draft.twoShiftNightRecoveryDisplay === 'NIGHT_CONTINUATION', includeAnnualLeave: true},
     );
 
     if (requiredShiftTypeCounts.some(({count}) => count === 0)) {
         issues.push({code: 'missing-required-shift-types', step});
     }
 
-    if (requiredShiftTypeCounts.some(({count}) => count > 1)) {
+    if (requiredShiftTypeCounts.some((requirement) => requirement.count > 1 && !isRequiredRotationClassificationSatisfied(requirement))) {
         issues.push({code: 'duplicate-required-shift-types', step});
     }
 

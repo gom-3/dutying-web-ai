@@ -33,6 +33,7 @@ import {
     canGoNext,
     canGoPrev,
     createInitialDraft,
+    ensureOnboardingAnnualLeave,
     deleteNurseDraft,
     deleteDivisionDraft,
     deleteScheduleDivisionDraft,
@@ -255,40 +256,44 @@ const normalizeRestoredConstraintCandidates = (
             riskNote: constraint.riskNote,
             selected: constraint.selected,
         }));
-const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
-    currentStep: draft.currentStep,
-    uploadedFileName: draft.uploadedFileName,
-    wardName: draft.wardName,
-    hospitalName: draft.hospitalName,
-    hospitalId: draft.hospitalId,
-    rotationMode: draft.rotationMode ?? 'THREE',
-    twoShiftNightRecoveryDisplay:
-        draft.rotationMode === 'TWO'
-            ? (draft.twoShiftNightRecoveryDisplay ??
-              (draft.shiftTypes.some(
-                  (shiftType) =>
-                      shiftType.isActive !== false &&
-                      shiftType.rotationSystem === 'TWO' &&
-                      shiftType.classification === 'NIGHT_CONTINUATION',
-              )
-                  ? 'NIGHT_CONTINUATION'
-                  : 'OFF'))
-            : null,
-    shiftTypes: draft.shiftTypes.map((shiftType) => ({
-        ...shiftType,
-        rotationSystem: resolveOnboardingRotationSystem(shiftType),
-        paidMinutes: resolveOnboardingRotationSystem(shiftType) === 'NONE' ? null : (shiftType.paidMinutes ?? null),
-    })),
-    teams: normalizeRestoredTeams(draft.teams, normalizeRestoredNurses(draft.nurses)),
-    nurses: normalizeRestoredNurses(draft.nurses),
-    scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
-    constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
-});
+const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardingDraftLabels): TOnboardingWardDraft =>
+    ensureOnboardingAnnualLeave(
+        {
+            currentStep: draft.currentStep,
+            uploadedFileName: draft.uploadedFileName,
+            wardName: draft.wardName,
+            hospitalName: draft.hospitalName,
+            hospitalId: draft.hospitalId,
+            rotationMode: draft.rotationMode ?? 'THREE',
+            twoShiftNightRecoveryDisplay:
+                draft.rotationMode === 'TWO'
+                    ? (draft.twoShiftNightRecoveryDisplay ??
+                      (draft.shiftTypes.some(
+                          (shiftType) =>
+                              shiftType.isActive !== false &&
+                              shiftType.rotationSystem === 'TWO' &&
+                              shiftType.classification === 'NIGHT_CONTINUATION',
+                      )
+                          ? 'NIGHT_CONTINUATION'
+                          : 'OFF'))
+                    : null,
+            shiftTypes: draft.shiftTypes.map((shiftType) => ({
+                ...shiftType,
+                rotationSystem: resolveOnboardingRotationSystem(shiftType),
+                paidMinutes: resolveOnboardingRotationSystem(shiftType) === 'NONE' ? null : (shiftType.paidMinutes ?? null),
+            })),
+            teams: normalizeRestoredTeams(draft.teams, normalizeRestoredNurses(draft.nurses)),
+            nurses: normalizeRestoredNurses(draft.nurses),
+            scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
+            constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
+        },
+        labels,
+    );
 const migrateLegacyDraftStep = (step: TOnboardingWardDraft['currentStep'], flowVersion: unknown) =>
     flowVersion === ONBOARDING_DRAFT_FLOW_VERSION || step === 1
         ? step
         : (Math.min(MAX_STEP, step + 1) as TOnboardingWardDraft['currentStep']);
-const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
+const readServerOnboardingWardDraftPayload = (payload: unknown, labels?: TOnboardingDraftLabels): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
     }
@@ -314,7 +319,7 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     };
 
     return {
-        draft: normalizePersistedDraft(restoredDraft),
+        draft: normalizePersistedDraft(restoredDraft, labels),
         draftWardId,
         selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
         sortMode: isSortMode(payload.sortMode) ? payload.sortMode : 'manual',
@@ -553,10 +558,15 @@ const applySchedulePreviewToDraft = (
     teamId: string,
     schedule: TOnboardingTeamScheduleDraft,
     response: TOnboardingScheduleInputPreviewResponse,
+    labels?: TOnboardingDraftLabels,
 ): TOnboardingWardDraft => {
-    const draftWithShiftTypes = applyParsedWardData(draft, {
-        shiftTypes: mergeSchedulePreviewShiftTypes(draft, schedule, response),
-    });
+    const draftWithShiftTypes = applyParsedWardData(
+        draft,
+        {
+            shiftTypes: mergeSchedulePreviewShiftTypes(draft, schedule, response),
+        },
+        labels,
+    );
     const shiftIdByShortName = new Map(
         draftWithShiftTypes.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => [shiftType.shortName, shiftType.id]),
     );
@@ -564,7 +574,11 @@ const applySchedulePreviewToDraft = (
         .map((shiftType) => shiftIdByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName) ?? shiftType.shortName))
         .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
     const protectedPreviousShiftTypeIds = draftWithShiftTypes.shiftTypes
-        .filter((shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.protectedByPreviousSchedule)
+        .filter(
+            (shiftType) =>
+                isOnboardingShiftTypeActive(shiftType) &&
+                (shiftType.protectedByPreviousSchedule === true || shiftType.classification === 'ANNUAL_LEAVE'),
+        )
         .map((shiftType) => shiftType.id);
     const possibleShiftTypeIds = Array.from(new Set([...previewPossibleShiftTypeIds, ...protectedPreviousShiftTypeIds]));
     const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes
@@ -776,6 +790,7 @@ function useOnboardingWardWizard() {
                 evening: t('feature.registerWard.defaultShiftType.evening'),
                 night: t('feature.registerWard.defaultShiftType.night'),
                 off: t('feature.registerWard.defaultShiftType.off'),
+                annualLeave: t('page.onboardingWardCreate.defaults.annualLeave'),
                 twoDay: t('page.onboardingWardCreate.shiftType.twoDayLabel'),
                 twoNight: t('page.onboardingWardCreate.shiftType.twoNightLabel'),
                 twoNightContinuation: t('page.onboardingWardCreate.shiftType.classification.nightContinuation'),
@@ -836,7 +851,7 @@ function useOnboardingWardWizard() {
                 }
 
                 if (serverDraft?.ward?.wardId) {
-                    const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload);
+                    const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload, onboardingDraftLabels);
 
                     setDraftWardId(serverDraft.ward.wardId);
                     setDraftCreationStatus('created');
@@ -1042,7 +1057,7 @@ function useOnboardingWardWizard() {
         setDraftWardId(serverDraft.ward.wardId);
         setDraftCreationStatus('created');
 
-        const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload);
+        const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload, onboardingDraftLabels);
 
         if (!restoredDraftState) {
             setDraft(fallbackDraft);
@@ -1111,7 +1126,8 @@ function useOnboardingWardWizard() {
                 })),
             );
             const previewDraft = previewResults.reduce(
-                (currentDraft, {teamId, schedule, response}) => applySchedulePreviewToDraft(currentDraft, teamId, schedule, response),
+                (currentDraft, {teamId, schedule, response}) =>
+                    applySchedulePreviewToDraft(currentDraft, teamId, schedule, response, onboardingDraftLabels),
                 draft,
             );
             const nextDraft = goNextStepDraft(previewDraft);
@@ -1374,7 +1390,7 @@ function useOnboardingWardWizard() {
     };
     const updateScheduleInput = (teamId: string, schedule: TOnboardingTeamScheduleDraft) => {
         markDraftTouched();
-        setDraft((prev) => applyScheduleInputDraft(prev, teamId, schedule));
+        setDraft((prev) => applyScheduleInputDraft(prev, teamId, schedule, onboardingDraftLabels));
     };
     const addScheduleDivisionAfterRow = (teamId: string, schedule: TOnboardingTeamScheduleDraft, rowId: string) => {
         markDraftTouched();
@@ -1576,7 +1592,7 @@ function useOnboardingWardWizard() {
             let nextActiveTeamId: string | null = null;
 
             setDraft((prev) => {
-                const parsedDraft = applyParsedWardData(prev, parsedWardData);
+                const parsedDraft = applyParsedWardData(prev, parsedWardData, onboardingDraftLabels);
                 // 월별 탭이 여러 장인 파일은 달마다 근무표 칸을 따로 채운다. 명단은 최신 달이 정한다.
                 const monthlySchedules = scheduleTemplate.length > 0 ? [] : buildUploadedMonthlySchedulesFromParsedWardData(parsedWardData);
                 const primaryMonth = monthlySchedules.length > 1 ? monthlySchedules[monthlySchedules.length - 1] : null;

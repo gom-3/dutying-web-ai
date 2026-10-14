@@ -7,6 +7,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassificationCounts,
+    isRequiredRotationClassificationSatisfied,
     getSelectableClassificationsForWardMode,
     getSelectableRotationSystemsForClassification,
     getSelectableShiftRotationSystemsForWardMode,
@@ -25,6 +26,8 @@ import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown
 import {
     DEFAULT_SHIFT_TYPE_COLORS,
     getAutomaticPreviousScheduleShiftMapping,
+    isLastOnboardingAnnualLeave,
+    isOnboardingShiftTypeActive,
     isOnboardingShiftMappingResolved,
     resolveOnboardingRotationSystem,
     type TOnboardingRotationMode,
@@ -128,16 +131,18 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightCon
             getRequiredRotationClassificationCounts(
                 rotationMode,
                 shiftTypes
-                    .filter((shiftType) => isOnboardingShiftMappingResolved(shiftType.mappingStatus))
+                    .filter(
+                        (shiftType) => isOnboardingShiftTypeActive(shiftType) && isOnboardingShiftMappingResolved(shiftType.mappingStatus),
+                    )
                     .map((shiftType) => ({
                         classification: shiftType.classification,
                         rotationSystem: resolveOnboardingRotationSystem(shiftType),
                     })),
-                {includeNightContinuation: requireNightContinuation},
+                {includeNightContinuation: requireNightContinuation, includeAnnualLeave: true},
             ),
         [requireNightContinuation, rotationMode, shiftTypes],
     );
-    const satisfiedCount = requiredShiftTypeStatuses.filter(({count}) => count === 1).length;
+    const satisfiedCount = requiredShiftTypeStatuses.filter(isRequiredRotationClassificationSatisfied).length;
     const issueCount = requiredShiftTypeStatuses.length - satisfiedCount;
     const showGroupLabels = rotationMode === 'MIXED';
     const requirementGroups = showGroupLabels
@@ -195,7 +200,7 @@ export function ShiftTypeRequirements({shiftTypes, rotationMode, requireNightCon
                         <ul className="flex min-w-0 flex-1 flex-wrap gap-x-5 gap-y-2">
                             {group.items.map((requiredShiftType) => {
                                 const {classificationLabel, scope} = getRequiredShiftTypeCopy(requiredShiftType);
-                                const isSatisfied = requiredShiftType.count === 1;
+                                const isSatisfied = isRequiredRotationClassificationSatisfied(requiredShiftType);
                                 const statusLabel = isSatisfied
                                     ? t('page.onboardingWardCreate.shiftType.requirements.satisfied', {
                                           scope,
@@ -331,12 +336,26 @@ export function ShiftTypeStep({
     rotationMode,
     allowNightContinuation = true,
     requireNightContinuation = false,
-    onChange,
+    onChange: onShiftTypeChange,
     onDragEnd,
     onAdd,
     onDelete,
 }: IShiftTypeStepProps) {
     const {t} = useTypedTranslation();
+    const onChange: IShiftTypeStepProps['onChange'] = (shiftTypeId, updater) => {
+        if (
+            isLastOnboardingAnnualLeave(shiftTypes, shiftTypeId) &&
+            (updater.isActive === false ||
+                (updater.classification != null && updater.classification !== 'ANNUAL_LEAVE') ||
+                updater.mappingStatus === 'UNASSIGNED')
+        ) {
+            toast.error(t('page.onboardingWardCreate.toast.annualLeaveRequired'));
+
+            return;
+        }
+
+        onShiftTypeChange(shiftTypeId, updater);
+    };
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
@@ -890,8 +909,17 @@ export function ShiftTypeStep({
                                                             shiftType.shortName ||
                                                             t('page.onboardingWardCreate.shiftType.work'),
                                                     })}
-                                                    aria-disabled={shiftType.protectedByPreviousSchedule}
+                                                    aria-disabled={
+                                                        shiftType.protectedByPreviousSchedule === true ||
+                                                        isLastOnboardingAnnualLeave(shiftTypes, shiftType.id)
+                                                    }
                                                     onClick={() => {
+                                                        if (isLastOnboardingAnnualLeave(shiftTypes, shiftType.id)) {
+                                                            toast.error(t('page.onboardingWardCreate.toast.annualLeaveRequired'));
+
+                                                            return;
+                                                        }
+
                                                         if (shiftType.protectedByPreviousSchedule) {
                                                             showProtectedDeleteToast();
 
@@ -901,7 +929,10 @@ export function ShiftTypeStep({
                                                         onDelete(shiftType.id);
                                                     }}
                                                     className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS} ${
-                                                        shiftType.protectedByPreviousSchedule ? 'cursor-not-allowed opacity-50' : ''
+                                                        shiftType.protectedByPreviousSchedule ||
+                                                        isLastOnboardingAnnualLeave(shiftTypes, shiftType.id)
+                                                            ? 'cursor-not-allowed opacity-50'
+                                                            : ''
                                                     }`}
                                                 >
                                                     <X className="h-4 w-4" />
