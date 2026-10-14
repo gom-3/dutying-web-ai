@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.2.3 - 2026-10-15
+
+- `@dutying/app` (patch): 경고·확인 모달의 작은 경고 아이콘을 번들에 포함해 추가 이미지 요청을 없애고, 내용 해시가 포함된 정적 자산에 장기 브라우저 캐시를 적용합니다.
+
 ## 1.2.2 - 2026-10-14
 
 - `@dutying/app` (patch): 모든 교대제의 온보딩에 연차 근무유형을 필수로 설정합니다. 기존 임시 저장·업로드 자료에 연차를 안전하게 보충하고, 마지막 연차의 삭제·비활성화·분류 변경을 방지합니다.
