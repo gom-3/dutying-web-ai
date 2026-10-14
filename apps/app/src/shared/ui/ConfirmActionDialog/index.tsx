@@ -2,7 +2,7 @@ import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {X} from 'lucide-react';
 import {type ReactNode, type SyntheticEvent, useCallback, useLayoutEffect, useState} from 'react';
-import redWarnIcon from '@/shared/assets/images/red-warn-icon.webp';
+import redWarnIcon from '@/shared/assets/images/red-warn-icon.webp?inline';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 
@@ -168,7 +168,7 @@ function ConfirmActionDialog({
                             </div>
                         ) : (
                             <div className="shrink-0" aria-hidden="true">
-                                <img src={redWarnIcon} alt="" className="h-12 w-12 object-contain" />
+                                <img src={redWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />
                             </div>
                         )}
                         <Dialog.Close asChild>
