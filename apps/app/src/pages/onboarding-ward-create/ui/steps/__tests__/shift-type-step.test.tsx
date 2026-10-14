@@ -2,7 +2,8 @@ import {screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, userEvent} from '@/shared/util/test-utils';
 import type {TOnboardingWardShiftType} from '../../../model';
-import {ShiftTypeStep} from '../shift-type-step';
+import {createInitialDraft} from '../../../model';
+import {ShiftTypeStep, ShiftTypeRequirements} from '../shift-type-step';
 
 const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
     id: 'schedule-night',
@@ -24,6 +25,55 @@ const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
 });
 
 describe('ShiftTypeStep', () => {
+    it('blocks deleting or reclassifying the last annual leave and permits editing its name', async () => {
+        const user = userEvent.setup();
+        const draft = createInitialDraft();
+        const annual = draft.shiftTypes.find((shift) => shift.classification === 'ANNUAL_LEAVE')!;
+        const onChange = vi.fn();
+        const onDelete = vi.fn();
+
+        render(
+            <ShiftTypeStep
+                shiftTypes={[annual]}
+                rotationMode="THREE"
+                onChange={onChange}
+                onDelete={onDelete}
+                onAdd={vi.fn()}
+                onDragEnd={vi.fn()}
+            />,
+        );
+
+        const deleteButton = screen.getByRole('button', {name: '연차 삭제'});
+
+        expect(deleteButton).toHaveAttribute('aria-disabled', 'true');
+        await user.click(deleteButton);
+        expect(onDelete).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('combobox', {name: '연차 근무 의미 선택'}));
+        await user.click(screen.getByRole('option', {name: '기타 휴무'}));
+        expect(onChange).not.toHaveBeenCalled();
+        await user.type(screen.getByDisplayValue('연차'), '휴');
+        expect(onChange).toHaveBeenCalled();
+    });
+
+    it('marks annual leave with multiple units as ready and ignores inactive units', () => {
+        const draft = createInitialDraft();
+        const annual = draft.shiftTypes.find((shift) => shift.classification === 'ANNUAL_LEAVE')!;
+        const {rerender} = render(
+            <ShiftTypeRequirements shiftTypes={[...draft.shiftTypes, {...annual, id: 'half-day', shortName: 'H'}]} rotationMode="THREE" />,
+        );
+
+        expect(screen.getByRole('status')).toHaveTextContent('5');
+        expect(screen.queryByText('2개 중복')).not.toBeInTheDocument();
+        rerender(
+            <ShiftTypeRequirements
+                shiftTypes={draft.shiftTypes.map((shift) =>
+                    shift.classification === 'ANNUAL_LEAVE' ? {...shift, isActive: false} : shift,
+                )}
+                rotationMode="THREE"
+            />,
+        );
+        expect(screen.getByText('추가가 필요해요')).toBeInTheDocument();
+    });
     it('혼합 교대의 미확정 야간 근무에서 3교대와 2교대를 모두 직접 선택할 수 있다', async () => {
         const user = userEvent.setup();
         const onChange = vi.fn();

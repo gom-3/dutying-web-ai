@@ -223,6 +223,7 @@ describe('OnboardingWardCreatePage adapter', () => {
             }),
             expect.objectContaining({shortName: 'O', classification: 'OFF', rotationSystem: 'NONE'}),
             expect.objectContaining({shortName: 'E', classification: 'OTHER_WORK', rotationSystem: 'NONE'}),
+            expect.objectContaining({shortName: 'A', classification: 'ANNUAL_LEAVE', rotationSystem: 'NONE'}),
         ]);
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.rotationSystem === 'THREE')).toBe(false);
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.classification === 'EVENING')).toBe(false);
@@ -272,7 +273,7 @@ describe('OnboardingWardCreatePage adapter', () => {
 
         expect(parsedDraft.shiftTypes.some((shiftType) => shiftType.rotationSystem === 'TWO')).toBe(false);
         expect(parsedDraft.shiftTypes.some((shiftType) => ['1', '2', 'ⓓ', 'ⓝ'].includes(shiftType.shortName))).toBe(false);
-        expect(parsedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['교육']);
+        expect(parsedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['교육', 'A']);
     });
 
     it('keeps only parsed previous-schedule shifts after mixed-mode defaults were seeded', () => {
@@ -286,7 +287,7 @@ describe('OnboardingWardCreatePage adapter', () => {
             ],
         });
 
-        expect(parsedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
+        expect(parsedDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'A']);
         expect(parsedDraft.shiftTypes.some((shiftType) => ['1', '2', 'ⓓ', 'ⓝ'].includes(shiftType.shortName))).toBe(false);
     });
 
@@ -404,7 +405,7 @@ describe('OnboardingWardCreatePage adapter', () => {
             ...initialDraft.shiftTypes[0]!,
             id: 'shift-archived-a',
             name: 'Archived A',
-            shortName: 'A',
+            shortName: 'F',
             startTime: '',
             endTime: '',
             isDefault: false,
@@ -419,15 +420,15 @@ describe('OnboardingWardCreatePage adapter', () => {
                     id: 'nurse-a',
                     name: 'Nurse A',
                     possibleShiftTypeIds: [...initialDraft.shiftTypes.map((shiftType) => shiftType.id), archivedShiftType.id],
-                    initialShifts: [{date: '2026-05-01', shiftShortName: 'A'}],
+                    initialShifts: [{date: '2026-05-01', shiftShortName: 'F'}],
                 }),
             ],
         };
         const payload = buildCreateWardPayload(draft);
 
-        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === 'A')).toEqual(expect.objectContaining({isActive: false}));
-        expect(payload.shiftTeams[0]?.nurses?.[0]?.possibleShiftShortNames).not.toContain('A');
-        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'A'}]);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === 'F')).toEqual(expect.objectContaining({isActive: false}));
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.possibleShiftShortNames).not.toContain('F');
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'F'}]);
     });
 
     it('preserves ordinary spaces in nurse names when building the create ward payload', () => {
@@ -525,7 +526,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(nextDraft.uploadedFileName).toBe('ward.xlsx');
         expect(nextDraft.wardName).toBe('중환자실');
         expect(nextDraft.hospitalName).toBe('듀팅병원');
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O', 'A']);
         expect(nextDraft.teams).toHaveLength(1);
         expect(nextDraft.teams[0]?.name).toBe('A팀');
         expect(nextDraft.nurses[0]?.teamId).toBe(nextDraft.teams[0]?.id);
@@ -543,7 +544,13 @@ describe('OnboardingWardCreatePage adapter', () => {
             ],
         });
 
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.classification)).toEqual(['DAY', 'EVENING', 'NIGHT', 'OFF']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.classification)).toEqual([
+            'DAY',
+            'EVENING',
+            'NIGHT',
+            'OFF',
+            'ANNUAL_LEAVE',
+        ]);
     });
 
     it('falls back to default possible shifts when parsed shift mappings are empty', () => {
@@ -618,7 +625,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const remappedNurse = nextDraft.nurses.find((nurse) => nurse.id === nurseId);
         const defaultShiftTypeIds = nextDraft.shiftTypes.map((shiftType) => shiftType.id);
 
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O', 'M']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O', 'M', 'A']);
         expect(remappedNurse?.possibleShiftTypeIds).toEqual(defaultShiftTypeIds);
     });
 
@@ -718,11 +725,11 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육', 'A']);
         expect(nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === '교육')).toEqual(
             expect.objectContaining({mappingStatus: 'UNASSIGNED'}),
         );
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', 'A']);
         expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N', '교육']);
         expect(parsedWardData.nurses?.[0]?.initialShifts).toEqual([
             {date: '2025-03-01', shiftShortName: 'D'},
@@ -783,7 +790,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['N', '-']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['N', '-', 'A']);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.classification).toBe('OFF');
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.isOff).toBe(true);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.color).toBe('#465B7A');
@@ -815,7 +822,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/', 'A']);
         expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: '/'},
             {date: '2026-05-02', shiftShortName: '/'},
@@ -842,7 +849,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
-        expect(payload.wardShiftTypes).toHaveLength(1);
+        expect(payload.wardShiftTypes).toHaveLength(2);
         expect(payload.wardShiftTypes[0]).toEqual(
             expect.objectContaining({shortName: '/', isDefault: true, isOff: true, classification: 'OFF'}),
         );

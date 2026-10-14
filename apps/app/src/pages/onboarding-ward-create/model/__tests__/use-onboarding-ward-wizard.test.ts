@@ -228,8 +228,12 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(1);
         expect(savedDraft.currentStep).toBe(4);
         expect(result.current.draft.currentStep).toBe(4);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/', 'R', 'Z', 'A', 'Y']);
-        expect(result.current.draft.shiftTypes.every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/', 'R', 'Z', 'A', 'Y', 'L']);
+        expect(
+            result.current.draft.shiftTypes
+                .filter((shiftType) => shiftType.classification !== 'ANNUAL_LEAVE')
+                .every((shiftType) => shiftType.source === 'schedule-input'),
+        ).toBe(true);
 
         const customShiftColors = result.current.draft.shiftTypes.slice(1).map((shiftType) => shiftType.color);
 
@@ -583,6 +587,44 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draftCreationStatus).toBe('created');
     });
 
+    it('restores legacy drafts with a collision-free annual leave without changing existing assignments', async () => {
+        const initial = createInitialDraft();
+        const savedDraft = {
+            ...initial,
+            currentStep: 4 as const,
+            hospitalName: 'Hospital',
+            shiftTypes: initial.shiftTypes.filter((shift) => shift.classification !== 'ANNUAL_LEAVE'),
+        };
+
+        savedDraft.shiftTypes.push({
+            ...savedDraft.shiftTypes[0]!,
+            id: 'custom-a',
+            name: 'Custom',
+            shortName: 'A',
+            classification: 'OTHER_WORK',
+            rotationSystem: 'NONE',
+            autoSeeded: false,
+        });
+        savedDraft.nurses[0]!.initialShifts = [{date: '2026-10-01', shiftShortName: 'A'}];
+        mockGetOnboardingWardDraft.mockResolvedValueOnce({
+            ward: draftWardResponse,
+            draftPayload: {
+                flowVersion: 2,
+                draft: savedDraft,
+                draftWardId: 10,
+                selectedTeamId: savedDraft.teams[0]!.id,
+                sortMode: 'manual',
+            },
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(4));
+        expect(result.current.draft.shiftTypes.find((shift) => shift.classification === 'ANNUAL_LEAVE')?.shortName).toBe('L');
+        expect(result.current.draft.nurses[0]!.initialShifts).toEqual([{date: '2026-10-01', shiftShortName: 'A'}]);
+        expect(result.current.draft.shiftTypes.find((shift) => shift.id === 'custom-a')?.classification).toBe('OTHER_WORK');
+    });
+
     it('starts from identity when entering create flow with reset state even if a later draft exists', async () => {
         const savedDraft = {
             ...createInitialDraft(),
@@ -698,11 +740,12 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O', 'A']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프', '연차']);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual([
             DEFAULT_SHIFT_TYPE_COLORS[0],
             DEFAULT_SHIFT_TYPE_COLORS[3],
+            DEFAULT_SHIFT_TYPE_COLORS[8],
         ]);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
