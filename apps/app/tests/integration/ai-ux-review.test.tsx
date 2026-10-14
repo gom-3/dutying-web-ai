@@ -4,6 +4,9 @@ import {useShiftEditorStore} from '../../src/features/shift-editor';
 import {Review, resetReviewFixture, restoreReviewFixture, saveReviewFixture, failNextReviewExecution} from './ai-ux-review';
 import {reviewConditions} from './ai-ux-review-request';
 
+// Shared CI runners render and interact with the full 240-cell calendar more slowly.
+const REVIEW_TIMEOUT_MS = Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? (process.env.CI ? 60_000 : 30_000));
+
 afterEach(() => vi.unstubAllGlobals());
 
 beforeEach(() => {
@@ -72,7 +75,7 @@ describe('local UI review', () => {
         expect(chat().getByText(/^자동채우기 1회차 · 실패$/)).toBeVisible();
         expect(chat().getByRole('alert')).toHaveTextContent('기존 근무표는 그대로예요.');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    }, Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000));
+    }, REVIEW_TIMEOUT_MS);
     it(
         'restores an earlier autofill and its before/after tables after a page reload',
         async () => {
@@ -102,7 +105,7 @@ describe('local UI review', () => {
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
             expect(chat().getByText(/^자동채우기 1회차 · 완료$/)).toBeVisible();
         },
-        Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000),
+        REVIEW_TIMEOUT_MS,
     );
     it('keeps the schedule visible through regenerate, new chat, adjustment, close and reopen', async () => {
         render(<Review />);
@@ -150,7 +153,7 @@ describe('local UI review', () => {
         expect(chat().getByText(/^자동채우기 1회차 · 완료$/)).toBeVisible();
         expect(chat().getByText(/^수정 1회차 · 완료$/)).toBeVisible();
         expect(chat().getAllByRole('button', {name: '변경 전후 비교'})).toHaveLength(2);
-    }, Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000));
+    }, REVIEW_TIMEOUT_MS);
     it('interprets nurse 1 and an inclusive period without leaking other requests', async () => {
         render(<Review />);
         const chat = () => within(screen.getByLabelText('AI 자동채우기'));
@@ -177,7 +180,7 @@ describe('local UI review', () => {
             before.rows.slice(1).map((row) => ({workerId: row.workerId, cells: row.cells})),
         );
         expect(after.rows.every((row) => (row.lastCells ?? []).every((cell) => cell === null))).toBe(true);
-    }, Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000));
+    }, REVIEW_TIMEOUT_MS);
     it('uses a specific model clarification and retains the original request when answered', async () => {
         render(<Review />);
         const chat = () => within(screen.getByLabelText('AI 자동채우기'));
@@ -230,5 +233,5 @@ describe('local UI review', () => {
         expect(JSON.parse(llm.mock.calls[1][1].body as string).text).toBe(`${ambiguous}\n추가 답변: O로 배정해줘.`);
         expect(chat().getByText('O로 배정해줘.')).toBeVisible();
         expect(chat().queryByText(`${ambiguous}\n추가 답변: O로 배정해줘.`)).not.toBeInTheDocument();
-    }, Number(process.env.DUTYING_UI_REVIEW_TIMEOUT_MS ?? 30000));
+    }, REVIEW_TIMEOUT_MS);
 });
