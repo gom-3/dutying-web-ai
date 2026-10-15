@@ -189,18 +189,18 @@ export function toTextRequestItems(cardItems: TInterpretCardItem[], requestText:
     );
 }
 
-type TCarryOverKey = {wardId: number; shiftTeamId: number; year: number; month: number};
+type TCarryOverKey = {accountId?: number | null; wardId: number; shiftTeamId: number; year: number; month: number};
 
-function carryOverAnsweredStorageKey({wardId, shiftTeamId, year, month}: TCarryOverKey) {
-    return `make-shift:adjust-carry-over-answered:${wardId}:${shiftTeamId}:${year}:${month}`;
+function carryOverAnsweredStorageKey({accountId, wardId, shiftTeamId, year, month}: TCarryOverKey) {
+    return `make-shift:adjust-carry-over-answered:${accountId ?? 'guest'}:${wardId}:${shiftTeamId}:${year}:${month}`;
 }
 
-/** 되묻기 카드는 세션에서 한 번만 묻는다. 적용이든 건너뛰기든 답하면 다시 띄우지 않는다. */
+/** Keep the answer for this account and month on this browser, including after reopening it. */
 export function isCarryOverAnswered(key: TCarryOverKey): boolean {
     if (typeof window === 'undefined') return false;
 
     try {
-        return window.sessionStorage.getItem(carryOverAnsweredStorageKey(key)) === '1';
+        return window.localStorage.getItem(carryOverAnsweredStorageKey(key)) === '1';
     } catch {
         return false;
     }
@@ -210,7 +210,7 @@ export function markCarryOverAnswered(key: TCarryOverKey) {
     if (typeof window === 'undefined') return;
 
     try {
-        window.sessionStorage.setItem(carryOverAnsweredStorageKey(key), '1');
+        window.localStorage.setItem(carryOverAnsweredStorageKey(key), '1');
     } catch {
         // 저장이 막힌 브라우저에서는 다음 진입에 한 번 더 묻는다. 그뿐이다.
     }

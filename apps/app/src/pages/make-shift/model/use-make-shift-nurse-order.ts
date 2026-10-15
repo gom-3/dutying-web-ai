@@ -9,6 +9,7 @@ import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
 import {NurseAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
+import {useMakeShiftStore} from './make-shift-store';
 import {buildMakeShiftWorkerMovePayload} from './make-shift-worker-order';
 import {
     applyNursePriorityMoveToNurses,
@@ -19,7 +20,6 @@ import {
     sortDutyDocByScheduleOrder,
     type TNurseOrderMovePayload,
 } from './nurse-order-sync';
-import {useMakeShiftStore} from './make-shift-store';
 
 type TScheduleKind = 'duty' | 'request';
 type TSchedule = TShift | TRequestShift;
@@ -69,7 +69,6 @@ export function useMakeShiftNurseOrder() {
     const currentTeamNurses = useMemo(() => getCurrentTeamNurses(shiftTeams, currentShiftTeamId), [currentShiftTeamId, shiftTeams]);
     const [isReorderingRows, setIsReorderingRows] = useState(false);
     const patchYearMonth = formatPatchYearMonth(year, month);
-
     const invalidateOrderQueries = useCallback(async () => {
         if (!wardId || !currentShiftTeamId) return;
 
@@ -79,10 +78,11 @@ export function useMakeShiftNurseOrder() {
             queryClient.invalidateQueries({queryKey: wardQueryKeys.shiftTeamNurses(wardId, currentShiftTeamId)}),
             queryClient.invalidateQueries({queryKey: wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey}),
             queryClient.invalidateQueries({queryKey: wardQueryOptions.request(wardId, currentShiftTeamId, year, month).queryKey}),
-            queryClient.invalidateQueries({queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month]}),
+            queryClient.invalidateQueries({
+                queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
+            }),
         ]);
     }, [currentShiftTeamId, month, queryClient, wardId, year]);
-
     const moveNurseOrder = useCallback(
         async (payload: TNurseOrderMovePayload, options: TMoveNurseOrderOptions = {}) => {
             if (!wardId || !currentShiftTeamId || isReorderingRows) return false;
@@ -154,10 +154,15 @@ export function useMakeShiftNurseOrder() {
                 useMakeShiftStore.setState({shiftTeams: previousStoreShiftTeams});
 
                 if (previousWard !== undefined) queryClient.setQueryData(wardQueryKey, previousWard);
+
                 if (previousShiftTeams !== undefined) queryClient.setQueryData(shiftTeamsQueryKey, previousShiftTeams);
+
                 if (previousShiftTeamNurses !== undefined) queryClient.setQueryData(shiftTeamNursesQueryKey, previousShiftTeamNurses);
+
                 if (previousDuty !== undefined) queryClient.setQueryData(dutyQueryKey, previousDuty);
+
                 if (previousRequest !== undefined) queryClient.setQueryData(requestQueryKey, previousRequest);
+
                 if (previousDoc) useShiftEditorStore.getState().setDoc(previousDoc);
 
                 showActionErrorFeedback(error, t('feature.editShiftTeam.moveNurseFailed'));
@@ -169,7 +174,6 @@ export function useMakeShiftNurseOrder() {
         },
         [currentShiftTeamId, invalidateOrderQueries, isReorderingRows, month, patchYearMonth, queryClient, t, wardId, year],
     );
-
     const moveScheduleRow = useCallback(
         async (schedule: TSchedule, result: DropResult, options: TMoveScheduleRowOptions) => {
             if (!currentShiftTeamId || !result.destination) return false;

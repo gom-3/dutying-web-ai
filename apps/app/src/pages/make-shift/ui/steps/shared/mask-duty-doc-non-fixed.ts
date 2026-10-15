@@ -10,7 +10,10 @@ export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
     return maskDutyDocCells(doc, {hideFixed: true});
 }
 
-export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests = false, hideUnlocked = false}: TMaskDutyDocOptions): TDutyDoc {
+export function maskDutyDocCells(
+    doc: TDutyDoc,
+    {hideFixed = false, hideRequests = false, hideUnlocked = false}: TMaskDutyDocOptions,
+): TDutyDoc {
     return {
         ...doc,
         fixedCells: hideFixed ? {} : doc.fixedCells,

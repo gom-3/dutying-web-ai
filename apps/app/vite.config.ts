@@ -21,6 +21,14 @@ const koreanMarketingPage = marketingPages.find((page) => page.language === 'ko'
 const englishMarketingPage = marketingPages.find((page) => page.language === 'en') as TMarketingPage;
 const appStaticRoutes = [
     ...marketingPages.filter((page) => page.path !== '/').map((page) => page.path),
+    '/pricing',
+    '/refund',
+    '/subscription-terms',
+    '/workspace',
+    '/workspace/plans',
+    '/workspace/adoption',
+    '/workspace/billing-return',
+    '/workspace/payment-return',
     '/privacy',
     '/terms',
     '/home',

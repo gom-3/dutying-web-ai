@@ -52,6 +52,7 @@ export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps =
 
         if (onBeforeContextChange) {
             onBeforeContextChange(changeContext);
+
             return;
         }
 
@@ -67,6 +68,7 @@ export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps =
 
         if (onBeforeContextChange) {
             onBeforeContextChange(changeContext);
+
             return;
         }
 
@@ -85,6 +87,7 @@ export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps =
 
         if (onBeforeContextChange) {
             onBeforeContextChange(changeContext);
+
             return;
         }
 

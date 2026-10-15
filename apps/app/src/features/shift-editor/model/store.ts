@@ -19,6 +19,7 @@ export type TShiftEditorStore = {
      */
     autofillAdjustEnabled: boolean;
     conversationEnabled: boolean;
+    semanticExecutionEnabled: boolean;
     selection: TSelection | null;
     /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
     scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
@@ -40,6 +41,7 @@ export type TShiftEditorStore = {
     setEditorMode: (mode: TEditorMode) => void;
     setRulesHash: (rulesHash: string | null) => void;
     setConversationEnabled: (enabled: boolean) => void;
+    setSemanticExecutionEnabled: (enabled: boolean) => void;
     setAutofillAdjustEnabled: (autofillAdjustEnabled: boolean) => void;
 
     reset: (opts?: {maxHistoryDepth?: number}) => void;
@@ -55,6 +57,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         rulesHash: null,
         autofillAdjustEnabled: false,
         conversationEnabled: false,
+        semanticExecutionEnabled: false,
         selection: null,
         scheduleValidationSnapshot: null,
         legacyDisplayViolations: [],
@@ -73,6 +76,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         setEditorMode: (editorMode) => set(() => ({editorMode})),
         setRulesHash: (rulesHash) => set(() => ({rulesHash})),
         setConversationEnabled: (conversationEnabled) => set(() => ({conversationEnabled})),
+        setSemanticExecutionEnabled: (semanticExecutionEnabled) => set(() => ({semanticExecutionEnabled})),
         setAutofillAdjustEnabled: (autofillAdjustEnabled) => set(() => ({autofillAdjustEnabled})),
 
         reset: (opts) => {
@@ -83,6 +87,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
                 draftRevision: 0,
                 rulesHash: null,
                 conversationEnabled: false,
+                semanticExecutionEnabled: false,
                 selection: null,
                 scheduleValidationSnapshot: null,
                 legacyDisplayViolations: [],

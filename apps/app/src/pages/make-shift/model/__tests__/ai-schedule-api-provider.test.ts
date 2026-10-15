@@ -53,7 +53,6 @@ describe('apiAiScheduleProvider', () => {
             fixedCells: {},
             requestCells: {},
         };
-
         const originalShift = {
             days: [{day: 1}, {day: 2}],
             wardShiftTypes: [
@@ -63,7 +62,6 @@ describe('apiAiScheduleProvider', () => {
             ],
             divisionShiftNurses: [],
         } as never;
-
         const result = await apiAiScheduleProvider.generate({
             wardId: 1,
             shiftTeamId: 10,

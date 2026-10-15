@@ -23,6 +23,7 @@ const mockPreviewOnboardingScheduleInput = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+const mockSearchHospitals = vi.fn();
 
 let latestSavedDraftPayload: unknown = null;
 
@@ -139,6 +140,10 @@ vi.mock('@/shared/api', async () => {
         FileAPI: {
             ...actual.FileAPI,
             parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+        },
+        HospitalAPI: {
+            ...actual.HospitalAPI,
+            searchHospitals: (...args: unknown[]) => mockSearchHospitals(...args),
         },
     };
 });
@@ -275,6 +280,7 @@ describe('OnboardingWardCreatePage', () => {
         toastSuccess.mockReset();
         toastError.mockReset();
         mockParseOnboardingWardExcel.mockReset();
+        mockSearchHospitals.mockReset().mockResolvedValue([]);
         latestSavedDraftPayload = null;
         window.localStorage.clear();
         window.sessionStorage.clear();
@@ -297,7 +303,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('병원명')).toBeInTheDocument();
         expect(screen.getByLabelText('병동명')).toBeInTheDocument();
         expect(screen.getByText('(선택) 병동명')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('병원명을 검색해 주세요')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('병원명을 입력해 주세요')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('병동명을 입력해 주세요')).toBeInTheDocument();
     });
 
