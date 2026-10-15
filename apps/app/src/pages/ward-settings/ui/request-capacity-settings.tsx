@@ -1,22 +1,22 @@
 import {type TReqShiftCapacitySettings} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {isAxiosError} from 'axios';
-import {ChevronDown, Plus, Trash2} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {useEffect, useId, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {Switch} from '@/shared/ui/primitives/switch';
 import {capacityDraftRows, capacityDraftRules, type TCapacityDraftRow} from '../model/request-capacity';
 
-const FIELD_CLASS = 'h-11 min-w-0 rounded-[10px] bg-gray-7 px-3 text-sm text-sub-1 disabled:opacity-60';
-const ACTION_CLASS =
-    'inline-flex min-h-10 items-center gap-1.5 rounded-[10px] px-3 text-sm font-medium text-main-1 hover:bg-gray-7 disabled:opacity-50';
+const FOCUS_CLASS =
+    'focus-visible:bg-[#EDE7FF] focus-visible:text-[#45229E] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2';
+const FIELD_CLASS = `h-11 min-w-0 rounded-lg px-3 disabled:opacity-60 ${FOCUS_CLASS}`;
+const ACTION_CLASS = `inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-[#5833D6] hover:bg-[#F3F0FF] disabled:opacity-50 ${FOCUS_CLASS}`;
 
 export function RequestCapacitySettings() {
+    const sectionId = useId();
     const {t} = useTypedTranslation();
     const {
         state: {wardId},
@@ -53,7 +53,7 @@ export function RequestCapacitySettings() {
         const nextRows = capacityDraftRows(saved, types);
 
         setRows(nextRows);
-        setExpandedTypes(nextRows.filter((row) => row.groups.length > 0).map((row) => row.wardShiftTypeId));
+        setExpandedTypes([]);
         setErrorKey(null);
         // Reset only when a server result or the available shift types actually changes.
     }, [saved, typeSignature]);
@@ -135,29 +135,38 @@ export function RequestCapacitySettings() {
     }
 
     return (
-        <section className="mt-6 rounded-[16px] bg-white px-5 py-5" aria-label={t('requestCapacity.title')}>
+        <section className="mt-6 rounded-2xl bg-white p-5 sm:p-6" aria-label={t('requestCapacity.title')}>
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h3 className="text-[17px] leading-6 font-semibold text-sub-1">{t('requestCapacity.title')}</h3>
-                    <p className="mt-1 text-[13px] leading-5 text-gray-3">{t('requestCapacity.description')}</p>
+                    <p className="mt-1 text-sm leading-5 text-[#626775]">{t('requestCapacity.description')}</p>
                 </div>
                 {saved && !stateContent ? (
-                    <Switch
-                        checked={enabled}
-                        disabled={saving}
-                        onCheckedChange={setEnabled}
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={enabled}
                         aria-label={t('requestCapacity.enabled')}
-                        className="shrink-0 data-[state=checked]:bg-main-1"
-                    />
+                        disabled={saving}
+                        onClick={() => setEnabled((value) => !value)}
+                        className={`group -mt-2 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg disabled:opacity-50 ${FOCUS_CLASS}`}
+                    >
+                        <span
+                            aria-hidden="true"
+                            className={`inline-flex h-6 w-10 items-center rounded-full px-0.5 group-focus-visible:bg-[#45229E] ${enabled ? 'bg-main-1' : 'bg-[#B2B6C0]'}`}
+                        >
+                            <span className={`h-5 w-5 rounded-full bg-white ${enabled ? 'translate-x-4' : ''}`} />
+                        </span>
+                    </button>
                 ) : null}
             </div>
             {stateContent ?? (
                 <>
                     {teams.length > 1 ? (
-                        <label className="mt-5 flex flex-col gap-2 text-sm font-medium text-sub-1">
+                        <label className="mt-5 flex flex-wrap items-center gap-3 text-sm text-[#626775]">
                             {t('requestCapacity.team')}
                             <select
-                                className={FIELD_CLASS}
+                                className={`${FIELD_CLASS} flex-1 bg-[#F3F4F7] text-sm text-sub-1 sm:max-w-56`}
                                 value={teamId ?? ''}
                                 disabled={saving}
                                 onChange={(event) => {
@@ -175,196 +184,204 @@ export function RequestCapacitySettings() {
                         </label>
                     ) : null}
                     {enabled ? (
-                        <div className="mt-5 grid gap-4">
-                            <p className="text-xs leading-5 text-gray-3">{t('requestCapacity.allDates')}</p>
-                            {rows.map((row) => {
-                                const type = types.find((candidate) => candidate.wardShiftTypeId === row.wardShiftTypeId);
-                                const typeLabel = type?.shortName ?? '';
-                                const expanded = expandedTypes.includes(row.wardShiftTypeId);
-                                const availableGroups = (saved?.groups ?? []).filter(
-                                    (group) => !row.groups.some((value) => value.groupId === group.groupId),
-                                );
+                        <div className="mt-6">
+                            <p className="mb-4 text-xs leading-5 text-[#626775]">{t('requestCapacity.allDates')}</p>
+                            <div className="grid gap-6">
+                                {rows.map((row) => {
+                                    const type = types.find((candidate) => candidate.wardShiftTypeId === row.wardShiftTypeId);
+                                    const typeLabel = type?.shortName ?? '';
+                                    const expanded = expandedTypes.includes(row.wardShiftTypeId);
+                                    const groupPanelId = `${sectionId}-${row.wardShiftTypeId}-groups`;
+                                    const groupSummary = row.groups
+                                        .map((rule) =>
+                                            t('requestCapacity.groupSummary', {
+                                                group: saved?.groups.find((group) => group.groupId === rule.groupId)?.name ?? '',
+                                                count: rule.max,
+                                            }),
+                                        )
+                                        .join(' · ');
 
-                                return (
-                                    <div key={row.wardShiftTypeId} className="rounded-[12px] bg-[#F6F7F9] p-4">
-                                        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-                                            <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-sub-1">
-                                                {t('requestCapacity.type')}
-                                                <select
-                                                    className="h-11 rounded-[10px] bg-white px-3 text-sm"
-                                                    value={row.wardShiftTypeId}
-                                                    disabled={saving}
-                                                    onChange={(event) =>
-                                                        patchRow(row.wardShiftTypeId, {wardShiftTypeId: Number(event.target.value)})
-                                                    }
-                                                >
-                                                    {types
-                                                        .filter(
-                                                            (candidate) =>
-                                                                candidate.wardShiftTypeId === row.wardShiftTypeId ||
-                                                                !rows.some((value) => value.wardShiftTypeId === candidate.wardShiftTypeId),
-                                                        )
-                                                        .map((candidate) => (
-                                                            <option key={candidate.wardShiftTypeId} value={candidate.wardShiftTypeId}>
-                                                                {candidate.shortName} · {candidate.name}
-                                                            </option>
-                                                        ))}
-                                                </select>
-                                            </label>
-                                            <button
-                                                type="button"
-                                                className={`${ACTION_CLASS} self-end text-gray-3`}
-                                                disabled={saving}
-                                                aria-label={`${typeLabel} ${t('requestCapacity.remove')}`}
-                                                onClick={() => setRows((previous) => previous.filter((value) => value !== row))}
-                                            >
-                                                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                                            </button>
-                                        </div>
-                                        <label className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-sub-1">
-                                            {t('requestCapacity.teamLimit')}
-                                            <span className="flex items-center gap-2">
-                                                <input
-                                                    className="h-11 w-28 rounded-[10px] bg-white px-3 text-sm"
-                                                    type="number"
-                                                    inputMode="numeric"
-                                                    min={0}
-                                                    max={10000}
-                                                    step={1}
-                                                    value={row.teamMax}
-                                                    placeholder={t('requestCapacity.unlimited')}
-                                                    disabled={saving}
-                                                    aria-label={`${typeLabel} ${t('requestCapacity.teamLimit')}`}
-                                                    onChange={(event) => patchRow(row.wardShiftTypeId, {teamMax: event.target.value})}
-                                                />
-                                                {t('requestCapacity.people')}
-                                            </span>
-                                        </label>
-                                        <button
-                                            type="button"
-                                            className={`${ACTION_CLASS} mt-3 px-0`}
-                                            disabled={saving}
-                                            aria-expanded={expanded}
-                                            onClick={() =>
-                                                setExpandedTypes((previous) =>
-                                                    expanded
-                                                        ? previous.filter((id) => id !== row.wardShiftTypeId)
-                                                        : [...previous, row.wardShiftTypeId],
-                                                )
-                                            }
-                                        >
-                                            {t('requestCapacity.groups')}
-                                            {row.groups.length > 0 ? ` (${row.groups.length})` : ''}
-                                            <ChevronDown className={`h-4 w-4 ${expanded ? 'rotate-180' : ''}`} aria-hidden="true" />
-                                        </button>
-                                        {expanded ? (
-                                            <div className="mt-2 grid gap-3">
-                                                {row.groups.map((groupRule, index) => (
-                                                    <div key={groupRule.groupId} className="flex flex-wrap items-center gap-2">
+                                    return (
+                                        <div key={row.wardShiftTypeId}>
+                                            <div className="flex items-start gap-2">
+                                                <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3">
+                                                    <label className="min-w-0">
+                                                        <span className="sr-only">{`${typeLabel} ${t('requestCapacity.type')}`}</span>
                                                         <select
-                                                            className="h-11 min-w-24 flex-1 rounded-[10px] bg-white px-3 text-sm"
-                                                            value={groupRule.groupId}
+                                                            className={`${FIELD_CLASS} max-w-full bg-[#F3F0FF] text-sm font-semibold text-[#45229E]`}
+                                                            value={row.wardShiftTypeId}
                                                             disabled={saving}
-                                                            aria-label={`${typeLabel} ${t('requestCapacity.group')} ${index + 1}`}
-                                                            onChange={(event) =>
+                                                            onChange={(event) => {
+                                                                setExpandedTypes([]);
                                                                 patchRow(row.wardShiftTypeId, {
-                                                                    groups: row.groups.map((value, i) =>
-                                                                        i === index
-                                                                            ? {...value, groupId: Number(event.target.value)}
-                                                                            : value,
-                                                                    ),
-                                                                })
-                                                            }
+                                                                    wardShiftTypeId: Number(event.target.value),
+                                                                });
+                                                            }}
                                                         >
-                                                            {(saved?.groups ?? [])
+                                                            {types
                                                                 .filter(
                                                                     (candidate) =>
-                                                                        candidate.groupId === groupRule.groupId ||
-                                                                        availableGroups.some(
-                                                                            (value) => value.groupId === candidate.groupId,
+                                                                        candidate.wardShiftTypeId === row.wardShiftTypeId ||
+                                                                        !rows.some(
+                                                                            (value) => value.wardShiftTypeId === candidate.wardShiftTypeId,
                                                                         ),
                                                                 )
                                                                 .map((candidate) => (
-                                                                    <option key={candidate.groupId} value={candidate.groupId}>
-                                                                        {candidate.name}
+                                                                    <option
+                                                                        key={candidate.wardShiftTypeId}
+                                                                        value={candidate.wardShiftTypeId}
+                                                                    >
+                                                                        {candidate.shortName} · {candidate.name}
                                                                     </option>
                                                                 ))}
                                                         </select>
-                                                        <input
-                                                            className="h-11 w-24 rounded-[10px] bg-white px-3 text-sm"
-                                                            type="number"
-                                                            inputMode="numeric"
-                                                            min={0}
-                                                            max={10000}
-                                                            step={1}
-                                                            value={groupRule.max}
-                                                            placeholder={t('requestCapacity.example')}
-                                                            disabled={saving}
-                                                            aria-label={`${typeLabel} ${saved?.groups.find((value) => value.groupId === groupRule.groupId)?.name ?? ''} ${t('requestCapacity.groupLimit')}`}
-                                                            onChange={(event) =>
-                                                                patchRow(row.wardShiftTypeId, {
-                                                                    groups: row.groups.map((value, i) =>
-                                                                        i === index ? {...value, max: event.target.value} : value,
-                                                                    ),
-                                                                })
-                                                            }
-                                                        />
-                                                        <span className="text-sm text-gray-3">{t('requestCapacity.people')}</span>
-                                                        <button
-                                                            type="button"
-                                                            className={`${ACTION_CLASS} px-2 text-gray-3`}
-                                                            disabled={saving}
-                                                            aria-label={`${typeLabel} ${saved?.groups.find((value) => value.groupId === groupRule.groupId)?.name ?? ''} ${t('requestCapacity.remove')}`}
-                                                            onClick={() =>
-                                                                patchRow(row.wardShiftTypeId, {
-                                                                    groups: row.groups.filter((_, i) => i !== index),
-                                                                })
-                                                            }
-                                                        >
-                                                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <button
-                                                    type="button"
-                                                    className={`${ACTION_CLASS} justify-self-start px-0`}
-                                                    disabled={saving || availableGroups.length === 0}
-                                                    onClick={() => {
-                                                        const group = availableGroups[0];
-
-                                                        if (group)
-                                                            patchRow(row.wardShiftTypeId, {
-                                                                groups: [...row.groups, {groupId: group.groupId, max: ''}],
-                                                            });
-                                                    }}
-                                                >
-                                                    <Plus className="h-4 w-4" aria-hidden="true" />
-                                                    {t('requestCapacity.addGroup')}
-                                                </button>
+                                                    </label>
+                                                    <label className="flex max-w-full flex-wrap items-center gap-2 text-sm text-sub-1">
+                                                        {t('requestCapacity.dailyMax')}
+                                                        <span className="flex max-w-full items-center gap-2">
+                                                            <input
+                                                                className={`${FIELD_CLASS} w-24 bg-[#F3F4F7] text-center text-lg font-semibold text-sub-1`}
+                                                                type="number"
+                                                                inputMode="numeric"
+                                                                min={0}
+                                                                max={10000}
+                                                                step={1}
+                                                                value={row.teamMax}
+                                                                placeholder={t('requestCapacity.unlimited')}
+                                                                disabled={saving}
+                                                                aria-label={`${typeLabel} ${t('requestCapacity.teamLimit')}`}
+                                                                onChange={(event) =>
+                                                                    patchRow(row.wardShiftTypeId, {teamMax: event.target.value})
+                                                                }
+                                                            />
+                                                            {t('requestCapacity.people')}
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                                {rows.length > 1 ? (
+                                                    <button
+                                                        type="button"
+                                                        className={`${ACTION_CLASS} shrink-0 text-[#626775]`}
+                                                        disabled={saving}
+                                                        aria-label={`${typeLabel} ${t('requestCapacity.remove')}`}
+                                                        onClick={() => setRows((previous) => previous.filter((value) => value !== row))}
+                                                    >
+                                                        {t('requestCapacity.remove')}
+                                                    </button>
+                                                ) : null}
                                             </div>
-                                        ) : null}
-                                    </div>
-                                );
-                            })}
-                            <button
-                                type="button"
-                                className={`${ACTION_CLASS} justify-self-start px-0`}
-                                disabled={saving || rows.length >= types.length}
-                                onClick={() => {
-                                    const type = types.find(
-                                        (candidate) => !rows.some((row) => row.wardShiftTypeId === candidate.wardShiftTypeId),
+                                            {(saved?.groups.length ?? 0) > 0 ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        className={`${ACTION_CLASS} mt-1 -ml-3 text-[#626775]`}
+                                                        disabled={saving}
+                                                        aria-label={`${typeLabel} ${t('requestCapacity.groups')}`}
+                                                        aria-expanded={expanded}
+                                                        aria-controls={groupPanelId}
+                                                        onClick={() =>
+                                                            setExpandedTypes((previous) =>
+                                                                expanded
+                                                                    ? previous.filter((id) => id !== row.wardShiftTypeId)
+                                                                    : [...previous, row.wardShiftTypeId],
+                                                            )
+                                                        }
+                                                    >
+                                                        {t('requestCapacity.groups')}
+                                                        <span aria-hidden="true" className={`text-base ${expanded ? 'rotate-180' : ''}`}>
+                                                            ⌄
+                                                        </span>
+                                                    </button>
+                                                    {!expanded && groupSummary ? (
+                                                        <p className="text-xs leading-5 text-[#626775]">{groupSummary}</p>
+                                                    ) : null}
+                                                    {expanded ? (
+                                                        <div id={groupPanelId} className="mt-1 rounded-lg bg-[#F7F8FA] p-3 sm:p-4">
+                                                            <p className="mb-2 text-xs leading-5 text-[#626775]">
+                                                                {t('requestCapacity.groupHint')}
+                                                            </p>
+                                                            <div className="grid gap-2">
+                                                                {saved?.groups.map((group) => (
+                                                                    <label
+                                                                        key={group.groupId}
+                                                                        className="flex min-w-0 flex-wrap items-center justify-between gap-3 text-sm text-sub-1"
+                                                                    >
+                                                                        <span className="min-w-0 break-words">{group.name}</span>
+                                                                        <span className="flex max-w-full shrink-0 items-center gap-2">
+                                                                            <input
+                                                                                className={`${FIELD_CLASS} w-24 bg-white text-center text-sm font-semibold text-sub-1`}
+                                                                                type="number"
+                                                                                inputMode="numeric"
+                                                                                min={0}
+                                                                                max={10000}
+                                                                                step={1}
+                                                                                value={
+                                                                                    row.groups.find(
+                                                                                        (rule) => rule.groupId === group.groupId,
+                                                                                    )?.max ?? ''
+                                                                                }
+                                                                                placeholder={t('requestCapacity.unlimited')}
+                                                                                disabled={saving}
+                                                                                aria-label={`${typeLabel} ${group.name} ${t('requestCapacity.groupLimit')}`}
+                                                                                onChange={(event) =>
+                                                                                    patchRow(row.wardShiftTypeId, {
+                                                                                        groups: [
+                                                                                            ...row.groups.filter(
+                                                                                                (rule) => rule.groupId !== group.groupId,
+                                                                                            ),
+                                                                                            ...(event.target.value === ''
+                                                                                                ? []
+                                                                                                : [
+                                                                                                      {
+                                                                                                          groupId: group.groupId,
+                                                                                                          max: event.target.value,
+                                                                                                      },
+                                                                                                  ]),
+                                                                                        ],
+                                                                                    })
+                                                                                }
+                                                                            />
+                                                                            {t('requestCapacity.people')}
+                                                                        </span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                            {row.teamMax !== '' ? (
+                                                                <p className="mt-3 text-xs leading-5 text-[#626775]">
+                                                                    {t('requestCapacity.groupBoth')}
+                                                                </p>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : null}
+                                                </>
+                                            ) : null}
+                                        </div>
                                     );
+                                })}
+                            </div>
+                            {rows.length < types.length ? (
+                                <button
+                                    type="button"
+                                    className={`${ACTION_CLASS} mt-4 -ml-3`}
+                                    disabled={saving}
+                                    onClick={() => {
+                                        const type = types.find(
+                                            (candidate) => !rows.some((row) => row.wardShiftTypeId === candidate.wardShiftTypeId),
+                                        );
 
-                                    if (type)
-                                        setRows((previous) => [
-                                            ...previous,
-                                            {wardShiftTypeId: type.wardShiftTypeId, teamMax: '', groups: []},
-                                        ]);
-                                }}
-                            >
-                                <Plus className="h-4 w-4" aria-hidden="true" />
-                                {t('requestCapacity.addType')}
-                            </button>
+                                        if (type)
+                                            setRows((previous) => [
+                                                ...previous,
+                                                {wardShiftTypeId: type.wardShiftTypeId, teamMax: '', groups: []},
+                                            ]);
+                                    }}
+                                >
+                                    <span aria-hidden="true" className="text-lg">
+                                        ＋
+                                    </span>
+                                    {t('requestCapacity.addType')}
+                                </button>
+                            ) : null}
                         </div>
                     ) : null}
                     {overflows.length > 0 ? (
@@ -401,11 +418,11 @@ export function RequestCapacitySettings() {
                         <span className="text-xs text-gray-3">{dirty ? t('requestCapacity.changed') : ''}</span>
                         <button
                             type="button"
-                            className="h-11 rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white hover:bg-main-1-hover disabled:bg-gray-6 disabled:text-gray-3"
+                            className={`min-h-11 rounded-lg bg-main-1 px-5 text-sm font-semibold text-white hover:bg-main-1-hover disabled:bg-[#F3F4F7] disabled:text-[#626775] ${FOCUS_CLASS}`}
                             disabled={saving || !dirty || settingsQuery.isFetching || errorKey === 'stale'}
                             onClick={() => void save()}
                         >
-                            {t(saving ? 'requestCapacity.saving' : 'requestCapacity.save')}
+                            {t(saving ? 'requestCapacity.saving' : !dirty ? 'requestCapacity.savedLabel' : 'requestCapacity.save')}
                         </button>
                     </div>
                 </>
