@@ -1,4 +1,9 @@
 export const requestCapacityKo = {
+    help: '{{label}} 도움말',
+    limitLabel: '인원 제한',
+    groupSettings: '그룹별 설정',
+    capacityHelp: '모든 날짜에 같은 정원을 적용해요. 정원이 차면 앱에서 추가 신청을 받지 않아요. 0명은 신규 신청을 막아요.',
+    groupHelp: '팀 전체와 그룹별 정원을 함께 적용해요. 빈칸은 제한 없음이에요. 팀 전체 인원을 비우면 그룹별 정원만 적용해요.',
     numberError: '0~10,000 사이의 정수를 입력해 주세요.',
     dailyTitle: '하루 신청 정원',
     teamDailyMax: '팀 전체 · 하루 최대',
@@ -66,6 +71,11 @@ export const requestCapacityKo = {
 };
 
 export const requestCapacityEn = {
+    help: 'Help: {{label}}',
+    limitLabel: 'Limit requests',
+    groupSettings: 'Group limits',
+    capacityHelp: 'The same limit applies every day. App requests close when the limit is reached. Zero blocks new requests.',
+    groupHelp: 'Both team and group limits apply. An empty field means no limit. Clear the team total to use group limits only.',
     numberError: 'Enter a whole number from 0 to 10,000.',
     dailyTitle: 'Daily request capacity',
     teamDailyMax: 'Whole team · per day',
@@ -133,6 +143,11 @@ export const requestCapacityEn = {
 };
 
 export const requestCapacityJa = {
+    help: '{{label}}のヘルプ',
+    limitLabel: '人数制限',
+    groupSettings: 'グループ別設定',
+    capacityHelp: 'すべての日に同じ定員を適用します。定員に達するとアプリの追加申請を締め切ります。0人は新規申請不可です。',
+    groupHelp: 'チーム全体とグループの上限を同時に適用します。空欄は制限なしです。チーム全体を空欄にするとグループの上限のみ適用します。',
     numberError: '0〜10,000の整数を入力してください。',
     dailyTitle: '1日の申請定員',
     teamDailyMax: 'チーム全体 · 1日最大',
@@ -200,6 +215,11 @@ export const requestCapacityJa = {
 };
 
 export const requestCapacityZh = {
+    help: '{{label}}帮助',
+    limitLabel: '人数限制',
+    groupSettings: '分组设置',
+    capacityHelp: '每天使用相同名额。达到上限后，应用将停止接收新申请。0人表示不可新增申请。',
+    groupHelp: '团队和分组上限同时生效。留空表示不限。将团队总人数留空可仅应用分组上限。',
     numberError: '请输入0至10,000的整数。',
     dailyTitle: '每日申请名额',
     teamDailyMax: '整个团队 · 每天最多',
@@ -267,6 +287,11 @@ export const requestCapacityZh = {
 };
 
 export const requestCapacityTh = {
+    help: 'คำแนะนำ: {{label}}',
+    limitLabel: 'จำกัดจำนวนคน',
+    groupSettings: 'ตั้งค่ากลุ่ม',
+    capacityHelp: 'ใช้ขีดจำกัดเดียวกันทุกวัน เมื่อครบจำนวนจะปิดรับคำขอในแอป ตั้งค่า 0 เพื่อปิดคำขอใหม่',
+    groupHelp: 'ใช้ขีดจำกัดทั้งทีมและกลุ่มร่วมกัน ช่องว่างหมายถึงไม่จำกัด ล้างจำนวนรวมของทีมเพื่อใช้เฉพาะขีดจำกัดกลุ่ม',
     numberError: 'กรอกจำนวนเต็มตั้งแต่ 0 ถึง 10,000',
     dailyTitle: 'จำนวนคนที่รับต่อวัน',
     teamDailyMax: 'ทั้งทีม · สูงสุดต่อวัน',
@@ -334,6 +359,11 @@ export const requestCapacityTh = {
 };
 
 export const requestCapacityVi = {
+    help: 'Trợ giúp: {{label}}',
+    limitLabel: 'Giới hạn số người',
+    groupSettings: 'Cài đặt nhóm',
+    capacityHelp: 'Áp dụng cùng giới hạn mỗi ngày. Ứng dụng ngừng nhận đăng ký khi đủ người. Số 0 chặn đăng ký mới.',
+    groupHelp: 'Áp dụng đồng thời giới hạn đội và nhóm. Để trống là không giới hạn. Xóa tổng đội để chỉ áp dụng giới hạn nhóm.',
     numberError: 'Nhập số nguyên từ 0 đến 10.000.',
     dailyTitle: 'Số người đăng ký mỗi ngày',
     teamDailyMax: 'Toàn đội · tối đa/ngày',

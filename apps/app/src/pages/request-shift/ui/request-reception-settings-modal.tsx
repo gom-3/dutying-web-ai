@@ -82,9 +82,7 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
                                     <Dialog.Title className="font-apple text-[24px] leading-8 font-semibold text-sub-1">
                                         {t('page.wardSettings.tabs.requestReception')}
                                     </Dialog.Title>
-                                    <Dialog.Description className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
-                                        {t('requestCapacity.settingsDescription')}
-                                    </Dialog.Description>
+                                    <Dialog.Description className="sr-only">{t('requestCapacity.settingsDescription')}</Dialog.Description>
                                 </div>
                             </div>
                             <Dialog.Close asChild>

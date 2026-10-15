@@ -1517,14 +1517,8 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                     <h1 className="pr-12 font-apple text-[30px] font-semibold text-sub-1">
                         {t(state.currentTab === 'annualLeave' ? 'annualLeave.title' : `page.wardSettings.tabs.${state.currentTab}`)}
                     </h1>
-                    {state.currentTab !== 'restLeavePolicy' ? (
-                        <p className="mt-1 font-apple text-sm text-gray-3">
-                            {t(
-                                state.currentTab === 'requestReception'
-                                    ? 'requestCapacity.settingsDescription'
-                                    : getTabDescriptionKey(state.currentTab),
-                            )}
-                        </p>
+                    {state.currentTab !== 'restLeavePolicy' && state.currentTab !== 'requestReception' ? (
+                        <p className="mt-1 font-apple text-sm text-gray-3">{t(getTabDescriptionKey(state.currentTab))}</p>
                     ) : null}
                 </div>
             </div>

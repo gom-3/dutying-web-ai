@@ -1,24 +1,24 @@
 import {type TReqShiftCapacitySettings} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {isAxiosError} from 'axios';
-import {useEffect, useId, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {capacityDraftRows, capacityDraftRules, type TCapacityDraftRow} from '../model/request-capacity';
 import {RequestCapacityRule} from './request-capacity-rule';
+import {RequestSettingsHelp} from './request-settings-help';
 
 const FOCUS_CLASS =
     'focus-visible:bg-[#EDE7FF] focus-visible:text-[#45229E] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2';
 const ACTION_CLASS = `inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-[#5833D6] hover:bg-[#F3F0FF] disabled:opacity-50 ${FOCUS_CLASS}`;
 
 export function RequestCapacitySettings() {
-    const id = useId();
     const sectionRef = useRef<HTMLElement>(null);
-    const addTypeRef = useRef<HTMLButtonElement>(null);
     const newTypeFocusRef = useRef<number | null>(null);
     const {t} = useTypedTranslation();
     const {
@@ -44,7 +44,6 @@ export function RequestCapacitySettings() {
     const [enabled, setEnabled] = useState(false);
     const [rows, setRows] = useState<TCapacityDraftRow[]>([]);
     const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
-    const [addingType, setAddingType] = useState(false);
     const [saving, setSaving] = useState(false);
     const [errorKey, setErrorKey] = useState<'invalid' | 'saveError' | 'stale' | null>(null);
 
@@ -67,7 +66,6 @@ export function RequestCapacitySettings() {
 
         setEnabled(saved.enabled);
         setRows(nextRows);
-        setAddingType(false);
         setOpenGroups(Object.fromEntries(nextRows.map((row) => [row.wardShiftTypeId, row.groups.length > 0])));
         setErrorKey(null);
     };
@@ -139,7 +137,6 @@ export function RequestCapacitySettings() {
             setSaving(false);
         }
     };
-    const currentTeam = teams.find((team) => team.shiftTeamId === teamId);
     const unusedTypes = types.filter((type) => !rows.some((row) => row.wardShiftTypeId === type.wardShiftTypeId));
 
     let stateContent = null;
@@ -161,60 +158,61 @@ export function RequestCapacitySettings() {
     }
 
     return (
-        <section ref={sectionRef} className="mt-7 min-w-0" aria-label={t('requestCapacity.title')}>
-            <div className="mb-5">
-                <h3 className="text-[1.375rem] leading-8 font-bold text-[#252735]">{t('requestCapacity.dailyTitle')}</h3>
-                <p className="mt-1 text-sm leading-6 text-[#626573]">{t('requestCapacity.allDates')}</p>
-            </div>
-            {stateContent ? (
-                <div className="rounded-xl bg-white p-6">{stateContent}</div>
-            ) : (
+        <section
+            ref={sectionRef}
+            className="mt-6 min-w-0 rounded-xl bg-white p-4 sm:p-5 motion-reduce:[&_[role=listbox]]:animate-none [&_[role=option]]:min-h-11 [&_[role=option]]:whitespace-normal"
+            aria-label={t('requestCapacity.title')}
+        >
+            {stateContent ?? (
                 <>
-                    <div className="mb-5 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                        <label className="flex min-w-0 flex-wrap items-center gap-3 text-sm font-medium text-[#626573]">
-                            {t('requestCapacity.team')}
-                            <select
-                                value={teamId ?? ''}
+                    <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                        <div className="w-32 max-w-full">
+                            <ShiftClassificationDropdown
+                                value={String(teamId ?? '')}
+                                options={teams.map((team) => ({value: String(team.shiftTeamId), label: team.name}))}
+                                ariaLabel={t('requestCapacity.team')}
                                 disabled={saving || teams.length === 1}
-                                className={`min-h-12 max-w-full min-w-24 rounded-lg bg-white px-4 text-base font-bold text-[#252735] disabled:opacity-100 ${FOCUS_CLASS}`}
-                                onChange={(event) => {
+                                portalled={false}
+                                className="h-11 min-h-11 font-apple text-sm font-semibold motion-reduce:transition-none"
+                                onChange={(value) => {
+                                    if (Number(value) === teamId) return;
+
                                     if (dirty && !window.confirm(t('requestCapacity.unsaved'))) return;
 
-                                    setSelectedTeamId(Number(event.target.value));
+                                    setSelectedTeamId(Number(value));
                                 }}
-                            >
-                                {teams.map((team) => (
-                                    <option key={team.shiftTeamId} value={team.shiftTeamId}>
-                                        {team.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={enabled}
-                            aria-label={t('requestCapacity.enabled')}
-                            disabled={saving}
-                            onClick={() => {
-                                setEnabled((value) => !value);
+                            />
+                        </div>
+                        <div className="flex max-w-full min-w-0 items-center">
+                            <RequestSettingsHelp label={t('requestCapacity.title')}>
+                                {t('requestCapacity.capacityHelp')}
+                            </RequestSettingsHelp>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={enabled}
+                                aria-label={t('requestCapacity.enabled')}
+                                disabled={saving}
+                                onClick={() => {
+                                    setEnabled((value) => !value);
 
-                                if (errorKey !== 'stale') setErrorKey(null);
-                            }}
-                            className={`inline-flex min-h-12 shrink-0 items-center gap-3 rounded-lg px-2 text-sm font-semibold text-[#454856] disabled:opacity-50 ${FOCUS_CLASS}`}
-                        >
-                            <span>{t(enabled ? 'requestCapacity.on' : 'requestCapacity.off')}</span>
-                            <span
-                                aria-hidden="true"
-                                className={`inline-flex h-7 w-12 items-center rounded-full px-1 ${enabled ? 'bg-[#6242D9]' : 'bg-[#9094A5]'}`}
+                                    if (errorKey !== 'stale') setErrorKey(null);
+                                }}
+                                className={`inline-flex min-h-11 max-w-full min-w-0 flex-wrap items-center gap-3 rounded-lg px-2 text-sm font-semibold text-[#36394B] disabled:opacity-50 ${FOCUS_CLASS}`}
                             >
-                                <span className={`size-5 rounded-full bg-white ${enabled ? 'translate-x-5' : ''}`} />
-                            </span>
-                        </button>
+                                <span className="min-w-0 text-left leading-5 break-words">{t('requestCapacity.limitLabel')}</span>
+                                <span
+                                    aria-hidden="true"
+                                    className={`inline-flex h-6 w-10 shrink-0 items-center rounded-full px-0.5 ${enabled ? 'bg-[#6242D9]' : 'bg-[#A0A4B3]'}`}
+                                >
+                                    <span className={`size-5 rounded-full bg-white ${enabled ? 'translate-x-4' : ''}`} />
+                                </span>
+                            </button>
+                        </div>
                     </div>
                     {enabled ? (
-                        <>
-                            <div className="grid grid-cols-1 gap-6">
+                        <div className="mt-4">
+                            <div className="grid grid-cols-1 gap-3">
                                 {rows.map((row) => (
                                     <RequestCapacityRule
                                         key={row.wardShiftTypeId}
@@ -243,63 +241,37 @@ export function RequestCapacitySettings() {
                                 ))}
                             </div>
                             {unusedTypes.length > 0 ? (
-                                <div className="mt-4 min-w-0">
-                                    <button
-                                        ref={addTypeRef}
-                                        type="button"
+                                <div className="mt-3 w-44 max-w-full">
+                                    <ShiftClassificationDropdown
+                                        value=""
+                                        options={[
+                                            {value: '', label: t('requestCapacity.addType')},
+                                            ...unusedTypes.map((type) => ({
+                                                value: String(type.wardShiftTypeId),
+                                                label: `${type.shortName} · ${type.name}`,
+                                            })),
+                                        ]}
+                                        ariaLabel={t('requestCapacity.addType')}
                                         disabled={saving}
-                                        aria-expanded={addingType}
-                                        aria-controls={`${id}-add-types`}
-                                        className={`min-h-12 max-w-full gap-2 rounded-lg bg-white px-4 py-3 text-left text-sm leading-6 font-semibold text-[#5630C4] disabled:opacity-50 ${FOCUS_CLASS}`}
-                                        onClick={() => setAddingType((value) => !value)}
-                                    >
-                                        <span aria-hidden="true" className="text-xl">
-                                            {addingType ? '−' : '＋'}
-                                        </span>
-                                        <span className="min-w-0">{t('requestCapacity.addType')}</span>
-                                    </button>
-                                    <div
-                                        id={`${id}-add-types`}
-                                        hidden={!addingType}
-                                        className="mt-2 rounded-lg bg-white p-2"
-                                        onKeyDown={(event) => {
-                                            if (event.key !== 'Escape') return;
+                                        portalled={false}
+                                        className="h-auto min-h-11 bg-[#F5F6F9] py-2 font-apple text-sm font-medium motion-reduce:transition-none [&>span]:overflow-visible [&>span]:whitespace-normal"
+                                        onChange={(value) => {
+                                            if (!value) return;
 
-                                            setAddingType(false);
-                                            addTypeRef.current?.focus();
+                                            const typeId = Number(value);
+
+                                            newTypeFocusRef.current = typeId;
+                                            setRows((previous) => [...previous, {wardShiftTypeId: typeId, teamMax: '', groups: []}]);
+
+                                            if (errorKey !== 'stale') setErrorKey(null);
                                         }}
-                                    >
-                                        {unusedTypes.map((type) => (
-                                            <button
-                                                key={type.wardShiftTypeId}
-                                                type="button"
-                                                aria-label={`${type.shortName} ${type.name}`}
-                                                disabled={saving}
-                                                className={`flex min-h-12 w-full min-w-0 flex-wrap justify-start gap-x-2 rounded-md px-3 py-2 text-left text-base leading-6 text-[#363244] hover:bg-[#F1EDF9] ${FOCUS_CLASS}`}
-                                                onClick={() => {
-                                                    newTypeFocusRef.current = type.wardShiftTypeId;
-                                                    setRows((previous) => [
-                                                        ...previous,
-                                                        {wardShiftTypeId: type.wardShiftTypeId, teamMax: '', groups: []},
-                                                    ]);
-                                                    setAddingType(false);
-
-                                                    if (errorKey !== 'stale') setErrorKey(null);
-                                                }}
-                                            >
-                                                <span className="font-bold break-all">{type.shortName}</span>
-                                                <span className="min-w-0 break-words">{type.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                    />
                                 </div>
                             ) : null}
-                        </>
-                    ) : (
-                        <p className="rounded-xl bg-white p-6 text-base leading-7 text-[#454856]">{t('requestCapacity.offHint')}</p>
-                    )}
+                        </div>
+                    ) : null}
                     {overflows.length > 0 ? (
-                        <div className="mt-5 rounded-lg bg-orange-50 p-4 text-sm leading-6 text-orange-900" role="status">
+                        <div className="mt-4 rounded-lg bg-orange-50 p-4 text-sm leading-6 text-orange-900" role="status">
                             <p>{t('requestCapacity.overflowHint')}</p>
                             <ul className="mt-2 grid gap-1">
                                 {overflows.map((overflow) => (
@@ -319,7 +291,7 @@ export function RequestCapacitySettings() {
                         </div>
                     ) : null}
                     {errorKey ? (
-                        <div className="mt-5 rounded-lg bg-[#FDECEB] p-4 text-sm leading-6 text-[#A52D26]" role="alert">
+                        <div className="mt-4 rounded-lg bg-[#FDECEB] p-4 text-sm leading-6 text-[#A52D26]" role="alert">
                             <p>{t(`requestCapacity.${errorKey}`)}</p>
                             {errorKey === 'stale' ? (
                                 <button type="button" className={ACTION_CLASS} onClick={() => void reload()}>
@@ -328,30 +300,25 @@ export function RequestCapacitySettings() {
                             ) : null}
                         </div>
                     ) : null}
-                    <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-                        <p className="min-w-0 text-sm leading-6 text-[#626573]">
-                            {dirty ? t('requestCapacity.changed') : t('requestCapacity.appliedTeam', {team: currentTeam?.name ?? ''})}
-                        </p>
-                        <div className="flex w-full items-center gap-2 sm:w-auto">
-                            {dirty ? (
-                                <button
-                                    type="button"
-                                    onClick={resetDraft}
-                                    disabled={saving || errorKey === 'stale'}
-                                    className={`${ACTION_CLASS} text-[#505464]`}
-                                >
-                                    {t('requestCapacity.cancel')}
-                                </button>
-                            ) : null}
+                    <div className="mt-5 flex items-center justify-end gap-2">
+                        {dirty ? (
                             <button
                                 type="button"
-                                className={`min-h-12 flex-1 rounded-lg px-7 text-base font-bold disabled:bg-[#E5E4ED] disabled:text-[#626573] sm:min-w-40 ${FOCUS_CLASS} bg-[#6242D9] text-white hover:bg-[#5434C5]`}
-                                disabled={saving || !dirty || settingsQuery.isFetching || errorKey === 'stale'}
-                                onClick={() => void save()}
+                                onClick={resetDraft}
+                                disabled={saving || errorKey === 'stale'}
+                                className={`${ACTION_CLASS} text-[#505464]`}
                             >
-                                {t(saving ? 'requestCapacity.saving' : dirty ? 'requestCapacity.save' : 'requestCapacity.savedLabel')}
+                                {t('requestCapacity.cancel')}
                             </button>
-                        </div>
+                        ) : null}
+                        <button
+                            type="button"
+                            disabled={saving || !dirty || settingsQuery.isFetching || errorKey === 'stale'}
+                            className={`min-h-11 min-w-28 rounded-lg bg-[#6242D9] px-6 text-sm font-semibold text-white hover:bg-[#5434C5] disabled:bg-[#E8E8F0] disabled:text-[#626573] ${FOCUS_CLASS}`}
+                            onClick={() => void save()}
+                        >
+                            {t(saving ? 'requestCapacity.saving' : dirty ? 'requestCapacity.save' : 'requestCapacity.savedLabel')}
+                        </button>
                     </div>
                 </>
             )}

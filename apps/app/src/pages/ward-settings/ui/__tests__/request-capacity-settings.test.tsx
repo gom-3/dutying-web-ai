@@ -239,7 +239,7 @@ describe('request capacity settings', () => {
 
         await user.click(await screen.findByRole('button', {name: 'OFF 그룹별 인원 설정'}));
         await user.type(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'}), '1');
-        await user.click(screen.getByRole('button', {name: '팀 전체 제한 해제'}));
+        await user.clear(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'}));
         expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(null);
         await user.click(screen.getByRole('button', {name: '저장하기'}));
         await waitFor(() =>
@@ -302,8 +302,8 @@ describe('request capacity settings', () => {
 
         const user = mount();
 
-        await user.click(await screen.findByRole('button', {name: '다른 근무 추가'}));
-        await user.click(screen.getByRole('button', {name: 'D 데이'}));
+        await user.click(await screen.findByRole('combobox', {name: '다른 근무 추가'}));
+        await user.click(screen.getByRole('option', {name: 'D · 데이'}));
         expect(screen.getByRole('spinbutton', {name: 'D 팀 전체 하루 최대 인원'})).toHaveValue(null);
         expect(screen.getByRole('spinbutton', {name: 'D 팀 전체 하루 최대 인원'})).toHaveFocus();
         await user.type(screen.getByRole('spinbutton', {name: 'D 팀 전체 하루 최대 인원'}), '2');
@@ -402,14 +402,29 @@ describe('request capacity settings', () => {
 
         await user.clear(input);
         await user.type(input, '4');
-        await user.selectOptions(screen.getByRole('combobox', {name: '근무팀'}), '12');
-        expect(screen.getByRole('combobox', {name: '근무팀'})).toHaveValue('11');
+        await user.click(screen.getByRole('combobox', {name: '근무팀'}));
+        await user.click(screen.getByRole('option', {name: '2팀'}));
+        expect(screen.getByRole('combobox', {name: '근무팀'})).toHaveTextContent('1팀');
         expect(input).toHaveValue(4);
         confirm.mockReturnValue(true);
-        await user.selectOptions(screen.getByRole('combobox', {name: '근무팀'}), '12');
+        await user.click(screen.getByRole('combobox', {name: '근무팀'}));
+        await user.click(screen.getByRole('option', {name: '2팀'}));
         await waitFor(() => expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(1));
-        expect(screen.getByRole('combobox', {name: '근무팀'})).toHaveValue('12');
+        expect(screen.getByRole('combobox', {name: '근무팀'})).toHaveTextContent('2팀');
         expect(confirm).toHaveBeenCalledTimes(2);
         expect(api.updateReqShiftCapacitySettings).not.toHaveBeenCalled();
+    });
+    it('shows optional explanations only in the info tooltip on hover and tap', async () => {
+        const user = mount();
+        const help = await screen.findByRole('button', {name: '신청 인원 제한 도움말'});
+
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        expect(screen.queryByText('매일 같은 인원 적용')).not.toBeInTheDocument();
+        await user.hover(help);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('모든 날짜에 같은 정원');
+        await user.unhover(help);
+        await user.keyboard('{Escape}');
+        await user.click(help);
+        expect(await screen.findByRole('tooltip')).toHaveTextContent('앱에서 추가 신청을 받지 않아요');
     });
 });
