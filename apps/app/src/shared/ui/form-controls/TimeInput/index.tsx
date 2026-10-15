@@ -1,8 +1,10 @@
 import {cn} from '@dutying/utils/style';
 import React, {useEffect, useRef, useState} from 'react';
-import {Input} from '@/shared/ui/primitives/input';
+import {normalizeInputWidth} from '@/shared/lib/input-width';
+import CompositionInput from '@/shared/ui/form-controls/CompositionInput';
 
-interface ITimeInputProps extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
+interface ITimeInputProps
+    extends Omit<React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>, 'onChange' | 'value'> {
     initTime?: string;
     onTimeChange?: (value: string) => void;
 }
@@ -43,8 +45,8 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
 
         return true;
     };
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value;
+    const handleChange = (rawValue: string) => {
+        let value = normalizeInputWidth(rawValue);
 
         if (value === time) {
             return;
@@ -72,9 +74,9 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
     }, [initTime]);
 
     return (
-        <Input
+        <CompositionInput
             value={time}
-            onChange={handleChange}
+            onValueChange={handleChange}
             variant="foundation"
             fieldSize="md"
             className={cn(

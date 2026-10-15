@@ -1,8 +1,27 @@
+import {fireEvent} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import TimeInput from '..';
 
 describe('TimeInput 컴포넌트', () => {
+    it('accepts fullwidth time pasted or committed by a Japanese IME', () => {
+        const onTimeChange = vi.fn();
+
+        render(<TimeInput onTimeChange={onTimeChange} />);
+
+        const input = screen.getByRole('textbox');
+
+        fireEvent.compositionStart(input);
+        fireEvent.change(input, {target: {value: '０９：３０'}});
+        expect(input).toHaveValue('０９：３０');
+        expect(onTimeChange).not.toHaveBeenCalled();
+        fireEvent.compositionEnd(input);
+        expect(input).toHaveValue('09:30');
+        expect(onTimeChange).toHaveBeenCalledWith('09:30');
+        fireEvent.change(input, {target: {value: '１８：００'}});
+        expect(input).toHaveValue('18:00');
+        expect(onTimeChange).toHaveBeenCalledWith('18:00');
+    });
     it('정상적으로 렌더링되어야 함', () => {
         render(<TimeInput />);
         expect(screen.getByRole('textbox')).toBeInTheDocument();
