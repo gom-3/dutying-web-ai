@@ -29,6 +29,27 @@ export type TResultVersion = {
     inputDigest: string;
     createdAt: string;
 };
+export type TSemanticPlan = {
+    planId: string;
+    planHash: string;
+    sourceVersionId: string;
+    state: string;
+    summary: string;
+    confirmationAllowed: boolean;
+    reasonCodes: string[];
+    conditions: {
+        intentId: string;
+        action: 'ASSIGN' | 'FORBID' | 'COUNT';
+        nurseIds: number[];
+        dates: string[];
+        shiftCodes: string[];
+        quantifier: 'EACH' | 'GROUP_TOTAL';
+        modality: 'HARD' | 'SOFT';
+        operator: 'MIN' | 'MAX' | 'EXACT' | null;
+        count: number | null;
+        sourceSpan: {quote: string};
+    }[];
+};
 export type TConversationTurn = {
     eventId: number;
     sequence: number;
@@ -39,6 +60,7 @@ export type TConversationTurn = {
     baseRevision: number;
     contextHash: string | null;
     interpretation: TScheduleAdjustInterpretRes | null;
+    semanticPlan?: TSemanticPlan | null;
     createdAt: string;
 };
 export type TConversationOperation = {
@@ -79,6 +101,8 @@ export type TConversationExecute = {
     fillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     rebuildConfirmed?: boolean;
     interpretationId?: string;
+    planHash?: string;
+    sourceVersionId?: string;
     failureSourceOperationId?: string;
     failureSuggestionId?: string;
     failureSuggestionDigest?: string;
@@ -86,7 +110,7 @@ export type TConversationExecute = {
 };
 export function conversationApi(wardId: number, teamId: number) {
     const base = `/wards/${wardId}/shift-teams/${teamId}/schedule`;
-    const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true})).data;
+    const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true, timeout: 15000})).data;
     const post = async <T>(path: string, data: unknown) =>
         (await client.post<T>(`${base}${path}`, data, {suppressErrorToast: true, timeout: 330000})).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;
@@ -120,11 +144,20 @@ export function conversationApi(wardId: number, teamId: number) {
                 expectedRevision,
                 items,
             }),
+        confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
+            put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+            }),
+        report: (id: number, operationId: string, note: string) =>
+            post<{incidentId: string}>(`/conversations/${id}/reports`, {operationId, note}),
         execute: (id: number, request: TConversationExecute) => post<TConversationOperation>(`/conversations/${id}/operations`, request),
         operation: (id: string) => get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`),
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),
         branch: (id: number, versionId: string, expectedRevision: number) =>
             post<TConversation>(`/conversations/${id}/branches`, {versionId, expectedRevision}),
+        startSegment: (id: number, versionId: string, expectedRevision: number) =>
+            post<TConversationDetail>(`/conversations/${id}/segments`, {versionId, expectedRevision}),
         preferences: () => get<TConversationPreference[]>('/conversation-preferences'),
         savePreference: (value: string, provenance: string) =>
             post<TConversationPreference>('/conversation-preferences', {category: 'REQUEST_TEXT', value, provenance, confirmed: true}),
@@ -156,5 +189,14 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
         turn.interpretationId === detail.conversation.latestInterpretationId &&
         turn.baseRevision === detail.conversation.revision &&
         turn.contextHash === detail.contextHash
+    );
+}
+
+export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+    return (
+        isConversationConfirmationCurrent(detail, turn, localDirty) &&
+        turn.type === 'SEMANTIC_PLAN_CONFIRMED' &&
+        turn.semanticPlan?.state === 'CONFIRMED' &&
+        turn.semanticPlan.sourceVersionId === detail.conversation.currentVersionId
     );
 }

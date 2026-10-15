@@ -331,7 +331,7 @@ export type TSnapshotCellDTO = {
     nurseId?: number;
     date: string;
     wardShiftTypeId: number | null;
-    shiftCode?: string;
+    shiftCode?: string | null;
     source?: string;
     fixed?: boolean;
 };
@@ -450,6 +450,7 @@ export type TWorkspaceScheduleResponse = {
      */
     autofillAdjustEnabled?: boolean;
     conversationEnabled?: boolean;
+    semanticExecutionEnabled?: boolean;
 };
 
 export type TUpdateShiftWorkflowDTO = {
@@ -740,6 +741,15 @@ export type TScheduleAdjustInterpretDTO = {
 export type TScheduleAdjustInterpretUnmapped = {
     text: string;
     hint?: string | null;
+    reasonCode?:
+        | 'NURSE_NOT_RESOLVED'
+        | 'SHIFT_NOT_RESOLVED'
+        | 'INVALID_DATE'
+        | 'INVALID_VALUE'
+        | 'UNSUPPORTED_REQUEST'
+        | 'INTERPRETATION_FAILED'
+        | 'NEEDS_CLARIFICATION'
+        | null;
 };
 
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
@@ -788,6 +798,8 @@ export type TAutofillResponse = {
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     failure?: {reasonCode: string; message: string; suggestions?: TFailureSuggestion[]};
     applicable?: boolean;
+    /** Validation describes the returned draft, a withheld candidate, or the original table. */
+    validationTarget?: 'RESULT' | 'CANDIDATE' | 'BASELINE';
     approvable?: boolean;
     blockingViolations?: TScheduleViolationDto[];
     draftRevision: number;
@@ -798,6 +810,9 @@ export type TAutofillResponse = {
     sameAsPrevious: boolean;
     /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
+        /** Complete generated draft with known unmet rules; approval remains separate. */
+        candidateVisible?: boolean;
+        reviewRequired?: boolean;
         qualitySidebar?: TQualitySidebar;
         status?: string;
         offGoal?: {

@@ -24,7 +24,10 @@ function movedPriority(payload: TNurseOrderMovePayload) {
     return Math.floor((payload.prevPriority + payload.nextPriority) / 2);
 }
 
-function compareSavedNurseOrder(left: Pick<TNurse, 'divisionNum' | 'priority' | 'nurseId'>, right: Pick<TNurse, 'divisionNum' | 'priority' | 'nurseId'>) {
+function compareSavedNurseOrder(
+    left: Pick<TNurse, 'divisionNum' | 'priority' | 'nurseId'>,
+    right: Pick<TNurse, 'divisionNum' | 'priority' | 'nurseId'>,
+) {
     return (
         (left.divisionNum ?? FALLBACK_DIVISION) - (right.divisionNum ?? FALLBACK_DIVISION) ||
         (left.priority ?? FALLBACK_PRIORITY) - (right.priority ?? FALLBACK_PRIORITY) ||
@@ -94,10 +97,7 @@ export function sortScheduleByTeamNurseOrder<TSchedule extends TScheduleLike<TSc
     };
 }
 
-export function sortDutyDocByScheduleOrder<TSchedule extends TScheduleLike<TScheduleRow>>(
-    doc: TDutyDoc,
-    schedule: TSchedule,
-): TDutyDoc {
+export function sortDutyDocByScheduleOrder<TSchedule extends TScheduleLike<TScheduleRow>>(doc: TDutyDoc, schedule: TSchedule): TDutyDoc {
     const orderedWorkerIds = schedule.divisionShiftNurses
         .flat()
         .filter((row) => row.shiftNurse.isWorker)

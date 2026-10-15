@@ -1,16 +1,12 @@
-import {afterAll, afterEach, beforeAll, beforeEach} from 'vitest';
+import {afterEach, beforeEach} from 'vitest';
 import '@testing-library/jest-dom';
 import '@/i18n';
 import i18n from '@/i18n';
+import {assertNoUnexpectedNetworkRequests, installTestNetworkGuard} from '@/shared/util/test-network-guard';
 
-// Start server before all tests
-beforeAll(() => {});
-
-//  Close server after all tests
-afterAll(() => {});
-
-// Reset handlers after each test `important for test isolation`
-afterEach(() => {});
+installTestNetworkGuard();
+// Fail even when UI error handling catches the blocked network exception.
+afterEach(assertNoUnexpectedNetworkRequests);
 
 beforeEach(async () => {
     if (

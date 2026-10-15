@@ -1,106 +1,118 @@
-import type {TScheduleMonthRequestRes} from '@dutying/api/ward';
-import {cn} from '@dutying/utils/style';
-import {useState} from 'react';
+import {Check} from 'lucide-react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import type {TCarryOverOption} from '../../../model/ai-carry-over';
+import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 
 type TProps = {
-    candidates: TScheduleMonthRequestRes[];
+    options: TCarryOverOption[];
+    selectedIds: number[];
+    isLoading: boolean;
+    loadFailed: boolean;
     isApplying: boolean;
-    onApply: (requestIds: number[]) => void;
-    onSkip: () => void;
+    error: string | null;
+    onToggle: (id: number) => void;
+    onConfirm: () => void;
+    onRetry: () => void;
 };
 
-/**
- * 다음 달 첫 진입 시 되묻기. 지난달의 "이번 달만" 요청을 골라 이번 달로 복사한다.
- * 전부 미선택으로 시작한다 — 기본 선택이면 지난달 사정이 확인 없이 이번 달로 새어 들어온다.
- */
-export default function AiCarryOverCard({candidates, isApplying, onApply, onSkip}: TProps) {
+/** A draft user reply. Only the confirmation commits it to the conversation. */
+export default function AiCarryOverCard({
+    options,
+    selectedIds,
+    isLoading,
+    loadFailed,
+    isApplying,
+    error,
+    onToggle,
+    onConfirm,
+    onRetry,
+}: TProps) {
     const {t} = useTypedTranslation();
-    const [selected, setSelected] = useState<Set<number>>(() => new Set());
-    const toggle = (id: number, on: boolean) => {
-        setSelected((current) => {
-            const next = new Set(current);
+    const actionClass =
+        'min-h-11 rounded-xl px-4 py-3 text-[13.5px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40';
 
-            if (on) next.add(id);
-            else next.delete(id);
+    if (isLoading)
+        return (
+            <AssistantMessage>
+                <span role="status" aria-label={t('aiAdjust.carryOver.loading')} className="flex min-h-7 items-center gap-1">
+                    {[0, 1, 2].map((dot) => (
+                        <span key={dot} aria-hidden="true" className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
+                    ))}
+                </span>
+            </AssistantMessage>
+        );
 
-            return next;
-        });
-    };
-    const canApply = selected.size > 0 && !isApplying;
+    if (!loadFailed && !options.some((option) => !option.unavailable)) return null;
 
     return (
-        <section
-            aria-label={t('page.makeShift.aiRefill.adjust.carryOver.title')}
-            data-preserve-duty-selection="true"
-            className="ai-carry-over-card border-line bg-sub-bg mx-4 my-2 flex flex-col gap-2 rounded-lg border px-3 py-2"
-        >
-            <h3 className="text-13 font-semibold">{t('page.makeShift.aiRefill.adjust.carryOver.title')}</h3>
-            <p className="text-12 text-sub">{t('page.makeShift.aiRefill.adjust.carryOver.description')}</p>
-
-            <ul className="flex flex-col gap-1">
-                {candidates.map((candidate) => {
-                    const isSelected = selected.has(candidate.id);
-
-                    return (
-                        <li key={candidate.id} className="flex flex-wrap items-center gap-2">
-                            <span className="text-13">{candidate.displayLabel}</span>
-                            <div role="group" aria-label={candidate.displayLabel} className="flex gap-1">
-                                <button
-                                    type="button"
-                                    aria-pressed={isSelected}
-                                    disabled={isApplying}
-                                    onClick={() => toggle(candidate.id, true)}
-                                    className={cn(
-                                        'text-12 rounded-full border px-2 py-0.5 transition-colors',
-                                        isSelected
-                                            ? 'border-primary bg-primary/10 font-semibold text-primary'
-                                            : 'border-line text-sub hover:bg-white',
-                                    )}
+        <section aria-label={t('aiAdjust.carryOver.title')} className="flex min-w-0 flex-col gap-4">
+            {loadFailed ? (
+                <AssistantMessage>
+                    <p role="alert">{t('aiAdjust.carryOver.loadFailed')}</p>
+                    <button type="button" className={actionClass} onClick={onRetry}>
+                        {t('aiAdjust.failure.retry')}
+                    </button>
+                </AssistantMessage>
+            ) : null}
+            <UserMessage>
+                {!loadFailed && (
+                    <>
+                        <p className="mb-2 font-medium">{t('aiAdjust.carryOver.thisMonth')}</p>
+                        <div role="group" aria-label={t('aiAdjust.carryOver.title')} className="flex min-w-0 flex-col gap-1">
+                            {options.map(({request, unavailable}) => (
+                                <label
+                                    key={request.id}
+                                    className={`relative flex min-h-11 items-start gap-2 rounded-lg px-2 py-2 text-[13.5px] leading-6 [overflow-wrap:anywhere] break-keep ${unavailable || isApplying ? 'cursor-default' : 'cursor-pointer hover:bg-white/60'} focus-within:bg-main-1 focus-within:text-white`}
                                 >
-                                    {t('page.makeShift.aiRefill.adjust.carryOver.yes')}
-                                </button>
-                                <button
-                                    type="button"
-                                    aria-pressed={!isSelected}
-                                    disabled={isApplying}
-                                    onClick={() => toggle(candidate.id, false)}
-                                    className={cn(
-                                        'text-12 rounded-full border px-2 py-0.5 transition-colors',
-                                        !isSelected
-                                            ? 'border-primary bg-primary/10 font-semibold text-primary'
-                                            : 'border-line text-sub hover:bg-white',
-                                    )}
-                                >
-                                    {t('page.makeShift.aiRefill.adjust.carryOver.no')}
-                                </button>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ul>
-
-            <div className="flex justify-end gap-2">
-                <button
-                    type="button"
-                    disabled={isApplying}
-                    onClick={onSkip}
-                    className="text-13 border-line text-sub rounded-full border px-3 py-1 transition-colors hover:bg-white disabled:opacity-50"
-                >
-                    {t('page.makeShift.aiRefill.adjust.carryOver.skip')}
-                </button>
-                <button
-                    type="button"
-                    disabled={!canApply}
-                    onClick={() => onApply([...selected])}
-                    className={cn(
-                        'text-13 rounded-full bg-primary px-3 py-1 font-semibold text-white transition-colors',
-                        !canApply && 'cursor-not-allowed opacity-50',
+                                    <input
+                                        type="checkbox"
+                                        className="peer sr-only"
+                                        checked={!unavailable && selectedIds.includes(request.id)}
+                                        disabled={isApplying || Boolean(unavailable)}
+                                        aria-label={request.displayLabel}
+                                        aria-describedby={unavailable ? `carry-over-reason-${request.id}` : undefined}
+                                        onChange={() => onToggle(request.id)}
+                                    />
+                                    <span
+                                        aria-hidden="true"
+                                        className="mt-1 grid size-4 shrink-0 place-items-center rounded-[4px] bg-white text-transparent peer-checked:bg-main-1 peer-checked:text-white peer-focus-visible:bg-white peer-focus-visible:text-main-1 peer-disabled:opacity-40"
+                                    >
+                                        <Check
+                                            className={`size-3 ${!unavailable && selectedIds.includes(request.id) ? '' : 'invisible'}`}
+                                            strokeWidth={3}
+                                        />
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className={unavailable ? 'text-[#6B7684]' : ''}>{request.displayLabel}</span>
+                                        {unavailable && (
+                                            <span
+                                                id={`carry-over-reason-${request.id}`}
+                                                className="mt-1 block text-[12px] leading-5 text-[#6B7684]"
+                                            >
+                                                {t(`aiAdjust.carryOver.unavailable.${unavailable}`)}
+                                            </span>
+                                        )}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    </>
+                )}
+                <button type="button" disabled={isApplying} className={`${actionClass} mt-2 w-full bg-white text-left`} onClick={onConfirm}>
+                    {t(
+                        isApplying
+                            ? 'aiAdjust.carryOver.saving'
+                            : selectedIds.length && !loadFailed
+                              ? 'aiAdjust.carryOver.confirm'
+                              : 'aiAdjust.carryOver.skip',
                     )}
-                >
-                    {t('page.makeShift.aiRefill.adjust.carryOver.apply')}
                 </button>
-            </div>
+            </UserMessage>
+            {error && (
+                <AssistantMessage>
+                    <p role="alert">{error}</p>
+                </AssistantMessage>
+            )}
         </section>
     );
 }

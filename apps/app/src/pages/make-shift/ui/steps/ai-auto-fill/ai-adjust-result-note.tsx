@@ -6,6 +6,7 @@ type TProps = {
     changedCount: number | null;
     /** 실패는 토스트로만 끝내지 않는다. 다음 행동을 판단할 수 있도록 표 위에 남긴다. */
     failure?: string | null;
+    onReviewFailure?: () => void;
     ruleResults: TScheduleRequestRuleResult[];
     notices?: TScheduleAdjustmentNotice[];
     goalResult?: TScheduleGoalResult | null;
@@ -23,7 +24,18 @@ type TProps = {
  * 잔여 위반이 있으면 그것이 먼저다. "12칸 바꿨어요"보다 "'D 최대 4연속'이 2곳 남았어요"가
  * 다음에 할 일을 정한다. 여러 줄을 쌓지 않고 가장 먼저 안 지켜진 것 하나만 보여 준다.
  */
-export default function AiAdjustResultNote({changedCount, failure, ruleResults, notices = [], goalResult, offGoal, isStrongest, disabled, onAdjustHarder}: TProps) {
+export default function AiAdjustResultNote({
+    changedCount,
+    failure,
+    onReviewFailure,
+    ruleResults,
+    notices = [],
+    goalResult,
+    offGoal,
+    isStrongest,
+    disabled,
+    onAdjustHarder,
+}: TProps) {
     const {t} = useTypedTranslation();
     const unmet = ruleResults.find((entry) => (entry.violationCount ?? 0) > 0);
     const offGoalUnmet = offGoal && offGoal.goalStatus !== 'SATISFIED';
@@ -38,7 +50,18 @@ export default function AiAdjustResultNote({changedCount, failure, ruleResults, 
     return (
         <div className="ai-adjust-result-note text-12 text-sub flex flex-wrap items-center gap-2 px-4" role={failure ? 'alert' : 'status'}>
             {failure ? (
-                <span className="text-red">조절을 적용하지 않았어요. {failure}</span>
+                <>
+                    <span>{t('aiAdjust.executionFailure.summary')}</span>
+                    {onReviewFailure && (
+                        <button
+                            type="button"
+                            className="min-h-11 rounded-lg px-3 text-main-1 hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none"
+                            onClick={onReviewFailure}
+                        >
+                            {t('aiAdjust.executionFailure.openChat')}
+                        </button>
+                    )}
+                </>
             ) : offGoalUnmet ? (
                 <span>{offGoalLabel}</span>
             ) : unmet ? (

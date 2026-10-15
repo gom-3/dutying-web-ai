@@ -44,19 +44,11 @@ const response = (q: TQualitySidebar | undefined, s: TFailureSuggestion[] = []):
     }) as TAutofillResponse;
 
 describe('conversation result evidence', () => {
-    it('shows individual harm and unknown coverage together', async () => {
-        render(
-            <ConversationEvidence
-                result={response(quality)}
-                nurseName={(id) => id}
-                suggestionsCurrent
-                disabled={false}
-                onSelect={vi.fn()}
-            />,
-        );
-        await userEvent.click(screen.getByText(/품질 전후 변화/));
-        expect(screen.getByText(/비교 2명 · 악화 1명 · 최대 손해 6 · 평가 안 됨 1명/)).toBeInTheDocument();
-        expect(screen.getByText('개선과 손해가 함께 있음')).toBeInTheDocument();
+    it('does not expose internal quality measurements or change counts', () => {
+        const r = response(quality);
+        r.changedCells = [{shiftNurseId: 1, date: '2026-10-02', wardShiftTypeId: 1}];
+        const {container} = render(<ConversationEvidence result={{...r, failure: undefined}} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
+        expect(container).toBeEmptyDOMElement();
     });
     it('selects a verified candidate without executing and preserves unknown impact', async () => {
         const select = vi.fn();
@@ -70,9 +62,43 @@ describe('conversation result evidence', () => {
                 onSelect={select}
             />,
         );
-        expect(screen.getByText(/최대 개인 손해 평가 안 됨/)).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '후보 선택'}));
+        expect(screen.getByText(/개인별 변화는 아직 확인할 수 없어요/)).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '변경 제안 보기'}));
         expect(select).toHaveBeenCalledWith(candidate);
+    });
+    it.each(['expired', 'invalid date'])('blocks a suggestion with an unusable expiration: %s', (expiresAt) => {
+        render(
+            <ConversationEvidence
+                result={response(undefined, [{...candidate, expiresAt}])}
+                nurseName={(id) => id}
+                suggestionsCurrent
+                disabled={false}
+                onSelect={vi.fn()}
+            />,
+        );
+        expect(screen.getByRole('button', {name: '변경 제안 보기'})).toBeDisabled();
+    });
+    it('explains supported suggestion changes without object strings or priority codes', () => {
+        render(
+            <ConversationEvidence
+                result={response(undefined, [
+                    {
+                        ...candidate,
+                        changes: [
+                            {kind: 'REQUEST_REMOVE', oldValue: {severity: 'SOFT'}, proposedValue: null},
+                            {kind: 'REQUEST_PRIORITY', oldValue: 'NORMAL', proposedValue: 'LOW'},
+                        ],
+                    },
+                ])}
+                nurseName={(id) => id}
+                suggestionsCurrent
+                disabled={false}
+                onSelect={vi.fn()}
+            />,
+        );
+        expect(screen.getByText('가능하면 맞추기로 한 요청을 이번 계산에서 제외해요.')).toBeInTheDocument();
+        expect(screen.getByText('가능하면 맞추기로 한 요청의 우선순위를 보통에서 낮음으로 바꿔요.')).toBeInTheDocument();
+        expect(screen.queryByText(/\[object Object\]|NORMAL|LOW|SOFT/)).not.toBeInTheDocument();
     });
     it('blocks stale or unauthorized candidates', () => {
         render(
@@ -84,6 +110,6 @@ describe('conversation result evidence', () => {
                 onSelect={vi.fn()}
             />,
         );
-        expect(screen.getByRole('button', {name: '후보 선택'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '변경 제안 보기'})).toBeDisabled();
     });
 });

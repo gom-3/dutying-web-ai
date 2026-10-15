@@ -30,3 +30,6 @@ dist-ssr
 .vercel
 
 cypress.env.json
+
+# Synthetic test reports
+/artifacts/

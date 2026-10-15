@@ -9,6 +9,7 @@ type TScope = {
     year: number;
     month: number;
     enabled: boolean;
+    accountId?: number | null;
 };
 
 /**
@@ -60,48 +61,57 @@ export function useScheduleMonthRequests({wardId, shiftTeamId, year, month, enab
     return {requests, isLoading, isError, refetch};
 }
 
-/**
- * 직전 달의 "이번 달만" 요청. 근무표 만들기 진입 시 한 번 묻고, 답하면 세션 동안 다시 묻지 않는다.
- */
-export function useScheduleCarryOverCandidates({wardId, shiftTeamId, year, month, enabled}: TScope) {
-    const [candidates, setCandidates] = useState<TScheduleMonthRequestRes[]>([]);
-    const [answered, setAnswered] = useState(true);
+/** Load once per account, team and month; preparation waits for this result before continuing. */
+export function useScheduleCarryOverCandidates({wardId, shiftTeamId, year, month, enabled, accountId}: TScope) {
+    const scopeKey = `${accountId ?? 'guest'}:${wardId ?? 'none'}:${shiftTeamId ?? 'none'}:${year}:${month}`;
+    const [state, setState] = useState<{
+        scope: string;
+        candidates: TScheduleMonthRequestRes[];
+        answered: boolean;
+        loading: boolean;
+        error: boolean;
+    }>({scope: '', candidates: [], answered: false, loading: false, error: false});
     const seqRef = useRef(0);
-    const scopeKey = `${wardId ?? 'none'}:${shiftTeamId ?? 'none'}:${year}:${month}`;
+    const available = enabled && wardId != null && shiftTeamId != null;
+    const refetch = useCallback(async () => {
+        const seq = ++seqRef.current;
+        const answered =
+            !enabled || wardId == null || shiftTeamId == null || isCarryOverAnswered({accountId, wardId, shiftTeamId, year, month});
+
+        setState({scope: scopeKey, candidates: [], answered, loading: !answered, error: false});
+
+        if (answered || wardId == null || shiftTeamId == null) return;
+
+        try {
+            const result = await WardAPI.getScheduleCarryOverCandidates(wardId, shiftTeamId, year, month);
+
+            if (seqRef.current === seq)
+                setState({scope: scopeKey, candidates: result.requests ?? [], answered: false, loading: false, error: false});
+        } catch {
+            if (seqRef.current === seq) setState({scope: scopeKey, candidates: [], answered: false, loading: false, error: true});
+        }
+    }, [scopeKey, enabled, accountId, wardId, shiftTeamId, year, month]);
 
     useEffect(() => {
-        const seq = seqRef.current + 1;
+        void refetch();
 
-        seqRef.current = seq;
-        setCandidates([]);
-
-        if (!enabled || wardId == null || shiftTeamId == null) {
-            setAnswered(true);
-
-            return;
-        }
-
-        const alreadyAnswered = isCarryOverAnswered({wardId, shiftTeamId, year, month});
-
-        setAnswered(alreadyAnswered);
-
-        if (alreadyAnswered) return;
-
-        WardAPI.getScheduleCarryOverCandidates(wardId, shiftTeamId, year, month)
-            .then((result) => {
-                if (seqRef.current !== seq) return;
-
-                setCandidates(result.requests ?? []);
-            })
-            .catch(() => {
-                // 되묻기는 부가 기능이다. 못 읽으면 조용히 묻지 않는다.
-            });
-    }, [scopeKey, enabled]);
+        return () => {
+            seqRef.current += 1;
+        };
+    }, [refetch]);
 
     const dismiss = useCallback(() => {
-        setAnswered(true);
-        setCandidates([]);
-    }, []);
+        seqRef.current += 1;
+        setState({scope: scopeKey, candidates: [], answered: true, loading: false, error: false});
+    }, [scopeKey]);
+    const current = state.scope === scopeKey;
 
-    return {candidates, isVisible: !answered && candidates.length > 0, dismiss};
+    return {
+        candidates: current && available ? state.candidates : [],
+        needsReview: available && (!current || !state.answered),
+        isLoading: available && (!current || state.loading),
+        isError: available && current && state.error,
+        retry: refetch,
+        dismiss,
+    };
 }

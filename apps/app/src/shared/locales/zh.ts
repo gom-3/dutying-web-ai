@@ -135,7 +135,7 @@ export const zh = {
                     downgraded: '“{{label}}”设成了必须，但这个月没能完全满足。',
                     useSuggestion: '用这句话',
                     applied: '已更改 {{count}} 个单元格。',
-                    noChange: '在该方向上已是最优。',
+                    noChange: '本次运行未找到可应用的更改。',
                     failed: '无法调整，请稍后重试。',
                     notAllowed: '该功能尚未对此账号开放。',
                     textInput: {

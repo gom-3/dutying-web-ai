@@ -33,6 +33,8 @@ import {
 import {WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 import './workspace.css';
+import {sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
+import {RefundConditions, SubscriptionConditions, fetchPublicOffer} from '@/pages/subscription-info';
 import type {CommercialBatchResult} from '@/features/commercial/batch-result';
 
 const useCopy = () => {
@@ -450,7 +452,6 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
-    const navigate = useNavigate();
     const data = useQuery({
         queryKey: commercialQueryKey(accountId, scope.type, scope.ref, 'billing'),
         queryFn: () => commercialGet<Billing>(`/billing-scopes/${scope.scopeId}`),
@@ -472,7 +473,16 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const [quote, setQuote] = useState<Quote>();
     const [consent, setConsent] = useState(false);
     const [trialLoss, setTrialLoss] = useState(false);
+    const [billingProof, setBillingProof] = useState('');
+    const publicOffer = useQuery({queryKey: ['public-plus-offer'], queryFn: fetchPublicOffer, retry: false});
     const terms: QuoteTerms | undefined = quote ? JSON.parse(quote.snapshot) : undefined;
+    const cardSubscription = scope.type === 'WARD' && purpose === 'SUBSCRIPTION';
+    const cardReady =
+        cardSubscription &&
+        publicOffer.data?.ready &&
+        sellerReady &&
+        terms?.termsVersion === SUBSCRIPTION_TERMS_VERSION &&
+        terms.totalAmount <= (publicOffer.data?.maxChargeGross ?? 0);
     const review = async () => {
         const payload: QuoteRequest = {
             purpose,
@@ -502,7 +512,9 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     return (
         <>
             {scope.type === 'HOSPITAL' ? <HospitalCalculator scope={scope} e={e} /> : null}
-            {e.entitlementSource === 'SUBSCRIPTION' ? <PaymentMethodPanel scope={scope} /> : null}
+            {scope.type === 'WARD' && e.plan === 'PLUS' && e.entitlementSource === 'SUBSCRIPTION' ? (
+                <PaymentMethodPanel scope={scope} />
+            ) : null}
             <Section title={t('요금제와 추가 구매', 'Plan & add-ons')}>
                 <p>
                     {t(
@@ -528,6 +540,12 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                         )}
                     </Notice>
                 ) : null}
+                <Notice>
+                    {t(
+                        '현재 카드 결제는 Plus 월 구독만 지원합니다. Hospital은 개별 계약·계좌이체로 진행하며, 추가 횟수·중도 증원은 고객센터에 문의해 주세요.',
+                        'Card billing currently supports Plus monthly subscriptions. Contact support for Hospital contracts, add-ons or mid-cycle capacity changes.',
+                    )}
+                </Notice>
                 <form
                     onSubmit={(event) => {
                         event.preventDefault();
@@ -649,13 +667,34 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                 'Included uses expire at the cycle end. Purchased uses last 365 days and cannot be converted between meters. Cancellation takes effect at period end; existing data is preserved.',
                             )}
                         </Notice>
+                        {cardSubscription && (
+                            <>
+                                <details>
+                                    <summary>{t('월 자동결제·해지·환불 안내', 'Monthly billing, cancellation & refunds')}</summary>
+                                    <SubscriptionConditions />
+                                    <RefundConditions />
+                                </details>
+                                <p>
+                                    {t(
+                                        '카드 등록 후 아래 버튼으로 확인한 금액을 첫 결제합니다. 이후 매월 이용기간 종료일에 자동 갱신합니다.',
+                                        'After card registration, confirm the first charge below. Monthly renewals follow at each period end.',
+                                    )}
+                                </p>
+                                <Reauthenticate onVerified={setBillingProof} />
+                            </>
+                        )}
                         <label className="workspace-check">
                             <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
                             <span>
                                 {t('금액·대상·기간 및', 'I agree to the amount, scope, period and')}{' '}
-                                <Link to={ROUTE.TERMS} target="_blank">
-                                    {t('이용약관·환불 조건', 'terms and refund conditions')}
+                                <Link to="/subscription-terms" target="_blank">
+                                    {t('정기결제 약관', 'subscription terms')}
+                                </Link>{' '}
+                                ·{' '}
+                                <Link to="/refund" target="_blank">
+                                    {t('환불 조건', 'refund policy')}
                                 </Link>
+                                {t('에 동의하며 매월 자동결제를 신청합니다.', ' and authorize monthly automatic payments.')}
                             </span>
                         </label>
                         {e.entitlementSource === 'EVENT' ? (
@@ -670,7 +709,14 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             </label>
                         ) : null}
                         <button
-                            disabled={!consent || action.busy || !e.checkoutEnabled || (e.entitlementSource === 'EVENT' && !trialLoss)}
+                            disabled={
+                                !consent ||
+                                !billingProof ||
+                                !cardReady ||
+                                action.busy ||
+                                !e.checkoutEnabled ||
+                                (e.entitlementSource === 'EVENT' && !trialLoss)
+                            }
                             onClick={() =>
                                 void action.run(async () => {
                                     const payload = {
@@ -682,14 +728,42 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                     const keyName = `dutying:checkout:${quote.id}`;
                                     const key = sessionStorage.getItem(keyName) ?? crypto.randomUUID();
                                     sessionStorage.setItem(keyName, key);
-                                    const order = await commercialPost<Order>(`/billing-scopes/${scope.scopeId}/orders`, payload, key);
-                                    navigate(`/workspace/payment-return?orderId=${order.id}`);
-                                    return order;
+                                    const registration = await commercialPost<{
+                                        id: string;
+                                        orderId: string;
+                                        clientKey: string;
+                                        customerKey: string;
+                                        returnUrl: string;
+                                    }>(
+                                        `/billing-scopes/${scope.scopeId}/subscription-checkout`,
+                                        {checkout: payload, reauthenticationToken: billingProof},
+                                        key,
+                                    );
+                                    const sdk = await loadToss();
+                                    await sdk(registration.clientKey).payment({customerKey: registration.customerKey}).requestBillingAuth({
+                                        method: 'CARD',
+                                        successUrl: registration.returnUrl,
+                                        failUrl: registration.returnUrl,
+                                    });
+                                    return registration;
                                 })
                             }
                         >
-                            {t('동의하고 결제 진행', 'Agree & proceed to payment')}
+                            {t('동의하고 정기결제 카드 등록', 'Agree & register subscription card')}
                         </button>
+                        {!cardReady && (
+                            <Notice>
+                                {cardSubscription
+                                    ? t(
+                                          '상품 안내 준비 상태 또는 1회 최대 100만 원의 결제 한도를 확인해 주세요.',
+                                          'Review sales availability and the KRW 1,000,000 charge limit.',
+                                      )
+                                    : t(
+                                          '이 견적은 상담용입니다. 고객센터를 통해 진행해 주세요.',
+                                          'This estimate is for consultation. Please contact support.',
+                                      )}
+                            </Notice>
+                        )}
                     </div>
                 ) : null}
                 <ActionsFeedback action={action} />
@@ -802,8 +876,8 @@ function Reauthenticate({onVerified}: {onVerified: (token: string) => void}) {
         <div className="workspace-reauth">
             <p>
                 {t(
-                    'OWNER 인계는 이메일 재인증 후 10분 동안 가능합니다.',
-                    'Ownership transfer requires email verification within the last 10 minutes.',
+                    '카드 등록·OWNER 인계 등 중요 변경 전 이메일로 본인을 확인합니다. 인증은 10분 동안 유효합니다.',
+                    'Verify your email before registering a card or transferring ownership. Verification is valid for 10 minutes.',
                 )}
             </p>
             <button
@@ -1470,30 +1544,15 @@ function PaymentReturn() {
                         {t('서비스 적용', 'Service applied')}: {date(order.appliedAt)}
                     </p>
                     {order.failureCode ? <Notice>{order.failureCode}</Notice> : null}
-                    {order.status === 'AWAITING_PAYMENT' ? (
-                        <button
-                            disabled={action.busy}
-                            onClick={() =>
-                                void action.run(async () => {
-                                    if (paymentKey.current)
-                                        return commercialPost(`/orders/${id}/CONFIRM`, {paymentReference: paymentKey.current});
-                                    const ready = await commercialPost<Order>(`/orders/${id}/CREATE`);
-                                    if (ready.checkoutUrl) {
-                                        const url = new URL(ready.checkoutUrl);
-                                        if (url.protocol !== 'https:')
-                                            throw new Error(t('안전한 결제 URL을 확인할 수 없습니다.', 'Invalid payment URL.'));
-                                        window.location.assign(ready.checkoutUrl);
-                                    }
-                                    return ready;
-                                })
-                            }
-                        >
-                            {paymentKey.current
-                                ? t('승인 확인하고 적용', 'Verify approval & activate')
-                                : t('PG 결제 화면 열기', 'Open payment window')}
-                        </button>
-                    ) : null}
-                    {!['APPLIED', 'FAILED'].includes(order.status) ? (
+                    {order.status === 'AWAITING_PAYMENT' && !order.provider && (
+                        <Notice>
+                            {t(
+                                '아직 청구되지 않은 주문입니다. 카드 등록을 완료하지 못했다면 아래에서 주문을 취소한 후 병동 결제 화면에서 다시 시작하세요.',
+                                'No charge has been submitted. Cancel this order below and restart from ward billing if card registration was not completed.',
+                            )}
+                        </Notice>
+                    )}
+                    {order.provider && !['APPLIED', 'FAILED'].includes(order.status) ? (
                         <button
                             className="secondary"
                             disabled={action.busy}
@@ -1741,38 +1800,117 @@ function BillingReturn() {
     const location = useLocation();
     const params = useRef(new URLSearchParams(location.search));
     const [done, setDone] = useState(false);
+    const [result, setResult] = useState<Order>();
+    const id = params.current.get('orderId');
+    const registration = params.current.get('registration');
+    const authorization = params.current.get('authKey');
+    const accountId = useAuthStore((s) => s.accountId);
+    const order = useQuery({
+        queryKey: commercialQueryKey(accountId, 'order', id),
+        queryFn: () => commercialGet<Order>(`/orders/${id}`),
+        enabled: !!id,
+        refetchInterval: (q) => (['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(q.state.data?.status ?? '') ? 5000 : false),
+    });
+    const current = order.data ?? result;
+    const applied = current?.status === 'APPLIED';
     useEffect(() => {
-        window.history.replaceState(null, '', location.pathname);
-    }, [location.pathname]);
+        // Keep only the nonsensitive order identifier so a refresh can recover payment status.
+        window.history.replaceState(null, '', location.pathname + (id ? `?orderId=${encodeURIComponent(id)}` : ''));
+    }, [location.pathname, id]);
     return (
-        <Section title={t('자동결제 등록 확인', 'Confirm renewal registration')}>
+        <Section
+            title={id ? t('Plus 첫 결제 확인', 'Confirm first Plus payment') : t('자동결제 등록 확인', 'Confirm renewal registration')}
+        >
             <Notice>
-                {done
-                    ? t(
-                          '등록되었습니다. 현재 계약의 다음 갱신일부터 사용합니다.',
-                          'Registered for the next renewal of your current contract.',
-                      )
-                    : t(
-                          '카드 인증 결과를 서버에서 확인한 뒤 등록합니다.',
-                          'The server must verify the card authorization before registration.',
-                      )}
+                {id
+                    ? applied
+                        ? t(
+                              '결제와 Plus 적용이 완료되었습니다. 등록한 카드로 매월 자동 갱신합니다.',
+                              'Payment and Plus activation are complete. Your registered card will be charged monthly.',
+                          )
+                        : t(
+                              '카드 인증만으로 결제가 완료되지 않습니다. 아래에서 금액을 확인하고 첫 결제를 완료해 주세요.',
+                              'Card authorization alone does not complete your subscription. Review and confirm the first charge below.',
+                          )
+                    : done
+                      ? t('등록되었습니다. 현재 계약의 다음 갱신일부터 사용합니다.', 'Registered for the next renewal.')
+                      : t('카드 인증 결과를 서버에서 확인한 뒤 등록합니다.', 'The server verifies card authorization before registration.')}
             </Notice>
-            {params.current.get('authKey') && !done ? (
-                <button
-                    disabled={action.busy}
-                    onClick={() =>
-                        void action.run(async () => {
-                            await commercialPost(`/billing-registrations/${params.current.get('registration')}/confirm`, {
-                                customerKey: params.current.get('customerKey'),
-                                authKey: params.current.get('authKey'),
-                            });
-                            setDone(true);
-                        })
-                    }
-                >
-                    {t('확인하고 등록 완료', 'Verify & finish registration')}
-                </button>
-            ) : null}
+            {current && (
+                <p>
+                    {t('이번 결제금액', 'Due now')}: {money(current.gross)} · {t('상태', 'Status')}: {current.status}
+                </p>
+            )}
+            {current && ['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(current.status) && (
+                <Notice>
+                    {t(
+                        '기존 결제 결과를 확인 중입니다. 새로 결제하지 말고 결과 조회를 이용해 주세요.',
+                        'The existing payment is being reconciled. Check its status instead of paying again.',
+                    )}
+                </Notice>
+            )}
+            {current?.status === 'FAILED' && (
+                <Notice>
+                    {t(
+                        '결제가 완료되지 않았습니다. 결제내역을 확인한 뒤 병동 결제 메뉴에서 새로 시작해 주세요.',
+                        'The payment did not complete. Review payment history, then restart from ward billing.',
+                    )}
+                </Notice>
+            )}
+            {params.current.get('code') && (
+                <p role="alert">
+                    {t('카드 인증을 완료하지 못했습니다.', 'Card authorization was not completed.')} {params.current.get('message')}
+                </p>
+            )}
+            {authorization &&
+                registration &&
+                !done &&
+                !applied &&
+                (!id || (current?.status === 'AWAITING_PAYMENT' && !current.provider)) && (
+                    <button
+                        disabled={action.busy || (!!id && !current)}
+                        onClick={() =>
+                            void action.run(async () => {
+                                const body = {customerKey: params.current.get('customerKey'), authKey: authorization};
+                                if (id) {
+                                    try {
+                                        const payment = await commercialPost<Order>(`/orders/${id}/confirm-subscription`, {
+                                            ...body,
+                                            registrationId: registration,
+                                        });
+                                        setResult(payment);
+                                        if (payment.status === 'APPLIED') setDone(true);
+                                    } finally {
+                                        // A failed HTTP response may still have submitted a charge.
+                                        // Refresh into reconciliation/declined state before another action.
+                                        await order.refetch();
+                                    }
+                                } else {
+                                    await commercialPost(`/billing-registrations/${registration}/confirm`, body);
+                                    setDone(true);
+                                }
+                            })
+                        }
+                    >
+                        {id
+                            ? `${current ? money(current.gross) : ''} ${t('첫 결제하고 구독 시작', 'Pay & start subscription')}`
+                            : t('확인하고 등록 완료', 'Verify & finish registration')}
+                    </button>
+                )}
+            {id && (
+                <Link className="workspace-button secondary" to={`/workspace/payment-return?orderId=${encodeURIComponent(id)}`}>
+                    {t('결제 결과 재조회·미결제 주문 취소', 'Check payment status or cancel an unsubmitted order')}
+                </Link>
+            )}
+            {!authorization && !applied && (
+                <p>
+                    {t(
+                        '인증 정보가 없으면 새로 청구하지 않습니다. 결제 결과를 먼저 확인해 주세요.',
+                        'No new charge is submitted without authorization. Check payment status first.',
+                    )}
+                </p>
+            )}
+            <ErrorView error={order.error} />
             <ActionsFeedback action={action} />
             <Link to="/workspace">{t('관리 공간으로', 'Back to workspaces')}</Link>
         </Section>
@@ -1904,6 +2042,14 @@ function Plans() {
                     'Hospital allowance scales with contracted capacity. The separate 90-day Plus promotion requires no card and never auto-charges.',
                 )}
             </Notice>
+            <p>
+                <Link className="workspace-button" to="/workspace">
+                    {t('Plus를 사용할 병동 선택·만들기', 'Choose or create a ward for Plus')}
+                </Link>
+            </p>
+            <p>
+                {t('OWNER 병동을 선택하고 결제 메뉴에서 Plus 구독을 시작하세요.', 'Select a ward you own, then start Plus from Billing.')}
+            </p>
             <Link to="/workspace/adoption">{t('병원 도입 견적·문의', 'Hospital quote & inquiry')}</Link>
             <ErrorView error={q.error} />
         </Section>

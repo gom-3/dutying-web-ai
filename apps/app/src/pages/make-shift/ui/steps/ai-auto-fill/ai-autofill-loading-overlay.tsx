@@ -64,6 +64,7 @@ function getLoadingProgressMessageKey(progress: number): TI18nKey {
 }
 
 type TAiAutofillLoadingOverlayProps = {
+    sidebarOpen?: boolean;
     isFinishing?: boolean;
     onFinish?: () => void;
     startedAt: number | null;
@@ -71,7 +72,13 @@ type TAiAutofillLoadingOverlayProps = {
     isAdjusting?: boolean;
 };
 
-export function AiAutofillLoadingOverlay({isFinishing = false, onFinish, startedAt, isAdjusting = false}: TAiAutofillLoadingOverlayProps) {
+export function AiAutofillLoadingOverlay({
+    sidebarOpen = false,
+    isFinishing = false,
+    onFinish,
+    startedAt,
+    isAdjusting = false,
+}: TAiAutofillLoadingOverlayProps) {
     const {t} = useTypedTranslation();
     const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(startedAt)));
     const progressRef = useRef(progress);
@@ -141,9 +148,9 @@ export function AiAutofillLoadingOverlay({isFinishing = false, onFinish, started
     return createPortal(
         <div
             role="dialog"
-            aria-modal="true"
+            aria-modal={!sidebarOpen}
             aria-labelledby="ai-autofill-loading-title"
-            className="fixed inset-0 z-[100002] flex items-center justify-center bg-transparent px-4"
+            className={`fixed z-[100002] flex items-center justify-center bg-transparent px-4 ${sidebarOpen ? 'inset-x-0 top-24 bottom-0 lg:top-0 lg:right-[var(--make-ai-adjust-sidebar-width,0px)]' : 'inset-0'}`}
         >
             <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center shadow-[0_22px_80px_rgba(45,32,92,0.24)]">
                 <div className="mx-auto flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F3F4F6] text-main-1">

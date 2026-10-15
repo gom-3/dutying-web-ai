@@ -375,6 +375,7 @@ describe('LandingPage', () => {
     it('renders profile modal account fields while ward profile is still loading', async () => {
         const pendingWardRequest = new Promise<never>(() => undefined);
         const getWardSpy = vi.spyOn(WardAPI, 'getWard').mockImplementation(() => pendingWardRequest);
+        const getWaitingNursesSpy = vi.spyOn(WardAPI, 'getWaitingNurses').mockResolvedValue([]);
 
         mockUseAuthState(true, {
             accountId: 7,
@@ -407,6 +408,7 @@ describe('LandingPage', () => {
         expect(screen.getByLabelText('전화번호')).toHaveValue('01012345678');
 
         getWardSpy.mockRestore();
+        getWaitingNursesSpy.mockRestore();
     });
 
     it('keeps product information and app download links in one responsive document on phones', () => {
