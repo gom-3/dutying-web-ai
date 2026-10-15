@@ -12,6 +12,7 @@ import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/constraints';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {normalizeInputWidth} from '@/shared/lib/input-width';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassifications,
@@ -25,11 +26,10 @@ import {
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
-    SHIFT_SHORT_NAME_MAX_LENGTH,
 } from '@/shared/lib/shift-short-name';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
+import CompositionInput from '@/shared/ui/form-controls/CompositionInput';
 import PageState from '@/shared/ui/PageState';
-import {Input} from '@/shared/ui/primitives/input';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import {
@@ -204,7 +204,8 @@ function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSetting
 }
 
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
-    const shortName = normalizeShiftShortNameInput(shiftType.shortName.trim());
+    // Used legacy codes may be locked by the server. Normalize width only when the user edits the input.
+    const shortName = normalizeShiftShortNameInput(shiftType.shortName.trim(), {preserveWidth: true});
     const name = shiftType.name.trim() || shortName;
     const classification = getShiftTypeClassification(shiftType);
     const isOff = classification === 'OFF' || classification === 'ANNUAL_LEAVE' || classification === 'OTHER_LEAVE';
@@ -247,7 +248,7 @@ function areShiftTypePayloadsEqual(left: TCreateShiftTypeDTO, right: TCreateShif
 function hasPersistedShiftTypeContractDrift(persisted: TWardSettingsShiftType, desired: TCreateShiftTypeDTO) {
     return (
         persisted.rotationSystem !== desired.rotationSystem ||
-        normalizeShiftShortNameInput(persisted.shortName) !== desired.shortName ||
+        normalizeShiftShortNameInput(persisted.shortName, {preserveWidth: true}) !== desired.shortName ||
         (persisted.paidMinutes ?? null) !== (desired.paidMinutes ?? null)
     );
 }
@@ -273,7 +274,7 @@ function parseShiftTimeToMinutes(value: string) {
 }
 
 function normalizeShiftTimeInput(value: string) {
-    const trimmed = value.trim();
+    const trimmed = normalizeInputWidth(value).trim();
 
     if (!trimmed) return '';
 
@@ -910,13 +911,11 @@ function ShiftTypeTable({
                                                         <SixDotsIcon className="h-4 w-4" />
                                                     </button>
                                                     <div className="flex flex-col gap-1">
-                                                        <Input
+                                                        <CompositionInput
                                                             data-shift-name-input={shiftType.wardShiftTypeId}
                                                             value={shiftType.name}
                                                             maxLength={SHIFT_NAME_MAX_LENGTH}
-                                                            onChange={(event) =>
-                                                                patchDraft(shiftType.wardShiftTypeId, {name: event.target.value})
-                                                            }
+                                                            onValueChange={(value) => patchDraft(shiftType.wardShiftTypeId, {name: value})}
                                                             variant="foundation"
                                                             fieldSize="lg"
                                                             aria-invalid={
@@ -942,10 +941,9 @@ function ShiftTypeTable({
                                                         ) : null}
                                                     </div>
                                                     <div className="flex flex-col items-center gap-1">
-                                                        <Input
+                                                        <CompositionInput
                                                             data-shift-shortname-input={shiftType.wardShiftTypeId}
                                                             value={shiftType.shortName}
-                                                            maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
                                                             tabIndex={isUsedShiftShortNameLocked(shiftType) ? -1 : undefined}
                                                             readOnly={isUsedShiftShortNameLocked(shiftType)}
                                                             aria-readonly={isUsedShiftShortNameLocked(shiftType)}
@@ -972,18 +970,16 @@ function ShiftTypeTable({
                                                                     showUsedShiftTypeLockedToast();
                                                                 }
                                                             }}
-                                                            onChange={(event) => {
+                                                            onValueChange={(value) => {
                                                                 if (isUsedShiftShortNameLocked(shiftType)) {
                                                                     showUsedShiftTypeLockedToast();
 
                                                                     return;
                                                                 }
 
-                                                                const normalizedShortName = normalizeShiftShortNameInput(
-                                                                    event.target.value,
-                                                                );
+                                                                const normalizedShortName = normalizeShiftShortNameInput(value);
 
-                                                                if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
+                                                                if (hasInvalidShiftShortNameLengthInput(value)) {
                                                                     setShortNameErrorById((prev) => ({
                                                                         ...prev,
                                                                         [shiftType.wardShiftTypeId]: t(
@@ -1128,15 +1124,15 @@ function ShiftTypeTable({
                                                         <div className="flex items-start">
                                                             <div className="flex flex-col gap-1">
                                                                 <div className="flex items-center gap-2">
-                                                                    <Input
+                                                                    <CompositionInput
                                                                         data-shift-start-input={shiftType.wardShiftTypeId}
                                                                         value={
                                                                             isOffShiftType(shiftType) ? '-' : (shiftType.startTime ?? '')
                                                                         }
                                                                         disabled={isOffShiftType(shiftType)}
-                                                                        onChange={(event) =>
+                                                                        onValueChange={(value) =>
                                                                             patchDraft(shiftType.wardShiftTypeId, {
-                                                                                startTime: normalizeShiftTimeInput(event.target.value),
+                                                                                startTime: normalizeShiftTimeInput(value),
                                                                             })
                                                                         }
                                                                         onBlur={(event) => {
@@ -1163,13 +1159,13 @@ function ShiftTypeTable({
                                                                         placeholder="07:00"
                                                                     />
                                                                     <span className="font-poppins text-[15px] text-gray-3">~</span>
-                                                                    <Input
+                                                                    <CompositionInput
                                                                         data-shift-end-input={shiftType.wardShiftTypeId}
                                                                         value={isOffShiftType(shiftType) ? '-' : (shiftType.endTime ?? '')}
                                                                         disabled={isOffShiftType(shiftType)}
-                                                                        onChange={(event) =>
+                                                                        onValueChange={(value) =>
                                                                             patchDraft(shiftType.wardShiftTypeId, {
-                                                                                endTime: normalizeShiftTimeInput(event.target.value),
+                                                                                endTime: normalizeShiftTimeInput(value),
                                                                             })
                                                                         }
                                                                         onBlur={(event) => {

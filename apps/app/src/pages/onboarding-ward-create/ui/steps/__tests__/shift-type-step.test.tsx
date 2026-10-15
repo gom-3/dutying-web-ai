@@ -1,4 +1,4 @@
-import {screen} from '@testing-library/react';
+import {fireEvent, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, userEvent} from '@/shared/util/test-utils';
 import type {TOnboardingWardShiftType} from '../../../model';
@@ -25,6 +25,37 @@ const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
 });
 
 describe('ShiftTypeStep', () => {
+    it('commits Japanese abbreviations and fullwidth times after IME conversion', () => {
+        const draft = createInitialDraft();
+        const shift = draft.shiftTypes[0]!;
+        const onChange = vi.fn();
+
+        render(
+            <ShiftTypeStep
+                shiftTypes={[shift]}
+                rotationMode="THREE"
+                onChange={onChange}
+                onDelete={vi.fn()}
+                onAdd={vi.fn()}
+                onDragEnd={vi.fn()}
+            />,
+        );
+
+        const shortName = screen.getByDisplayValue(shift.shortName);
+        const time = screen.getByDisplayValue(shift.startTime);
+
+        fireEvent.compositionStart(shortName);
+        fireEvent.change(shortName, {target: {value: 'にっきん'}});
+        expect(onChange).not.toHaveBeenCalled();
+        fireEvent.change(shortName, {target: {value: '日勤'}});
+        fireEvent.compositionEnd(shortName);
+        expect(onChange).toHaveBeenCalledWith(shift.id, {shortName: '日勤'});
+        fireEvent.compositionStart(time);
+        fireEvent.change(time, {target: {value: '０９：３０'}});
+        fireEvent.compositionEnd(time);
+        expect(onChange).toHaveBeenCalledWith(shift.id, {startTime: '09:30'});
+    });
+
     it('blocks deleting or reclassifying the last annual leave and permits editing its name', async () => {
         const user = userEvent.setup();
         const draft = createInitialDraft();

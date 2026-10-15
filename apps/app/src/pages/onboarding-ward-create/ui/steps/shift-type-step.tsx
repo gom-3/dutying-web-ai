@@ -4,6 +4,7 @@ import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {normalizeInputWidth} from '@/shared/lib/input-width';
 import {
     getDefaultTimeRangeForRotation,
     getRequiredRotationClassificationCounts,
@@ -18,10 +19,9 @@ import {
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
-    SHIFT_SHORT_NAME_MAX_LENGTH,
 } from '@/shared/lib/shift-short-name';
 import Card from '@/shared/ui/Card';
-import {Input} from '@/shared/ui/primitives/input';
+import CompositionInput from '@/shared/ui/form-controls/CompositionInput';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {
     DEFAULT_SHIFT_TYPE_COLORS,
@@ -269,7 +269,7 @@ const parseShiftTimeToMinutes = (value: string) => {
     return hour * 60 + minute;
 };
 const normalizeShiftTimeInput = (value: string) => {
-    const trimmed = value.trim();
+    const trimmed = normalizeInputWidth(value).trim();
 
     if (!trimmed) return '';
 
@@ -567,10 +567,10 @@ export function ShiftTypeStep({
                                                     <SixDotsIcon className="h-4 w-4" />
                                                 </button>
                                                 <div className="flex flex-col items-center gap-1">
-                                                    <Input
+                                                    <CompositionInput
                                                         value={shiftType.name}
                                                         maxLength={SHIFT_NAME_MAX_LENGTH}
-                                                        onChange={(event) => onChange(shiftType.id, {name: event.target.value})}
+                                                        onValueChange={(value) => onChange(shiftType.id, {name: value})}
                                                         variant="foundation"
                                                         fieldSize="lg"
                                                         aria-invalid={Boolean(getShiftNameError(shiftType.name))}
@@ -591,13 +591,12 @@ export function ShiftTypeStep({
                                                     ) : null}
                                                 </div>
                                                 <div className="flex flex-col items-center gap-1">
-                                                    <Input
+                                                    <CompositionInput
                                                         value={shiftType.shortName}
-                                                        maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
-                                                        onChange={(event) => {
-                                                            const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
+                                                        onValueChange={(value) => {
+                                                            const normalizedShortName = normalizeShiftShortNameInput(value);
 
-                                                            if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
+                                                            if (hasInvalidShiftShortNameLengthInput(value)) {
                                                                 setShortNameErrorById((prev) => ({
                                                                     ...prev,
                                                                     [shiftType.id]: t(
@@ -783,12 +782,12 @@ export function ShiftTypeStep({
                                                     <div className="flex items-start">
                                                         <div className="flex flex-col gap-1">
                                                             <div className="flex items-center gap-2">
-                                                                <Input
+                                                                <CompositionInput
                                                                     value={isOffShiftType(shiftType) ? '-' : shiftType.startTime}
                                                                     disabled={isOffShiftType(shiftType)}
-                                                                    onChange={(event) =>
+                                                                    onValueChange={(value) =>
                                                                         onChange(shiftType.id, {
-                                                                            startTime: normalizeShiftTimeInput(event.target.value),
+                                                                            startTime: normalizeShiftTimeInput(value),
                                                                         })
                                                                     }
                                                                     onBlur={(event) =>
@@ -810,12 +809,12 @@ export function ShiftTypeStep({
                                                                     placeholder="07:00"
                                                                 />
                                                                 <span className="font-poppins text-[15px] text-gray-3">~</span>
-                                                                <Input
+                                                                <CompositionInput
                                                                     value={isOffShiftType(shiftType) ? '-' : shiftType.endTime}
                                                                     disabled={isOffShiftType(shiftType)}
-                                                                    onChange={(event) =>
+                                                                    onValueChange={(value) =>
                                                                         onChange(shiftType.id, {
-                                                                            endTime: normalizeShiftTimeInput(event.target.value),
+                                                                            endTime: normalizeShiftTimeInput(value),
                                                                         })
                                                                     }
                                                                     onBlur={(event) =>

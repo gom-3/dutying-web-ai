@@ -1,5 +1,6 @@
 import {koToEn} from '@dutying/utils/ko-to-en';
 import {useCallback, useMemo} from 'react';
+import {normalizeInputWidth} from '@/shared/lib/input-width';
 import {useShiftEditorStore} from './store';
 import type {TClipboardPayload, TWorkKeyMap} from './types';
 import {useShiftEditorCommands} from './use-shift-editor-commands';
@@ -47,7 +48,8 @@ export function isEditableEventTarget(target: EventTarget | null): boolean {
 
 function normalizeKey(key: string): string {
     // 한글 IME 입력도 영문 키로 normalize (예: 'ㅇ' -> 'd')
-    const normalized = key.length === 1 ? koToEn(key) : key;
+    const widthNormalized = normalizeInputWidth(key);
+    const normalized = widthNormalized.length === 1 ? koToEn(widthNormalized) : widthNormalized;
 
     return normalized.length === 1 ? normalized.toLowerCase() : normalized;
 }
@@ -102,7 +104,7 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
         // normalize keys once
         const normalized: TWorkKeyMap = {};
 
-        for (const [k, v] of Object.entries(map)) normalized[k.toLowerCase()] = v;
+        for (const [k, v] of Object.entries(map)) normalized[normalizeInputWidth(k).toLowerCase()] = v;
 
         return normalized;
     }, [opts.workKeyMap]);

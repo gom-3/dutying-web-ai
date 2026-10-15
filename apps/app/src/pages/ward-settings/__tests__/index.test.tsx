@@ -1,4 +1,4 @@
-import {waitFor} from '@testing-library/react';
+import {fireEvent, waitFor} from '@testing-library/react';
 import toast from 'react-hot-toast';
 import type * as ReactRouterModule from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -528,6 +528,91 @@ describe('WardSettingsPage', () => {
         expect(names).toEqual(['데이', '이브닝', '나이트', '2교대 주간', '2교대 야간', '오프', '2교대 데이', '2교대 나이트']);
         expect(updateShiftType).not.toHaveBeenCalled();
         expect(deleteShiftType).not.toHaveBeenCalled();
+    });
+
+    it('saves Japanese names and abbreviations with fullwidth times after IME conversion', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(createValue({state: {shiftTypes: requiredShiftTypes()}, actions: {updateShiftType}}));
+        render(<WardSettingsPage />);
+
+        const name = document.querySelector<HTMLInputElement>('[data-shift-name-input="1"]')!;
+        const shortName = document.querySelector<HTMLInputElement>('[data-shift-shortname-input="1"]')!;
+        const start = document.querySelector<HTMLInputElement>('[data-shift-start-input="1"]')!;
+        const end = document.querySelector<HTMLInputElement>('[data-shift-end-input="1"]')!;
+
+        fireEvent.compositionStart(name);
+        fireEvent.change(name, {target: {value: 'にっきん'}});
+        expect(name).toHaveValue('にっきん');
+        fireEvent.change(name, {target: {value: '日勤'}});
+        fireEvent.compositionEnd(name);
+        fireEvent.compositionStart(shortName);
+        fireEvent.change(shortName, {target: {value: 'ﾊﾞﾝ'}});
+        expect(shortName).toHaveValue('ﾊﾞﾝ');
+        fireEvent.compositionEnd(shortName);
+        expect(shortName).toHaveValue('バン');
+        fireEvent.compositionStart(start);
+        fireEvent.change(start, {target: {value: '０９：００'}});
+        fireEvent.compositionEnd(start);
+        fireEvent.change(end, {target: {value: '１８：３０'}});
+        expect(start).toHaveValue('09:00');
+        expect(end).toHaveValue('18:30');
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(updateShiftType).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({name: '日勤', shortName: 'バン', startTime: '09:00', endTime: '18:30'}),
+            );
+        });
+    });
+
+    it.each(['Ｗ', 'ﾊﾞ'])('preserves an existing used abbreviation %s when only its name changes', async (shortName) => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+        const customShiftType = {
+            ...baseValue().state.shiftTypes[0],
+            wardShiftTypeId: 9,
+            name: '既存勤務',
+            shortName,
+            isDefault: false,
+            classification: 'OTHER_WORK' as const,
+            rotationSystem: 'NONE' as const,
+            isUsed: true,
+        };
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({state: {shiftTypes: [...requiredShiftTypes(), customShiftType]}, actions: {updateShiftType}}),
+        );
+        render(<WardSettingsPage />);
+
+        const input = document.querySelector<HTMLInputElement>('[data-shift-name-input="9"]')!;
+
+        fireEvent.change(input, {target: {value: '既存勤務改'}});
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+        await waitFor(() => {
+            expect(updateShiftType).toHaveBeenCalledWith(9, expect.objectContaining({name: '既存勤務改', shortName}));
+        });
+    });
+
+    it('still rejects duplicate abbreviation keys entered in fullwidth', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(createValue({state: {shiftTypes: requiredShiftTypes()}, actions: {updateShiftType}}));
+        render(<WardSettingsPage />);
+
+        const shortName = document.querySelector<HTMLInputElement>('[data-shift-shortname-input="2"]')!;
+
+        document.querySelectorAll<HTMLInputElement>('[data-shift-shortname-input]').forEach((input) => {
+            input.scrollIntoView = vi.fn();
+        });
+        fireEvent.change(shortName, {target: {value: 'Ｄ'}});
+        expect(shortName).toHaveValue('D');
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+        expect(updateShiftType).not.toHaveBeenCalled();
+        expect(screen.getAllByText('약자의 첫 글자가 겹치지 않게 입력해 주세요.').length).toBeGreaterThan(0);
     });
 
     it('allows overnight shift times and preserves payload classifications on save', async () => {

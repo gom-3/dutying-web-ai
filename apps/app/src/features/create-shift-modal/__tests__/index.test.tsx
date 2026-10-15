@@ -1,3 +1,4 @@
+import {fireEvent} from '@testing-library/react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import CreateShiftModal from '../index';
@@ -12,6 +13,30 @@ describe('CreateShiftModal', () => {
 
     afterEach(() => {
         document.querySelector('#modal-root')?.remove();
+    });
+
+    it('saves a Japanese abbreviation and fullwidth time after composition', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+
+        render(<CreateShiftModal open shiftType={null} close={vi.fn()} onSubmit={onSubmit} onDelete={vi.fn()} />);
+
+        const [name, shortName] = screen.getAllByRole('textbox');
+        const [start, end] = screen.getAllByDisplayValue('00:00');
+
+        fireEvent.change(name!, {target: {value: '夜勤'}});
+        fireEvent.compositionStart(shortName!);
+        fireEvent.change(shortName!, {target: {value: 'やきん'}});
+        expect(shortName).toHaveValue('やきん');
+        fireEvent.change(shortName!, {target: {value: '夜'}});
+        fireEvent.compositionEnd(shortName!);
+        fireEvent.change(start!, {target: {value: '２２：００'}});
+        fireEvent.change(end!, {target: {value: '０７：００'}});
+        await user.click(screen.getByRole('button', {name: '저장'}));
+
+        expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({name: '夜勤', shortName: '夜', startTime: '22:00', endTime: '07:00'}),
+        );
     });
 
     it('shows inline validation instead of alert when required fields are missing', async () => {
