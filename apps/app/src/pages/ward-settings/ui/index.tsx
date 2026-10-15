@@ -44,8 +44,7 @@ import {
     type TWardSettingsState,
     type TWardSettingsTab,
 } from '../model/ward-settings-hook';
-import {RequestReceptionContent} from './request-reception-content';
-import {RequestCapacitySettings} from './request-capacity-settings';
+import {RequestReceptionSettings} from './request-reception-settings';
 import {RestLeavePolicySection} from './rest-leave-policy-section';
 
 type TWardSettingsPageViewProps = {
@@ -1519,7 +1518,13 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         {t(state.currentTab === 'annualLeave' ? 'annualLeave.title' : `page.wardSettings.tabs.${state.currentTab}`)}
                     </h1>
                     {state.currentTab !== 'restLeavePolicy' ? (
-                        <p className="mt-1 font-apple text-sm text-gray-3">{t(getTabDescriptionKey(state.currentTab))}</p>
+                        <p className="mt-1 font-apple text-sm text-gray-3">
+                            {t(
+                                state.currentTab === 'requestReception'
+                                    ? 'requestCapacity.settingsDescription'
+                                    : getTabDescriptionKey(state.currentTab),
+                            )}
+                        </p>
                     ) : null}
                 </div>
             </div>
@@ -1543,15 +1548,12 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                 ) : state.currentTab === 'annualLeave' ? (
                     <AnnualLeaveSettingsSection wardId={state.wardId} shiftTypes={state.shiftTypes} shiftTeams={state.shiftTeams} />
                 ) : state.currentTab === 'requestReception' ? (
-                    <>
-                        <RequestReceptionContent
-                            settings={state.requestReceptionSettings}
-                            status={state.requestReceptionStatus}
-                            onSave={actions.updateRequestReceptionSettings}
-                            onRetry={actions.retryRequestReceptionSettings}
-                        />
-                        <RequestCapacitySettings />
-                    </>
+                    <RequestReceptionSettings
+                        settings={state.requestReceptionSettings}
+                        status={state.requestReceptionStatus}
+                        onSave={actions.updateRequestReceptionSettings}
+                        onRetry={actions.retryRequestReceptionSettings}
+                    />
                 ) : (
                     <ConstraintsContent
                         state={{

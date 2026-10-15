@@ -3,7 +3,9 @@ import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {requestCapacityKo} from '@/shared/locales/request-capacity';
+import {DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS} from '../../model/ward-settings-hook';
 import {RequestCapacitySettings} from '../request-capacity-settings';
+import {RequestReceptionSettings} from '../request-reception-settings';
 
 const api = vi.hoisted(() => ({
     getShiftTeams: vi.fn(),
@@ -38,12 +40,21 @@ const saved = {
     overflows: [],
 };
 
-function mount() {
+function mount(settingsSurface = false) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
     render(
         <QueryClientProvider client={client}>
-            <RequestCapacitySettings />
+            {settingsSurface ? (
+                <RequestReceptionSettings
+                    settings={DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS}
+                    status="success"
+                    onSave={async () => true}
+                    onRetry={() => undefined}
+                />
+            ) : (
+                <RequestCapacitySettings />
+            )}
         </QueryClientProvider>,
     );
 
@@ -73,7 +84,7 @@ describe('request capacity settings', () => {
 
         await user.click(await screen.findByRole('switch', {name: '인원 제한 사용'}));
         await user.type(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'}), '3');
-        await user.click(screen.getByRole('button', {name: 'OFF 그룹별 인원 설정'}));
+        await user.click(screen.getByRole('button', {name: 'OFF 그룹별'}));
         await user.type(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'}), '1');
         await user.click(screen.getByRole('button', {name: '저장하기'}));
         await waitFor(() =>
@@ -102,7 +113,7 @@ describe('request capacity settings', () => {
         expect(api.updateReqShiftCapacitySettings).not.toHaveBeenCalled();
     });
 
-    it('keeps group controls collapsed and shows existing group limits in the summary', async () => {
+    it('opens existing group settings and makes the combined team limit explicit', async () => {
         api.getReqShiftCapacitySettings.mockResolvedValue({
             ...saved,
             enabled: true,
@@ -112,13 +123,12 @@ describe('request capacity settings', () => {
             ],
         });
 
-        const user = mount();
-        const toggle = await screen.findByRole('button', {name: 'OFF 그룹별 인원 설정'});
+        mount();
 
-        expect(toggle).toHaveAttribute('aria-expanded', 'false');
-        expect(screen.getByText('A그룹 1명')).toBeInTheDocument();
-        expect(screen.queryByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'})).not.toBeInTheDocument();
-        await user.click(toggle);
+        const toggle = await screen.findByRole('button', {name: 'OFF 그룹별'});
+
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('checkbox', {name: 'OFF 팀 전체 인원도 함께 제한'})).toBeChecked();
         expect(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'})).toHaveValue(1);
         expect(screen.getByRole('spinbutton', {name: 'OFF B그룹 그룹 하루 최대 인원'})).toHaveValue(null);
     });
@@ -135,7 +145,7 @@ describe('request capacity settings', () => {
 
         const user = mount();
 
-        await user.click(await screen.findByRole('button', {name: 'OFF 그룹별 인원 설정'}));
+        await screen.findByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'});
         await user.clear(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'}));
         await user.click(screen.getByRole('button', {name: '저장하기'}));
         await waitFor(() =>
@@ -172,6 +182,7 @@ describe('request capacity settings', () => {
         await user.click(await screen.findByRole('switch', {name: '인원 제한 사용'}));
         await user.click(screen.getByRole('button', {name: '저장하기'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('제한을 하나 이상 설정');
+        expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveFocus();
         expect(api.updateReqShiftCapacitySettings).not.toHaveBeenCalled();
     });
 
@@ -185,7 +196,7 @@ describe('request capacity settings', () => {
         const user = mount();
 
         await screen.findByRole('switch', {name: '인원 제한 사용'});
-        await user.click(screen.getByRole('button', {name: 'OFF 그룹별 인원 설정'}));
+        await user.click(screen.getByRole('button', {name: 'OFF 그룹별'}));
         await user.type(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'}), '-1');
         await user.click(screen.getByRole('switch', {name: '인원 제한 사용'}));
         await user.click(screen.getByRole('button', {name: '저장하기'}));
@@ -213,5 +224,110 @@ describe('request capacity settings', () => {
         expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(3);
         expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
         expect(api.getReqShiftCapacitySettings).toHaveBeenCalledTimes(1);
+    });
+    it('saves group-only limits without sending a hidden team limit', async () => {
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+        });
+
+        const user = mount();
+
+        await user.click(await screen.findByRole('button', {name: 'OFF 그룹별'}));
+        await user.click(screen.getByRole('checkbox', {name: 'OFF 팀 전체 인원도 함께 제한'}));
+        expect(screen.queryByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).not.toBeInTheDocument();
+        await user.type(screen.getByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'}), '1');
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+        await waitFor(() =>
+            expect(api.updateReqShiftCapacitySettings).toHaveBeenCalledWith(1, 11, {
+                enabled: true,
+                revision: 0,
+                rules: [{wardShiftTypeId: 1, groupId: 21, maxPerDay: 1}],
+            }),
+        );
+    });
+
+    it('switching to the whole team removes group rules from the saved scope', async () => {
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            rules: [
+                {wardShiftTypeId: 1, groupId: null, maxPerDay: 3},
+                {wardShiftTypeId: 1, groupId: 21, maxPerDay: 1},
+            ],
+        });
+
+        const user = mount();
+
+        await user.click(await screen.findByRole('button', {name: 'OFF 팀 전체'}));
+        expect(screen.queryByRole('spinbutton', {name: 'OFF A그룹 그룹 하루 최대 인원'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+        await waitFor(() =>
+            expect(api.updateReqShiftCapacitySettings).toHaveBeenCalledWith(1, 11, {
+                enabled: true,
+                revision: 0,
+                rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+            }),
+        );
+    });
+
+    it('restores saved inputs when edits are canceled', async () => {
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+        });
+
+        const user = mount();
+
+        await user.click(await screen.findByRole('button', {name: 'OFF 팀 전체 하루 최대 인원 늘리기'}));
+        expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(4);
+        await user.click(screen.getByRole('button', {name: '취소'}));
+        expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(3);
+        expect(api.updateReqShiftCapacitySettings).not.toHaveBeenCalled();
+    });
+
+    it('adds another shift without transferring the OFF limit to it', async () => {
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+        });
+
+        const user = mount();
+
+        await user.selectOptions(await screen.findByRole('combobox', {name: '다른 근무 추가'}), '2');
+        expect(screen.getByRole('spinbutton', {name: 'D 팀 전체 하루 최대 인원'})).toHaveValue(null);
+        await user.type(screen.getByRole('spinbutton', {name: 'D 팀 전체 하루 최대 인원'}), '2');
+        await user.click(screen.getByRole('button', {name: 'OFF 삭제'}));
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+        await waitFor(() =>
+            expect(api.updateReqShiftCapacitySettings).toHaveBeenCalledWith(1, 11, {
+                enabled: true,
+                revision: 0,
+                rules: [{wardShiftTypeId: 2, groupId: null, maxPerDay: 2}],
+            }),
+        );
+    });
+
+    it('retains capacity edits while switching to the reception period and back', async () => {
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+        });
+
+        const user = mount(true);
+
+        await user.click(screen.getByRole('tab', {name: '신청 인원'}));
+        await user.click(await screen.findByRole('button', {name: 'OFF 팀 전체 하루 최대 인원 늘리기'}));
+        await user.click(screen.getByRole('tab', {name: '접수 기간'}));
+        expect(screen.queryByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('tab', {name: '신청 인원'}));
+        expect(screen.getByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'})).toHaveValue(4);
+        await user.keyboard('{ArrowLeft}');
+        expect(screen.getByRole('tab', {name: '접수 기간'})).toHaveAttribute('aria-selected', 'true');
+        expect(api.updateReqShiftCapacitySettings).not.toHaveBeenCalled();
     });
 });
