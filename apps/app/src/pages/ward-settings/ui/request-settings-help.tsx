@@ -18,7 +18,7 @@ export function RequestSettingsHelp({label, children}: {label: string; children:
                             event.preventDefault();
                             setOpen((value) => !value);
                         }}
-                        className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[#777B89] hover:bg-[#ECE9F5] hover:text-[#5331B5] focus-visible:bg-[#E6DFFF] focus-visible:text-[#432091] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2"
+                        className="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-[#777B89] hover:text-[#5331B5] focus-visible:bg-[#E6DFFF] focus-visible:text-[#432091] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2"
                     >
                         <InfoIcon aria-hidden="true" className="size-4" />
                     </button>

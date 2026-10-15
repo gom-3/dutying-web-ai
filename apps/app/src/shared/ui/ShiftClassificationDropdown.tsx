@@ -18,6 +18,7 @@ type TShiftClassificationDropdownProps = {
     onDisabledClick?: () => void;
     className?: string;
     portalled?: boolean;
+    triggerContent?: ReactNode;
 };
 
 type TMenuPosition = {
@@ -40,6 +41,7 @@ export default function ShiftClassificationDropdown({
     onDisabledClick,
     className,
     portalled = true,
+    triggerContent,
 }: TShiftClassificationDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
@@ -226,12 +228,19 @@ export default function ShiftClassificationDropdown({
                     className,
                 )}
             >
-                <span className="truncate">{selectedOption?.label ?? value}</span>
-                <ChevronDown
-                    className={cn('pointer-events-none absolute right-2.5 h-4 w-4 text-gray-3 transition-transform', open && 'rotate-180')}
-                    strokeWidth={2.25}
-                    aria-hidden="true"
-                />
+                {triggerContent ?? (
+                    <>
+                        <span className="truncate">{selectedOption?.label ?? value}</span>
+                        <ChevronDown
+                            className={cn(
+                                'pointer-events-none absolute right-2.5 h-4 w-4 text-gray-3 transition-transform',
+                                open && 'rotate-180',
+                            )}
+                            strokeWidth={2.25}
+                            aria-hidden="true"
+                        />
+                    </>
+                )}
             </button>
 
             {portalled && typeof document !== 'undefined' ? createPortal(menu, document.body) : menu}

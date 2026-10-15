@@ -1,6 +1,7 @@
 import {type TReqShiftCapacitySettings} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {isAxiosError} from 'axios';
+import {Plus} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
@@ -254,7 +255,18 @@ export function RequestCapacitySettings() {
                                         ariaLabel={t('requestCapacity.addType')}
                                         disabled={saving}
                                         portalled={false}
-                                        className="h-auto min-h-11 bg-[#F5F6F9] py-2 font-apple text-sm font-medium motion-reduce:transition-none [&>span]:overflow-visible [&>span]:whitespace-normal"
+                                        className="group h-auto min-h-11 justify-start gap-2 rounded-lg bg-transparent px-0 py-2 font-apple text-base font-medium text-gray-3 transition-colors hover:bg-transparent hover:text-[#4E586C] focus-visible:bg-[#F1F2F5] focus-visible:text-[#394153] focus-visible:ring-0 motion-reduce:transition-none"
+                                        triggerContent={
+                                            <>
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="flex size-[19px] shrink-0 items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C] group-focus-visible:bg-[#394153] motion-reduce:transition-none"
+                                                >
+                                                    <Plus className="size-[11px] text-white" />
+                                                </span>
+                                                <span className="text-left">{t('requestCapacity.addType')}</span>
+                                            </>
+                                        }
                                         onChange={(value) => {
                                             if (!value) return;
 
