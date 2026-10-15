@@ -1,7 +1,7 @@
 import {type TReqShiftCapacitySettings} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {isAxiosError} from 'axios';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useId, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -9,14 +9,17 @@ import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {capacityDraftRows, capacityDraftRules, type TCapacityDraftRow} from '../model/request-capacity';
-import {RequestCapacityRule, type TCapacityScope} from './request-capacity-rule';
+import {RequestCapacityRule} from './request-capacity-rule';
 
 const FOCUS_CLASS =
     'focus-visible:bg-[#EDE7FF] focus-visible:text-[#45229E] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2';
 const ACTION_CLASS = `inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-[#5833D6] hover:bg-[#F3F0FF] disabled:opacity-50 ${FOCUS_CLASS}`;
 
 export function RequestCapacitySettings() {
+    const id = useId();
     const sectionRef = useRef<HTMLElement>(null);
+    const addTypeRef = useRef<HTMLButtonElement>(null);
+    const newTypeFocusRef = useRef<number | null>(null);
     const {t} = useTypedTranslation();
     const {
         state: {wardId},
@@ -40,13 +43,21 @@ export function RequestCapacitySettings() {
     const saved = settingsQuery.data;
     const [enabled, setEnabled] = useState(false);
     const [rows, setRows] = useState<TCapacityDraftRow[]>([]);
-    const [scopes, setScopes] = useState<Record<number, TCapacityScope>>({});
+    const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
+    const [addingType, setAddingType] = useState(false);
     const [saving, setSaving] = useState(false);
     const [errorKey, setErrorKey] = useState<'invalid' | 'saveError' | 'stale' | null>(null);
 
     useEffect(() => {
         if (errorKey === 'invalid') sectionRef.current?.querySelector<HTMLInputElement>('input[aria-invalid="true"]')?.focus();
     }, [errorKey]);
+
+    useEffect(() => {
+        if (newTypeFocusRef.current === null) return;
+
+        sectionRef.current?.querySelector<HTMLInputElement>(`[data-shift-type="${newTypeFocusRef.current}"] input`)?.focus();
+        newTypeFocusRef.current = null;
+    }, [rows]);
 
     const typeSignature = types.map((type) => `${type.wardShiftTypeId}:${type.classification}`).join(',');
     const resetDraft = () => {
@@ -56,28 +67,14 @@ export function RequestCapacitySettings() {
 
         setEnabled(saved.enabled);
         setRows(nextRows);
-        setScopes(
-            Object.fromEntries(
-                nextRows.map((row) => [
-                    row.wardShiftTypeId,
-                    {
-                        mode: row.groups.length > 0 ? 'GROUP' : 'TEAM',
-                        includeTeam: row.teamMax !== '',
-                    },
-                ]),
-            ),
-        );
+        setAddingType(false);
+        setOpenGroups(Object.fromEntries(nextRows.map((row) => [row.wardShiftTypeId, row.groups.length > 0])));
         setErrorKey(null);
     };
 
     useEffect(resetDraft, [saved, typeSignature]);
 
-    const effectiveRows = rows.map((row) => {
-        const scope = scopes[row.wardShiftTypeId];
-
-        return scope?.mode === 'GROUP' ? {...row, teamMax: scope.includeTeam ? row.teamMax : ''} : {...row, groups: []};
-    });
-    const rules = capacityDraftRules(effectiveRows);
+    const rules = capacityDraftRules(rows);
     const normalizedRules = (value: TReqShiftCapacitySettings['rules']) =>
         JSON.stringify([...value].sort((a, b) => a.wardShiftTypeId - b.wardShiftTypeId || (a.groupId ?? 0) - (b.groupId ?? 0)));
     const dirty = Boolean(
@@ -108,10 +105,15 @@ export function RequestCapacitySettings() {
 
         const nextRules = enabled ? rules : (rules ?? saved.rules);
 
-        if (
-            nextRules === null ||
-            (enabled && (nextRules.length === 0 || effectiveRows.some((row) => !capacityDraftRules([row])?.length)))
-        ) {
+        if (nextRules === null || (enabled && (nextRules.length === 0 || rows.some((row) => !capacityDraftRules([row])?.length)))) {
+            setOpenGroups((previous) => ({
+                ...previous,
+                ...Object.fromEntries(
+                    rows
+                        .filter((row) => row.groups.some((group) => !/^\d+$/.test(group.max) || Number(group.max) > 10000))
+                        .map((row) => [row.wardShiftTypeId, true]),
+                ),
+            }));
             setErrorKey('invalid');
 
             return;
@@ -139,11 +141,6 @@ export function RequestCapacitySettings() {
     };
     const currentTeam = teams.find((team) => team.shiftTeamId === teamId);
     const unusedTypes = types.filter((type) => !rows.some((row) => row.wardShiftTypeId === type.wardShiftTypeId));
-    const updateScope = (typeId: number, scope: TCapacityScope) => {
-        setScopes((previous) => ({...previous, [typeId]: scope}));
-
-        if (errorKey !== 'stale') setErrorKey(null);
-    };
 
     let stateContent = null;
 
@@ -164,137 +161,147 @@ export function RequestCapacitySettings() {
     }
 
     return (
-        <section ref={sectionRef} className="mt-6 overflow-hidden rounded-2xl bg-white" aria-label={t('requestCapacity.title')}>
-            <div className="px-5 pt-6 sm:px-7">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                        <h3 className="text-lg font-semibold text-[#242633]">{t('requestCapacity.title')}</h3>
-                        <p className="mt-1 text-sm leading-6 text-[#626573]">{t('requestCapacity.description')}</p>
-                    </div>
-                    {saved && !stateContent ? (
+        <section ref={sectionRef} className="mt-7 min-w-0" aria-label={t('requestCapacity.title')}>
+            <div className="mb-5">
+                <h3 className="text-[1.375rem] leading-8 font-bold text-[#252735]">{t('requestCapacity.dailyTitle')}</h3>
+                <p className="mt-1 text-sm leading-6 text-[#626573]">{t('requestCapacity.allDates')}</p>
+            </div>
+            {stateContent ? (
+                <div className="rounded-xl bg-white p-6">{stateContent}</div>
+            ) : (
+                <>
+                    <div className="mb-5 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                        <label className="flex min-w-0 flex-wrap items-center gap-3 text-sm font-medium text-[#626573]">
+                            {t('requestCapacity.team')}
+                            <select
+                                value={teamId ?? ''}
+                                disabled={saving || teams.length === 1}
+                                className={`min-h-12 max-w-full min-w-24 rounded-lg bg-white px-4 text-base font-bold text-[#252735] disabled:opacity-100 ${FOCUS_CLASS}`}
+                                onChange={(event) => {
+                                    if (dirty && !window.confirm(t('requestCapacity.unsaved'))) return;
+
+                                    setSelectedTeamId(Number(event.target.value));
+                                }}
+                            >
+                                {teams.map((team) => (
+                                    <option key={team.shiftTeamId} value={team.shiftTeamId}>
+                                        {team.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
                         <button
                             type="button"
                             role="switch"
                             aria-checked={enabled}
                             aria-label={t('requestCapacity.enabled')}
                             disabled={saving}
-                            onClick={() => setEnabled((value) => !value)}
-                            className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-2 text-sm text-[#505464] disabled:opacity-50 ${FOCUS_CLASS}`}
+                            onClick={() => {
+                                setEnabled((value) => !value);
+
+                                if (errorKey !== 'stale') setErrorKey(null);
+                            }}
+                            className={`inline-flex min-h-12 shrink-0 items-center gap-3 rounded-lg px-2 text-sm font-semibold text-[#454856] disabled:opacity-50 ${FOCUS_CLASS}`}
                         >
-                            <span className="hidden sm:inline forced-colors:inline">
-                                {t(enabled ? 'requestCapacity.on' : 'requestCapacity.off')}
-                            </span>
+                            <span>{t(enabled ? 'requestCapacity.on' : 'requestCapacity.off')}</span>
                             <span
                                 aria-hidden="true"
-                                className={`inline-flex h-6 w-10 items-center rounded-full px-0.5 ${enabled ? 'bg-[#6242D9]' : 'bg-[#B1B3BD]'}`}
+                                className={`inline-flex h-7 w-12 items-center rounded-full px-1 ${enabled ? 'bg-[#6242D9]' : 'bg-[#9094A5]'}`}
                             >
-                                <span className={`size-5 rounded-full bg-white ${enabled ? 'translate-x-4' : ''}`} />
+                                <span className={`size-5 rounded-full bg-white ${enabled ? 'translate-x-5' : ''}`} />
                             </span>
                         </button>
-                    ) : null}
-                </div>
-                {stateContent ? (
-                    <div className="py-6">{stateContent}</div>
-                ) : (
-                    <>
-                        {teams.length > 1 ? (
-                            <div className="mt-5 flex flex-wrap items-center gap-3" role="group" aria-label={t('requestCapacity.team')}>
-                                <p className="text-xs font-medium text-[#626573]">{t('requestCapacity.team')}</p>
-                                <div className="flex flex-wrap gap-1">
-                                    {teams.map((team) => (
-                                        <button
-                                            key={team.shiftTeamId}
-                                            type="button"
-                                            aria-pressed={teamId === team.shiftTeamId}
-                                            disabled={saving}
-                                            className={`min-h-11 rounded-lg px-5 text-sm font-semibold disabled:opacity-50 ${teamId === team.shiftTeamId ? 'bg-[#EEEAFB] text-[#5532C8] forced-colors:underline' : 'text-[#626573] hover:bg-[#F1F1F6]'} ${FOCUS_CLASS}`}
-                                            onClick={() => {
-                                                if (teamId === team.shiftTeamId) return;
+                    </div>
+                    {enabled ? (
+                        <>
+                            <div className="grid grid-cols-1 gap-6">
+                                {rows.map((row) => (
+                                    <RequestCapacityRule
+                                        key={row.wardShiftTypeId}
+                                        row={row}
+                                        type={types.find((type) => type.wardShiftTypeId === row.wardShiftTypeId)}
+                                        groups={saved?.groups ?? []}
+                                        groupsOpen={openGroups[row.wardShiftTypeId] ?? false}
+                                        disabled={saving}
+                                        canRemove={rows.length > 1}
+                                        showErrors={errorKey === 'invalid'}
+                                        onChange={(patch) => patchRow(row.wardShiftTypeId, patch)}
+                                        onToggleGroups={() =>
+                                            setOpenGroups((previous) => ({
+                                                ...previous,
+                                                [row.wardShiftTypeId]: !previous[row.wardShiftTypeId],
+                                            }))
+                                        }
+                                        onRemove={() => {
+                                            setRows((previous) =>
+                                                previous.filter((value) => value.wardShiftTypeId !== row.wardShiftTypeId),
+                                            );
 
-                                                if (dirty && !window.confirm(t('requestCapacity.unsaved'))) return;
-
-                                                setSelectedTeamId(team.shiftTeamId);
-                                            }}
-                                        >
-                                            {team.name}
-                                        </button>
-                                    ))}
-                                </div>
+                                            if (errorKey !== 'stale') setErrorKey(null);
+                                        }}
+                                    />
+                                ))}
                             </div>
-                        ) : null}
-                        <div className="py-6">
-                            {enabled ? (
-                                <>
-                                    <div className="grid grid-cols-1 gap-8">
-                                        {rows.map((row) => (
-                                            <RequestCapacityRule
-                                                key={row.wardShiftTypeId}
-                                                row={row}
-                                                type={types.find((type) => type.wardShiftTypeId === row.wardShiftTypeId)}
-                                                groups={saved?.groups ?? []}
-                                                scope={scopes[row.wardShiftTypeId] ?? {mode: 'TEAM', includeTeam: row.teamMax !== ''}}
+                            {unusedTypes.length > 0 ? (
+                                <div className="mt-4 min-w-0">
+                                    <button
+                                        ref={addTypeRef}
+                                        type="button"
+                                        disabled={saving}
+                                        aria-expanded={addingType}
+                                        aria-controls={`${id}-add-types`}
+                                        className={`min-h-12 max-w-full gap-2 rounded-lg bg-white px-4 py-3 text-left text-sm leading-6 font-semibold text-[#5630C4] disabled:opacity-50 ${FOCUS_CLASS}`}
+                                        onClick={() => setAddingType((value) => !value)}
+                                    >
+                                        <span aria-hidden="true" className="text-xl">
+                                            {addingType ? '−' : '＋'}
+                                        </span>
+                                        <span className="min-w-0">{t('requestCapacity.addType')}</span>
+                                    </button>
+                                    <div
+                                        id={`${id}-add-types`}
+                                        hidden={!addingType}
+                                        className="mt-2 rounded-lg bg-white p-2"
+                                        onKeyDown={(event) => {
+                                            if (event.key !== 'Escape') return;
+
+                                            setAddingType(false);
+                                            addTypeRef.current?.focus();
+                                        }}
+                                    >
+                                        {unusedTypes.map((type) => (
+                                            <button
+                                                key={type.wardShiftTypeId}
+                                                type="button"
+                                                aria-label={`${type.shortName} ${type.name}`}
                                                 disabled={saving}
-                                                canRemove={rows.length > 1}
-                                                showErrors={errorKey === 'invalid'}
-                                                onChange={(patch) => patchRow(row.wardShiftTypeId, patch)}
-                                                onScopeChange={(scope) => updateScope(row.wardShiftTypeId, scope)}
-                                                onRemove={() => {
-                                                    setRows((previous) =>
-                                                        previous.filter((value) => value.wardShiftTypeId !== row.wardShiftTypeId),
-                                                    );
+                                                className={`flex min-h-12 w-full min-w-0 flex-wrap justify-start gap-x-2 rounded-md px-3 py-2 text-left text-base leading-6 text-[#363244] hover:bg-[#F1EDF9] ${FOCUS_CLASS}`}
+                                                onClick={() => {
+                                                    newTypeFocusRef.current = type.wardShiftTypeId;
+                                                    setRows((previous) => [
+                                                        ...previous,
+                                                        {wardShiftTypeId: type.wardShiftTypeId, teamMax: '', groups: []},
+                                                    ]);
+                                                    setAddingType(false);
 
                                                     if (errorKey !== 'stale') setErrorKey(null);
                                                 }}
-                                            />
+                                            >
+                                                <span className="font-bold break-all">{type.shortName}</span>
+                                                <span className="min-w-0 break-words">{type.name}</span>
+                                            </button>
                                         ))}
                                     </div>
-                                    {unusedTypes.length > 0 ? (
-                                        <label className="mt-5 inline-flex max-w-full items-center gap-2 text-sm text-[#505464]">
-                                            <span aria-hidden="true" className="text-lg">
-                                                ＋
-                                            </span>
-                                            <span className="sr-only">{t('requestCapacity.addType')}</span>
-                                            <select
-                                                value=""
-                                                disabled={saving}
-                                                className={`min-h-11 max-w-full min-w-0 rounded-lg bg-[#F7F7FA] px-3 text-sm ${FOCUS_CLASS}`}
-                                                onChange={(event) => {
-                                                    const typeId = Number(event.target.value);
-
-                                                    setRows((previous) => [
-                                                        ...previous,
-                                                        {wardShiftTypeId: typeId, teamMax: '', groups: []},
-                                                    ]);
-                                                    updateScope(typeId, {mode: 'TEAM', includeTeam: true});
-                                                }}
-                                            >
-                                                <option value="" disabled>
-                                                    {t('requestCapacity.addType')}
-                                                </option>
-                                                {unusedTypes.map((type) => (
-                                                    <option key={type.wardShiftTypeId} value={type.wardShiftTypeId}>
-                                                        {type.shortName} · {type.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                    ) : null}
-                                </>
-                            ) : (
-                                <p className="rounded-lg bg-[#F7F7FA] px-4 py-5 text-sm leading-6 text-[#626573]">
-                                    {t('requestCapacity.offHint')}
-                                </p>
-                            )}
-                        </div>
-                    </>
-                )}
-            </div>
-            {!stateContent ? (
-                <>
+                                </div>
+                            ) : null}
+                        </>
+                    ) : (
+                        <p className="rounded-xl bg-white p-6 text-base leading-7 text-[#454856]">{t('requestCapacity.offHint')}</p>
+                    )}
                     {overflows.length > 0 ? (
-                        <div className="mx-5 mb-5 rounded-lg bg-orange-50 p-4 text-sm text-orange-900 sm:mx-7" role="status">
+                        <div className="mt-5 rounded-lg bg-orange-50 p-4 text-sm leading-6 text-orange-900" role="status">
                             <p>{t('requestCapacity.overflowHint')}</p>
-                            <ul className="mt-2 grid gap-1 text-xs">
+                            <ul className="mt-2 grid gap-1">
                                 {overflows.map((overflow) => (
                                     <li key={`${overflow.date}:${overflow.wardShiftTypeId}:${overflow.groupId}`}>
                                         {t('requestCapacity.overflow', {
@@ -312,7 +319,7 @@ export function RequestCapacitySettings() {
                         </div>
                     ) : null}
                     {errorKey ? (
-                        <div className="mx-5 mb-5 text-sm text-[#BA3830] sm:mx-7" role="alert">
+                        <div className="mt-5 rounded-lg bg-[#FDECEB] p-4 text-sm leading-6 text-[#A52D26]" role="alert">
                             <p>{t(`requestCapacity.${errorKey}`)}</p>
                             {errorKey === 'stale' ? (
                                 <button type="button" className={ACTION_CLASS} onClick={() => void reload()}>
@@ -321,11 +328,11 @@ export function RequestCapacitySettings() {
                             ) : null}
                         </div>
                     ) : null}
-                    <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F7F7FA] px-5 py-4 sm:px-7">
-                        <p className="min-w-0 text-xs leading-5 text-[#626573]">
-                            {currentTeam?.name} · {t('requestCapacity.allDates')}
+                    <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
+                        <p className="min-w-0 text-sm leading-6 text-[#626573]">
+                            {dirty ? t('requestCapacity.changed') : t('requestCapacity.appliedTeam', {team: currentTeam?.name ?? ''})}
                         </p>
-                        <div className="flex items-center gap-2">
+                        <div className="flex w-full items-center gap-2 sm:w-auto">
                             {dirty ? (
                                 <button
                                     type="button"
@@ -338,7 +345,7 @@ export function RequestCapacitySettings() {
                             ) : null}
                             <button
                                 type="button"
-                                className={`min-h-11 rounded-lg px-5 text-sm font-semibold disabled:opacity-50 ${dirty ? 'bg-[#6242D9] text-white hover:bg-[#5434C5]' : 'text-[#626573]'} ${FOCUS_CLASS}`}
+                                className={`min-h-12 flex-1 rounded-lg px-7 text-base font-bold disabled:bg-[#E5E4ED] disabled:text-[#626573] sm:min-w-40 ${FOCUS_CLASS} bg-[#6242D9] text-white hover:bg-[#5434C5]`}
                                 disabled={saving || !dirty || settingsQuery.isFetching || errorKey === 'stale'}
                                 onClick={() => void save()}
                             >
@@ -347,7 +354,7 @@ export function RequestCapacitySettings() {
                         </div>
                     </div>
                 </>
-            ) : null}
+            )}
         </section>
     );
 }

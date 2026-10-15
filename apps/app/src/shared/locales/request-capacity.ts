@@ -1,4 +1,12 @@
 export const requestCapacityKo = {
+    numberError: '0~10,000 사이의 정수를 입력해 주세요.',
+    dailyTitle: '하루 신청 정원',
+    teamDailyMax: '팀 전체 · 하루 최대',
+    autoClose: '{{count}}명이 차면 그날의 신청이 마감돼요.',
+    groupOnly: '팀 전체 제한 없이, 그룹별 정원만 적용해요.',
+    removeTeamLimit: '팀 전체 제한 해제',
+    clearGroups: '그룹 제한 해제',
+    appliedTeam: '{{team}}에 적용 중',
     title: '신청 인원 제한',
     description: '같은 날짜의 신청 인원을 정해요.',
     enabled: '인원 제한 사용',
@@ -58,6 +66,14 @@ export const requestCapacityKo = {
 };
 
 export const requestCapacityEn = {
+    numberError: 'Enter a whole number from 0 to 10,000.',
+    dailyTitle: 'Daily request capacity',
+    teamDailyMax: 'Whole team · per day',
+    autoClose: 'Requests for the date close at {{count}} people.',
+    groupOnly: 'Only group limits apply. The team total is unlimited.',
+    removeTeamLimit: 'Remove team limit',
+    clearGroups: 'Clear group limits',
+    appliedTeam: 'Applied to {{team}}',
     title: 'Daily request limits',
     description: 'Set how many people can request the same date.',
     enabled: 'Use capacity limits',
@@ -117,6 +133,14 @@ export const requestCapacityEn = {
 };
 
 export const requestCapacityJa = {
+    numberError: '0〜10,000の整数を入力してください。',
+    dailyTitle: '1日の申請定員',
+    teamDailyMax: 'チーム全体 · 1日最大',
+    autoClose: '{{count}}人に達すると、その日の申請を締め切ります。',
+    groupOnly: 'チーム全体の上限なしで、グループ定員のみ適用します。',
+    removeTeamLimit: 'チーム全体の上限を解除',
+    clearGroups: 'グループ上限を解除',
+    appliedTeam: '{{team}}に適用中',
     title: '1日の申請人数制限',
     description: '同じ日に申請できる人数を設定します。',
     enabled: '人数制限を使用',
@@ -176,6 +200,14 @@ export const requestCapacityJa = {
 };
 
 export const requestCapacityZh = {
+    numberError: '请输入0至10,000的整数。',
+    dailyTitle: '每日申请名额',
+    teamDailyMax: '整个团队 · 每天最多',
+    autoClose: '达到{{count}}人后，该日期的申请将关闭。',
+    groupOnly: '仅应用分组名额，团队总人数不限。',
+    removeTeamLimit: '取消团队总人数限制',
+    clearGroups: '清除分组限制',
+    appliedTeam: '已应用于{{team}}',
     title: '每日申请人数限制',
     description: '设置同一天可申请的人数。',
     enabled: '启用人数限制',
@@ -235,6 +267,14 @@ export const requestCapacityZh = {
 };
 
 export const requestCapacityTh = {
+    numberError: 'กรอกจำนวนเต็มตั้งแต่ 0 ถึง 10,000',
+    dailyTitle: 'จำนวนคนที่รับต่อวัน',
+    teamDailyMax: 'ทั้งทีม · สูงสุดต่อวัน',
+    autoClose: 'เมื่อครบ {{count}} คน จะปิดรับคำขอของวันนั้น',
+    groupOnly: 'ใช้เฉพาะขีดจำกัดกลุ่ม ไม่จำกัดยอดรวมทีม',
+    removeTeamLimit: 'ยกเลิกขีดจำกัดทีม',
+    clearGroups: 'ล้างขีดจำกัดกลุ่ม',
+    appliedTeam: 'ใช้กับ {{team}}',
     title: 'จำนวนคำขอสูงสุดต่อวัน',
     description: 'กำหนดจำนวนคนที่ขอเวรในวันเดียวกันได้',
     enabled: 'ใช้ขีดจำกัดจำนวนคน',
@@ -294,6 +334,14 @@ export const requestCapacityTh = {
 };
 
 export const requestCapacityVi = {
+    numberError: 'Nhập số nguyên từ 0 đến 10.000.',
+    dailyTitle: 'Số người đăng ký mỗi ngày',
+    teamDailyMax: 'Toàn đội · tối đa/ngày',
+    autoClose: 'Đủ {{count}} người sẽ đóng đăng ký cho ngày đó.',
+    groupOnly: 'Chỉ áp dụng giới hạn nhóm, không giới hạn tổng đội.',
+    removeTeamLimit: 'Bỏ giới hạn toàn đội',
+    clearGroups: 'Xóa giới hạn nhóm',
+    appliedTeam: 'Đang áp dụng cho {{team}}',
     title: 'Giới hạn đăng ký mỗi ngày',
     description: 'Đặt số người được đăng ký cùng một ngày.',
     enabled: 'Dùng giới hạn số người',

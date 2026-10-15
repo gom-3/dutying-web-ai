@@ -10,7 +10,7 @@ export function RequestReceptionSettings(props: ComponentProps<typeof RequestRec
     const tabs = ['period', 'capacity'] as const;
 
     return (
-        <div>
+        <div className="max-w-[760px]">
             <div role="tablist" aria-label={t('requestCapacity.settingsTabs')} className="flex flex-wrap gap-6">
                 {tabs.map((value, index) => (
                     <button
@@ -40,7 +40,7 @@ export function RequestReceptionSettings(props: ComponentProps<typeof RequestRec
                             setTab(tabs[target]);
                             event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[target]?.focus();
                         }}
-                        className={`relative min-h-12 rounded-t-md px-1 pb-3 text-sm font-semibold focus-visible:bg-[#EAE4FF] focus-visible:text-[#422395] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2 ${tab === value ? 'text-[#5532C8] forced-colors:underline' : 'text-[#626573] hover:text-[#242633]'}`}
+                        className={`relative min-h-12 rounded-t-md px-1 pb-3 text-base font-bold focus-visible:bg-[#EAE4FF] focus-visible:text-[#422395] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2 ${tab === value ? 'text-[#5532C8] forced-colors:underline' : 'text-[#626573] hover:text-[#242633]'}`}
                     >
                         {t(value === 'period' ? 'requestCapacity.periodTab' : 'requestCapacity.capacityTab')}
                         {tab === value ? (
