@@ -82,6 +82,36 @@ afterEach(() => {
 });
 
 describe('request capacity settings', () => {
+    it.each(['shiftTypes', 'wardShiftTypes'])(
+        'accepts the existing %s response envelope without breaking reception settings',
+        async (key) => {
+            api.getShiftTypes.mockResolvedValue({
+                [key]: [
+                    {wardShiftTypeId: 1, name: '휴무', shortName: 'OFF', classification: 'OFF', isActive: true},
+                    {wardShiftTypeId: 2, name: '데이', shortName: 'D', classification: 'DAY', isActive: true},
+                ],
+            });
+
+            const user = mount(true);
+
+            expect(screen.getByRole('tab', {name: '접수 기간'})).toHaveAttribute('aria-selected', 'true');
+            await user.click(screen.getByRole('tab', {name: '신청 인원'}));
+            await user.click(await screen.findByRole('switch', {name: '인원 제한 사용'}));
+            await user.type(await screen.findByRole('spinbutton', {name: 'OFF 팀 전체 하루 최대 인원'}), '3');
+            await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+            await waitFor(() =>
+                expect(api.updateReqShiftCapacitySettings).toHaveBeenCalledWith(1, 11, {
+                    enabled: true,
+                    revision: 0,
+                    rules: [{wardShiftTypeId: 1, groupId: null, maxPerDay: 3}],
+                }),
+            );
+            await user.click(screen.getByRole('tab', {name: '접수 기간'}));
+            expect(screen.getByRole('tab', {name: '접수 기간'})).toHaveAttribute('aria-selected', 'true');
+        },
+    );
+
     it('saves independent team and group limits using stable group IDs', async () => {
         const user = mount();
 
