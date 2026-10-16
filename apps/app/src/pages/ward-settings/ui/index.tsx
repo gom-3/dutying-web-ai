@@ -44,7 +44,7 @@ import {
     type TWardSettingsState,
     type TWardSettingsTab,
 } from '../model/ward-settings-hook';
-import {RequestReceptionContent} from './request-reception-content';
+import {RequestReceptionSettings} from './request-reception-settings';
 import {RestLeavePolicySection} from './rest-leave-policy-section';
 
 type TWardSettingsPageViewProps = {
@@ -1513,7 +1513,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                     <h1 className="pr-12 font-apple text-[30px] font-semibold text-sub-1">
                         {t(state.currentTab === 'annualLeave' ? 'annualLeave.title' : `page.wardSettings.tabs.${state.currentTab}`)}
                     </h1>
-                    {state.currentTab !== 'restLeavePolicy' ? (
+                    {state.currentTab !== 'restLeavePolicy' && state.currentTab !== 'requestReception' ? (
                         <p className="mt-1 font-apple text-sm text-gray-3">{t(getTabDescriptionKey(state.currentTab))}</p>
                     ) : null}
                 </div>
@@ -1538,7 +1538,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                 ) : state.currentTab === 'annualLeave' ? (
                     <AnnualLeaveSettingsSection wardId={state.wardId} shiftTypes={state.shiftTypes} shiftTeams={state.shiftTeams} />
                 ) : state.currentTab === 'requestReception' ? (
-                    <RequestReceptionContent
+                    <RequestReceptionSettings
                         settings={state.requestReceptionSettings}
                         status={state.requestReceptionStatus}
                         onSave={actions.updateRequestReceptionSettings}

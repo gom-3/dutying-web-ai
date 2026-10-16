@@ -4,3 +4,4 @@ export * from './create-ward-api';
 export * from './annual-leave';
 
 export * from './schedule-evidence';
+export * from './request-capacity';
