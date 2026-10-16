@@ -11,6 +11,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {capacityDraftRows, capacityDraftRules, type TCapacityDraftRow} from '../model/request-capacity';
+import {normalizeShiftTypes} from '../model/ward-settings-hook';
 import {RequestCapacityRule} from './request-capacity-rule';
 import {RequestSettingsHelp} from './request-settings-help';
 
@@ -30,7 +31,7 @@ export function RequestCapacitySettings() {
     const teamsQuery = useQuery({...wardQueryOptions.shiftTeams(wardId ?? -1), enabled: wardId != null});
     const typesQuery = useQuery({...wardQueryOptions.shiftTypes(wardId ?? -1), enabled: wardId != null});
     const teams = teamsQuery.data ?? [];
-    const types = (typesQuery.data ?? []).filter((type) => type.isActive !== false);
+    const types = normalizeShiftTypes(typesQuery.data).filter((type) => type.isActive !== false);
     const teamId = teams.find((team) => team.shiftTeamId === selectedTeamId)?.shiftTeamId ?? teams[0]?.shiftTeamId ?? null;
     const settingsKey = ['ward', 'requestCapacitySettings', wardId, teamId];
     const settingsQuery = useQuery({

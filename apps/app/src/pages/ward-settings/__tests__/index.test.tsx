@@ -8,6 +8,7 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
 import {DEFAULT_REST_LEAVE_POLICY} from '../model/rest-leave-policy';
 import type * as RestPolicyModule from '../model/rest-leave-policy';
+import type * as WardSettingsModule from '../model/ward-settings-hook';
 
 const {mockUseRestLeavePolicy, mockSaveRestPolicy} = vi.hoisted(() => ({mockUseRestLeavePolicy: vi.fn(), mockSaveRestPolicy: vi.fn()}));
 
@@ -23,9 +24,11 @@ const mockAuthState = vi.hoisted(() => ({
     accessToken: null as string | null,
 }));
 
-vi.mock('../model/ward-settings-hook', () => ({
-    useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
-}));
+vi.mock('../model/ward-settings-hook', async () => {
+    const actual = await vi.importActual<typeof WardSettingsModule>('../model/ward-settings-hook');
+
+    return {...actual, useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args)};
+});
 
 vi.mock('@/features/auth', () => ({
     default: () => ({

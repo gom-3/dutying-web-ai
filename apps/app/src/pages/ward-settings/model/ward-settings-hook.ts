@@ -28,7 +28,7 @@ function normalizeShiftType(shiftType: TRawWardShiftType): TWardShiftType {
     };
 }
 
-function normalizeShiftTypes(input: unknown): TWardShiftType[] {
+export function normalizeShiftTypes(input: unknown): TWardShiftType[] {
     if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType);
 
     if (input && typeof input === 'object') {
