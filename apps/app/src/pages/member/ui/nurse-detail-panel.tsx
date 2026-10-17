@@ -2,7 +2,7 @@
 import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
 import {ArrowRightLeft, Check, ChevronDown, ChevronRight, Loader2} from 'lucide-react';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
@@ -11,7 +11,7 @@ import useEditShiftTeam from '@/features/edit-shift-team';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
-import {NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
+import {isValidRosterNurseName, normalizeRosterNurseNameForRequest, NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -207,7 +207,8 @@ function NurseDetailPanel({
     const {t} = useTypedTranslation();
     const [savedNurseBaseline, setSavedNurseBaseline] = useState<TNurse | null>(null);
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
-    const [showNameRequiredError, setShowNameRequiredError] = useState(false);
+    const [nameError, setNameError] = useState<'required' | 'invalid' | null>(null);
+    const nameErrorId = useId();
     const [disconnectConfirmModalOpen, setDisconnectConfirmModalOpen] = useState(false);
     const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
     const [moveTeamMenuOpen, setMoveTeamMenuOpen] = useState(false);
@@ -246,7 +247,7 @@ function NurseDetailPanel({
 
         setSavedNurseBaseline(normalizedSelectedNurse);
         setWriteNurse(normalizedSelectedNurse);
-        setShowNameRequiredError(false);
+        setNameError(null);
         setMoveTeamMenuOpen(false);
         setIsMovingTeam(false);
         setIsShiftRatioOpen(false);
@@ -500,10 +501,21 @@ function NurseDetailPanel({
         if (!savedNurseBaseline || !writeNurse || isBusy) return Promise.resolve(false);
 
         if (writeNurse.name.trim().length === 0) {
-            setShowNameRequiredError(true);
+            setNameError('required');
 
             return Promise.resolve(false);
         }
+
+        const nameChanged =
+            normalizeRosterNurseNameForRequest(writeNurse.name) !== normalizeRosterNurseNameForRequest(savedNurseBaseline.name);
+
+        if ((isCreateMode || nameChanged) && !isValidRosterNurseName(writeNurse.name)) {
+            setNameError('invalid');
+
+            return Promise.resolve(false);
+        }
+
+        setNameError(null);
 
         if (isCreateMode && !canSaveCreateDraft(writeNurse)) return Promise.resolve(false);
 
@@ -559,7 +571,6 @@ function NurseDetailPanel({
                 const originalBirthDate = normalizeBirthDateForStorage(savedNurseBaseline.birthDate);
 
                 nursePayload = {
-                    name: normalizeNurseNameForRequest(writeNurse.name.trim()),
                     phoneNum: writeNurse.phoneNum,
                     isWorker: writeNurse.isWorker,
                     isWardManager: writeNurse.isWardManager,
@@ -567,6 +578,10 @@ function NurseDetailPanel({
                     isPreceptor,
                     isPreceptee,
                 };
+
+                if (nameChanged || isCreateMode) {
+                    nursePayload.name = normalizeRosterNurseNameForRequest(writeNurse.name);
+                }
 
                 if (birthDate !== originalBirthDate) {
                     nursePayload.birthDate = birthDate;
@@ -580,7 +595,12 @@ function NurseDetailPanel({
 
             if (!saved) return false;
 
-            setSavedNurseBaseline(normalizeNurseRoleFields(writeNurse));
+            const savedDraft = normalizeNurseRoleFields(
+                nameChanged || isCreateMode ? {...writeNurse, name: normalizeRosterNurseNameForRequest(writeNurse.name)} : writeNurse,
+            );
+
+            setSavedNurseBaseline(savedDraft);
+            setWriteNurse(savedDraft);
             setNurseDraftDirty(false);
 
             if (changedShiftTypes.length > 0) {
@@ -629,7 +649,7 @@ function NurseDetailPanel({
     ]);
     const handleDiscardDraft = useCallback(() => {
         setWriteNurse(savedNurseBaseline);
-        setShowNameRequiredError(false);
+        setNameError(null);
         setMoveTeamMenuOpen(false);
         setManualShiftRatioWeightKeys(new Set());
         setManualShiftRatioBaselineWeights(new Map());
@@ -734,20 +754,29 @@ function NurseDetailPanel({
                                 disabled={isBusy}
                                 name="nurseName"
                                 maxLength={NURSE_NAME_MAX_LENGTH}
-                                placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
+                                placeholder={nameError === 'required' ? t('page.member.table.name') : undefined}
+                                aria-label={t('page.member.table.name')}
+                                aria-invalid={nameError !== null}
+                                aria-describedby={nameError ? nameErrorId : undefined}
                                 className={cn(
                                     'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',
                                     isModal &&
                                         'h-12 rounded-[12px] bg-[#F2F4F6] px-4 text-[19px] focus:!border-0 focus:!bg-[#E5E8ED] focus:!text-[#191F28] focus:!outline-none focus-visible:!border-0 focus-visible:!outline-none',
-                                    showNameRequiredError &&
+                                    nameError &&
                                         (isModal
                                             ? '!border-0 bg-[#FFF0F0] font-normal text-[#B42318] placeholder:font-normal placeholder:text-[#D6DCE6]'
                                             : '!border !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-none focus-visible:!border-[#E57373]'),
                                 )}
                                 value={writeNurse.name}
                                 onChange={(event) => {
-                                    if (showNameRequiredError && event.target.value.trim().length > 0) {
-                                        setShowNameRequiredError(false);
+                                    if (nameError) {
+                                        setNameError(
+                                            !event.target.value.trim()
+                                                ? 'required'
+                                                : isValidRosterNurseName(event.target.value)
+                                                  ? null
+                                                  : 'invalid',
+                                        );
                                     }
 
                                     setWriteNurse((prev) => (prev ? {...prev, name: event.target.value} : prev));
@@ -785,6 +814,11 @@ function NurseDetailPanel({
                                 </Tooltip>
                             ) : null}
                         </div>
+                        {nameError ? (
+                            <p id={nameErrorId} role="alert" className="mt-2 font-apple text-[12px] text-red">
+                                {t(nameError === 'required' ? 'page.member.detail.nameRequired' : 'page.member.detail.nameInvalid')}
+                            </p>
+                        ) : null}
                     </div>
                     <div
                         className={cn(

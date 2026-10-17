@@ -1,5 +1,11 @@
 import {describe, expect, it} from 'vitest';
-import {isValidNurseName, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '../nurse-name';
+import {
+    isValidNurseName,
+    isValidRosterNurseName,
+    normalizeNurseNameForRequest,
+    normalizeRosterNurseNameForRequest,
+    sanitizeNurseNameInput,
+} from '../nurse-name';
 
 describe('nurse name helpers', () => {
     it('accepts Korean, English, digits, ASCII spaces, and Japanese names', () => {
@@ -46,5 +52,25 @@ describe('nurse name helpers', () => {
         expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
         expect(sanitizeNurseNameInput('홍')).toBe('홍');
         expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田 花子Nurse1・ー ');
+    });
+});
+
+describe('roster nurse name policy', () => {
+    it.each(['홍', 'Élodie', '佐藤・美咲', 'ジョンー2', '护士1', 'QA OFF 02', '123', 'A'.repeat(50)])(
+        'accepts server-compatible name %s without the registration-only restrictions',
+        (name) => expect(isValidRosterNurseName(name)).toBe(true),
+    );
+
+    it.each(['QA_OFF_02', 'Nurse-1', '🙂', '・ー', '', '   ', 'A'.repeat(51), 'Kim\tNurse', 'Kim\nNurse', 'Kim\u00a0Nurse'])(
+        'rejects server-incompatible name %s',
+        (name) => expect(isValidRosterNurseName(name)).toBe(false),
+    );
+
+    it('normalizes Japanese spacing, middle dots and composed letters for older servers', () => {
+        expect(normalizeRosterNurseNameForRequest('　佐藤･美咲　')).toBe('佐藤・美咲');
+        expect(normalizeRosterNurseNameForRequest('\u00a0山田　花子\u00a0')).toBe('山田 花子');
+        expect(normalizeRosterNurseNameForRequest('  Cafe\u0301  ')).toBe('Café');
+        expect(isValidRosterNurseName('　佐藤･美咲　')).toBe(true);
+        expect(normalizeRosterNurseNameForRequest('QA_OFF_02')).toBe('QA_OFF_02');
     });
 });
