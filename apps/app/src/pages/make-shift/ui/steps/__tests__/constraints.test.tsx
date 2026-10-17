@@ -1499,7 +1499,7 @@ describe('Constraints', () => {
         }
 
         expect(normalRuleCount).toBe(20);
-        expect(normalHelpCount).toBe(20);
+        expect(normalHelpCount).toBe(19);
         expect(screen.queryByRole('button', {name: '숙련도·역할'})).not.toBeInTheDocument();
         expect(document.body.textContent).not.toContain('sentinel-exact_staff_by_shift');
         expect(document.body.textContent).not.toContain('sentinel-max_day_night_transitions');
@@ -3602,11 +3602,45 @@ describe('Constraints', () => {
         });
     });
 
-    it('saves a personal weekday exclusion as hard zero without changing ward staffing', async () => {
+    it.each([
+        {rotationMode: 'TWO', scenario: 'new'},
+        {rotationMode: 'THREE', scenario: 'new'},
+        {rotationMode: 'MIXED', scenario: 'new'},
+        {rotationMode: 'THREE', scenario: 'existing max zero'},
+        {rotationMode: 'THREE', scenario: 'no nurse'},
+    ] as const)('separates personal restrictions for $rotationMode / $scenario', async ({rotationMode, scenario}) => {
+        if (scenario === 'no nurse') wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([] as never);
+        if (scenario === 'existing max zero') {
+            wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+                schemaVersion: 1,
+                wardId: 1,
+                shiftTeamId: 10,
+                rotationMode,
+                rules: [
+                    {
+                        shiftConstraintRuleId: 91,
+                        templateCode: 'STAFF_COUNT_BY_SHIFT',
+                        category: 'STAFFING_COUNT',
+                        severity: 'HARD',
+                        sortOrder: 1,
+                        selected: true,
+                        isImportant: true,
+                        params: {
+                            target: {type: 'NURSE', nurseId: 7},
+                            dateScope: {type: 'WEDNESDAY'},
+                            shift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11},
+                            operator: {type: 'MAX'},
+                            count: 0,
+                        },
+                    },
+                ],
+            } as never);
+        }
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([
             {wardShiftTypeId: 11, shortName: 'D', name: '데이', classification: 'DAY', rotationSystem: 'THREE', isActive: true},
         ] as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            rotationMode,
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
@@ -3614,11 +3648,12 @@ describe('Constraints', () => {
                 staffingTargets: [
                     {type: 'ALL', label: '모든 간호사'},
                     {type: 'DIVISION', divisionNum: 2, label: '신규 간호사'},
-                    {type: 'NURSE', nurseId: 7, label: '김간호사'},
+                    ...(scenario === 'no nurse' ? [] : [{type: 'NURSE', nurseId: 7, label: '김간호사'}]),
                 ],
                 dateScopes: [
                     {type: 'EVERYDAY', label: '매일'},
-                    {type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'},
+                    {type: 'WEDNESDAY', label: '수요일'},
+                    {type: 'DAY_OF_MONTH', day: 15, label: '15일'},
                 ],
                 shifts: [
                     {type: 'ALL', label: '모든'},
@@ -3651,11 +3686,56 @@ describe('Constraints', () => {
         });
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+        if (scenario === 'existing max zero') {
+            const row = await waitFor(() => {
+                const savedRow = document.querySelector<HTMLElement>('[data-constraint-rule-id="saved-91"]');
+                expect(savedRow).toBeInTheDocument();
+                return savedRow!;
+            });
+            expect(within(row).queryByRole('spinbutton')).not.toBeInTheDocument();
+            expect(within(row).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
+            await userEvent.click(within(row).getByRole('button', {name: '수요일'}));
+            await userEvent.click(screen.getByRole('option', {name: '매월 15일'}));
+            await waitFor(() =>
+                expect(getLastUpdatePayload()?.rules?.[0]?.params).toEqual(
+                    expect.objectContaining({
+                        target: {type: 'NURSE', nurseId: 7},
+                        dateScope: {type: 'DAY_OF_MONTH', day: 15},
+                        operator: {type: 'MAX'},
+                        count: 0,
+                    }),
+                ),
+            );
+            return;
+        }
         await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
-        await userEvent.click(screen.getByRole('button', {name: '직원별 날짜·요일 근무 제외'}));
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="STAFF_COUNT_BY_SHIFT"]')!;
+        if (scenario === 'no nurse') {
+            expect(within(card).getByTitle('추가')).toBeDisabled();
+            expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+            return;
+        }
         expect(within(card).getByRole('button', {name: '김간호사'})).toBeInTheDocument();
+        expect(within(card).getByText('날짜·요일별 배정 제한')).toBeInTheDocument();
+        expect(within(card).queryByRole('spinbutton')).not.toBeInTheDocument();
+        expect(within(card).queryByRole('button', {name: '정확히'})).not.toBeInTheDocument();
+        expect(within(card).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
+        await userEvent.click(within(card).getByRole('button', {name: '김간호사'}));
+        const targets = screen.getByRole('listbox');
+        expect(within(targets).queryByRole('option', {name: '모든 간호사'})).not.toBeInTheDocument();
+        expect(within(targets).queryByRole('option', {name: '신규 간호사'})).not.toBeInTheDocument();
+        await userEvent.click(within(targets).getByRole('option', {name: '김간호사'}));
+        await userEvent.click(within(card).getByRole('button', {name: '매일'}));
+        await userEvent.click(screen.getByRole('option', {name: '수요일'}));
+        // Tab changes must not turn staffing requirements into personal exclusions.
+        await userEvent.click(screen.getByRole('button', {name: '인원수'}));
+        expect(within(card).getByRole('spinbutton')).toHaveValue(2);
+        expect(within(card).getByRole('button', {name: '모든 간호사'})).toBeInTheDocument();
+        expect(within(card).queryByText('날짜·요일별 배정 제한')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
+        expect(within(card).getByRole('button', {name: '수요일'})).toBeInTheDocument();
+
         await userEvent.click(within(card).getByTitle('추가'));
         await waitFor(() =>
             expect(getLastUpdatePayload()?.rules).toEqual(
@@ -3671,6 +3751,22 @@ describe('Constraints', () => {
                         }),
                     }),
                 ]),
+            ),
+        );
+        // Once saved, the same plain-language editor supports a numbered day.
+        const row = document.querySelector<HTMLElement>('[data-constraint-rule-id]')!;
+        expect(within(row).queryByRole('spinbutton')).not.toBeInTheDocument();
+        expect(within(row).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
+        await userEvent.click(within(row).getByRole('button', {name: '수요일'}));
+        await userEvent.click(screen.getByRole('option', {name: '매월 15일'}));
+        await waitFor(() =>
+            expect(getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'STAFF_COUNT_BY_SHIFT')?.params).toEqual(
+                expect.objectContaining({
+                    target: {type: 'NURSE', nurseId: 7},
+                    dateScope: {type: 'DAY_OF_MONTH', day: 15},
+                    operator: {type: 'EXACT'},
+                    count: 0,
+                }),
             ),
         );
     });
