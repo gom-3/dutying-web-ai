@@ -6,6 +6,16 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.0 - 2026-10-17
+
+- `@dutying/app` (patch): AI 근무표 진입 버튼을 통합하고 사이드바 글자·대비와 해석 대기 상태를 개선합니다.
+- `@dutying/app` (patch): 근무 유형 설정에서 전각 시간과 일본어 약자를 지원하고, 일본어 변환 중 글자 잘림을 방지합니다. 이미 저장된 전각·반각 약자는 다른 항목을 수정할 때 그대로 유지합니다.
+- `@dutying/app` (patch): 경고·확인 모달의 작은 경고 아이콘을 번들에 포함해 추가 이미지 요청을 없애고, 내용 해시가 포함된 정적 자산에 장기 브라우저 캐시를 적용합니다.
+- `@dutying/app` (patch): 개인별 월간 근무 횟수와 날짜·요일별 근무 제외를 설정할 수 있고, 새 횟수 조건은 필수로 적용합니다.
+- `@dutying/app` (patch): 기존 근무유형 응답 형식을 지원해 신청근무 접수 화면 진입 오류를 수정합니다.
+- `@dutying/app` (patch): 신청근무 접수설정 모달의 좌우 여백과 저장 버튼 정렬을 맞췄습니다.
+- `@dutying/api` (minor), `@dutying/app` (minor): 신청근무 접수에 근무팀·그룹별 하루 신청 인원 제한 설정을 추가합니다. 기존 접수 기간 설정을 유지하며, OFF를 기본 근무유형으로 표시하고 다른 근무유형도 추가할 수 있습니다.
+
 ## 1.2.5 - 2026-10-15
 
 - `@dutying/app` (patch): 개인별 월간 근무 횟수와 날짜·요일별 근무 제외를 설정할 수 있고, 새 횟수 조건은 필수로 적용합니다.

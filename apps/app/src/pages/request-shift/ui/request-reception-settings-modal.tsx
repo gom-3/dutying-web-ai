@@ -2,11 +2,11 @@ import {type TReqShiftReceptionSettingsResponse, type TUpdateReqShiftReceptionSe
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {X} from 'lucide-react';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS} from '@/pages/ward-settings/model/ward-settings-hook';
-import {RequestReceptionContent, type TRequestReceptionStatus} from '@/pages/ward-settings/ui/request-reception-content';
+import {type TRequestReceptionStatus} from '@/pages/ward-settings/ui/request-reception-content';
+import {RequestReceptionSettings} from '@/pages/ward-settings/ui/request-reception-settings';
 import {WardAPI} from '@/shared/api';
 import requestReceptionIcon from '@/shared/assets/images/request-reception-icon.webp';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -69,10 +69,10 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
     return (
         <Dialog.Root open={open} onOpenChange={onOpenChange}>
             <Dialog.Portal container={portalContainer}>
-                <Dialog.Overlay className="fixed inset-0 z-[1100] overflow-y-auto bg-[#111827]/55 px-4 py-8 backdrop-blur-[2px] sm:py-10">
+                <Dialog.Overlay className="fixed inset-0 z-[1100] overflow-y-auto bg-[#111827]/55 px-4 py-8 sm:py-10">
                     <Dialog.Content
                         className={cn(
-                            'relative z-[1101] mx-auto w-full max-w-[860px] overflow-hidden rounded-[22px] bg-white shadow-[0_24px_80px_rgba(18,23,38,0.2)] focus-visible:outline-none',
+                            'relative z-[1101] mx-auto w-full max-w-[860px] overflow-hidden rounded-[22px] bg-white focus-visible:outline-none',
                         )}
                     >
                         <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-5">
@@ -82,23 +82,22 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
                                     <Dialog.Title className="font-apple text-[24px] leading-8 font-semibold text-sub-1">
                                         {t('page.wardSettings.tabs.requestReception')}
                                     </Dialog.Title>
-                                    <Dialog.Description className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
-                                        {t('page.wardSettings.description.requestReception')}
-                                    </Dialog.Description>
+                                    <Dialog.Description className="sr-only">{t('requestCapacity.settingsDescription')}</Dialog.Description>
                                 </div>
                             </div>
                             <Dialog.Close asChild>
                                 <button
                                     type="button"
-                                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6 hover:text-sub-1"
+                                    className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-gray-7 text-[24px] text-gray-3 hover:bg-gray-6 hover:text-sub-1 focus-visible:bg-[#EAE4FF] focus-visible:text-[#422395] focus-visible:outline-none forced-colors:focus-visible:outline forced-colors:focus-visible:outline-2"
                                     aria-label={t('shared.confirmActionDialog.close')}
                                 >
-                                    <X className="h-4 w-4" aria-hidden="true" />
+                                    <span aria-hidden="true">×</span>
                                 </button>
                             </Dialog.Close>
                         </div>
                         <div className="bg-[#F4F6F8] px-5 py-5">
-                            <RequestReceptionContent
+                            <RequestReceptionSettings
+                                className="max-w-none"
                                 settings={requestReceptionSettingsQuery.data ?? DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS}
                                 status={status}
                                 onSave={updateRequestReceptionSettings}

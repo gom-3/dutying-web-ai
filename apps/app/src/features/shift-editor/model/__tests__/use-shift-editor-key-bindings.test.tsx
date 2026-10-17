@@ -78,6 +78,17 @@ describe('useShiftEditorKeyBindings', () => {
         vi.unstubAllGlobals();
     });
 
+    it.each([
+        ['Ｄ', {d: 'D'}, 'D'],
+        ['日', {日: '日勤'}, '日勤'],
+        ['ﾊﾞ', {バ: 'バン'}, 'バン'],
+    ])('recognizes width variants and Japanese work keys: %s', async (key, workKeyMap, value) => {
+        const {result} = renderHook(() => useShiftEditorKeyBindings({workKeyMap}));
+
+        await result.current.onKeyDown(createKeyboardEvent(key));
+        expect(commands.setSelectionValue).toHaveBeenCalledWith(value);
+    });
+
     it('maps arrow keys to selection movement and passes shift/meta modifiers through', async () => {
         const {result} = renderHook(() => useShiftEditorKeyBindings());
         const event = createKeyboardEvent('ArrowRight', {shiftKey: true, metaKey: true});
