@@ -68,6 +68,7 @@ type TProps = {
     requestList?: ReactNode;
     conversationActions?: ReactNode;
     generationCompleted?: boolean;
+    generationCompletedMessage?: string;
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     onRegenerate?: () => void;
@@ -140,6 +141,7 @@ export default function AiAdjustTextInput({
     requestList,
     conversationActions,
     generationCompleted = false,
+    generationCompletedMessage,
     generationFailure,
     onDismissFailure,
     onRegenerate,
@@ -170,7 +172,7 @@ export default function AiAdjustTextInput({
         autofillFlow?.kind !== 'adjustment' && autofillFlow?.status === 'running' && !generationCompleted && !generationFailure,
     );
     const paused = autofillFlow?.status === 'paused';
-    const completedMessage = t('aiAdjust.generationCompleted');
+    const completedMessage = generationCompletedMessage ?? t('aiAdjust.generationCompleted');
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
     const composerHidden =
         preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
@@ -819,6 +821,7 @@ export default function AiAdjustTextInput({
                                 modifyDisabled={modifyDisabled}
                                 hideIntro={flowCompleted}
                                 generationCompleted={generationCompleted && !noticeDismissed}
+                                generationCompletedMessage={completedMessage}
                                 confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
                                 onChoose={(choice) => {
                                     setEntryChoice(choice);
@@ -834,11 +837,10 @@ export default function AiAdjustTextInput({
                                                     ? [
                                                           {
                                                               role: 'assistant' as const,
-                                                              text: t(
+                                                              text:
                                                                   generationCompleted && !noticeDismissed
-                                                                      ? 'aiAdjust.generationCompleted'
-                                                                      : 'aiAdjust.chat.welcome',
-                                                              ),
+                                                                      ? completedMessage
+                                                                      : t('aiAdjust.chat.welcome'),
                                                           },
                                                       ]
                                                     : []),
@@ -859,11 +861,7 @@ export default function AiAdjustTextInput({
                         turns.length === 0 && (
                             <AssistantMessage>
                                 <span className="whitespace-pre-line">
-                                    {t(
-                                        generationCompleted && !noticeDismissed
-                                            ? 'aiAdjust.generationCompleted'
-                                            : 'aiAdjust.chat.askChanges',
-                                    )}
+                                    {generationCompleted && !noticeDismissed ? completedMessage : t('aiAdjust.chat.askChanges')}
                                 </span>
                             </AssistantMessage>
                         )

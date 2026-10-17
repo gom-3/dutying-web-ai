@@ -49,6 +49,7 @@ export function AiConversationEntry({
     disabled,
     modifyDisabled,
     generationCompleted = false,
+    generationCompletedMessage,
     hideIntro = false,
     confirmation,
     onChoose,
@@ -57,6 +58,7 @@ export function AiConversationEntry({
     disabled: boolean;
     modifyDisabled?: boolean;
     generationCompleted?: boolean;
+    generationCompletedMessage?: string;
     hideIntro?: boolean;
     confirmation?: TAdjustResultActions;
     onChoose: (choice: TConversationEntryChoice) => void;
@@ -68,7 +70,9 @@ export function AiConversationEntry({
             {!hideIntro && (
                 <AssistantMessage>
                     <span className="whitespace-pre-line">
-                        {t(generationCompleted ? 'aiAdjust.generationCompleted' : 'aiAdjust.chat.welcome')}
+                        {generationCompleted
+                            ? (generationCompletedMessage ?? t('aiAdjust.generationCompleted'))
+                            : t('aiAdjust.chat.welcome')}
                     </span>
                 </AssistantMessage>
             )}

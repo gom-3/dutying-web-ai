@@ -23,6 +23,7 @@ type TProps = {
     onGenerate?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
+    generationCompletedMessage?: string;
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     disabled: boolean;
@@ -60,6 +61,7 @@ export default function AiAdjustDialog({
     onGenerate,
     hasGeneratedSchedule = false,
     generationCompleted = false,
+    generationCompletedMessage,
     generationFailure,
     onDismissFailure,
     disabled,
@@ -175,6 +177,7 @@ export default function AiAdjustDialog({
                         disabled={disabled}
                         modifyDisabled={modifyDisabled}
                         generationCompleted={generationCompleted}
+                        generationCompletedMessage={generationCompletedMessage}
                         generationFailure={generationFailure}
                         onDismissFailure={onDismissFailure}
                         interpret={interpret}
