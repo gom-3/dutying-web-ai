@@ -1,6 +1,8 @@
+import {normalizeInputWidth} from './input-width';
+
 export const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
 
-const SHIFT_SHORT_NAME_ENTRY_KEY_REGEX = /^[!-~ⓓⓝ]$/u;
+const SHIFT_SHORT_NAME_ENTRY_KEY_REGEX = /^[!-~ⓓⓝ\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}ー]$/u;
 
 function uppercaseAscii(value: string) {
     return value
@@ -9,12 +11,16 @@ function uppercaseAscii(value: string) {
         .replace(/[a-z]/g, (character) => character.toUpperCase());
 }
 
-export function normalizeShiftShortNameInput(value: string) {
-    return Array.from(uppercaseAscii(value).replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
+export function normalizeShiftShortNameInput(value: string, {preserveWidth = false}: {preserveWidth?: boolean} = {}) {
+    return Array.from(uppercaseAscii(preserveWidth ? value : normalizeInputWidth(value)).replace(/\s/g, ''))
+        .slice(0, SHIFT_SHORT_NAME_MAX_LENGTH)
+        .join('');
 }
 
 export function hasInvalidShiftShortNameLengthInput(value: string) {
-    return /\s/.test(value) || Array.from(value.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
+    const normalized = normalizeInputWidth(value);
+
+    return /\s/.test(normalized) || Array.from(normalized.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
 }
 
 export function getShiftShortNameEntryKey(value: string) {
