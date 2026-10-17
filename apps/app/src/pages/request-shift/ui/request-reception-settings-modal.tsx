@@ -97,6 +97,7 @@ function RequestReceptionSettingsModal({open, onOpenChange}: TRequestReceptionSe
                         </div>
                         <div className="bg-[#F4F6F8] px-5 py-5">
                             <RequestReceptionSettings
+                                className="max-w-none"
                                 settings={requestReceptionSettingsQuery.data ?? DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS}
                                 status={status}
                                 onSave={updateRequestReceptionSettings}

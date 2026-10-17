@@ -1,16 +1,17 @@
+import {cn} from '@dutying/utils/style';
 import {useId, useState, type ComponentProps} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {RequestCapacitySettings} from './request-capacity-settings';
 import {RequestReceptionContent} from './request-reception-content';
 
-export function RequestReceptionSettings(props: ComponentProps<typeof RequestReceptionContent>) {
+export function RequestReceptionSettings({className, ...props}: ComponentProps<typeof RequestReceptionContent> & {className?: string}) {
     const {t} = useTypedTranslation();
     const id = useId();
     const [tab, setTab] = useState<'period' | 'capacity'>('period');
     const tabs = ['period', 'capacity'] as const;
 
     return (
-        <div className="max-w-[760px]">
+        <div className={cn('w-full max-w-[760px]', className)}>
             <div role="tablist" aria-label={t('requestCapacity.settingsTabs')} className="flex flex-wrap gap-6">
                 {tabs.map((value, index) => (
                     <button
