@@ -95,7 +95,16 @@ export type TConversationOperation = {
     result: TAutofillResponse | null;
     createdAt: string;
 };
+export type TConversationState = {
+    version: number;
+    sourceVersionId: string;
+    contextHash: string | null;
+    expiresAt: string | null;
+    conditions: {conditionId: string; text: string; preview: {status: string}}[];
+    pendingQuestion: {conditionId: string; question: string} | null;
+};
 export type TConversationDetail = {
+    conversationState?: TConversationState | null;
     contextHash: string;
     activeConditionLabels: string[];
     conversation: TConversation;
@@ -152,7 +161,9 @@ export function conversationApi(wardId: number, teamId: number) {
                 text: string;
                 language: string;
                 previousInterpretationId?: string;
-                change?: 'ADD' | 'REPLACE' | 'REMOVE' | 'RESET';
+                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET';
+                expectedStateVersion?: number;
+                targetConditionIds?: string[];
                 removeLabels?: string[];
             },
         ) => post<TConversationTurn>(`/conversations/${id}/interpretations`, request),
