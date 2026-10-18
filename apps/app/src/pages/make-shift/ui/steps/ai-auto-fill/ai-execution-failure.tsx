@@ -1,5 +1,7 @@
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import ROUTE from '@/shared/constant/path';
+import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {AiFailureMessage} from './ai-failure-message';
 
 /** The failed result and the next decision belong after the preparation replies. */
@@ -21,6 +23,8 @@ export function AiExecutionFailure({
     operationType?: 'GENERATE' | 'ADJUST';
 }) {
     const {t} = useTypedTranslation();
+    const teamId = useMakeShiftStore((state) => state.currentShiftTeamId);
+    const settingsUrl = teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : ROUTE.MEMBER;
     const choiceClass =
         'min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left text-[13.5px] leading-5 font-medium text-[#5931B9] hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40';
     const retryable = !failure.blocked && (!failure.recovery || failure.recovery === 'retry');
@@ -30,23 +34,30 @@ export function AiExecutionFailure({
             <AiFailureMessage
                 message={failure.message}
                 title={
-                    operationType
-                        ? t(
-                              operationType === 'GENERATE'
-                                  ? 'aiAdjust.executionFailure.autofillTitle'
-                                  : 'aiAdjust.executionFailure.adjustTitle',
-                          )
-                        : undefined
+                    failure.recovery === 'settings'
+                        ? t('aiAdjust.executionFailure.offSettingsTitle')
+                        : operationType
+                          ? t(
+                                operationType === 'GENERATE'
+                                    ? 'aiAdjust.executionFailure.autofillTitle'
+                                    : 'aiAdjust.executionFailure.adjustTitle',
+                            )
+                          : undefined
                 }
             />
             {active && (
                 <div className="ml-auto flex max-w-full flex-col items-end gap-2">
+                    {failure.recovery === 'settings' && (
+                        <a className={choiceClass} href={settingsUrl} target="_blank" rel="noopener noreferrer">
+                            {t('aiAdjust.executionFailure.memberSettings')}
+                        </a>
+                    )}
                     {retryable && onRetry && (
                         <button type="button" className={choiceClass} disabled={disabled} onClick={onRetry}>
                             {t('aiAdjust.failure.retry')}
                         </button>
                     )}
-                    {!failure.blocked && failure.recovery !== 'review' && onRevise && (
+                    {!failure.blocked && failure.recovery !== 'review' && failure.recovery !== 'settings' && onRevise && (
                         <button type="button" className={choiceClass} disabled={disabled} onClick={onRevise}>
                             {t('aiAdjust.issue.edit')}
                         </button>
