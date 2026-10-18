@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.5
+
+### Patch Changes
+
+- 68d2cdd: Show independent plan restriction states and distinguish unrestricted AI use from exhausted allowance.
+    - @dutying/api@1.3.5
+    - @dutying/domain@1.3.5
+    - @dutying/utils@1.3.5
+
 ## 1.3.4
 
 ### Patch Changes

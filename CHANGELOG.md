@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.5 - 2026-10-18
+
+- `@dutying/app` (patch): Show independent plan restriction states and distinguish unrestricted AI use from exhausted allowance.
+
 ## 1.3.4 - 2026-10-18
 
 - `@dutying/app` (patch): Separate billing access from existing ward plan limits while preserving older-server behavior.

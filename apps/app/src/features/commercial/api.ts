@@ -32,6 +32,20 @@ export type Transfer = {
 export type AccessContext = {
     enabled: boolean;
     enforcementEnabled?: boolean;
+    configurationReady?: boolean;
+    restrictionStates?: Partial<
+        Record<
+            | 'STAFF_CAPACITY'
+            | 'BOARD_CREATE'
+            | 'REQUEST_CREATE'
+            | 'CYCLE_CREATE'
+            | 'ADMIN_SEATS'
+            | 'EDITOR_INVITE'
+            | 'AI_FULL'
+            | 'AI_PARTIAL',
+            boolean
+        >
+    >;
     scopes: Scope[];
     invitations?: Invitation[];
     transfers?: Transfer[];
@@ -48,6 +62,7 @@ export type UsageLot = {
 };
 export type Usage = {
     meter: 'FULL_GENERATE' | 'PARTIAL_ADJUST';
+    enforced?: boolean;
     granted: number;
     used: number;
     reserved: number;
@@ -62,6 +77,7 @@ export type BillingScope = {
     periodStart?: string;
     periodEnd?: string;
     cancelAtPeriodEnd: boolean;
+    archived?: boolean;
     nextCapacity?: number;
     customerId: string;
 };
@@ -83,6 +99,7 @@ export type Policy = {
     setupExtra: number;
 };
 export type Entitlement = {
+    restrictionStates?: AccessContext['restrictionStates'];
     billingHold?: boolean;
     scope: BillingScope;
     billingScopeId: string;
@@ -287,7 +304,7 @@ export function useWardEntitlement() {
     const context = useCommercialContext();
     const enforcementEnabled = !!wardId && isPlanEnforcementEnabled(context.data);
     const query = useQuery({
-        queryKey: commercialQueryKey(accountId, 'WARD', wardId, 'entitlements'),
+        queryKey: [...commercialQueryKey(accountId, 'WARD', wardId, 'entitlements'), context.data?.restrictionStates ?? null],
         queryFn: () => commercialGet<Entitlement>(`/scopes/WARD/${wardId}/entitlements`),
         enabled: enforcementEnabled,
         staleTime: 5_000,
@@ -296,7 +313,37 @@ export function useWardEntitlement() {
     });
 
     // Disabling a query retains cached data; hide it so old limits cannot keep blocking the UI.
-    return enforcementEnabled ? query : {...query, data: undefined};
+    if (!enforcementEnabled) return {...query, data: undefined};
+
+    if (!query.data || !context.data?.restrictionStates) return query;
+
+    // The context refreshes separately; apply current switches even to a cached entitlement.
+    return {...query, data: applyRestrictionStates(query.data, context.data.restrictionStates)};
+}
+export function applyRestrictionStates(entitlement: Entitlement, states: NonNullable<AccessContext['restrictionStates']>): Entitlement {
+    return {
+        ...entitlement,
+        restrictionStates: states,
+        capacity: {...entitlement.capacity, overLimit: states.STAFF_CAPACITY === false ? false : entitlement.capacity.overLimit},
+        usage: entitlement.usage.map((usage) => ({
+            ...usage,
+            enforced: states[usage.meter === 'FULL_GENERATE' ? 'AI_FULL' : 'AI_PARTIAL'] ?? usage.enforced,
+        })),
+    };
+}
+export function isAdminSeatLimitEnabled(context?: AccessContext) {
+    if (!context?.enabled) return true;
+
+    return context.restrictionStates?.ADMIN_SEATS ?? context.enforcementEnabled !== false;
+}
+export function isAdminSeatLimitReached(entitlement: Entitlement) {
+    return (
+        entitlement.restrictionStates?.ADMIN_SEATS !== false &&
+        entitlement.adminSeats.active + entitlement.adminSeats.reserved >= entitlement.adminSeats.limit
+    );
+}
+export function usageRemainingLabel(usage: Usage | undefined, ko: boolean) {
+    return usage?.enforced === false ? (ko ? '제한 해제' : 'No plan limit') : String(usage?.remaining ?? 0);
 }
 export const scopePath = (scope: Pick<Scope, 'type' | 'ref'>, tab = 'usage') => `/workspace/${scope.type}/${scope.ref}/${tab}`;
 export function commercialError(error: unknown) {
