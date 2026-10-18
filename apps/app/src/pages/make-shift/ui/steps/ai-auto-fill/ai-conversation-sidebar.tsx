@@ -1,3 +1,6 @@
+import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
+import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {JourneyObserved} from './journey-observed';
 import {type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
@@ -387,6 +390,7 @@ export default function AiConversationSidebar({
             useShiftEditorStore.getState().draftRevision === uiRevision
         ) {
             const version = await api.version(operation.resultVersionId);
+            if (!mounted.current) return;
 
             if (!mounted.current) return;
 
