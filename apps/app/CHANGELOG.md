@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.1
+
+### Patch Changes
+
+- 99c29f6: 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
+- Updated dependencies [99c29f6]
+    - @dutying/api@1.3.1
+    - @dutying/domain@1.3.1
+    - @dutying/utils@1.3.1
+
 ## 1.3.0
 
 ### Minor Changes

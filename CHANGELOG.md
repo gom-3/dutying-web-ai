@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.1 - 2026-10-18
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
+
 ## 1.3.0 - 2026-10-17
 
 - `@dutying/app` (patch): AI 근무표 진입 버튼을 통합하고 사이드바 글자·대비와 해석 대기 상태를 개선합니다.
