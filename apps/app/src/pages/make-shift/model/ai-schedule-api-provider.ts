@@ -4,6 +4,7 @@ import {commercialGet} from '@/features/commercial/api';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import WardAPI from '@/shared/api/ward';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
+import {scheduleJourneyId} from './schedule-journey';
 import {loadMonthlyRestRequirement} from './monthly-rest-requirement';
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
@@ -23,6 +24,7 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         signal,
     }) => {
         const dto = {
+            journeyId: scheduleJourneyId(wardId, shiftTeamId, year, month),
             ...buildAutofillDTO({
                 year,
                 month,
@@ -38,7 +40,7 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
             monthlyRestRequirement: await loadMonthlyRestRequirement(wardId, shiftTeamId, originalShift, year, month),
         };
         const storageKey = `dutying.ai-pending:${useAuthStore.getState().accountId}:${wardId}:${shiftTeamId}`;
-        const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(dto)));
+        const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify({...dto, journeyId: undefined})));
         const fingerprint = Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, '0')).join('');
 
         let pending: {key: string; fingerprint: string} | null = null;

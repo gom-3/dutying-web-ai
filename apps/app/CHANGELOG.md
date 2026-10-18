@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.2
+
+### Patch Changes
+
+- 5d1e65f: 자동완성·조절 결과의 화면 표시와 표 적용을 운영 기록에 연결합니다.
+- Updated dependencies [5d1e65f]
+    - @dutying/api@1.3.2
+    - @dutying/domain@1.3.2
+    - @dutying/utils@1.3.2
+
 ## 1.3.1
 
 ### Patch Changes

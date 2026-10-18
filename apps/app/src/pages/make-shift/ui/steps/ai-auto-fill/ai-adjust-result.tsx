@@ -1,3 +1,4 @@
+import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import {Undo2} from 'lucide-react';
 import {useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -28,6 +29,7 @@ const textActionClass =
 export function AiAdjustResult({result, active, disabled, modifyDisabled, canUndo, actions, onModify, onUndo}: TProps) {
     const {t} = useTypedTranslation();
     const issues = useRef<HTMLDetailsElement>(null);
+    const displayRef = useScheduleJourneyDisplay(result?.response?.observation);
     const [changesExpanded, setChangesExpanded] = useState(false);
 
     if (!result?.applied) return <AssistantMessage>{t(result ? 'aiAdjust.reviewCandidate' : 'aiAdjust.result')}</AssistantMessage>;
@@ -44,7 +46,7 @@ export function AiAdjustResult({result, active, disabled, modifyDisabled, canUnd
     const hasDetails = hasProblems || problemMessages.length > 0 || hasUnmet || notices.length > 0;
 
     return (
-        <div className="flex min-w-0 flex-col gap-3">
+        <div ref={displayRef} className="flex min-w-0 flex-col gap-3">
             <AssistantMessage>
                 <div className="flex min-w-0 flex-col gap-2">
                     <p>{changes.length ? t('aiAdjust.completed', {count: changes.length}) : t('aiAdjust.noChange')}</p>
