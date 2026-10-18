@@ -2900,6 +2900,7 @@ export function AiAutofill() {
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     generationCompleted={hasGenerationNotice}
                     generationCompletedMessage={generationReviewMessage ?? undefined}
+                    generationObservation={lastAppliedObservation}
                     generationFailure={generationFailure}
                     onDismissFailure={() => setGenerationFailure(null)}
                     disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
