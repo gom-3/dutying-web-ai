@@ -47,6 +47,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         return null;
 
     const solverReason = response.engineResult?.solver?.reason?.toUpperCase();
+
     if (
         reason === 'NURSE_OFF_NOT_ALLOWED' ||
         ['NURSE_HAS_NO_ASSIGNABLE_OFF', 'CONTRACT_NURSE_OFF_NOT_ALLOWED'].includes(solverReason ?? '')
@@ -59,6 +60,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         const displayNames =
             uniqueNames.slice(0, 3).join(', ') +
             (uniqueNames.length > 3 ? i18n.t('aiAdjust.executionFailure.moreNurses', {count: uniqueNames.length - 3}) : '');
+
         return {
             message: uniqueNames.length
                 ? i18n.t('aiAdjust.executionFailure.offNotAllowedNamed', {names: displayNames})
