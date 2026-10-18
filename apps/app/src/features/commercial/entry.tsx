@@ -8,7 +8,7 @@ export function CommercialEntry({compact = false}: {compact?: boolean}) {
     const context = useCommercialContext();
     const {i18n} = useTranslation();
 
-    if (!context.data?.enabled) return null;
+    if (!context.data?.enabled || context.data.configurationReady === false) return null;
 
     const ko = i18n.language.startsWith('ko');
 

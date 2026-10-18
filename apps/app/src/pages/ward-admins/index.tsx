@@ -1,4 +1,4 @@
-import {useWardEntitlement} from '@/features/commercial/api';
+import {isAdminSeatLimitEnabled, useCommercialContext, useWardEntitlement} from '@/features/commercial/api';
 import {Link} from 'react-router';
 import {WARD_ADMIN_MAX_COUNT, type TWardAdminMembershipResponse, type TWardReservedAdminEmailResponse} from '@dutying/api/ward';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -175,6 +175,7 @@ function ReservedAdminEmailRow({
 
 function WardAdminsPage() {
     const commercial = useWardEntitlement();
+    const commercialContext = useCommercialContext();
     const adminLimit = commercial.data?.adminSeats.limit ?? WARD_ADMIN_MAX_COUNT;
     const {t} = useTypedTranslation();
     const {
@@ -248,7 +249,7 @@ function WardAdminsPage() {
     const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
     const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
     const adminCount = getAdminCount(members, reservedEmails);
-    const hasReachedAdminLimit = adminCount >= adminLimit;
+    const hasReachedAdminLimit = isAdminSeatLimitEnabled(commercialContext.data) && adminCount >= adminLimit;
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
