@@ -1,6 +1,6 @@
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
-import ROUTE from '@/shared/constant/path';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {AiFailureMessage} from './ai-failure-message';
 
