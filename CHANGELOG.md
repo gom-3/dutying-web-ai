@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.4 - 2026-10-18
+
+- `@dutying/app` (patch): Separate billing access from existing ward plan limits while preserving older-server behavior.
+
 ## 1.3.3 - 2026-10-18
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
