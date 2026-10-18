@@ -706,6 +706,7 @@ export function AiAutofill() {
         setGenerationReviewMessage(null);
         setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
+        setGenerationReviewMessage(null);
         setGenerationFailure(null);
         setAutofillFlow(null);
         generationNoticeShownRef.current = false;
@@ -1547,9 +1548,11 @@ export function AiAutofill() {
             if (!adjust && result.response.operationType === 'GENERATE') {
                 const review = isGenerateReviewDraft(result.response);
 
-                setGenerationReviewMessage(review ? result.response.unmetInstructions[0] || '' : null);
+                setGenerationReviewMessage(review ? result.response.unmetInstructions[0] || t('aiAdjust.reviewDraft.completed') : null);
 
                 if (review) {
+                    setHasGenerationNotice(true);
+                    setIsAdjustDialogOpen(true);
                     setShowFaults(true);
                     setGenerationFailure(null);
                     rememberGeneratedSchedule();
@@ -2058,6 +2061,7 @@ export function AiAutofill() {
         setCarryOverSelection(null);
         setCarryOverError(null);
         setHasGenerationNotice(false);
+        setGenerationReviewMessage(null);
         setGenerationFailure(null);
         generationNoticeShownRef.current = false;
         setIsAiGenerating(false);
@@ -2256,6 +2260,7 @@ export function AiAutofill() {
         setAiFillDecisionContext(null);
         setLastShiftBlankWarningIntent(null);
         setHasGenerationNotice(false);
+        setGenerationReviewMessage(null);
         setGenerationFailure(null);
         generationNoticeShownRef.current = false;
         autofillContext.current = currentContextKey;
@@ -2631,7 +2636,12 @@ export function AiAutofill() {
               : undefined;
     const isConversationOpen =
         isAdjustDialogOpen &&
-        (conversationEnabled || isAdjustEnabled || Boolean(preparationStep) || Boolean(generationFailure) || autofillFlow === null);
+        (conversationEnabled ||
+            isAdjustEnabled ||
+            Boolean(preparationStep) ||
+            Boolean(generationFailure) ||
+            generationReviewMessage !== null ||
+            autofillFlow === null);
     const publishConfirmDescription =
         connectedNurseCount > 0
             ? t('page.makeShift.aiRefill.publishConfirm.description', {count: connectedNurseCount})
@@ -2737,29 +2747,6 @@ export function AiAutofill() {
                     onSaveSnapshot={handleSaveSnapshot}
                     isSavingSnapshot={isSavingSnapshot}
                 />
-
-                {generationReviewMessage !== null && (
-                    <JourneyObserved observation={lastAppliedObservation}>
-                        <div role="status" className="mx-4 my-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                            <p className="font-semibold">
-                                {batchCopy('초안을 만들었어요 · 확인할 규칙이 있어요', 'Draft created · some rules need review')}
-                            </p>
-                            <p className="mt-1">
-                                {generationReviewMessage ||
-                                    batchCopy(
-                                        '못 지킨 규칙은 근무표에 표시했어요. 표시된 칸에서 내용을 확인하고 수정할 수 있어요.',
-                                        'Unmet rules are marked on the schedule. Review the marked cells and edit the draft.',
-                                    )}
-                            </p>
-                            <button type="button" className="mt-2 underline" onClick={() => setShowFaults(true)}>
-                                {batchCopy('규칙 위반 표시 보기', 'Show rule violations')}
-                            </button>
-                            <button type="button" className="mt-2 ml-4 underline" onClick={() => setGenerationReviewMessage(null)}>
-                                {batchCopy('안내 닫기', 'Dismiss notice')}
-                            </button>
-                        </div>
-                    </JourneyObserved>
-                )}
 
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
@@ -2912,6 +2899,7 @@ export function AiAutofill() {
                     onGenerate={handleAiFill}
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     generationCompleted={hasGenerationNotice}
+                    generationCompletedMessage={generationReviewMessage ?? undefined}
                     generationFailure={generationFailure}
                     onDismissFailure={() => setGenerationFailure(null)}
                     disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
