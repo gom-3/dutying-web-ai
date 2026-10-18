@@ -2,7 +2,12 @@ import * as Sentry from '@sentry/react';
 import {enableMapSet} from 'immer';
 import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
-import {googleAnalyticsMeasurementId, isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
+import {
+    googleAnalyticsMeasurementId,
+    isAuthenticationReferrer,
+    isGoogleAnalyticsEnabled,
+    isMetaPixelEnabled,
+} from '@/shared/config/analytics';
 import {isNonProductionAppDomain} from '@/shared/config/feature-flags';
 
 export default function initializeApp() {
@@ -23,7 +28,9 @@ export default function initializeApp() {
 
         // The dedicated .ai stream has enhanced measurement disabled. Router owns page_view.
         if (isGoogleAnalyticsEnabled() && gaTrackingId) {
-            ReactGA.initialize(gaTrackingId, {gtagOptions: {send_page_view: false}});
+            ReactGA.initialize(gaTrackingId, {
+                gtagOptions: {send_page_view: false, ...(isAuthenticationReferrer(document.referrer) ? {ignore_referrer: true} : {})},
+            });
         }
 
         // Pixel 관련 초기화

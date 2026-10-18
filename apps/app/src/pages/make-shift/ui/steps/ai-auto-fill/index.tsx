@@ -44,6 +44,7 @@ import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
 import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc, type TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
@@ -943,6 +944,7 @@ export function AiAutofill() {
                 : {}),
         });
 
+        trackProductOutcome('schedule_confirmed');
         setGoalCandidateReview((current) =>
             current?.response.goalCandidate?.applicationStatus === 'APPLIED'
                 ? {

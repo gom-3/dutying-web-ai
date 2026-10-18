@@ -14,6 +14,7 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getStoredServiceRegion, normalizePreferredLanguage} from '@/shared/i18n/locale';
 import {createMarketingAgreementRecord, createTermsAgreementRecord} from '@/shared/legal/agreements';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 import './index.css';
 
 type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm' | 'terms', string>>;
@@ -623,6 +624,7 @@ function LoginPage() {
                 password: loginPassword,
             });
 
+            trackProductOutcome('login', 'password');
             handleLogin(response.accessToken, nextPath);
         } catch (error) {
             setLoginError(error instanceof Error ? error.message : t('page.login.feedback.loginFailed'));
@@ -688,6 +690,7 @@ function LoginPage() {
                 legalAgreements,
             });
 
+            trackProductOutcome('sign_up', 'password');
             handleLogin(response.accessToken, ROUTE.REGISTER);
         } catch (error) {
             setSignupError(error instanceof Error ? error.message : t('page.login.feedback.signupFailed'));

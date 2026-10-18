@@ -5,6 +5,10 @@ import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {useDutyHook} from '../duty-hook';
 import {useDutyStore} from '../duty-store';
 
+const mockTrackOutcome = vi.hoisted(() => vi.fn());
+
+vi.mock('@/shared/util/growth-analytics', () => ({trackProductOutcome: mockTrackOutcome}));
+
 const {
     mockNavigate,
     mockSetSearchParams,
@@ -452,6 +456,7 @@ describe('useDutyHook', () => {
         });
 
         expect(mockPostShift).toHaveBeenCalledWith(1, 20, 2025, 7);
+        expect(mockTrackOutcome).toHaveBeenCalledWith('schedule_published');
         expect(mockInvalidateQueries).toHaveBeenCalledWith({
             queryKey: ['ward', 'duty', 1, 20, 2025, 7],
         });
@@ -477,6 +482,7 @@ describe('useDutyHook', () => {
 
         expect(mockPostShift).toHaveBeenCalledWith(1, 20, 2025, 7);
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
+        expect(mockTrackOutcome).not.toHaveBeenCalled();
     });
 
     it('skips postShift when no shift team is selected', async () => {

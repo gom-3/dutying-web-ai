@@ -47,3 +47,14 @@ export function analyticsPageLocation(pathname: string, search = window.location
 
     return url.toString();
 }
+
+/** Do not credit the sign-in provider as an acquisition channel on return. */
+export function isAuthenticationReferrer(referrer: string): boolean {
+    try {
+        return ['accounts.google.com', 'accounts.kakao.com', 'kauth.kakao.com', 'access.line.me', 'appleid.apple.com'].includes(
+            new URL(referrer).hostname,
+        );
+    } catch {
+        return false;
+    }
+}

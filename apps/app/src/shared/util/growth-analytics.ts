@@ -7,3 +7,17 @@ export function trackGrowthAction(action: 'web_cta_click' | 'app_store_click', d
 
     ReactGA.event(action, {destination});
 }
+
+/** Outcome events contain controlled enums only; analytics must never break a successful action. */
+export function trackProductOutcome(
+    event: 'login' | 'sign_up' | 'ward_created' | 'schedule_confirmed' | 'schedule_published',
+    method?: 'password' | 'social',
+) {
+    if (!isGoogleAnalyticsEnabled()) return;
+
+    try {
+        ReactGA.event(event, {schema_version: 1, service: 'dutying_ai', ...(method ? {method} : {})});
+    } catch {
+        // Telemetry failures must not change account or scheduling outcomes.
+    }
+}

@@ -1,5 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {analyticsPageLocation, googleAnalyticsMeasurementId, isMarketingAnalyticsEnabled} from '../analytics';
+import {analyticsPageLocation, googleAnalyticsMeasurementId, isAuthenticationReferrer, isMarketingAnalyticsEnabled} from '../analytics';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -38,4 +38,13 @@ it('preserves attribution while excluding credentials and private query values',
     expect(result.searchParams.get('gclid')).toBe('abc123');
     expect(result.searchParams.has('token')).toBe(false);
     expect(result.searchParams.has('email')).toBe(false);
+});
+
+it('excludes authentication referrers while preserving search and social acquisition', () => {
+    expect(isAuthenticationReferrer('https://accounts.kakao.com/login')).toBe(true);
+    expect(isAuthenticationReferrer('https://accounts.google.com/')).toBe(true);
+    expect(isAuthenticationReferrer('https://www.google.com/search?q=dutying')).toBe(false);
+    expect(isAuthenticationReferrer('https://www.instagram.com/')).toBe(false);
+    expect(isAuthenticationReferrer('https://accounts.google.com.example.com/')).toBe(false);
+    expect(isAuthenticationReferrer('')).toBe(false);
 });
