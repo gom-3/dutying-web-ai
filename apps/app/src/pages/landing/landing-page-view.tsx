@@ -1,4 +1,3 @@
-import {SellerDetails} from '@/shared/business/profile';
 import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
 import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
@@ -7,12 +6,14 @@ import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import {SellerDetails} from '@/shared/business/profile';
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
+import {trackGrowthAction} from '@/shared/util/growth-analytics';
 import './landing-page.css';
 
 const termsOfServiceLink = ROUTE.TERMS;
@@ -574,6 +575,7 @@ function StoreButton() {
         <>
             <a
                 href={appStoreLink}
+                onClick={() => trackGrowthAction('app_store_click', 'ios')}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 sm:w-[180px]"
@@ -587,6 +589,7 @@ function StoreButton() {
             </a>
             <a
                 href={playStoreLink}
+                onClick={() => trackGrowthAction('app_store_click', 'android')}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
@@ -909,7 +912,7 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
 
     if (isWeb) {
         return (
-            <Link reloadDocument to={href} className={className}>
+            <Link reloadDocument to={href} className={className} onClick={() => trackGrowthAction('web_cta_click', 'web')}>
                 <CtaIcon src={iconSrc} />
                 {label}
             </Link>
@@ -1284,6 +1287,7 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                                 <Link
                                     reloadDocument
                                     to={webMakeLink}
+                                    onClick={() => trackGrowthAction('web_cta_click', 'web')}
                                     className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
                                 >
                                     <CtaIcon src={webCtaIconSrc} />
@@ -1294,6 +1298,7 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                                     <Link
                                         reloadDocument
                                         to={webMakeLink}
+                                        onClick={() => trackGrowthAction('web_cta_click', 'web')}
                                         className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
                                     >
                                         {t('page.landing.common.tryDemo')}

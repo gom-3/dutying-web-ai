@@ -1,3 +1,5 @@
+import type {TScheduleObservation} from '@dutying/api/ward';
+import {JourneyObserved} from './journey-observed';
 import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutying/api/ward';
 import {X} from 'lucide-react';
 import {useEffect, useImperativeHandle, useLayoutEffect, useRef, type Ref, type ReactNode} from 'react';
@@ -23,6 +25,8 @@ type TProps = {
     onGenerate?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
+    generationCompletedMessage?: string;
+    generationObservation?: TScheduleObservation;
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     disabled: boolean;
@@ -60,6 +64,8 @@ export default function AiAdjustDialog({
     onGenerate,
     hasGeneratedSchedule = false,
     generationCompleted = false,
+    generationCompletedMessage,
+    generationObservation,
     generationFailure,
     onDismissFailure,
     disabled,
@@ -162,7 +168,7 @@ export default function AiAdjustDialog({
                         <X className="size-[18px]" />
                     </button>
                 </header>
-                <div className="flex min-h-0 flex-1 flex-col">
+                <JourneyObserved observation={generationCompleted ? generationObservation : undefined} className="flex min-h-0 flex-1 flex-col">
                     <AiAdjustTextInput
                         ref={input}
                         open={open}
@@ -175,6 +181,7 @@ export default function AiAdjustDialog({
                         disabled={disabled}
                         modifyDisabled={modifyDisabled}
                         generationCompleted={generationCompleted}
+                        generationCompletedMessage={generationCompletedMessage}
                         generationFailure={generationFailure}
                         onDismissFailure={onDismissFailure}
                         interpret={interpret}
@@ -200,7 +207,7 @@ export default function AiAdjustDialog({
                             />
                         }
                     />
-                </div>
+                </JourneyObserved>
             </aside>
         </div>,
         document.body,

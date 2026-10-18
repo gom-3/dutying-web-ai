@@ -21,6 +21,7 @@ import {AccountAPI, AdminAPI, WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 
 type TChangeAccountStatusOptions = {
     navigateOnLinked?: boolean;
@@ -94,6 +95,8 @@ const useRegister = () => {
                 }
 
                 const createdWard = await WardAPI.createWard(createWardDTO);
+
+                trackProductOutcome('ward_created');
 
                 initTutorial();
 
@@ -181,6 +184,8 @@ const useRegister = () => {
                 }
 
                 const createdWard = await WardAPI.completeOnboardingWardDraft(wardId, createWardDTO);
+
+                trackProductOutcome('ward_created');
 
                 initTutorial();
 

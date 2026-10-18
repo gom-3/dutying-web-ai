@@ -1626,7 +1626,11 @@ export const ko = {
                         "number": "숫자 값"
                     }
                 },
-                "personalExclusionPreset": "직원별 날짜·요일 근무 제외"
+                "personalExclusion": {
+                    "label": "날짜·요일별 배정 제한",
+                    "sentence": "{target}에게 {dateScope} {shift} 근무를 배정하지 않아요.",
+                    "description": "선택한 근무만 제한해요. 다른 근무나 휴무는 배정될 수 있어요. 요일은 매주, 일자는 매월 반복 적용돼요."
+                }
             },
             "fixedShifts": {
                 "empty": "이번 달 근무표가 아직 없어요",
@@ -1946,7 +1950,9 @@ export const ko = {
                 "shiftTypes": "가능 근무",
                 "shiftTypesHelpAria": "가능 근무 안내",
                 "shiftTypesHint": "가능한 근무를 모두 선택해 주세요",
-                "worker": "근무투입"
+                "worker": "근무투입",
+                "nameRequired": "이름을 입력해 주세요.",
+                "nameInvalid": "이름은 50자 이하의 문자, 숫자, 공백, '・', 'ー'로 입력해 주세요. '_' 등의 기호는 사용할 수 없어요."
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요."
@@ -4767,7 +4773,11 @@ export const en: TLocale = {
                         "number": "Numeric value"
                     }
                 },
-                "personalExclusionPreset": "Exclude a shift by nurse and day"
+                "personalExclusion": {
+                    "label": "Assignment restrictions by date or weekday",
+                    "sentence": "Do not assign {shift} shifts to {target} on {dateScope}.",
+                    "description": "Only the selected shifts are restricted. Other shifts or days off may be assigned. Weekdays repeat weekly; day numbers repeat monthly."
+                }
             },
             "fixedShifts": {
                 "empty": "No schedule exists for this month yet",
@@ -5087,7 +5097,9 @@ export const en: TLocale = {
                 "shiftTypes": "Available shifts",
                 "shiftTypesHelpAria": "Available shifts guide",
                 "shiftTypesHint": "Select every shift this person can work",
-                "worker": "Included"
+                "worker": "Included",
+                "nameRequired": "Enter a name.",
+                "nameInvalid": "Use up to 50 letters, numbers, spaces, '・', or 'ー'. Symbols such as '_' are not allowed."
             },
             "drawer": {
                 "deleteConfirm": "Delete nurse {{nurseName}}? This cannot be undone."
@@ -7906,7 +7918,11 @@ export const ja: TLocale = {
                         "number": "数値"
                     }
                 },
-                "personalExclusionPreset": "看護師・日付・曜日別の勤務除外"
+                "personalExclusion": {
+                    "label": "日付・曜日別の勤務制限",
+                    "sentence": "{target} / {dateScope} / {shift}勤務を割り当てません。",
+                    "description": "選択した勤務のみ制限します。他の勤務や休みは割り当てられます。曜日は毎週、日付は毎月適用します。"
+                }
             },
             "fixedShifts": {
                 "empty": "今月の勤務表はまだありません",
@@ -8226,7 +8242,9 @@ export const ja: TLocale = {
                 "shiftTypes": "可能勤務",
                 "shiftTypesHelpAria": "可能勤務の案内",
                 "shiftTypesHint": "可能な勤務をすべて選択してください",
-                "worker": "勤務投入"
+                "worker": "勤務投入",
+                "nameRequired": "名前を入力してください。",
+                "nameInvalid": "名前は50文字以内の文字、数字、スペース、「・」「ー」で入力してください。「_」などの記号は使えません。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}}看護師を削除しますか？削除後は元に戻せません。"
@@ -11045,7 +11063,11 @@ export const zh: TLocale = {
                         "number": "数值"
                     }
                 },
-                "personalExclusionPreset": "按护士及日期排除班次"
+                "personalExclusion": {
+                    "label": "按日期或星期限制排班",
+                    "sentence": "{target}在{dateScope}不安排{shift}班次。",
+                    "description": "仅限制所选班次，仍可安排其他班次或休息。星期每周重复，日期每月重复。"
+                }
             },
             "fixedShifts": {
                 "empty": "本月还没有排班表。",
@@ -11365,7 +11387,9 @@ export const zh: TLocale = {
                 "shiftTypes": "可用的工作",
                 "shiftTypesHelpAria": "可用工作信息",
                 "shiftTypesHint": "请选择所有空缺职位",
-                "worker": "投入工作"
+                "worker": "投入工作",
+                "nameRequired": "请输入姓名。",
+                "nameInvalid": "姓名最多50个字符，可使用文字、数字、空格、“・”和“ー”。不能使用“_”等符号。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要删除护士吗？一旦删除，就无法恢复。"
@@ -14184,7 +14208,11 @@ export const th: TLocale = {
                         "number": "ค่าตัวเลข"
                     }
                 },
-                "personalExclusionPreset": "ยกเว้นเวรตามพยาบาลและวัน"
+                "personalExclusion": {
+                    "label": "จำกัดการจัดเวรตามวันที่หรือวันในสัปดาห์",
+                    "sentence": "ไม่จัดเวร {shift} ให้ {target} ใน {dateScope}",
+                    "description": "จำกัดเฉพาะเวรที่เลือก ยังจัดเวรอื่นหรือวันหยุดได้ วันในสัปดาห์มีผลทุกสัปดาห์ ส่วนวันที่มีผลทุกเดือน"
+                }
             },
             "fixedShifts": {
                 "empty": "ยังไม่มีกำหนดการสำหรับเดือนนี้",
@@ -14504,7 +14532,9 @@ export const th: TLocale = {
                 "shiftTypes": "กะที่มีอยู่",
                 "shiftTypesHelpAria": "คู่มือกะที่มีอยู่",
                 "shiftTypesHint": "เลือกทุกกะที่บุคคลนี้สามารถทำงานได้",
-                "worker": "รวมอยู่ด้วย"
+                "worker": "รวมอยู่ด้วย",
+                "nameRequired": "กรุณาใส่ชื่อ",
+                "nameInvalid": "ใช้ตัวอักษร ตัวเลข ช่องว่าง '・' หรือ 'ー' ได้สูงสุด 50 ตัว ไม่อนุญาตสัญลักษณ์ เช่น '_'"
             },
             "drawer": {
                 "deleteConfirm": "ลบพยาบาล {{nurseName}} ใช่ไหม สิ่งนี้ไม่สามารถยกเลิกได้"
@@ -17323,7 +17353,11 @@ export const vi: TLocale = {
                         "number": "Giá trị số"
                     }
                 },
-                "personalExclusionPreset": "Loại ca theo nhân viên và ngày"
+                "personalExclusion": {
+                    "label": "Hạn chế phân ca theo ngày hoặc thứ",
+                    "sentence": "Không phân ca {shift} cho {target} vào {dateScope}.",
+                    "description": "Chỉ hạn chế ca đã chọn. Vẫn có thể phân ca khác hoặc ngày nghỉ. Thứ áp dụng hằng tuần; ngày lặp lại hằng tháng."
+                }
             },
             "fixedShifts": {
                 "empty": "Chưa có lịch nào cho tháng này",
@@ -17643,7 +17677,9 @@ export const vi: TLocale = {
                 "shiftTypes": "ca có sẵn",
                 "shiftTypesHelpAria": "Hướng dẫn ca làm việc có sẵn",
                 "shiftTypesHint": "Chọn mọi ca mà người này có thể làm việc",
-                "worker": "Bao gồm"
+                "worker": "Bao gồm",
+                "nameRequired": "Vui lòng nhập tên.",
+                "nameInvalid": "Dùng tối đa 50 chữ cái, chữ số, dấu cách, '・' hoặc 'ー'. Không được dùng ký hiệu như '_'."
             },
             "drawer": {
                 "deleteConfirm": "Xóa điều dưỡng {{nurseName}}? Điều này không thể hoàn tác được."

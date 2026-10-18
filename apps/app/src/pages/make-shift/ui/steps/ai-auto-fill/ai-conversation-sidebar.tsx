@@ -1,10 +1,7 @@
-import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
-import {reportScheduleJourney} from '../../../model/schedule-journey';
-import {JourneyObserved} from './journey-observed';
 import {type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
-import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
@@ -13,6 +10,8 @@ import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
+import {trackScheduleSignal} from '@/shared/util/growth-analytics';
+import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {conversationOperationFailure as operationFailure, isGenerateReviewDraft} from '../../../model/ai-execution-failure';
@@ -40,6 +39,8 @@ import {
     type TConversationTurn,
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
+import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -56,6 +57,7 @@ import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiSemanticReview} from './ai-semantic-review';
+import {JourneyObserved} from './journey-observed';
 
 type TProps = {
     open: boolean;
@@ -150,7 +152,52 @@ export default function AiConversationSidebar({
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
     const [reportNote, setReportNote] = useState('');
+    const [reportAttempt] = useState(() => new ScheduleReportAttempt());
+    const [reportRecovery, setReportRecovery] = useState<boolean>();
+    const reportScopeFor = (conversationId: number, operationId: string) => {
+        const auth = useAuthStore.getState();
+        const admin = isWardAdminAccessToken(auth.accessToken);
+
+        return scheduleReportScope({
+            mode: admin ? 'admin' : 'account',
+            ownerId: admin ? getWardAdminAccountIdFromAccessToken(auth.accessToken) : auth.accountId,
+            permission: auth.accountMe?.isManager ?? null,
+            wardId,
+            teamId,
+            year,
+            month,
+            conversationId,
+            operationId,
+        });
+    };
+    const reportInput = useRef<HTMLTextAreaElement>(null);
+    const reportTrigger = useRef<HTMLButtonElement | null>(null);
+    const returnReportFocus = useRef(false);
+
+    useEffect(() => {
+        if (reportOperation && open) reportInput.current?.focus();
+    }, [reportOperation, open]);
+
+    useEffect(() => {
+        if (returnReportFocus.current && !reportOperation && !busy && open) {
+            returnReportFocus.current = false;
+            reportTrigger.current?.focus();
+        }
+    }, [reportOperation, open, busy]);
+
+    const closeReport = async (cancel = true) => {
+        const conversationId = detailRef.current?.conversation.conversationId;
+
+        if (cancel)
+            await reportAttempt.cancel(conversationId && reportOperation ? reportScopeFor(conversationId, reportOperation) : undefined);
+        else reportAttempt.complete();
+
+        returnReportFocus.current = true;
+        setReportOperation(null);
+    };
     const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
+    const [conditionEdit, setConditionEdit] = useState<'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET'>('ANSWER');
+    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
     const [previousId, setPreviousId] = useState<string>();
     const [preview, setPreview] = useState<TPreview | null>(null);
     const [pendingBranch, setPendingBranch] = useState<TConversationDetail | null>(null);
@@ -192,8 +239,14 @@ export default function AiConversationSidebar({
             return;
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
+            reportAttempt.reset();
+            setReportOperation(null);
+            setReportNote('');
+            reportTrigger.current = null;
             setLocalEvents([]);
             setEditingRequest(null);
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
             setRequestToolsOpen(false);
             onNewConversation?.();
         }
@@ -334,10 +387,12 @@ export default function AiConversationSidebar({
             useShiftEditorStore.getState().draftRevision === uiRevision
         ) {
             const version = await api.version(operation.resultVersionId);
+
             if (!mounted.current) return;
 
             if (useShiftEditorStore.getState().draftRevision === uiRevision) {
                 const before = useShiftEditorStore.getState().doc;
+
                 restore(version);
                 void reportScheduleJourney(operation.result?.observation, {
                     type: 'CLIENT_APPLIED',
@@ -445,6 +500,23 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
+    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
+        await run(async () => {
+            const current = detailRef.current;
+
+            if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
+                throw new Error(t('aiAdjust.stale'));
+
+            await api.selectConditions(
+                current.conversation.conversationId,
+                turn.semanticPlan.planId,
+                current.conversation.revision,
+                turn.semanticPlan.planHash,
+                ids,
+            );
+            await refresh();
+        });
+    };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
 
@@ -518,7 +590,15 @@ export default function AiConversationSidebar({
         setEntryChoice('modify');
         setPreviousId(turn.interpretationId ?? undefined);
         setChange('REPLACE');
-        setText(original);
+
+        if (current.conversationState) {
+            setConditionEdit('UPDATE');
+            setConditionTargets(
+                current.conversationState.conditions.length === 1 ? [current.conversationState.conditions[0].conditionId] : [],
+            );
+            setText('');
+        } else setText(original);
+
         setRequestToolsOpen(false);
         textarea.current?.focus();
     };
@@ -616,6 +696,8 @@ export default function AiConversationSidebar({
     };
     const retryPending = async () =>
         run(async () => {
+            trackScheduleSignal('outcome_recheck');
+
             const saved = readPendingExecution(sessionStorage, pendingKey);
 
             if (!saved) {
@@ -661,12 +743,14 @@ export default function AiConversationSidebar({
 
         if (!message) return;
 
+        const reviewedStateVersion = detailRef.current?.conversationState?.version;
+
         await run(async () => {
             if (useShiftEditorStore.getState().semanticExecutionEnabled && onPrepareAdjustment) await onPrepareAdjustment();
 
             const current = await sync();
 
-            if (reference && current.conversation.latestInterpretationId !== reference) {
+            if (!current.conversationState && reference && current.conversation.latestInterpretationId !== reference) {
                 throw new AiConversationInputError('staleRequest');
             }
 
@@ -678,25 +762,60 @@ export default function AiConversationSidebar({
                         (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                 )?.interpretationId;
             const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
-            const original = priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
+            const state = current.conversationState;
+
+            if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
+                throw new Error(
+                    copy(
+                        '요청이 변경됐어요. 현재 조건을 확인한 뒤 다시 보내 주세요.',
+                        'The request changed. Review current conditions before sending again.',
+                    ),
+                );
+
+            const original = !state && priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
             const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
             const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
 
             if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
 
-            const interpreted = await api.interpret(current.conversation.conversationId, {
-                expectedRevision: current.conversation.revision,
-                text: interpretedText,
-                language: i18n.language,
-                ...(previous && current.conversation.latestInterpretationId === previous
-                    ? {
-                          previousInterpretationId: previous,
-                          change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
-                              ? 'REPLACE'
-                              : change,
-                      }
-                    : {}),
-            });
+            const interpreted = await api
+                .interpret(current.conversation.conversationId, {
+                    expectedRevision: current.conversation.revision,
+                    text: interpretedText,
+                    language: i18n.language,
+                    ...(state
+                        ? {
+                              expectedStateVersion: state.version,
+                              change:
+                                  conditionEdit === 'ANSWER'
+                                      ? state.pendingQuestion
+                                          ? ('UPDATE' as const)
+                                          : ('ADD' as const)
+                                      : conditionEdit,
+                              targetConditionIds:
+                                  conditionEdit === 'RESET' ||
+                                  conditionEdit === 'ADD' ||
+                                  (conditionEdit === 'ANSWER' && !state.pendingQuestion)
+                                      ? []
+                                      : state.pendingQuestion && conditionEdit === 'ANSWER'
+                                        ? [state.pendingQuestion.conditionId]
+                                        : conditionTargets,
+                          }
+                        : previous && current.conversation.latestInterpretationId === previous
+                          ? {
+                                previousInterpretationId: previous,
+                                change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
+                                    ? 'REPLACE'
+                                    : change,
+                            }
+                          : {}),
+                })
+                .catch(async (cause) => {
+                    // The server reserves a request version before model work. Refresh it for retry.
+                    if (state) await refresh().catch(() => undefined);
+
+                    throw cause;
+                });
 
             setText('');
             setEditingPreferenceId(undefined);
@@ -704,6 +823,8 @@ export default function AiConversationSidebar({
             setEditingRequest(null);
             setPreviousId(interpreted.interpretationId ?? undefined);
             setChange('ADD');
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
             setEntryChoice('modify');
             await refresh();
         });
@@ -730,6 +851,7 @@ export default function AiConversationSidebar({
         setPreview(null);
         setNotice(null);
         setPendingBranch(null);
+        reportAttempt.reset();
         setReportOperation(null);
         setReportNote('');
         setSelectedSuggestion(undefined);
@@ -1048,6 +1170,7 @@ export default function AiConversationSidebar({
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
                             }
                             copy={copy}
+                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
@@ -1291,6 +1414,25 @@ export default function AiConversationSidebar({
                                                         loadVersion={api.version}
                                                     />
                                                 )}
+                                                {event.operation.executionStatus === 'SUCCEEDED' &&
+                                                    !operationFailure(event.operation) &&
+                                                    event.operation.result && (
+                                                        <p className="mt-2 text-sm break-keep">
+                                                            {copy(
+                                                                `계산 결과: ${event.operation.result.changedCells.length}칸 변경.`,
+                                                                `Calculated result: ${event.operation.result.changedCells.length} changed cells.`,
+                                                            )}{' '}
+                                                            {event.operation.applyStatus === 'APPLIED'
+                                                                ? copy(
+                                                                      '실행 시점의 작성본 기준 결과예요. 현재 표를 확인한 뒤 별도로 확정해 주세요.',
+                                                                      'This result is based on the draft at execution time. Review the current schedule and confirm it separately.',
+                                                                  )
+                                                                : copy(
+                                                                      '현재 표에 반영되지 않은 결과예요.',
+                                                                      'This result has not been applied to the current draft.',
+                                                                  )}
+                                                        </p>
+                                                    )}
                                                 {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
                                                 {event.operation.result && (
                                                     <ConversationEvidence
@@ -1316,12 +1458,39 @@ export default function AiConversationSidebar({
                                                             <button
                                                                 className={buttonClass}
                                                                 disabled={busy}
-                                                                onClick={() => void view(event.operation, true)}
+                                                                onClick={() => {
+                                                                    trackScheduleSignal('comparison_open');
+                                                                    void view(event.operation, true);
+                                                                }}
                                                             >
                                                                 {copy('변경 전후 비교', 'Compare before and after')}
                                                             </button>
                                                         )}
                                                     </div>
+                                                )}
+                                                {['FAILED', 'SUCCEEDED'].includes(event.operation.executionStatus) && (
+                                                    <button
+                                                        className={`${buttonClass} mt-2`}
+                                                        disabled={busy || running || preparing || reportOperation !== null}
+                                                        onClick={(click) => {
+                                                            reportAttempt.reset();
+                                                            setNotice((currentNotice) =>
+                                                                [
+                                                                    '의견을 보냈어요. 확인해서 개선할게요.',
+                                                                    'Your feedback was sent. Thank you.',
+                                                                ].includes(currentNotice ?? '')
+                                                                    ? null
+                                                                    : currentNotice,
+                                                            );
+                                                            setReportRecovery(undefined);
+                                                            reportTrigger.current = click.currentTarget;
+                                                            setReportNote('');
+                                                            setReportOperation(event.operation.operationId);
+                                                            trackScheduleSignal('feedback_open');
+                                                        }}
+                                                    >
+                                                        {copy('이 결과에 의견 보내기', 'Send feedback on this result')}
+                                                    </button>
                                                 )}
                                             </JourneyObserved>
                                             {operationFailure(event.operation) && (
@@ -1477,6 +1646,8 @@ export default function AiConversationSidebar({
                                         ]);
 
                                         if (choice === 'regenerate') {
+                                            trackScheduleSignal('regeneration_selected');
+
                                             if (onPrepareGeneration) onPrepareGeneration();
                                             else setRebuild(true);
                                         } else textarea.current?.focus();
@@ -1536,17 +1707,57 @@ export default function AiConversationSidebar({
                         )}
                     </AiChatScroll>
                     {reportOperation && (
-                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('결과 의견 보내기', 'Send feedback')}>
+                        <section
+                            className="max-h-[50dvh] shrink-0 overflow-y-auto rounded-xl bg-gray-7 p-3"
+                            aria-label={copy('결과 의견 보내기', 'Send feedback')}
+                        >
+                            <p className="mb-2 text-sm font-semibold">
+                                {copy('의견 대상', 'Feedback for')}:{' '}
+                                {copy(
+                                    detail?.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE'
+                                        ? '자동채우기'
+                                        : '수정',
+                                    detail?.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE'
+                                        ? 'Autofill'
+                                        : 'Adjustment',
+                                )}{' '}
+                                {detail && operationAttempt(detail, reportOperation)}
+                                {copy('회차 결과', ' attempt result')}
+                            </p>
                             <label htmlFor="ai-report-note">
                                 {copy('예상한 조건과 다른 점을 적어 주세요.', 'Describe how the outcome differs from your request.')}
                             </label>
                             <textarea
                                 id="ai-report-note"
+                                ref={reportInput}
+                                disabled={busy}
                                 className="my-2 w-full rounded-lg border border-gray-5 bg-white p-3 text-sm focus:border-main-1 focus:outline-none"
                                 value={reportNote}
                                 maxLength={500}
-                                onChange={(event) => setReportNote(event.target.value)}
+                                onChange={(event) => {
+                                    reportAttempt.noteChanged(event.target.value);
+                                    setReportNote(event.target.value);
+                                }}
                             />
+                            <p className="mb-2 text-xs break-keep text-[#475467]">
+                                {copy(
+                                    '취소하면 이 신고를 끝내고, 다시 작성할 때 새 신고로 보내요.',
+                                    'Cancel ends this report. Writing again starts a new report.',
+                                )}
+                            </p>
+                            {reportRecovery !== undefined && !busy && (
+                                <p role="status" className="mb-2 text-xs break-keep text-[#475467]">
+                                    {reportRecovery
+                                        ? copy(
+                                              '이 탭에서 24시간 안에 같은 내용을 다시 입력하면 기존 신고로 재시도해요.',
+                                              'Re-enter the same note in this tab within 24 hours to retry the same report.',
+                                          )
+                                        : copy(
+                                              '재시도 정보를 저장하지 못했어요. 새로고침하지 않고 여기서 다시 보내 주세요.',
+                                              'Retry metadata could not be saved. Retry here without refreshing.',
+                                          )}
+                                </p>
+                            )}
                             <button
                                 className={buttonClass}
                                 disabled={busy || !reportNote.trim()}
@@ -1556,36 +1767,34 @@ export default function AiConversationSidebar({
 
                                         if (!current) return;
 
-                                        await api.report(current.conversation.conversationId, reportOperation, reportNote.trim());
+                                        const note = reportNote.trim();
+                                        const scope = reportScopeFor(current.conversation.conversationId, reportOperation);
+                                        const key = await reportAttempt.keyFor(scope, note);
+
+                                        if (!mounted.current) return;
+
+                                        if (scope !== reportScopeFor(current.conversation.conversationId, reportOperation))
+                                            throw new AiConversationInputError('staleRequest');
+
+                                        setReportRecovery(reportAttempt.recoverable);
+
+                                        await api.report(current.conversation.conversationId, reportOperation, note, key);
+
+                                        if (!mounted.current) return;
+
                                         setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
-                                        setReportOperation(null);
+                                        trackScheduleSignal('feedback_sent');
+                                        await closeReport(false);
                                         setReportNote('');
                                     })
                                 }
                             >
                                 {copy('의견 보내기', 'Send feedback')}
                             </button>
-                            <button className={buttonClass} onClick={() => setReportOperation(null)}>
+                            <button className={buttonClass} disabled={busy} onClick={() => void run(closeReport)}>
                                 {copy('취소', 'Cancel')}
                             </button>
                         </section>
-                    )}
-                    {detail?.operations.some(
-                        (op) => op.result && (op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED'),
-                    ) && (
-                        <button
-                            className="min-h-11 self-start px-1 text-[13px] text-[#6B7280] hover:text-main-1"
-                            disabled={busy}
-                            onClick={() => {
-                                const completed = [...(detail?.operations ?? [])]
-                                    .reverse()
-                                    .find((op) => op.executionStatus === 'FAILED' || op.executionStatus === 'SUCCEEDED');
-
-                                if (completed) setReportOperation(completed.operationId);
-                            }}
-                        >
-                            {copy('결과에 문제가 있나요?', 'Something wrong with the result?')}
-                        </button>
                     )}
                     {selectedSuggestion && (
                         <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('제안 확인', 'Review suggestion')}>
@@ -1686,6 +1895,46 @@ export default function AiConversationSidebar({
                                         </div>
                                     ))}
                                 </details>
+                            )}
+                            {detail?.conversationState && (
+                                <fieldset className="space-y-2 rounded border p-2 text-sm" disabled={busy || running}>
+                                    <legend>{copy('현재 요청 조건', 'Current request conditions')}</legend>
+                                    {detail.conversationState.pendingQuestion && <p>{detail.conversationState.pendingQuestion.question}</p>}
+                                    {detail.conversationState.conditions.map((condition) => (
+                                        <label key={condition.conditionId} className="flex items-start gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={conditionTargets.includes(condition.conditionId)}
+                                                onChange={(event) =>
+                                                    setConditionTargets((ids) =>
+                                                        event.target.checked
+                                                            ? [...ids, condition.conditionId]
+                                                            : ids.filter((id) => id !== condition.conditionId),
+                                                    )
+                                                }
+                                            />
+                                            <span>{condition.text}</span>
+                                        </label>
+                                    ))}
+                                    <select
+                                        aria-label={copy('조건 수정 방식', 'Condition edit mode')}
+                                        value={conditionEdit}
+                                        onChange={(event) => setConditionEdit(event.target.value as typeof conditionEdit)}
+                                        className="w-full rounded border p-2"
+                                    >
+                                        <option value="ANSWER">
+                                            {detail.conversationState.pendingQuestion
+                                                ? copy('질문에 답변', 'Answer question')
+                                                : copy('조건 추가', 'Add condition')}
+                                        </option>
+                                        {detail.conversationState.pendingQuestion && (
+                                            <option value="ADD">{copy('별도 조건 추가', 'Add a separate condition')}</option>
+                                        )}
+                                        <option value="UPDATE">{copy('선택한 조건 수정', 'Update selected conditions')}</option>
+                                        <option value="REMOVE">{copy('선택한 조건 삭제', 'Remove selected conditions')}</option>
+                                        <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
+                                    </select>
+                                </fieldset>
                             )}
                             {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select

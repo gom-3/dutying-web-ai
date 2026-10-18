@@ -13,7 +13,9 @@ interface ImportMetaEnv {
     readonly VITE_MEMBER_TUTORIAL_URL?: string;
     readonly VITE_REQUEST_TUTORIAL_URL?: string;
     readonly VITE_MAKE_TUTORIAL_URL?: string;
+    /** Legacy .net ID; not used for .ai tracking. */
     readonly VITE_GA_TRACKING_ID?: string;
+    readonly VITE_AI_GA_TRACKING_ID?: string;
     readonly VITE_PIXEL_ID?: string;
     readonly VITE_AI_SCHEDULE_PROVIDER?: string;
     readonly VITE_ENABLE_WARD_CHAT?: string;

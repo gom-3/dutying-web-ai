@@ -4,7 +4,8 @@ import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
 import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp?inline';
 import {ko} from '@/shared/i18n/resources.generated';
-import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import * as growthAnalytics from '@/shared/util/growth-analytics';
+import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import {useSchedulePublishSuccessStore} from '../../../../model/schedule-publish-success-store';
 import {AiAutofill} from '../index';
 
@@ -432,6 +433,8 @@ describe('AiAutofill blank preview', () => {
     });
 
     it('checks previous shifts in chat before choosing fixed shifts and keeps the grey spotlight', async () => {
+        const signal = vi.spyOn(growthAnalytics, 'trackScheduleSignal');
+
         mocks.previousBlank = true;
 
         const user = userEvent.setup();
@@ -448,6 +451,7 @@ describe('AiAutofill blank preview', () => {
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).toBeVisible();
+        expect(signal).toHaveBeenCalledWith('preparation_started');
         expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).not.toBeInTheDocument();
         expect(document.querySelector('[data-confirmation-spotlight]')).toBeInTheDocument();
         await waitFor(() => expect(document.querySelector('[data-spotlight-blocker]')).toHaveStyle({top: '52px', height: '348px'}));
@@ -464,6 +468,9 @@ describe('AiAutofill blank preview', () => {
         expect(screen.getByText('aiAdjust.preparation.continue')).toBeVisible();
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        expect(signal).toHaveBeenCalledWith('preparation_paused');
+        expect(signal.mock.calls.filter(([event]) => event === 'preparation_paused')).toHaveLength(1);
+        signal.mockRestore();
         expect(document.querySelector('[data-confirmation-spotlight]')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
@@ -492,10 +499,14 @@ describe('AiAutofill blank preview', () => {
         expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.continue'})).not.toBeInTheDocument();
     });
 
-    it('applies a review draft and keeps its rule warning visible beside the schedule', async () => {
+    it.each([
+        {adjustEnabled: false, warning: '기존 고정표의 11일은 D가 1명씩 부족해요.'},
+        {adjustEnabled: false, warning: undefined},
+    ])('keeps review warnings inside the sidebar (adjustEnabled=$adjustEnabled, warning=$warning)', async ({adjustEnabled, warning}) => {
         const doc = makeDoc();
 
         seedEditor({...doc, rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})), fixedCells: {}, requestCells: {}});
+        useShiftEditorStore.getState().setAutofillAdjustEnabled(adjustEnabled);
         mocks.requestAiSchedule.mockImplementation(async (request) => ({
             ok: true,
             response: {
@@ -505,7 +516,7 @@ describe('AiAutofill blank preview', () => {
                 approvable: false,
                 validationTarget: 'RESULT',
                 changedCells: [{cellKey: '10:2026-07-01', shiftNurseId: 10, date: '2026-07-01', wardShiftTypeId: 1, shiftCode: 'D'}],
-                unmetInstructions: ['기존 고정표의 11일은 D가 1명씩 부족해요.'],
+                unmetInstructions: warning ? [warning] : [],
                 engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
             },
             validation: {
@@ -525,12 +536,17 @@ describe('AiAutofill blank preview', () => {
             await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
         }
 
-        expect(await screen.findByText('초안을 만들었어요 · 확인할 규칙이 있어요')).toBeVisible();
-        expect(screen.getByText('기존 고정표의 11일은 D가 1명씩 부족해요.')).toBeVisible();
+        const sidebar = await screen.findByRole('dialog', {name: 'aiAdjust.title'});
+
+        expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(adjustEnabled);
+        expect(await within(sidebar).findByText(warning ?? 'aiAdjust.reviewDraft.completed')).toBeVisible();
+        expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '안내 닫기'})).not.toBeInTheDocument();
+        expect(within(sidebar).queryByText('aiAdjust.generationCompleted')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
         expect(toast.error).not.toHaveBeenCalled();
-        await user.click(screen.getByRole('button', {name: '안내 닫기'}));
-        expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
+        await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.close'}));
+        expect(screen.queryByRole('dialog', {name: 'aiAdjust.title'})).not.toBeInTheDocument();
     });
 
     it('shows every shift cell in the preparation chat before autofill starts', async () => {
