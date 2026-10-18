@@ -1702,6 +1702,9 @@ export default function AiConversationSidebar({
                                         setReportRecovery(reportAttempt.recoverable);
 
                                         await api.report(current.conversation.conversationId, reportOperation, note, key);
+
+                                        if (!mounted.current) return;
+
                                         setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
                                         trackScheduleSignal('feedback_sent');
                                         await closeReport(false);

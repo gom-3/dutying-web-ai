@@ -351,6 +351,35 @@ describe('persistent schedule sidebar', () => {
         expect(accepted.size).toBe(1);
         expect(receipts()).toHaveLength(0);
     });
+    it('keeps recovery metadata when an old request acknowledges success after the component unmounts', async () => {
+        let acknowledge!: (value: {incidentId: string}) => void;
+
+        mocks.report.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    acknowledge = resolve;
+                }),
+        );
+
+        const first = renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '늦은 응답 신고');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(mocks.report).toHaveBeenCalledOnce());
+
+        const key = mocks.report.mock.calls[0][3];
+
+        first.unmount();
+        renderSidebar();
+        await act(async () => acknowledge({incidentId: 'accepted:1'}));
+        expect(Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX))).toHaveLength(1);
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '늦은 응답 신고');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
+        expect(mocks.report.mock.calls[1][3]).toBe(key);
+    });
     it('keeps sending and same-mount retry working when session metadata cannot be saved', async () => {
         const first = renderSidebar();
 
