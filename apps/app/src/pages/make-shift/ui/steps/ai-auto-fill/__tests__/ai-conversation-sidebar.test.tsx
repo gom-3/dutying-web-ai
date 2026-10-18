@@ -37,6 +37,7 @@ const mocks = vi.hoisted(() => ({
     confirm: vi.fn(),
     confirmPlan: vi.fn(),
     selectConditions: vi.fn(),
+    changeModalities: vi.fn(),
     report: vi.fn(),
     draftFixed: false,
 }));
@@ -1670,6 +1671,84 @@ describe('persistent schedule sidebar', () => {
             sourceVersionId: source.versionId,
         });
     });
+    it('saves priority edits as a new review without interpreting or executing', async () => {
+        const proposal: TConversationTurn = {
+            eventId: 2,
+            sequence: 2,
+            actor: 'ASSISTANT',
+            type: 'SEMANTIC_PLAN',
+            text: null,
+            interpretationId: 'priority:parent',
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            interpretation: null,
+            createdAt: source.createdAt,
+            semanticPlan: {
+                planId: 'p1',
+                planHash: 'a'.repeat(64),
+                sourceVersionId: source.versionId,
+                state: 'PREVIEW_READY',
+                summary: '',
+                confirmationAllowed: true,
+                reasonCodes: [],
+                modalityEditableIntentIds: ['count'],
+                conditions: [
+                    {
+                        intentId: 'count',
+                        action: 'COUNT',
+                        nurseIds: [1],
+                        dates: ['2026-11-01'],
+                        shiftCodes: ['D'],
+                        quantifier: 'EACH',
+                        modality: 'HARD',
+                        operator: 'MAX',
+                        count: 1,
+                        sourceSpan: {quote: '데이 최대 1회'},
+                    },
+                ],
+            },
+        };
+
+        current = {
+            ...current,
+            turns: [proposal],
+            conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
+        };
+        mocks.changeModalities.mockImplementation(async () => {
+            const child: TConversationTurn = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                interpretationId: 'priority:child',
+                semanticPlan: {
+                    ...proposal.semanticPlan!,
+                    planId: 'p2',
+                    planHash: 'b'.repeat(64),
+                    conditions: [{...proposal.semanticPlan!.conditions[0]!, modality: 'SOFT'}],
+                },
+            };
+
+            current = {
+                ...current,
+                turns: [proposal, child],
+                conversation: {...current.conversation, latestInterpretationId: child.interpretationId},
+            };
+
+            return child;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('radio', {name: '권장'}));
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        await waitFor(() =>
+            expect(mocks.changeModalities).toHaveBeenCalledExactlyOnceWith(1, 'priority:parent', 0, 'a'.repeat(64), {count: 'SOFT'}),
+        );
+        await waitFor(() => expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled());
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.getByRole('radio', {name: '권장'})).toBeChecked();
+    });
     it('revalidates explicit partial selection and waits for confirmation of the new plan', async () => {
         const groups = [
             {
@@ -1885,6 +1964,7 @@ describe('persistent schedule sidebar', () => {
     });
     it('sends only a new answer with the server state version and waiting condition ID', async () => {
         const {raw, proposal} = semanticRequest();
+
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
         proposal.semanticPlan!.confirmationAllowed = false;
         current.conversationState = {
@@ -1912,6 +1992,7 @@ describe('persistent schedule sidebar', () => {
     });
     it('adds a separate condition while a question is waiting instead of treating it as an answer', async () => {
         const {raw, proposal} = semanticRequest();
+
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
         proposal.semanticPlan!.confirmationAllowed = false;
         current.conversationState = {
@@ -1938,6 +2019,7 @@ describe('persistent schedule sidebar', () => {
     });
     it('uses explicitly selected condition IDs for removal and keeps the original clause visible', async () => {
         const {raw, proposal} = semanticRequest();
+
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
         proposal.semanticPlan!.confirmationAllowed = false;
         current.conversationState = {
@@ -1950,7 +2032,9 @@ describe('persistent schedule sidebar', () => {
         };
         mocks.interpret.mockResolvedValue(proposal);
         renderSidebar();
+
         const mode = await screen.findByRole('combobox', {name: '조건 수정 방식'});
+
         await userEvent.selectOptions(mode, 'REMOVE');
         await userEvent.click(screen.getByRole('checkbox', {name: raw}));
         await userEvent.type(screen.getByRole('textbox'), '삭제해줘');

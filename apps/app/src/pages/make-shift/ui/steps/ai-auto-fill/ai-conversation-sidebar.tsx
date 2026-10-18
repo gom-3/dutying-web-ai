@@ -517,6 +517,29 @@ export default function AiConversationSidebar({
             await refresh();
         });
     };
+    const changeModalities = async (turn: TConversationTurn, overrides: Record<string, 'HARD' | 'SOFT'>) => {
+        // run() presents errors but deliberately consumes them. Track completion so the editor retains failed changes.
+        let saved = false;
+
+        await run(async () => {
+            const current = detailRef.current;
+
+            if (!current || !turn.semanticPlan || !turn.interpretationId || !isConversationConfirmationCurrent(current, turn, localDirty))
+                throw new Error(t('aiAdjust.stale'));
+
+            await api.changeModalities(
+                current.conversation.conversationId,
+                turn.interpretationId,
+                current.conversation.revision,
+                turn.semanticPlan.planHash,
+                overrides,
+            );
+            await refresh();
+            saved = true;
+        });
+
+        if (!saved) throw new Error('Priority update was not saved');
+    };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
 
@@ -1170,6 +1193,7 @@ export default function AiConversationSidebar({
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
                             }
                             copy={copy}
+                            onChangeModalities={(overrides) => changeModalities(turn, overrides)}
                             onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
