@@ -2,11 +2,12 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
 import {LoaderIcon, Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
-import useAuthStore from '@/features/auth/model/store';
 import App from '@/app/App';
 import {captureOAuthRedirectPayload} from '@/features/auth/model/oauth-redirect-payload';
+import useAuthStore from '@/features/auth/model/store';
 import {initializeProfileImageStore} from '@/features/file';
 import {getIndexedMarketingLanguageFromPath} from '@/shared/seo/marketing-locale';
+import {AnalyticsRouteObserver} from '@/shared/ui/analytics-route-observer';
 import Loading from '@/widgets/loading';
 import Tutorial from '@/widgets/tutorial';
 import './index.css';
@@ -37,6 +38,7 @@ useAuthStore.subscribe((next, previous) => {
 window.addEventListener('dutying:scope-access-revoked', () => {
     void queryClient.cancelQueries();
     queryClient.clear();
+
     if (!window.location.pathname.startsWith('/workspace')) window.location.replace('/workspace');
 });
 window.addEventListener('dutying:commercial-usage-changed', () => {
@@ -58,6 +60,7 @@ const container = document.getElementById('root') as HTMLElement;
 const element = (
     <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+            <AnalyticsRouteObserver />
             <App />
             <Toaster
                 position="bottom-center"

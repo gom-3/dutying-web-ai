@@ -34,7 +34,22 @@ function LandingClient() {
         let active = true;
 
         // Analytics and persisted session loading never block or replace the public page.
-        void import('../../initializeApp').then(({default: initializeApp}) => initializeApp()).catch(() => {});
+        void import('../../initializeApp')
+            .then(async ({default: initializeApp}) => {
+                initializeApp();
+
+                const {analyticsPageLocation, isGoogleAnalyticsEnabled} = await import('@/shared/config/analytics');
+
+                if (isGoogleAnalyticsEnabled()) {
+                    const {default: ReactGA} = await import('react-ga4');
+
+                    ReactGA.event('page_view', {
+                        page_path: window.location.pathname,
+                        page_location: analyticsPageLocation(window.location.pathname),
+                    });
+                }
+            })
+            .catch(() => {});
 
         try {
             const saved = JSON.parse(localStorage.getItem('useAuthStore') ?? 'null');

@@ -1,5 +1,6 @@
 import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
+import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
 
 interface IEvent {
     category: string;
@@ -410,12 +411,15 @@ export const events = {
 };
 
 export const sendEvent = (event: IEvent, label?: string) => {
-    if (import.meta.env.PROD) {
+    if (isGoogleAnalyticsEnabled()) {
         ReactGA.event({
             category: event.category,
             action: event.action,
             label,
         });
+    }
+
+    if (isMetaPixelEnabled()) {
         ReactPixel.trackCustom(event.action, {label});
     }
 };

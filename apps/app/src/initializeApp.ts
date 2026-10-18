@@ -1,15 +1,15 @@
 import * as Sentry from '@sentry/react';
-import {createBrowserHistory} from 'history';
 import {enableMapSet} from 'immer';
 import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
+import {googleAnalyticsMeasurementId, isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
 import {isNonProductionAppDomain} from '@/shared/config/feature-flags';
 
 export default function initializeApp() {
     enableMapSet();
 
     if (import.meta.env.PROD) {
-        const gaTrackingId = import.meta.env.VITE_GA_TRACKING_ID;
+        const gaTrackingId = googleAnalyticsMeasurementId();
         const pixelId = import.meta.env.VITE_PIXEL_ID;
 
         Sentry.init({
@@ -21,21 +21,13 @@ export default function initializeApp() {
             environment: isNonProductionAppDomain() ? 'development' : 'production',
         });
 
-        // GA 관련 초기화
-        if (gaTrackingId) {
-            ReactGA.initialize(gaTrackingId, {gaOptions: {}});
-        }
-
-        if (gaTrackingId) {
-            const history = createBrowserHistory();
-
-            history.listen(async (response) => {
-                ReactGA.send({hitType: 'pageview', page: response.location.pathname});
-            });
+        // The dedicated .ai stream has enhanced measurement disabled. Router owns page_view.
+        if (isGoogleAnalyticsEnabled() && gaTrackingId) {
+            ReactGA.initialize(gaTrackingId, {gtagOptions: {send_page_view: false}});
         }
 
         // Pixel 관련 초기화
-        if (pixelId) {
+        if (isMetaPixelEnabled() && pixelId) {
             ReactPixel.init(pixelId);
             ReactPixel.pageView();
         }
