@@ -74,6 +74,7 @@ const renderPanel = (
     wardShiftTypes: TWardShiftType[] = [],
     onSaveSuccess?: () => void,
     variant: 'panel' | 'modal' = 'panel',
+    mode: 'create' | 'edit' = 'edit',
 ) => {
     const saveNurseDetails = vi.fn().mockResolvedValue(true);
     const deleteNurse = vi.fn().mockResolvedValue(true);
@@ -82,7 +83,7 @@ const renderPanel = (
     mockUseEditShiftTeam.mockReturnValue({
         state: {
             selectedNurse,
-            selectedNurseDrawerMode: 'edit',
+            selectedNurseDrawerMode: mode,
             nurseSaveStatus: 'idle',
             isDeletingNurse: false,
         },
@@ -160,6 +161,45 @@ describe('NurseDetailPanel', () => {
         await waitFor(() =>
             expect(saveNurseDetails).toHaveBeenCalledWith(101, expect.objectContaining({nurse: expect.objectContaining({name})})),
         );
+    });
+
+    it.each(['create', 'edit'] as const)('validates the %s name before shift edits and permits a corrected retry', async (mode) => {
+        const {saveNurseDetails} = renderPanel(createNurseWithMonthlyShiftRatio(), [createWardShiftType()], undefined, 'panel', mode);
+        const nameInput = screen.getByLabelText('이름');
+
+        fireEvent.change(nameInput, {target: {value: 'QA_OFF_02'}});
+        fireEvent.click(screen.getByRole('button', {name: 'DDay'}));
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        expect(saveNurseDetails).not.toHaveBeenCalled();
+        expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByRole('alert')).toHaveTextContent("'_' 등의 기호는 사용할 수 없어요.");
+
+        fireEvent.change(nameInput, {target: {value: 'QA OFF 02'}});
+        expect(nameInput).toHaveAttribute('aria-invalid', 'false');
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() =>
+            expect(saveNurseDetails).toHaveBeenCalledWith(
+                101,
+                expect.objectContaining({
+                    nurse: expect.objectContaining({name: 'QA OFF 02'}),
+                    shiftTypes: [expect.objectContaining({nurseShiftTypeId: 101, change: expect.objectContaining({isPossible: false})})],
+                }),
+            ),
+        );
+    });
+
+    it('preserves an unchanged legacy name while editing another profile field', async () => {
+        const {saveNurseDetails} = renderPanel(createNurse({name: 'Legacy_Nurse'}));
+
+        fireEvent.change(screen.getByLabelText('생년월일'), {target: {value: '19960314'}});
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => expect(saveNurseDetails).toHaveBeenCalled());
+        expect(saveNurseDetails.mock.calls[0]?.[1]?.nurse).not.toHaveProperty('name');
+        expect(saveNurseDetails.mock.calls[0]?.[1]?.nurse).toHaveProperty('birthDate', '1996-03-14');
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('lets a connected nurse birthDate be edited and sends it in the nurse patch payload', async () => {

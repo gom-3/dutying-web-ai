@@ -26,6 +26,7 @@ const {
     mockRemoveNurseFromShiftTeam,
     mockToastSuccess,
     mockToastError,
+    mockUseQuery,
 } = vi.hoisted(() => ({
     mockInvalidateQueries: vi.fn(),
     mockCancelQueries: vi.fn(),
@@ -37,6 +38,7 @@ const {
     mockRemoveNurseFromShiftTeam: vi.fn(),
     mockToastSuccess: vi.fn(),
     mockToastError: vi.fn(),
+    mockUseQuery: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-query', async () => {
@@ -44,7 +46,7 @@ vi.mock('@tanstack/react-query', async () => {
 
     return {
         ...actual,
-        useQuery: vi.fn(() => ({data: ward})),
+        useQuery: mockUseQuery,
         useQueryClient: vi.fn(() => ({
             invalidateQueries: mockInvalidateQueries,
             cancelQueries: mockCancelQueries,
@@ -102,6 +104,7 @@ describe('useEditShiftTeam', () => {
         mockRemoveNurseFromShiftTeam.mockReset();
         mockToastSuccess.mockReset();
         mockToastError.mockReset();
+        mockUseQuery.mockReturnValue({data: ward});
     });
 
     it('keeps the draft dirty and exposes an error save status when updateNurse fails with an unknown error shape', async () => {
@@ -126,7 +129,7 @@ describe('useEditShiftTeam', () => {
     });
 
     it.each([
-        ['김하나', '김하나'],
+        ['김수정', '김수정'],
         ['　山田　花子　', '山田 花子'],
         ['\u00a0山田　花子\u00a0', '山田 花子'],
     ])('patches nurse name %s with normalized spaces and without retired fields', async (input, name) => {
@@ -164,7 +167,6 @@ describe('useEditShiftTeam', () => {
         });
 
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
-            name: '김하나',
             phoneNum: null,
         });
     });
@@ -178,7 +180,7 @@ describe('useEditShiftTeam', () => {
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {phoneNum: null});
     });
 
-    it('saves profile and shift-type edits in parallel and revalidates related data only once', async () => {
+    it('waits for profile validation before saving shift types and revalidates related data only once', async () => {
         let resolveProfileSave: (() => void) | undefined;
         let resolveShiftSave: (() => void) | undefined;
 
@@ -209,11 +211,17 @@ describe('useEditShiftTeam', () => {
         });
 
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {name: '김수정'});
-        expect(mockUpdateNurseShiftType).toHaveBeenCalledWith(11, 101, {isPossible: false});
+        expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
         expect(result.current.state.nurseSaveStatus).toBe('saving');
 
         await act(async () => {
             resolveProfileSave?.();
+            await Promise.resolve();
+        });
+
+        expect(mockUpdateNurseShiftType).toHaveBeenCalledWith(11, 101, {isPossible: false});
+
+        await act(async () => {
             resolveShiftSave?.();
             await savePromise;
         });
@@ -221,6 +229,94 @@ describe('useEditShiftTeam', () => {
         expect(result.current.state.nurseSaveStatus).toBe('success');
         expect(result.current.state.isNurseDraftDirty).toBe(false);
         expect(mockInvalidateQueries).toHaveBeenCalledTimes(7);
+    });
+
+    it('does not send either request or change caches for an invalid edited name', async () => {
+        useEditNurseStore.getState().setNurseDraftDirty(true);
+        const {result} = renderHook(() => useEditShiftTeam());
+        let saved: boolean | undefined;
+
+        await act(async () => {
+            saved = await result.current.actions.saveNurseDetails(11, {
+                nurse: {name: 'QA_OFF_02'},
+                shiftTypes: [{nurseShiftTypeId: 101, change: {isPossible: false}}],
+            });
+        });
+
+        expect(saved).toBe(false);
+        expect(mockUpdateNurse).not.toHaveBeenCalled();
+        expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
+        expect(mockSetQueryData).not.toHaveBeenCalled();
+        expect(result.current.state.isNurseDraftDirty).toBe(true);
+        expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining("'_'"), {id: 'validation-feedback'});
+    });
+
+    it('does not save shift types if the server rejects another profile field', async () => {
+        mockUpdateNurse.mockRejectedValue({code: 400});
+        const {result} = renderHook(() => useEditShiftTeam());
+        let saved: boolean | undefined;
+
+        await act(async () => {
+            saved = await result.current.actions.saveNurseDetails(11, {
+                nurse: {name: '김수정', phoneNum: '123'},
+                shiftTypes: [{nurseShiftTypeId: 101, change: {isPossible: false}}],
+            });
+        });
+
+        expect(saved).toBe(false);
+        expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
+        expect(result.current.state.nurseSaveStatus).toBe('error');
+    });
+
+    it('validates inline name edits before sending a request', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            expect(await result.current.actions.updateNurse(11, {name: 'QA_OFF_02'})).toBe(false);
+        });
+
+        expect(mockUpdateNurse).not.toHaveBeenCalled();
+        expect(mockSetQueryData).not.toHaveBeenCalled();
+    });
+
+    it('omits an unchanged legacy name from inline profile updates', async () => {
+        const legacyWard = {
+            ...ward,
+            shiftTeams: [{...ward.shiftTeams[0], nurses: [{...ward.shiftTeams[0].nurses[0], name: 'Legacy_Nurse'}]}],
+        };
+        mockUseQuery.mockReturnValue({data: legacyWard});
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            expect(await result.current.actions.updateNurse(11, {name: 'Legacy_Nurse', isWorker: false})).toBe(true);
+        });
+
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {isWorker: false});
+    });
+
+    it('normalizes changed names into a form accepted by older servers', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            expect(await result.current.actions.updateNurse(11, {name: '　佐藤･美咲　'})).toBe(true);
+        });
+
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {name: '佐藤・美咲'});
+    });
+
+    it('saves shift-only changes without a profile request', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            expect(
+                await result.current.actions.saveNurseDetails(11, {
+                    shiftTypes: [{nurseShiftTypeId: 101, change: {isPossible: false}}],
+                }),
+            ).toBe(true);
+        });
+
+        expect(mockUpdateNurse).not.toHaveBeenCalled();
+        expect(mockUpdateNurseShiftType).toHaveBeenCalledWith(11, 101, {isPossible: false});
     });
 
     it('keeps the draft and rolls back both member caches when a combined save partially fails', async () => {
