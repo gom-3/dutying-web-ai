@@ -29,7 +29,13 @@ export type Transfer = {
     expiresAt: string;
     status: string;
 };
-export type AccessContext = {enabled: boolean; scopes: Scope[]; invitations?: Invitation[]; transfers?: Transfer[]};
+export type AccessContext = {
+    enabled: boolean;
+    enforcementEnabled?: boolean;
+    scopes: Scope[];
+    invitations?: Invitation[];
+    transfers?: Transfer[];
+};
 export type UsageLot = {
     id: string;
     source: string;
@@ -233,7 +239,9 @@ export type Organization = {
     wards: WardLink[];
     entitlement: Entitlement;
 };
+
 const ROOT = '/admin/commercial';
+
 export const commercialGet = async <T>(path: string) => (await adminAxiosInstance.get<T>(ROOT + path, {suppressErrorToast: true})).data;
 export const commercialPost = async <T>(path: string, data: unknown = {}, key: string = crypto.randomUUID()) =>
     (await adminAxiosInstance.post<T>(ROOT + path, data, {headers: {'Idempotency-Key': key}, suppressErrorToast: true})).data;
@@ -269,18 +277,27 @@ export function useCommercialContext() {
         refetchOnWindowFocus: 'always',
     });
 }
+// Older servers omit this field and retain their existing plan enforcement.
+export function isPlanEnforcementEnabled(context?: AccessContext) {
+    return !!context?.enabled && context.enforcementEnabled !== false;
+}
 export function useWardEntitlement() {
     const wardId = useAuthStore((s) => s.wardId);
     const accountId = useAuthStore((s) => s.accountId);
     const context = useCommercialContext();
-    return useQuery({
+
+    const enforcementEnabled = !!wardId && isPlanEnforcementEnabled(context.data);
+    const query = useQuery({
         queryKey: commercialQueryKey(accountId, 'WARD', wardId, 'entitlements'),
         queryFn: () => commercialGet<Entitlement>(`/scopes/WARD/${wardId}/entitlements`),
-        enabled: !!wardId && !!context.data?.enabled,
+        enabled: enforcementEnabled,
         staleTime: 5_000,
         refetchOnWindowFocus: 'always',
         retry: false,
     });
+
+    // Disabling a query retains cached data; hide it so old limits cannot keep blocking the UI.
+    return enforcementEnabled ? query : {...query, data: undefined};
 }
 export const scopePath = (scope: Pick<Scope, 'type' | 'ref'>, tab = 'usage') => `/workspace/${scope.type}/${scope.ref}/${tab}`;
 export function commercialError(error: unknown) {

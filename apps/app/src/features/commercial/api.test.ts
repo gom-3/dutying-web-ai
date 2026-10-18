@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {CommercialAPI, getCommercialContext} from './api';
+import {CommercialAPI, getCommercialContext, isPlanEnforcementEnabled} from './api';
 
 const {get, put} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn()}));
 
@@ -41,5 +41,21 @@ describe('CommercialAPI', () => {
         get.mockRejectedValue(error);
 
         await expect(getCommercialContext()).rejects.toBe(error);
+    });
+});
+
+describe('billing and existing feature enforcement', () => {
+    it('does not load plan restrictions when only billing is enabled', () => {
+        expect(isPlanEnforcementEnabled({enabled: true, enforcementEnabled: false, scopes: []})).toBe(false);
+    });
+
+    it('keeps restrictions compatible with older servers', () => {
+        expect(isPlanEnforcementEnabled({enabled: true, scopes: []})).toBe(true);
+        expect(isPlanEnforcementEnabled({enabled: true, enforcementEnabled: true, scopes: []})).toBe(true);
+    });
+
+    it('never enables restrictions for a disabled or unavailable commercial context', () => {
+        expect(isPlanEnforcementEnabled({enabled: false, enforcementEnabled: true, scopes: []})).toBe(false);
+        expect(isPlanEnforcementEnabled()).toBe(false);
     });
 });
