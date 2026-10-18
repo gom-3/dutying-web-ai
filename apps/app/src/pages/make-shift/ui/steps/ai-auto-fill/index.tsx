@@ -1,5 +1,3 @@
-import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
-import {JourneyObserved} from './journey-observed';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -1535,12 +1533,6 @@ export function AiAutofill() {
             }
 
             const docAfterApply = useShiftEditorStore.getState().doc;
-            void reportScheduleJourney(result.response.observation, {
-                type: 'CLIENT_APPLIED',
-                changedCellCount: describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length,
-                draftRevision: useShiftEditorStore.getState().draftRevision,
-            });
-            setLastAppliedObservation(result.response.observation);
 
             void reportScheduleJourney(result.response.observation, {
                 type: 'CLIENT_APPLIED',

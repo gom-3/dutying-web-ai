@@ -6,6 +6,16 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.3 - 2026-10-18
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
+- `@dutying/app` (patch): 새 결과 의견을 작성할 때 이전 신고 접수 안내를 지워 아직 보내지 않은 의견과 구분하고, 과거 계산 완료를 현재 표 반영과 구분합니다.
+- `@dutying/app` (patch): 근무자 이름의 입력 오류를 저장 전에 안내하고, 기본정보 저장이 거절되면 가능근무 변경도 보내지 않도록 수정했습니다. 기존 이름을 그대로 둔 정보 편집은 계속 사용할 수 있습니다.
+- `@dutying/app` (patch): 날짜·요일별 개인 배정 제한을 인원수 설정과 분리하고, 저장된 조건도 직원·적용일·근무만 선택하는 문장으로 표시합니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동완성·조절 결과의 화면 표시와 표 적용을 운영 기록에 연결합니다.
+- `@dutying/app` (patch): 결과 의견 전송 실패 후 새로고침하더라도 같은 탭에서 24시간 안에 같은 내용을 다시 입력하면 세션에 보관한 신고 키를 복구해, 지원하는 서버에서 중복 접수를 방지합니다.
+- `@dutying/app` (patch): 자동채우기·조절 결과마다 변경 범위와 의견 대상을 안내하고, 의견 입력과 전송 후 키보드 초점을 보존합니다.
+
 ## 1.3.2 - 2026-10-18
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 자동완성·조절 결과의 화면 표시와 표 적용을 운영 기록에 연결합니다.
