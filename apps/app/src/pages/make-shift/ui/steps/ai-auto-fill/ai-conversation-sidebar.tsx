@@ -40,6 +40,7 @@ import {
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
 import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {ScheduleReportAttempt} from '../../../model/schedule-report-attempt';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -151,6 +152,7 @@ export default function AiConversationSidebar({
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
     const [reportNote, setReportNote] = useState('');
+    const [reportAttempt] = useState(() => new ScheduleReportAttempt());
     const reportInput = useRef<HTMLTextAreaElement>(null);
     const reportTrigger = useRef<HTMLButtonElement | null>(null);
     const returnReportFocus = useRef(false);
@@ -167,6 +169,7 @@ export default function AiConversationSidebar({
     }, [reportOperation, open, busy]);
 
     const closeReport = () => {
+        reportAttempt.reset();
         returnReportFocus.current = true;
         setReportOperation(null);
     };
@@ -212,6 +215,7 @@ export default function AiConversationSidebar({
             return;
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
+            reportAttempt.reset();
             setReportOperation(null);
             setReportNote('');
             reportTrigger.current = null;
@@ -757,6 +761,7 @@ export default function AiConversationSidebar({
         setPreview(null);
         setNotice(null);
         setPendingBranch(null);
+        reportAttempt.reset();
         setReportOperation(null);
         setReportNote('');
         setSelectedSuggestion(undefined);
@@ -1377,6 +1382,7 @@ export default function AiConversationSidebar({
                                                         className={`${buttonClass} mt-2`}
                                                         disabled={busy || running || preparing || reportOperation !== null}
                                                         onClick={(click) => {
+                                                            reportAttempt.reset();
                                                             reportTrigger.current = click.currentTarget;
                                                             setReportNote('');
                                                             setReportOperation(event.operation.operationId);
@@ -1628,7 +1634,10 @@ export default function AiConversationSidebar({
                                 className="my-2 w-full rounded-lg border border-gray-5 bg-white p-3 text-sm focus:border-main-1 focus:outline-none"
                                 value={reportNote}
                                 maxLength={500}
-                                onChange={(event) => setReportNote(event.target.value)}
+                                onChange={(event) => {
+                                    reportAttempt.noteChanged(event.target.value);
+                                    setReportNote(event.target.value);
+                                }}
                             />
                             <button
                                 className={buttonClass}
@@ -1639,7 +1648,13 @@ export default function AiConversationSidebar({
 
                                         if (!current) return;
 
-                                        await api.report(current.conversation.conversationId, reportOperation, reportNote.trim());
+                                        const note = reportNote.trim();
+                                        const key = reportAttempt.keyFor(
+                                            JSON.stringify([pendingKey, current.conversation.conversationId, reportOperation]),
+                                            note,
+                                        );
+
+                                        await api.report(current.conversation.conversationId, reportOperation, note, key);
                                         setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
                                         trackScheduleSignal('feedback_sent');
                                         closeReport();

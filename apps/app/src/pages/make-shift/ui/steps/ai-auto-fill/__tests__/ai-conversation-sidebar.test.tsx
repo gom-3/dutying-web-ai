@@ -86,6 +86,21 @@ const operation: TConversationOperation = {
     result: null,
     createdAt: '2026-10-03T10:00:00',
 };
+const successfulResult: NonNullable<TConversationOperation['result']> = {
+    operationType: 'GENERATE',
+    applicable: true,
+    draftRevision: 0,
+    resultType: 'PATCH',
+    changedCells: [cell],
+    unmetInstructions: [],
+    sameAsPrevious: false,
+    validation: {draftRevision: 0, rulesHash: 'rules:1', summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0}, violations: []},
+};
+const expectExecutionTimeScope = () => {
+    expect(screen.getAllByText(/실행 시점의 작성본 기준 결과예요/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('complementary')).toHaveTextContent('현재 표를 확인한 뒤 별도로 확정해 주세요.');
+    expect(screen.getByRole('complementary')).not.toHaveTextContent(/현재 (표|근무표)에 (반영|적용)(했|됐|되었)/);
+};
 
 let current: TConversationDetail;
 
@@ -159,6 +174,7 @@ const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSi
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.report.mockReset().mockResolvedValue({incidentId: 'accepted:1'});
     mocks.draftFixed = false;
     sessionStorage.clear();
     current = {
@@ -196,6 +212,34 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('describes server APPLIED as historical after a page refresh without claiming local application', async () => {
+        current.operations = [{...operation, result: successfulResult}];
+        useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+
+        const first = renderSidebar();
+
+        await screen.findByText(/계산 결과: 1칸 변경/);
+        expectExecutionTimeScope();
+        first.unmount();
+        renderSidebar();
+        await screen.findByText(/계산 결과: 1칸 변경/);
+        expectExecutionTimeScope();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('keeps historical result wording when opening an earlier APPLIED result', async () => {
+        current.operations = [
+            {...operation, result: successfulResult},
+            {...operation, operationId: 'later:2', sequence: 2},
+        ];
+        renderSidebar();
+        await userEvent.click((await screen.findAllByRole('button', {name: '근무표 열기'}))[0]);
+        await screen.findByRole('dialog');
+        await userEvent.click(screen.getByRole('button', {name: '미리보기 닫기'}));
+        expectExecutionTimeScope();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
+    });
     it('reports the selected earlier result and returns keyboard focus after cancel', async () => {
         current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
         renderSidebar();
@@ -215,9 +259,59 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'})).toHaveValue('');
         await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '조건을 다시 확인해 주세요');
         await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(mocks.report).toHaveBeenCalledWith(1, operation.operationId, '조건을 다시 확인해 주세요'));
+        await waitFor(() =>
+            expect(mocks.report).toHaveBeenCalledWith(1, operation.operationId, '조건을 다시 확인해 주세요', expect.any(String)),
+        );
         expect(mocks.report).toHaveBeenCalledOnce();
         expect(buttons[0]).toHaveFocus();
+    });
+    it('reuses a report key after a lost acknowledgement and creates a new key after success', async () => {
+        mocks.report.mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({incidentId: 'accepted:1'});
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '조건이 달라요');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
+
+        const first = mocks.report.mock.calls[0];
+
+        expect(first.slice(0, 3)).toEqual([1, operation.operationId, '조건이 달라요']);
+        expect(first[3]).toMatch(/^[0-9a-f-]{36}$/i);
+        expect(screen.queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(screen.queryByRole('region', {name: '결과 의견 보내기'})).not.toBeInTheDocument());
+        expect(mocks.report.mock.calls[1]).toEqual(first);
+        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '조건이 달라요');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(3));
+        expect(mocks.report.mock.calls[2][3]).not.toBe(first[3]);
+    });
+    it('changes the report key after editing the note or choosing another operation', async () => {
+        mocks.report.mockRejectedValue(new Error('response lost'));
+        current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
+        renderSidebar();
+
+        const reportButtons = await screen.findAllByRole('button', {name: '이 결과에 의견 보내기'});
+
+        await userEvent.click(reportButtons[0]);
+
+        const note = screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'});
+
+        await userEvent.type(note, '첫 의견');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(note).toBeEnabled());
+        await userEvent.clear(note);
+        await userEvent.type(note, '다른 의견');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(note).toBeEnabled());
+        await userEvent.click(screen.getByRole('button', {name: '취소'}));
+        await userEvent.click(reportButtons[1]);
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '다른 의견');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(3));
+        expect(new Set(mocks.report.mock.calls.map((call) => call[3])).size).toBe(3);
+        expect(mocks.report.mock.calls[2][1]).toBe('later:2');
     });
     it('clears an unfinished report when starting a new request section', async () => {
         mocks.startSegment.mockResolvedValueOnce({...current, conversation: {...current.conversation, revision: 1}});
@@ -788,9 +882,11 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('does not overwrite a manual edit made while downloading the calculated result', async () => {
+        current.operations = [{...operation, result: successfulResult}];
+
         let finish!: (version: TResultVersion) => void;
 
-        mocks.execute.mockResolvedValue(operation);
+        mocks.execute.mockResolvedValue({...operation, result: successfulResult});
         mocks.version.mockImplementationOnce(
             () =>
                 new Promise<TResultVersion>((resolve) => {
@@ -808,6 +904,7 @@ describe('persistent schedule sidebar', () => {
         await screen.findByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.');
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
+        expectExecutionTimeScope();
     });
     it('selecting another saved request stops editing the previous saved request', async () => {
         mocks.preferences.mockResolvedValue([
@@ -1699,11 +1796,15 @@ describe('interrupted execution recovery', () => {
                         executionStatus,
                         applyStatus: executionStatus === 'SUCCEEDED' ? 'APPLIED' : 'NOT_APPLIED',
                         resultVersionId: executionStatus === 'SUCCEEDED' ? 'result:2' : null,
+                        result: executionStatus === 'SUCCEEDED' ? successfulResult : null,
                     },
                 ],
             };
             await waitFor(() => expect(screen.getByRole('button', {name: '새 요청 시작하기'})).toBeEnabled(), {timeout: 5000});
             expect(screen.queryByText('아직 근무표를 작성하고 있어요. 잠시만 기다려 주세요.')).not.toBeInTheDocument();
+
+            if (executionStatus === 'SUCCEEDED') expectExecutionTimeScope();
+
             await userEvent.click(screen.getByRole('button', {name: '새 요청 시작하기'}));
             await waitFor(() => expect(mocks.startSegment).toHaveBeenCalledOnce());
             expect(sessionStorage.getItem(key)).toBeNull();
