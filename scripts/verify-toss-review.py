@@ -18,6 +18,8 @@ EXPECTED = {
 def offer_errors(body, require_ready=False):
     if not isinstance(body, dict):
         return ['JSON object required']
+    if body.get('code') == 'COMMERCIAL_NOT_ENABLED' and body.get('ready') is False:
+        return ['COMMERCIAL_NOT_ENABLED: server reachable; commercial feature disabled, setup/payment verification pending']
     errors = [f'{key}: expected {value!r}' for key, value in EXPECTED.items()
               if type(body.get(key)) is not type(value) or body.get(key) != value]
     if not isinstance(body.get('priceVersion'), str) or not body['priceVersion']:
