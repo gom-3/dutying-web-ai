@@ -196,6 +196,8 @@ export default function AiConversationSidebar({
         setReportOperation(null);
     };
     const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
+    const [conditionEdit, setConditionEdit] = useState<'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET'>('ANSWER');
+    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
     const [previousId, setPreviousId] = useState<string>();
     const [preview, setPreview] = useState<TPreview | null>(null);
     const [pendingBranch, setPendingBranch] = useState<TConversationDetail | null>(null);
@@ -243,6 +245,8 @@ export default function AiConversationSidebar({
             reportTrigger.current = null;
             setLocalEvents([]);
             setEditingRequest(null);
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
             setRequestToolsOpen(false);
             onNewConversation?.();
         }
@@ -496,6 +500,23 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
+    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
+        await run(async () => {
+            const current = detailRef.current;
+
+            if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
+                throw new Error(t('aiAdjust.stale'));
+
+            await api.selectConditions(
+                current.conversation.conversationId,
+                turn.semanticPlan.planId,
+                current.conversation.revision,
+                turn.semanticPlan.planHash,
+                ids,
+            );
+            await refresh();
+        });
+    };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
 
@@ -569,7 +590,15 @@ export default function AiConversationSidebar({
         setEntryChoice('modify');
         setPreviousId(turn.interpretationId ?? undefined);
         setChange('REPLACE');
-        setText(original);
+
+        if (current.conversationState) {
+            setConditionEdit('UPDATE');
+            setConditionTargets(
+                current.conversationState.conditions.length === 1 ? [current.conversationState.conditions[0].conditionId] : [],
+            );
+            setText('');
+        } else setText(original);
+
         setRequestToolsOpen(false);
         textarea.current?.focus();
     };
@@ -714,12 +743,14 @@ export default function AiConversationSidebar({
 
         if (!message) return;
 
+        const reviewedStateVersion = detailRef.current?.conversationState?.version;
+
         await run(async () => {
             if (useShiftEditorStore.getState().semanticExecutionEnabled && onPrepareAdjustment) await onPrepareAdjustment();
 
             const current = await sync();
 
-            if (reference && current.conversation.latestInterpretationId !== reference) {
+            if (!current.conversationState && reference && current.conversation.latestInterpretationId !== reference) {
                 throw new AiConversationInputError('staleRequest');
             }
 
@@ -731,25 +762,60 @@ export default function AiConversationSidebar({
                         (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
                 )?.interpretationId;
             const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
-            const original = priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
+            const state = current.conversationState;
+
+            if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
+                throw new Error(
+                    copy(
+                        '요청이 변경됐어요. 현재 조건을 확인한 뒤 다시 보내 주세요.',
+                        'The request changed. Review current conditions before sending again.',
+                    ),
+                );
+
+            const original = !state && priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
             const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
             const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
 
             if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
 
-            const interpreted = await api.interpret(current.conversation.conversationId, {
-                expectedRevision: current.conversation.revision,
-                text: interpretedText,
-                language: i18n.language,
-                ...(previous && current.conversation.latestInterpretationId === previous
-                    ? {
-                          previousInterpretationId: previous,
-                          change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
-                              ? 'REPLACE'
-                              : change,
-                      }
-                    : {}),
-            });
+            const interpreted = await api
+                .interpret(current.conversation.conversationId, {
+                    expectedRevision: current.conversation.revision,
+                    text: interpretedText,
+                    language: i18n.language,
+                    ...(state
+                        ? {
+                              expectedStateVersion: state.version,
+                              change:
+                                  conditionEdit === 'ANSWER'
+                                      ? state.pendingQuestion
+                                          ? ('UPDATE' as const)
+                                          : ('ADD' as const)
+                                      : conditionEdit,
+                              targetConditionIds:
+                                  conditionEdit === 'RESET' ||
+                                  conditionEdit === 'ADD' ||
+                                  (conditionEdit === 'ANSWER' && !state.pendingQuestion)
+                                      ? []
+                                      : state.pendingQuestion && conditionEdit === 'ANSWER'
+                                        ? [state.pendingQuestion.conditionId]
+                                        : conditionTargets,
+                          }
+                        : previous && current.conversation.latestInterpretationId === previous
+                          ? {
+                                previousInterpretationId: previous,
+                                change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
+                                    ? 'REPLACE'
+                                    : change,
+                            }
+                          : {}),
+                })
+                .catch(async (cause) => {
+                    // The server reserves a request version before model work. Refresh it for retry.
+                    if (state) await refresh().catch(() => undefined);
+
+                    throw cause;
+                });
 
             setText('');
             setEditingPreferenceId(undefined);
@@ -757,6 +823,8 @@ export default function AiConversationSidebar({
             setEditingRequest(null);
             setPreviousId(interpreted.interpretationId ?? undefined);
             setChange('ADD');
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
             setEntryChoice('modify');
             await refresh();
         });
@@ -1102,6 +1170,7 @@ export default function AiConversationSidebar({
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
                             }
                             copy={copy}
+                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
@@ -1826,6 +1895,46 @@ export default function AiConversationSidebar({
                                         </div>
                                     ))}
                                 </details>
+                            )}
+                            {detail?.conversationState && (
+                                <fieldset className="space-y-2 rounded border p-2 text-sm" disabled={busy || running}>
+                                    <legend>{copy('현재 요청 조건', 'Current request conditions')}</legend>
+                                    {detail.conversationState.pendingQuestion && <p>{detail.conversationState.pendingQuestion.question}</p>}
+                                    {detail.conversationState.conditions.map((condition) => (
+                                        <label key={condition.conditionId} className="flex items-start gap-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={conditionTargets.includes(condition.conditionId)}
+                                                onChange={(event) =>
+                                                    setConditionTargets((ids) =>
+                                                        event.target.checked
+                                                            ? [...ids, condition.conditionId]
+                                                            : ids.filter((id) => id !== condition.conditionId),
+                                                    )
+                                                }
+                                            />
+                                            <span>{condition.text}</span>
+                                        </label>
+                                    ))}
+                                    <select
+                                        aria-label={copy('조건 수정 방식', 'Condition edit mode')}
+                                        value={conditionEdit}
+                                        onChange={(event) => setConditionEdit(event.target.value as typeof conditionEdit)}
+                                        className="w-full rounded border p-2"
+                                    >
+                                        <option value="ANSWER">
+                                            {detail.conversationState.pendingQuestion
+                                                ? copy('질문에 답변', 'Answer question')
+                                                : copy('조건 추가', 'Add condition')}
+                                        </option>
+                                        {detail.conversationState.pendingQuestion && (
+                                            <option value="ADD">{copy('별도 조건 추가', 'Add a separate condition')}</option>
+                                        )}
+                                        <option value="UPDATE">{copy('선택한 조건 수정', 'Update selected conditions')}</option>
+                                        <option value="REMOVE">{copy('선택한 조건 삭제', 'Remove selected conditions')}</option>
+                                        <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
+                                    </select>
+                                </fieldset>
                             )}
                             {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select
