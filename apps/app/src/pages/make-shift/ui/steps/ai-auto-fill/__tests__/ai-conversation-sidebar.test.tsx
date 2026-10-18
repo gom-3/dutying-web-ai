@@ -262,6 +262,17 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
     });
+    it('clears the previous receipt notice when starting another report', async () => {
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByLabelText('예상한 조건과 다른 점을 적어 주세요.'), '첫 번째 합성 의견');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        expect(await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.')).toBeVisible();
+        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+        expect(screen.queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('예상한 조건과 다른 점을 적어 주세요.')).toHaveValue('');
+        expect(mocks.report).toHaveBeenCalledOnce();
+    });
     it('reports the selected earlier result and returns keyboard focus after cancel', async () => {
         current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
         renderSidebar();

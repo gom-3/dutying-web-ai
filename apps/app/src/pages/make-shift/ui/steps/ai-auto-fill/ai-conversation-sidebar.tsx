@@ -1405,6 +1405,7 @@ export default function AiConversationSidebar({
                                                         disabled={busy || running || preparing || reportOperation !== null}
                                                         onClick={(click) => {
                                                             reportAttempt.reset();
+                                                            setNotice(null);
                                                             setReportRecovery(undefined);
                                                             reportTrigger.current = click.currentTarget;
                                                             setReportNote('');
