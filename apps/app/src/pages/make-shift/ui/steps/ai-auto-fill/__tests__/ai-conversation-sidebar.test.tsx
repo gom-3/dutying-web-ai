@@ -1755,7 +1755,7 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(check);
         await userEvent.click(screen.getByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/}));
         await waitFor(() => expect(mocks.selectConditions).toHaveBeenCalledWith(1, 'parent', 0, 'a'.repeat(64), ['supported']));
-        expect(await screen.findByRole('button', {name: /이 조건으로 조절|Adjust with these conditions/})).toBeInTheDocument();
+        expect(await screen.findByRole('button', {name: /이대로 수정하기|Adjust with these conditions/})).toBeInTheDocument();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(screen.getByText('제외:')).toBeInTheDocument();
