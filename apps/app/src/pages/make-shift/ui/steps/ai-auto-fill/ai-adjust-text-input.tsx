@@ -422,6 +422,7 @@ export default function AiAdjustTextInput({
                     llmPrompt: result.llmPrompt?.trim() ? result.llmPrompt.trim() : undefined,
                     unmapped: result.unmapped ?? [],
                     strength: result.strength ?? 'NORMAL',
+                    ...(result.observation ? {observation: result.observation} : {}),
                 },
             });
             setEditing(false);

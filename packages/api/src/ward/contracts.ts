@@ -733,6 +733,7 @@ export type TScheduleCarryOverDTO = {
 };
 
 export type TScheduleAdjustInterpretDTO = {
+    journeyId?: string;
     text: string;
     language?: string;
     year?: number;
@@ -755,6 +756,7 @@ export type TScheduleAdjustInterpretUnmapped = {
 
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
 export type TScheduleAdjustInterpretRes = {
+    observation?: TScheduleObservation;
     items: TScheduleMonthRequestItem[];
     /** 규칙/축으로 구조화하지 못해 이번 ADJUST에서만 LLM이 처리할 사용자 원문의 잔여 문장. */
     llmPrompt?: string | null;
@@ -772,6 +774,7 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    journeyId?: string;
     monthlyRestRequirement?: TMonthlyRestRequirement;
     year: number;
     month: number;
@@ -795,7 +798,17 @@ export type TAutofillDTO = {
     idempotencyKey?: string;
 };
 
+export type TScheduleObservation = {
+    flowId: string;
+    serverEventId: string;
+    wardId: number;
+    shiftTeamId: number;
+    year: number;
+    month: number;
+};
+
 export type TAutofillResponse = {
+    observation?: TScheduleObservation;
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     failure?: {
         reasonCode: string;
@@ -896,6 +909,7 @@ export type TSnapshotDetailRes = {
 };
 
 export type TPublishSnapshotDTO = {
+    sourceJourneyEventId?: string;
     overwriteWardShift?: boolean;
     applyRowOrder?: boolean;
     /**

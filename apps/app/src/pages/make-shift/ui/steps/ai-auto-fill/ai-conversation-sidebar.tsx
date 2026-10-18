@@ -1,3 +1,6 @@
+import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
+import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {JourneyObserved} from './journey-observed';
 import {type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
@@ -331,9 +334,17 @@ export default function AiConversationSidebar({
             useShiftEditorStore.getState().draftRevision === uiRevision
         ) {
             const version = await api.version(operation.resultVersionId);
+            if (!mounted.current) return;
 
-            if (useShiftEditorStore.getState().draftRevision === uiRevision) restore(version);
-            else
+            if (useShiftEditorStore.getState().draftRevision === uiRevision) {
+                const before = useShiftEditorStore.getState().doc;
+                restore(version);
+                void reportScheduleJourney(operation.result?.observation, {
+                    type: 'CLIENT_APPLIED',
+                    changedCellCount: describeAdjustChanges(before, useShiftEditorStore.getState().doc).length,
+                    draftRevision: useShiftEditorStore.getState().draftRevision,
+                });
+            } else
                 setNotice(
                     copy(
                         '작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.',
@@ -1236,7 +1247,11 @@ export default function AiConversationSidebar({
                                         </div>
                                     ) : (
                                         <div key={event.id} className="space-y-3">
-                                            <article className="rounded-xl border border-gray-6 bg-white p-3" inert={preparing}>
+                                            <JourneyObserved
+                                                observation={event.operation.result?.observation}
+                                                inert={preparing}
+                                                className="rounded-xl border border-gray-6 bg-white p-3"
+                                            >
                                                 <p className="font-semibold">
                                                     {copy(
                                                         event.operation.operationType === 'GENERATE' ? '자동채우기' : '수정',
@@ -1308,7 +1323,7 @@ export default function AiConversationSidebar({
                                                         )}
                                                     </div>
                                                 )}
-                                            </article>
+                                            </JourneyObserved>
                                             {operationFailure(event.operation) && (
                                                 <AiExecutionFailure
                                                     operationType={event.operation.operationType}
