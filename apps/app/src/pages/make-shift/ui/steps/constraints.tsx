@@ -81,6 +81,7 @@ type TSoftRuleTemplate = {
     buildText: (params: Record<string, string>) => string;
     isRecommended?: boolean;
     targetLockedToAll?: boolean;
+    personalExclusion?: boolean;
     sourceTemplate?: TShiftConstraintTemplate;
 };
 type TRulesUpdate = (prev: TShiftConstraintRuleDraft[]) => TShiftConstraintRuleDraft[];
@@ -1577,6 +1578,29 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
     });
 }
 
+function isPersonalDateExclusion(templateCode: string, params: Record<string, unknown>) {
+    return (
+        templateCode === 'STAFF_COUNT_BY_SHIFT' &&
+        getConstraintOptionType(params.target) === 'NURSE' &&
+        Number(params.count) === 0 &&
+        ['EXACT', 'MAX'].includes(getConstraintOptionType(params.operator) ?? '')
+    );
+}
+
+function personalDateExclusionTemplate(template: TSoftRuleTemplate, t: TTypedT): TSoftRuleTemplate {
+    const controls = template.controls.filter((control) => ['target', 'dateScope', 'shift'].includes(control.key));
+    const pattern = t('page.makeShift.constraints.personalExclusion.sentence');
+    return {
+        ...template,
+        personalExclusion: true,
+        isRecommended: false,
+        label: t('page.makeShift.constraints.personalExclusion.label'),
+        controls,
+        sentence: createSentenceFromPattern(pattern, controls),
+        buildText: (params) => interpolateLocalizedPattern(pattern, params),
+    };
+}
+
 function createLegacySoftRuleTemplates(t: TTypedT, rotationMode: TWardRotationMode = 'THREE') {
     return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => createLocalizedSoftRuleTemplate(template, t, rotationMode));
 }
@@ -2852,12 +2876,7 @@ function getOptionsForControl(
     if (template.id === 'STAFF_COUNT_BY_SHIFT' && control.optionsKey === 'target') {
         return resolvedOptions.filter((option) => {
             const type = getConstraintOptionType(option.raw ?? option.value);
-
-            return (
-                type === 'ALL' ||
-                type === 'DIVISION' ||
-                (type === 'NURSE' && Number(params.count) === 0 && getConstraintOptionType(params.operator) !== 'MIN')
-            );
+            return template.personalExclusion ? type === 'NURSE' : type === 'ALL' || type === 'DIVISION';
         });
     }
 
@@ -3899,10 +3918,14 @@ const RuleRow = memo(function RuleRow({
     onSoftParamChange,
 }: TRuleRowProps) {
     const {t} = useTypedTranslation();
+    const presentationTemplate =
+        softTemplate && isPersonalDateExclusion(rule.templateCode, rule.params)
+            ? personalDateExclusionTemplate(softTemplate, t)
+            : softTemplate;
     const slots = template?.slots ?? [];
     const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
     const canChangeSeverity = !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
-    const showHelp = hasConstraintHelp(rule.templateCode);
+    const showHelp = !isPersonalDateExclusion(rule.templateCode, rule.params) && hasConstraintHelp(rule.templateCode);
 
     return (
         <div
@@ -3920,12 +3943,12 @@ const RuleRow = memo(function RuleRow({
                 ) : isImportant ? (
                     <StaticImportantBadge isRecommended={isRecommended} />
                 ) : null}
-                {softTemplate ? (
+                {presentationTemplate ? (
                     <SoftSentence
-                        template={softTemplate}
+                        template={presentationTemplate}
                         params={rule.params}
                         optionMap={optionMap}
-                        onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
+                        onParamChange={(key, value) => onSoftParamChange(presentationTemplate, key, value)}
                     />
                 ) : (
                     <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
@@ -4199,6 +4222,14 @@ function getSoftRuleAddIssue(
     params: Record<string, unknown>,
     _optionMap: Record<string, TSelectOption[]> = {},
 ): TI18nKey | null {
+    if (
+        template.personalExclusion &&
+        !getOptionsForControl({key: 'target', kind: 'select', optionsKey: 'target'}, template, params, _optionMap).some((option) =>
+            doesSelectOptionMatchValue(option, params.target),
+        )
+    ) {
+        return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
+    }
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
     const minimumNurseCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
 
@@ -4322,6 +4353,17 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
             const params = getDefaultParams(template, optionMap, rotationMode);
 
             next[template.id] = normalizeCombinationParams(template, params, optionMap);
+            if (template.id === 'STAFF_COUNT_BY_SHIFT') {
+                const nurse = (optionMap.target ?? []).find((option) => getConstraintOptionType(option.raw) === 'NURSE');
+                const evening = (optionMap.dutyStrict ?? []).find((option) => option.classification === 'EVENING');
+                next.personalDateExclusion = {
+                    ...next[template.id],
+                    target: nurse?.raw,
+                    ...(evening?.raw ? {shift: evening.raw} : {}),
+                    operator: {type: 'EXACT'},
+                    count: 0,
+                };
+            }
         });
         setDraftParams(next);
         setSelectedCategory(categories[0] ?? 'STAFFING');
@@ -4409,22 +4451,26 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                             onScroll={updateScrollHint}
                             className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-6 pr-2 pb-14 [scrollbar-color:#8C83D8_#EEF0F4] [scrollbar-gutter:stable] [scrollbar-width:auto] [&::-webkit-scrollbar]:block [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#8C83D8] [&::-webkit-scrollbar-thumb:hover]:bg-main-1 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-[#EEF0F4]"
                         >
-                            {visibleTemplates.map((template) => {
-                                const templateParams = draftParams[template.id] ?? {};
+                            {visibleTemplates.map((baseTemplate) => {
+                                const personalExclusion = selectedCategory === 'NURSE_LIMIT' && baseTemplate.id === 'STAFF_COUNT_BY_SHIFT';
+                                const template = personalExclusion ? personalDateExclusionTemplate(baseTemplate, t) : baseTemplate;
+                                const draftKey = personalExclusion ? 'personalDateExclusion' : template.id;
+                                const templateParams = draftParams[draftKey] ?? {};
                                 const addDescription = template.buildText(normalizeSoftRuleParams(template, templateParams, optionMap));
                                 const addIssue = getSoftRuleAddIssue(template, templateParams, optionMap);
                                 const canAdd = addIssue === null;
                                 const addIssueId = `constraint-add-issue-${template.id}`;
-                                const helpRule: TShiftConstraintRuleDraft | null = hasConstraintHelp(template.id)
-                                    ? {
-                                          clientId: `constraint-modal-help-${template.id}`,
-                                          templateCode: template.id,
-                                          category: template.category,
-                                          severity: 'SOFT',
-                                          sortOrder: 0,
-                                          params: templateParams,
-                                      }
-                                    : null;
+                                const helpRule: TShiftConstraintRuleDraft | null =
+                                    !personalExclusion && hasConstraintHelp(template.id)
+                                        ? {
+                                              clientId: `constraint-modal-help-${template.id}`,
+                                              templateCode: template.id,
+                                              category: template.category,
+                                              severity: 'SOFT',
+                                              sortOrder: 0,
+                                              params: templateParams,
+                                          }
+                                        : null;
 
                                 return (
                                     <div
@@ -4433,33 +4479,13 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                         className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
                                     >
                                         <div className="min-w-0 flex-1">
-                                            {template.id === 'STAFF_COUNT_BY_SHIFT' && (
-                                                <button
-                                                    type="button"
-                                                    className="mb-2 text-sm font-semibold text-main-1"
-                                                    onClick={() => {
-                                                        const nurse = (optionMap.target ?? []).find(
-                                                            (option) => option.raw?.type === 'NURSE',
-                                                        );
-                                                        const evening = (optionMap.dutyStrict ?? []).find(
-                                                            (option) => option.classification === 'EVENING',
-                                                        );
-                                                        if (!nurse) return;
-                                                        setDraftParams((prev) => ({
-                                                            ...prev,
-                                                            [template.id]: {
-                                                                ...(prev[template.id] ?? {}),
-                                                                target: nurse.raw,
-                                                                ...(evening?.raw ? {shift: evening.raw} : {}),
-                                                                dateScope: {type: 'WEDNESDAY'},
-                                                                operator: {type: 'EXACT'},
-                                                                count: 0,
-                                                            },
-                                                        }));
-                                                    }}
-                                                >
-                                                    {t('page.makeShift.constraints.personalExclusionPreset')}
-                                                </button>
+                                            {personalExclusion && (
+                                                <>
+                                                    <p className="mb-1 text-sm font-semibold text-main-1">{template.label}</p>
+                                                    <p className="mb-2 text-xs text-gray-4">
+                                                        {t('page.makeShift.constraints.personalExclusion.description')}
+                                                    </p>
+                                                </>
                                             )}
                                             <SoftSentence
                                                 template={template}
@@ -4468,9 +4494,9 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                                 onParamChange={(key, value) =>
                                                     setDraftParams((prev) => ({
                                                         ...prev,
-                                                        [template.id]: normalizeCombinationParams(
+                                                        [draftKey]: normalizeCombinationParams(
                                                             template,
-                                                            {...(prev[template.id] ?? {}), [key]: value},
+                                                            {...(prev[draftKey] ?? {}), [key]: value},
                                                             optionMap,
                                                         ),
                                                     }))

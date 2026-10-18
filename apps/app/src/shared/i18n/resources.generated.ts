@@ -1626,7 +1626,11 @@ export const ko = {
                         "number": "숫자 값"
                     }
                 },
-                "personalExclusionPreset": "직원별 날짜·요일 근무 제외"
+                "personalExclusion": {
+                    "label": "날짜·요일별 배정 제한",
+                    "sentence": "{target}에게 {dateScope} {shift} 근무를 배정하지 않아요.",
+                    "description": "선택한 근무만 제한해요. 다른 근무나 휴무는 배정될 수 있어요. 요일은 매주, 일자는 매월 반복 적용돼요."
+                }
             },
             "fixedShifts": {
                 "empty": "이번 달 근무표가 아직 없어요",
@@ -4769,7 +4773,11 @@ export const en: TLocale = {
                         "number": "Numeric value"
                     }
                 },
-                "personalExclusionPreset": "Exclude a shift by nurse and day"
+                "personalExclusion": {
+                    "label": "Assignment restrictions by date or weekday",
+                    "sentence": "Do not assign {shift} shifts to {target} on {dateScope}.",
+                    "description": "Only the selected shifts are restricted. Other shifts or days off may be assigned. Weekdays repeat weekly; day numbers repeat monthly."
+                }
             },
             "fixedShifts": {
                 "empty": "No schedule exists for this month yet",
@@ -7910,7 +7918,11 @@ export const ja: TLocale = {
                         "number": "数値"
                     }
                 },
-                "personalExclusionPreset": "看護師・日付・曜日別の勤務除外"
+                "personalExclusion": {
+                    "label": "日付・曜日別の勤務制限",
+                    "sentence": "{target} / {dateScope} / {shift}勤務を割り当てません。",
+                    "description": "選択した勤務のみ制限します。他の勤務や休みは割り当てられます。曜日は毎週、日付は毎月適用します。"
+                }
             },
             "fixedShifts": {
                 "empty": "今月の勤務表はまだありません",
@@ -11051,7 +11063,11 @@ export const zh: TLocale = {
                         "number": "数值"
                     }
                 },
-                "personalExclusionPreset": "按护士及日期排除班次"
+                "personalExclusion": {
+                    "label": "按日期或星期限制排班",
+                    "sentence": "{target}在{dateScope}不安排{shift}班次。",
+                    "description": "仅限制所选班次，仍可安排其他班次或休息。星期每周重复，日期每月重复。"
+                }
             },
             "fixedShifts": {
                 "empty": "本月还没有排班表。",
@@ -14192,7 +14208,11 @@ export const th: TLocale = {
                         "number": "ค่าตัวเลข"
                     }
                 },
-                "personalExclusionPreset": "ยกเว้นเวรตามพยาบาลและวัน"
+                "personalExclusion": {
+                    "label": "จำกัดการจัดเวรตามวันที่หรือวันในสัปดาห์",
+                    "sentence": "ไม่จัดเวร {shift} ให้ {target} ใน {dateScope}",
+                    "description": "จำกัดเฉพาะเวรที่เลือก ยังจัดเวรอื่นหรือวันหยุดได้ วันในสัปดาห์มีผลทุกสัปดาห์ ส่วนวันที่มีผลทุกเดือน"
+                }
             },
             "fixedShifts": {
                 "empty": "ยังไม่มีกำหนดการสำหรับเดือนนี้",
@@ -17333,7 +17353,11 @@ export const vi: TLocale = {
                         "number": "Giá trị số"
                     }
                 },
-                "personalExclusionPreset": "Loại ca theo nhân viên và ngày"
+                "personalExclusion": {
+                    "label": "Hạn chế phân ca theo ngày hoặc thứ",
+                    "sentence": "Không phân ca {shift} cho {target} vào {dateScope}.",
+                    "description": "Chỉ hạn chế ca đã chọn. Vẫn có thể phân ca khác hoặc ngày nghỉ. Thứ áp dụng hằng tuần; ngày lặp lại hằng tháng."
+                }
             },
             "fixedShifts": {
                 "empty": "Chưa có lịch nào cho tháng này",
