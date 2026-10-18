@@ -262,6 +262,55 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
     });
+    it('does not describe historical semantic APPLIED as current browser application after a saved manual edit', async () => {
+        current.conversation.currentVersionId = 'manual-latest';
+        current.conversation.latestInterpretationId = 'confirmed:1';
+        current.draft = {...source, versionId: 'manual-latest'};
+        current.operations = [{...operation, interpretationId: 'confirmed:1', result: successfulResult}];
+        current.turns = [
+            {
+                eventId: 1,
+                sequence: 1,
+                actor: 'ASSISTANT',
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                text: null,
+                interpretationId: 'confirmed:1',
+                baseRevision: 0,
+                contextHash: 'rules:1',
+                interpretation: null,
+                createdAt: source.createdAt,
+                semanticPlan: {
+                    planId: 'plan:1',
+                    planHash: 'a'.repeat(64),
+                    sourceVersionId: source.versionId,
+                    state: 'CONFIRMED',
+                    summary: 'D 배정',
+                    confirmationAllowed: false,
+                    reasonCodes: [],
+                    conditions: [
+                        {
+                            intentId: 'intent:1',
+                            action: 'ASSIGN',
+                            nurseIds: [1],
+                            dates: ['2026-11-01'],
+                            shiftCodes: ['D'],
+                            quantifier: 'EACH',
+                            modality: 'HARD',
+                            operator: null,
+                            count: null,
+                            sourceSpan: {quote: 'D 배정'},
+                        },
+                    ],
+                },
+            },
+        ];
+        renderSidebar();
+        await screen.findByText(/계산 결과: 1칸 변경/);
+        expect(screen.queryByText('이 요청을 반영했어요.')).not.toBeInTheDocument();
+        expect(screen.getByText('이 요청으로 계산을 마쳤어요.')).toBeVisible();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
     it('clears the previous receipt notice when starting another report', async () => {
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
