@@ -50,6 +50,20 @@ def parse_report(raw):
 def access_token():
     if os.environ.get('GA_ACCESS_TOKEN'):
         return os.environ['GA_ACCESS_TOKEN']
+    credentials_path = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
+    if not credentials_path:
+        candidate = Path.home() / '.local/share/dutying-analytics/google-credentials.json'
+        if candidate.is_file():
+            credentials_path = str(candidate)
+    if credentials_path:
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            credentials = Credentials.from_authorized_user_file(credentials_path)
+            credentials.refresh(Request())
+            return credentials.token
+        except Exception:
+            raise RuntimeError('승인된 Google 읽기 전용 인증 갱신 실패. 인증 파일과 권한을 확인하세요.') from None
     try:
         result = subprocess.run(['gcloud', 'auth', 'application-default', 'print-access-token'],
                                 capture_output=True, text=True, check=True, timeout=30)
