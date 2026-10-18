@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.4
+
+### Patch Changes
+
+- 73647eb: Separate billing access from existing ward plan limits while preserving older-server behavior.
+    - @dutying/api@1.3.4
+    - @dutying/domain@1.3.4
+    - @dutying/utils@1.3.4
+
 ## 1.3.3
 
 ### Patch Changes
