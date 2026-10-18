@@ -262,6 +262,66 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
     });
+    it('does not describe historical semantic APPLIED as current browser application after a saved manual edit', async () => {
+        current.conversation.currentVersionId = 'manual-latest';
+        current.conversation.latestInterpretationId = 'confirmed:1';
+        current.draft = {...source, versionId: 'manual-latest'};
+        current.operations = [{...operation, interpretationId: 'confirmed:1', result: successfulResult}];
+        current.turns = [
+            {
+                eventId: 1,
+                sequence: 1,
+                actor: 'ASSISTANT',
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                text: null,
+                interpretationId: 'confirmed:1',
+                baseRevision: 0,
+                contextHash: 'rules:1',
+                interpretation: null,
+                createdAt: source.createdAt,
+                semanticPlan: {
+                    planId: 'plan:1',
+                    planHash: 'a'.repeat(64),
+                    sourceVersionId: source.versionId,
+                    state: 'CONFIRMED',
+                    summary: 'D 배정',
+                    confirmationAllowed: false,
+                    reasonCodes: [],
+                    conditions: [
+                        {
+                            intentId: 'intent:1',
+                            action: 'ASSIGN',
+                            nurseIds: [1],
+                            dates: ['2026-11-01'],
+                            shiftCodes: ['D'],
+                            quantifier: 'EACH',
+                            modality: 'HARD',
+                            operator: null,
+                            count: null,
+                            sourceSpan: {quote: 'D 배정'},
+                        },
+                    ],
+                },
+            },
+        ];
+        renderSidebar();
+        await screen.findByText(/계산 결과: 1칸 변경/);
+        expect(screen.queryByText('이 요청을 반영했어요.')).not.toBeInTheDocument();
+        expect(screen.getByText('이 요청으로 계산을 마쳤어요.')).toBeVisible();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('clears the previous receipt notice when starting another report', async () => {
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByLabelText('예상한 조건과 다른 점을 적어 주세요.'), '첫 번째 합성 의견');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        expect(await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.')).toBeVisible();
+        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+        expect(screen.queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('예상한 조건과 다른 점을 적어 주세요.')).toHaveValue('');
+        expect(mocks.report).toHaveBeenCalledOnce();
+    });
     it('reports the selected earlier result and returns keyboard focus after cancel', async () => {
         current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
         renderSidebar();
@@ -1019,6 +1079,8 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expectExecutionTimeScope();
+        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+        expect(screen.getByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.')).toBeVisible();
     });
     it('selecting another saved request stops editing the previous saved request', async () => {
         mocks.preferences.mockResolvedValue([

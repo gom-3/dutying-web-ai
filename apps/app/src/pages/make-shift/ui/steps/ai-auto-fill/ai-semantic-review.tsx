@@ -79,7 +79,7 @@ export function AiSemanticReview({
             <p className="font-medium">
                 {ready
                     ? applied
-                        ? copy('이 요청을 반영했어요.', 'These conditions have been applied.')
+                        ? copy('이 요청으로 계산을 마쳤어요.', 'The calculation for these conditions is complete.')
                         : current
                           ? copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
                           : copy('이전 요청 내용', 'Previous request')

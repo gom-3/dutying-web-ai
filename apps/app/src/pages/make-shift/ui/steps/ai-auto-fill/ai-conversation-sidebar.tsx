@@ -1405,6 +1405,14 @@ export default function AiConversationSidebar({
                                                         disabled={busy || running || preparing || reportOperation !== null}
                                                         onClick={(click) => {
                                                             reportAttempt.reset();
+                                                            setNotice((currentNotice) =>
+                                                                [
+                                                                    '의견을 보냈어요. 확인해서 개선할게요.',
+                                                                    'Your feedback was sent. Thank you.',
+                                                                ].includes(currentNotice ?? '')
+                                                                    ? null
+                                                                    : currentNotice,
+                                                            );
                                                             setReportRecovery(undefined);
                                                             reportTrigger.current = click.currentTarget;
                                                             setReportNote('');
