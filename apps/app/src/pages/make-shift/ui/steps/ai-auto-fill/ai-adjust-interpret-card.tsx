@@ -1,3 +1,4 @@
+import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import type {TAutofillAdjustStrength, TScheduleAdjustInterpretRes, TScheduleMonthRequestItem} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -6,6 +7,7 @@ import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
 import {AiAdjustInterpretIssues} from './ai-adjust-interpret-issues';
 
 export type TAdjustCard = {
+    observation?: TScheduleAdjustInterpretRes['observation'];
     requestText: string;
     items: TInterpretCardItem[];
     llmPrompt?: string;
@@ -22,6 +24,7 @@ type TProps = {
 /** The assistant's interpretation is a message; answers are collected in separate user bubbles. */
 export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps) {
     const {t} = useTypedTranslation();
+    const displayRef = useScheduleJourneyDisplay<HTMLElement>(card.observation);
     const displayItems = summarizeInterpretationItems(card.items.map(({item}) => item));
     const nurseName = (id: number) => nurses.find((nurse) => nurse.nurseId === id)?.name ?? t('aiAdjust.nurse', {id});
     const fieldLabels = {
@@ -135,7 +138,7 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps
     if (!hasContent) return <AiAdjustInterpretIssues card={card} nurses={nurses} partial={false} />;
 
     return (
-        <section aria-label={title} className="min-w-0 space-y-3 text-[14.5px] leading-7">
+        <section ref={displayRef} aria-label={title} className="min-w-0 space-y-3 text-[14.5px] leading-7">
             <h3 className="font-semibold">{title}</h3>
             {displayItems.length > 0 && (
                 <ul className="space-y-2">

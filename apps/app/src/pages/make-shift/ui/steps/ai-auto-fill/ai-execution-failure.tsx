@@ -1,3 +1,4 @@
+import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
@@ -23,6 +24,7 @@ export function AiExecutionFailure({
     operationType?: 'GENERATE' | 'ADJUST';
 }) {
     const {t} = useTypedTranslation();
+    const displayRef = useScheduleJourneyDisplay(failure.observation);
     const teamId = useMakeShiftStore((state) => state.currentShiftTeamId);
     const settingsUrl = teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : ROUTE.MEMBER;
     const choiceClass =
@@ -30,7 +32,7 @@ export function AiExecutionFailure({
     const retryable = !failure.blocked && (!failure.recovery || failure.recovery === 'retry');
 
     return (
-        <div className="flex min-w-0 flex-col gap-4">
+        <div ref={displayRef} className="flex min-w-0 flex-col gap-4">
             <AiFailureMessage
                 message={failure.message}
                 title={

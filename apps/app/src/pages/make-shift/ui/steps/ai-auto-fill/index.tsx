@@ -1,3 +1,5 @@
+import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
+import {JourneyObserved} from './journey-observed';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -123,7 +125,7 @@ type TSelectionFixedStats = {
 };
 
 type TGoalCandidateResponse = Pick<TAutofillResponse, 'changedCells'> &
-    Partial<Pick<TAutofillResponse, 'validation' | 'requestRuleResults' | 'adjustmentNotices'>> & {
+    Partial<Pick<TAutofillResponse, 'validation' | 'requestRuleResults' | 'adjustmentNotices' | 'observation'>> & {
         goalCandidate: NonNullable<TAutofillResponse['goalCandidate']>;
     };
 
@@ -389,6 +391,7 @@ export function AiAutofill() {
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+    const [lastAppliedObservation, setLastAppliedObservation] = useState<TAutofillResponse['observation']>();
     const [hasGeneratedSchedule, setHasGeneratedSchedule] = useState(false);
     const rememberGeneratedSchedule = useCallback(() => {
         setHasGeneratedSchedule(true);
@@ -699,6 +702,7 @@ export function AiAutofill() {
 
     useEffect(() => {
         setHasCompletedAiFill(false);
+        setLastAppliedObservation(undefined);
         setGenerationReviewMessage(null);
         setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
@@ -936,6 +940,9 @@ export function AiAutofill() {
         invalidateSnapshots(wardId, currentShiftTeamId, year, month);
 
         const publishResult = await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
+            ...(lastAppliedScheduleObservation(wardId, currentShiftTeamId, year, month)
+                ? {sourceJourneyEventId: lastAppliedScheduleObservation(wardId, currentShiftTeamId, year, month)!.serverEventId}
+                : {}),
             overwriteWardShift: true,
             applyRowOrder: true,
             // 고른 것이 없으면 키를 넣지 않는다. 승격은 기본 미선택이고, 안 고른 확정의
@@ -1072,6 +1079,7 @@ export function AiAutofill() {
             markLastAiGeneratedDoc(null);
             resetAiStatus();
             setHasCompletedAiFill(false);
+            setLastAppliedObservation(undefined);
             setHasGeneratedSchedule(false);
             writeAutofillCompletion(completionStorageKey, false);
 
@@ -1332,6 +1340,7 @@ export function AiAutofill() {
         aiAbortControllerRef.current?.abort();
         aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
+        setLastAppliedObservation(undefined);
         setIsAiGenerating(true);
         setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
@@ -1523,6 +1532,12 @@ export function AiAutofill() {
             }
 
             const docAfterApply = useShiftEditorStore.getState().doc;
+            void reportScheduleJourney(result.response.observation, {
+                type: 'CLIENT_APPLIED',
+                changedCellCount: describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length,
+                draftRevision: useShiftEditorStore.getState().draftRevision,
+            });
+            setLastAppliedObservation(result.response.observation);
 
             markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length > 0);
@@ -1656,6 +1671,7 @@ export function AiAutofill() {
         setIsAiBlankPreviewVisible(false);
         markLastAiGeneratedDoc(null);
         setHasCompletedAiFill(false);
+        setLastAppliedObservation(undefined);
         setHasGeneratedSchedule(false);
         writeAutofillCompletion(completionStorageKey, false);
         resetAiStatus();
@@ -1704,6 +1720,7 @@ export function AiAutofill() {
         const revision = useShiftEditorStore.getState().draftRevision;
         const [result] = await Promise.all([
             WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
+                journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
                 text,
                 language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
                 year,
@@ -1899,6 +1916,12 @@ export function AiAutofill() {
         });
 
         commands.applyChangedCells(persisted.changedCells, originalShift, 'ai');
+        void reportScheduleJourney(response.observation, {
+            type: 'CLIENT_APPLIED',
+            changedCellCount: persisted.changedCells.length,
+            draftRevision: useShiftEditorStore.getState().draftRevision,
+        });
+        setLastAppliedObservation(response.observation);
 
         const docAfterApply = useShiftEditorStore.getState().doc;
 
@@ -1948,6 +1971,11 @@ export function AiAutofill() {
 
                 // 페이지를 다시 열었어도 command history가 아니라 저장된 실행 직전 셀로 되돌린다.
                 commands.applyChangedCells(persisted.revertCells, current.originalShift, 'ai');
+                void reportScheduleJourney(current.response.observation, {
+                    type: 'CLIENT_UNDONE',
+                    changedCellCount: persisted.revertCells.length,
+                    draftRevision: useShiftEditorStore.getState().draftRevision,
+                });
                 setGoalCandidateReview((latest) =>
                     latest ? {...latest, response: {...latest.response, goalCandidate: persisted.candidate}} : latest,
                 );
@@ -2707,46 +2735,50 @@ export function AiAutofill() {
                 />
 
                 {generationReviewMessage !== null && (
-                    <div role="status" className="mx-4 my-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
-                        <p className="font-semibold">
-                            {batchCopy('초안을 만들었어요 · 확인할 규칙이 있어요', 'Draft created · some rules need review')}
-                        </p>
-                        <p className="mt-1">
-                            {generationReviewMessage ||
-                                batchCopy(
-                                    '못 지킨 규칙은 근무표에 표시했어요. 표시된 칸에서 내용을 확인하고 수정할 수 있어요.',
-                                    'Unmet rules are marked on the schedule. Review the marked cells and edit the draft.',
-                                )}
-                        </p>
-                        <button type="button" className="mt-2 underline" onClick={() => setShowFaults(true)}>
-                            {batchCopy('규칙 위반 표시 보기', 'Show rule violations')}
-                        </button>
-                        <button type="button" className="mt-2 ml-4 underline" onClick={() => setGenerationReviewMessage(null)}>
-                            {batchCopy('안내 닫기', 'Dismiss notice')}
-                        </button>
-                    </div>
+                    <JourneyObserved observation={lastAppliedObservation}>
+                        <div role="status" className="mx-4 my-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                            <p className="font-semibold">
+                                {batchCopy('초안을 만들었어요 · 확인할 규칙이 있어요', 'Draft created · some rules need review')}
+                            </p>
+                            <p className="mt-1">
+                                {generationReviewMessage ||
+                                    batchCopy(
+                                        '못 지킨 규칙은 근무표에 표시했어요. 표시된 칸에서 내용을 확인하고 수정할 수 있어요.',
+                                        'Unmet rules are marked on the schedule. Review the marked cells and edit the draft.',
+                                    )}
+                            </p>
+                            <button type="button" className="mt-2 underline" onClick={() => setShowFaults(true)}>
+                                {batchCopy('규칙 위반 표시 보기', 'Show rule violations')}
+                            </button>
+                            <button type="button" className="mt-2 ml-4 underline" onClick={() => setGenerationReviewMessage(null)}>
+                                {batchCopy('안내 닫기', 'Dismiss notice')}
+                            </button>
+                        </div>
+                    </JourneyObserved>
                 )}
 
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
-                    <AiAdjustResultNote
-                        changedCount={lastAdjustChangedCount}
-                        failure={isAdjustDialogOpen ? null : lastAdjustFailure}
-                        onReviewFailure={() => setIsAdjustDialogOpen(true)}
-                        ruleResults={lastRuleResults}
-                        notices={lastAdjustmentNotices}
-                        goalResult={lastGoalResult}
-                        offGoal={lastOffGoal}
-                        isStrongest={lastAdjustStrength === 'STRONG'}
-                        disabled={isAiGenerating || disablingRequestId !== null || isAutofillBlocked}
-                        onAdjustHarder={() => {
-                            const readyContext = getAiFillReadyContext();
+                    <JourneyObserved observation={lastAppliedObservation}>
+                        <AiAdjustResultNote
+                            changedCount={lastAdjustChangedCount}
+                            failure={isAdjustDialogOpen ? null : lastAdjustFailure}
+                            onReviewFailure={() => setIsAdjustDialogOpen(true)}
+                            ruleResults={lastRuleResults}
+                            notices={lastAdjustmentNotices}
+                            goalResult={lastGoalResult}
+                            offGoal={lastOffGoal}
+                            isStrongest={lastAdjustStrength === 'STRONG'}
+                            disabled={isAiGenerating || disablingRequestId !== null || isAutofillBlocked}
+                            onAdjustHarder={() => {
+                                const readyContext = getAiFillReadyContext();
 
-                            if (!readyContext) return;
+                                if (!readyContext) return;
 
-                            void runAiFill(readyContext, {strength: 'STRONG'});
-                        }}
-                    />
+                                void runAiFill(readyContext, {strength: 'STRONG'});
+                            }}
+                        />
+                    </JourneyObserved>
                 )}
 
                 {goalCandidateReview?.response.goalCandidate && (
