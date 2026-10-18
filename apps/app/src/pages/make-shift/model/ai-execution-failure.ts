@@ -62,6 +62,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             (uniqueNames.length > 3 ? i18n.t('aiAdjust.executionFailure.moreNurses', {count: uniqueNames.length - 3}) : '');
 
         return {
+            ...(response.observation ? {observation: response.observation} : {}),
             message: uniqueNames.length
                 ? i18n.t('aiAdjust.executionFailure.offNotAllowedNamed', {names: displayNames})
                 : i18n.t('aiAdjust.executionFailure.offNotAllowed'),
@@ -117,5 +118,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         recovery = 'revise';
     }
 
-    return {message: i18n.t(`aiAdjust.executionFailure.${key}`), blocked: false, recovery};
+    return {
+        ...(response.observation ? {observation: response.observation} : {}),
+        message: i18n.t(`aiAdjust.executionFailure.${key}`),
+        blocked: false,
+        recovery,
+    };
 }

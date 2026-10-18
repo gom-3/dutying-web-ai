@@ -55,6 +55,7 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
                     message: i18n.t('aiAdjust.executionFailure.unknown'),
                     blocked: false,
                     recovery: 'retry',
+                    ...(response.observation ? {observation: response.observation} : {}),
                 };
 
                 return {ok: false, message: failure.message, failure};
