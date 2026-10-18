@@ -126,7 +126,7 @@ def write_artifacts(snapshot, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--property', default=os.environ.get('GA_PROPERTY_ID'))
-    parser.add_argument('--output', type=Path, default=Path('artifacts/analytics'))
+    parser.add_argument('--output', type=Path, default=Path('artifacts/analytics-basic'))
     parser.add_argument('--preview', action='store_true', help='Generate an explicitly disconnected dashboard without contacting GA')
     args = parser.parse_args()
     if not args.preview and (not args.property or not re.fullmatch(r'[0-9]+', args.property)):
