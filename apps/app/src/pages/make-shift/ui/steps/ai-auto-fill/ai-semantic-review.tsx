@@ -1,3 +1,4 @@
+import {useState} from 'react';
 import {semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 
@@ -14,6 +15,7 @@ type TProps = {
     onApply: () => void;
     onEdit: () => void;
     onRetry: () => void;
+    onSelectConditions?: (ids: string[]) => void;
 };
 
 const primary =
@@ -59,7 +61,15 @@ export function AiSemanticReview({
     onApply,
     onEdit,
     onRetry,
+    onSelectConditions,
 }: TProps) {
+    const [selection, setSelection] = useState<{planId: string; ids: string[]}>({planId: plan.planId, ids: []});
+    const selected = selection.planId === plan.planId ? selection.ids : [];
+    const canSelect =
+        !plan.selectionAudit &&
+        ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
+        plan.conditionGroups?.some((group) => group.selectable) &&
+        Boolean(onSelectConditions);
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
     const retry = semanticRecovery(plan) === 'retry';
     const blockedMessage = retry
@@ -131,6 +141,83 @@ export function AiSemanticReview({
                         </li>
                     ))}
                 </ul>
+            )}
+            {plan.selectionAudit && (
+                <ul aria-label={copy('적용 및 제외 조건', 'Applied and excluded conditions')} className="space-y-2 text-[13px]">
+                    {plan.selectionAudit.conditionGroups.map((group) => {
+                        const included = plan.selectionAudit!.selectedConditionIds.includes(group.conditionId);
+
+                        return (
+                            <li key={group.conditionId}>
+                                <strong>{included ? copy('적용: ', 'Apply: ') : copy('제외: ', 'Exclude: ')}</strong>
+                                <span className="whitespace-pre-wrap">{group.sourceSpan.quote.trim()}</span>
+                                {!included && (
+                                    <p>
+                                        {group.selectable
+                                            ? copy('사용자가 선택하지 않음', 'Not selected by you')
+                                            : group.status === 'UNSUPPORTED'
+                                              ? copy('지원하지 않는 조건', 'Unsupported condition')
+                                              : copy(
+                                                    '확인이 필요하거나 다른 조건과 연결됨',
+                                                    'Needs clarification or depends on other conditions',
+                                                )}
+                                    </p>
+                                )}
+                            </li>
+                        );
+                    })}
+                </ul>
+            )}
+            {!ready && !plan.selectionAudit && !!plan.conditionGroups?.length && (
+                <div className="space-y-2">
+                    <p className="text-[13px]">
+                        {copy(
+                            '독립 조건은 줄바꿈으로 구분해 주세요. 선택하지 않은 조건은 이번 실행에서 제외됩니다.',
+                            'Put independent conditions on separate lines. Unselected conditions will be excluded from this run.',
+                        )}
+                    </p>
+                    {plan.conditionGroups.map((group) => (
+                        <label key={group.conditionId} className="block rounded-lg border border-gray-6 p-3 text-[13px]">
+                            {canSelect && (
+                                <input
+                                    type="checkbox"
+                                    checked={selected.includes(group.conditionId)}
+                                    disabled={!group.selectable || !current || disabled || stale}
+                                    onChange={(event) =>
+                                        setSelection({
+                                            planId: plan.planId,
+                                            ids: event.target.checked
+                                                ? [...selected, group.conditionId]
+                                                : selected.filter((id) => id !== group.conditionId),
+                                        })
+                                    }
+                                />
+                            )}
+                            <span className="ml-2 whitespace-pre-wrap">{group.sourceSpan.quote.trim()}</span>
+                            <p>
+                                {group.selectable
+                                    ? selected.includes(group.conditionId)
+                                        ? copy('적용 예정', 'Will apply')
+                                        : copy('제외 예정 · 선택하지 않음', 'Will exclude · not selected')
+                                    : group.status === 'UNSUPPORTED'
+                                      ? copy('제외 예정 · 지원하지 않는 조건', 'Will exclude · unsupported condition')
+                                      : copy(
+                                            '제외 예정 · 확인이 필요하거나 다른 조건과 연결됨',
+                                            'Will exclude · needs clarification or depends on other conditions',
+                                        )}
+                            </p>
+                        </label>
+                    ))}
+                    {current && canSelect && (
+                        <button
+                            className={primary}
+                            disabled={disabled || stale || selected.length === 0}
+                            onClick={() => onSelectConditions?.(selected)}
+                        >
+                            {copy('선택한 조건만 다시 검증', 'Revalidate only selected conditions')}
+                        </button>
+                    )}
+                </div>
             )}
             {current && (
                 <>

@@ -36,6 +36,7 @@ const mocks = vi.hoisted(() => ({
     clearScheduleValidationFromApi: vi.fn(),
     confirm: vi.fn(),
     confirmPlan: vi.fn(),
+    selectConditions: vi.fn(),
     report: vi.fn(),
     draftFixed: false,
 }));
@@ -1668,6 +1669,96 @@ describe('persistent schedule sidebar', () => {
             planHash: 'a'.repeat(64),
             sourceVersionId: source.versionId,
         });
+    });
+    it('revalidates explicit partial selection and waits for confirmation of the new plan', async () => {
+        const groups = [
+            {
+                conditionId: 'supported',
+                sourceSpan: {start: 0, end: 8, quote: '김 1일 D 배정'},
+                intentIds: ['i1'],
+                status: 'SUPPORTED' as const,
+                reasonCodes: [],
+                selectable: true,
+            },
+            {
+                conditionId: 'unsupported',
+                sourceSpan: {start: 9, end: 20, quote: '김 입사일부터 N 금지'},
+                intentIds: [],
+                status: 'UNSUPPORTED' as const,
+                reasonCodes: ['UNSUPPORTED_CAPABILITY'],
+                selectable: false,
+            },
+        ];
+        const proposal: TConversationTurn = {
+            eventId: 2,
+            sequence: 2,
+            actor: 'ASSISTANT',
+            type: 'SEMANTIC_PLAN',
+            text: null,
+            interpretationId: 'partial:parent',
+            baseRevision: 0,
+            contextHash: 'rules:1',
+            interpretation: null,
+            createdAt: source.createdAt,
+            semanticPlan: {
+                planId: 'parent',
+                planHash: 'a'.repeat(64),
+                sourceVersionId: source.versionId,
+                state: 'UNSUPPORTED',
+                summary: '지원하지 않는 조건',
+                confirmationAllowed: false,
+                reasonCodes: ['UNSUPPORTED_CAPABILITY'],
+                conditions: [],
+                conditionGroups: groups,
+            },
+        };
+
+        current = {
+            ...current,
+            turns: [proposal],
+            conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
+        };
+        mocks.selectConditions.mockImplementation(async () => {
+            const child = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                interpretationId: 'partial:child',
+                semanticPlan: {
+                    ...proposal.semanticPlan!,
+                    planId: 'child',
+                    planHash: 'b'.repeat(64),
+                    state: 'PREVIEW_READY',
+                    confirmationAllowed: true,
+                    selectionAudit: {
+                        sourcePreviewId: 'preview',
+                        originalText: 'original',
+                        conditionGroups: groups,
+                        selectedConditionIds: ['supported'],
+                        excludedConditionIds: ['unsupported'],
+                    },
+                },
+            };
+
+            current = {
+                ...current,
+                turns: [proposal, child],
+                conversation: {...current.conversation, latestInterpretationId: child.interpretationId},
+            };
+
+            return child;
+        });
+        renderSidebar();
+
+        const check = (await screen.findAllByRole('checkbox'))[0];
+
+        await userEvent.click(check);
+        await userEvent.click(screen.getByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/}));
+        await waitFor(() => expect(mocks.selectConditions).toHaveBeenCalledWith(1, 'parent', 0, 'a'.repeat(64), ['supported']));
+        expect(await screen.findByRole('button', {name: /이 조건으로 조절|Adjust with these conditions/})).toBeInTheDocument();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.getByText('제외:')).toBeInTheDocument();
     });
     it('keeps unsupported semantic conditions visible and disables confirmation', async () => {
         const proposal = {

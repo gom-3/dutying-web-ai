@@ -496,6 +496,23 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
+    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
+        await run(async () => {
+            const current = detailRef.current;
+
+            if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
+                throw new Error(t('aiAdjust.stale'));
+
+            await api.selectConditions(
+                current.conversation.conversationId,
+                turn.semanticPlan.planId,
+                current.conversation.revision,
+                turn.semanticPlan.planHash,
+                ids,
+            );
+            await refresh();
+        });
+    };
     const confirmAndAdjust = async (turn: TConversationTurn) => {
         if (awaitingAdjustmentRef.current || !turn.interpretationId || !turn.semanticPlan) return;
 
@@ -1102,6 +1119,7 @@ export default function AiConversationSidebar({
                                 copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
                             }
                             copy={copy}
+                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {

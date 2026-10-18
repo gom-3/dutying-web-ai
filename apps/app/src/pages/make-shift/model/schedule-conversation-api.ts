@@ -29,7 +29,24 @@ export type TResultVersion = {
     inputDigest: string;
     createdAt: string;
 };
+export type TConditionGroup = {
+    conditionId: string;
+    sourceSpan: {start: number; end: number; quote: string};
+    intentIds: string[];
+    status: 'SUPPORTED' | 'UNSUPPORTED' | 'UNRESOLVED';
+    reasonCodes: string[];
+    selectable: boolean;
+};
+export type TSelectionAudit = {
+    sourcePreviewId: string;
+    originalText: string;
+    conditionGroups: TConditionGroup[];
+    selectedConditionIds: string[];
+    excludedConditionIds: string[];
+};
 export type TSemanticPlan = {
+    conditionGroups?: TConditionGroup[] | null;
+    selectionAudit?: TSelectionAudit | null;
     planId: string;
     planHash: string;
     sourceVersionId: string;
@@ -143,6 +160,12 @@ export function conversationApi(wardId: number, teamId: number) {
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
                 expectedRevision,
                 items,
+            }),
+        selectConditions: (id: number, planId: string, expectedRevision: number, planHash: string, selectedConditionIds: string[]) =>
+            post<TConversationTurn>(`/conversations/${id}/plans/${encodeURIComponent(planId)}/selections`, {
+                expectedRevision,
+                planHash,
+                selectedConditionIds,
             }),
         confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
