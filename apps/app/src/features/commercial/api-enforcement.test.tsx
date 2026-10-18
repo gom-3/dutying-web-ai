@@ -17,11 +17,13 @@ beforeEach(() => {
 
 it('hides cached limits immediately when enforcement is turned off while billing stays enabled', () => {
     let enforcementEnabled = true;
+
     const cached = {plan: 'FREE', capacity: {overLimit: true}};
 
     query.mockImplementation((options: {queryKey: unknown[]}) =>
         options.queryKey.includes('context') ? {data: {enabled: true, enforcementEnabled, scopes: []}} : {data: cached},
     );
+
     const {result, rerender} = renderHook(() => useWardEntitlement());
 
     expect(result.current.data).toBe(cached);

@@ -285,7 +285,6 @@ export function useWardEntitlement() {
     const wardId = useAuthStore((s) => s.wardId);
     const accountId = useAuthStore((s) => s.accountId);
     const context = useCommercialContext();
-
     const enforcementEnabled = !!wardId && isPlanEnforcementEnabled(context.data);
     const query = useQuery({
         queryKey: commercialQueryKey(accountId, 'WARD', wardId, 'entitlements'),
