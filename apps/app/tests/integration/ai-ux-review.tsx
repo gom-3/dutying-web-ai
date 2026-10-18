@@ -1,8 +1,9 @@
 /** Synthetic local draft; every entered request uses the native dev semantic preview. */
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import type {AxiosAdapter} from 'axios';
 import type {TAutofillResponse} from '@dutying/api/ward';
+import useAuthStore from '../../src/features/auth/model/store';
 import {useShiftEditorStore} from '../../src/features/shift-editor';
 import {buildAutofillDTO} from '../../src/features/shift-editor/model/schedule-authoring';
 import {buildConversationSnapshot} from '../../src/pages/make-shift/model/conversation-snapshot';
@@ -22,6 +23,10 @@ import '../../src/index.css';
 
 void i18n.changeLanguage('ko');
 const scene = new URLSearchParams(location.search).get('scene') ?? 'start';
+// A test-only origin/scene: no real account, server or report content is stored here.
+if (scene === 'report-recovery') useAuthStore.setState({accountId: 1000001, accessToken: null, accountMe: {accountId: 1000001, nurseId: null, wardId: 1, shiftTeamId: 1, email: '', name: '합성 계정', profileImgUrl: '', isManager: true, status: 'LINKED'}});
+const syntheticReportKey = 'dutying.synthetic-report-receipts.v1';
+const syntheticReceipts = (): Record<string, string> => JSON.parse(sessionStorage.getItem(syntheticReportKey) ?? '{}');
 const codes = ['D', 'E', 'N', 'O'];
 const names = ['간호사 1', '신규 간호사 2', '간호사 3', '간호사 4', '간호사 5', '간호사 6', '간호사 7', '간호사 8'];
 const createdAt = '2026-10-06T22:00:00';
@@ -158,7 +163,7 @@ function propose(text: string, state = 'PREVIEW_READY', live?: TLiveReview) {
     detail.conversation.latestInterpretationId = turn.interpretationId;
     return turn;
 }
-if (!['start', 'autofill-timeout', 'autofill-conflict'].includes(scene))
+if (!['start', 'autofill-timeout', 'autofill-conflict', 'report-recovery'].includes(scene))
     propose(
         scene === 'unsupported' ? '오프를 더 공평하게 배치해줘' : original,
         scene === 'unsupported'
@@ -258,7 +263,19 @@ const adapter: AxiosAdapter = async (config) => {
         carryOverEnabled: false, holidayCountry: null, holidayRegion: null,
     };
     else if (url.includes('/conversation-preferences')) data = [];
-    else if (url.includes('/reports')) data = {incidentId: 'local-admin-only-reference'};
+    else if (url.includes('/reports')) {
+        if (scene === 'report-recovery') {
+            const receipts = syntheticReceipts();
+            const key = request.idempotencyKey;
+            const existed = Boolean(receipts[key]);
+            const loseFirstAcknowledgement = !existed && Object.keys(receipts).length === 0;
+            receipts[key] ??= `synthetic-incident-${Object.keys(receipts).length + 1}`;
+            sessionStorage.setItem(syntheticReportKey, JSON.stringify(receipts));
+            window.dispatchEvent(new Event('synthetic-report-updated'));
+            if (loseFirstAcknowledgement) throw new Error('Synthetic acknowledgement lost after acceptance');
+            data = {incidentId: receipts[key]};
+        } else data = {incidentId: 'local-admin-only-reference'};
+    }
     else if (url.endsWith('/segments')) {
         const selected = versions.get(request.versionId) ?? detail.draft;
         const isCurrent = selected.versionId === detail.draft.versionId;
@@ -446,11 +463,18 @@ client.defaults.adapter = adapter;
 
 export function Review() {
     const [open, setOpen] = useState(true);
+    const [reportCount, setReportCount] = useState(() => scene === 'report-recovery' ? Object.keys(syntheticReceipts()).length : 0);
+    useEffect(() => {
+        const update = () => setReportCount(Object.keys(syntheticReceipts()).length);
+        window.addEventListener('synthetic-report-updated', update);
+        return () => window.removeEventListener('synthetic-report-updated', update);
+    }, []);
     const currentDoc = useShiftEditorStore((state) => state.doc);
     return (
         <main className="min-h-dvh bg-[#F7F8FA] p-6" style={{paddingRight: open ? 430 : 24}}>
             <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-xl font-semibold">2026년 11월 근무표</h1>
+                {scene === 'report-recovery' && <output aria-label="합성 접수 건수">합성 접수 {reportCount}건 · 실서버 미사용</output>}
                 {!open && (
                     <button
                         className="min-h-11 rounded-xl bg-main-light px-4 text-sm font-medium text-main-1 hover:bg-main-1 hover:text-white"

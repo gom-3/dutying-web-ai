@@ -1,8 +1,10 @@
 vi.mock('../../../../model/monthly-rest-requirement', () => ({loadMonthlyRestRequirement: vi.fn().mockResolvedValue(undefined)}));
 vi.mock('../ai-conversation-image', () => ({AiConversationImage: () => null}));
+import {webcrypto} from 'node:crypto';
 import type {ComponentProps} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift} from '@/entities/shift';
+import useAuthStore from '@/features/auth/model/store';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
 import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
@@ -13,6 +15,7 @@ import type {
     TConversationTurn,
     TResultVersion,
 } from '../../../../model/schedule-conversation-api';
+import {REPORT_SESSION_PREFIX} from '../../../../model/schedule-report-attempt';
 import AiConversationSidebar from '../ai-conversation-sidebar';
 
 const mocks = vi.hoisted(() => ({
@@ -174,6 +177,22 @@ const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSi
 
 beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('crypto', webcrypto);
+    useAuthStore.setState({
+        accountId: 4,
+        accessToken: null,
+        accountMe: {
+            accountId: 4,
+            nurseId: null,
+            wardId: 1,
+            shiftTeamId: 2,
+            email: '',
+            name: '합성 계정',
+            profileImgUrl: '',
+            isManager: true,
+            status: 'LINKED',
+        },
+    });
     mocks.report.mockReset().mockResolvedValue({incidentId: 'accepted:1'});
     mocks.draftFixed = false;
     sessionStorage.clear();
@@ -208,6 +227,9 @@ beforeEach(() => {
     mocks.execute.mockResolvedValue({...operation, executionStatus: 'FAILED', resultVersionId: null});
 });
 afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    useAuthStore.getState().resetState();
     vi.clearAllTimers();
 });
 
@@ -286,6 +308,69 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
         await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(3));
         expect(mocks.report.mock.calls[2][3]).not.toBe(first[3]);
+    });
+    it('recovers a lost-acknowledgement report after remount and note re-entry without duplicating the synthetic receipt', async () => {
+        const accepted = new Map<string, string>();
+
+        let loseResponse = true;
+
+        mocks.report.mockImplementation(async (_conversation, _operation, _note, key: string) => {
+            if (!accepted.has(key)) accepted.set(key, `accepted:${accepted.size + 1}`);
+
+            if (loseResponse) {
+                loseResponse = false;
+                throw new Error('lost acknowledgement after storing');
+            }
+
+            return {incidentId: accepted.get(key)};
+        });
+
+        const first = renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'}), '새로고침 뒤 같은 신고');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
+
+        const key = mocks.report.mock.calls[0][3];
+        const receipts = () => Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX));
+
+        expect(receipts()).toHaveLength(1);
+        expect(sessionStorage.getItem(receipts()[0])).not.toContain('새로고침 뒤 같은 신고');
+        first.unmount();
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+
+        const note = screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'});
+
+        expect(note).toHaveValue('');
+        await userEvent.type(note, '새로고침 뒤 같은 신고');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
+        expect(mocks.report.mock.calls[1][3]).toBe(key);
+        expect(accepted.size).toBe(1);
+        expect(receipts()).toHaveLength(0);
+    });
+    it('keeps sending and same-mount retry working when session metadata cannot be saved', async () => {
+        const first = renderSidebar();
+
+        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
+        mocks.report.mockRejectedValueOnce(new Error('lost acknowledgement'));
+        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('storage blocked');
+        });
+
+        const note = screen.getByRole('textbox', {name: '예상한 조건과 다른 점을 적어 주세요.'});
+
+        await userEvent.type(note, '입력을 유지해 주세요');
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await waitFor(() => expect(note).toBeEnabled());
+        expect(note).toHaveValue('입력을 유지해 주세요');
+        expect(await screen.findByText('재시도 정보를 저장하지 못했어요. 새로고침하지 않고 여기서 다시 보내 주세요.')).toBeVisible();
+        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
+        expect(mocks.report.mock.calls[1][3]).toBe(mocks.report.mock.calls[0][3]);
+        first.unmount();
     });
     it('changes the report key after editing the note or choosing another operation', async () => {
         mocks.report.mockRejectedValue(new Error('response lost'));

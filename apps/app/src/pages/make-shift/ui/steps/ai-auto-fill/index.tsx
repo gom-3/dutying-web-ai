@@ -1,5 +1,3 @@
-import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
-import {JourneyObserved} from './journey-observed';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -46,7 +44,7 @@ import {isAiAdjustEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
-import {trackProductOutcome} from '@/shared/util/growth-analytics';
+import {trackProductOutcome, trackScheduleSignal} from '@/shared/util/growth-analytics';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc, type TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
 import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
@@ -68,6 +66,7 @@ import {sortScheduleByTeamNurseOrder} from '../../../model/nurse-order-sync';
 import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
+import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
 import {
     markCarryOverAnswered,
     promotableRuleRequests,
@@ -106,6 +105,7 @@ import AiConversationSidebar from './ai-conversation-sidebar';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
+import {JourneyObserved} from './journey-observed';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
 
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
@@ -1532,6 +1532,7 @@ export function AiAutofill() {
             }
 
             const docAfterApply = useShiftEditorStore.getState().doc;
+
             void reportScheduleJourney(result.response.observation, {
                 type: 'CLIENT_APPLIED',
                 changedCellCount: describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length,
@@ -2258,6 +2259,7 @@ export function AiAutofill() {
         setGenerationFailure(null);
         generationNoticeShownRef.current = false;
         autofillContext.current = currentContextKey;
+        trackScheduleSignal('preparation_started');
         setAutofillFlow({id: ++autofillSequence.current, kind, messages: [], status: 'preparing'});
         setIsSnapshotSidebarOpen(false);
         setIsAdjustDialogOpen(true);
@@ -2562,6 +2564,8 @@ export function AiAutofill() {
             ? 'fixed'
             : null;
     const closePreparation = () => {
+        if (autofillFlow?.status === 'preparing' && !preparationPaused.current) trackScheduleSignal('preparation_paused');
+
         preparationPaused.current = true;
         setIsReviewingCarryOver(false);
         setAutofillFlow((flow) =>

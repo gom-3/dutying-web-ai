@@ -24,7 +24,14 @@ export function trackProductOutcome(
 
 /** Behavioral signals are not dissatisfaction labels. Never include request/result text or scope IDs. */
 export function trackScheduleSignal(
-    signal: 'comparison_open' | 'regeneration_selected' | 'outcome_recheck' | 'feedback_open' | 'feedback_sent',
+    signal:
+        | 'preparation_started'
+        | 'preparation_paused'
+        | 'comparison_open'
+        | 'regeneration_selected'
+        | 'outcome_recheck'
+        | 'feedback_open'
+        | 'feedback_sent',
 ) {
     try {
         if (!isGoogleAnalyticsEnabled()) return;
