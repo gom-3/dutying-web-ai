@@ -12,22 +12,26 @@ Google Analytics·Search Console 읽기 전용 인증과 실제 조회를 검증
 
 Google 공식 Analytics MCP와 `growth_mcp.py`의 읽기 전용 도구를 사용한다. `query_dutying_growth(start_date,end_date)`는 현재/직전 기간의 웹 유입·성공 이벤트, 구/신 AI 앱 스트림, 확정 검색 집계를 구조화한다. 자세한 사용자 퍼널은 이벤트 수를 나누지 말고 GA 순차 퍼널 도구로 검증한다. 각 팀원은 자신의 계정 권한과 연결이 필요하다.
 
-## 보조 화면 생성
+## 1년·월별·서비스별 분석 화면
 
-승인된 인증 환경에서 프로젝트 루트 기준으로 실행한다. Python 기본 집계는 표준 라이브러리를 사용하며, 갱신 가능한 OAuth 인증에는 `scripts/analytics/requirements-mcp.txt`의 Google 인증 패키지가 필요하다.
+저장소 루트에서 승인된 Google 인증 환경으로 실행한다. Python 환경에는 `scripts/analytics/requirements-mcp.txt`의 패키지가 필요하다.
 
 ```sh
-# 조회 전 화면 확인
-python3 scripts/analytics/report.py --preview
-# 현재 과거 .ai 웹 집계: 새 스트림 배포·수신 이후 대상을 재확인
-python3 scripts/analytics/report.py --property 394593452
-# 검증
+# 최대 365일과 월별, 직전 동일 일수 비교를 원본 API에서 수집
+python3 scripts/analytics/explorer.py
+# 이 컴퓨터에서만 여는 읽기 전용 분석 서버
+python3 scripts/analytics/serve.py --port 8795
+# http://127.0.0.1:8795/
 python3 -m unittest discover -s scripts/analytics -p 'test_*.py'
 ```
 
-인증 우선순위: GA_ACCESS_TOKEN → GOOGLE_APPLICATION_CREDENTIALS 또는 이 컴퓨터의 승인된 전용 인증 파일 → gcloud ADC. 인증정보를 출력·공유·커밋하지 않는다. 인증이 없는 팀원에게 이 컴퓨터의 파일을 복사하지 않는다.
+화면은 최근 30/90/180/365일 및 조회 구간의 달력 월을 선택한다. 현재 월과 첫 월은 부분 기간일 수 있다. 서비스·기기별로 기간 전체 수치를 직접 조회하며, 전체 사용자/방문을 월별·기기별 합산으로 재구성하지 않는다. 운영체제·유입 경로·성공 행동과 관측된 이벤트 목록, 소스별 첫/마지막 기록을 함께 표시한다. 규칙 기반 관찰과 원인 가설을 구분한다. 검색어 표와 월별 추세는 최근 1년 기준이며 별도 표기로 기간 필터 범위를 명시한다.
 
-출력은 gitignore 대상인 `artifacts/analytics/index.html`, `report.json`이다. 보조 화면은 웹 GA 스냅샷이고 검색·앱·광고가 포함된 팀 공용 실시간 서비스가 아니다. 생성 시각을 확인한다. API 실패 시 기존 산출물을 덮어쓰지 않으며 파일은 소유자만 읽을 수 있게 저장한다. 코드 가이드 HTML은 내려받아 브라우저로 열 수 있다. 인증 없는 공개 서버에 실제 지표를 게시하지 않는다.
+인증 우선순위: GA_ACCESS_TOKEN → GOOGLE_APPLICATION_CREDENTIALS 또는 이 컴퓨터의 승인된 전용 인증 파일 → gcloud ADC. 인증정보를 출력·공유·커밋하지 않는다. 다른 팀원은 자신의 권한과 인증으로 연결한다.
+
+출력은 gitignore 대상인 `artifacts/analytics/index.html`, `report.json`이다. 화면에서 **최신 데이터 가져오기**를 누르면 서버가 승인된 읽기 전용 인증으로 다시 수집한다. 서버는 loopback만 수신하고 갱신은 같은 Origin에서만 허용하며, 임의 파일/인증정보를 제공하지 않는다. 예약 작업은 없다. 갱신 중에는 마지막 정상 데이터를 보여준다. 로컬 서버가 없으면 저장된 스냅샷만 볼 수 있다. 이 화면은 팀 공용 호스팅 서비스가 아니다.
+
+`get_dutying_analysis_view(service_id, period_key, device)`는 LLM에 이 화면과 같은 집계 근거·월별 추이·출처·날짜·품질 제한을 제공한다. 캐시 생성 시각을 확인하고, 최신 조회가 필요하면 원본 GA 도구 또는 수동 갱신을 사용한다. 기존 `report.py`는 웹 단일 속성의 28일 보조 보고서이므로 새 화면 생성에는 `explorer.py`를 사용한다.
 
 ## 유지할 기준
 

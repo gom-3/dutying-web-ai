@@ -93,5 +93,18 @@ def query_dutying_growth(start_date: str, end_date: str) -> dict:
                 'Inspect metadata for sampling/thresholding; report rowCount vs returned rows before claiming exhaustive coverage.',
                 'Search final data may lag the requested end date.']}
 
+@mcp.tool(annotations=READ)
+def get_dutying_analysis_view(service_id: str='ai_web_history', period_key: str='d365', device: str='all') -> dict:
+    """Read the same verified 1-year/monthly service/device aggregates as the analytics UI. Returns snapshot timestamp, exact whole-period distinct users, monthly totals, acquisition, observed events and quality limits. Use d30/d90/d180/d365 or calendar keys mYYYY-MM. Service IDs: ai_web_history, ai_web, ai_app, ai_app_previous, legacy_web, legacy_app. Device: all/mobile/desktop/tablet. Snapshot is cached, not a new live API call; inspect freshness and use live GA tools if needed."""
+    import json
+    from explorer import view
+    path = Path(os.environ.get('DUTYING_ANALYTICS_SNAPSHOT', str(Path.home() / 'swm/dutying-web-marketing-analytics/artifacts/analytics/report.json')))
+    if not path.is_file():
+        raise ValueError('Generate the analysis explorer snapshot first.')
+    snapshot = json.loads(path.read_text())
+    if snapshot.get('version') != 2:
+        raise ValueError('Year-scale explorer data is not available in this snapshot.')
+    return view(snapshot, service_id, period_key, device)
+
 if __name__ == '__main__':
     mcp.run()
