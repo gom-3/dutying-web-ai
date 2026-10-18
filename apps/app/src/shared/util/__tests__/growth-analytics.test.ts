@@ -25,13 +25,18 @@ it('keeps a successful product action successful when the analytics SDK fails', 
     expect(() => trackProductOutcome('schedule_confirmed')).not.toThrow();
 });
 
-it.each(['comparison_open', 'regeneration_selected', 'outcome_recheck', 'feedback_open', 'feedback_sent'] as const)(
-    'sends a controlled scheduling signal without user text or identifiers: %s',
-    (signal) => {
-        trackScheduleSignal(signal);
-        expect(ReactGA.event).toHaveBeenCalledWith('schedule_behavior', {schema_version: 1, service: 'dutying_ai', signal});
-    },
-);
+it.each([
+    'preparation_started',
+    'preparation_paused',
+    'comparison_open',
+    'regeneration_selected',
+    'outcome_recheck',
+    'feedback_open',
+    'feedback_sent',
+] as const)('sends a controlled scheduling signal without user text or identifiers: %s', (signal) => {
+    trackScheduleSignal(signal);
+    expect(ReactGA.event).toHaveBeenCalledWith('schedule_behavior', {schema_version: 1, service: 'dutying_ai', signal});
+});
 it('does not send scheduling signals when analytics is disabled', () => {
     vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(false);
     trackScheduleSignal('feedback_open');

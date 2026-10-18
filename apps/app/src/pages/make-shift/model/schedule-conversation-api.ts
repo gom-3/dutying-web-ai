@@ -149,8 +149,12 @@ export function conversationApi(wardId: number, teamId: number) {
                 expectedRevision,
                 planHash,
             }),
-        report: (id: number, operationId: string, note: string) =>
-            post<{incidentId: string}>(`/conversations/${id}/reports`, {operationId, note}),
+        report: (id: number, operationId: string, note: string, idempotencyKey?: string) =>
+            post<{incidentId: string}>(`/conversations/${id}/reports`, {
+                operationId,
+                note,
+                ...(idempotencyKey === undefined ? {} : {idempotencyKey}),
+            }),
         execute: (id: number, request: TConversationExecute) => post<TConversationOperation>(`/conversations/${id}/operations`, request),
         operation: (id: string) => get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`),
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),

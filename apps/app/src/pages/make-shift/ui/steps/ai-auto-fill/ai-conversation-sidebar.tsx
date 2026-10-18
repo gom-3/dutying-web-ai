@@ -1,7 +1,7 @@
 import {type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
-import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
@@ -40,6 +40,7 @@ import {
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
 import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -151,6 +152,24 @@ export default function AiConversationSidebar({
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
     const [reportNote, setReportNote] = useState('');
+    const [reportAttempt] = useState(() => new ScheduleReportAttempt());
+    const [reportRecovery, setReportRecovery] = useState<boolean>();
+    const reportScopeFor = (conversationId: number, operationId: string) => {
+        const auth = useAuthStore.getState();
+        const admin = isWardAdminAccessToken(auth.accessToken);
+
+        return scheduleReportScope({
+            mode: admin ? 'admin' : 'account',
+            ownerId: admin ? getWardAdminAccountIdFromAccessToken(auth.accessToken) : auth.accountId,
+            permission: auth.accountMe?.isManager ?? null,
+            wardId,
+            teamId,
+            year,
+            month,
+            conversationId,
+            operationId,
+        });
+    };
     const reportInput = useRef<HTMLTextAreaElement>(null);
     const reportTrigger = useRef<HTMLButtonElement | null>(null);
     const returnReportFocus = useRef(false);
@@ -166,7 +185,13 @@ export default function AiConversationSidebar({
         }
     }, [reportOperation, open, busy]);
 
-    const closeReport = () => {
+    const closeReport = async (cancel = true) => {
+        const conversationId = detailRef.current?.conversation.conversationId;
+
+        if (cancel)
+            await reportAttempt.cancel(conversationId && reportOperation ? reportScopeFor(conversationId, reportOperation) : undefined);
+        else reportAttempt.complete();
+
         returnReportFocus.current = true;
         setReportOperation(null);
     };
@@ -212,6 +237,7 @@ export default function AiConversationSidebar({
             return;
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
+            reportAttempt.reset();
             setReportOperation(null);
             setReportNote('');
             reportTrigger.current = null;
@@ -757,6 +783,7 @@ export default function AiConversationSidebar({
         setPreview(null);
         setNotice(null);
         setPendingBranch(null);
+        reportAttempt.reset();
         setReportOperation(null);
         setReportNote('');
         setSelectedSuggestion(undefined);
@@ -1377,6 +1404,8 @@ export default function AiConversationSidebar({
                                                         className={`${buttonClass} mt-2`}
                                                         disabled={busy || running || preparing || reportOperation !== null}
                                                         onClick={(click) => {
+                                                            reportAttempt.reset();
+                                                            setReportRecovery(undefined);
                                                             reportTrigger.current = click.currentTarget;
                                                             setReportNote('');
                                                             setReportOperation(event.operation.operationId);
@@ -1628,8 +1657,30 @@ export default function AiConversationSidebar({
                                 className="my-2 w-full rounded-lg border border-gray-5 bg-white p-3 text-sm focus:border-main-1 focus:outline-none"
                                 value={reportNote}
                                 maxLength={500}
-                                onChange={(event) => setReportNote(event.target.value)}
+                                onChange={(event) => {
+                                    reportAttempt.noteChanged(event.target.value);
+                                    setReportNote(event.target.value);
+                                }}
                             />
+                            <p className="mb-2 text-xs break-keep text-[#475467]">
+                                {copy(
+                                    '취소하면 이 신고를 끝내고, 다시 작성할 때 새 신고로 보내요.',
+                                    'Cancel ends this report. Writing again starts a new report.',
+                                )}
+                            </p>
+                            {reportRecovery !== undefined && !busy && (
+                                <p role="status" className="mb-2 text-xs break-keep text-[#475467]">
+                                    {reportRecovery
+                                        ? copy(
+                                              '이 탭에서 24시간 안에 같은 내용을 다시 입력하면 기존 신고로 재시도해요.',
+                                              'Re-enter the same note in this tab within 24 hours to retry the same report.',
+                                          )
+                                        : copy(
+                                              '재시도 정보를 저장하지 못했어요. 새로고침하지 않고 여기서 다시 보내 주세요.',
+                                              'Retry metadata could not be saved. Retry here without refreshing.',
+                                          )}
+                                </p>
+                            )}
                             <button
                                 className={buttonClass}
                                 disabled={busy || !reportNote.trim()}
@@ -1639,17 +1690,31 @@ export default function AiConversationSidebar({
 
                                         if (!current) return;
 
-                                        await api.report(current.conversation.conversationId, reportOperation, reportNote.trim());
+                                        const note = reportNote.trim();
+                                        const scope = reportScopeFor(current.conversation.conversationId, reportOperation);
+                                        const key = await reportAttempt.keyFor(scope, note);
+
+                                        if (!mounted.current) return;
+
+                                        if (scope !== reportScopeFor(current.conversation.conversationId, reportOperation))
+                                            throw new AiConversationInputError('staleRequest');
+
+                                        setReportRecovery(reportAttempt.recoverable);
+
+                                        await api.report(current.conversation.conversationId, reportOperation, note, key);
+
+                                        if (!mounted.current) return;
+
                                         setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
                                         trackScheduleSignal('feedback_sent');
-                                        closeReport();
+                                        await closeReport(false);
                                         setReportNote('');
                                     })
                                 }
                             >
                                 {copy('의견 보내기', 'Send feedback')}
                             </button>
-                            <button className={buttonClass} disabled={busy} onClick={closeReport}>
+                            <button className={buttonClass} disabled={busy} onClick={() => void run(closeReport)}>
                                 {copy('취소', 'Cancel')}
                             </button>
                         </section>

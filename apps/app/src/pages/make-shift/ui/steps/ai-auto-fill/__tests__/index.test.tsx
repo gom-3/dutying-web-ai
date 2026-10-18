@@ -4,6 +4,7 @@ import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
 import purpleWarnIcon from '@/shared/assets/images/purple-warn-icon.webp?inline';
 import {ko} from '@/shared/i18n/resources.generated';
+import * as growthAnalytics from '@/shared/util/growth-analytics';
 import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import {useSchedulePublishSuccessStore} from '../../../../model/schedule-publish-success-store';
 import {AiAutofill} from '../index';
@@ -432,6 +433,8 @@ describe('AiAutofill blank preview', () => {
     });
 
     it('checks previous shifts in chat before choosing fixed shifts and keeps the grey spotlight', async () => {
+        const signal = vi.spyOn(growthAnalytics, 'trackScheduleSignal');
+
         mocks.previousBlank = true;
 
         const user = userEvent.setup();
@@ -448,6 +451,7 @@ describe('AiAutofill blank preview', () => {
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).toBeVisible();
+        expect(signal).toHaveBeenCalledWith('preparation_started');
         expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.lastShiftBlankDialog.title'})).not.toBeInTheDocument();
         expect(document.querySelector('[data-confirmation-spotlight]')).toBeInTheDocument();
         await waitFor(() => expect(document.querySelector('[data-spotlight-blocker]')).toHaveStyle({top: '52px', height: '348px'}));
@@ -464,6 +468,9 @@ describe('AiAutofill blank preview', () => {
         expect(screen.getByText('aiAdjust.preparation.continue')).toBeVisible();
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        expect(signal).toHaveBeenCalledWith('preparation_paused');
+        expect(signal.mock.calls.filter(([event]) => event === 'preparation_paused')).toHaveLength(1);
+        signal.mockRestore();
         expect(document.querySelector('[data-confirmation-spotlight]')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
