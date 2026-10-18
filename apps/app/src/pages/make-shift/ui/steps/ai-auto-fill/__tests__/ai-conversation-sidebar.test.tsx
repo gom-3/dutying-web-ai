@@ -1079,6 +1079,8 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expectExecutionTimeScope();
+        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+        expect(screen.getByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.')).toBeVisible();
     });
     it('selecting another saved request stops editing the previous saved request', async () => {
         mocks.preferences.mockResolvedValue([
