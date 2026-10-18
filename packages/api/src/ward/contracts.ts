@@ -797,7 +797,12 @@ export type TAutofillDTO = {
 
 export type TAutofillResponse = {
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
-    failure?: {reasonCode: string; message: string; suggestions?: TFailureSuggestion[]};
+    failure?: {
+        reasonCode: string;
+        message: string;
+        suggestions?: TFailureSuggestion[];
+        affectedNurses?: {shiftNurseId: number; name: string}[];
+    };
     applicable?: boolean;
     /** Validation describes the returned draft, a withheld candidate, or the original table. */
     validationTarget?: 'RESULT' | 'CANDIDATE' | 'BASELINE';

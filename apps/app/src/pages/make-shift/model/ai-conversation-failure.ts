@@ -6,7 +6,7 @@ export type TAiConversationFailure = {
     /** A local input issue does not need an execution-history lookup. */
     checkOutcome?: boolean;
     /** Present only for a completed execution that did not produce an applicable result. */
-    recovery?: 'retry' | 'revise' | 'review';
+    recovery?: 'retry' | 'revise' | 'review' | 'settings';
 };
 
 /** Trusted UI failures carry a fixed reason, never arbitrary server/exception text. */
