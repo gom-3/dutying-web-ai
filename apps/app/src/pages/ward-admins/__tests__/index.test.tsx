@@ -4,6 +4,7 @@ import {render as rtlRender, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ReactNode} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import useAuthStore from '@/features/auth/model/store';
 import WardAdminsPage from '..';
 
 const {
@@ -95,7 +96,7 @@ const createMaxAdminsResponse = () => ({
     invitations: [],
 });
 
-function renderPage(children: ReactNode) {
+function renderPage(children: ReactNode, context?: object) {
     const queryClient = new QueryClient({
         defaultOptions: {
             queries: {
@@ -103,6 +104,8 @@ function renderPage(children: ReactNode) {
             },
         },
     });
+
+    if (context) queryClient.setQueryData(['commercial', useAuthStore.getState().accountId, 'context'], context);
 
     return rtlRender(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
 }
@@ -126,6 +129,16 @@ describe('WardAdminsPage', () => {
         });
         mockRemoveWardAdmin.mockResolvedValue(undefined);
         mockRemoveWardAdminEmail.mockResolvedValue(undefined);
+    });
+
+    it('allows another invitation after the independent administrator seat limit is disabled', async () => {
+        const user = userEvent.setup();
+
+        mockGetWardAdmins.mockResolvedValue(createMaxAdminsResponse());
+        renderPage(<WardAdminsPage />, {enabled: true, enforcementEnabled: false, restrictionStates: {ADMIN_SEATS: false}, scopes: []});
+        await user.type(await screen.findByPlaceholderText('이메일'), 'another@example.com');
+        await user.click(screen.getByRole('button', {name: '관리자 추가'}));
+        await waitFor(() => expect(mockCreateWardAdminEmail).toHaveBeenCalledWith(10, {email: 'another@example.com', role: 'EDITOR'}));
     });
 
     it('renders active admins and reserved admin emails in one registered list', async () => {

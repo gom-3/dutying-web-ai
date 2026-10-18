@@ -32,6 +32,7 @@ export type Transfer = {
 export type AccessContext = {
     enabled: boolean;
     enforcementEnabled?: boolean;
+    configurationReady?: boolean;
     restrictionStates?: Partial<
         Record<
             | 'STAFF_CAPACITY'
@@ -329,6 +330,17 @@ export function applyRestrictionStates(entitlement: Entitlement, states: NonNull
             enforced: states[usage.meter === 'FULL_GENERATE' ? 'AI_FULL' : 'AI_PARTIAL'] ?? usage.enforced,
         })),
     };
+}
+export function isAdminSeatLimitEnabled(context?: AccessContext) {
+    if (!context?.enabled) return true;
+
+    return context.restrictionStates?.ADMIN_SEATS ?? context.enforcementEnabled !== false;
+}
+export function isAdminSeatLimitReached(entitlement: Entitlement) {
+    return (
+        entitlement.restrictionStates?.ADMIN_SEATS !== false &&
+        entitlement.adminSeats.active + entitlement.adminSeats.reserved >= entitlement.adminSeats.limit
+    );
 }
 export function usageRemainingLabel(usage: Usage | undefined, ko: boolean) {
     return usage?.enforced === false ? (ko ? '제한 해제' : 'No plan limit') : String(usage?.remaining ?? 0);
