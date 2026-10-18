@@ -36,7 +36,7 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 q=parse_qs(route.query)
                 snapshot=json.loads((OUTPUT/'report.json').read_text())
-                return self.send(200,explorer.view(snapshot,q.get('service',['ai_web_history'])[0],q.get('period',['d30'])[0],q.get('device',['all'])[0]))
+                return self.send(200,explorer.view(snapshot,q.get('service',['ai_web_history'])[0],q.get('period',['d365'])[0],q.get('device',['all'])[0]))
             except (ValueError,OSError):return self.send(400,{'error':'선택 조건 또는 저장 데이터가 올바르지 않습니다.'})
         routes={'/':(OUTPUT/'index.html','text/html'),'/index.html':(OUTPUT/'index.html','text/html'),'/artifacts/analytics/index.html':(OUTPUT/'index.html','text/html'),'/report.json':(OUTPUT/'report.json','application/json'),'/team-guide.html':(explorer.ROOT/'docs/analytics/team-guide.html','text/html'),'/README.md':(explorer.ROOT/'docs/analytics/README.md','text/plain'),'/contracts/growth-events.schema.json':(explorer.ROOT/'docs/contracts/growth-events.schema.json','application/json')}
         item=routes.get(route.path)
