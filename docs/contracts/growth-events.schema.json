@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "service": "dutying_ai",
+  "privacy": "No profile values, IDs, credentials, free text or schedules in event parameters.",
+  "events": {
+    "web_cta_click": {
+      "surface": "web",
+      "meaning": "Open web product CTA; intent only"
+    },
+    "app_store_click": {
+      "surface": "web",
+      "meaning": "Store link click; not an installation"
+    },
+    "login": {
+      "surface": "web_and_app",
+      "meaning": "Interactive authentication success; not token refresh"
+    },
+    "sign_up": {
+      "surface": "web_and_app",
+      "meaning": "Account signup API success; not profile updates",
+      "web_coverage": "password signup only; social profile flow requires reliable new-account signal"
+    },
+    "ward_created": {
+      "surface": "web",
+      "meaning": "Create ward or complete onboarding draft API success; existing linked ward is excluded"
+    },
+    "schedule_confirmed": {
+      "surface": "web",
+      "meaning": "Snapshot publish API success; repeated confirmations are repeated events, not first activation"
+    },
+    "schedule_published": {
+      "surface": "web",
+      "meaning": "Schedule notification publication API success"
+    },
+    "tutorial_complete": {
+      "surface": "app",
+      "meaning": "Intro marked complete locally; not clinical onboarding or ward setup"
+    }
+  },
+  "parameters": {
+    "schema_version": "integer:1",
+    "service": "dutying_ai",
+    "method": "controlled authentication method; never email or user ID"
+  },
+  "analysis": {
+    "acquisition": "GA source/medium + Search Console query/page; exact .ai hostname filter",
+    "activation": "Ordered user funnel sign_up -> ward_created -> schedule_confirmed; do not divide event counts",
+    "retention": "User cohort return activity after activation; requires sufficient post-release history",
+    "quality_checks": [
+      "source authentication and freshness",
+      "exact hostname/streamId separation",
+      "row limits, thresholds and sampling",
+      "event coverage and missing success events",
+      "OAuth referrals and internal traffic",
+      "timezone and complete period alignment"
+    ],
+    "output": [
+      "observation with source/date/denominator",
+      "hypothesis with uncertainty",
+      "next experiment with success metric"
+    ]
+  }
+}

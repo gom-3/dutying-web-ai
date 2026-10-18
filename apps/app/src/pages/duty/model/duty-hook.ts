@@ -19,6 +19,7 @@ import {
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getCurrentTeamNurses, sortScheduleByTeamNurseOrder} from '@/pages/make-shift/model/nurse-order-sync';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 import {
     isDutyAtMaxFutureMonth,
     isDutyCalendarViewAllowed,
@@ -297,6 +298,7 @@ export function useDutyHook() {
         if (!wardId || !currentShiftTeamId) return;
 
         await WardAPI.postShift(wardId, currentShiftTeamId, year, month);
+        trackProductOutcome('schedule_published');
         await queryClient.invalidateQueries({queryKey: dutyQueryKey});
     };
     const handleExportExcel = () => {

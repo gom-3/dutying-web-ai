@@ -1,0 +1,2 @@
+analytics-mcp==0.7.0
+google-auth-oauthlib==1.5.0

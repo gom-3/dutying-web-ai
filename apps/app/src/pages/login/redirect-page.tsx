@@ -18,6 +18,7 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 
 const normalizeQueryValue = (value: unknown): string | undefined => {
     if (Array.isArray(value)) {
@@ -111,6 +112,9 @@ const RedirectPage = () => {
         }
 
         clearStoredOAuthRedirectPayload();
+
+        if (!isSocialSignupRequired) trackProductOutcome('login', 'social');
+
         handleLogin(accessToken, redirectNextPageUrl);
     }, [_loaded, handleLogin, t]);
 
