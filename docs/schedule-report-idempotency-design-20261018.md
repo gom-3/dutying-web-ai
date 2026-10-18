@@ -30,7 +30,7 @@ storage 접근/get/set/remove 또는 WebCrypto digest 실패는 신고 전송·�
 
 단위: 범위 변경, 만료/손상, 저장소/해시 장애, 성공/취소/늦은 정리. 컴포넌트: mocked API 접수 후 응답 유실, remount와 재입력, 같은 키와 합성 접수 1건, 저장 실패 시 입력·재시도 보존. 브라우저: 별도 로컬 origin의 report-recovery 합성 scene에서 실제 reload와 재입력을 확인한다. 합성 adapter/저장소를 사용하며 실서버 인증·HTTP·DB/outbox 통합 증거로 주장하지 않는다. 운영/유료 LLM/replay를 호출하지 않는다.
 
-적용 순서: 웹 #85 → 백엔드 #225 검증·적용 → 웹 #86. #85 merge 후 #86의 base를 develop으로 변경한다. #86은 기존 PR을 업데이트하고 새 PR을 만들지 않는다. 새 API/스키마/운영 변경 없음. 이번 보강 커밋 revert는 e3aa45b3의 메모리 전용 방식으로, #86 전체 revert는 #85로 돌아간다.
+적용 순서: 웹 #85 → 백엔드 #225 검증·적용 → 웹 #86. #85 merge 후 #86의 base를 develop으로 변경한다. #86은 기존 PR을 업데이트하고 새 PR을 만들지 않는다. 새 API/스키마/운영 변경 없음. 세션 복구 코드만 원복하려면 9ac45c1b와 cf522aca를 역순으로 revert해 e3aa45b3의 메모리 전용 방식으로 돌아간다(문서 충돌 시 기록을 맞춘다). #86 전체 원복은 #85 상태를 복원한다.
 
 | Before | After | Why |
 | --- | --- | --- |
