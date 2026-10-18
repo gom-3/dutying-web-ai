@@ -73,9 +73,11 @@ def query_dutying_growth(start_date: str, end_date: str) -> dict:
     with AuthorizedSession(credentials) as session:
         reports = {
             'web_totals': ga(session, '394593452', [], ['activeUsers', 'newUsers', 'sessions', 'engagedSessions'], host_filter),
+            'web_totals_new_stream': ga(session, '551586530', [], ['activeUsers', 'newUsers', 'sessions', 'engagedSessions'], {'andGroup': {'expressions': [host_filter, {'filter': {'fieldName': 'streamId', 'stringFilter': {'matchType': 'EXACT', 'value': '16150940090'}}}]}}),
+            'ai_mobile': ga(session, '551586530', ['streamId', 'platform'], ['activeUsers', 'eventCount'], {'filter': {'fieldName': 'streamId', 'inListFilter': {'values': ['15500007523', '15500030482']}}}),
             'web_acquisition': ga(session, '394593452', ['sessionSourceMedium'], ['sessions', 'engagedSessions'], host_filter),
             'web_outcomes': ga(session, '394593452', ['eventName'], ['eventCount', 'totalUsers'], outcome_filter),
-            'ai_mobile': ga(session, '406327786', ['streamId', 'platform'], ['activeUsers', 'eventCount'], {'filter': {'fieldName': 'streamId', 'inListFilter': {'values': ['15481397214', '15489331448']}}}),
+            'ai_mobile_legacy': ga(session, '406327786', ['streamId', 'platform'], ['activeUsers', 'eventCount'], {'filter': {'fieldName': 'streamId', 'inListFilter': {'values': ['15481397214', '15489331448']}}}),
         }
     try:
         search = query_search_performance(start.isoformat(), end.isoformat())
@@ -84,7 +86,7 @@ def query_dutying_growth(start_date: str, end_date: str) -> dict:
     return {'schema_version': 1, 'current_period': ranges[0], 'previous_period': ranges[1],
             'ga_timezone': 'Asia/Seoul', 'search_timezone': 'America/Los_Angeles',
             'reports': reports, 'search': search,
-            'measurement_limits': ['New web measurement migration is not deployed; verify source before changing property.',
+            'measurement_limits': ['Compare legacy and new stream coverage to determine migration status; never sum overlapping streams without deduplication.',
                 'Legacy Auth_login is not a signup event. Empty AI app rows mean no recorded usage in these streams.',
                 'No verified Meta API data or ad spend; do not calculate blended CAC/ROAS.',
                 'Events are occurrences. Do not divide event counts to claim ordered user funnel conversion.',
