@@ -177,4 +177,43 @@ describe('HospitalSearchField', () => {
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
         await waitFor(() => expect(onChange).toHaveBeenCalledWith({hospitalId: undefined, hospitalName: '세브란스병원'}));
     });
+
+    it('해외 지역에서는 병원명을 직접 입력하고 한국 병원 API를 부르지 않는다', async () => {
+        const user = userEvent.setup();
+        const onChange = renderField(vi.fn(), {serviceRegion: 'JP'});
+
+        await user.type(screen.getByRole('textbox'), '東京病院');
+
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        expect(onChange).toHaveBeenLastCalledWith({hospitalId: undefined, hospitalName: '東京病院'});
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        expect(mockSearchHospitals).not.toHaveBeenCalled();
+    });
+
+    it('한국 병원 선택 후 지역이 해외로 바뀌면 카탈로그 ID를 지운다', async () => {
+        const onChange = vi.fn();
+        const {rerender} = render(
+            <HospitalSearchField
+                serviceRegion="KR"
+                fieldClassName="field"
+                hospitalId={7}
+                hospitalName="세브란스병원"
+                onChange={onChange}
+            />,
+        );
+
+        rerender(
+            <HospitalSearchField
+                serviceRegion="JP"
+                fieldClassName="field"
+                hospitalId={7}
+                hospitalName="세브란스병원"
+                onChange={onChange}
+            />,
+        );
+
+        expect(screen.getByRole('textbox')).toHaveValue('세브란스병원');
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+        await waitFor(() => expect(onChange).toHaveBeenCalledWith({hospitalId: undefined, hospitalName: '세브란스병원'}));
+    });
 });

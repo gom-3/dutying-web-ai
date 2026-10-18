@@ -33,6 +33,13 @@ export const aiAdjustKo = {
         timeout: '자동채우기 서버에서 정해진 시간 안에 결과를 받지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 다시 시도해 주세요.',
         response:
             '자동채우기 서버의 응답에 문제가 있어 결과를 적용하지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해도 같다면 고객지원에 알려 주세요.',
+        offNotAllowed:
+            '일부 간호사의 가능한 근무에 휴무가 없어요.\n구성원 설정에서 휴무를 허용한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
+        offNotAllowedNamed:
+            '{{names}}의 가능한 근무에 휴무가 없어요.\n구성원 설정에서 휴무를 허용한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
+        moreNurses: ' 외 {{count}}명',
+        memberSettings: '구성원 설정 확인 (새 탭)',
+        offSettingsTitle: '휴무 설정을 확인해 주세요.',
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
         infeasible: '지금 조건으로는 근무표를 만들 수 없어요.\n요청이나 고정한 근무를 바꿔 주세요. 기존 근무표는 그대로예요.',
@@ -399,6 +406,13 @@ export const aiAdjustEn = {
         timeout: 'The scheduling server did not return a result in time.\nYour schedule is unchanged. Please try again shortly.',
         response:
             'The scheduling server returned an unusable response, so no changes were applied.\nYour schedule is unchanged. Contact support if retrying does not help.',
+        offNotAllowed:
+            'Some nurses have no allowed rest shift.\nAllow rest in Members settings, then run autofill again. Your schedule is unchanged.',
+        offNotAllowedNamed:
+            '{{names}} have no allowed rest shift.\nAllow rest in Members settings, then run autofill again. Your schedule is unchanged.',
+        moreNurses: ' and {{count}} more',
+        memberSettings: 'Check member settings (new tab)',
+        offSettingsTitle: 'Check rest shift settings.',
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
         infeasible:

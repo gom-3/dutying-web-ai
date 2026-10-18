@@ -45,8 +45,8 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
-import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
 import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc, type TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
+import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
 import {
     autofillCompletionKey,
     readAutofillCompletion,
@@ -93,13 +93,13 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
-import AiConversationSidebar from './ai-conversation-sidebar';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
+import AiConversationSidebar from './ai-conversation-sidebar';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
@@ -535,6 +535,7 @@ export function AiAutofill() {
     const adjustActionRef = useRef<{fingerprint: string; key: string} | null>(null);
     const interpretedRevisionRef = useRef<number | null>(null);
     const interpretSeqRef = useRef(0);
+
     useEffect(() => {
         if (!isAdjustDialogOpen || !isAdjustEnabled) return;
 
@@ -544,6 +545,7 @@ export function AiAutofill() {
     useEffect(() => {
         if (isAdjustDialogOpen) void refetchMonthRequests();
     }, [isAdjustDialogOpen, refetchMonthRequests]);
+
     const aiAbortControllerRef = useRef<AbortController | null>(null);
     const aiEffectDismissTimerRef = useRef<number | null>(null);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -1426,6 +1428,7 @@ export function AiAutofill() {
                         ],
                     });
                 }
+
                 return {
                     error: result.conflict ? t('aiAdjust.conflict') : failure.message,
                     failure,
@@ -1443,17 +1446,21 @@ export function AiAutofill() {
 
                 return {error: failure.message, failure, requiresReinterpret: true};
             }
+
             if (adjust && result.response.operationType !== 'ADJUST') return {error: t('aiAdjust.unexpectedOperation')};
 
             const executionFailure = aiExecutionFailure(result.response);
 
             if (executionFailure) {
                 setLastAdjustChangedCount(null);
+
                 if (adjust) setLastAdjustFailure(executionFailure.message);
                 else setGenerationFailure(executionFailure);
+
                 setAiStatus('error');
                 setIsAdjustDialogOpen(true);
                 void refetchMonthRequests();
+
                 return {error: executionFailure.message, failure: executionFailure};
             }
 
@@ -1479,6 +1486,7 @@ export function AiAutofill() {
                 setLastGoalResult(goalResult);
                 setAiStatus('success');
                 void refetchMonthRequests();
+
                 return {response: result.response, applied: false};
             }
 
@@ -1496,6 +1504,7 @@ export function AiAutofill() {
                 );
 
                 void refetchMonthRequests();
+
                 return {error: t('aiAdjust.reviewCandidate')};
             }
 
@@ -1505,6 +1514,7 @@ export function AiAutofill() {
                     result.response.changedCells,
                     new Map(readyContext.originalShift.wardShiftTypes.map((type) => [type.wardShiftTypeId, type.shortName])),
                 );
+
                 commands.applyAdjustedDoc(nextDoc);
             } else {
                 commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
@@ -1547,7 +1557,9 @@ export function AiAutofill() {
             }
 
             shouldKeepAiEffectVisible = !adjust;
+
             if (!adjust) scheduleAiEffectDismiss();
+
             setAiStatus('success');
             setHasCompletedAiFill(true);
 
@@ -1572,6 +1584,7 @@ export function AiAutofill() {
                 setLastRuleResults([]);
                 setLastOffGoal(null);
             }
+
             return {response: result.response, applied: true};
         } catch (error) {
             if (abortController.signal.aborted || aiRequestSeqRef.current !== requestSeq) return;
@@ -1684,6 +1697,7 @@ export function AiAutofill() {
     };
     const interpretAdjustText = async (text: string) => {
         if (wardId == null || currentShiftTeamId == null) throw new Error(t('aiAdjust.failed'));
+
         const seq = ++interpretSeqRef.current;
         const revision = useShiftEditorStore.getState().draftRevision;
         const [result] = await Promise.all([
@@ -1695,7 +1709,9 @@ export function AiAutofill() {
             }),
             refetchMonthRequests(),
         ]);
+
         if (seq === interpretSeqRef.current) interpretedRevisionRef.current = revision;
+
         return result;
     };
     const handleApplyTextRequests = async (
@@ -1706,23 +1722,33 @@ export function AiAutofill() {
         actionKey?: string,
     ): Promise<TAdjustApplyResult> => {
         const conversation = conversationSequence.current;
+
         let readyContext = getAiFillReadyContext();
+
         if (!readyContext) throw new Error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
         let before = useShiftEditorStore.getState();
+
         if (interpretedRevisionRef.current !== before.draftRevision)
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
         const latestRequests = await refetchMonthRequests();
 
         if (conversationSequence.current !== conversation) throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
         if (!latestRequests) throw new Error(t('aiAdjust.requestsFailed'));
+
         const activeFingerprint = (requests: TScheduleMonthRequestRes[]) =>
             JSON.stringify(requests.filter((entry) => entry.status === 'ACTIVE'));
+
         if (activeFingerprint(latestRequests) !== activeFingerprint(monthRequests))
             throw Object.assign(new Error(t('aiAdjust.requestsChanged')), {requiresConfirmation: true});
+
         if (useShiftEditorStore.getState().draftRevision !== before.draftRevision)
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
         const currentScope = currentAiContextRef.current;
+
         if (
             currentScope.wardId !== readyContext.wardId ||
             currentScope.shiftTeamId !== readyContext.shiftTeamId ||
@@ -1730,6 +1756,7 @@ export function AiAutofill() {
             currentScope.month !== month
         )
             throw Object.assign(new Error(t('aiAdjust.stale')), {requiresReinterpret: true});
+
         if (
             items.some(({item}) =>
                 item.kind === 'CELL'
@@ -1771,8 +1798,11 @@ export function AiAutofill() {
 
         // The user has now reviewed the current previous-month cells and fixed shifts.
         interpretedRevisionRef.current = before.draftRevision;
+
         const requests = toTextRequestItems(items, requestText);
+
         let prepared: TDutyDoc;
+
         try {
             prepared = prepareAdjustDoc(
                 before.doc,
@@ -1782,6 +1812,7 @@ export function AiAutofill() {
         } catch (error) {
             throw new Error(t(error instanceof Error && error.message === 'LOCKED_CELL' ? 'aiAdjust.lockedCell' : 'aiAdjust.invalidCell'));
         }
+
         const fingerprint = JSON.stringify({
             actionKey,
             requests,
@@ -1791,19 +1822,24 @@ export function AiAutofill() {
             revision: before.draftRevision,
             rulesHash: readyContext.rulesHash,
         });
+
         if (adjustActionRef.current?.fingerprint !== fingerprint) adjustActionRef.current = {fingerprint, key: crypto.randomUUID()};
+
         setLastAdjustChangedCount(null);
 
         const result = await runAiFill(readyContext, {strength, requests}, llmPrompt, {
             doc: prepared,
             idempotencyKey: adjustActionRef.current.key,
         });
+
         if (!result || 'error' in result)
             throw Object.assign(new Error(result?.error ?? t('aiAdjust.failed')), {
                 requiresReinterpret: result?.requiresReinterpret,
                 failure: result && 'failure' in result ? result.failure : undefined,
             });
+
         const after = useShiftEditorStore.getState();
+
         return {
             response: result.response,
             applied: result.applied,
@@ -1969,7 +2005,6 @@ export function AiAutofill() {
         if (cellsToUnfix.length > 0) commands.setCellsFixed(cellsToUnfix, false);
     };
     const rollbackPreparationRef = useRef(restoreAiFillDecisionFixedCells);
-
     const resetAutofillConversation = () => {
         // Invalidate asynchronous work before returning to the entry choices. Keep the
         // current schedule and saved requests; only unconfirmed preparation is undone.
@@ -2017,6 +2052,7 @@ export function AiAutofill() {
 
     const startPreparedFill = () => {
         if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
+
         const readyContext = getAiFillReadyContext();
 
         if (!readyContext) return;
@@ -2059,6 +2095,7 @@ export function AiAutofill() {
 
         if (!hasFilledCells && skipWhenEmpty) {
             startPreparedFill();
+
             return;
         }
 
@@ -2107,7 +2144,9 @@ export function AiAutofill() {
         try {
             if (selected.length) {
                 await WardAPI.carryOverScheduleMonthRequests(wardId, currentShiftTeamId, {year, month, requestIds: selected});
+
                 if (!isSameScope()) return;
+
                 // A confirmed save can finish after a chat reset. Refresh the saved
                 // requests without resuming that old preparation flow.
                 await refetchMonthRequests();
@@ -2207,6 +2246,7 @@ export function AiAutofill() {
         new Promise<void>((resolve, reject) => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) {
                 reject(new Error(t('aiAdjust.allFixed')));
+
                 return;
             }
 
@@ -2852,6 +2892,7 @@ export function AiAutofill() {
                     resultActions={scheduleActions}
                     onUndo={(revision) => {
                         if (useShiftEditorStore.getState().draftRevision !== revision || isAiGenerating) return false;
+
                         commands.undo();
                         commands.clearScheduleValidationFromApi();
                         setLastAdjustChangedCount(null);
