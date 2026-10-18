@@ -58,3 +58,7 @@ GA Ask Advisor는 속성 권한과 제공 범위 내에서 질문/보고서 탐�
 - https://support.google.com/analytics/answer/16675569
 - https://posthog.com/docs/web-analytics/marketing-analytics
 - https://posthog.com/docs/product-analytics/dashboards
+
+## 앱 내 정기 확인
+
+2026-10-18 현재 채팅에 매일 09:00 KST 수집 상태 확인 자동화를 활성화했다. 수집 시작·중단·의미 있는 변화·조치 필요 시에만 알린다. 이는 Data API 보고서의 무인 갱신이 설정됐다는 뜻이 아니다. API 인증이 준비된 경우에만 집계 도구를 실행하고, 그렇지 않으면 로그인된 GA 화면에서 확인 가능한 상태만 읽는다. PR 머지·운영 배포·권한 변경은 자동 수행하지 않는다.
