@@ -5,6 +5,7 @@ import {useTranslation} from 'react-i18next';
 import useAuth from '@/features/auth';
 import useAuthStore from '@/features/auth/model/store';
 import {
+    isAdminSeatLimitReached,
     commercialGet,
     commercialDelete,
     type Policy,
@@ -261,7 +262,8 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
                     </div>
                     <div>
                         <strong>
-                            {e.adminSeats.active} + {e.adminSeats.reserved} / {e.adminSeats.limit}
+                            {e.adminSeats.active} + {e.adminSeats.reserved} /{' '}
+                            {e.restrictionStates?.ADMIN_SEATS === false ? t('제한 해제', 'No plan limit') : e.adminSeats.limit}
                         </strong>
                         <span>{t('활성 관리자 + 대기 초대', 'Active admins + pending invitations')}</span>
                     </div>
@@ -281,13 +283,16 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                 {u.meter === 'FULL_GENERATE' ? t('전체 생성', 'Full generation') : t('부분 조정', 'Partial adjustment')}
                             </h3>
                             <strong>
-                                {u.remaining}
-                                {t('회 남음', ' remaining')}
+                                {u.enforced === false
+                                    ? t('요금제 횟수 제한 해제', 'Plan usage limit disabled')
+                                    : `${u.remaining}${t('회 남음', ' remaining')}`}
                             </strong>
                             <p>
                                 {t('사용', 'Used')} {u.used} · {t('처리 중 예약', 'Reserved')} {u.reserved}
                             </p>
-                            <meter min={0} max={Math.max(u.granted, 1)} value={u.remaining} aria-label={u.meter} />
+                            {u.enforced !== false ? (
+                                <meter min={0} max={Math.max(u.granted, 1)} value={u.remaining} aria-label={u.meter} />
+                            ) : null}
                             <ul>
                                 {u.lots.map((l) => (
                                     <li key={l.id}>
@@ -947,7 +952,8 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                 <p>
                     {e.adminSeats.active}
                     {t('명 참여', ' active')} + {e.adminSeats.reserved}
-                    {t('명 대기', ' pending')} / {e.adminSeats.limit}
+                    {t('명 대기', ' pending')} /{' '}
+                    {e.restrictionStates?.ADMIN_SEATS === false ? t('제한 해제', 'No plan limit') : e.adminSeats.limit}
                     {t('명', ' seats')}
                 </p>
                 <ErrorView error={data.error} />
@@ -1011,9 +1017,7 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                         <Field label={t('초대할 관리자 이메일', 'Administrator email')}>
                             <input type="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} />
                         </Field>
-                        <button disabled={action.busy || e.adminSeats.active + e.adminSeats.reserved >= e.adminSeats.limit}>
-                            {t('관리자 초대', 'Invite administrator')}
-                        </button>
+                        <button disabled={action.busy || isAdminSeatLimitReached(e)}>{t('관리자 초대', 'Invite administrator')}</button>
                     </form>
                 ) : null}
                 {inviteUrl ? (
@@ -2138,9 +2142,18 @@ function AiBatchPanel({scope, e}: {scope: Scope; e: Entitlement}) {
         queryKey: commercialQueryKey(accountId, scope.scopeId, 'teams'),
         queryFn: () => WardAPI.getShiftTeams(Number(scope.ref)),
     });
-    const remaining = e.usage.find((u) => u.meter === 'FULL_GENERATE')?.remaining ?? 0;
+    const fullUsage = e.usage.find((u) => u.meter === 'FULL_GENERATE');
+    const remaining = fullUsage?.remaining ?? 0;
     return (
         <Section title={t('여러 팀 전체 생성', 'Generate schedules for multiple teams')}>
+            {fullUsage?.enforced === false ? (
+                <Notice>
+                    {t(
+                        '일괄 생성은 월간 횟수 예약이 필요해 현재 제한 설정에서는 사용할 수 없어요. 개별 팀 생성은 계속 사용할 수 있어요.',
+                        'Batch generation requires monthly reservations. Individual team generation remains available.',
+                    )}
+                </Notice>
+            ) : null}
             <Notice>
                 {t(
                     '서버에 저장된 팀별 명단·설정으로 실행합니다. 전체 생성은 팀당 1회이며 필요한 횟수를 함께 예약합니다. 결과를 검토한 뒤 저장·확정해 주세요.',
@@ -2168,6 +2181,7 @@ function AiBatchPanel({scope, e}: {scope: Scope; e: Entitlement}) {
             <button
                 disabled={
                     action.busy ||
+                    fullUsage?.enforced === false ||
                     !selected.length ||
                     selected.length > remaining ||
                     selected.length > 20 ||
