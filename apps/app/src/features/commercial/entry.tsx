@@ -1,14 +1,17 @@
 import {useState} from 'react';
-import {Link} from 'react-router';
 import {useTranslation} from 'react-i18next';
-import {scopePath, useCommercialContext, useWardEntitlement} from './api';
+import {Link} from 'react-router';
 import useAuthStore from '@/features/auth/model/store';
+import {scopePath, useCommercialContext, useWardEntitlement, usageRemainingLabel} from './api';
 
 export function CommercialEntry({compact = false}: {compact?: boolean}) {
     const context = useCommercialContext();
     const {i18n} = useTranslation();
+
     if (!context.data?.enabled) return null;
+
     const ko = i18n.language.startsWith('ko');
+
     return (
         <Link
             to="/workspace"
@@ -23,9 +26,12 @@ export function WardUsageSummary() {
     const wardId = useAuthStore((s) => s.wardId);
     const query = useWardEntitlement();
     const {i18n} = useTranslation();
+
     if (!query.data || !wardId) return null;
+
     const e = query.data;
     const ko = i18n.language.startsWith('ko');
+
     return (
         <Link
             to={scopePath({type: 'WARD', ref: String(wardId)})}
@@ -34,7 +40,16 @@ export function WardUsageSummary() {
             {e.plan}
             {e.entitlementSource === 'EVENT' ? (ko ? ' · 무료 이벤트' : ' · Trial') : ''}
             <br />
-            {ko ? '전체' : 'Full'} {e.usage[0]?.remaining ?? 0} · {ko ? '부분' : 'Partial'} {e.usage[1]?.remaining ?? 0}
+            {ko ? '전체' : 'Full'}{' '}
+            {usageRemainingLabel(
+                e.usage.find((usage) => usage.meter === 'FULL_GENERATE'),
+                ko,
+            )}{' '}
+            · {ko ? '부분' : 'Partial'}{' '}
+            {usageRemainingLabel(
+                e.usage.find((usage) => usage.meter === 'PARTIAL_ADJUST'),
+                ko,
+            )}
             {e.capacity.overLimit ? <span className="block">{ko ? '편성 인원 조정이 필요합니다' : 'Review staff capacity'}</span> : null}
         </Link>
     );
@@ -46,17 +61,21 @@ export function AiPlanNotice({hasResult = false}: {hasResult?: boolean}) {
     const {i18n} = useTranslation();
     const ko = i18n.language.startsWith('ko');
     const [dismissed, setDismissed] = useState(false);
+
     if (!q.data || !ward) return null;
+
     const e = q.data;
     const full = e.usage.find((u) => u.meter === 'FULL_GENERATE');
     const partial = e.usage.find((u) => u.meter === 'PARTIAL_ADJUST');
+
     return (
         <aside
             className="flex flex-wrap items-center gap-3 rounded-xl bg-main-light px-4 py-3 text-sm"
             aria-label={ko ? 'AI 사용량' : 'AI allowance'}
         >
             <span>
-                {e.plan} · {ko ? '전체' : 'Full'} {full?.remaining ?? 0} · {ko ? '부분' : 'Partial'} {partial?.remaining ?? 0}
+                {e.plan} · {ko ? '전체' : 'Full'} {usageRemainingLabel(full, ko)} · {ko ? '부분' : 'Partial'}{' '}
+                {usageRemainingLabel(partial, ko)}
             </span>
             {e.capacity.overLimit ? (
                 <span>
@@ -66,7 +85,7 @@ export function AiPlanNotice({hasResult = false}: {hasResult?: boolean}) {
             <Link to={scopePath({type: 'WARD', ref: String(ward)}, 'billing')}>
                 {e.canManageBilling ? (ko ? '요금제·추가 횟수' : 'Plan & additional uses') : ko ? 'OWNER에게 요청' : 'Request from owner'}
             </Link>
-            {hasResult && e.plan === 'FREE' && !dismissed ? (
+            {hasResult && e.plan === 'FREE' && (full?.enforced !== false || partial?.enforced !== false) && !dismissed ? (
                 <span>
                     {ko ? '다음 달 편성도 Plus로 이어가세요.' : 'Continue next month’s scheduling with Plus.'}{' '}
                     <button onClick={() => setDismissed(true)}>{ko ? '나중에' : 'Later'}</button>
@@ -81,7 +100,9 @@ export function PlanFeatureNotice({action}: {action: 'BOARD_CREATE' | 'REQUEST_S
     const ward = useAuthStore((s) => s.wardId);
     const {i18n} = useTranslation();
     const ko = i18n.language.startsWith('ko');
+
     if (!query.data || !ward || query.data.allowedActions.includes(action)) return null;
+
     return (
         <aside className="mb-3 rounded-xl bg-main-light p-4 text-sm leading-6">
             {action === 'BOARD_CREATE'
