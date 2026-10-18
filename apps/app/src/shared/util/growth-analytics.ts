@@ -21,3 +21,16 @@ export function trackProductOutcome(
         // Telemetry failures must not change account or scheduling outcomes.
     }
 }
+
+/** Behavioral signals are not dissatisfaction labels. Never include request/result text or scope IDs. */
+export function trackScheduleSignal(
+    signal: 'comparison_open' | 'regeneration_selected' | 'outcome_recheck' | 'feedback_open' | 'feedback_sent',
+) {
+    try {
+        if (!isGoogleAnalyticsEnabled()) return;
+
+        ReactGA.event('schedule_behavior', {schema_version: 1, service: 'dutying_ai', signal});
+    } catch {
+        // Observation is optional; scheduling and feedback must keep working.
+    }
+}
