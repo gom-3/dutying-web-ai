@@ -48,6 +48,7 @@ export type TSemanticPlan = {
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
     planId: string;
+    refreshedFromPlanId?: string | null;
     planHash: string;
     sourceVersionId: string;
     state: string;
@@ -180,6 +181,11 @@ export function conversationApi(wardId: number, teamId: number) {
             }),
         confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+            }),
+        refreshPlan: (id: number, planId: string, expectedRevision: number, planHash: string) =>
+            post<TConversationTurn>(`/conversations/${id}/plans/${encodeURIComponent(planId)}/refresh`, {
                 expectedRevision,
                 planHash,
             }),

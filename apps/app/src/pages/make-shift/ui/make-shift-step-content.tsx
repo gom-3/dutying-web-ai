@@ -21,6 +21,7 @@ type TMakeShiftStepContentProps = {
     nextBusy?: boolean;
     onPrev: () => void;
     onNext: () => void;
+    onOpenConstraints?: () => void;
 };
 
 function ImportantIntroBadge() {
@@ -63,7 +64,15 @@ export function MakeShiftStepContent(props: TMakeShiftStepContentProps) {
     );
 }
 
-function LoadedMakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = false, onPrev, onNext}: TMakeShiftStepContentProps) {
+function LoadedMakeShiftStepContent({
+    currentStep,
+    canPrev,
+    canNext,
+    nextBusy = false,
+    onPrev,
+    onNext,
+    onOpenConstraints,
+}: TMakeShiftStepContentProps) {
     const {t} = useTypedTranslation();
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const stepConfig = MAKE_SHIFT_STEP_CONFIG[currentStep];
@@ -90,7 +99,7 @@ function LoadedMakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = f
         return (
             <div className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-0 flex-col pb-3 ${widePtClass}`}>
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
-                <StepComponent />
+                <StepComponent {...(currentStep === 4 ? {onOpenConstraints} : {})} />
             </div>
         );
     }

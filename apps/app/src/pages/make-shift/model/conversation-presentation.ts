@@ -1,35 +1,49 @@
 import type {TConversationDetail, TConversationOperation, TConversationTurn, TSemanticPlan} from './schedule-conversation-api';
 
-/** Storage events are not dialogue. A confirmation replaces the proposal of the same plan. */
+/** Storage events are not dialogue. Confirmations and explicit refreshes replace their source cards. */
 export function visibleConversationTurns(detail: TConversationDetail): TConversationTurn[] {
     const latestPlan = new Map<string, number>();
+    const refreshedPlans = new Set<string>();
 
     for (const turn of detail.turns) {
-        if (turn.semanticPlan)
+        if (turn.semanticPlan) {
             latestPlan.set(turn.semanticPlan.planId, Math.max(latestPlan.get(turn.semanticPlan.planId) ?? -1, turn.sequence));
+
+            if (turn.semanticPlan.refreshedFromPlanId && turn.semanticPlan.refreshedFromPlanId !== turn.semanticPlan.planId)
+                refreshedPlans.add(turn.semanticPlan.refreshedFromPlanId);
+        }
     }
 
     return detail.turns.filter(
         (turn) =>
             (turn.actor !== 'SYSTEM' || turn.type === 'SEGMENT_START') &&
-            (!turn.semanticPlan || turn.sequence === latestPlan.get(turn.semanticPlan.planId)),
+            (!turn.semanticPlan ||
+                (!refreshedPlans.has(turn.semanticPlan.planId) && turn.sequence === latestPlan.get(turn.semanticPlan.planId))),
     );
 }
 
-/** Previous segments remain visible; only the latest one supplies active UI state. */
+/** A segment starts a fresh dialogue, including when older model work finishes late. */
 export function currentConversationTurns(detail: TConversationDetail): TConversationTurn[] {
-    const start = Math.max(0, ...detail.turns.filter((turn) => turn.type === 'SEGMENT_START').map((turn) => turn.sequence));
+    const start = detail.turns.filter((turn) => turn.type === 'SEGMENT_START').sort((a, b) => b.sequence - a.sequence)[0];
 
-    return visibleConversationTurns(detail).filter((turn) => turn.sequence > start);
+    return visibleConversationTurns(detail).filter(
+        (turn) => turn.sequence > (start?.sequence ?? 0) && (!start || turn.baseRevision >= start.baseRevision),
+    );
 }
 
 export function operationAttempt(detail: TConversationDetail, operationId: string): number {
     const operation = detail.operations.find((entry) => entry.operationId === operationId);
 
-    return operation
-        ? detail.operations.filter((entry) => entry.operationType === operation.operationType && entry.sequence <= operation.sequence)
-              .length
-        : 0;
+    if (!operation) return 0;
+
+    const segmentStart = Math.max(
+        0,
+        ...detail.turns.filter((turn) => turn.type === 'SEGMENT_START' && turn.sequence < operation.sequence).map((turn) => turn.sequence),
+    );
+
+    return detail.operations.filter(
+        (entry) => entry.operationType === operation.operationType && entry.sequence > segmentStart && entry.sequence <= operation.sequence,
+    ).length;
 }
 
 /** Place the boundary before the next request, after all prior result messages. */
@@ -52,11 +66,30 @@ export function precedingCompletedOperation(detail: TConversationDetail, turn: T
 
 /** Recover the original message, including conditions not represented by a ready artifact. */
 export function requestTextForTurn(detail: TConversationDetail, turn: TConversationTurn): string {
-    const proposal = turn.semanticPlan
-        ? (detail.turns
-              .filter((entry) => entry.semanticPlan?.planId === turn.semanticPlan?.planId)
-              .sort((a, b) => a.sequence - b.sequence)[0] ?? turn)
-        : turn;
+    const proposals = new Map<string, TConversationTurn>();
+    const refreshedFrom = new Map<string, string>();
+
+    for (const entry of [...detail.turns, turn]) {
+        if (!entry.semanticPlan) continue;
+
+        const {planId, refreshedFromPlanId} = entry.semanticPlan;
+        const proposal = proposals.get(planId);
+
+        if (!proposal || entry.sequence < proposal.sequence) proposals.set(planId, entry);
+
+        if (refreshedFromPlanId) refreshedFrom.set(planId, refreshedFromPlanId);
+    }
+
+    let proposal = turn;
+    let planId = turn.semanticPlan?.planId;
+
+    const visited = new Set<string>();
+
+    while (planId && !visited.has(planId)) {
+        visited.add(planId);
+        proposal = proposals.get(planId) ?? proposal;
+        planId = refreshedFrom.get(planId);
+    }
 
     return (
         [...detail.turns]

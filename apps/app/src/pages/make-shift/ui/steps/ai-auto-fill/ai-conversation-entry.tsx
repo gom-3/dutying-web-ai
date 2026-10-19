@@ -1,11 +1,27 @@
 import {ChevronRight, RotateCw, SlidersHorizontal} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
+import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 
 export type TConversationEntryChoice = 'regenerate' | 'modify';
+
+export function AiConversationConfirmation({confirmation}: {confirmation: TAdjustResultActions}) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <button
+            type="button"
+            disabled={!confirmation.canConfirm || confirmation.disabled}
+            onClick={confirmation.onConfirm}
+            className="col-span-2 mt-1 min-h-11 w-full rounded-[10px] bg-main-1 px-4 py-3 text-center text-[14px] leading-5 font-medium text-white hover:bg-[#5931B9] focus-visible:bg-[#E9E1FF] focus-visible:text-[#5931B9] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        >
+            {t('aiAdjust.chat.confirmSchedule')}
+        </button>
+    );
+}
 
 export function AiInfoTip({label, children}: {label: string; children: ReactNode}) {
     const [open, setOpen] = useState(false);
@@ -51,6 +67,8 @@ export function AiConversationEntry({
     generationCompleted = false,
     generationCompletedMessage,
     hideIntro = false,
+    compact = false,
+    attached = false,
     confirmation,
     onChoose,
 }: {
@@ -60,10 +78,18 @@ export function AiConversationEntry({
     generationCompleted?: boolean;
     generationCompletedMessage?: string;
     hideIntro?: boolean;
+    compact?: boolean;
+    attached?: boolean;
     confirmation?: TAdjustResultActions;
     onChoose: (choice: TConversationEntryChoice) => void;
 }) {
     const {t} = useTypedTranslation();
+    const ko = i18n.language.startsWith('ko');
+    const choices: TConversationEntryChoice[] = compact ? ['modify', 'regenerate'] : ['regenerate', 'modify'];
+    const compactLabels = {
+        modify: ko ? '수정 요청하기' : 'Request changes',
+        regenerate: ko ? '다시 채우기' : 'Refill',
+    };
 
     return (
         <div className="flex min-w-0 flex-col gap-4">
@@ -84,36 +110,48 @@ export function AiConversationEntry({
             ) : (
                 <div
                     role="group"
-                    aria-label={t('aiAdjust.chat.welcome')}
-                    className="flex w-full min-w-0 flex-col gap-2 border-t border-gray-6 pt-4"
+                    aria-label={
+                        attached
+                            ? t('aiAdjust.snapshot.nextAction')
+                            : compact
+                              ? ko
+                                  ? '현재 근무표에서 계속하기'
+                                  : 'Continue with the current schedule'
+                              : t('aiAdjust.chat.welcome')
+                    }
+                    className={
+                        attached
+                            ? 'flex w-full min-w-0 flex-col gap-2'
+                            : compact
+                              ? 'grid w-full min-w-0 grid-cols-2 gap-2'
+                              : 'flex w-full min-w-0 flex-col gap-2 pt-3'
+                    }
                 >
-                    {(['regenerate', 'modify'] as const).map((value) => (
+                    {compact && (
+                        <p className="col-span-2 px-1 text-xs leading-5 text-[#667085]">
+                            {ko ? '현재 근무표에서 계속하기' : 'Continue with the current schedule'}
+                        </p>
+                    )}
+                    {choices.map((value) => (
                         <button
                             key={value}
                             type="button"
                             disabled={disabled || (value === 'modify' && modifyDisabled)}
                             onClick={() => onChoose(value)}
-                            className="group flex min-h-14 w-full items-center gap-3 rounded-lg border border-gray-5 bg-white px-4 py-3 text-left text-[14px] font-medium text-[#333D4B] transition-colors hover:border-main-1 hover:bg-main-light focus-visible:border-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
+                            className={`group flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`}
                         >
                             {value === 'regenerate' ? (
-                                <RotateCw aria-hidden className="size-5 shrink-0 text-main-1" />
+                                <RotateCw aria-hidden className="size-4 shrink-0" />
                             ) : (
-                                <SlidersHorizontal aria-hidden className="size-5 shrink-0 text-main-1" />
+                                <SlidersHorizontal aria-hidden className="size-4 shrink-0" />
                             )}
-                            <span className="flex-1">{t(`aiAdjust.chat.${value}`)}</span>
-                            <ChevronRight aria-hidden className="size-4 shrink-0 text-gray-3 group-hover:text-main-1" />
+                            <span className={compact ? 'min-w-0 break-keep' : 'min-w-0 flex-1 break-keep'}>
+                                {compact ? compactLabels[value] : t(`aiAdjust.chat.${value}`)}
+                            </span>
+                            {!compact && <ChevronRight aria-hidden className="size-4 shrink-0" />}
                         </button>
                     ))}
-                    {confirmation && (
-                        <button
-                            type="button"
-                            disabled={!confirmation.canConfirm || confirmation.disabled}
-                            onClick={confirmation.onConfirm}
-                            className="mt-2 min-h-11 w-full rounded-lg bg-main-1 px-4 py-2 text-center text-[14px] font-medium text-white hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                            {t('aiAdjust.chat.confirmSchedule')}
-                        </button>
-                    )}
+                    {confirmation && <AiConversationConfirmation confirmation={confirmation} />}
                 </div>
             )}
         </div>

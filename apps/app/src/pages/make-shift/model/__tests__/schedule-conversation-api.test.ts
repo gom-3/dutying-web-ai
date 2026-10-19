@@ -3,6 +3,7 @@ import {
     currentConversationTurns,
     operationAttempt,
     precedingCompletedOperation,
+    requestTextForTurn,
     visibleConversationTurns,
 } from '../conversation-presentation';
 import {
@@ -77,7 +78,24 @@ describe('conversation state', () => {
 
         expect(visibleConversationTurns(monthly)).toEqual([turn, start, next]);
         expect(currentConversationTurns(monthly)).toEqual([next]);
-        expect(operationAttempt({...monthly, operations: [operation, {...operation, operationId: 'a2', sequence: 5}]}, 'a2')).toBe(2);
+        expect(operationAttempt({...monthly, operations: [operation, {...operation, operationId: 'a2', sequence: 5}]}, 'a2')).toBe(1);
+    });
+    it('numbers runs within their own request section while preserving earlier history and operation types', () => {
+        const monthly = {
+            ...detail,
+            turns: [{...turn, sequence: 3, actor: 'SYSTEM', type: 'SEGMENT_START'}],
+            operations: [
+                operation,
+                {...operation, operationId: 'a2', sequence: 5},
+                {...operation, operationId: 'a3', sequence: 6},
+                {...operation, operationId: 'adjust:1', sequence: 7, operationType: 'ADJUST' as const},
+            ],
+        };
+
+        expect(operationAttempt(monthly, operation.operationId)).toBe(1);
+        expect(operationAttempt(monthly, 'a2')).toBe(1);
+        expect(operationAttempt(monthly, 'a3')).toBe(2);
+        expect(operationAttempt(monthly, 'adjust:1')).toBe(1);
     });
     it('places each follow-up boundary before the next user request and avoids duplicate new-section boundaries', () => {
         const next = {...turn, sequence: 3, actor: 'USER'};
@@ -113,6 +131,107 @@ describe('conversation state', () => {
                 false,
             ),
         ).toBe(false);
+    });
+});
+
+describe('refreshed semantic plan presentation', () => {
+    const proposal = (planId: string, sequence: number, refreshedFromPlanId?: string): TConversationTurn => ({
+        ...turn,
+        eventId: sequence,
+        sequence,
+        type: 'SEMANTIC_PLAN',
+        interpretationId: `interpretation:${planId}`,
+        semanticPlan: {
+            planId,
+            ...(refreshedFromPlanId ? {refreshedFromPlanId} : {}),
+            planHash: 'same-reviewed-conditions',
+            sourceVersionId: `source:${planId}`,
+            state: 'PREVIEW_READY',
+            summary: '조건 확인',
+            confirmationAllowed: true,
+            reasonCodes: [],
+            conditions: [
+                {
+                    intentId: 'condition:1',
+                    action: 'FORBID',
+                    nurseIds: [1],
+                    dates: ['2026-11-01'],
+                    shiftCodes: ['N'],
+                    quantifier: 'EACH',
+                    modality: 'HARD',
+                    operator: null,
+                    count: null,
+                    sourceSpan: {quote: '김 간호사 1일 N 금지'},
+                },
+            ],
+        },
+    });
+    const message = (sequence: number, text: string): TConversationTurn => ({
+        ...turn,
+        eventId: sequence,
+        sequence,
+        actor: 'USER',
+        type: 'MESSAGE',
+        interpretationId: null,
+        text,
+    });
+    const confirm = (source: TConversationTurn, sequence: number): TConversationTurn => ({
+        ...source,
+        eventId: sequence,
+        sequence,
+        type: 'SEMANTIC_PLAN_CONFIRMED',
+        semanticPlan: {...source.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+    });
+
+    it('shows only the latest confirmed card across an explicit refresh chain', () => {
+        const original = message(1, '김 간호사 1일 N 금지');
+        const initial = proposal('initial', 2);
+        const refreshed = proposal('refreshed', 3, 'initial');
+        const next = proposal('next', 4, 'refreshed');
+        const confirmed = confirm(next, 5);
+        const conversation = {...detail, turns: [original, initial, refreshed, next, confirmed]};
+
+        expect(visibleConversationTurns(conversation)).toEqual([original, confirmed]);
+        expect(requestTextForTurn(conversation, confirmed)).toBe(original.text);
+    });
+
+    it('retains the original request through refresh metadata on the confirmation', () => {
+        const original = message(1, '김 간호사 1일 N 금지');
+        const initial = proposal('initial', 2);
+        const intervening = message(3, '다른 입력');
+        const refreshed = proposal('refreshed', 4);
+        const confirmed = confirm({...refreshed, semanticPlan: {...refreshed.semanticPlan!, refreshedFromPlanId: 'initial'}}, 5);
+        const conversation = {...detail, turns: [original, initial, intervening, refreshed, confirmed]};
+
+        expect(visibleConversationTurns(conversation)).toEqual([original, intervening, confirmed]);
+        expect(requestTextForTurn(conversation, confirmed)).toBe(original.text);
+        expect(requestTextForTurn(conversation, refreshed)).toBe(original.text);
+    });
+
+    it('preserves independently requested identical conditions in different request sections', () => {
+        const original = message(1, '김 간호사 1일 N 금지');
+        const initial = proposal('initial', 2);
+        const confirmed = confirm(initial, 3);
+        const start = {...turn, eventId: 4, sequence: 4, actor: 'SYSTEM', type: 'SEGMENT_START', text: 'CURRENT_DRAFT'};
+        const repeated = message(5, '다시 김 간호사 1일 N 금지');
+        const independent = proposal('independent', 6);
+        const conversation = {...detail, turns: [original, initial, confirmed, start, repeated, independent]};
+
+        expect(independent.semanticPlan!.conditions).toEqual(initial.semanticPlan!.conditions);
+        expect(visibleConversationTurns(conversation)).toEqual([original, confirmed, start, repeated, independent]);
+        expect(currentConversationTurns(conversation)).toEqual([repeated, independent]);
+        expect(requestTextForTurn(conversation, independent)).toBe(repeated.text);
+    });
+
+    it('uses the first source request even when later refreshes follow other user messages', () => {
+        const original = message(1, '김 간호사 1일 N 금지');
+        const initial = proposal('initial', 2);
+        const intervening = message(3, '다른 입력');
+        const refreshed = proposal('refreshed', 4, 'initial');
+        const next = proposal('next', 5, 'refreshed');
+        const conversation = {...detail, turns: [original, initial, intervening, refreshed, next]};
+
+        expect(requestTextForTurn(conversation, next)).toBe(original.text);
     });
 });
 

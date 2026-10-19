@@ -6,8 +6,10 @@ import type {
 } from '@dutying/api/ward';
 import {useEffect, useImperativeHandle, useRef, useState, type ReactNode, type Ref} from 'react';
 import {v4 as uuid} from 'uuid';
+import type {TShift} from '@/entities/shift';
 import {useShiftEditorStore} from '@/features/shift-editor';
 import type {TDutyDoc} from '@/features/shift-editor/model/types';
+import i18n from '@/i18n';
 import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -29,7 +31,8 @@ import {AiAdjustResult, type TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustReviewConversation, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
-import {AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
+import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
+import {AiConversationLoading} from './ai-conversation-loading';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiResultSnapshot} from './ai-result-snapshot';
@@ -54,6 +57,7 @@ type TProps = {
     onReviewSchedule?: () => void;
     hideRestartButton?: boolean;
     onBusyChange?: (busy: boolean) => void;
+    conditionsVersion?: number;
     interpret: (text: string) => Promise<TScheduleAdjustInterpretRes>;
     onApply: TAdjustApply;
     goalNurses: {nurseId: number; name: string}[];
@@ -69,6 +73,8 @@ type TProps = {
     conversationActions?: ReactNode;
     generationCompleted?: boolean;
     generationCompletedMessage?: string;
+    generationReviewRequired?: boolean;
+    snapshotShift?: TShift;
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     onRegenerate?: () => void;
@@ -94,13 +100,33 @@ type TTurn = {
         | 'error';
     result?: TAdjustApplyResult;
     snapshot?: TDutyDoc;
+    snapshotShift?: TShift;
+    snapshotBefore?: TDutyDoc;
+    snapshotBeforeShift?: TShift;
+    attempt?: number;
+    completion?: {message: string; reviewRequired: boolean};
     error?: string;
     failure?: TAiConversationFailure;
-    failedAttempts?: {messages: TAutofillMessage[]; failure: TAiConversationFailure; reply: string}[];
+    failedAttempts?: {messages: TAutofillMessage[]; failure: TAiConversationFailure; reply: string; attempt?: number}[];
     replies?: TReviewReply[];
     followups?: {text: string; reply: string}[];
     reviewRequests?: TScheduleMonthRequestRes[];
 };
+
+function snapshotChangedCount(before: TDutyDoc | undefined, after: TDutyDoc): number | undefined {
+    if (!before) return undefined;
+
+    const previous = new Map(
+        before.rows.flatMap((row) => before.columns.map((date, index) => [`${row.workerId}|${date}`, row.cells[index] ?? null] as const)),
+    );
+
+    return after.rows.reduce(
+        (count, row) =>
+            count +
+            after.columns.filter((date, index) => (previous.get(`${row.workerId}|${date}`) ?? null) !== (row.cells[index] ?? null)).length,
+        0,
+    );
+}
 
 export function toCardItems(items: TScheduleMonthRequestItem[], goalNurseIds: number[]): TInterpretCardItem[] {
     return items.map((item) => ({
@@ -127,6 +153,7 @@ export default function AiAdjustTextInput({
     onReviewSchedule,
     hideRestartButton = false,
     onBusyChange,
+    conditionsVersion = 0,
     interpret,
     onApply,
     goalNurses,
@@ -142,12 +169,15 @@ export default function AiAdjustTextInput({
     conversationActions,
     generationCompleted = false,
     generationCompletedMessage,
+    generationReviewRequired = false,
+    snapshotShift,
     generationFailure,
     onDismissFailure,
     onRegenerate,
     ref,
 }: TProps) {
     const {t} = useTypedTranslation();
+    const attemptLabel = (attempt: number) => (i18n.language.startsWith('ko') ? `${attempt}회차` : `Run ${attempt}`);
     const preparing = Boolean(preparation);
     const [text, setText] = useState('');
     const [noticeDismissed, setNoticeDismissed] = useState(false);
@@ -160,14 +190,18 @@ export default function AiAdjustTextInput({
     // Message IDs do not invalidate in-flight interpretation requests.
     const messageSequence = useRef(0);
     const lastAutofillId = useRef<number | undefined>(undefined);
+    const dismissedAutofillIds = useRef(new Set<number>());
+    const generationBefore = useRef(new Map<number, {doc: TDutyDoc; shift?: TShift}>());
+    const adjustmentAttempt = useRef(0);
     const busy = useRef(false);
     const mounted = useRef(true);
     const textarea = useRef<HTMLTextAreaElement>(null);
     const action = useRef<{fingerprint: string; key: string} | null>(null);
+    const previousConditionsVersion = useRef(conditionsVersion);
     const lastTurn = turns[turns.length - 1];
     const active = lastTurn?.group === group ? lastTurn : undefined;
     const hasRequestTurns = turns.some((turn) => turn.status !== 'messages');
-    const flowCompleted = Boolean(autofillFlow && generationCompleted && !noticeDismissed);
+    const flowCompleted = Boolean(generationCompleted && !noticeDismissed && !generationFailure);
     const waitingForGeneration = Boolean(
         autofillFlow?.kind !== 'adjustment' && autofillFlow?.status === 'running' && !generationCompleted && !generationFailure,
     );
@@ -178,16 +212,40 @@ export default function AiAdjustTextInput({
         preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
 
     useEffect(() => {
-        if (!autofillFlow) return;
+        if (previousConditionsVersion.current === conditionsVersion) return;
 
-        const isNewAttempt = lastAutofillId.current !== autofillFlow.id;
-        const messages: TAutofillMessage[] = [
-            ...autofillFlow.messages,
-            ...(generationCompleted ? [{role: 'assistant' as const, text: completedMessage}] : []),
-        ];
+        previousConditionsVersion.current = conditionsVersion;
+        action.current = null;
+        setTurns((current) =>
+            current.map((turn) =>
+                ['confirm', 'revising', 'applyFailed'].includes(turn.status) ? {...turn, status: 'superseded' as const} : turn,
+            ),
+        );
+        setEditing(false);
+    }, [conditionsVersion]);
 
-        if (isNewAttempt && autofillFlow.kind !== 'adjustment') {
-            lastAutofillId.current = autofillFlow.id;
+    useEffect(() => {
+        // A completed result can also be opened without an in-memory preparation history.
+        const flow =
+            autofillFlow ??
+            (generationCompleted && !noticeDismissed && !generationFailure ? {id: -1, status: 'running' as const, messages: []} : null);
+
+        if (!flow || dismissedAutofillIds.current.has(flow.id)) return;
+
+        if (flow.kind !== 'adjustment' && !generationCompleted && !generationFailure && !generationBefore.current.has(flow.id)) {
+            generationBefore.current.set(flow.id, {
+                doc: structuredClone(useShiftEditorStore.getState().doc),
+                shift: snapshotShift ? structuredClone(snapshotShift) : undefined,
+            });
+        }
+
+        const isNewAttempt = lastAutofillId.current !== flow.id;
+        const messages = flow.messages;
+        const completion =
+            generationCompleted && !generationFailure ? {message: completedMessage, reviewRequired: generationReviewRequired} : undefined;
+
+        if (isNewAttempt && flow.kind !== 'adjustment') {
+            lastAutofillId.current = flow.id;
             setEntryChoice(null);
             setNoticeDismissed(false);
             setEditing(false);
@@ -196,21 +254,20 @@ export default function AiAdjustTextInput({
         }
 
         setTurns((current) => {
-            const existing = current.find((turn) => turn.autofillId === autofillFlow.id);
+            const existing = current.find((turn) => turn.autofillId === flow.id);
 
-            if (autofillFlow.kind === 'adjustment') {
+            if (flow.kind === 'adjustment') {
                 const target = existing ?? current.find((turn) => turn.status === 'applying');
 
-                if (!target || target.messages === autofillFlow.messages) return current;
+                if (!target || target.messages === flow.messages) return current;
 
-                return current.map((turn) =>
-                    turn.id === target.id ? {...turn, autofillId: autofillFlow.id, messages: autofillFlow.messages} : turn,
-                );
+                return current.map((turn) => (turn.id === target.id ? {...turn, autofillId: flow.id, messages: flow.messages} : turn));
             }
 
             if (
                 existing &&
                 JSON.stringify(existing.messages) === JSON.stringify(messages) &&
+                JSON.stringify(existing.completion) === JSON.stringify(completion) &&
                 existing.error === generationFailure?.message &&
                 (!generationCompleted || !!existing.snapshot)
             )
@@ -221,11 +278,15 @@ export default function AiAdjustTextInput({
                 group: existing?.group ?? group,
                 text: '',
                 status: 'messages',
-                autofillId: autofillFlow.id,
+                autofillId: flow.id,
                 messages,
+                completion,
                 snapshot:
                     existing?.snapshot ??
                     (generationCompleted && !generationFailure ? structuredClone(useShiftEditorStore.getState().doc) : undefined),
+                snapshotShift: existing?.snapshotShift ?? (completion && snapshotShift ? structuredClone(snapshotShift) : undefined),
+                snapshotBefore: existing?.snapshotBefore ?? generationBefore.current.get(flow.id)?.doc,
+                snapshotBeforeShift: existing?.snapshotBeforeShift ?? generationBefore.current.get(flow.id)?.shift,
                 error: generationFailure?.message,
                 failure: generationFailure ?? undefined,
             };
@@ -239,7 +300,16 @@ export default function AiAdjustTextInput({
                 event,
             ];
         });
-    }, [autofillFlow, generationCompleted, generationFailure, completedMessage, group]);
+    }, [
+        autofillFlow,
+        generationCompleted,
+        generationFailure,
+        noticeDismissed,
+        completedMessage,
+        generationReviewRequired,
+        snapshotShift,
+        group,
+    ]);
 
     useEffect(() => {
         onBusyChange?.(isBusy);
@@ -486,6 +556,9 @@ export default function AiAdjustTextInput({
         busy.current = true;
         updateTurn(id, {
             status: 'applying',
+            attempt: ++adjustmentAttempt.current,
+            snapshotBefore: structuredClone(useShiftEditorStore.getState().doc),
+            snapshotBeforeShift: snapshotShift ? structuredClone(snapshotShift) : undefined,
             error: undefined,
             failure: undefined,
             reviewRequests: activeRequests,
@@ -497,6 +570,7 @@ export default function AiAdjustTextInput({
                               messages: active.messages ?? [],
                               failure: active.failure ?? {message: active.error ?? t('aiAdjust.failed'), blocked: false},
                               reply: t('aiAdjust.failure.retry'),
+                              attempt: active.attempt,
                           },
                       ],
                       messages: undefined,
@@ -510,7 +584,12 @@ export default function AiAdjustTextInput({
 
             if (!mounted.current || sequence.current !== requestSequence) return;
 
-            updateTurn(id, {status: 'applied', result: result ?? undefined, snapshot: structuredClone(useShiftEditorStore.getState().doc)});
+            updateTurn(id, {
+                status: 'applied',
+                result: result ?? undefined,
+                snapshot: structuredClone(useShiftEditorStore.getState().doc),
+                snapshotShift: snapshotShift ? structuredClone(snapshotShift) : undefined,
+            });
         } catch (cause) {
             if (!mounted.current || sequence.current !== requestSequence) return;
 
@@ -549,6 +628,7 @@ export default function AiAdjustTextInput({
                         messages: active.messages ?? [],
                         failure: active.failure ?? {message: active.error ?? t('aiAdjust.failed'), blocked: false},
                         reply: t('aiAdjust.issue.edit'),
+                        attempt: active.attempt,
                     },
                 ],
             });
@@ -589,6 +669,12 @@ export default function AiAdjustTextInput({
     const newConversation = () => {
         sequence.current += 1;
         busy.current = false;
+
+        if (autofillFlow) dismissedAutofillIds.current.add(autofillFlow.id);
+        else dismissedAutofillIds.current.add(-1);
+
+        adjustmentAttempt.current = 0;
+        generationBefore.current.clear();
         lastAutofillId.current = undefined;
         onDismissFailure?.();
         onNewConversation?.();
@@ -605,6 +691,37 @@ export default function AiAdjustTextInput({
 
     useImperativeHandle(ref, () => ({fill, restart: newConversation}));
 
+    const canShowNextEntry = !preparation && !paused && !waitingForGeneration && !generationFailure && !entryChoice;
+    const attachEntryToResult = Boolean(
+        canShowNextEntry && onRegenerate && active?.status === 'messages' && active.snapshot && active.completion,
+    );
+    const chooseNextAction = (choice: TConversationEntryChoice) => {
+        setEntryChoice(choice);
+        setTurns((current) => [
+            ...current,
+            {
+                id: --messageSequence.current,
+                group,
+                text: '',
+                status: 'messages',
+                messages: [
+                    ...(!flowCompleted
+                        ? [
+                              {
+                                  role: 'assistant' as const,
+                                  text: generationCompleted && !noticeDismissed ? completedMessage : t('aiAdjust.chat.welcome'),
+                              },
+                          ]
+                        : []),
+                    {role: 'user', text: t(`aiAdjust.chat.${choice}`)},
+                    ...(choice === 'modify' ? [{role: 'assistant' as const, text: t('aiAdjust.chat.askChanges')}] : []),
+                ],
+            },
+        ]);
+
+        if (choice === 'regenerate') onRegenerate?.();
+        else textarea.current?.focus();
+    };
     const examples = [
         t('aiAdjust.offExample'),
         ...(goalNurses.length >= 2 && shiftCodes.includes('O')
@@ -639,6 +756,7 @@ export default function AiAdjustTextInput({
                                         replies={turn.replies ?? []}
                                         nurses={goalNurses}
                                         editable={turn.status === 'confirm' && turn.id === active?.id}
+                                        historical={turn.id !== active?.id || ['revising', 'superseded', 'undone'].includes(turn.status)}
                                         accepted={
                                             ['applying', 'applyFailed', 'applied', 'undone'].includes(turn.status) ||
                                             Boolean(turn.failedAttempts?.length)
@@ -678,7 +796,7 @@ export default function AiAdjustTextInput({
                                                     </div>
                                                 )}
                                                 {turn.status === 'confirm' && requestsLoading && (
-                                                    <p role="status">{t('aiAdjust.requestsLoading')}</p>
+                                                    <AiConversationLoading label={t('aiAdjust.requestsLoading')} className="mb-3" />
                                                 )}
                                                 {turn.status === 'confirm' && requestsError && (
                                                     <div className="mb-3">
@@ -699,15 +817,56 @@ export default function AiAdjustTextInput({
                                 {turn.failedAttempts?.map((attempt, index) => (
                                     <div key={index} className="flex min-w-0 flex-col gap-4">
                                         <AiAutofillMessages messages={attempt.messages} />
-                                        <AiExecutionFailure operationType="ADJUST" failure={attempt.failure} />
+                                        <AiExecutionFailure
+                                            operationType="ADJUST"
+                                            failure={attempt.failure}
+                                            attemptLabel={attemptLabel(attempt.attempt ?? index + 1)}
+                                        />
                                         <UserMessage>{attempt.reply}</UserMessage>
                                     </div>
                                 ))}
                                 {turn.messages && <AiAutofillMessages messages={turn.messages} />}
-                                {turn.snapshot && turn.status === 'messages' && <AiResultSnapshot doc={turn.snapshot} />}
+                                {turn.snapshot && turn.status === 'messages' && (
+                                    <AiResultSnapshot
+                                        doc={turn.snapshot}
+                                        shift={turn.snapshotShift}
+                                        before={turn.snapshotBefore}
+                                        beforeShift={turn.snapshotBeforeShift}
+                                        changedCount={snapshotChangedCount(turn.snapshotBefore, turn.snapshot)}
+                                        title={
+                                            turn.completion?.reviewRequired ? t('aiAdjust.reviewDraft.completed') : turn.completion?.message
+                                        }
+                                        reviewRequired={turn.completion?.reviewRequired}
+                                        description={
+                                            turn.completion?.reviewRequired
+                                                ? turn.completion.message === t('aiAdjust.reviewDraft.completed')
+                                                    ? t('aiAdjust.reviewDraft.next')
+                                                    : turn.completion.message
+                                                : undefined
+                                        }
+                                        attempt={
+                                            turns
+                                                .slice(0, index + 1)
+                                                .filter((entry) => entry.status === 'messages' && (entry.completion ?? entry.failure))
+                                                .length
+                                        }
+                                    >
+                                        {attachEntryToResult && turn.id === active?.id && (
+                                            <AiConversationEntry
+                                                choice={null}
+                                                attached
+                                                hideIntro
+                                                disabled={disabled || isBusy}
+                                                modifyDisabled={modifyDisabled}
+                                                onChoose={chooseNextAction}
+                                            />
+                                        )}
+                                    </AiResultSnapshot>
+                                )}
                                 {turn.status === 'applyFailed' && turn.failure && (
                                     <AiExecutionFailure
                                         operationType="ADJUST"
+                                        attemptLabel={attemptLabel(turn.attempt ?? 1)}
                                         failure={turn.failure}
                                         active={turn.id === active?.id}
                                         disabled={disabled || isBusy || requestsLoading || requestsError}
@@ -718,17 +877,9 @@ export default function AiAdjustTextInput({
                                 )}
                                 {(turn.status === 'interpreting' || (turn.status === 'applying' && !preparing && !paused)) && (
                                     <AssistantMessage>
-                                        <p
-                                            role="status"
-                                            aria-label={t(turn.status === 'applying' ? 'aiAdjust.applying' : 'aiAdjust.reviewing')}
-                                            className="flex min-h-7 items-center"
-                                        >
-                                            <span aria-hidden="true" className="flex w-[23px] shrink-0 items-center gap-1">
-                                                <span className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
-                                                <span className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
-                                                <span className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
-                                            </span>
-                                        </p>
+                                        <AiConversationLoading
+                                            label={t(turn.status === 'applying' ? 'aiAdjust.applying' : 'aiAdjust.reviewing')}
+                                        />
                                     </AssistantMessage>
                                 )}
                                 {turn.status === 'error' && turn.error && <AiFailureMessage message={turn.error} />}
@@ -743,10 +894,20 @@ export default function AiAdjustTextInput({
                                         <AssistantMessage>{message.reply}</AssistantMessage>
                                     </div>
                                 ))}
-                                {turn.snapshot && turn.status === 'applied' && <AiResultSnapshot doc={turn.snapshot} />}
                                 {turn.status === 'applied' && (
                                     <AiAdjustResult
                                         result={turn.result}
+                                        attempt={turn.attempt}
+                                        preview={
+                                            turn.snapshot && (
+                                                <AiResultSnapshot
+                                                    doc={turn.snapshot}
+                                                    shift={turn.snapshotShift}
+                                                    before={turn.snapshotBefore}
+                                                    beforeShift={turn.snapshotBeforeShift}
+                                                />
+                                            )
+                                        }
                                         active={turn.id === active?.id}
                                         disabled={(resultActions?.disabled ?? disabled) || isBusy || preparing || paused}
                                         modifyDisabled={disabled}
@@ -758,22 +919,9 @@ export default function AiAdjustTextInput({
                                         }}
                                         onModify={() => {
                                             setEditing(false);
-                                            setEntryChoice('modify');
-                                            setTurns((current) => [
-                                                ...current,
-                                                {
-                                                    id: --messageSequence.current,
-                                                    group,
-                                                    text: '',
-                                                    status: 'messages',
-                                                    messages: [
-                                                        {role: 'user', text: t('aiAdjust.modifyMore')},
-                                                        {role: 'assistant', text: t('aiAdjust.chat.askChanges')},
-                                                    ],
-                                                },
-                                            ]);
-                                            textarea.current?.focus();
+                                            chooseNextAction('modify');
                                         }}
+                                        onRegenerate={onRegenerate ? () => chooseNextAction('regenerate') : undefined}
                                     />
                                 )}
                                 {turn.status === 'undone' && (
@@ -785,6 +933,12 @@ export default function AiAdjustTextInput({
                                 {turn.error && turn.status === 'messages' && (
                                     <AiExecutionFailure
                                         operationType="GENERATE"
+                                        attemptLabel={attemptLabel(
+                                            turns
+                                                .slice(0, index + 1)
+                                                .filter((entry) => entry.status === 'messages' && (entry.completion ?? entry.failure))
+                                                .length,
+                                        )}
                                         failure={turn.failure ?? {message: turn.error, blocked: false}}
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
@@ -809,11 +963,15 @@ export default function AiAdjustTextInput({
                         {preparation}
                     </div>
                 )}
-                {!preparation &&
-                    !paused &&
-                    !waitingForGeneration &&
-                    !generationFailure &&
-                    !entryChoice &&
+                {attachEntryToResult && resultActions && (
+                    <div className="mt-3">
+                        <AiConversationConfirmation
+                            confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
+                        />
+                    </div>
+                )}
+                {canShowNextEntry &&
+                    !attachEntryToResult &&
                     (onRegenerate ? (
                         <div className="mt-6">
                             <AiConversationEntry
@@ -824,38 +982,7 @@ export default function AiAdjustTextInput({
                                 generationCompleted={generationCompleted && !noticeDismissed}
                                 generationCompletedMessage={completedMessage}
                                 confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
-                                onChoose={(choice) => {
-                                    setEntryChoice(choice);
-                                    setTurns((current) => [
-                                        ...current,
-                                        {
-                                            id: --messageSequence.current,
-                                            group,
-                                            text: '',
-                                            status: 'messages',
-                                            messages: [
-                                                ...(!flowCompleted
-                                                    ? [
-                                                          {
-                                                              role: 'assistant' as const,
-                                                              text:
-                                                                  generationCompleted && !noticeDismissed
-                                                                      ? completedMessage
-                                                                      : t('aiAdjust.chat.welcome'),
-                                                          },
-                                                      ]
-                                                    : []),
-                                                {role: 'user', text: t(`aiAdjust.chat.${choice}`)},
-                                                ...(choice === 'modify'
-                                                    ? [{role: 'assistant' as const, text: t('aiAdjust.chat.askChanges')}]
-                                                    : []),
-                                            ],
-                                        },
-                                    ]);
-
-                                    if (choice === 'regenerate') onRegenerate();
-                                    else textarea.current?.focus();
-                                }}
+                                onChoose={chooseNextAction}
                             />
                         </div>
                     ) : (
@@ -870,6 +997,7 @@ export default function AiAdjustTextInput({
                 {generationFailure && !autofillFlow && (
                     <AiExecutionFailure
                         operationType="GENERATE"
+                        attemptLabel={attemptLabel(1)}
                         failure={generationFailure}
                         active
                         disabled={disabled || isBusy}

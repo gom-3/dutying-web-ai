@@ -1,83 +1,94 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import {useState} from 'react';
+import {useId, useMemo, useRef, useState, type ReactNode} from 'react';
+import type {TShift} from '@/entities/shift';
 import type {TDutyDoc} from '@/features/shift-editor/model/types';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {localScheduleSnapshot} from '../../../model/local-schedule-snapshot';
+import {AiConversationImage} from './ai-conversation-image';
+import {AiScheduleResultCard} from './ai-schedule-result-card';
+import {AiScheduleSnapshotViewer, type TScheduleSnapshot} from './ai-schedule-snapshot-viewer';
 
-/** Captured data only: viewing a past result never reads or writes the live editor. */
-export function AiResultSnapshot({doc}: {doc: TDutyDoc}) {
+const capturedSnapshot = (snapshot: TScheduleSnapshot) => snapshot;
+
+/** Captured data only: opening a result never reads or writes the live editor. */
+export function AiResultSnapshot({
+    doc,
+    shift,
+    before,
+    beforeShift,
+    title,
+    reviewRequired = false,
+    description,
+    attempt,
+    changedCount,
+    outcome,
+    headerAction,
+    actions,
+    children,
+}: {
+    doc: TDutyDoc;
+    shift?: TShift;
+    before?: TDutyDoc;
+    beforeShift?: TShift;
+    title?: string;
+    reviewRequired?: boolean;
+    description?: ReactNode;
+    attempt?: number;
+    changedCount?: number;
+    outcome?: 'success' | 'review' | 'neutral';
+    headerAction?: ReactNode;
+    actions?: ReactNode;
+    children?: ReactNode;
+}) {
     const [open, setOpen] = useState(false);
+    const id = useId();
+    const trigger = useRef<HTMLButtonElement | null>(null);
     const {t} = useTypedTranslation();
-    const month = doc.columns[0]?.slice(0, 7) ?? '';
-    const table = (preview: boolean) => (
-        <table className="w-full border-collapse text-center text-xs" aria-label={t('aiAdjust.snapshot.title')}>
-            <thead>
-                <tr>
-                    <th className="border border-gray-6 p-2">{t('aiAdjust.snapshot.name')}</th>
-                    {(preview ? doc.columns.slice(0, 7) : doc.columns).map((date) => (
-                        <th key={date} className="min-w-8 border border-gray-6 p-1">
-                            {Number(date.slice(-2))}
-                        </th>
-                    ))}
-                </tr>
-            </thead>
-            <tbody>
-                {(preview ? doc.rows.slice(0, 4) : doc.rows).map((row) => (
-                    <tr key={row.workerId}>
-                        <th className="border border-gray-6 p-2 font-normal whitespace-nowrap">
-                            {doc.workerMeta[row.workerId]?.name ?? row.workerId}
-                        </th>
-                        {(preview ? doc.columns.slice(0, 7) : doc.columns).map((date, index) => (
-                            <td key={date} className="border border-gray-6 bg-main-light/30 p-1">
-                                {row.cells[index] ?? '—'}
-                            </td>
-                        ))}
-                    </tr>
-                ))}
-            </tbody>
-        </table>
+    const snapshot = useMemo(() => localScheduleSnapshot(doc, shift), [doc, shift]);
+    const comparisonBefore = useMemo(() => (before ? localScheduleSnapshot(before, beforeShift) : undefined), [before, beforeShift]);
+    const [year, month] = doc.columns[0]?.split('-').map(Number) ?? [];
+    const resultOutcome = outcome ?? (reviewRequired ? 'review' : 'success');
+    const preview = (
+        <AiConversationImage
+            cacheKey={`local-result:${id}`}
+            versionId="captured"
+            snapshot={snapshot}
+            onOpen={(control) => {
+                trigger.current = control;
+                setOpen(true);
+            }}
+        />
     );
 
     return (
-        <Dialog.Root open={open} onOpenChange={setOpen}>
-            <div className="ml-8 overflow-hidden rounded-xl border border-gray-5 bg-white p-3">
-                <p className="mb-2 text-sm font-medium">
-                    {month} · {t('aiAdjust.snapshot.title')}
-                </p>
-                <div aria-hidden="true" className="pointer-events-none overflow-hidden">
-                    {table(true)}
-                </div>
-                <p className="mt-2 text-xs text-gray-4">{t('aiAdjust.snapshot.note')}</p>
-                <Dialog.Trigger asChild>
-                    <button
-                        type="button"
-                        className="mt-2 min-h-11 w-full rounded-lg bg-main-light px-3 py-2 text-sm font-medium text-main-1"
-                    >
-                        {t('aiAdjust.snapshot.open')}
-                    </button>
-                </Dialog.Trigger>
-            </div>
-            <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 z-[1500] bg-black/20" />
-                <Dialog.Content
-                    className="fixed inset-4 z-[1501] flex flex-col rounded-xl bg-white p-5 shadow-xl"
-                    onKeyDown={(e) => e.stopPropagation()}
+        <>
+            {title ? (
+                <AiScheduleResultCard
+                    title={title}
+                    attempt={attempt}
+                    outcome={resultOutcome}
+                    outcomeLabel={t(resultOutcome === 'review' ? 'aiAdjust.snapshot.review' : 'aiAdjust.snapshot.success')}
+                    description={description}
+                    changedCount={changedCount}
+                    headerAction={headerAction}
+                    preview={preview}
+                    actions={actions}
                 >
-                    <div className="mb-4 flex items-start justify-between gap-3">
-                        <div>
-                            <Dialog.Title className="text-lg font-semibold">
-                                {month} · {t('aiAdjust.snapshot.title')}
-                            </Dialog.Title>
-                            <Dialog.Description className="text-sm text-gray-4">{t('aiAdjust.snapshot.readonly')}</Dialog.Description>
-                        </div>
-                        <Dialog.Close asChild>
-                            <button type="button" className="min-h-11 rounded-lg border border-gray-5 px-4">
-                                {t('aiAdjust.snapshot.close')}
-                            </button>
-                        </Dialog.Close>
-                    </div>
-                    <div className="min-h-0 flex-1 overflow-auto">{table(false)}</div>
-                </Dialog.Content>
-            </Dialog.Portal>
-        </Dialog.Root>
+                    {children}
+                </AiScheduleResultCard>
+            ) : (
+                preview
+            )}
+            {open && (
+                <AiScheduleSnapshotViewer
+                    after={snapshot}
+                    before={comparisonBefore}
+                    toSnapshot={capturedSnapshot}
+                    year={year}
+                    month={month}
+                    returnFocusTo={trigger.current}
+                    onClose={() => setOpen(false)}
+                />
+            )}
+        </>
     );
 }

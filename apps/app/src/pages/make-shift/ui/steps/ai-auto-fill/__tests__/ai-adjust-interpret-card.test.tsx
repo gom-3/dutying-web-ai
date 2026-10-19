@@ -40,7 +40,7 @@ function show(rule: TScheduleMonthRequestItem) {
 describe('readable interpretation', () => {
     it('explains the actual rule and its inferred count once without technical details', () => {
         show(item);
-        expect(screen.getByRole('heading', {name: '이렇게 반영할까요?'})).toBeVisible();
+        expect(screen.getByRole('heading', {name: '이렇게 바꿀까요?'})).toBeVisible();
         expect(screen.getByText('신규 간호사 1')).toBeVisible();
         expect(screen.getByText('D 근무를 월 10회 이상 배정')).toBeVisible();
         expect(screen.getByText('횟수를 따로 말씀하지 않아 월 10회 이상으로 제안했어요.')).toBeVisible();

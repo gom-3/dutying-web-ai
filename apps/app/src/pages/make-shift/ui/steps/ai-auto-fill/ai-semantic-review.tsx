@@ -1,6 +1,9 @@
 import {useState} from 'react';
 import {semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
+import {AiConversationLoading} from './ai-conversation-loading';
+import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
+import {AiSemanticCondition} from './ai-semantic-condition';
 
 type TProps = {
     plan: TSemanticPlan;
@@ -8,7 +11,7 @@ type TProps = {
     disabled: boolean;
     stale: boolean;
     applied: boolean;
-    processing: 'adjust' | 'review' | null;
+    processing?: 'adjust' | 'review' | null;
     nurseName: (id: number) => string;
     rosterNurseIds?: number[];
     copy: (ko: string, en: string) => string;
@@ -18,34 +21,50 @@ type TProps = {
     onSelectConditions?: (ids: string[]) => void;
 };
 
-const primary =
-    'min-h-11 rounded-xl bg-main-1 px-4 py-3 text-[13.5px] font-medium text-white hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40';
-const secondary =
-    'min-h-11 rounded-xl px-3 py-3 text-[13.5px] font-medium text-main-1 hover:bg-main-light focus-visible:bg-main-light focus-visible:outline-none disabled:opacity-40';
+const action =
+    'flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-center text-[13px] leading-5 font-semibold transition-colors focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none';
+const primary = `${action} bg-main-1 text-white hover:bg-[#5931B9]`;
+const secondary = `${action} bg-white text-[#5931B9] hover:bg-[#EDE7FF]`;
 
-function period(dates: string[], copy: TProps['copy']) {
-    const sorted = [...dates].sort();
-    const format = (date: string) => {
-        const [, month, day] = date.split('-').map(Number);
+type TIconKind = 'review' | 'confirmed' | 'clarify' | 'history' | 'warning' | 'failure' | 'success';
 
-        return copy(`${month}월 ${day}일`, `${month}/${day}`);
-    };
+function StateIcon({kind, label}: {kind: TIconKind; label: string}) {
+    if (kind === 'success' || kind === 'failure') return <AiConversationOutcomeIcon status={kind} label={label} />;
 
-    if (!sorted.length) return '';
-
-    const consecutive = sorted.every((date, index) => index === 0 || Date.parse(date) - Date.parse(sorted[index - 1]) === 86400000);
-
-    if (sorted.length > 1 && consecutive) {
-        const first = sorted[0];
-        const last = sorted[sorted.length - 1];
-        const [, month, day] = first.split('-').map(Number);
-
-        return first.slice(0, 7) === last.slice(0, 7)
-            ? copy(`${month}월 ${day}~${Number(last.slice(-2))}일`, `${format(first)}–${format(last)}`)
-            : `${format(first)} ~ ${format(last)}`;
-    }
-
-    return sorted.map(format).join(', ');
+    return (
+        <svg
+            role="img"
+            aria-label={label}
+            viewBox="0 0 20 20"
+            className={`mt-[2px] size-[18px] shrink-0 ${kind === 'warning' ? 'text-[#B45309]' : kind === 'history' ? 'text-[#667085]' : 'text-main-1'}`}
+        >
+            {kind === 'warning' ? (
+                <>
+                    <path d="M8.27 3a2 2 0 0 1 3.46 0l6.93 12a2 2 0 0 1-1.73 3H3.07a2 2 0 0 1-1.73-3L8.27 3Z" fill="currentColor" />
+                    <rect x="9" y="6" width="2" height="6" rx="1" fill="white" />
+                    <circle cx="10" cy="15" r="1" fill="white" />
+                </>
+            ) : kind === 'review' ? (
+                <>
+                    <rect x="3" y="1" width="14" height="18" rx="3" fill="currentColor" />
+                    <path d="M6 6h8v2H6zm0 4h8v2H6zm0 4h5v2H6z" fill="white" />
+                </>
+            ) : (
+                <>
+                    <circle cx="10" cy="10" r="9" fill="currentColor" />
+                    {kind === 'confirmed' ? (
+                        <path d="m5.5 9.5 3 3 6-6L16 8l-7.5 7.5L4 11z" fill="white" />
+                    ) : kind === 'history' ? (
+                        <path d="M9 4h2v5.6l3.2 1.9-1 1.7L9 10.7Z" fill="white" />
+                    ) : (
+                        <text x="10" y="14.5" textAnchor="middle" fontSize="14" fontWeight="700" fill="white">
+                            ?
+                        </text>
+                    )}
+                </>
+            )}
+        </svg>
+    );
 }
 
 export function AiSemanticReview({
@@ -54,7 +73,7 @@ export function AiSemanticReview({
     disabled,
     stale,
     applied,
-    processing,
+    processing = null,
     nurseName,
     rosterNurseIds = [],
     copy,
@@ -64,171 +83,262 @@ export function AiSemanticReview({
     onSelectConditions,
 }: TProps) {
     const [selection, setSelection] = useState<{planId: string; ids: string[]}>({planId: plan.planId, ids: []});
+    const cleared = plan.state === 'NEEDS_CLARIFICATION' && plan.reasonCodes.includes('EMPTY_CONDITIONS') && plan.conditions.length === 0;
+
+    if (cleared)
+        return (
+            <section aria-label={copy('조건 삭제 완료', 'Conditions removed')} className="min-w-0 space-y-2">
+                <header className="flex items-start gap-2.5">
+                    <StateIcon kind="success" label={copy('삭제 완료', 'Removed')} />
+                    <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">
+                        {copy('요청 조건을 삭제했어요.', 'Your request conditions were removed.')}
+                    </p>
+                </header>
+                <p className="text-[13px] leading-6 text-[#667085]">{copy('새 요청을 입력해 주세요.', 'Enter a new request.')}</p>
+            </section>
+        );
+
     const selected = selection.planId === plan.planId ? selection.ids : [];
-    const canSelect =
-        !plan.selectionAudit &&
-        ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
-        plan.conditionGroups?.some((group) => group.selectable) &&
-        Boolean(onSelectConditions);
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
-    const retry = semanticRecovery(plan) === 'retry';
-    const blockedMessage = retry
-        ? copy(
-              '요청을 확인하는 중 문제가 생겼어요. 같은 요청으로 다시 시도할 수 있어요.',
-              'Something went wrong while reviewing your request. You can try the same request again.',
-          )
-        : plan.state === 'UNSUPPORTED'
-          ? copy(
-                '이 요청은 아직 자동으로 반영하기 어려워요. 요청을 수정하거나 표에서 직접 바꿔 주세요.',
-                'This request is not supported yet. Edit the request or change the schedule directly.',
-            )
-          : plan.summary;
+    const conflict = plan.state === 'LOCKED_CONFLICT';
+    const expired = plan.state === 'EXPIRED';
+    const complete = ready && applied;
+    const retry = !ready && !conflict && !expired && semanticRecovery(plan) === 'retry';
+    const showGroups =
+        !plan.selectionAudit &&
+        !retry &&
+        ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
+        Boolean(plan.conditionGroups?.length);
+    const canSelect = showGroups && Boolean(plan.conditionGroups?.some((group) => group.selectable)) && Boolean(onSelectConditions);
+    const title = ready
+        ? complete
+            ? copy('이 요청으로 계산을 마쳤어요.', 'The calculation for these conditions is complete.')
+            : !current
+              ? copy('이전 요청 내용', 'Previous request')
+              : plan.state === 'CONFIRMED'
+                ? copy('확인한 조건이에요', 'Your confirmed conditions')
+                : copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
+        : conflict
+          ? copy('고정 근무와 요청이 충돌해요', 'Your request conflicts with fixed shifts')
+          : retry
+            ? copy('요청을 확인하지 못했어요', 'Your request could not be reviewed')
+            : expired
+              ? copy('요청을 다시 확인해 주세요', 'Review your request again')
+              : plan.state === 'UNSUPPORTED'
+                ? copy('반영하기 어려운 조건이 있어요', 'Some conditions are not supported yet')
+                : plan.state === 'NEEDS_CLARIFICATION'
+                  ? copy('요청을 조금 더 확인할게요', 'A little more detail is needed')
+                  : copy('요청 내용을 확인해 주세요', 'Review your request');
+    const kind: TIconKind =
+        conflict || expired
+            ? 'warning'
+            : retry
+              ? 'failure'
+              : complete
+                ? 'success'
+                : !current
+                  ? 'history'
+                  : ready
+                    ? plan.state === 'CONFIRMED'
+                        ? 'confirmed'
+                        : 'review'
+                    : 'clarify';
+    const iconLabel = conflict
+        ? copy('고정 근무 충돌', 'Fixed shift conflict')
+        : expired
+          ? copy('다시 확인 필요', 'Review needed')
+          : retry
+            ? copy('요청 확인 오류', 'Request review failed')
+            : complete
+              ? copy('요청 계산 완료', 'Calculation completed')
+              : !current
+                ? copy('이전 요청', 'Previous request')
+                : ready
+                  ? copy('요청 조건 확인', 'Review request conditions')
+                  : copy('추가 확인 필요', 'More detail needed');
+    const description =
+        ready || conflict
+            ? null
+            : retry
+              ? copy('입력한 요청은 유지돼요. 같은 요청으로 다시 시도할 수 있어요.', 'Your request is kept. You can try it again.')
+              : expired
+                ? copy(
+                      '표나 요청이 바뀌어 이전 조건으로 진행할 수 없어요.',
+                      'The schedule or request changed, so the earlier conditions cannot be used.',
+                  )
+                : plan.state === 'UNSUPPORTED'
+                  ? canSelect
+                      ? null
+                      : copy('요청을 수정하거나 근무표에서 직접 바꿔 주세요.', 'Edit your request or change the schedule directly.')
+                  : plan.summary ||
+                    copy('대상이나 조건을 조금 더 자세히 알려 주세요.', 'Add a little more detail about the people or conditions.');
+    const listLabel =
+        conflict || !ready
+            ? copy('확인할 요청', 'Request to review')
+            : complete
+              ? copy('계산에 사용한 요청', 'Conditions used for this calculation')
+              : plan.state === 'CONFIRMED'
+                ? copy('확인한 요청', 'Confirmed request')
+                : copy('반영할 요청', 'Requested changes');
 
     return (
-        <section aria-label={copy('요청 조건 확인', 'Review request conditions')} className="space-y-3">
-            <p className="font-medium">
-                {ready
-                    ? applied
-                        ? copy('이 요청으로 계산을 마쳤어요.', 'The calculation for these conditions is complete.')
-                        : current
-                          ? copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
-                          : copy('이전 요청 내용', 'Previous request')
-                    : blockedMessage}
-            </p>
-            {!!plan.conditions.length && (
-                <ul className="space-y-3">
-                    {plan.conditions.map((condition) => (
-                        <li key={condition.intentId} className="border-l-2 border-main-1/25 pl-3">
-                            <p className="text-[13px] text-[#6B7280]">{period(condition.dates, copy)}</p>
-                            <p>
-                                <span className="font-medium">
-                                    {rosterNurseIds.length > 0 &&
-                                    new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
-                                    rosterNurseIds.every((id) => condition.nurseIds.includes(id))
-                                        ? copy('전체 간호사', 'All nurses')
-                                        : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ')}
-                                </span>
-                                {copy(' · ', ': ')}
-                                {condition.action === 'COUNT' && condition.quantifier === 'GROUP_TOTAL' && condition.dates.length === 1 ? (
-                                    <>
-                                        {condition.shiftCodes.map((code) => (code === 'O' ? copy('휴무', 'off-duty') : code)).join(', ')}
-                                        {copy(' 인원을 ', ' headcount: ')}
-                                        {condition.operator === 'MIN'
-                                            ? copy('최소', 'at least')
-                                            : condition.operator === 'MAX'
-                                              ? copy('최대', 'at most')
-                                              : copy('정확히', 'exactly')}{' '}
-                                        {condition.count}
-                                        {copy('명으로 맞춰요.', ' nurses.')}
-                                    </>
-                                ) : (
-                                    <>
-                                        {condition.shiftCodes.join(', ')}
-                                        {copy(' 근무를', ' shifts')}{' '}
-                                        {condition.action === 'FORBID'
-                                            ? copy('배정하지 않아요.', 'will be excluded')
-                                            : condition.action === 'ASSIGN'
-                                              ? copy('배정해요.', 'will be assigned')
-                                              : `${condition.quantifier === 'GROUP_TOTAL' ? copy('합계', 'combined') : copy('각각', 'each')} ${condition.operator === 'MIN' ? copy('최소', 'at least') : condition.operator === 'MAX' ? copy('최대', 'at most') : copy('정확히', 'exactly')} ${condition.count}${copy('회 배정해요.', ' times')}`}
-                                    </>
-                                )}
-                            </p>
-                            <p className="text-[13px] text-[#6B7280]">
-                                {condition.modality === 'HARD'
-                                    ? copy('꼭 지킬 조건', 'Required')
-                                    : copy('가능하면 맞출 조건', 'If possible')}
-                            </p>
-                        </li>
-                    ))}
-                </ul>
+        <section aria-label={copy('요청 조건 확인', 'Review request conditions')} className="min-w-0 space-y-4">
+            <header className="flex items-start gap-2.5">
+                <StateIcon kind={kind} label={iconLabel} />
+                <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">{title}</p>
+            </header>
+            {description && <p className="text-[13px] leading-6 break-keep whitespace-pre-line text-[#667085]">{description}</p>}
+            {!showGroups && !!plan.conditions.length && (
+                <div className="space-y-2">
+                    <p className="text-xs leading-5 font-medium text-[#667085]">{listLabel}</p>
+                    <ul aria-label={listLabel} className="space-y-2">
+                        {plan.conditions.map((condition) => (
+                            <AiSemanticCondition
+                                key={condition.intentId}
+                                condition={condition}
+                                nurseName={nurseName}
+                                rosterNurseIds={rosterNurseIds}
+                                copy={copy}
+                            />
+                        ))}
+                    </ul>
+                </div>
+            )}
+            {showGroups && (
+                <div className="space-y-2">
+                    {current && canSelect && (
+                        <p className="text-xs leading-5 text-[#667085]">
+                            {copy(
+                                '이번에 반영할 조건을 선택해 주세요. 선택하지 않은 조건은 제외돼요.',
+                                'Choose conditions for this run. Unselected conditions will be excluded.',
+                            )}
+                        </p>
+                    )}
+                    <ul aria-label={copy('요청 조건 선택', 'Select request conditions')} className="space-y-2">
+                        {plan.conditionGroups!.map((group) => {
+                            const checked = selected.includes(group.conditionId);
+                            const Choice = current && canSelect ? 'label' : 'div';
+                            const interactive = current && canSelect && group.selectable && !disabled && !stale;
+
+                            return (
+                                <li key={group.conditionId}>
+                                    <Choice
+                                        className={`group flex min-h-[44px] items-start gap-3 rounded-xl p-3 focus-within:bg-[#4620B8] focus-within:text-[#FFF1D6] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${checked ? 'bg-[#EDE7FF]' : 'bg-white'}`}
+                                    >
+                                        {current && canSelect && (
+                                            <>
+                                                <input
+                                                    type="checkbox"
+                                                    className="peer sr-only"
+                                                    checked={checked}
+                                                    disabled={!group.selectable || !current || disabled || stale}
+                                                    onChange={(event) =>
+                                                        setSelection({
+                                                            planId: plan.planId,
+                                                            ids: event.target.checked
+                                                                ? [...selected, group.conditionId]
+                                                                : selected.filter((id) => id !== group.conditionId),
+                                                        })
+                                                    }
+                                                />
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="mt-[1px] grid size-5 shrink-0 place-items-center rounded-md bg-[#E9ECF2] text-transparent peer-checked:bg-main-1 peer-checked:text-white peer-disabled:opacity-50"
+                                                >
+                                                    <svg viewBox="0 0 20 20" className="size-4" fill="currentColor">
+                                                        <path d="m5.5 9.5 3 3 6-6L16 8l-7.5 7.5L4 11z" />
+                                                    </svg>
+                                                </span>
+                                            </>
+                                        )}
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-[13px] leading-5 font-medium whitespace-pre-wrap text-[#333D4B] group-focus-within:text-[#FFF1D6]">
+                                                {group.sourceSpan.quote.trim()}
+                                            </span>
+                                            <span className="mt-1 block text-xs leading-5 text-[#667085] group-focus-within:text-[#FFF1D6]">
+                                                {group.selectable
+                                                    ? current && canSelect
+                                                        ? checked
+                                                            ? copy('선택됨', 'Selected')
+                                                            : copy('선택 가능', 'Available to select')
+                                                        : copy('지원하는 조건', 'Supported condition')
+                                                    : group.status === 'UNSUPPORTED'
+                                                      ? copy('아직 지원하지 않아요', 'Not supported yet')
+                                                      : copy('추가 확인이 필요해요', 'Needs more detail')}
+                                            </span>
+                                        </span>
+                                    </Choice>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
             )}
             {plan.selectionAudit && (
-                <ul aria-label={copy('적용 및 제외 조건', 'Applied and excluded conditions')} className="space-y-2 text-[13px]">
-                    {plan.selectionAudit.conditionGroups.map((group) => {
-                        const included = plan.selectionAudit!.selectedConditionIds.includes(group.conditionId);
-
-                        return (
-                            <li key={group.conditionId}>
-                                <strong>{included ? copy('적용: ', 'Apply: ') : copy('제외: ', 'Exclude: ')}</strong>
-                                <span className="whitespace-pre-wrap">{group.sourceSpan.quote.trim()}</span>
-                                {!included && (
-                                    <p>
-                                        {group.selectable
-                                            ? copy('사용자가 선택하지 않음', 'Not selected by you')
-                                            : group.status === 'UNSUPPORTED'
-                                              ? copy('지원하지 않는 조건', 'Unsupported condition')
-                                              : copy(
-                                                    '확인이 필요하거나 다른 조건과 연결됨',
-                                                    'Needs clarification or depends on other conditions',
-                                                )}
-                                    </p>
+                <details className="group min-w-0">
+                    <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-[13px] font-medium text-[#475467] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none">
+                        <span>{copy('선택 내역 보기', 'Selection details')}</span>
+                        <span className="flex items-center gap-2 text-xs">
+                            <span>
+                                {copy(
+                                    `포함 ${plan.selectionAudit.selectedConditionIds.length} · 제외 ${plan.selectionAudit.excludedConditionIds.length}`,
+                                    `${plan.selectionAudit.selectedConditionIds.length} included · ${plan.selectionAudit.excludedConditionIds.length} excluded`,
                                 )}
-                            </li>
-                        );
-                    })}
-                </ul>
+                            </span>
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 20 20"
+                                className="size-4 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+                                fill="currentColor"
+                            >
+                                <path d="m5 7 5 6 5-6z" />
+                            </svg>
+                        </span>
+                    </summary>
+                    <ul
+                        aria-label={copy('적용 및 제외 조건', 'Included and excluded conditions')}
+                        className="mt-2 space-y-2 text-[13px] leading-5"
+                    >
+                        {plan.selectionAudit.conditionGroups.map((group) => {
+                            const included = plan.selectionAudit!.selectedConditionIds.includes(group.conditionId);
+
+                            return (
+                                <li key={group.conditionId} className="rounded-[10px] bg-white p-3">
+                                    <p className="break-keep whitespace-pre-wrap text-[#333D4B]">
+                                        <strong>{included ? copy('포함: ', 'Include: ') : copy('제외: ', 'Exclude: ')}</strong>
+                                        {group.sourceSpan.quote.trim()}
+                                    </p>
+                                    {!included && (
+                                        <p className="mt-1 text-xs text-[#667085]">
+                                            {group.selectable
+                                                ? copy('선택하지 않은 조건', 'Not selected')
+                                                : group.status === 'UNSUPPORTED'
+                                                  ? copy('지원하지 않는 조건', 'Unsupported condition')
+                                                  : copy('확인이 필요한 조건', 'Needs clarification')}
+                                        </p>
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </details>
             )}
-            {!ready && !plan.selectionAudit && !!plan.conditionGroups?.length && (
-                <div className="space-y-2">
-                    <p className="text-[13px]">
-                        {copy(
-                            '독립 조건은 줄바꿈으로 구분해 주세요. 선택하지 않은 조건은 이번 실행에서 제외됩니다.',
-                            'Put independent conditions on separate lines. Unselected conditions will be excluded from this run.',
-                        )}
-                    </p>
-                    {plan.conditionGroups.map((group) => (
-                        <label key={group.conditionId} className="block rounded-lg border border-gray-6 p-3 text-[13px]">
-                            {canSelect && (
-                                <input
-                                    type="checkbox"
-                                    checked={selected.includes(group.conditionId)}
-                                    disabled={!group.selectable || !current || disabled || stale}
-                                    onChange={(event) =>
-                                        setSelection({
-                                            planId: plan.planId,
-                                            ids: event.target.checked
-                                                ? [...selected, group.conditionId]
-                                                : selected.filter((id) => id !== group.conditionId),
-                                        })
-                                    }
-                                />
-                            )}
-                            <span className="ml-2 whitespace-pre-wrap">{group.sourceSpan.quote.trim()}</span>
-                            <p>
-                                {group.selectable
-                                    ? selected.includes(group.conditionId)
-                                        ? copy('적용 예정', 'Will apply')
-                                        : copy('제외 예정 · 선택하지 않음', 'Will exclude · not selected')
-                                    : group.status === 'UNSUPPORTED'
-                                      ? copy('제외 예정 · 지원하지 않는 조건', 'Will exclude · unsupported condition')
-                                      : copy(
-                                            '제외 예정 · 확인이 필요하거나 다른 조건과 연결됨',
-                                            'Will exclude · needs clarification or depends on other conditions',
-                                        )}
-                            </p>
-                        </label>
-                    ))}
-                    {current && canSelect && (
-                        <button
-                            className={primary}
-                            disabled={disabled || stale || selected.length === 0}
-                            onClick={() => onSelectConditions?.(selected)}
-                        >
-                            {copy('선택한 조건만 다시 검증', 'Revalidate only selected conditions')}
-                        </button>
-                    )}
-                </div>
+            {conflict && (
+                <p className="text-[13px] leading-6 break-keep text-[#667085]">
+                    {copy('고정 근무를 확인하거나 요청을 수정해 주세요.', 'Review the fixed shifts or edit your request.')}
+                </p>
             )}
             {current && (
                 <>
-                    {stale && (
-                        <p role="status" className="text-[13px] text-[#6B7280]">
+                    {stale && !expired && (
+                        <p role="status" className="rounded-[10px] bg-[#FFF4DF] px-3 py-2 text-[13px] leading-5 text-[#8A4B08]">
                             {copy('표가 바뀌었어요. 요청을 다시 확인해 주세요.', 'The schedule changed. Review the request again.')}
                         </p>
                     )}
-                    <div className="flex flex-wrap gap-1 pt-1">
-                        {ready && (
+                    <div className="grid gap-2">
+                        {ready && !complete && (
                             <button
+                                type="button"
                                 className={primary}
                                 disabled={disabled || stale || (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)}
                                 onClick={onApply}
@@ -236,13 +346,24 @@ export function AiSemanticReview({
                                 {copy('이대로 수정하기', 'Adjust with these conditions')}
                             </button>
                         )}
-                        {!ready && retry && (
-                            <button className={primary} disabled={disabled} onClick={onRetry}>
+                        {retry && (
+                            <button type="button" className={primary} disabled={disabled} onClick={onRetry}>
                                 {copy('다시 시도하기', 'Try again')}
                             </button>
                         )}
+                        {canSelect && (
+                            <button
+                                type="button"
+                                className={primary}
+                                disabled={disabled || stale || selected.length === 0}
+                                onClick={() => onSelectConditions?.(selected)}
+                            >
+                                {copy('선택한 조건만 다시 검증', 'Revalidate only selected conditions')}
+                            </button>
+                        )}
                         <button
-                            className={ready || retry || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
+                            type="button"
+                            className={ready || retry || canSelect || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
                             disabled={disabled}
                             onClick={onEdit}
                         >
@@ -252,11 +373,13 @@ export function AiSemanticReview({
                 </>
             )}
             {processing && (
-                <p role="status" className="text-[13px] text-[#6B7280]">
-                    {processing === 'adjust'
-                        ? copy('요청한 내용으로 근무표를 수정하고 있어요.', 'Adjusting with your conditions.')
-                        : copy('요청을 확인하고 있어요.', 'Reviewing your request.')}
-                </p>
+                <AiConversationLoading
+                    label={
+                        processing === 'adjust'
+                            ? copy('근무표 수정 중', 'Adjusting your schedule')
+                            : copy('요청 확인 중', 'Reviewing your request')
+                    }
+                />
             )}
         </section>
     );

@@ -2,6 +2,7 @@ import type {TScheduleMonthRequestRes} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {AiConversationLoading} from './ai-conversation-loading';
 
 type TProps = {
     requests: TScheduleMonthRequestRes[];
@@ -73,13 +74,8 @@ export default function AiMonthRequestList({
         if (!isLoading) return null;
 
         return (
-            <div
-                className="ai-month-request-list flex min-h-11 items-center gap-2 rounded-t-[14px] bg-[#F2F4F6] px-4 py-2"
-                data-preserve-duty-selection="true"
-                role="status"
-            >
-                <SavedRequestIcon active={false} />
-                <p className="text-[14px] leading-5 font-medium text-[#475467]">{t('aiAdjust.savedRequests.loading')}</p>
+            <div className="ai-month-request-list min-h-[44px] rounded-t-[14px] bg-[#F2F4F6] px-4 py-2" data-preserve-duty-selection="true">
+                <AiConversationLoading label={t('aiAdjust.savedRequests.loading')} />
             </div>
         );
     }

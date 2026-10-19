@@ -2,7 +2,18 @@ import type {TWardRotationMode} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {ChevronDown, Plus, TriangleAlert, X} from 'lucide-react';
-import {type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    type KeyboardEvent as ReactKeyboardEvent,
+    type ReactNode,
+    type Ref,
+    memo,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useTranslation} from 'react-i18next';
@@ -29,6 +40,7 @@ import {
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
 } from '../../model/shift-constraint-rules';
+import {ConstraintEditorContext, useConstraintEditorContext} from './constraint-editor-context';
 import {ConstraintRuleHelp} from './constraint-rule-help';
 import {hasConstraintHelp} from './constraint-rule-help-codes';
 
@@ -185,9 +197,13 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
 };
 
 function ConstraintModalPortal({children}: {children: ReactNode}) {
+    const editorContext = useConstraintEditorContext();
+
     if (typeof document === 'undefined') return <>{children}</>;
 
-    return createPortal(children, document.body);
+    if (editorContext.dialog && !editorContext.portalContainer) return null;
+
+    return createPortal(children, editorContext.portalContainer ?? document.body);
 }
 
 function getCategoryLabel(t: TTypedT, category: TModalCategory, rotationMode: TWardRotationMode = 'THREE') {
@@ -1590,6 +1606,7 @@ function isPersonalDateExclusion(templateCode: string, params: Record<string, un
 function personalDateExclusionTemplate(template: TSoftRuleTemplate, t: TTypedT): TSoftRuleTemplate {
     const controls = template.controls.filter((control) => ['target', 'dateScope', 'shift'].includes(control.key));
     const pattern = t('page.makeShift.constraints.personalExclusion.sentence');
+
     return {
         ...template,
         personalExclusion: true,
@@ -1781,6 +1798,7 @@ function getNumberBounds(
         ).size;
 
         if (nurseCount > 0) max = nurseCount;
+
         if (targetType === 'NURSE') {
             min = 0;
             max = 0;
@@ -1842,8 +1860,10 @@ function getDefaultParams(
 
         if (template.id === 'SHIFT_COUNT_PER_PERIOD' && control.key === 'shift') {
             const night = controlOptions.find((option) => option.classification === 'NIGHT');
+
             if (night) {
                 params[control.key] = getSelectOptionParamValue(night);
+
                 return;
             }
         }
@@ -2876,6 +2896,7 @@ function getOptionsForControl(
     if (template.id === 'STAFF_COUNT_BY_SHIFT' && control.optionsKey === 'target') {
         return resolvedOptions.filter((option) => {
             const type = getConstraintOptionType(option.raw ?? option.value);
+
             return template.personalExclusion ? type === 'NURSE' : type === 'ALL' || type === 'DIVISION';
         });
     }
@@ -3105,6 +3126,7 @@ type TInlineDropdownProps = {
 
 function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TInlineDropdownProps) {
     const {t} = useTypedTranslation();
+    const editorContext = useConstraintEditorContext();
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
@@ -3169,13 +3191,20 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
         : undefined;
 
     return (
-        <div ref={ref} className="relative inline-flex">
+        <div ref={ref} data-constraint-layer-open={open || undefined} className="relative inline-flex">
             <button
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={open}
                 aria-label={ariaLabel}
                 onClick={toggleOpen}
+                onKeyDown={(event) => {
+                    if (open && event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                    }
+                }}
                 className={buttonClassName}
                 style={{minWidth}}
             >
@@ -3183,12 +3212,20 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {open && menuPosition && typeof document !== 'undefined'
+            {open && menuPosition && typeof document !== 'undefined' && (!editorContext.dialog || editorContext.portalContainer)
                 ? createPortal(
                       <div
                           ref={menuRef}
                           role="listbox"
                           aria-label={ariaLabel}
+                          onKeyDown={(event) => {
+                              if (event.key !== 'Escape') return;
+
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setOpen(false);
+                              ref.current?.querySelector('button')?.focus();
+                          }}
                           style={menuStyle}
                           className={`dropdown-scrollbar-visible fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
@@ -3231,7 +3268,7 @@ function InlineDropdown({value, options, minWidth = 72, ariaLabel, onChange}: TI
                               );
                           })}
                       </div>,
-                      document.body,
+                      editorContext.portalContainer ?? document.body,
                   )
                 : null}
         </div>
@@ -3275,13 +3312,20 @@ function InlineMultiSelect({
     }, [open]);
 
     return (
-        <div ref={ref} className="relative inline-flex">
+        <div ref={ref} data-constraint-layer-open={open || undefined} className="relative inline-flex">
             <button
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={open}
                 aria-label={`${accessibleLabel}: ${selectedText}`}
                 onClick={() => setOpen((current) => !current)}
+                onKeyDown={(event) => {
+                    if (open && event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                    }
+                }}
                 className="inline-flex h-8 min-w-32 cursor-pointer items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4"
             >
                 <span className="max-w-48 truncate">{selectedText}</span>
@@ -3292,6 +3336,14 @@ function InlineMultiSelect({
                     role="listbox"
                     aria-multiselectable="true"
                     aria-label={accessibleLabel}
+                    onKeyDown={(event) => {
+                        if (event.key !== 'Escape') return;
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                        ref.current?.querySelector('button')?.focus();
+                    }}
                     className="dropdown-scrollbar-visible absolute top-10 left-0 z-50 max-h-56 min-w-48 overflow-y-auto rounded-[10px] bg-white py-1 ring-1 ring-gray-6"
                 >
                     {options.map((option) => {
@@ -3408,6 +3460,7 @@ function InlineNumberInput({
 
                 if (event.key === 'Escape') {
                     event.preventDefault();
+                    event.stopPropagation();
                     setInputValue(String(value));
                     event.currentTarget.blur();
                 }
@@ -3478,6 +3531,7 @@ function getInlineTimeOptions(value: string, locale: string): TTimeOption[] {
 }
 
 function InlineTimeInput({value, label, onChange}: {value: string; label: string; onChange: (value: string) => void}) {
+    const editorContext = useConstraintEditorContext();
     const {i18n} = useTranslation();
     const locale = i18n.resolvedLanguage ?? i18n.language ?? 'ko';
     const selectedValue = parseInlineTimeValue(value)?.value ?? value;
@@ -3549,7 +3603,7 @@ function InlineTimeInput({value, label, onChange}: {value: string; label: string
         : undefined;
 
     return (
-        <div ref={triggerRef} className="relative inline-flex">
+        <div ref={triggerRef} data-constraint-layer-open={open || undefined} className="relative inline-flex">
             <button
                 type="button"
                 role="combobox"
@@ -3558,6 +3612,13 @@ function InlineTimeInput({value, label, onChange}: {value: string; label: string
                 aria-label={label}
                 aria-valuetext={selectedLabel}
                 value={selectedValue}
+                onKeyDown={(event) => {
+                    if (open && event.key === 'Escape') {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                    }
+                }}
                 onClick={() => {
                     if (!open) updateMenuPosition();
 
@@ -3569,12 +3630,20 @@ function InlineTimeInput({value, label, onChange}: {value: string; label: string
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
 
-            {open && menuPosition && typeof document !== 'undefined'
+            {open && menuPosition && typeof document !== 'undefined' && (!editorContext.dialog || editorContext.portalContainer)
                 ? createPortal(
                       <div
                           ref={menuRef}
                           role="listbox"
                           aria-label={label}
+                          onKeyDown={(event) => {
+                              if (event.key !== 'Escape') return;
+
+                              event.preventDefault();
+                              event.stopPropagation();
+                              setOpen(false);
+                              triggerRef.current?.querySelector('button')?.focus();
+                          }}
                           style={menuStyle}
                           className={`fixed z-[2147483647] max-h-[240px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
@@ -3607,7 +3676,7 @@ function InlineTimeInput({value, label, onChange}: {value: string; label: string
                               );
                           })}
                       </div>,
-                      document.body,
+                      editorContext.portalContainer ?? document.body,
                   )
                 : null}
         </div>
@@ -3918,6 +3987,7 @@ const RuleRow = memo(function RuleRow({
     onSoftParamChange,
 }: TRuleRowProps) {
     const {t} = useTypedTranslation();
+    const {dialog} = useConstraintEditorContext();
     const presentationTemplate =
         softTemplate && isPersonalDateExclusion(rule.templateCode, rule.params)
             ? personalDateExclusionTemplate(softTemplate, t)
@@ -3926,49 +3996,56 @@ const RuleRow = memo(function RuleRow({
     const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
     const canChangeSeverity = !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
     const showHelp = !isPersonalDateExclusion(rule.templateCode, rule.params) && hasConstraintHelp(rule.templateCode);
+    const priorityControl = isImportantBlocked ? (
+        <ImportantToggle checked={isImportant} isRecommended={isRecommended} isBlocked onChange={onToggleImportant} />
+    ) : canChangeSeverity ? (
+        <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+    ) : isImportant ? (
+        <StaticImportantBadge isRecommended={isRecommended} />
+    ) : null;
+    const sentence = (
+        <>
+            {presentationTemplate ? (
+                <SoftSentence
+                    template={presentationTemplate}
+                    params={rule.params}
+                    optionMap={optionMap}
+                    onParamChange={(key, value) => onSoftParamChange(presentationTemplate, key, value)}
+                />
+            ) : (
+                <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
+            )}
+            {!softTemplate && slots.length ? (
+                <div className="flex flex-wrap items-center gap-2">
+                    {slots.map((slot) => (
+                        <SlotControl
+                            key={`${rule.clientId}-${slot.key}`}
+                            slot={slot}
+                            value={rule.params[slot.key]}
+                            options={options}
+                            onChange={(next) => onParamChange(slot.key, next)}
+                        />
+                    ))}
+                </div>
+            ) : null}
+        </>
+    );
 
     return (
         <div
             id={getConstraintRuleRowId(rule.clientId)}
             data-constraint-rule-id={rule.clientId}
+            style={dialog && highlighted ? {backgroundColor: '#F0EBFF'} : undefined}
             className={`grid min-h-[52px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[10px] bg-white px-3 py-2.5 transition-colors ${
                 highlighted ? 'shadow-[0_0_0_2px_rgba(127,93,255,0.10)] ring-2 ring-main-1/55' : ''
             }`}
         >
-            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
-                {isImportantBlocked ? (
-                    <ImportantToggle checked={isImportant} isRecommended={isRecommended} isBlocked onChange={onToggleImportant} />
-                ) : canChangeSeverity ? (
-                    <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
-                ) : isImportant ? (
-                    <StaticImportantBadge isRecommended={isRecommended} />
-                ) : null}
-                {presentationTemplate ? (
-                    <SoftSentence
-                        template={presentationTemplate}
-                        params={rule.params}
-                        optionMap={optionMap}
-                        onParamChange={(key, value) => onSoftParamChange(presentationTemplate, key, value)}
-                    />
-                ) : (
-                    <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
-                )}
-                {!softTemplate && slots.length ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                        {slots.map((slot) => (
-                            <SlotControl
-                                key={`${rule.clientId}-${slot.key}`}
-                                slot={slot}
-                                value={rule.params[slot.key]}
-                                options={options}
-                                onChange={(next) => onParamChange(slot.key, next)}
-                            />
-                        ))}
-                    </div>
-                ) : null}
+            <div className={cn('flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2', dialog && 'constraint-editor-rule-main')}>
+                {dialog ? <div className="constraint-editor-rule-priority contents">{priorityControl}</div> : priorityControl}
+                {dialog ? <div className="constraint-editor-rule-sentence contents">{sentence}</div> : sentence}
             </div>
 
-            <div className="flex items-center justify-end gap-1">
+            <div className={cn('flex items-center justify-end gap-1', dialog && 'constraint-editor-rule-actions')}>
                 {showHelp ? (
                     <ConstraintRuleHelp
                         rule={rule}
@@ -3997,10 +4074,11 @@ type TSectionProps = {
 
 function Section({action, children}: TSectionProps) {
     const {t} = useTypedTranslation();
+    const {dialog} = useConstraintEditorContext();
 
     return (
         <section className="mb-4">
-            <div className="rounded-[18px] bg-[#F8F9FB] px-3 pt-5 pb-8">
+            <div className={cn('rounded-[18px] bg-[#F8F9FB] px-3 pt-5', dialog ? 'constraint-editor-section pb-3' : 'pb-8')}>
                 <div className="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3">
                     <span className="font-apple text-[13px] font-bold text-gray-4">{t('page.makeShift.constraints.listTitle')}</span>
                     {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
@@ -4060,6 +4138,60 @@ type TConstraintImportButtonProps = {
     onImport: (shiftTeamId: number) => Promise<void>;
 };
 
+function handleConstraintDialogKeyDown(event: ReactKeyboardEvent, dialog: HTMLElement | null, onClose: () => void) {
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        onClose();
+
+        return;
+    }
+
+    if (event.key !== 'Tab' || !dialog) return;
+
+    const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR)).filter(
+        (element) => element.getAttribute('aria-hidden') !== 'true',
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (!first || !last) {
+        event.preventDefault();
+        dialog.focus();
+    } else if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+    }
+}
+
+function useConstraintChildDialog(open: boolean, onClose: () => void) {
+    const {dialog} = useConstraintEditorContext();
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!dialog || !open) return;
+
+        const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const timer = window.setTimeout(() => {
+            (ref.current?.querySelector<HTMLElement>(CONSTRAINT_DIALOG_FOCUSABLE_SELECTOR) ?? ref.current)?.focus();
+        }, 0);
+
+        return () => {
+            window.clearTimeout(timer);
+
+            if (previous?.isConnected) previous.focus();
+        };
+    }, [dialog, open]);
+
+    return {
+        ref,
+        onKeyDown: dialog ? (event: ReactKeyboardEvent) => handleConstraintDialogKeyDown(event, ref.current, onClose) : undefined,
+    };
+}
+
 function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId, onImport}: TConstraintImportButtonProps) {
     const {t} = useTypedTranslation();
     const [open, setOpen] = useState(false);
@@ -4090,6 +4222,7 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
 
         setOpen(false);
     };
+    const childDialog = useConstraintChildDialog(open, closeModal);
     const confirmImport = async () => {
         if (selectedShiftTeamId === null || importingShiftTeamId !== null) return;
 
@@ -4116,6 +4249,10 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                 <ConstraintModalPortal>
                     <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
                         <div
+                            ref={childDialog.ref}
+                            data-constraint-layer-open="true"
+                            onKeyDown={childDialog.onKeyDown}
+                            tabIndex={-1}
                             role="dialog"
                             aria-modal="true"
                             aria-labelledby="constraint-import-title"
@@ -4196,13 +4333,27 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
     );
 }
 
+export type TConstraintsEditorHandle = {apply: () => Promise<boolean>};
+export type TConstraintsEditorState = {
+    dirty: boolean;
+    saving: boolean;
+    ready: boolean;
+    count: number;
+    error?: boolean;
+    refreshPending?: boolean;
+};
+
 type TConstraintsProps = {
     wardId?: number | null;
     shiftTeamId?: number | null;
     shiftTeams?: TShiftTeam[];
     year?: number;
     month?: number;
-    variant?: 'flow' | 'settings';
+    variant?: 'flow' | 'settings' | 'dialog';
+    editorRef?: Ref<TConstraintsEditorHandle>;
+    onEditorStateChange?: (state: TConstraintsEditorState) => void;
+    onApplied?: () => Promise<void> | void;
+    disabled?: boolean;
 };
 
 type TSoftModalProps = {
@@ -4230,6 +4381,7 @@ function getSoftRuleAddIssue(
     ) {
         return 'page.makeShift.constraints.mixed.validation.selectEligibleNurse';
     }
+
     const selectedNurseCount = Array.isArray(params.nurseIds) ? params.nurseIds.length : 0;
     const minimumNurseCount = template.id === 'MIXED_SHIFT_WORKLOAD_BALANCE' ? 2 : 1;
 
@@ -4245,6 +4397,7 @@ function getSoftRuleAddIssue(
 
 function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd}: TSoftModalProps) {
     const {t} = useTypedTranslation();
+    const editorContext = useConstraintEditorContext();
     const dialogRef = useRef<HTMLDivElement>(null);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const scrollRegionRef = useRef<HTMLDivElement>(null);
@@ -4267,8 +4420,10 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
         const normalCategories = Array.from(
             new Set(templates.map((template) => template.category).filter((category) => !isRecommendedOnlyCategory(category))),
         );
+
         if (templates.some((template) => template.id === 'STAFF_COUNT_BY_SHIFT') && !normalCategories.includes('NURSE_LIMIT'))
             normalCategories.push('NURSE_LIMIT');
+
         const categoryOrder = rotationMode === 'MIXED' ? MIXED_MODAL_CATEGORY_ORDER : ROTATION_MODAL_CATEGORY_ORDER;
         const orderedCategories = [...normalCategories].sort((left, right) => {
             const leftIndex = categoryOrder.indexOf(left);
@@ -4334,7 +4489,7 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
             }
         };
 
-        document.addEventListener('keydown', handleKeyDown);
+        if (!editorContext.dialog) document.addEventListener('keydown', handleKeyDown);
 
         return () => {
             window.clearTimeout(focusTimer);
@@ -4342,7 +4497,7 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
 
             if (previousActiveElement?.isConnected) previousActiveElement.focus();
         };
-    }, [open]);
+    }, [open, editorContext.dialog]);
 
     useEffect(() => {
         if (!open) return;
@@ -4353,9 +4508,11 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
             const params = getDefaultParams(template, optionMap, rotationMode);
 
             next[template.id] = normalizeCombinationParams(template, params, optionMap);
+
             if (template.id === 'STAFF_COUNT_BY_SHIFT') {
                 const nurse = (optionMap.target ?? []).find((option) => getConstraintOptionType(option.raw) === 'NURSE');
                 const evening = (optionMap.dutyStrict ?? []).find((option) => option.classification === 'EVENING');
+
                 next.personalDateExclusion = {
                     ...next[template.id],
                     target: nurse?.raw,
@@ -4400,6 +4557,10 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
             <div className="fixed inset-0 z-[1300] flex items-center justify-center overflow-y-auto bg-black/30 px-4 py-4">
                 <div
                     ref={dialogRef}
+                    data-constraint-layer-open="true"
+                    onKeyDown={
+                        editorContext.dialog ? (event) => handleConstraintDialogKeyDown(event, dialogRef.current, onClose) : undefined
+                    }
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="constraint-add-dialog-title"
@@ -4567,6 +4728,8 @@ type TRecommendedRuleWarningModalProps = {
 
 function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommendedRuleWarningModalProps) {
     const {t} = useTypedTranslation();
+    const editorContext = useConstraintEditorContext();
+    const childDialog = useConstraintChildDialog(Boolean(warning), onClose);
 
     if (!warning) return null;
 
@@ -4575,8 +4738,23 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
     return (
         <ConstraintModalPortal>
             <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
-                <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
-                    <p className="font-apple text-[20px] font-bold text-sub-1">
+                <div
+                    ref={childDialog.ref}
+                    data-constraint-layer-open="true"
+                    onKeyDown={childDialog.onKeyDown}
+                    role={editorContext.dialog ? 'dialog' : undefined}
+                    aria-modal={editorContext.dialog ? true : undefined}
+                    aria-labelledby={editorContext.dialog ? 'constraint-warning-dialog-title' : undefined}
+                    tabIndex={editorContext.dialog ? -1 : undefined}
+                    className={cn(
+                        'w-full max-w-[420px] rounded-[18px] bg-white p-5',
+                        !editorContext.dialog && 'shadow-[0_24px_56px_rgba(15,23,42,0.22)]',
+                    )}
+                >
+                    <p
+                        id={editorContext.dialog ? 'constraint-warning-dialog-title' : undefined}
+                        className="font-apple text-[20px] font-bold text-sub-1"
+                    >
                         {isDelete
                             ? t('page.makeShift.constraints.warning.deleteTitle')
                             : t('page.makeShift.constraints.warning.unmarkTitle')}
@@ -4611,16 +4789,75 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
     );
 }
 
-export function Constraints({
+/** Reuse the real step-two editor without allowing a modal draft to auto-save. */
+export function Constraints(props: TConstraintsProps = {}) {
+    const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
+
+    if (props.variant !== 'dialog') return <ConstraintsContent {...props} />;
+
+    return (
+        <ConstraintEditorContext.Provider value={{dialog: true, portalContainer}}>
+            <div className="constraint-editor-dialog min-w-0">
+                <style>{`
+                    .constraint-editor-dialog button, .constraint-editor-dialog input { min-height: 44px; box-shadow: none !important; border: 0; }
+                    .constraint-editor-dialog [class*="ring-"], .constraint-editor-dialog [data-constraint-rule-id] { box-shadow: none !important; }
+                    .constraint-editor-dialog button { min-width: 44px; }
+                    .constraint-editor-dialog button[aria-haspopup="listbox"], .constraint-editor-dialog input,
+                    .constraint-editor-dialog button[role="combobox"] { background: #F0EBFF; }
+                    .constraint-editor-dialog button[aria-haspopup="listbox"], .constraint-editor-dialog button[role="combobox"] {
+                        border: 1px solid #C6B8EC;
+                    }
+                    .constraint-editor-dialog button[aria-haspopup="listbox"][aria-expanded="true"],
+                    .constraint-editor-dialog button[role="combobox"][aria-expanded="true"] {
+                        border-color: #9276D5; background: #E8DFFF;
+                    }
+                    .constraint-editor-dialog button:focus-visible, .constraint-editor-dialog input:focus-visible {
+                        outline: none; background-color: #E1D9FF; color: #4930AF;
+                    }
+                    .constraint-editor-dialog button:disabled { cursor: not-allowed; opacity: .5; }
+                    .constraint-editor-dialog button[role="checkbox"][aria-checked="false"]:not(:focus-visible) { background: #F3F5F7; color: #667085; }
+                    .constraint-editor-dialog .constraint-editor-rule-actions button:not(:focus-visible),
+                    .constraint-editor-dialog .constraint-editor-section > div:first-child > span { color: #667085; }
+                    .constraint-editor-dialog [data-constraint-rule-id] { align-items: start; }
+                    .constraint-editor-dialog [role="listbox"] { border: 1px solid #8B95A1; background: white; box-shadow: none; }
+                    .constraint-editor-dialog [data-constraint-help-trigger] { width: 44px; height: 44px; }
+                    @media (max-width: 639px) {
+                        .constraint-editor-dialog .constraint-editor-section { padding: 12px 8px 8px; }
+                        .constraint-editor-dialog [data-constraint-rule-id] { column-gap: 8px; row-gap: 8px; padding: 8px 12px 12px; }
+                        .constraint-editor-dialog .constraint-editor-rule-main { display: contents; }
+                        .constraint-editor-dialog .constraint-editor-rule-priority {
+                            display: flex; align-items: center; min-height: 44px; grid-column: 1; grid-row: 1;
+                        }
+                        .constraint-editor-dialog .constraint-editor-rule-priority > * { margin-right: 0; border-radius: 8px; }
+                        .constraint-editor-dialog .constraint-editor-rule-actions { grid-column: 2; grid-row: 1; }
+                        .constraint-editor-dialog .constraint-editor-rule-sentence {
+                            display: block; min-width: 0; width: 100%; grid-column: 1 / -1; grid-row: 2;
+                        }
+                        .constraint-editor-dialog .constraint-editor-rule-sentence > p { white-space: normal; }
+                    }
+                `}</style>
+                <ConstraintsContent key={`${props.wardId}:${props.shiftTeamId}:${props.year}:${props.month}`} {...props} />
+                <div ref={setPortalContainer} data-constraint-editor-portals="true" />
+            </div>
+        </ConstraintEditorContext.Provider>
+    );
+}
+
+function ConstraintsContent({
     wardId: wardIdProp,
     shiftTeamId,
     shiftTeams: shiftTeamsProp,
     year: yearProp,
     month: monthProp,
     variant = 'flow',
+    editorRef,
+    onEditorStateChange,
+    onApplied,
+    disabled = false,
 }: TConstraintsProps = {}) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
+    const isDialog = variant === 'dialog';
     const queryClient = useQueryClient();
     const authWardId = useAuthStore((s) => s.wardId);
     const storeWardId = useMakeShiftStore((s) => s.wardId);
@@ -4644,14 +4881,47 @@ export function Constraints({
                 wardId,
                 currentShiftTeamId,
             ));
-    const frameClassName = variant === 'settings' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
+    const frameClassName = variant !== 'flow' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
     const surfaceWidthClassName =
-        variant === 'settings'
+        variant !== 'flow'
             ? 'w-full'
             : 'w-full min-w-[720px] max-w-[920px] min-[1400px]:min-w-[740px] min-[1400px]:max-w-[1000px] min-[1600px]:min-w-[920px] min-[1600px]:max-w-[1088px]';
     const surfacePaddingYClassName = variant === 'settings' ? 'py-[clamp(10px,1.1vw,16px)]' : 'py-0';
     const [rules, setRules] = useState<TShiftConstraintRuleDraft[]>([]);
     const rulesRef = useRef<TShiftConstraintRuleDraft[]>([]);
+    const [dirty, setDirty] = useState(false);
+    const dirtyRef = useRef(false);
+    const [saving, setSaving] = useState(false);
+    const savingRef = useRef(false);
+    const [refreshPending, setRefreshPending] = useState(false);
+    const refreshPendingRef = useRef(false);
+    const [editorMessage, setEditorMessage] = useState<{text: string; error: boolean} | null>(null);
+    const baseline = useRef('');
+    const mounted = useRef(true);
+    const onAppliedRef = useRef(onApplied);
+    const onEditorStateChangeRef = useRef(onEditorStateChange);
+
+    onAppliedRef.current = onApplied;
+    onEditorStateChangeRef.current = onEditorStateChange;
+
+    const disabledRef = useRef(disabled);
+
+    disabledRef.current = disabled;
+    useEffect(() => {
+        mounted.current = true;
+
+        return () => {
+            mounted.current = false;
+        };
+    }, []);
+
+    const notify = useMemo(
+        () => ({
+            success: (text: string) => (isDialog ? setEditorMessage({text, error: false}) : toast.success(text)),
+            error: (text: string) => (isDialog ? setEditorMessage({text, error: true}) : toast.error(text)),
+        }),
+        [isDialog],
+    );
     const [softModalOpen, setSoftModalOpen] = useState(false);
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
@@ -5057,7 +5327,7 @@ export function Constraints({
                 setRules([]);
             }
 
-            toast.error(t('page.makeShift.constraints.toast.saveFailed'));
+            notify.error(t('page.makeShift.constraints.toast.saveFailed'));
         },
     });
     const persistRules = useCallback(
@@ -5071,37 +5341,52 @@ export function Constraints({
         },
         [currentShiftTeamId, enabled, mutateSaveRules, wardId],
     );
+    const rulesSignature = useCallback(
+        (draft: TShiftConstraintRuleDraft[]) =>
+            JSON.stringify(draft.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode)))),
+        [softTemplateByCode],
+    );
     const replaceRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
             const normalizedRules = nextRules
-                .filter(isVisibleConstraintRule)
+                .filter((rule) => isDialog || isVisibleConstraintRule(rule))
                 .map((rule) => normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode))
                 .map((rule, index) => ({...rule, sortOrder: index + 1}));
 
             rulesRef.current = normalizedRules;
             setRules(normalizedRules);
 
-            if (options.sync !== false) {
+            if (isDialog) {
+                const signature = rulesSignature(normalizedRules);
+
+                if (options.sync === false) baseline.current = signature;
+
+                dirtyRef.current = signature !== baseline.current;
+                setDirty(dirtyRef.current);
+            } else if (options.sync !== false) {
                 persistRules(normalizedRules);
             }
         },
-        [persistRules, rotationMode, templateByCode],
+        [isDialog, persistRules, rotationMode, rulesSignature, templateByCode],
     );
     const updateRules = useCallback(
         (updater: TRulesUpdate) => {
+            if (isDialog && (disabledRef.current || savingRef.current)) return;
+
             replaceRules(updater(rulesRef.current));
         },
-        [replaceRules],
+        [isDialog, replaceRules],
     );
 
     useEffect(() => {
-        if (!rulesQuery.data || candidatesQuery.isPending) return;
+        if (!rulesQuery.data || candidatesQuery.isPending || (isDialog && (dirtyRef.current || savingRef.current))) return;
 
         replaceRules(createRulesFromServer(rulesQuery.data.rules), {sync: false});
-    }, [candidatesQuery.isPending, replaceRules, rulesQuery.data]);
+    }, [candidatesQuery.isPending, isDialog, replaceRules, rulesQuery.data]);
 
     useEffect(() => {
         if (
+            isDialog ||
             !rulesQuery.data?.rules.length ||
             candidatesQuery.isPending ||
             nurseQuery.isPending ||
@@ -5174,6 +5459,7 @@ export function Constraints({
         rulesQuery.data,
         shiftTypeQuery.isPending,
         wardId,
+        isDialog,
     ]);
 
     useEffect(() => {
@@ -5187,7 +5473,7 @@ export function Constraints({
 
         replaceRules(result.rules);
         setHighlightedRuleId(null);
-        toast.success(t('page.makeShift.constraints.toast.duplicatesRemoved', {count: result.removedCount}));
+        notify.success(t('page.makeShift.constraints.toast.duplicatesRemoved', {count: result.removedCount}));
 
         return result.removedCount;
     }, [replaceRules, t]);
@@ -5213,8 +5499,118 @@ export function Constraints({
             isSavedRuleVisibleForRotation(rule.templateCode, rotationMode),
     );
     const isLoading = candidatesQuery.isPending || rulesQuery.isPending || nurseQuery.isPending || shiftTypeQuery.isPending;
-    const isLoadError = rulesQuery.isError;
+    const isLoadError = rulesQuery.isError || (isDialog && (candidatesQuery.isError || nurseQuery.isError || shiftTypeQuery.isError));
     const savedRuleWarnings = rulesQuery.data?.warnings ?? [];
+    const ready = enabled && !isLoading && !isLoadError;
+    const {mutateAsync: applyRules} = useMutation({
+        mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
+        mutationFn: (draft: TShiftConstraintRuleDraft[]) => {
+            if (!enabled || wardId == null || currentShiftTeamId == null) throw new Error('Constraint scope is unavailable');
+
+            return putShiftConstraintRules(wardId, currentShiftTeamId, {
+                rules: draft.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
+            });
+        },
+    });
+    const apply = useCallback(async () => {
+        if (!isDialog || !ready || disabledRef.current || savingRef.current) return false;
+
+        if (!dirtyRef.current && !refreshPendingRef.current) return true;
+
+        savingRef.current = true;
+        setSaving(true);
+        setEditorMessage(null);
+
+        let saved = false;
+
+        try {
+            if (dirtyRef.current) {
+                const response = await applyRules(rulesRef.current);
+
+                queryClient.setQueryData(rulesQueryKey, response);
+                // Other locale caches must refetch the same rule IDs and parameters.
+                await queryClient.invalidateQueries({
+                    queryKey: [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, currentShiftTeamId],
+                    refetchType: 'none',
+                });
+
+                if (wardId != null && currentShiftTeamId != null) {
+                    void queryClient.invalidateQueries({
+                        queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace'],
+                    });
+                }
+
+                if (!mounted.current) return false;
+
+                const savedRules = createRulesFromServer(response.rules).map((rule) =>
+                    normalizeRuleSeverity(rule, templateByCode.get(rule.templateCode), rotationMode),
+                );
+
+                rulesRef.current = savedRules;
+                setRules(savedRules);
+                baseline.current = rulesSignature(savedRules);
+                dirtyRef.current = false;
+                setDirty(false);
+                refreshPendingRef.current = true;
+                setRefreshPending(true);
+            }
+
+            saved = true;
+            await onAppliedRef.current?.();
+
+            if (!mounted.current) return false;
+
+            refreshPendingRef.current = false;
+            setRefreshPending(false);
+
+            return true;
+        } catch {
+            if (mounted.current) {
+                setEditorMessage({
+                    text: saved
+                        ? i18n.language.startsWith('ko')
+                            ? '조건은 적용됐어요. 최신 상태를 불러오려면 다시 확인해 주세요.'
+                            : 'The conditions were applied. Check again to refresh the latest state.'
+                        : t('page.makeShift.constraints.toast.saveFailed'),
+                    error: true,
+                });
+            }
+
+            return false;
+        } finally {
+            savingRef.current = false;
+
+            if (mounted.current) setSaving(false);
+        }
+    }, [
+        applyRules,
+        currentShiftTeamId,
+        i18n,
+        isDialog,
+        queryClient,
+        ready,
+        rotationMode,
+        rulesQueryKey,
+        rulesSignature,
+        t,
+        templateByCode,
+        wardId,
+    ]);
+
+    useImperativeHandle(editorRef, () => ({apply}), [apply]);
+    useEffect(() => {
+        if (!isDialog) return;
+
+        onEditorStateChangeRef.current?.({
+            dirty,
+            saving,
+            ready,
+            count: softRules.length,
+            error: Boolean(editorMessage?.error),
+            refreshPending,
+        });
+    }, [dirty, editorMessage?.error, isDialog, ready, refreshPending, saving, softRules.length]);
+
     const softRuleViewModels = useMemo(
         () =>
             softRules.map((rule) => ({
@@ -5300,7 +5696,7 @@ export function Constraints({
 
             setSoftModalOpen(false);
             revealRuleForEditing(existingRule.clientId);
-            toast.success(t('page.makeShift.constraints.toast.duplicateSkipped'));
+            notify.success(t('page.makeShift.constraints.toast.duplicateSkipped'));
 
             return;
         }
@@ -5317,7 +5713,7 @@ export function Constraints({
                 revealRuleForEditing(conflictingRule.clientId);
             }
 
-            toast.error(t('page.makeShift.constraints.toast.staffCountConflict'));
+            notify.error(t('page.makeShift.constraints.toast.staffCountConflict'));
 
             return;
         }
@@ -5331,7 +5727,7 @@ export function Constraints({
         });
         setHighlightedRuleId(nextRule.clientId);
         setSoftModalOpen(false);
-        toast.success(t('page.makeShift.constraints.toast.added'));
+        notify.success(t('page.makeShift.constraints.toast.added'));
 
         window.setTimeout(() => {
             setHighlightedRuleId((current) => (current === nextRule.clientId ? null : current));
@@ -5365,7 +5761,7 @@ export function Constraints({
                     }));
 
                 if (!next.length && skippedNurseRuleCount > 0) {
-                    toast.error(
+                    notify.error(
                         t('page.makeShift.constraints.toast.importSkippedAllNurseRules', {
                             count: skippedNurseRuleCount,
                         }),
@@ -5376,7 +5772,7 @@ export function Constraints({
 
                 replaceRules(next);
                 setHighlightedRuleId(null);
-                toast.success(
+                notify.success(
                     skippedNurseRuleCount > 0
                         ? t('page.makeShift.constraints.toast.importedWithSkippedNurseRules', {
                               teamName: sourceTeam?.name ?? t('page.makeShift.constraints.import.sourceTeamFallback'),
@@ -5387,7 +5783,7 @@ export function Constraints({
                           }),
                 );
             } catch {
-                toast.error(t('page.makeShift.constraints.toast.importFailed'));
+                notify.error(t('page.makeShift.constraints.toast.importFailed'));
             } finally {
                 setImportingShiftTeamId(null);
             }
@@ -5412,7 +5808,7 @@ export function Constraints({
                     const addIssue = getSoftRuleAddIssue(template, nextParams, optionMap);
 
                     if (addIssue) {
-                        toast.error(t(addIssue));
+                        notify.error(t(addIssue));
 
                         return item;
                     }
@@ -5446,7 +5842,7 @@ export function Constraints({
     const toggleRuleImportant = useCallback(
         (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
             if (nextImportant && isNurseShiftPreferenceSoftOnlyRule(rule.templateCode)) {
-                toast.error(t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked'));
+                notify.error(t('page.makeShift.constraints.toast.nurseShiftPreferenceImportantBlocked'));
 
                 return;
             }
@@ -5478,10 +5874,10 @@ export function Constraints({
 
         if (recommendedWarning.action === 'delete') {
             updateRules((prev) => prev.filter((item) => item.clientId !== recommendedWarning.rule.clientId));
-            toast.success(t('page.makeShift.constraints.toast.recommendedDeleted'));
+            notify.success(t('page.makeShift.constraints.toast.recommendedDeleted'));
         } else {
             setRuleImportant(recommendedWarning.rule.clientId, false);
-            toast.success(t('page.makeShift.constraints.toast.importantUnmarked'));
+            notify.success(t('page.makeShift.constraints.toast.importantUnmarked'));
         }
 
         setRecommendedWarning(null);
@@ -5514,6 +5910,22 @@ export function Constraints({
             <div className={frameClassName}>
                 <div className={`${surfaceWidthClassName} rounded-[18px] bg-white px-5 py-5 font-apple text-[14px] text-gray-4`}>
                     {t('page.makeShift.constraints.state.loadError')}
+                    {isDialog ? (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                void Promise.all([
+                                    candidatesQuery.refetch(),
+                                    rulesQuery.refetch(),
+                                    nurseQuery.refetch(),
+                                    shiftTypeQuery.refetch(),
+                                ])
+                            }
+                            className="mt-3 rounded-[10px] bg-[#F0EBFF] px-4 font-semibold text-main-1"
+                        >
+                            {i18n.language.startsWith('ko') ? '다시 불러오기' : 'Try again'}
+                        </button>
+                    ) : null}
                 </div>
             </div>
         );
@@ -5521,10 +5933,24 @@ export function Constraints({
 
     return (
         <>
-            <div className={frameClassName}>
+            <fieldset disabled={isDialog && (disabled || saving)} className={cn(frameClassName, 'min-w-0')}>
                 <div
-                    className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
+                    className={cn(
+                        `${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white ${surfacePaddingYClassName}`,
+                        !isDialog && 'px-[clamp(14px,1.5vw,22px)]',
+                    )}
                 >
+                    {isDialog && editorMessage ? (
+                        <p
+                            role={editorMessage.error ? 'alert' : 'status'}
+                            className={cn(
+                                'mb-3 rounded-[10px] px-4 py-3 text-[14px] leading-6',
+                                editorMessage.error ? 'bg-[#FFF0F0] text-[#A52D2D]' : 'bg-[#F0EBFF] text-[#4930AF]',
+                            )}
+                        >
+                            {editorMessage.text}
+                        </p>
+                    ) : null}
                     {savedRuleWarnings.length > 0 ? (
                         <section
                             role="status"
@@ -5556,12 +5982,14 @@ export function Constraints({
                     <Section
                         action={
                             <>
-                                <ConstraintImportButton
-                                    teams={availableShiftTeams}
-                                    currentShiftTeamId={currentShiftTeamId}
-                                    importingShiftTeamId={importingShiftTeamId}
-                                    onImport={importRulesFromTeam}
-                                />
+                                {!isDialog ? (
+                                    <ConstraintImportButton
+                                        teams={availableShiftTeams}
+                                        currentShiftTeamId={currentShiftTeamId}
+                                        importingShiftTeamId={importingShiftTeamId}
+                                        onImport={importRulesFromTeam}
+                                    />
+                                ) : null}
                                 <button
                                     id="make_constraint_add_button"
                                     type="button"
@@ -5610,7 +6038,7 @@ export function Constraints({
                         </TooltipProvider>
                     </Section>
                 </div>
-            </div>
+            </fieldset>
 
             <SoftRuleModal
                 open={softModalOpen}

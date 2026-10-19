@@ -1,35 +1,47 @@
 import type {TScheduleObservation} from '@dutying/api/ward';
-import {JourneyObserved} from './journey-observed';
 import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutying/api/ward';
-import {X} from 'lucide-react';
-import {useEffect, useImperativeHandle, useLayoutEffect, useRef, type Ref, type ReactNode} from 'react';
+import {useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
-import headerIcon from '@/shared/assets/images/ai-adjust/header.svg';
+import type {TShift} from '@/entities/shift';
+import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
+import {AiActiveConditions} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
 import type {TAutofillFlow} from './ai-autofill-preparation';
+import {AiConversationHeader} from './ai-conversation-header';
 import AiMonthRequestList from './ai-month-request-list';
+import {JourneyObserved} from './journey-observed';
 
 type TProps = {
     open: boolean;
+    loading?: boolean;
     preparation?: ReactNode;
     autofillFlow?: TAutofillFlow | null;
     onNewConversation?: () => void;
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onClose: () => void;
+    onOpenConstraints?: () => void;
+    wardId?: number;
+    teamId?: number;
+    year?: number;
+    month?: number;
     onRegenerate: () => void;
     onGenerate?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
     generationCompletedMessage?: string;
+    generationReviewRequired?: boolean;
+    snapshotShift?: TShift;
     generationObservation?: TScheduleObservation;
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     disabled: boolean;
+    conditionsDisabled?: boolean;
     modifyDisabled?: boolean;
     textInputRef: Ref<TAdjustTextInputHandle>;
     onPickExample: (sentence: string) => void;
@@ -54,21 +66,29 @@ const AI_ADJUST_SIDEBAR_WIDTH_PX = 407;
 /** Non-modal: the schedule stays visible and usable while the conversation is open. */
 export default function AiAdjustDialog({
     open,
+    loading = false,
     preparation,
     autofillFlow,
     onNewConversation,
     spotlightSelector,
     spotlightInteractive,
     onClose,
+    wardId,
+    teamId,
+    year,
+    month,
     onRegenerate,
     onGenerate,
     hasGeneratedSchedule = false,
     generationCompleted = false,
     generationCompletedMessage,
+    generationReviewRequired,
+    snapshotShift,
     generationObservation,
     generationFailure,
     onDismissFailure,
     disabled,
+    conditionsDisabled = disabled,
     modifyDisabled,
     textInputRef,
     interpret,
@@ -88,6 +108,22 @@ export default function AiAdjustDialog({
     const {t} = useTypedTranslation();
     const panel = useRef<HTMLElement>(null);
     const input = useRef<TAdjustTextInputHandle>(null);
+    const [inputBusy, setInputBusy] = useState(false);
+    const [conditionEditorBusy, setConditionEditorBusy] = useState(false);
+    const [conditionsVersion, setConditionsVersion] = useState(0);
+    const hasConditionContext = wardId != null && teamId != null && year != null && month != null;
+    const activeConditions = useAiActiveConditions({
+        wardId: wardId ?? 0,
+        teamId: teamId ?? 0,
+        year: year ?? 0,
+        month: month ?? 0,
+        enabled: open && hasConditionContext,
+        onChanged: async () => {
+            setConditionsVersion((version) => version + 1);
+            await onRetryRequests?.();
+        },
+    });
+
     useImperativeHandle(
         textInputRef,
         () => ({
@@ -96,13 +132,20 @@ export default function AiAdjustDialog({
         }),
         [],
     );
+
     const preparing = Boolean(preparation);
+
+    useEffect(() => {
+        // Execution can create saved AI requests while this sheet stays open.
+        if (open && hasConditionContext) void activeConditions.reload();
+    }, [requests, open, hasConditionContext, activeConditions.reload]);
 
     useLayoutEffect(() => {
         const root = document.documentElement;
 
         root.dataset.makeAiAdjustOpen = String(open);
         root.dataset.makeAiPreparing = String(open && preparing);
+
         if (open) root.style.setProperty('--make-ai-adjust-sidebar-width', `${AI_ADJUST_SIDEBAR_WIDTH_PX}px`);
         else root.style.removeProperty('--make-ai-adjust-sidebar-width');
 
@@ -135,6 +178,7 @@ export default function AiAdjustDialog({
                 ref={panel}
                 data-state={open ? 'open' : 'closed'}
                 data-preparing={preparing}
+                data-loading={loading}
                 aria-hidden={!open}
                 inert={!open}
                 role="dialog"
@@ -149,26 +193,41 @@ export default function AiAdjustDialog({
                 onPaste={(event) => event.stopPropagation()}
                 className="ai-adjust-sidebar pointer-events-auto absolute top-0 right-0 z-[1400] flex h-dvh w-[407px] max-w-full flex-col overflow-hidden bg-white focus-visible:bg-[#FAF9FF] focus-visible:text-main-1 focus-visible:outline-none"
             >
-                <header className="relative flex h-24 shrink-0 items-center gap-3 border-b border-gray-5 px-[25px]">
-                    <img src={headerIcon} alt="" width={32} height={32} className="shrink-0" />
-                    <h2 className="text-[18px] leading-6 font-semibold text-[#242B36]">{t('aiAdjust.title')}</h2>
-                    <button
-                        type="button"
-                        onClick={() => input.current?.restart()}
-                        className="ml-auto min-h-11 shrink-0 rounded-lg px-3 text-[13px] text-[#475467] hover:text-main-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none disabled:opacity-40"
-                    >
-                        {t('aiAdjust.chat.restart')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label={t('aiAdjust.close')}
-                        className="grid size-8 shrink-0 place-items-center rounded-lg text-gray-4 hover:text-main-1"
-                    >
-                        <X className="size-[18px]" />
-                    </button>
-                </header>
-                <JourneyObserved observation={generationCompleted ? generationObservation : undefined} className="flex min-h-0 flex-1 flex-col">
+                <AiConversationHeader
+                    onNewRequest={() => input.current?.restart()}
+                    onClose={onClose}
+                    disabled={conditionEditorBusy || activeConditions.removingId !== null}
+                />
+                {hasConditionContext && (
+                    <div className="shrink-0 px-[25px] pb-1">
+                        <AiActiveConditions
+                            wardId={wardId!}
+                            teamId={teamId!}
+                            year={year!}
+                            month={month!}
+                            available={open && !loading && !preparing}
+                            wardRules={activeConditions.wardRules}
+                            aiConditions={activeConditions.requests
+                                .filter((request) => request.promotedRuleId == null)
+                                .map((request) => ({
+                                    id: `request:${request.id}`,
+                                    label: request.displayLabel,
+                                    description: i18n.language.startsWith('ko') ? '이번 달에 저장됨' : 'Saved for this month',
+                                    onRemove: () => activeConditions.removeRequest(request.id),
+                                }))}
+                            loading={activeConditions.loading}
+                            error={activeConditions.error}
+                            onRetry={activeConditions.reload}
+                            disabled={conditionsDisabled || inputBusy || preparing || conditionEditorBusy}
+                            onWardRulesApplied={activeConditions.refreshAfterRuleChange}
+                            onBusyChange={setConditionEditorBusy}
+                        />
+                    </div>
+                )}
+                <JourneyObserved
+                    observation={generationCompleted ? generationObservation : undefined}
+                    className="flex min-h-0 flex-1 flex-col"
+                >
                     <AiAdjustTextInput
                         ref={input}
                         open={open}
@@ -178,33 +237,39 @@ export default function AiAdjustDialog({
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
-                        disabled={disabled}
+                        disabled={disabled || conditionEditorBusy || activeConditions.removingId !== null}
+                        onBusyChange={setInputBusy}
+                        conditionsVersion={conditionsVersion}
                         modifyDisabled={modifyDisabled}
                         generationCompleted={generationCompleted}
                         generationCompletedMessage={generationCompletedMessage}
+                        generationReviewRequired={generationReviewRequired}
+                        snapshotShift={snapshotShift}
                         generationFailure={generationFailure}
                         onDismissFailure={onDismissFailure}
                         interpret={interpret}
                         onApply={onApply}
                         goalNurses={goalNurses}
                         shiftCodes={shiftCodes}
-                        requests={requests}
-                        requestsLoading={requestsLoading}
-                        requestsError={requestsError}
-                        onRetryRequests={onRetryRequests}
+                        requests={hasConditionContext ? activeConditions.requests : requests}
+                        requestsLoading={hasConditionContext ? activeConditions.loading : requestsLoading}
+                        requestsError={hasConditionContext ? activeConditions.error : requestsError}
+                        onRetryRequests={hasConditionContext ? activeConditions.reload : onRetryRequests}
                         resultActions={resultActions}
                         onUndo={onUndo}
                         currentRevision={currentRevision}
                         requestList={
-                            <AiMonthRequestList
-                                requests={requests}
-                                disabled={disabled}
-                                disablingRequestId={disablingRequestId}
-                                onDisable={onDisableRequest}
-                                isLoading={requestsLoading}
-                                isError={requestsError}
-                                onRetry={onRetryRequests}
-                            />
+                            hasConditionContext ? undefined : (
+                                <AiMonthRequestList
+                                    requests={requests}
+                                    disabled={disabled}
+                                    disablingRequestId={disablingRequestId}
+                                    onDisable={onDisableRequest}
+                                    isLoading={requestsLoading}
+                                    isError={requestsError}
+                                    onRetry={onRetryRequests}
+                                />
+                            )
                         }
                     />
                 </JourneyObserved>

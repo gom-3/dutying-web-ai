@@ -1,27 +1,17 @@
-import {LoaderCircle} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const INITIAL_PROGRESS = 8;
 const FAST_PROGRESS_TARGET = 90;
-const TARGET_PROGRESS = 98;
 const SLOW_PROGRESS_LIMIT = 99.2;
-const TARGET_DURATION_MS = 120_000;
-const FAST_PROGRESS_DURATION_MS = 72_000;
-const SLOW_PROGRESS_DURATION_MS = TARGET_DURATION_MS - FAST_PROGRESS_DURATION_MS;
-const EXTRA_SLOW_DURATION_MS = 120_000;
+const FAST_PROGRESS_TIME_CONSTANT_MS = 8_000;
+const SLOW_PROGRESS_TIME_CONSTANT_MS = 90_000;
 const COMPLETION_PROGRESS_DURATION_MS = 520;
 const COMPLETION_SETTLE_MS = 180;
 const clampProgressRatio = (value: number) => Math.max(0, Math.min(1, value));
-const easeOutQuad = (value: number) => 1 - (1 - value) ** 2;
 const easeOutCubic = (value: number) => 1 - (1 - value) ** 3;
-const easeOutExponential = (value: number) => {
-    const clampedValue = clampProgressRatio(value);
-    const maxEasedValue = 1 - Math.exp(-4);
-
-    return (1 - Math.exp(-4 * clampedValue)) / maxEasedValue;
-};
 
 function getElapsedMs(startedAt: number | null) {
     if (startedAt === null) return 0;
@@ -30,37 +20,15 @@ function getElapsedMs(startedAt: number | null) {
 }
 
 function getSimulatedProgress(elapsedMs: number) {
-    if (elapsedMs <= FAST_PROGRESS_DURATION_MS) {
-        const progressRatio = easeOutQuad(clampProgressRatio(elapsedMs / FAST_PROGRESS_DURATION_MS));
+    const fastProgressRatio = 1 - Math.exp(-elapsedMs / FAST_PROGRESS_TIME_CONSTANT_MS);
+    const slowProgressRatio = 1 - Math.exp(-elapsedMs / SLOW_PROGRESS_TIME_CONSTANT_MS);
 
-        return INITIAL_PROGRESS + (FAST_PROGRESS_TARGET - INITIAL_PROGRESS) * progressRatio;
-    }
-
-    if (elapsedMs <= TARGET_DURATION_MS) {
-        const slowProgressRatio = clampProgressRatio((elapsedMs - FAST_PROGRESS_DURATION_MS) / SLOW_PROGRESS_DURATION_MS);
-
-        return FAST_PROGRESS_TARGET + (TARGET_PROGRESS - FAST_PROGRESS_TARGET) * easeOutExponential(slowProgressRatio);
-    }
-
-    const extraSlowProgressRatio = 1 - Math.exp(-(elapsedMs - TARGET_DURATION_MS) / EXTRA_SLOW_DURATION_MS);
-
-    return TARGET_PROGRESS + (SLOW_PROGRESS_LIMIT - TARGET_PROGRESS) * extraSlowProgressRatio;
-}
-
-function getLoadingProgressMessageKey(progress: number): TI18nKey {
-    if (progress < 55) {
-        return 'page.makeShift.aiRefill.loadingOverlay.checkingRequests';
-    }
-
-    if (progress < FAST_PROGRESS_TARGET) {
-        return 'page.makeShift.aiRefill.loadingOverlay.fillingBlanks';
-    }
-
-    if (progress < TARGET_PROGRESS) {
-        return 'page.makeShift.aiRefill.loadingOverlay.finalReview';
-    }
-
-    return 'page.makeShift.aiRefill.loadingOverlay.almostDone';
+    // Both curves keep slowing down, without a speed jump between loading stages.
+    return (
+        INITIAL_PROGRESS +
+        (FAST_PROGRESS_TARGET - INITIAL_PROGRESS) * fastProgressRatio +
+        (SLOW_PROGRESS_LIMIT - FAST_PROGRESS_TARGET) * slowProgressRatio
+    );
 }
 
 type TAiAutofillLoadingOverlayProps = {
@@ -80,7 +48,10 @@ export function AiAutofillLoadingOverlay({
     isAdjusting = false,
 }: TAiAutofillLoadingOverlayProps) {
     const {t} = useTypedTranslation();
-    const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(startedAt)));
+    const copy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
+    const [mountedAt] = useState(Date.now);
+    const progressStartedAt = startedAt ?? mountedAt;
+    const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(progressStartedAt)));
     const progressRef = useRef(progress);
 
     useEffect(() => {
@@ -89,7 +60,7 @@ export function AiAutofillLoadingOverlay({
 
     useEffect(() => {
         if (isFinishing) {
-            const startedProgress = Math.max(progressRef.current, getSimulatedProgress(getElapsedMs(startedAt)));
+            const startedProgress = Math.max(progressRef.current, getSimulatedProgress(getElapsedMs(progressStartedAt)));
             const startTime = performance.now();
 
             let animationFrameId = 0;
@@ -122,62 +93,78 @@ export function AiAutofillLoadingOverlay({
             };
         }
 
-        setProgress(getSimulatedProgress(getElapsedMs(startedAt)));
-
-        if (startedAt === null) return undefined;
+        setProgress(getSimulatedProgress(getElapsedMs(progressStartedAt)));
 
         let animationFrameId = 0;
 
         const updateProgress = () => {
-            setProgress(getSimulatedProgress(getElapsedMs(startedAt)));
+            setProgress(getSimulatedProgress(getElapsedMs(progressStartedAt)));
             animationFrameId = window.requestAnimationFrame(updateProgress);
         };
 
         animationFrameId = window.requestAnimationFrame(updateProgress);
 
         return () => window.cancelAnimationFrame(animationFrameId);
-    }, [isFinishing, onFinish, startedAt]);
+    }, [isFinishing, onFinish, progressStartedAt]);
 
     const portalContainer = typeof document === 'undefined' ? null : (document.getElementById('modal-root') ?? document.body);
 
     if (portalContainer === null) return null;
 
     const progressValue = Math.round(progress);
-    const progressMessage = t(getLoadingProgressMessageKey(progressValue));
+    const title = isFinishing
+        ? copy('근무표가 준비됐어요', 'Your schedule is ready')
+        : isAdjusting
+          ? copy('근무표를 수정하고 있어요', 'Updating your schedule')
+          : copy('근무표를 채우고 있어요', 'Filling your schedule');
+    const progressLabel = isFinishing && progressValue === 100 ? copy('완료', 'Complete') : copy('예상 진행률', 'Estimated progress');
 
     return createPortal(
         <div
             role="dialog"
             aria-modal={!sidebarOpen}
             aria-labelledby="ai-autofill-loading-title"
-            className={`fixed z-[100002] flex items-center justify-center bg-transparent px-4 ${sidebarOpen ? 'inset-x-0 top-24 bottom-0 lg:top-0 lg:right-[var(--make-ai-adjust-sidebar-width,0px)]' : 'inset-0'}`}
+            data-ai-autofill-loading="true"
+            className={`fixed z-[1401] flex flex-col items-center overflow-y-auto bg-[#121726]/55 p-4 ${sidebarOpen ? 'inset-x-0 top-0 bottom-[50dvh] md:right-[var(--make-ai-adjust-sidebar-width,407px)] md:bottom-0' : 'inset-0'}`}
         >
-            <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center shadow-[0_22px_80px_rgba(45,32,92,0.24)]">
-                <div className="mx-auto flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F3F4F6] text-main-1">
-                    <LoaderCircle className="h-[22px] w-[22px] animate-spin" aria-hidden />
+            <div className="my-auto w-full max-w-[420px] shrink-0 rounded-[20px] bg-white px-5 py-5 text-center sm:px-7 sm:py-8">
+                <div aria-hidden="true" className="mx-auto grid size-[60px] grid-cols-3 gap-1 p-3">
+                    {Array.from({length: 9}, (_, cell) => (
+                        <span
+                            key={cell}
+                            className={`rounded-[3px] bg-main-1 ${isFinishing ? '' : 'ai-adjust-review-dot'}`}
+                            style={{animationDelay: `${(cell % 3) * 0.18 + Math.floor(cell / 3) * 0.12}s`}}
+                        />
+                    ))}
                 </div>
-                <p id="ai-autofill-loading-title" className="mt-5 font-apple text-[24px] leading-[1.35] font-bold text-sub-1">
-                    {isAdjusting ? t('page.makeShift.aiRefill.adjusting') : t('page.makeShift.aiRefill.loadingOverlay.title')}
+                <p
+                    id="ai-autofill-loading-title"
+                    className="mt-4 font-apple text-xl leading-[1.35] font-bold text-sub-1 sm:mt-5 sm:text-2xl"
+                >
+                    {title}
                 </p>
-                <p className="mx-auto mt-3 max-w-[300px] font-apple text-[15px] leading-[1.6] font-medium whitespace-pre-line text-gray-3">
-                    {t('page.makeShift.aiRefill.loadingOverlay.description')}
+                <p
+                    className="mx-auto mt-2 max-w-[300px] font-apple text-[13px] leading-[1.6] font-medium text-gray-3 sm:text-[15px]"
+                    aria-live="polite"
+                >
+                    {isFinishing
+                        ? copy('결과를 곧 보여드릴게요.', 'Your result will appear shortly.')
+                        : copy('신청·고정 근무를 유지하며 계산해요.', 'Requested and fixed shifts stay in place.')}
                 </p>
-                <div className="mt-7">
+                <div className="mt-5 sm:mt-7">
                     <div
                         role="progressbar"
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={progressValue}
+                        aria-valuetext={`${progressLabel} ${progressValue}%`}
                         aria-label={t('page.makeShift.aiRefill.loadingOverlay.ariaLabel')}
                         className="h-2 overflow-hidden rounded-full bg-[#ECE6FF]"
                     >
                         <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
                     </div>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-apple text-[13px] font-semibold">
-                        <span className="min-w-0 text-left text-gray-3" aria-live="polite">
-                            {progressMessage}
-                        </span>
-                        <span className="shrink-0 font-poppins text-main-1">{progressValue}%</span>
+                    <div className="mt-3 flex justify-end font-apple text-[13px] font-semibold">
+                        <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
                     </div>
                 </div>
             </div>

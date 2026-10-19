@@ -1,21 +1,38 @@
-import {CircleAlert} from 'lucide-react';
-import type {ReactNode} from 'react';
+import {Children, type ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {AssistantMessage} from './ai-adjust-review-conversation';
+import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
 
-export function AiFailureMessage({message, children, title}: {message: string; children?: ReactNode; title?: string}) {
+export function AiFailureMessage({
+    message,
+    children,
+    title,
+    headerAction,
+}: {
+    message: string;
+    children?: ReactNode;
+    title?: string;
+    headerAction?: ReactNode;
+}) {
     const {t} = useTypedTranslation();
+    const resolvedTitle = title ?? t('aiAdjust.failure.title');
+    const content = Children.toArray(children);
 
     return (
-        <AssistantMessage tone="error">
-            <div role="alert" className="flex items-start gap-2.5">
-                <CircleAlert aria-hidden="true" className="mt-1 h-5 w-5 shrink-0 text-[#D92D20]" />
-                <div className="min-w-0 space-y-2">
-                    <p className="font-semibold">{title ?? t('aiAdjust.failure.title')}</p>
-                    <p className="break-keep whitespace-pre-line">{message}</p>
-                    {children}
+        <AssistantMessage tone="error" fullWidth>
+            <section aria-label={resolvedTitle} className="min-w-0">
+                <div className="relative min-w-0">
+                    <div role="alert" className="min-w-0">
+                        <div className={`flex items-start gap-2 ${headerAction ? 'min-h-[44px] pr-[52px]' : ''}`}>
+                            <AiConversationOutcomeIcon status="failure" label={resolvedTitle} />
+                            <p className="text-base leading-6 font-semibold break-keep text-[#333D4B]">{resolvedTitle}</p>
+                        </div>
+                        <p className="mt-2 text-[14px] leading-6 break-keep whitespace-pre-line text-[#667085]">{message}</p>
+                    </div>
+                    {headerAction && <div className="absolute top-0 right-0">{headerAction}</div>}
                 </div>
-            </div>
+                {!!content.length && <div className="mt-4 min-w-0">{content}</div>}
+            </section>
         </AssistantMessage>
     );
 }

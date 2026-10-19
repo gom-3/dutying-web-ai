@@ -1,10 +1,11 @@
 import type {TWardRotationMode} from '@dutying/domain';
 import {Check, Info, X} from 'lucide-react';
-import type {ReactNode} from 'react';
+import {type ReactNode, useState} from 'react';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import type {TShiftConstraintOption, TShiftConstraintRuleDraft} from '../../model/shift-constraint-rules';
+import {useConstraintEditorContext} from './constraint-editor-context';
 import {hasConstraintHelp} from './constraint-rule-help-codes';
 
 export type TConstraintHelpOption = {
@@ -899,6 +900,8 @@ function ExampleRow({
 
 export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: TConstraintRuleHelpProps) {
     const {t} = useTypedTranslation();
+    const editorContext = useConstraintEditorContext();
+    const [open, setOpen] = useState(false);
     const content = getConstraintHelpContent(rule, optionMap, rotationMode, t);
     const audienceLabels = getAudienceLabels(rule, optionMap, t);
 
@@ -907,23 +910,39 @@ export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: T
     const isNote = content.secondTone === 'note';
 
     return (
-        <Tooltip>
+        <Tooltip open={open} onOpenChange={setOpen}>
             <TooltipTrigger asChild>
                 <button
                     type="button"
                     aria-label={t('page.makeShift.constraints.help.aria', {constraint: ruleTitle})}
                     data-constraint-help-trigger={rule.templateCode}
+                    data-constraint-layer-open={open || undefined}
+                    onKeyDown={(event) => {
+                        if (!open || event.key !== 'Escape') return;
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                    }}
                     className="grid size-8 shrink-0 place-items-center rounded-full text-[#8B95A7] transition-colors hover:bg-[#EEEAFE] hover:text-[#6555E8] focus-visible:bg-[#E5E0FF] focus-visible:text-[#4F3FD8] focus-visible:outline-none motion-reduce:transition-none"
                 >
                     <Info className="size-[17px]" strokeWidth={2.2} aria-hidden="true" />
                 </button>
             </TooltipTrigger>
             <TooltipContent
+                container={editorContext.portalContainer ?? undefined}
                 side="top"
                 align="end"
                 sideOffset={10}
                 collisionPadding={12}
                 data-constraint-help-content={rule.templateCode}
+                onKeyDown={(event) => {
+                    if (event.key !== 'Escape') return;
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setOpen(false);
+                }}
                 className="z-[1400] max-h-[calc(100vh-24px)] w-max max-w-[min(720px,calc(100vw-24px))] overflow-y-auto rounded-[16px] bg-[#252B36] p-4 text-left text-white motion-reduce:animate-none"
             >
                 <p className="font-apple text-[12px] font-bold text-[#B9B0FF]">{t('page.makeShift.constraints.help.title')}</p>
