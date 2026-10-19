@@ -37,7 +37,13 @@ function description(condition: TProps['condition'], copy: TProps['copy']) {
 
     if (condition.action === 'FORBID') return copy(`${shifts} 근무 제외`, `Exclude ${shifts} shifts`);
 
-    if (condition.action === 'ASSIGN') return copy(`${shifts} 근무 배정`, `Assign ${shifts} shifts`);
+    if (condition.action === 'ASSIGN')
+        return condition.modality === 'SOFT'
+            ? copy(`${shifts} 근무 선호`, `Prefer ${shifts} shifts`)
+            : copy(`${shifts} 근무 배정`, `Assign ${shifts} shifts`);
+
+    if (condition.action === 'MAX_CONSECUTIVE_WORK')
+        return copy(`연속 근무 최대 ${condition.count}일`, `At most ${condition.count} consecutive work days`);
 
     const operator =
         condition.operator === 'MIN'
@@ -62,9 +68,12 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy}
         rosterNurseIds.length > 0 &&
         new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
         rosterNurseIds.every((id) => condition.nurseIds.includes(id));
-    const subject = everyone
-        ? copy('전체 간호사', 'All nurses')
-        : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ');
+    const subject =
+        condition.action === 'CATALOG_RULE'
+            ? condition.displayText?.trim() || copy('요청 조건을 다시 확인해 주세요.', 'Review the request conditions again.')
+            : everyone
+              ? copy('전체 간호사', 'All nurses')
+              : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ');
     const dates = period(condition.dates, copy);
 
     return (
@@ -76,8 +85,13 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy}
                 </span>
             </div>
             <p className="mt-1.5 text-[13px] leading-5 break-keep text-[#667085]">
-                {dates && <>{dates} · </>}
-                {description(condition, copy)}
+                {dates && (
+                    <>
+                        {dates}
+                        {condition.action !== 'CATALOG_RULE' && ' · '}
+                    </>
+                )}
+                {condition.action !== 'CATALOG_RULE' && description(condition, copy)}
             </p>
         </li>
     );

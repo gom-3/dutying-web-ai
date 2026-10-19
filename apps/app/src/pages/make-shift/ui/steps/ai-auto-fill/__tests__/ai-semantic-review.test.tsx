@@ -373,3 +373,46 @@ describe('readable request scope', () => {
         expect(screen.queryByText('전체 간호사')).not.toBeInTheDocument();
     });
 });
+
+describe('catalog plan wire compatibility', () => {
+    const catalogCondition: TSemanticPlan['conditions'][number] = {
+        ...conflictPlan.conditions[0],
+        action: 'CATALOG_RULE',
+        nurseIds: [1, 2],
+        shiftCodes: ['D', 'E', 'N', 'O'],
+        rule: {templateCode: 'FORBID_TRANSITION', params: {target: [1], fromShift: 'N', toShift: 'D'}},
+        displayText: '검증간호사는 N 근무 다음 날 D 근무를 피해요.',
+        count: null,
+        operator: null,
+    };
+    const readyPlan = {...conflictPlan, state: 'PREVIEW_READY', confirmationAllowed: true, conditions: [catalogCondition]};
+
+    it('shows the confirmed rule description without turning its evaluation scope into a quota', () => {
+        renderReview({plan: readyPlan});
+        const requests = screen.getByRole('list', {name: '반영할 요청'});
+        expect(requests).toHaveTextContent(catalogCondition.displayText!);
+        expect(requests).toHaveTextContent('필수 조건');
+        expect(requests).not.toHaveTextContent('전체 간호사');
+        expect(requests).not.toHaveTextContent(/null|정확히|D, E, N, O 근무/);
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+    });
+
+    it('prevents confirming a catalog rule with no rendered description', () => {
+        renderReview({plan: {...readyPlan, conditions: [{...catalogCondition, displayText: null}]}});
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        expect(screen.queryByText(/null회/)).not.toBeInTheDocument();
+    });
+
+    it('renders a consecutive work limit as days rather than a monthly shift count', () => {
+        renderReview({
+            plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'MAX_CONSECUTIVE_WORK', operator: 'MAX', count: 4}]},
+        });
+        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('연속 근무 최대 4일');
+        expect(screen.getByRole('list', {name: '반영할 요청'})).not.toHaveTextContent('4회');
+    });
+
+    it('renders a soft assignment as a preference', () => {
+        renderReview({plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'ASSIGN', modality: 'SOFT'}]}});
+        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('E 근무 선호');
+    });
+});

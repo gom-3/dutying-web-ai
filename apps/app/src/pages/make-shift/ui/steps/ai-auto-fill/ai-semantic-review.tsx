@@ -100,6 +100,11 @@ export function AiSemanticReview({
 
     const selected = selection.planId === plan.planId ? selection.ids : [];
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
+    const reviewable = plan.conditions.every((condition) =>
+        condition.action === 'CATALOG_RULE'
+            ? Boolean(condition.displayText?.trim())
+            : ['ASSIGN', 'FORBID', 'COUNT', 'MAX_CONSECUTIVE_WORK'].includes(condition.action),
+    );
     const conflict = plan.state === 'LOCKED_CONFLICT';
     const expired = plan.state === 'EXPIRED';
     const complete = ready && applied;
@@ -340,7 +345,7 @@ export function AiSemanticReview({
                             <button
                                 type="button"
                                 className={primary}
-                                disabled={disabled || stale || (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)}
+                                disabled={disabled || stale || !reviewable || (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)}
                                 onClick={onApply}
                             >
                                 {copy('이대로 수정하기', 'Adjust with these conditions')}
