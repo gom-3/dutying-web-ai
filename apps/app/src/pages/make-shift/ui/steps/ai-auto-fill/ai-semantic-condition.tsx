@@ -68,9 +68,12 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy}
         rosterNurseIds.length > 0 &&
         new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
         rosterNurseIds.every((id) => condition.nurseIds.includes(id));
+    const catalogDescription = condition.displayText?.trim();
     const subject =
         condition.action === 'CATALOG_RULE'
-            ? condition.displayText?.trim() || copy('요청 조건을 다시 확인해 주세요.', 'Review the request conditions again.')
+            ? catalogDescription?.length
+                ? catalogDescription
+                : copy('요청 조건을 다시 확인해 주세요.', 'Review the request conditions again.')
             : everyone
               ? copy('전체 간호사', 'All nurses')
               : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ');

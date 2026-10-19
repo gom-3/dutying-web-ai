@@ -389,7 +389,9 @@ describe('catalog plan wire compatibility', () => {
 
     it('shows the confirmed rule description without turning its evaluation scope into a quota', () => {
         renderReview({plan: readyPlan});
+
         const requests = screen.getByRole('list', {name: '반영할 요청'});
+
         expect(requests).toHaveTextContent(catalogCondition.displayText!);
         expect(requests).toHaveTextContent('필수 조건');
         expect(requests).not.toHaveTextContent('전체 간호사');
