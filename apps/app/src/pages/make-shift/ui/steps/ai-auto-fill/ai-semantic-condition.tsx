@@ -1,6 +1,8 @@
+import type {ReactNode} from 'react';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 
 type TProps = {
+    children?: ReactNode;
     condition: TSemanticPlan['conditions'][number];
     nurseName: (id: number) => string;
     rosterNurseIds: number[];
@@ -57,7 +59,7 @@ function description(condition: TProps['condition'], copy: TProps['copy']) {
         : copy(`${shifts} 근무 · ${operator} ${condition.count}회씩`, `${shifts} shifts · ${operator} ${condition.count} times each`);
 }
 
-export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy}: TProps) {
+export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy, children}: TProps) {
     const everyone =
         rosterNurseIds.length > 0 &&
         new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
@@ -79,6 +81,7 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy}
                 {dates && <>{dates} · </>}
                 {description(condition, copy)}
             </p>
+            {children}
         </li>
     );
 }

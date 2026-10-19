@@ -18,6 +18,7 @@ type TProps = {
     onApply: () => void;
     onEdit: () => void;
     onRetry: () => void;
+    onChangeModalities?: (overrides: Record<string, 'HARD' | 'SOFT'>) => Promise<void>;
     onSelectConditions?: (ids: string[]) => void;
 };
 
@@ -81,8 +82,32 @@ export function AiSemanticReview({
     onEdit,
     onRetry,
     onSelectConditions,
+    onChangeModalities,
 }: TProps) {
     const [selection, setSelection] = useState<{planId: string; ids: string[]}>({planId: plan.planId, ids: []});
+    const [priorityEdits, setPriorityEdits] = useState<{hash: string; values: Record<string, 'HARD' | 'SOFT'>}>({
+        hash: plan.planHash,
+        values: {},
+    });
+    const [savingPriority, setSavingPriority] = useState(false);
+    const [priorityError, setPriorityError] = useState(false);
+    const overrides = priorityEdits.hash === plan.planHash ? priorityEdits.values : {};
+    const priorityDirty = Object.keys(overrides).length > 0;
+    const canEditPriority = current && plan.state === 'PREVIEW_READY' && Boolean(onChangeModalities);
+    const savePriorities = async () => {
+        if (!priorityDirty || savingPriority || disabled || stale) return;
+
+        setSavingPriority(true);
+        setPriorityError(false);
+
+        try {
+            await onChangeModalities?.(overrides);
+        } catch {
+            setPriorityError(true);
+        } finally {
+            setSavingPriority(false);
+        }
+    };
     const cleared = plan.state === 'NEEDS_CLARIFICATION' && plan.reasonCodes.includes('EMPTY_CONDITIONS') && plan.conditions.length === 0;
 
     if (cleared)
@@ -199,7 +224,64 @@ export function AiSemanticReview({
                                 nurseName={nurseName}
                                 rosterNurseIds={rosterNurseIds}
                                 copy={copy}
-                            />
+                            >
+                            {canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId) ? (
+                                <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
+                                    <legend className="text-[13px] font-medium">{copy('반영 방식', 'Priority')}</legend>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(['SOFT', 'HARD'] as const).map((value) => (
+                                            <label
+                                                key={value}
+                                                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    className="accent-main-1"
+                                                    name={`priority-${plan.planId}-${condition.intentId}`}
+                                                    value={value}
+                                                    checked={(overrides[condition.intentId] ?? condition.modality) === value}
+                                                    onChange={() => {
+                                                        const values = {...overrides};
+
+                                                        if (value === condition.modality) delete values[condition.intentId];
+                                                        else values[condition.intentId] = value;
+
+                                                        setPriorityEdits({hash: plan.planHash, values});
+                                                        setPriorityError(false);
+                                                    }}
+                                                />
+                                                {copy(value === 'HARD' ? '필수' : '권장', value === 'HARD' ? 'Required' : 'Preferred')}
+                                            </label>
+                                        ))}
+                                    </div>
+                                    <p className="text-[13px] break-keep text-[#475467]">
+                                        {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
+                                            ? copy(
+                                                  '충족하지 못한 결과는 적용하지 않아요.',
+                                                  'A result that misses this condition cannot be applied.',
+                                              )
+                                            : copy(
+                                                  '가능한 만큼 맞추며, 다른 조건 때문에 충족하지 못할 수 있어요.',
+                                                  'We try to meet this preference; other conditions may prevent it.',
+                                              )}
+                                    </p>
+                                </fieldset>
+                            ) : (
+                                <p className="text-[13px] break-keep text-[#475467]">
+                                    {condition.modality === 'HARD' ? copy('필수', 'Required') : copy('권장', 'Preferred')}
+                                    {current && ready && condition.action !== 'COUNT' && (
+                                        <>
+                                            {' '}
+                                            ·{' '}
+                                            {copy(
+                                                '지정·금지한 배정은 필수로 적용해요.',
+                                                'Explicit assignments and exclusions are required.',
+                                            )}
+                                        </>
+                                    )}
+                                </p>
+                            )}
+                            </AiSemanticCondition>
                         ))}
                     </ul>
                 </div>
@@ -274,6 +356,47 @@ export function AiSemanticReview({
                     </ul>
                 </div>
             )}
+            {canEditPriority && Boolean(plan.modalityEditableIntentIds?.length) && (
+                <p className="text-[13px] break-keep text-[#475467]">
+                    {copy('반영 방식 변경은 이번 실행에만 적용돼요.', 'Priority changes apply to this run only.')}
+                </p>
+            )}
+            {priorityDirty && current && (
+                <div className="space-y-2">
+                    <p role="status" className="text-[13px]">
+                        {copy(
+                            '반영 방식을 바꿨어요. 변경한 조건을 확인한 뒤 실행해 주세요.',
+                            'Priority changed. Save and review the updated conditions before running.',
+                        )}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            className={primary}
+                            disabled={disabled || stale || savingPriority}
+                            onClick={() => void savePriorities()}
+                        >
+                            {copy('변경한 조건 확인하기', 'Review priority changes')}
+                        </button>
+                        <button
+                            type="button"
+                            className={secondary}
+                            disabled={disabled || savingPriority}
+                            onClick={() => {
+                                setPriorityEdits({hash: plan.planHash, values: {}});
+                                setPriorityError(false);
+                            }}
+                        >
+                            {copy('변경 취소', 'Cancel changes')}
+                        </button>
+                    </div>
+                    {priorityError && (
+                        <p role="alert">
+                            {copy('변경 내용을 저장하지 못했어요. 다시 시도해 주세요.', 'Could not save changes. Please try again.')}
+                        </p>
+                    )}
+                </div>
+            )}
             {plan.selectionAudit && (
                 <details className="group min-w-0">
                     <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-[13px] font-medium text-[#475467] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none">
@@ -340,7 +463,13 @@ export function AiSemanticReview({
                             <button
                                 type="button"
                                 className={primary}
-                                disabled={disabled || stale || (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)}
+                                disabled={
+                                    disabled ||
+                                    stale ||
+                                    priorityDirty ||
+                                    savingPriority ||
+                                    (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)
+                                }
                                 onClick={onApply}
                             >
                                 {copy('이대로 수정하기', 'Adjust with these conditions')}
@@ -364,7 +493,7 @@ export function AiSemanticReview({
                         <button
                             type="button"
                             className={ready || retry || canSelect || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
-                            disabled={disabled}
+                            disabled={disabled || savingPriority}
                             onClick={onEdit}
                         >
                             {copy('요청 수정하기', 'Edit request')}

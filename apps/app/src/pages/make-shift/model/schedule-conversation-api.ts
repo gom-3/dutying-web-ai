@@ -54,6 +54,7 @@ export type TSemanticPlan = {
     state: string;
     summary: string;
     confirmationAllowed: boolean;
+    modalityEditableIntentIds?: string[] | null;
     reasonCodes: string[];
     conditions: {
         intentId: string;
@@ -178,6 +179,18 @@ export function conversationApi(wardId: number, teamId: number) {
                 expectedRevision,
                 planHash,
                 selectedConditionIds,
+            }),
+        changeModalities: (
+            id: number,
+            interpretationId: string,
+            expectedRevision: number,
+            planHash: string,
+            modalityOverrides: Record<string, 'HARD' | 'SOFT'>,
+        ) =>
+            put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+                modalityOverrides,
             }),
         confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
