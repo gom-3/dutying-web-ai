@@ -6,6 +6,7 @@ import SubscriptionInfoPage from './index';
 
 const offer = {
     plan: 'PLUS',
+    currency: 'KRW',
     baseGross: 19900,
     includedStaff: 50,
     extraStaffGross: 990,
@@ -46,6 +47,41 @@ describe('public Plus review pages', () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: false}));
         page();
         expect(await screen.findByText('현재 요금 정보를 불러올 수 없습니다.')).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '로그인하고 Plus 신청'})).not.toBeInTheDocument();
+    });
+    it('keeps the page and seller information visible while the commercial feature is disabled', async () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    ready: false,
+                    code: 'COMMERCIAL_NOT_ENABLED',
+                    message: '요금제 기능을 준비하고 있습니다.',
+                }),
+            }),
+        );
+        page();
+        expect(await screen.findByText('요금제 기능을 준비하고 있습니다.')).toBeInTheDocument();
+        expect(screen.getByText('사업자등록번호: 818-09-01330')).toBeInTheDocument();
+        expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '로그인하고 Plus 신청'})).not.toBeInTheDocument();
+    });
+    it.each([{}, null, {...offer, baseGross: undefined}, {...offer, baseGross: '19900'}, {...offer, currency: 'USD'}])(
+        'does not display a price or enable checkout for an invalid successful response: %j',
+        async (body) => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: true, json: async () => body}));
+            page();
+            expect(await screen.findByText('현재 요금 정보를 불러올 수 없습니다.')).toBeInTheDocument();
+            expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+            expect(screen.queryByRole('link', {name: '로그인하고 Plus 신청'})).not.toBeInTheDocument();
+        },
+    );
+    it('shows a valid unpublished offer without opening checkout', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: true, json: async () => ({...offer, ready: false})}));
+        page();
+        expect(await screen.findByText('월 19,900원')).toBeInTheDocument();
+        expect(screen.getByText('온라인 구독 신청을 준비하고 있습니다.')).toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '로그인하고 Plus 신청'})).not.toBeInTheDocument();
     });
     it('publishes the approved refund terms and seller identity without requiring login', () => {
