@@ -230,62 +230,62 @@ export function AiSemanticReview({
                                 rosterNurseIds={rosterNurseIds}
                                 copy={copy}
                             >
-                            {canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId) ? (
-                                <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
-                                    <legend className="text-[13px] font-medium">{copy('반영 방식', 'Priority')}</legend>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(['SOFT', 'HARD'] as const).map((value) => (
-                                            <label
-                                                key={value}
-                                                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    className="accent-main-1"
-                                                    name={`priority-${plan.planId}-${condition.intentId}`}
-                                                    value={value}
-                                                    checked={(overrides[condition.intentId] ?? condition.modality) === value}
-                                                    onChange={() => {
-                                                        const values = {...overrides};
+                                {canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId) ? (
+                                    <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
+                                        <legend className="text-[13px] font-medium">{copy('반영 방식', 'Priority')}</legend>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(['SOFT', 'HARD'] as const).map((value) => (
+                                                <label
+                                                    key={value}
+                                                    className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        className="accent-main-1"
+                                                        name={`priority-${plan.planId}-${condition.intentId}`}
+                                                        value={value}
+                                                        checked={(overrides[condition.intentId] ?? condition.modality) === value}
+                                                        onChange={() => {
+                                                            const values = {...overrides};
 
-                                                        if (value === condition.modality) delete values[condition.intentId];
-                                                        else values[condition.intentId] = value;
+                                                            if (value === condition.modality) delete values[condition.intentId];
+                                                            else values[condition.intentId] = value;
 
-                                                        setPriorityEdits({hash: plan.planHash, values});
-                                                        setPriorityError(false);
-                                                    }}
-                                                />
-                                                {copy(value === 'HARD' ? '필수' : '권장', value === 'HARD' ? 'Required' : 'Preferred')}
-                                            </label>
-                                        ))}
-                                    </div>
+                                                            setPriorityEdits({hash: plan.planHash, values});
+                                                            setPriorityError(false);
+                                                        }}
+                                                    />
+                                                    {copy(value === 'HARD' ? '필수' : '권장', value === 'HARD' ? 'Required' : 'Preferred')}
+                                                </label>
+                                            ))}
+                                        </div>
+                                        <p className="text-[13px] break-keep text-[#475467]">
+                                            {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
+                                                ? copy(
+                                                      '충족하지 못한 결과는 적용하지 않아요.',
+                                                      'A result that misses this condition cannot be applied.',
+                                                  )
+                                                : copy(
+                                                      '가능한 만큼 맞추며, 다른 조건 때문에 충족하지 못할 수 있어요.',
+                                                      'We try to meet this preference; other conditions may prevent it.',
+                                                  )}
+                                        </p>
+                                    </fieldset>
+                                ) : (
                                     <p className="text-[13px] break-keep text-[#475467]">
-                                        {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
-                                            ? copy(
-                                                  '충족하지 못한 결과는 적용하지 않아요.',
-                                                  'A result that misses this condition cannot be applied.',
-                                              )
-                                            : copy(
-                                                  '가능한 만큼 맞추며, 다른 조건 때문에 충족하지 못할 수 있어요.',
-                                                  'We try to meet this preference; other conditions may prevent it.',
-                                              )}
+                                        {condition.modality === 'HARD' ? copy('필수', 'Required') : copy('권장', 'Preferred')}
+                                        {current && ready && condition.action !== 'COUNT' && (
+                                            <>
+                                                {' '}
+                                                ·{' '}
+                                                {copy(
+                                                    '지정·금지한 배정은 필수로 적용해요.',
+                                                    'Explicit assignments and exclusions are required.',
+                                                )}
+                                            </>
+                                        )}
                                     </p>
-                                </fieldset>
-                            ) : (
-                                <p className="text-[13px] break-keep text-[#475467]">
-                                    {condition.modality === 'HARD' ? copy('필수', 'Required') : copy('권장', 'Preferred')}
-                                    {current && ready && condition.action !== 'COUNT' && (
-                                        <>
-                                            {' '}
-                                            ·{' '}
-                                            {copy(
-                                                '지정·금지한 배정은 필수로 적용해요.',
-                                                'Explicit assignments and exclusions are required.',
-                                            )}
-                                        </>
-                                    )}
-                                </p>
-                            )}
+                                )}
                             </AiSemanticCondition>
                         ))}
                     </ul>
