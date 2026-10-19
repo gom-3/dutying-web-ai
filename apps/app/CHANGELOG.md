@@ -1,5 +1,13 @@
 # @dutying/app
 
+## 1.3.7
+
+### Patch Changes
+
+- 자연어 조절의 필수·권장 선택과 검증된 카탈로그 설명을 지원하고, 미저장 변경과 설명이 없는 조건의 실행을 막습니다.
+- 공개 Plus 요금 응답 검증과 준비 상태 안내를 보완합니다.
+- Updated workspace dependencies to 1.3.7.
+
 ## 1.3.6
 
 ### Patch Changes
