@@ -17,7 +17,7 @@ export type TMakeShiftStepConfig = {
     labelKey: TI18nKey;
     captionKey: TI18nKey;
     layout: 'narrow' | 'wide';
-    Component: ComponentType;
+    Component: ComponentType | ComponentType<{onOpenConstraints?: () => void}>;
     intro?: TMakeShiftStepIntro;
 };
 

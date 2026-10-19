@@ -332,7 +332,7 @@ function resolveSnapshotDisplayTitle(params: {
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
-export function AiAutofill() {
+export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void} = {}) {
     const [batchKey, setBatchKey] = useState(() => new URLSearchParams(window.location.search).get('commercialBatch'));
     const [loadingBatch, setLoadingBatch] = useState(false);
     const batchCopy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
@@ -387,6 +387,7 @@ export function AiAutofill() {
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [isAiLoadingOverlayFinishing, setIsAiLoadingOverlayFinishing] = useState(false);
     const [aiStartedAt, setAiStartedAt] = useState<number | null>(null);
+    const conversationBusyRef = useRef(false);
     const [isAiEffectVisible, setIsAiEffectVisible] = useState(false);
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
@@ -398,6 +399,7 @@ export function AiAutofill() {
         writeAutofillCompletion(completionStorageKey, true);
     }, [completionStorageKey]);
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
+    const generationNoticeContext = useRef<string | null>(null);
     const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
     const [generationReviewMessage, setGenerationReviewMessage] = useState<string | null>(null);
     const generationNoticeShownRef = useRef(false);
@@ -660,6 +662,22 @@ export function AiAutofill() {
     const handleAiLoadingOverlayFinish = useCallback(() => {
         setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
+    }, []);
+    const handleConversationBusyChange = useCallback((busy: boolean, succeeded = false) => {
+        if (conversationBusyRef.current === busy) return;
+
+        conversationBusyRef.current = busy;
+        setIsAiGenerating(busy);
+
+        if (busy) {
+            setAiStartedAt(Date.now());
+            setIsAiLoadingOverlayFinishing(false);
+            setIsAdjustDialogOpen(true);
+        } else {
+            setIsAiLoadingOverlayFinishing(succeeded);
+
+            if (!succeeded) setAiStartedAt(null);
+        }
     }, []);
 
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
@@ -1551,6 +1569,7 @@ export function AiAutofill() {
                 setGenerationReviewMessage(review ? result.response.unmetInstructions[0] || t('aiAdjust.reviewDraft.completed') : null);
 
                 if (review) {
+                    generationNoticeContext.current = currentContextKey;
                     setHasGenerationNotice(true);
                     setIsAdjustDialogOpen(true);
                     setShowFaults(true);
@@ -1594,6 +1613,7 @@ export function AiAutofill() {
 
                     if (isAdjustEnabled && !generationNoticeShownRef.current) {
                         generationNoticeShownRef.current = true;
+                        generationNoticeContext.current = currentContextKey;
                         setHasGenerationNotice(true);
                         setIsAdjustDialogOpen(true);
                     }
@@ -2304,8 +2324,8 @@ export function AiAutofill() {
 
         const previousWarningKey = getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc);
         const needsPreviousReview =
-            autofillFlow.resumeStep === 'previous' ||
-            (previousWarningKey !== null && previousWarningKey !== autofillFlow.previousWarningKey);
+            previousWarningKey !== null &&
+            (autofillFlow.resumeStep === 'previous' || previousWarningKey !== autofillFlow.previousWarningKey);
 
         setAutofillFlow((flow) => (flow ? {...flow, status: 'preparing', resumeStep: undefined} : flow));
         setIsSnapshotSidebarOpen(false);
@@ -2314,7 +2334,9 @@ export function AiAutofill() {
 
         if (autofillFlow.resumeStep === 'carryOver') setIsReviewingCarryOver(true);
         else if (needsPreviousReview) showPreviousPreparation();
-        // Reopening the sheet is never permission to start a generation by itself.
+        // Pressing autofill after completing previous-month entry continues to the next step.
+        else if (autofillFlow.resumeStep === 'previous') showFixedPreparation();
+        // Other paused steps still require confirmation before generating.
         else showFixedPreparation(false);
 
         return true;
@@ -2638,6 +2660,8 @@ export function AiAutofill() {
         isAdjustDialogOpen &&
         (conversationEnabled ||
             isAdjustEnabled ||
+            isAiGenerating ||
+            isAiLoadingOverlayFinishing ||
             Boolean(preparationStep) ||
             Boolean(generationFailure) ||
             generationReviewMessage !== null ||
@@ -2858,7 +2882,9 @@ export function AiAutofill() {
                 <AiConversationSidebar
                     key={`conversation:${wardId}:${currentShiftTeamId}:${year}:${month}`}
                     open={isConversationOpen}
+                    loading={isAiGenerating || isAiLoadingOverlayFinishing}
                     onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
+                    onOpenConstraints={onOpenConstraints ?? (() => useCase.goToStep(2))}
                     wardId={wardId}
                     teamId={currentShiftTeamId}
                     year={year}
@@ -2876,7 +2902,7 @@ export function AiAutofill() {
                     spotlightSelector={preparationSpotlight}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onGenerated={rememberGeneratedSchedule}
-                    onBusyChange={setIsAiGenerating}
+                    onBusyChange={handleConversationBusyChange}
                     resultActions={scheduleActions}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
@@ -2889,7 +2915,13 @@ export function AiAutofill() {
                 <AiAdjustDialog
                     key={`${wardId}:${currentShiftTeamId}:${year}:${month}`}
                     open={isConversationOpen}
+                    loading={isAiGenerating || isAiLoadingOverlayFinishing}
                     onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
+                    onOpenConstraints={onOpenConstraints ?? (() => useCase.goToStep(2))}
+                    wardId={wardId ?? undefined}
+                    teamId={currentShiftTeamId ?? undefined}
+                    year={year}
+                    month={month}
                     preparation={preparation}
                     autofillFlow={autofillContext.current === currentContextKey ? autofillFlow : null}
                     onNewConversation={resetAutofillConversation}
@@ -2898,12 +2930,15 @@ export function AiAutofill() {
                     onRegenerate={handleRequestRegenerate}
                     onGenerate={handleAiFill}
                     hasGeneratedSchedule={hasGeneratedSchedule}
-                    generationCompleted={hasGenerationNotice}
+                    generationCompleted={hasGenerationNotice && generationNoticeContext.current === currentContextKey}
                     generationCompletedMessage={generationReviewMessage ?? undefined}
+                    generationReviewRequired={generationReviewMessage !== null}
+                    snapshotShift={orderedShift}
                     generationObservation={lastAppliedObservation}
                     generationFailure={generationFailure}
                     onDismissFailure={() => setGenerationFailure(null)}
                     disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
+                    conditionsDisabled={isAiGenerating || isCarryingOver || disablingRequestId !== null}
                     modifyDisabled={!isAdjustEnabled}
                     textInputRef={adjustTextInputRef}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}

@@ -3,13 +3,14 @@ import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent} from '@/shared/util/test-utils';
 import {useAiAutofillExitGuardStore} from '../../model/ai-autofill-exit-guard';
 import {useSchedulePublishSuccessStore} from '../../model/schedule-publish-success-store';
 import {MakeShiftPageView} from '../index';
 
 const queryMockState = vi.hoisted(() => ({
     pendingMutations: 0,
+    openConstraints: undefined as (() => void) | undefined,
 }));
 
 type TMockMakeShiftState = {
@@ -58,9 +59,12 @@ vi.mock('../../model/make-shift-use-case', () => ({
 }));
 
 vi.mock('../../model/make-shift-store', () => ({
+    MAKE_SHIFT_AUTHORING_STEP: 4,
     canGoNext: vi.fn(() => true),
     canGoPrev: vi.fn(() => false),
-    useMakeShiftStore: (selector: (state: TMockMakeShiftState) => unknown) => selector(makeShiftState),
+    useMakeShiftStore: Object.assign((selector: (state: TMockMakeShiftState) => unknown) => selector(makeShiftState), {
+        getState: () => makeShiftState,
+    }),
 }));
 
 vi.mock('../make-shift-header', () => ({
@@ -82,7 +86,17 @@ vi.mock('../make-shift-stepper', () => ({
 }));
 
 vi.mock('../make-shift-step-content', () => ({
-    MakeShiftStepContent: () => <div data-testid="make-shift-step-content" />,
+    MakeShiftStepContent: ({onOpenConstraints}: {onOpenConstraints?: () => void}) => {
+        queryMockState.openConstraints = onOpenConstraints;
+
+        return (
+            <div data-testid="make-shift-step-content">
+                <button type="button" onClick={onOpenConstraints}>
+                    제약조건 탭으로 이동
+                </button>
+            </div>
+        );
+    },
 }));
 
 function LocationProbe() {
@@ -118,6 +132,7 @@ describe('MakeShiftPageView layout', () => {
         mockUseCase.prev.mockClear();
         mockUseCase.next.mockClear();
         queryMockState.pendingMutations = 0;
+        queryMockState.openConstraints = undefined;
         useEditNurseStore.getState().reset();
         useAiAutofillExitGuardStore.getState().resetExitGuard();
         useSchedulePublishSuccessStore.getState().close();
@@ -274,6 +289,62 @@ describe('MakeShiftPageView layout', () => {
         renderMakeShiftPageView();
 
         expect(screen.getByTestId('make-shift-stepper')).toBeDisabled();
+    });
+
+    it('opens constraints from the chat through the normal workflow navigation', async () => {
+        makeShiftState = {...makeShiftState, currentStep: 4, maxReachedStep: 4};
+        renderMakeShiftPageView();
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 탭으로 이동'}));
+        expect(mockUseCase.goToStep).toHaveBeenCalledExactlyOnceWith(2);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('keeps unsaved chat work protected when opening constraints', async () => {
+        makeShiftState = {...makeShiftState, currentStep: 4, maxReachedStep: 4};
+        useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: true, isAiGenerating: false});
+        renderMakeShiftPageView();
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 탭으로 이동'}));
+        expect(screen.getByRole('dialog')).toHaveTextContent('page.makeShift.aiRefill.exitGuard.unsavedTitle');
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.stayCancel'}));
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 탭으로 이동'}));
+        await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.leaveConfirm'}));
+        expect(mockUseCase.goToStep).toHaveBeenCalledExactlyOnceWith(2);
+    });
+
+    it('checks live navigation and exit state when an older chat shortcut is invoked', async () => {
+        makeShiftState = {...makeShiftState, currentStep: 4, maxReachedStep: 4};
+        renderMakeShiftPageView();
+
+        const openConstraints = queryMockState.openConstraints;
+
+        makeShiftState = {...makeShiftState, stepNavigationBusy: {4: true}};
+        act(() => openConstraints?.());
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        makeShiftState = {...makeShiftState, stepNavigationBusy: {}};
+        act(() => {
+            useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: true, isAiGenerating: false});
+            openConstraints?.();
+        });
+        expect(screen.getByRole('dialog')).toHaveTextContent('page.makeShift.aiRefill.exitGuard.unsavedTitle');
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+        makeShiftState = {...makeShiftState, stepNavigationBusy: {4: true}};
+        await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.leaveConfirm'}));
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+    });
+
+    it('ignores an old constraints shortcut after the schedule context changes', () => {
+        makeShiftState = {...makeShiftState, currentStep: 4, maxReachedStep: 4};
+        renderMakeShiftPageView();
+
+        const openConstraints = queryMockState.openConstraints;
+
+        makeShiftState = {...makeShiftState, month: makeShiftState.month + 1};
+        act(() => openConstraints?.());
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('blocks leaving step 5 through the stepper when editable changes are unsaved', async () => {

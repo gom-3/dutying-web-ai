@@ -1,3 +1,4 @@
+import type {TScheduleAdjustInterpretRes} from '@dutying/api/ward';
 import {createRef} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
@@ -10,7 +11,8 @@ describe('unified AI sidebar entry', () => {
         const user = userEvent.setup();
         const onGenerate = vi.fn();
         const onRegenerate = vi.fn();
-        const interpret = vi.fn(() => new Promise<any>(() => {}));
+        const interpret = vi.fn(() => new Promise<TScheduleAdjustInterpretRes>(() => {}));
+
         render(
             <AiAdjustDialog
                 open
@@ -29,7 +31,9 @@ describe('unified AI sidebar entry', () => {
                 onDisableRequest={vi.fn()}
             />,
         );
+
         const restart = screen.getByRole('button', {name: 'aiAdjust.chat.restart'});
+
         expect(restart.closest('header')).not.toBeNull();
         expect(restart.nextElementSibling).toBe(screen.getByRole('button', {name: 'aiAdjust.close'}));
         expect(onGenerate).not.toHaveBeenCalled();
@@ -37,7 +41,9 @@ describe('unified AI sidebar entry', () => {
 
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
+
         const generate = screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'});
+
         await user.click(generate);
         expect(hasGeneratedSchedule ? onRegenerate : onGenerate).toHaveBeenCalledOnce();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -52,14 +58,14 @@ describe('unified AI sidebar entry', () => {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
         expect(interpret).toHaveBeenCalledOnce();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
-        expect(screen.getByRole('status', {name: 'aiAdjust.reviewing'}).textContent).toBe('');
+        expect(screen.getByRole('status')).toHaveTextContent('aiAdjust.reviewing');
         expect(screen.getByRole('status').querySelectorAll('.ai-adjust-review-dot')).toHaveLength(3);
-        expect(screen.queryByText('aiAdjust.reviewing')).not.toBeInTheDocument();
+        expect(screen.getByText('aiAdjust.reviewing')).toBeVisible();
         expect(screen.queryByText(/aiAdjust.elapsed/)).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.restart'})).toBeEnabled();
         expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.restart'})).toHaveLength(1);
         await user.click(restart);
-        expect(screen.queryByRole('status', {name: 'aiAdjust.reviewing'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
     });
 });

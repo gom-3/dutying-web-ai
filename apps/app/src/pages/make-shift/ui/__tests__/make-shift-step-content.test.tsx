@@ -1,6 +1,6 @@
 import {MemoryRouter} from 'react-router-dom';
 import {describe, expect, it, vi} from 'vitest';
-import {act, render, screen} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent} from '@/shared/util/test-utils';
 import {MakeShiftStepContent} from '../make-shift-step-content';
 
 const stepLoad = vi.hoisted(() => ({complete: undefined as (() => void) | undefined}));
@@ -49,6 +49,16 @@ vi.mock('../make-shift-step-config', async () => {
                 captionKey: 'requestsCaption',
                 layout: 'wide',
                 Component: () => <div data-testid="wide-step" />,
+            },
+            4: {
+                labelKey: 'autofill',
+                captionKey: 'autofillCaption',
+                layout: 'wide',
+                Component: ({onOpenConstraints}: {onOpenConstraints?: () => void}) => (
+                    <button type="button" onClick={onOpenConstraints}>
+                        제약조건 탭으로 이동
+                    </button>
+                ),
             },
         },
     };
@@ -109,5 +119,24 @@ describe('MakeShiftStepContent layout', () => {
         );
 
         expect(screen.getByRole('button', {name: /page\.makeShift\.navigation\.saving/})).toBeDisabled();
+    });
+
+    it('relays the guarded constraints shortcut to the autofill step', async () => {
+        const onOpenConstraints = vi.fn();
+
+        render(
+            <MemoryRouter>
+                <MakeShiftStepContent
+                    currentStep={4}
+                    canPrev
+                    canNext
+                    onPrev={vi.fn()}
+                    onNext={vi.fn()}
+                    onOpenConstraints={onOpenConstraints}
+                />
+            </MemoryRouter>,
+        );
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 탭으로 이동'}));
+        expect(onOpenConstraints).toHaveBeenCalledOnce();
     });
 });

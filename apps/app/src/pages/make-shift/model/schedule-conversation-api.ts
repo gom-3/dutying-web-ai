@@ -48,15 +48,19 @@ export type TSemanticPlan = {
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
     planId: string;
+    refreshedFromPlanId?: string | null;
     planHash: string;
     sourceVersionId: string;
     state: string;
     summary: string;
     confirmationAllowed: boolean;
+    modalityEditableIntentIds?: string[] | null;
     reasonCodes: string[];
     conditions: {
         intentId: string;
-        action: 'ASSIGN' | 'FORBID' | 'COUNT';
+        action: 'ASSIGN' | 'FORBID' | 'COUNT' | 'MAX_CONSECUTIVE_WORK' | 'CATALOG_RULE';
+        rule?: {templateCode: string; params: Record<string, unknown>} | null;
+        displayText?: string | null;
         nurseIds: number[];
         dates: string[];
         shiftCodes: string[];
@@ -178,8 +182,25 @@ export function conversationApi(wardId: number, teamId: number) {
                 planHash,
                 selectedConditionIds,
             }),
+        changeModalities: (
+            id: number,
+            interpretationId: string,
+            expectedRevision: number,
+            planHash: string,
+            modalityOverrides: Record<string, 'HARD' | 'SOFT'>,
+        ) =>
+            put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+                modalityOverrides,
+            }),
         confirmPlan: (id: number, interpretationId: string, expectedRevision: number, planHash: string) =>
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
+                expectedRevision,
+                planHash,
+            }),
+        refreshPlan: (id: number, planId: string, expectedRevision: number, planHash: string) =>
+            post<TConversationTurn>(`/conversations/${id}/plans/${encodeURIComponent(planId)}/refresh`, {
                 expectedRevision,
                 planHash,
             }),

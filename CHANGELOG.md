@@ -6,6 +6,15 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.7 - 2026-10-20
+
+- `@dutying/app` (patch): 자연어 조절 조건의 필수·권장 선택을 복구하고, 카탈로그 규칙과 연속 근무일을 정확히 표시합니다. 저장하지 않은 조건 변경이나 설명이 없는 규칙은 실행을 막습니다.
+- `@dutying/app` (patch): 공개 Plus 요금 응답의 금액·통화 검증과 요금제 준비 상태 안내를 운영 버전에 반영합니다.
+
+## 1.3.6 - 2026-10-19
+
+- `@dutying/app` (patch): 자동채우기 대화와 진행·결과 화면을 정리하고, 제약조건 편집과 결과 의견 작성을 모달로 제공합니다. 이전 결과의 미리보기와 변경 비교, 조건 삭제 및 실행 준비 이후 계획 갱신을 안전하게 연결합니다.
+
 ## 1.3.5 - 2026-10-18
 
 - `@dutying/app` (patch): Show independent plan restriction states and distinguish unrestricted AI use from exhausted allowance.

@@ -1,4 +1,5 @@
 import toast from 'react-hot-toast';
+import type * as ToastModule from 'react-hot-toast';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
@@ -29,6 +30,8 @@ const mocks = vi.hoisted(() => ({
         getSnapshots: vi.fn(),
         saveSnapshot: vi.fn(),
         publishSnapshot: vi.fn(),
+        getShiftConstraintRules: vi.fn(),
+        getScheduleMonthRequests: vi.fn(),
     },
     shift: {
         days: [],
@@ -38,8 +41,16 @@ const mocks = vi.hoisted(() => ({
     dutyDoc: null as TDutyDoc | null,
 }));
 
-vi.mock('react-hot-toast', () => ({
-    default: Object.assign(vi.fn(), {success: vi.fn(), error: vi.fn(), loading: vi.fn(), dismiss: vi.fn()}),
+vi.mock('react-hot-toast', async (importOriginal) => ({
+    ...(await importOriginal<typeof ToastModule>()),
+    default: Object.assign(vi.fn(), {
+        success: vi.fn(),
+        error: vi.fn(),
+        loading: vi.fn(),
+        dismiss: vi.fn(),
+        remove: vi.fn(),
+        custom: vi.fn(),
+    }),
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
@@ -295,6 +306,8 @@ describe('AiAutofill blank preview', () => {
         mocks.wardApi.getSnapshots.mockReset().mockResolvedValue({snapshots: []});
         mocks.wardApi.saveSnapshot.mockReset().mockResolvedValue({snapshotId: 101});
         mocks.wardApi.publishSnapshot.mockReset().mockResolvedValue(undefined);
+        mocks.wardApi.getShiftConstraintRules.mockReset().mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, rules: []});
+        mocks.wardApi.getScheduleMonthRequests.mockReset().mockResolvedValue({year: 2026, month: 7, requests: []});
         useSchedulePublishSuccessStore.getState().close();
         seedEditor();
     });

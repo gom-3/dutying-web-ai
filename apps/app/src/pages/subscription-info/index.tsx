@@ -6,7 +6,8 @@ import {SellerDetails, sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/b
 import './subscription-info.css';
 
 export type PublicOffer = {
-    plan: string;
+    plan: 'PLUS';
+    currency: 'KRW';
     baseGross: number;
     includedStaff: number;
     extraStaffGross: number;
@@ -18,10 +19,34 @@ export type PublicOffer = {
     priceVersion: string;
     ready: boolean;
 };
-export const fetchPublicOffer = async (): Promise<PublicOffer> => {
+type UnavailableOffer = {ready: false; code: 'COMMERCIAL_NOT_ENABLED'};
+const invalidOfferMessage = '요금 정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.';
+function isPublicOffer(value: Record<string, unknown>): value is PublicOffer {
+    const positive = ['baseGross', 'includedStaff', 'adminSeats', 'maxChargeGross'];
+    const nonnegative = ['extraStaffGross', 'generate', 'adjust'];
+    return (
+        value.plan === 'PLUS' &&
+        value.currency === 'KRW' &&
+        typeof value.ready === 'boolean' &&
+        positive.every((key) => Number.isSafeInteger(value[key]) && (value[key] as number) > 0) &&
+        nonnegative.every((key) => Number.isSafeInteger(value[key]) && (value[key] as number) >= 0) &&
+        typeof value.termsVersion === 'string' &&
+        value.termsVersion.length > 0 &&
+        typeof value.priceVersion === 'string' &&
+        value.priceVersion.length > 0
+    );
+}
+export const fetchPublicOffer = async (): Promise<PublicOffer | UnavailableOffer> => {
     const response = await fetch(`${RUNTIME_CONFIG.serverUrl().replace(/\/$/, '')}/commercial/offer`, {credentials: 'omit'});
-    if (!response.ok) throw new Error('요금 정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.');
-    return response.json();
+    if (!response.ok) throw new Error(invalidOfferMessage);
+    const body: unknown = await response.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error(invalidOfferMessage);
+    const value = body as Record<string, unknown>;
+    if (value.code === 'COMMERCIAL_NOT_ENABLED' && value.ready === false) {
+        return {ready: false, code: 'COMMERCIAL_NOT_ENABLED'};
+    }
+    if (!isPublicOffer(value)) throw new Error(invalidOfferMessage);
+    return value;
 };
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 export function SubscriptionConditions() {
@@ -99,7 +124,8 @@ export default function SubscriptionInfoPage() {
     const terms = pathname === '/subscription-terms';
     const offer = useQuery({queryKey: ['public-plus-offer'], queryFn: fetchPublicOffer, retry: false});
     const [capacity, setCapacity] = useState(50);
-    const p = offer.data;
+    const preparing = offer.data && 'code' in offer.data;
+    const p = offer.data && 'plan' in offer.data ? offer.data : undefined;
     const total = p ? p.baseGross + Math.max(0, capacity - p.includedStaff) * p.extraStaffGross : 0;
     const canStart =
         p?.ready &&
@@ -130,6 +156,8 @@ export default function SubscriptionInfoPage() {
                         </p>
                         {offer.isPending ? (
                             <p role="status">요금 정보를 불러오고 있습니다.</p>
+                        ) : preparing ? (
+                            <p role="status">요금제 기능을 준비하고 있습니다.</p>
                         ) : offer.isError || !p ? (
                             <div role="alert">
                                 <p>현재 요금 정보를 불러올 수 없습니다.</p>

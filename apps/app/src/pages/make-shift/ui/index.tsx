@@ -13,7 +13,7 @@ import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {getAiAutofillExitGuardReason, type TAiAutofillExitGuardReason, useAiAutofillExitGuardStore} from '../model/ai-autofill-exit-guard';
-import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
+import {canGoNext, canGoPrev, MAKE_SHIFT_AUTHORING_STEP, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {useSchedulePublishSuccessStore} from '../model/schedule-publish-success-store';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
@@ -74,18 +74,38 @@ export const MakeShiftPageView = ({wardCode = ''}: TMakeShiftPageViewProps) => {
         hasUnsavedChanges: hasAiAutofillUnsavedChanges,
         isAiGenerating: isAiAutofillGenerating,
     });
-    const runWithAiAutofillExitGuard = useCallback(
-        (action: () => void) => {
-            if (!aiAutofillExitGuardReason) {
-                action();
+    const runWithAiAutofillExitGuard = useCallback((action: () => void) => {
+        const reason = getAiAutofillExitGuardReason(useAiAutofillExitGuardStore.getState());
 
-                return;
-            }
+        if (!reason) {
+            action();
 
-            setPendingAiAutofillExit({action, reason: aiAutofillExitGuardReason});
-        },
-        [aiAutofillExitGuardReason],
-    );
+            return;
+        }
+
+        setPendingAiAutofillExit({action, reason});
+    }, []);
+    const openConstraints = useCallback(() => {
+        const canLeaveAuthoring = () => {
+            const state = useMakeShiftStore.getState();
+
+            return (
+                state.phase === 'stepping' &&
+                state.currentStep === MAKE_SHIFT_AUTHORING_STEP &&
+                state.wardId === wardId &&
+                state.currentShiftTeamId === currentShiftTeamId &&
+                state.year === year &&
+                state.month === month &&
+                !state.stepNavigationBusy[state.currentStep]
+            );
+        };
+
+        if (!canLeaveAuthoring()) return;
+
+        runWithAiAutofillExitGuard(() => {
+            if (canLeaveAuthoring()) useCase.goToStep(2);
+        });
+    }, [wardId, currentShiftTeamId, year, month, runWithAiAutofillExitGuard, useCase.goToStep]);
     const closeAiAutofillExitDialog = useCallback(() => {
         setPendingAiAutofillExit(null);
     }, []);
@@ -257,6 +277,7 @@ export const MakeShiftPageView = ({wardCode = ''}: TMakeShiftPageViewProps) => {
                                     nextBusy={isCurrentStepNavigationBusy}
                                     onPrev={() => runWithAiAutofillExitGuard(useCase.prev)}
                                     onNext={() => runWithAiAutofillExitGuard(useCase.next)}
+                                    onOpenConstraints={openConstraints}
                                 />
                             </div>
                         </>

@@ -1,5 +1,4 @@
 import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
-
 import i18n from '@/i18n';
 
 type TProps = {
@@ -13,7 +12,6 @@ type TProps = {
 export function AiChatScroll({children, open = true, composerHidden, className, contentClassName = ''}: TProps) {
     const viewport = useRef<HTMLDivElement>(null);
     const content = useRef<HTMLDivElement>(null);
-
     const following = useRef(true);
     const [showLatest, setShowLatest] = useState(false);
 
@@ -27,11 +25,13 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
 
         const followLatestMessage = () => {
             if (!following.current) return;
+
             if (frame !== undefined) cancelAnimationFrame(frame);
 
             // Measure after messages and the composer have finished changing the layout.
             frame = requestAnimationFrame(() => {
                 frame = undefined;
+
                 if (following.current) element.scrollTo?.({top: element.scrollHeight, behavior: 'instant'});
             });
         };
@@ -52,31 +52,40 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
     }, [open]);
 
     return (
-        <div
-            ref={viewport}
-            data-composer-hidden={composerHidden}
-            className={`ai-adjust-chat-scroll ${className}`}
-            onScroll={(event) => {
-                const element = event.currentTarget;
-                following.current = element.scrollHeight - element.scrollTop - element.clientHeight < 64;
-                setShowLatest(!following.current);
-            }}
-        >
-            <div ref={content} className={`flow-root min-w-0 ${contentClassName}`}>
-                {children}
+        <div className="ai-chat-scroll-frame relative flex min-h-0 min-w-0 flex-1 flex-col">
+            <div
+                ref={viewport}
+                tabIndex={-1}
+                data-composer-hidden={composerHidden}
+                className={`ai-adjust-chat-scroll focus-visible:bg-[#FAF9FF] focus-visible:text-[#333D4B] focus-visible:outline-none ${className}`}
+                onScroll={(event) => {
+                    const element = event.currentTarget;
+
+                    following.current = element.scrollHeight - element.scrollTop - element.clientHeight < 64;
+                    setShowLatest(!following.current);
+                }}
+            >
+                <div ref={content} className={`flow-root min-w-0 ${contentClassName}`}>
+                    {children}
+                </div>
             </div>
-            {showLatest && (
-                <div className="pointer-events-none sticky bottom-2 flex justify-center">
+            {open && showLatest && (
+                <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
                     <button
                         type="button"
-                        className="pointer-events-auto rounded-full border border-gray-6 bg-white px-4 py-2 text-sm shadow-sm focus-visible:outline-2 focus-visible:outline-main-1"
+                        aria-label={i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
+                        title={i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
+                        className="pointer-events-auto grid size-[44px] shrink-0 place-items-center rounded-full bg-[#F0EBFF] text-[#5931B9] transition-colors hover:bg-[#E6DEFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none motion-reduce:transition-none"
                         onClick={() => {
                             following.current = true;
                             setShowLatest(false);
+                            viewport.current?.focus({preventScroll: true});
                             viewport.current?.scrollTo({top: viewport.current.scrollHeight, behavior: 'instant'});
                         }}
                     >
-                        {i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
+                        <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-[20px]">
+                            <path d="M9 3h2v10.2l3.6-3.6L16 11l-6 6-6-6 1.4-1.4L9 13.2z" />
+                        </svg>
                     </button>
                 </div>
             )}
