@@ -28,25 +28,63 @@ function answerDefaultQuestions() {
             screen.queryByRole('button', {name: 'aiAdjust.chat.confirmProposal'}) ??
             screen.queryByRole('button', {name: 'aiAdjust.savedRequests.lifetime.MONTH'}) ??
             screen.queryByRole('button', {name: 'aiAdjust.chat.preferred'});
+
         if (!button) break;
+
         fireEvent.click(button);
     }
 }
+
 async function submit(text: string, answer = true) {
     fireEvent.change(textbox(), {target: {value: text}});
     fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
-    await waitFor(() => expect(screen.queryByRole('status', {name: 'aiAdjust.reviewing'})).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('aiAdjust.reviewing')).not.toBeInTheDocument());
+
     if (answer) answerDefaultQuestions();
 }
 
 describe('AI adjustment conversation', () => {
+    it('retires an earlier proposal after a saved condition is removed without applying it', async () => {
+        const interpret = vi.fn().mockResolvedValue(interpreted);
+        const apply = vi.fn();
+        const {rerender} = render(
+            <AiAdjustTextInput disabled={false} conditionsVersion={0} interpret={interpret} onApply={apply} goalNurses={nurses} />,
+        );
+
+        await submit('오프를 공평하게');
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
+        rerender(<AiAdjustTextInput disabled={false} conditionsVersion={1} interpret={interpret} onApply={apply} goalNurses={nurses} />);
+
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.reviseReply'})).not.toBeInTheDocument();
+        expect(screen.getByText('이전 요청 내용')).toBeVisible();
+        expect(apply).not.toHaveBeenCalled();
+        await submit('다시 오프 균형을 맞춰줘', false);
+        expect(interpret).toHaveBeenCalledTimes(2);
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'})).toBeEnabled();
+        expect(apply).not.toHaveBeenCalled();
+    });
+
     it('ignores an old interpretation after restarting while a new request is pending', async () => {
         let resolveOld!: (value: TScheduleAdjustInterpretRes) => void;
         let resolveNew!: (value: TScheduleAdjustInterpretRes) => void;
-        const interpret = vi.fn()
-            .mockImplementationOnce(() => new Promise<TScheduleAdjustInterpretRes>((resolve) => { resolveOld = resolve; }))
-            .mockImplementationOnce(() => new Promise<TScheduleAdjustInterpretRes>((resolve) => { resolveNew = resolve; }));
+
+        const interpret = vi
+            .fn()
+            .mockImplementationOnce(
+                () =>
+                    new Promise<TScheduleAdjustInterpretRes>((resolve) => {
+                        resolveOld = resolve;
+                    }),
+            )
+            .mockImplementationOnce(
+                () =>
+                    new Promise<TScheduleAdjustInterpretRes>((resolve) => {
+                        resolveNew = resolve;
+                    }),
+            );
         const apply = vi.fn();
+
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
 
         fireEvent.change(textbox(), {target: {value: '이전 요청'}});
@@ -57,7 +95,7 @@ describe('AI adjustment conversation', () => {
         await act(async () => resolveOld(interpreted));
 
         expect(screen.queryByText('이전 요청')).not.toBeInTheDocument();
-        expect(screen.getByRole('status', {name: 'aiAdjust.reviewing'})).toBeVisible();
+        expect(screen.getByText('aiAdjust.reviewing').closest('[role="status"]')).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.confirmProposal'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.send'})).toBeDisabled();
 
@@ -69,8 +107,18 @@ describe('AI adjustment conversation', () => {
 
     it('does not restore a canceled apply error or unlock a newer request after restarting', async () => {
         let rejectApply!: (reason: Error) => void;
-        const apply = vi.fn(() => new Promise<void>((_resolve, reject) => { rejectApply = reject; }));
-        const interpret = vi.fn().mockResolvedValueOnce(interpreted).mockImplementationOnce(() => new Promise(() => {}));
+
+        const apply = vi.fn(
+            () =>
+                new Promise<void>((_resolve, reject) => {
+                    rejectApply = reject;
+                }),
+        );
+        const interpret = vi
+            .fn()
+            .mockResolvedValueOnce(interpreted)
+            .mockImplementationOnce(() => new Promise(() => {}));
+
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
         await submit('오프를 공평하게');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
@@ -82,7 +130,7 @@ describe('AI adjustment conversation', () => {
 
         expect(textbox()).toHaveValue('');
         expect(screen.queryByText('old preparation')).not.toBeInTheDocument();
-        expect(screen.getByRole('status', {name: 'aiAdjust.reviewing'})).toBeVisible();
+        expect(screen.getByText('aiAdjust.reviewing').closest('[role="status"]')).toBeVisible();
         fireEvent.change(textbox(), {target: {value: '중복 요청'}});
         fireEvent.keyDown(textbox(), {key: 'Enter'});
         expect(interpret).toHaveBeenCalledTimes(2);
@@ -91,6 +139,7 @@ describe('AI adjustment conversation', () => {
     it('accepts a typed period answer without another interpretation and waits for an explicit apply reply', async () => {
         const interpret = vi.fn().mockResolvedValue(interpreted);
         const apply = vi.fn();
+
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
         await submit('오프를 공평하게', false);
         expect(textbox()).toBeEnabled();
@@ -145,6 +194,7 @@ describe('AI adjustment conversation', () => {
 
     it('reopens an earlier answer and clears later answers before allowing application', async () => {
         const apply = vi.fn();
+
         render(
             <AiAdjustTextInput
                 disabled={false}
@@ -171,6 +221,7 @@ describe('AI adjustment conversation', () => {
 
     it('collects a goal tolerance and nurse groups in sequence, then starts over without applying', async () => {
         const apply = vi.fn();
+
         render(
             <AiAdjustTextInput
                 disabled={false}
@@ -188,7 +239,9 @@ describe('AI adjustment conversation', () => {
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
         expect(screen.getByText('aiAdjust.chat.withinDays {"count":3}')).toBeVisible();
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmPeople'}));
+
         const comparison = screen.getByRole('group', {name: 'aiAdjust.chat.question.comparisonNurses'});
+
         fireEvent.click(within(comparison).getByRole('button', {name: '박지현'}));
         expect(within(comparison).getByRole('button', {name: 'aiAdjust.chat.confirmPeople'})).toBeDisabled();
         fireEvent.click(within(comparison).getByRole('button', {name: '박지현'}));
@@ -210,6 +263,7 @@ describe('AI adjustment conversation', () => {
         const {rerender} = render(
             <AiAdjustTextInput generationCompleted disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />,
         );
+
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(interpret).not.toHaveBeenCalled();
         fireEvent.change(textbox(), {target: {value: '   '}});
@@ -328,11 +382,11 @@ describe('AI adjustment conversation', () => {
         expect(apply).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
 
-        const pending = screen.getByRole('status', {name: 'aiAdjust.applying'});
+        const pending = screen.getByRole('status');
 
-        expect(pending.textContent).toBe('');
+        expect(pending).toHaveTextContent('aiAdjust.applying');
         expect(pending.querySelectorAll('.ai-adjust-review-dot')).toHaveLength(3);
-        expect(screen.queryByText('aiAdjust.applying')).not.toBeInTheDocument();
+        expect(screen.getByText('aiAdjust.applying')).toBeVisible();
         await waitFor(() =>
             expect(apply).toHaveBeenCalledWith(
                 [expect.objectContaining({item})],
@@ -383,7 +437,9 @@ describe('AI adjustment conversation', () => {
         );
         await submit('데이 근무를 줄여줘', false);
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'}));
+
         const card = screen.getByRole('region', {name: 'aiAdjust.understood'});
+
         fireEvent.click(within(card).getByText('aiAdjust.review.details'));
         expect(within(card).getByText('김서현, 박지현')).toBeVisible();
         expect(within(card).getByText('aiAdjust.review.consecutiveDays')).toBeVisible();
@@ -698,12 +754,12 @@ describe('AI adjustment conversation', () => {
         );
         await submit('김서현 쉬게 해줘');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        await screen.findByText('aiAdjust.completed {"count":1}');
+        await screen.findByText('근무표를 조정했어요!');
         expect(screen.getByText(/D → O/)).not.toBeVisible();
         fireEvent.click(screen.getByText('aiAdjust.changeDetails'));
         expect(screen.getByText(/D → O/)).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
-        expect(screen.getByText('필수 조건 위반')).not.toBeVisible();
+        expect(screen.getByText('필수 조건 위반')).toBeVisible();
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.checkProblems'}));
         expect(screen.getByText('필수 조건 위반')).toBeVisible();
         expect(screen.getByText('주말 요구 미달성')).toBeVisible();
@@ -753,6 +809,19 @@ describe('AI adjustment conversation', () => {
         await submit('오프를 고르게 해줘');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         expect(await screen.findByRole('button', {name: 'aiAdjust.confirmSchedule'})).toBeDisabled();
+
+        const resultCard = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
+
+        expect(within(resultCard).getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(within(resultCard).getByRole('img', {name: 'aiAdjust.snapshot.success'})).toBeVisible();
+        expect(within(resultCard).getByText('aiAdjust.snapshot.attempt {"count":1}')).toBeVisible();
+        expect(within(resultCard).getByLabelText('aiAdjust.snapshot.changedLabel {"count":1}')).toHaveTextContent(
+            'aiAdjust.snapshot.changed {"count":1}',
+        );
+        expect(within(resultCard).getByRole('button', {name: '근무표 살펴보기'})).toBeVisible();
+        expect(within(resultCard).getByRole('button', {name: 'aiAdjust.modifyMore'})).toBeEnabled();
+        expect(within(resultCard).queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
+        expect(within(screen.getByRole('region', {name: '확인한 조건이에요'})).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.validation')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.approvable')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.resultDetails')).not.toBeInTheDocument();
@@ -765,8 +834,8 @@ describe('AI adjustment conversation', () => {
         expect(textbox()).toHaveFocus();
         expect(textbox()).toHaveValue('');
         expect(screen.getByText('aiAdjust.chat.askChanges')).toBeVisible();
-        expect(screen.getByText('aiAdjust.modifyMore')).toBeVisible();
-        expect(screen.getByText('aiAdjust.completed {"count":1}')).toBeVisible();
+        expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
+        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.modifyMore'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
         expect(interpret).toHaveBeenCalledTimes(1);
@@ -774,7 +843,7 @@ describe('AI adjustment conversation', () => {
         await submit('데이 연속 근무를 줄여줘', false);
         expect(interpret).toHaveBeenCalledTimes(2);
         expect(apply).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('aiAdjust.completed {"count":1}')).toBeVisible();
+        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
     });
 
     it('does not send Enter while composing Korean input or leak editing keys', async () => {

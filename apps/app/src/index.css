@@ -221,13 +221,13 @@
 
 /* The adjustment sheet appears immediately to keep the large schedule responsive. */
 @media (max-width: 767px) {
-    .ai-adjust-sidebar[data-preparing='true'] {
+    .ai-adjust-sidebar:is([data-preparing='true'], [data-loading='true']) {
         width: 100%;
         top: auto;
         bottom: 0;
         height: 50dvh;
     }
-    .ai-adjust-sidebar[data-preparing='true'] > header {
+    .ai-adjust-sidebar:is([data-preparing='true'], [data-loading='true']) > header {
         height: 64px;
     }
     html[data-make-ai-preparing='true'] .ai-autofill-root__main {

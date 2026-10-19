@@ -1,9 +1,9 @@
-import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import type {TAutofillAdjustStrength, TScheduleAdjustInterpretRes, TScheduleMonthRequestItem} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatInterpretationDates, summarizeInterpretationItems} from '../../../model/ai-adjust-summary';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
+import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import {AiAdjustInterpretIssues} from './ai-adjust-interpret-issues';
 
 export type TAdjustCard = {
@@ -19,13 +19,19 @@ type TProps = {
     card: TAdjustCard;
     nurses: {nurseId: number; name: string}[];
     showDetails?: boolean;
+    heading?: string;
+    state?: 'preview' | 'confirmed' | 'history';
 };
 
 /** The assistant's interpretation is a message; answers are collected in separate user bubbles. */
-export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps) {
+export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading, state = 'preview'}: TProps) {
     const {t} = useTypedTranslation();
     const displayRef = useScheduleJourneyDisplay<HTMLElement>(card.observation);
-    const displayItems = summarizeInterpretationItems(card.items.map(({item}) => item));
+    const itemsWithSeverity = card.items.map(({item, severity}) => ({...item, severity: item.severity ?? severity}));
+    const displayItems =
+        new Set(itemsWithSeverity.map((item) => item.severity)).size > 1
+            ? itemsWithSeverity
+            : summarizeInterpretationItems(itemsWithSeverity);
     const nurseName = (id: number) => nurses.find((nurse) => nurse.nurseId === id)?.name ?? t('aiAdjust.nurse', {id});
     const fieldLabels = {
         target: 'aiAdjust.review.target',
@@ -76,13 +82,18 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps
         }
 
         if (value === 'ALL') return t('aiAdjust.allNurses');
+
         if (typeof value === 'boolean') return t(value ? 'aiAdjust.review.yes' : 'aiAdjust.review.no');
+
         if (Array.isArray(value)) return value.map((entry) => formatValue(entry, field)).join(', ');
+
         if (['target', 'nurseId', 'nurseIds'].includes(field) && typeof value === 'number') return nurseName(value);
+
         if (value && typeof value === 'object')
             return Object.entries(value)
                 .map(([key, entry]) => `${fieldLabel(key)}: ${formatValue(entry, key)}`)
                 .join(' · ');
+
         return String(value ?? '—');
     };
     const countRuleSummary = (item: TScheduleMonthRequestItem) => {
@@ -133,23 +144,56 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps
             item.kind === 'GOAL',
     );
     const hasContent = displayItems.length > 0 || Boolean(card.llmPrompt?.trim());
-    const title = t(card.unmapped.length ? 'aiAdjust.issue.partialTitle' : 'aiAdjust.understood');
+    const title = heading ?? t(card.unmapped.length ? 'aiAdjust.issue.partialTitle' : 'aiAdjust.understood');
 
     if (!hasContent) return <AiAdjustInterpretIssues card={card} nurses={nurses} partial={false} />;
 
     return (
         <section ref={displayRef} aria-label={title} className="min-w-0 space-y-3 text-[14.5px] leading-7">
-            <h3 className="font-semibold">{title}</h3>
+            <h3 className="flex items-start gap-2 text-base leading-6 font-semibold text-[#333D4B]">
+                <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className={`mt-[2px] size-[18px] shrink-0 ${state === 'history' ? 'text-[#667085]' : 'text-main-1'}`}
+                >
+                    {state === 'history' ? (
+                        <>
+                            <circle cx="10" cy="10" r="9" fill="currentColor" />
+                            <path d="M9 4h2v5.5l3 2-1.1 1.7L9 10.5z" fill="white" />
+                        </>
+                    ) : state === 'confirmed' ? (
+                        <>
+                            <circle cx="10" cy="10" r="9" fill="currentColor" />
+                            <path d="m5 9 3 3 6-6 1.4 1.4L8 14.8 3.6 10.4z" fill="white" />
+                        </>
+                    ) : (
+                        <>
+                            <rect x="3" y="1" width="14" height="18" rx="3" fill="currentColor" />
+                            <path d="M6 5h8v2H6zm0 4h8v2H6zm0 4h5v2H6z" fill="white" />
+                        </>
+                    )}
+                </svg>
+                <span>{title}</span>
+            </h3>
             {displayItems.length > 0 && (
                 <ul className="space-y-2">
                     {displayItems.map((item, index) => {
                         const countSummary = countRuleSummary(item);
 
                         return (
-                            <li key={index} className="min-w-0 space-y-1">
+                            <li key={index} className="relative min-w-0 space-y-1 rounded-[14px] bg-white px-3 py-3">
+                                <span className="absolute top-3 right-3 text-[12px] leading-5 font-medium text-[#667085]">
+                                    {item.severity === 'HARD' || item.required
+                                        ? i18n.language.startsWith('ko')
+                                            ? '필수 조건'
+                                            : 'Required'
+                                        : i18n.language.startsWith('ko')
+                                          ? '선호 조건'
+                                          : 'Preferred'}
+                                </span>
                                 {item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
                                     <div className="space-y-1">
-                                        <p className="font-medium break-keep">
+                                        <p className="pr-20 font-medium break-keep">
                                             {(item.kind === 'CELL' ? [item.nurseId] : (item.nurseIds ?? []))
                                                 .filter((id): id is number => id !== undefined)
                                                 .map(nurseName)
@@ -168,13 +212,16 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps
                                     </div>
                                 ) : countSummary ? (
                                     <div className="space-y-1 break-keep">
-                                        <p className="font-medium">{countSummary.target}</p>
+                                        <p className="pr-20 font-medium">{countSummary.target}</p>
                                         <p>{countSummary.text}</p>
                                     </div>
                                 ) : (
-                                    <p className="break-keep">
-                                        {displayItems.length > 1 && '• '}
-                                        {item.displayLabel || (item.knob ? t(`aiAdjust.knob.${item.knob}`) : card.requestText)}
+                                    <p className="pr-20 break-keep">
+                                        {item.displayLabel?.length
+                                            ? item.displayLabel
+                                            : item.knob
+                                              ? t(`aiAdjust.knob.${item.knob}`)
+                                              : card.requestText}
                                     </p>
                                 )}
                                 {!!item.applyMonths?.length && (
@@ -183,7 +230,9 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true}: TProps
                                         <span>{item.applyMonths.map(({year, month}) => `${year}.${month}`).join(', ')}</span>
                                     </p>
                                 )}
-                                {(item.requiresConfirmation || item.assumedSlots?.length || item.lifetimeHint === 'TEAM') && (
+                                {(item.requiresConfirmation === true ||
+                                    Boolean(item.assumedSlots?.length) ||
+                                    item.lifetimeHint === 'TEAM') && (
                                     <div className="space-y-1 text-[13px] break-keep text-[#86540E]">
                                         {item.confirmationReasons
                                             ?.filter((reason) => reason !== 'ASSUMED_VALUE' || !item.assumedSlots?.length)

@@ -1,4 +1,5 @@
 import {useState, type ReactNode} from 'react';
+import i18n from '@/i18n';
 import assistantIcon from '@/shared/assets/images/ai-adjust/assistant.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -14,17 +15,25 @@ import {AiAdjustInterpretCard, type TAdjustCard} from './ai-adjust-interpret-car
 const choiceClass =
     'min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left leading-5 text-[13.5px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
 
-export function AssistantMessage({children, tone = 'default'}: {children: ReactNode; tone?: 'default' | 'error'}) {
+export function AssistantMessage({
+    children,
+    tone = 'default',
+    fullWidth = false,
+}: {
+    children: ReactNode;
+    tone?: 'default' | 'error';
+    fullWidth?: boolean;
+}) {
     const {t} = useTypedTranslation();
 
     return (
-        <div className="flex min-w-0 flex-col items-start gap-2">
+        <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''}`}>
             <span className="flex items-center gap-1.5 text-[13px] font-medium text-main-1">
                 <img src={assistantIcon} width={16} height={16} alt="" />
                 {t('aiAdjust.assistant')}
             </span>
             <div
-                className={`max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${tone === 'error' ? 'w-full border border-[#FECDCA] bg-[#FFF5F5] text-[#7A271A]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
+                className={`max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
             >
                 {children}
             </div>
@@ -46,6 +55,7 @@ type TProps = {
     nurses: {nurseId: number; name: string}[];
     editable: boolean;
     accepted: boolean;
+    historical?: boolean;
     disabled: boolean;
     applyDisabled: boolean;
     onReply: (question: TReviewQuestion, value: TReviewValue) => void;
@@ -63,6 +73,7 @@ export function AiAdjustReviewConversation({
     nurses,
     editable,
     accepted,
+    historical = false,
     disabled,
     applyDisabled,
     onReply,
@@ -78,12 +89,31 @@ export function AiAdjustReviewConversation({
     const complete = isReviewComplete(card, replies);
     const canApply = Boolean(card.items.length || card.llmPrompt);
     const partial = card.unmapped.length > 0;
-    const showApply = canApply && complete && (editable || accepted);
+    const showApply = canApply && complete && editable && !accepted && !historical;
     const inlineConfirmation = questions.length === 0;
+    const state = historical || (!editable && !accepted) ? 'history' : accepted ? 'confirmed' : 'preview';
+    const heading =
+        state === 'history'
+            ? i18n.language.startsWith('ko')
+                ? '이전 요청 내용'
+                : 'Previous request'
+            : state === 'confirmed'
+              ? i18n.language.startsWith('ko')
+                  ? '확인한 조건이에요'
+                  : 'Confirmed conditions'
+              : undefined;
     const confirmation = (
         <>
             {beforeApply}
-            <p className="mt-3">{t('aiAdjust.chat.applyQuestion')}</p>
+            <div className="mt-3">
+                <AiAdjustApplyChoices
+                    disabled={disabled}
+                    applyDisabled={applyDisabled}
+                    onApply={onApply}
+                    onRevise={onRevise}
+                    partial={partial}
+                />
+            </div>
         </>
     );
     const answerLabel = (value: TReviewValue) =>
@@ -96,10 +126,11 @@ export function AiAdjustReviewConversation({
                 : value === 'CONFIRM'
                   ? t(partial ? 'aiAdjust.issue.partialConfirm' : 'aiAdjust.chat.confirmProposal')
                   : t(value === 'HARD' ? 'aiAdjust.chat.required' : 'aiAdjust.chat.preferred');
+
     return (
         <div className="ai-adjust-review-conversation flex min-w-0 flex-col gap-4">
-            <AssistantMessage>
-                <AiAdjustInterpretCard card={card} nurses={nurses} />
+            <AssistantMessage fullWidth>
+                <AiAdjustInterpretCard card={card} nurses={nurses} heading={heading} state={state} />
                 {showApply && inlineConfirmation && confirmation}
             </AssistantMessage>
             {questions.slice(0, replies.length + (editable ? 1 : 0)).map((question, index) => {
@@ -109,12 +140,15 @@ export function AiAdjustReviewConversation({
                     question.kind === 'proposal'
                         ? t(partial ? 'aiAdjust.issue.partialTitle' : 'aiAdjust.understood')
                         : t(`aiAdjust.chat.question.${question.kind}`);
+
                 return (
                     <div key={question.id} className="flex min-w-0 flex-col gap-3">
                         {question.kind !== 'proposal' && (
                             <AssistantMessage>
                                 {card.items.length > 1 && (
-                                    <p className="mb-1 text-[13px] text-[#475467]">{entry.item.displayLabel || card.requestText}</p>
+                                    <p className="mb-1 text-[13px] text-[#475467]">
+                                        {entry.item.displayLabel?.length ? entry.item.displayLabel : card.requestText}
+                                    </p>
                                 )}
                                 <p>{questionText}</p>
                             </AssistantMessage>
@@ -209,21 +243,9 @@ export function AiAdjustReviewConversation({
                     </div>
                 );
             })}
-            {showApply && (
-                <>
-                    {!inlineConfirmation && <AssistantMessage>{confirmation}</AssistantMessage>}
-                    {accepted ? (
-                        <UserMessage>{t(partial ? 'aiAdjust.issue.partialApply' : 'aiAdjust.chat.applyReply')}</UserMessage>
-                    ) : (
-                        <AiAdjustApplyChoices
-                            disabled={disabled}
-                            applyDisabled={applyDisabled}
-                            onApply={onApply}
-                            onRevise={onRevise}
-                            partial={partial}
-                        />
-                    )}
-                </>
+            {showApply && !inlineConfirmation && <AssistantMessage fullWidth>{confirmation}</AssistantMessage>}
+            {accepted && canApply && complete && (
+                <UserMessage>{t(partial ? 'aiAdjust.issue.partialApply' : 'aiAdjust.chat.applyReply')}</UserMessage>
             )}
             {editable && !canApply && (
                 <div className="ml-auto flex max-w-full flex-col items-end gap-2">
@@ -262,13 +284,14 @@ export function AiAdjustApplyChoices({
     partial?: boolean;
 }) {
     const {t} = useTypedTranslation();
+
     return (
-        <div className="ml-auto flex max-w-full flex-col items-end gap-2">
+        <div className="grid w-full gap-2">
             <button
                 type="button"
                 disabled={disabled || applyDisabled}
                 onClick={onApply}
-                className="min-h-11 max-w-full rounded-xl bg-main-1 px-4 py-3 text-left text-[13.5px] leading-5 font-medium text-white hover:bg-[#5931D9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40"
+                className="min-h-[44px] w-full rounded-[10px] bg-main-1 px-4 py-3 text-center text-[13.5px] leading-5 font-medium text-white hover:bg-[#5931D9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40"
             >
                 {t(partial ? 'aiAdjust.issue.partialApply' : 'aiAdjust.chat.applyReply')}
             </button>
@@ -276,7 +299,7 @@ export function AiAdjustApplyChoices({
                 type="button"
                 disabled={disabled}
                 onClick={onRevise}
-                className="min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left text-[13.5px] leading-5 font-medium text-[#5931B9] hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
+                className="min-h-[44px] w-full rounded-[10px] bg-white px-4 py-3 text-center text-[13.5px] leading-5 font-medium text-[#475467] hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
             >
                 {t('aiAdjust.chat.reviseReply')}
             </button>

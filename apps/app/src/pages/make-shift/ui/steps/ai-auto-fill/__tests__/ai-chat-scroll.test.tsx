@@ -1,5 +1,5 @@
-import {afterEach, describe, expect, it, vi} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {AiChatScroll} from '../ai-chat-scroll';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -7,6 +7,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('conversation reading position', () => {
     it('keeps the reading position across new messages, image resize and composer changes, then resumes following on request', () => {
         let resize: () => void = () => {};
+
         vi.stubGlobal(
             'ResizeObserver',
             class {
@@ -17,9 +18,12 @@ describe('conversation reading position', () => {
                 disconnect() {}
             },
         );
+
         const frames: FrameRequestCallback[] = [];
+
         vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback));
         vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
         const flushFrames = () =>
             act(() => {
                 frames.splice(0).forEach((callback) => callback(0));
@@ -29,7 +33,8 @@ describe('conversation reading position', () => {
                 First result
             </AiChatScroll>,
         );
-        const viewport = container.firstElementChild as HTMLDivElement;
+        const viewport = container.querySelector('.ai-adjust-chat-scroll') as HTMLDivElement;
+
         Object.defineProperties(viewport, {
             scrollHeight: {value: 1000, configurable: true},
             clientHeight: {value: 300, configurable: true},
@@ -52,6 +57,7 @@ describe('conversation reading position', () => {
         expect(viewport.scrollTo).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', {name: '최근 대화로 이동'}));
         expect(viewport.scrollTo).toHaveBeenCalledWith({top: 1000, behavior: 'instant'});
+        expect(viewport).toHaveFocus();
         expect(screen.queryByRole('button', {name: '최근 대화로 이동'})).not.toBeInTheDocument();
         vi.mocked(viewport.scrollTo).mockClear();
         act(() => resize());
