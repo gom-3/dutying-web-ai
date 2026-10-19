@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.6 - 2026-10-19
+
+- `@dutying/app` (patch): 자동채우기 대화와 진행·결과 화면을 정리하고, 제약조건 편집과 결과 의견 작성을 모달로 제공합니다. 이전 결과의 미리보기와 변경 비교, 조건 삭제 및 실행 준비 이후 계획 갱신을 안전하게 연결합니다.
+
 ## 1.3.5 - 2026-10-18
 
 - `@dutying/app` (patch): Show independent plan restriction states and distinguish unrestricted AI use from exhausted allowance.

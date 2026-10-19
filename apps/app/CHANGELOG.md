@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.6
+
+### Patch Changes
+
+- 7ea10f7: 자동채우기 대화와 진행·결과 화면을 정리하고, 제약조건 편집과 결과 의견 작성을 모달로 제공합니다. 이전 결과의 미리보기와 변경 비교, 조건 삭제 및 실행 준비 이후 계획 갱신을 안전하게 연결합니다.
+    - @dutying/api@1.3.6
+    - @dutying/domain@1.3.6
+    - @dutying/utils@1.3.6
+
 ## 1.3.5
 
 ### Patch Changes
