@@ -1,4 +1,4 @@
-import {render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ComponentProps} from 'react';
 import {describe, expect, it, vi} from 'vitest';
@@ -371,5 +371,148 @@ describe('readable request scope', () => {
         );
         expect(screen.getByText('간호사1님')).toBeVisible();
         expect(screen.queryByText('전체 간호사')).not.toBeInTheDocument();
+    });
+});
+
+const priorityPlan: TSemanticPlan = {
+    planId: 'priority',
+    planHash: 'hash1',
+    sourceVersionId: 'v',
+    state: 'PREVIEW_READY',
+    summary: '',
+    confirmationAllowed: true,
+    reasonCodes: [],
+    modalityEditableIntentIds: ['count1', 'count2'],
+    conditions: [1, 2].map((id) => ({
+        intentId: `count${id}`,
+        action: 'COUNT',
+        nurseIds: [id],
+        dates: ['2026-11-01'],
+        shiftCodes: ['D'],
+        quantifier: 'EACH',
+        modality: 'HARD',
+        operator: 'MAX',
+        count: 1,
+        sourceSpan: {quote: '데이 최대 1회'},
+    })),
+};
+
+function priorityProps() {
+    return {
+        plan: priorityPlan,
+        current: true,
+        disabled: false,
+        stale: false,
+        applied: false,
+        processing: null,
+        nurseName: (id: number) => `간호사${id}`,
+        copy: (ko: string) => ko,
+        onApply: vi.fn(),
+        onEdit: vi.fn(),
+        onRetry: vi.fn(),
+        onChangeModalities: vi.fn().mockResolvedValue(undefined),
+    };
+}
+
+describe('request priority controls', () => {
+    it('batches changes, blocks execution before saving and can cancel without a request', async () => {
+        const props = priorityProps();
+
+        render(<AiSemanticReview {...props} />);
+
+        const groups = screen.getAllByRole('group', {name: '반영 방식'});
+
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '권장'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '권장'}));
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        expect(props.onChangeModalities).not.toHaveBeenCalled();
+        expect(screen.getByText('반영 방식 변경은 이번 실행에만 적용돼요.')).toBeVisible();
+        fireEvent.click(screen.getByRole('button', {name: '변경 취소'}));
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+        expect(screen.getAllByRole('radio', {name: '필수'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '권장'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '권장'}));
+        fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        await waitFor(() => expect(props.onChangeModalities).toHaveBeenCalledExactlyOnceWith({count1: 'SOFT', count2: 'SOFT'}));
+        expect(props.onApply).not.toHaveBeenCalled();
+    });
+    it('retains edits after a save failure and resets them for a new server hash', async () => {
+        const props = priorityProps();
+
+        props.onChangeModalities.mockRejectedValue(new Error('offline'));
+
+        const {rerender} = render(<AiSemanticReview {...props} />);
+
+        fireEvent.click(screen.getAllByRole('radio', {name: '권장'})[0]!);
+        fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('변경 내용을 저장하지 못했어요');
+        expect(screen.getAllByRole('radio', {name: '권장'})[0]).toBeChecked();
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        rerender(<AiSemanticReview {...props} plan={{...priorityPlan, planId: 'new', planHash: 'hash2'}} />);
+        expect(screen.queryByRole('button', {name: '변경한 조건 확인하기'})).not.toBeInTheDocument();
+        expect(screen.getAllByRole('radio', {name: '필수'})[0]).toBeChecked();
+    });
+    it.each([{current: false}, {stale: true}, {disabled: true}, {plan: {...priorityPlan, modalityEditableIntentIds: undefined}}])(
+        'prevents editing stale, historical, busy or old-server plans: %j',
+        (override) => {
+            render(<AiSemanticReview {...priorityProps()} {...override} />);
+
+            for (const radio of screen.queryAllByRole('radio')) expect(radio).toBeDisabled();
+        },
+    );
+    it('explains fixed assignment and exclusion semantics without offering unsupported soft controls', () => {
+        render(
+            <AiSemanticReview
+                {...priorityProps()}
+                plan={{...priorityPlan, conditions: [{...priorityPlan.conditions[0]!, action: 'FORBID'}], modalityEditableIntentIds: []}}
+            />,
+        );
+        expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+        expect(screen.getByText(/지정·금지한 배정은 필수로 적용해요/)).toBeVisible();
+    });
+});
+
+describe('catalog plan wire compatibility', () => {
+    const catalogCondition: TSemanticPlan['conditions'][number] = {
+        ...conflictPlan.conditions[0],
+        action: 'CATALOG_RULE',
+        nurseIds: [1, 2],
+        shiftCodes: ['D', 'E', 'N', 'O'],
+        rule: {templateCode: 'FORBID_TRANSITION', params: {target: [1], fromShift: 'N', toShift: 'D'}},
+        displayText: '검증간호사는 N 근무 다음 날 D 근무를 피해요.',
+        count: null,
+        operator: null,
+    };
+    const readyPlan = {...conflictPlan, state: 'PREVIEW_READY', confirmationAllowed: true, conditions: [catalogCondition]};
+
+    it('shows the confirmed rule description without turning its evaluation scope into a quota', () => {
+        renderReview({plan: readyPlan});
+
+        const requests = screen.getByRole('list', {name: '반영할 요청'});
+
+        expect(requests).toHaveTextContent(catalogCondition.displayText!);
+        expect(requests).toHaveTextContent('필수 조건');
+        expect(requests).not.toHaveTextContent('전체 간호사');
+        expect(requests).not.toHaveTextContent(/null|정확히|D, E, N, O 근무/);
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+    });
+
+    it('prevents confirming a catalog rule with no rendered description', () => {
+        renderReview({plan: {...readyPlan, conditions: [{...catalogCondition, displayText: null}]}});
+        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        expect(screen.queryByText(/null회/)).not.toBeInTheDocument();
+    });
+
+    it('renders a consecutive work limit as days rather than a monthly shift count', () => {
+        renderReview({
+            plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'MAX_CONSECUTIVE_WORK', operator: 'MAX', count: 4}]},
+        });
+        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('연속 근무 최대 4일');
+        expect(screen.getByRole('list', {name: '반영할 요청'})).not.toHaveTextContent('4회');
+    });
+
+    it('renders a soft assignment as a preference', () => {
+        renderReview({plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'ASSIGN', modality: 'SOFT'}]}});
+        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('E 근무 선호');
     });
 });
