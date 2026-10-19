@@ -125,6 +125,11 @@ export function AiSemanticReview({
 
     const selected = selection.planId === plan.planId ? selection.ids : [];
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
+    const reviewable = plan.conditions.every((condition) =>
+        condition.action === 'CATALOG_RULE'
+            ? Boolean(condition.displayText?.trim())
+            : ['ASSIGN', 'FORBID', 'COUNT', 'MAX_CONSECUTIVE_WORK'].includes(condition.action),
+    );
     const conflict = plan.state === 'LOCKED_CONFLICT';
     const expired = plan.state === 'EXPIRED';
     const complete = ready && applied;
@@ -466,6 +471,7 @@ export function AiSemanticReview({
                                 disabled={
                                     disabled ||
                                     stale ||
+                                    !reviewable ||
                                     priorityDirty ||
                                     savingPriority ||
                                     (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)

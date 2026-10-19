@@ -58,7 +58,9 @@ export type TSemanticPlan = {
     reasonCodes: string[];
     conditions: {
         intentId: string;
-        action: 'ASSIGN' | 'FORBID' | 'COUNT';
+        action: 'ASSIGN' | 'FORBID' | 'COUNT' | 'MAX_CONSECUTIVE_WORK' | 'CATALOG_RULE';
+        rule?: {templateCode: string; params: Record<string, unknown>} | null;
+        displayText?: string | null;
         nurseIds: number[];
         dates: string[];
         shiftCodes: string[];
