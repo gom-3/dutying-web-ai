@@ -54,7 +54,7 @@ const mocks = vi.hoisted(() => ({
         preparation?: ReactNode;
         onBusyChange?: (busy: boolean, succeeded?: boolean) => void;
     } | null,
-    loadingProps: [] as Array<{startedAt: number | null; sidebarOpen?: boolean; isFinishing?: boolean}>,
+    loadingProps: [] as Array<{startedAt: number | null; sidebarOpen?: boolean; isFinishing?: boolean; isAdjusting?: boolean}>,
 }));
 
 vi.mock('../../constraints', async () => {
@@ -1222,6 +1222,37 @@ describe('AiAutofill adjust panel', () => {
         await openAdjustDialog(user);
 
         expect(screen.getByText('aiAdjust.generationCompleted')).toBeInTheDocument();
+    });
+
+    it.each([false, true])('shows the loading modal during adjustment until its result arrives (success: %s)', async (succeeded) => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+
+        const beforeCells = useShiftEditorStore.getState().doc.rows.map((row) => [...row.cells]);
+
+        let finish!: (value: ReturnType<typeof okResult> | {ok: false; message: string}) => void;
+
+        mocks.requestAiSchedule.mockImplementation(
+            () =>
+                new Promise((resolve) => {
+                    finish = resolve;
+                }),
+        );
+        await adjustBySentence(user, [CLUSTER_ITEM]);
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]).toMatchObject({sidebarOpen: true, isAdjusting: true});
+        expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
+        await act(async () => finish(succeeded ? okResult([], 'ADJUST') : {ok: false, message: 'rejected'}));
+        await waitFor(() => expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument());
+        expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
+
+        if (!succeeded) {
+            expect(screen.getByRole('alert')).toHaveTextContent('page.makeShift.aiRefill.adjust.failed');
+            expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(beforeCells);
+        }
     });
 
     it('adjusts with the requested knob and preserves manually edited cells', async () => {

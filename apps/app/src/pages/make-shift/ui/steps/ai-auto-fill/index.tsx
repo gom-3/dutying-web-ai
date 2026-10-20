@@ -3060,7 +3060,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
-            {(isAiGenerating || isAiLoadingOverlayFinishing) && !isAdjusting ? (
+            {isAiGenerating || isAiLoadingOverlayFinishing ? (
                 <AiAutofillLoadingOverlay
                     sidebarOpen={isConversationOpen}
                     isAdjusting={isAdjusting}
