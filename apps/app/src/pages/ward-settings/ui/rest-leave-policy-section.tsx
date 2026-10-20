@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {Check, Info, Minus, Plus} from 'lucide-react';
+import {Check, ChevronLeft, ChevronRight, Info, Minus, Plus} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -265,7 +265,14 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
     }, [language, wardId]);
     const [draft, setDraft] = useState<TRestLeavePolicy>(localizedPolicy);
     const [draftBase, setDraftBase] = useState<TRestLeavePolicy>(localizedPolicy);
-    const {year, month} = useMemo(getCurrentYearMonth, []);
+    const [{year, month}, setPreviewMonth] = useState(getCurrentYearMonth);
+    const movePreviewMonth = (offset: number) => {
+        setPreviewMonth((current) => {
+            const date = new Date(current.year, current.month - 1 + offset, 1);
+
+            return {year: date.getFullYear(), month: date.getMonth() + 1};
+        });
+    };
     const publicHolidayDays = useMemo(() => getPublicHolidayDaysForPolicy(year, month, draft), [draft, month, year]);
     const holidayRegions = draft.holidayCountry ? getHolidayRegions(draft.holidayCountry) : {};
     const locationMissing =
@@ -397,6 +404,27 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                         </button>
                     </div>
                 ) : null}
+                <div className="mb-4 flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        aria-label={t('page.duty.prevMonth')}
+                        className="grid size-11 place-items-center rounded-xl hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1"
+                        onClick={() => movePreviewMonth(-1)}
+                    >
+                        <ChevronLeft className="size-5" aria-hidden="true" />
+                    </button>
+                    <span aria-live="polite" className="min-w-28 text-center font-semibold tabular-nums">
+                        {t('page.duty.monthHeader', {year, month})}
+                    </span>
+                    <button
+                        type="button"
+                        aria-label={t('page.duty.nextMonth')}
+                        className="grid size-11 place-items-center rounded-xl hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1"
+                        onClick={() => movePreviewMonth(1)}
+                    >
+                        <ChevronRight className="size-5" aria-hidden="true" />
+                    </button>
+                </div>
                 <FeatureToggle
                     enabled={draft.enabled}
                     title={t('page.wardSettings.restLeavePolicy.availability.title')}
