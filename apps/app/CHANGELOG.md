@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.9
+
+### Patch Changes
+
+- 휴무 계산 월 이동과 일반 근무자 고정 휴무 요청을 지원하고, 필수 규칙을 위반한 AI 근무표가 적용되지 않도록 차단합니다.
+- Updated dependencies
+    - @dutying/api@1.3.9
+    - @dutying/domain@1.3.9
+    - @dutying/utils@1.3.9
+
 ## 1.3.8
 
 ### Patch Changes

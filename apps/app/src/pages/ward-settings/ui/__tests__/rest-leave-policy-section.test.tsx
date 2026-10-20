@@ -8,7 +8,12 @@ const {get, put, success, errorToast} = vi.hoisted(() => ({get: vi.fn(), put: vi
 
 vi.mock('@/shared/api/client', () => ({default: {get, put}}));
 vi.mock('react-hot-toast', () => ({default: {success, error: errorToast}}));
-vi.mock('@/shared/hook/use-typed-translation', () => ({useTypedTranslation: () => ({t: (key: string) => key})}));
+vi.mock('@/shared/hook/use-typed-translation', () => ({
+    useTypedTranslation: () => ({
+        t: (key: string, values?: {year?: number; month?: number}) =>
+            key === 'page.duty.monthHeader' ? `${values?.year}-${values?.month}` : key,
+    }),
+}));
 vi.mock('@/i18n', () => ({default: {resolvedLanguage: 'ko', language: 'ko'}}));
 
 const key = (suffix: string) => `page.wardSettings.restLeavePolicy.${suffix}`;
@@ -56,6 +61,22 @@ afterEach(() => {
 });
 
 describe('shared rest leave policy editor', () => {
+    it('moves the preview across year boundaries without changing or saving the policy', async () => {
+        mount();
+        const next = await screen.findByRole('button', {name: 'page.duty.nextMonth'});
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth() + 1;
+
+        expect(screen.getByText(`${year}-${month}`)).toBeInTheDocument();
+        for (let i = month; i <= 12; i++) fireEvent.click(next);
+        expect(screen.getByText(`${year + 1}-1`)).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: 'page.duty.prevMonth'}));
+        expect(screen.getByText(`${year}-12`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: key('save')})).toBeDisabled();
+        expect(put).not.toHaveBeenCalled();
+    });
+
     it('defaults a missing holiday country from the display language', async () => {
         shared = {...shared, holidayCountry: null, holidayRegion: null};
         mount();
