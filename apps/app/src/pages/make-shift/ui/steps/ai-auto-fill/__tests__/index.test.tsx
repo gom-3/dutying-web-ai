@@ -515,7 +515,7 @@ describe('AiAutofill blank preview', () => {
     it.each([
         {adjustEnabled: false, warning: '기존 고정표의 11일은 D가 1명씩 부족해요.'},
         {adjustEnabled: false, warning: undefined},
-    ])('keeps review warnings inside the sidebar (adjustEnabled=$adjustEnabled, warning=$warning)', async ({adjustEnabled, warning}) => {
+    ])('blocks legacy review drafts and preserves the table (adjustEnabled=$adjustEnabled, warning=$warning)', async ({adjustEnabled, warning}) => {
         const doc = makeDoc();
 
         seedEditor({...doc, rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})), fixedCells: {}, requestCells: {}});
@@ -552,11 +552,11 @@ describe('AiAutofill blank preview', () => {
         const sidebar = await screen.findByRole('dialog', {name: 'aiAdjust.title'});
 
         expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(adjustEnabled);
-        expect(await within(sidebar).findByText(warning ?? 'aiAdjust.reviewDraft.completed')).toBeVisible();
+        expect(await within(sidebar).findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
         expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '안내 닫기'})).not.toBeInTheDocument();
         expect(within(sidebar).queryByText('aiAdjust.generationCompleted')).not.toBeInTheDocument();
-        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
         expect(toast.error).not.toHaveBeenCalled();
         await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.close'}));
         expect(screen.queryByRole('dialog', {name: 'aiAdjust.title'})).not.toBeInTheDocument();
