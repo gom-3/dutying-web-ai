@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
 import i18n from '@/i18n';
-import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import type {TResultVersion} from '../../../../model/schedule-conversation-api';
 import AiConversationSnapshot from '../ai-conversation-snapshot';
 
@@ -36,36 +36,55 @@ describe('conversation snapshot screen', () => {
     it('renders the existing calendar and switches immutable versions without changing the editor or its selection', async () => {
         const current = useShiftEditorStore.getState();
         const onContinue = vi.fn();
+        const user = userEvent.setup();
 
         render(<AiConversationSnapshot version={result} before={before} disabled={false} onClose={vi.fn()} onContinue={onContinue} />);
+
+        // Search only the comparison controls, not every cell in the real calendar.
+        const comparison = within(screen.getByRole('group', {name: '전후 비교'}));
+        const beforeButton = comparison.getByRole('button', {name: '변경 전'});
+        const afterButton = comparison.getByRole('button', {name: '변경 후'});
+        const continueButton = screen.getByRole('button', {name: '이 표로 이어서 작성하기'});
+
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(screen.getByText('이 결과를 만든 시점의 근무표예요. 여기서는 수정할 수 없어요.')).toBeInTheDocument();
         expect(screen.queryByRole('group', {name: '보기 방식'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '결과 근무표'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '변경 전후 비교'})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '변경 후'})).toHaveAttribute('aria-pressed', 'true');
-        await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
-        expect(screen.getByRole('button', {name: '변경 전'})).toHaveAttribute('aria-pressed', 'true');
-        expect(screen.getByRole('button', {name: '변경 후'})).toHaveAttribute('aria-pressed', 'false');
-        await userEvent.click(screen.getByRole('button', {name: '변경 전 표로 이어서 작성하기'}));
+        expect(afterButton).toHaveAttribute('aria-pressed', 'true');
+        await user.click(beforeButton);
+        expect(beforeButton).toHaveAttribute('aria-pressed', 'true');
+        expect(afterButton).toHaveAttribute('aria-pressed', 'false');
+        expect(continueButton).toHaveAccessibleName('변경 전 표로 이어서 작성하기');
+        await user.click(continueButton);
         expect(onContinue).toHaveBeenLastCalledWith(before);
-        await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
-        await userEvent.click(screen.getByRole('button', {name: '이 표로 이어서 작성하기'}));
+        await user.click(afterButton);
+        expect(continueButton).toHaveAccessibleName('이 표로 이어서 작성하기');
+        await user.click(continueButton);
         expect(onContinue).toHaveBeenLastCalledWith(result);
-        await userEvent.click(screen.getByRole('region', {name: '근무표 전체 보기'}));
-        await userEvent.keyboard('N');
+        await user.click(screen.getByRole('region', {name: '근무표 전체 보기'}));
+        await user.keyboard('N');
         expect(useShiftEditorStore.getState().doc).toEqual(current.doc);
         expect(useShiftEditorStore.getState().selection).toEqual(current.selection);
         expect(useShiftEditorStore.getState().draftRevision).toEqual(current.draftRevision);
     });
     it('returns to the result with the same before and after control', async () => {
         const onContinue = vi.fn();
+        const user = userEvent.setup();
 
         render(<AiConversationSnapshot version={result} before={before} disabled={false} onClose={vi.fn()} onContinue={onContinue} />);
-        await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
-        await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
-        expect(screen.getByRole('button', {name: '변경 후'})).toHaveAttribute('aria-pressed', 'true');
-        await userEvent.click(screen.getByRole('button', {name: '이 표로 이어서 작성하기'}));
+
+        // Search only the comparison controls, not every cell in the real calendar.
+        const comparison = within(screen.getByRole('group', {name: '전후 비교'}));
+        const beforeButton = comparison.getByRole('button', {name: '변경 전'});
+        const afterButton = comparison.getByRole('button', {name: '변경 후'});
+        const continueButton = screen.getByRole('button', {name: '이 표로 이어서 작성하기'});
+
+        await user.click(beforeButton);
+        await user.click(afterButton);
+        expect(afterButton).toHaveAttribute('aria-pressed', 'true');
+        expect(continueButton).toHaveAccessibleName('이 표로 이어서 작성하기');
+        await user.click(continueButton);
         expect(onContinue).toHaveBeenCalledExactlyOnceWith(result);
     });
     it('does not offer comparison when there is no saved earlier schedule', () => {
