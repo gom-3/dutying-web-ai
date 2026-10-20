@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.8
+
+### Patch Changes
+
+- ac0ecc9: 기존 근무표를 수정하는 자동채우기에서도 계산 중 로딩 모달을 표시합니다. 오른쪽 대화창을 유지하고 성공·실패 결과가 도착하면 모달을 닫습니다.
+    - @dutying/api@1.3.8
+    - @dutying/domain@1.3.8
+    - @dutying/utils@1.3.8
+
 ## 1.3.7
 
 ### Patch Changes
