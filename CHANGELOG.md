@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.8 - 2026-10-20
+
+- `@dutying/app` (patch): 기존 근무표를 수정하는 자동채우기에서도 계산 중 로딩 모달을 표시합니다. 오른쪽 대화창을 유지하고 성공·실패 결과가 도착하면 모달을 닫습니다.
+
 ## 1.3.7 - 2026-10-20
 
 - `@dutying/app` (patch): 자연어 조절 조건의 필수·권장 선택을 복구하고, 카탈로그 규칙과 연속 근무일을 정확히 표시합니다. 저장하지 않은 조건 변경이나 설명이 없는 규칙은 실행을 막습니다.
