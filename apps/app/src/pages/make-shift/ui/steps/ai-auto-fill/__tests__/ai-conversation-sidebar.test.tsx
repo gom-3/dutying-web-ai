@@ -680,7 +680,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getAllByTestId('conversation-result-preview')).toHaveLength(2);
     });
 
-    it('keeps a review draft distinct from an approved completed schedule', async () => {
+    it('shows historical rejected review drafts as failures', async () => {
         current.operations = [
             {
                 ...operation,
@@ -695,13 +695,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const result = await screen.findByRole('region', {name: '근무표 결과'});
-
-        expect(within(result).getByText('근무표 초안을 만들었어요!').closest('p')).toHaveTextContent('근무표 초안을 만들었어요! (1회차)');
-        expect(within(result).queryByRole('img', {name: '자동채우기 성공'})).not.toBeInTheDocument();
-        expect(within(result).getByText('근무표 초안을 만들었어요!').closest('section')?.querySelector('details')).toHaveAttribute('open');
+        expect(await screen.findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
+        expect(screen.queryByRole('region', {name: '근무표 결과'})).not.toBeInTheDocument();
         expect(screen.queryByText('근무표를 채웠어요!')).not.toBeInTheDocument();
-        expect(screen.getAllByText('듀팅 AI')).toHaveLength(1);
+
     });
 
     it('does not claim local application after refreshing a saved APPLIED result', async () => {

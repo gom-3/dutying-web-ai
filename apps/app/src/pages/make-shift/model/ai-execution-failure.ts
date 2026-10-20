@@ -12,7 +12,7 @@ export function conversationOperationFailure(operation: TConversationOperation):
     );
 }
 
-/** Only explicit, revalidated GENERATE review drafts may bypass the approval verdict. */
+/** Recognize historical review results for display only; never authorizes applying cells. */
 export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
     return (
         response.operationType === 'GENERATE' &&
@@ -29,17 +29,17 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
-    if (isGenerateReviewDraft(response)) return null;
-
     const status = response.engineResult?.status?.toUpperCase();
+    const hardInvalid = (response.validation?.summary?.hardCount ?? 0) > 0;
     const reason = (
         response.failure?.reasonCode ??
         response.engineResult?.solver?.reason ??
-        (response.engineResult?.reviewRequired === true ? 'SPRING_HARD_VALIDATION' : '')
+        (response.engineResult?.reviewRequired === true || hardInvalid ? 'SPRING_HARD_VALIDATION' : '')
     ).toUpperCase();
 
     if (
         response.applicable !== false &&
+        !hardInvalid &&
         response.engineResult?.reviewRequired !== true &&
         !['REJECTED', 'ERROR', 'INFEASIBLE', 'TIME_LIMIT'].includes(status ?? '') &&
         reason !== 'TIME_LIMIT_NO_SOLUTION'

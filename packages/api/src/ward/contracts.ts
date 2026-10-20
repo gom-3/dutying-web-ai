@@ -1283,6 +1283,7 @@ export type TCreateShiftTypeDTO = {
 
 /** Same targets and accounting as the schedule's rest-check column. */
 export type TMonthlyRestRequirement = {
+    exactForRegularWorkers?: boolean;
     minimumDaysByShiftNurseId: Record<number, number>;
     countedWardShiftTypeIds: number[];
 };
