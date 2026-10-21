@@ -71,6 +71,30 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         };
     }
 
+    const diagnosis = response.failure?.diagnosis;
+    const diagnosedNurse = response.failure?.affectedNurses?.find((nurse) => nurse.shiftNurseId === diagnosis?.shiftNurseId);
+    if (
+        status === 'INFEASIBLE' &&
+        diagnosis?.status === 'VERIFIED_ALTERNATIVE' &&
+        diagnosedNurse?.name?.trim() &&
+        Number.isInteger(diagnosis.currentMax) &&
+        Number.isInteger(diagnosis.proposedMax) &&
+        diagnosis.currentMax >= 0 &&
+        diagnosis.proposedMax > diagnosis.currentMax &&
+        diagnosis.proposedMax <= 31
+    ) {
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: i18n.t('aiAdjust.executionFailure.verifiedNightCap', {
+                name: diagnosedNurse.name.trim().slice(0, 80),
+                current: diagnosis.currentMax,
+                proposed: diagnosis.proposedMax,
+            }),
+            blocked: false,
+            recovery: 'revise',
+        };
+    }
+
     let key:
         | 'connection'
         | 'busy'

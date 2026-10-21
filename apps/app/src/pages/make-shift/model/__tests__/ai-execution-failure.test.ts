@@ -82,3 +82,52 @@ describe('rest eligibility is a configuration issue', () => {
         expect(failure?.recovery).toBe('settings');
     });
 });
+
+describe('verified generation alternatives', () => {
+    function rejected(): TAutofillResponse {
+        return {
+            operationType: 'GENERATE',
+            draftRevision: 1,
+            resultType: 'PATCH',
+            changedCells: [],
+            applicable: false,
+            unmetInstructions: [],
+            sameAsPrevious: true,
+            validation: {
+                draftRevision: 1,
+                rulesHash: 'test',
+                summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+                violations: [],
+            },
+            engineResult: {status: 'INFEASIBLE'},
+            failure: {
+                reasonCode: 'HARD_RULE_CONFLICT',
+                message: 'traceback: do not render',
+                affectedNurses: [{shiftNurseId: 20, name: '테스트 간호사'}],
+                diagnosis: {status: 'VERIFIED_ALTERNATIVE', ruleId: 50, shiftNurseId: 20, currentMax: 2, proposedMax: 4},
+            },
+        };
+    }
+    it('shows the nurse, exact change, verification and a review step', () => {
+        const failure = aiExecutionFailure(rejected());
+        expect(failure?.message).toContain('테스트 간호사');
+        expect(failure?.message).toContain('2회에서 4회');
+        expect(failure?.message).toContain('다른 필수 조건과 고정 근무');
+        expect(failure?.message).toContain('대안 중 하나');
+        expect(failure?.message).toContain('아직 바뀌지 않았');
+        expect(failure?.message).not.toContain('traceback');
+        expect(failure?.recovery).toBe('revise');
+    });
+    it('does not show stale alternatives for timeouts', () => {
+        const response = rejected();
+        response.engineResult!.status = 'TIME_LIMIT';
+        response.failure!.reasonCode = 'TIME_LIMIT';
+        expect(aiExecutionFailure(response)?.message).not.toContain('2회에서 4회');
+    });
+    it.each(['missing-nurse', 'invalid-count'] as const)('falls back safely for %s', (mode) => {
+        const response = rejected();
+        if (mode === 'missing-nurse') response.failure!.affectedNurses = [];
+        else response.failure!.diagnosis!.proposedMax = -1;
+        expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.infeasible'));
+    });
+});

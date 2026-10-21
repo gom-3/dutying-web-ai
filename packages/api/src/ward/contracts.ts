@@ -815,6 +815,13 @@ export type TAutofillResponse = {
         message: string;
         suggestions?: TFailureSuggestion[];
         affectedNurses?: {shiftNurseId: number; name: string}[];
+        diagnosis?: {
+            status: 'VERIFIED_ALTERNATIVE';
+            ruleId: number;
+            shiftNurseId: number;
+            currentMax: number;
+            proposedMax: number;
+        };
     };
     applicable?: boolean;
     /** Validation describes the returned draft, a withheld candidate, or the original table. */
