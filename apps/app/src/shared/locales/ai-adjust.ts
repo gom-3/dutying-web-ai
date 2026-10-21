@@ -51,7 +51,7 @@ export const aiAdjustKo = {
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
         verifiedNightCap:
-            '{{name}}의 이번 달 야간근무는 최대 {{current}}번으로 설정돼 있어요. 지금 정한 조건을 모두 지키면서는 빈칸을 채울 수 없어요.\n이 설정을 최대 {{proposed}}번으로 바꾸면, 고정해 둔 근무와 나머지 꼭 지켜야 하는 조건을 그대로 지키면서 채울 수 있어요. 실제로 근무표를 만들어 확인했어요.\n가능한 방법 중 하나예요. 야간근무를 늘려도 괜찮다면 조건을 수정한 뒤 다시 자동채우기를 눌러 주세요. 설정과 근무표는 아직 바뀌지 않았어요.',
+            '지금 설정으로는 자동채우기를 완료할 수 없어요.\n{{name}}의 야간근무를 월 최대 {{current}}회에서 {{proposed}}회로 조정하면 근무표를 만들 수 있어요. 미리 정한 근무와 다른 설정은 그대로 유지할 수 있어요.\n야간근무 횟수를 늘려도 괜찮은지 확인해 주세요. 조정하려면 해당 간호사의 야간근무 횟수 설정을 바꾼 뒤 다시 자동채우기를 눌러 주세요.\n아직 설정이나 근무표가 변경되지는 않았어요.',
         infeasible:
             '지금 조건으로는 근무표를 만들 수 없어요.\n어떤 조건을 바꾸면 만들 수 있을지는 아직 찾지 못했어요. 근무 인원, 휴무, 고정해 둔 근무를 함께 확인해 주세요. 기존 근무표는 그대로예요.',
         unavailable:
@@ -441,7 +441,7 @@ export const aiAdjustEn = {
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
         verifiedNightCap:
-            '{{name}} is currently limited to {{current}} night shifts this month. We cannot fill the empty shifts while keeping all your current conditions.\nWe checked that allowing up to {{proposed}} night shifts makes it possible to fill the schedule while keeping fixed shifts and all other required conditions.\nThis is one option. If the extra night shifts are acceptable, update the condition and run autofill again. Your settings and schedule have not been changed.',
+            'Autofill could not be completed with your current settings.\nA schedule can be made if {{name}}’s monthly night shift limit is increased from {{current}} to {{proposed}}. Shifts you have already set and all other settings can stay as they are.\nPlease check whether more night shifts are acceptable. To make this change, update this nurse’s night shift limit and run autofill again.\nYour settings and schedule have not been changed.',
         infeasible:
             'A schedule cannot be made with these conditions.\nWe have not yet identified the specific conflict or a verified solution. Review the required conditions together with fixed shifts. Your schedule is unchanged.',
         unavailable:
