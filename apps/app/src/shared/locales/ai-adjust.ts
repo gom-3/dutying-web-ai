@@ -51,9 +51,9 @@ export const aiAdjustKo = {
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
         verifiedNightCap:
-            '현재 조건으로는 근무표를 만들 수 없어요.\n{{name}}의 월 야간 상한을 {{current}}회에서 {{proposed}}회로 늘리면, 다른 필수 조건과 고정 근무를 유지한 근무표를 만들 수 있는 것으로 확인했어요.\n가능한 대안 중 하나예요. 규칙 변경이 가능한지 검토한 뒤 다시 자동채우기 해 주세요. 규칙과 기존 근무표는 아직 바뀌지 않았어요.',
+            '{{name}}의 이번 달 야간근무는 최대 {{current}}번으로 설정돼 있어요. 지금 정한 조건을 모두 지키면서는 빈칸을 채울 수 없어요.\n이 설정을 최대 {{proposed}}번으로 바꾸면, 고정해 둔 근무와 나머지 꼭 지켜야 하는 조건을 그대로 지키면서 채울 수 있어요. 실제로 근무표를 만들어 확인했어요.\n가능한 방법 중 하나예요. 야간근무를 늘려도 괜찮다면 조건을 수정한 뒤 다시 자동채우기를 눌러 주세요. 설정과 근무표는 아직 바뀌지 않았어요.',
         infeasible:
-            '지금 조건으로는 근무표를 만들 수 없어요.\n구체적인 충돌 원인이나 해결안을 아직 확인하지 못했어요. 필수 조건과 고정 근무를 함께 확인해 주세요. 기존 근무표는 그대로예요.',
+            '지금 조건으로는 근무표를 만들 수 없어요.\n어떤 조건을 바꾸면 만들 수 있을지는 아직 찾지 못했어요. 근무 인원, 휴무, 고정해 둔 근무를 함께 확인해 주세요. 기존 근무표는 그대로예요.',
         unavailable:
             '정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 다시 시도하거나 근무 조건을 조절해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
@@ -441,7 +441,7 @@ export const aiAdjustEn = {
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
         verifiedNightCap:
-            'A schedule cannot be made with the current conditions.\nWe verified that increasing {{name}}’s monthly night limit from {{current}} to {{proposed}} allows a schedule that preserves the other required conditions and fixed shifts.\nThis is one possible alternative. Review whether this rule can change, then run autofill again. Your rules and schedule have not been changed.',
+            '{{name}} is currently limited to {{current}} night shifts this month. We cannot fill the empty shifts while keeping all your current conditions.\nWe checked that allowing up to {{proposed}} night shifts makes it possible to fill the schedule while keeping fixed shifts and all other required conditions.\nThis is one option. If the extra night shifts are acceptable, update the condition and run autofill again. Your settings and schedule have not been changed.',
         infeasible:
             'A schedule cannot be made with these conditions.\nWe have not yet identified the specific conflict or a verified solution. Review the required conditions together with fixed shifts. Your schedule is unchanged.',
         unavailable:

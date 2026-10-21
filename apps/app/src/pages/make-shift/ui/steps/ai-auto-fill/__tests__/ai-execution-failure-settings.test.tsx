@@ -40,8 +40,8 @@ it('keeps the verified alternative visible with a review action and no automatic
             onRetry={vi.fn()}
         />,
     );
-    expect(screen.getByText(/2회에서 4회/)).toBeInTheDocument();
-    expect(screen.getByText(/다른 필수 조건과 고정 근무/)).toBeInTheDocument();
+    expect(screen.getByText(/최대 4번/)).toBeInTheDocument();
+    expect(screen.getByText(/고정해 둔 근무와 나머지 꼭 지켜야 하는 조건/)).toBeInTheDocument();
     expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.failure.retry')})).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.issue.edit')}));
     expect(revise).toHaveBeenCalledTimes(1);

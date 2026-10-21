@@ -111,9 +111,9 @@ describe('verified generation alternatives', () => {
     it('shows the nurse, exact change, verification and a review step', () => {
         const failure = aiExecutionFailure(rejected());
         expect(failure?.message).toContain('테스트 간호사');
-        expect(failure?.message).toContain('2회에서 4회');
-        expect(failure?.message).toContain('다른 필수 조건과 고정 근무');
-        expect(failure?.message).toContain('대안 중 하나');
+        expect(failure?.message).toContain('최대 4번');
+        expect(failure?.message).toContain('고정해 둔 근무와 나머지 꼭 지켜야 하는 조건');
+        expect(failure?.message).toContain('방법 중 하나');
         expect(failure?.message).toContain('아직 바뀌지 않았');
         expect(failure?.message).not.toContain('traceback');
         expect(failure?.recovery).toBe('revise');
@@ -122,7 +122,7 @@ describe('verified generation alternatives', () => {
         const response = rejected();
         response.engineResult!.status = 'TIME_LIMIT';
         response.failure!.reasonCode = 'TIME_LIMIT';
-        expect(aiExecutionFailure(response)?.message).not.toContain('2회에서 4회');
+        expect(aiExecutionFailure(response)?.message).not.toContain('최대 4번');
     });
     it.each(['missing-nurse', 'invalid-count'] as const)('falls back safely for %s', (mode) => {
         const response = rejected();
