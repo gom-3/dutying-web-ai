@@ -29,6 +29,22 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    if (
+        response.confirmedConstraintException === true &&
+        response.applicable === true &&
+        response.approvable === true &&
+        response.engineResult?.status === 'ACCEPTED' &&
+        response.engineResult.reviewRequired !== true
+    )
+        return null;
+    if (response.conflictReview)
+        return {
+            message: i18n.t('aiAdjust.executionFailure.conflictMessage'),
+            blocked: false,
+            recovery: 'review',
+            confirmationRequired: true,
+            ...(response.observation ? {observation: response.observation} : {}),
+        };
     const status = response.engineResult?.status?.toUpperCase();
     const hardInvalid = (response.validation?.summary?.hardCount ?? 0) > 0;
     const reason = (

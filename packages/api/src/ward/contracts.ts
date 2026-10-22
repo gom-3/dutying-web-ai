@@ -498,6 +498,8 @@ export type TScheduleViolationDto = {
     templateCode: string;
     severity: TShiftConstraintSeverity;
     message: string;
+    messageKey?: string;
+    messageArgs?: Record<string, string | number | boolean | null | undefined>;
     period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
     displayContext?: TScheduleViolationDisplayContextDto | null;
@@ -808,6 +810,8 @@ export type TScheduleObservation = {
 };
 
 export type TAutofillResponse = {
+    confirmedConstraintException?: boolean;
+    conflictReview?: {token: string; expiresAt: string; ruleLabels?: Record<string, string>; violations: TScheduleViolationDto[]};
     observation?: TScheduleObservation;
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     failure?: {

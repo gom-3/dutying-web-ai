@@ -131,3 +131,15 @@ describe('verified generation alternatives', () => {
         expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.infeasible'));
     });
 });
+
+
+it('allows only an explicitly confirmed server exception through the failure gate', () => {
+    const response = {
+        operationType: 'ADJUST' as const, applicable: true, approvable: true, confirmedConstraintException: true,
+        changedCells: [], validation: {summary: {hardCount: 1}}, engineResult: {status: 'ACCEPTED', reviewRequired: false},
+    } as unknown as Parameters<typeof aiExecutionFailure>[0];
+    expect(aiExecutionFailure(response)).toBeNull();
+    expect(aiExecutionFailure({...response, confirmedConstraintException: false})).not.toBeNull();
+    expect(aiExecutionFailure({...response, engineResult: {status: 'REJECTED'}})).not.toBeNull();
+    expect(aiExecutionFailure({...response, applicable: false})).not.toBeNull();
+});

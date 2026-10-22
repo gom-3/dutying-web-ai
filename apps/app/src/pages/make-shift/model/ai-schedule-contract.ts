@@ -13,6 +13,8 @@ export type TAiScheduleRequest = {
     draftRevision: number;
     rulesHash: string;
     prompt?: string;
+    conflictReviewToken?: string;
+    conflictConfirmed?: boolean;
     idempotencyKey?: string;
     /** 값이 있으면 조절이다. doc 이 곧 시드이므로 재생성처럼 칸을 비우지 않고 그대로 보낸다. */
     adjust?: TAutofillAdjustDto;
@@ -35,6 +37,7 @@ export type TAiScheduleResult =
       }
     | {
           ok: false;
+          conflictReview?: TAutofillResponse['conflictReview'];
           message: string;
           failure?: TAiConversationFailure;
           canceled?: boolean;
