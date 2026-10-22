@@ -45,12 +45,13 @@ export function AiExecutionFailure({
     const showReview = Boolean(onReview) && (!retryable || !onRevise);
     const content = Children.toArray(children);
     const showActions = active && (showSettings || showRetry || showRevise || showReview);
-    const title =
-        failure.recovery === 'settings'
-            ? t('aiAdjust.executionFailure.offSettingsTitle')
-            : operationType
-              ? t(operationType === 'GENERATE' ? 'aiAdjust.executionFailure.autofillTitle' : 'aiAdjust.executionFailure.adjustTitle')
-              : t('aiAdjust.failure.title');
+    const title = failure.confirmationRequired
+        ? t('aiAdjust.executionFailure.conflictTitle')
+        : failure.recovery === 'settings'
+          ? t('aiAdjust.executionFailure.offSettingsTitle')
+          : operationType
+            ? t(operationType === 'GENERATE' ? 'aiAdjust.executionFailure.autofillTitle' : 'aiAdjust.executionFailure.adjustTitle')
+            : t('aiAdjust.failure.title');
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-4">

@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Generation failure explanation</title><style>body{max-width:900px;margin:48px auto;padding:0 24px;font:16px/1.7 system-ui}pre{white-space:pre-wrap}</style><main><pre># User-visible generation failure diagnosis
+
+A full-month INFEASIBLE response currently reaches users as generic text. Operators can reproduce the request and verify a small rule change, but that evidence is lost to the requester.
+
+## Contract
+
+For proven INFEASIBLE full-month generation only, run a read-only diagnostic in the existing idle solver slot, with a shared five-second deadline and at most three candidates. Probe individual HARD monthly NIGHT MAX rules by increasing their count by one or two. Match shifts by classification and targets by nurse ID, never names or proficiency. This is deliberately a narrow first diagnostic, not a general unsatisfiable-core claim.
+
+Each probe starts with the same snapshot and changes one rule count. A candidate is verified only after the full-month adapter&#x27;s independent hard/fixed-cell validation passes. Keep the original INFEASIBLE verdict and empty patch. Never persist a rule, schedule, or auto-applicable suggestion. Exceptions, busy slots and timeouts retain the original failure and report no verified alternative.
+
+Expose `solver.failureDiagnosis` with `status`, and for VERIFIED_ALTERNATIVE: `ruleId`, `shiftNurseId`, `currentMax`, `proposedMax`, `independentHardValidationPassed`. No free-form model output or names. Spring maps a validated diagnosis to `failure.diagnosis` and scoped `affectedNurses`. The web uses localized copy, explaining that one verified alternative exists and the user must review the rule. Unknown diagnostics retain the generic fallback. Existing diagnostics and ADJUST suggestions are unchanged.
+
+Tests cover no input mutation, classification/target filtering, failed independent validation, deadlines, busy slots, response and trace consistency, Spring scope validation, localized web rendering, and an anonymized fourteen-row night-cap regression. No database schema changes or Flyway migration.
+</pre></main></html>
