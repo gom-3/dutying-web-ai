@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.10 - 2026-10-22
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동채우기 실패 이유와 수정할 조건을 안내하고, 충돌하는 조건을 확인한 뒤 이번 결과에만 예외 적용 여부를 선택할 수 있습니다.
+
 ## 1.3.9 - 2026-10-21
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 휴무 계산 월 이동과 일반 근무자 고정 휴무 요청을 지원하고, 필수 규칙을 위반한 AI 근무표가 적용되지 않도록 차단합니다.

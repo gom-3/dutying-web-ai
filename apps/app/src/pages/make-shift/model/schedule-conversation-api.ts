@@ -124,6 +124,8 @@ export type TConversationPreference = {
     confirmedAt: string;
 };
 export type TConversationExecute = {
+    conflictReviewToken?: string;
+    conflictConfirmed?: boolean;
     monthlyRestRequirement?: TMonthlyRestRequirement;
     expectedRevision: number;
     idempotencyKey: string;

@@ -1,3 +1,4 @@
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -401,6 +402,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
     const generationNoticeContext = useRef<string | null>(null);
     const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
+    const [pendingConflict, setPendingConflict] = useState<{
+        review: NonNullable<TAutofillResponse['conflictReview']>;
+        revision: number;
+        proceed: () => Promise<void>;
+    } | null>(null);
     const [generationReviewMessage, setGenerationReviewMessage] = useState<string | null>(null);
     const generationNoticeShownRef = useRef(false);
     const autofillSequence = useRef(0);
@@ -1342,7 +1348,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         readyContext = getAiFillReadyContext(),
         adjust?: TAutofillAdjustDto,
         prompt?: string,
-        action?: {doc: TDutyDoc; idempotencyKey: string},
+        action?: {doc: TDutyDoc; idempotencyKey: string; conflictReviewToken?: string},
     ) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
@@ -1387,7 +1393,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 year: requestContext.year,
                 month: requestContext.month,
                 doc: requestDoc,
-                ...(action ? {idempotencyKey: action.idempotencyKey} : {}),
+                ...(action
+                    ? {
+                          idempotencyKey: action.idempotencyKey,
+                          ...(action.conflictReviewToken ? {conflictReviewToken: action.conflictReviewToken, conflictConfirmed: true} : {}),
+                      }
+                    : {}),
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
@@ -1419,6 +1430,22 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             }
 
             if (!result.ok) {
+                if (result.conflictReview) {
+                    const review = result.conflictReview;
+                    setPendingConflict({
+                        review,
+                        revision: stateBeforeRequest.draftRevision,
+                        proceed: async () => {
+                            if (useShiftEditorStore.getState().draftRevision !== stateBeforeRequest.draftRevision) return;
+                            setPendingConflict(null);
+                            await runAiFill(readyContext, adjust, prompt, {
+                                doc: requestDoc,
+                                idempotencyKey: crypto.randomUUID(),
+                                conflictReviewToken: review.token,
+                            });
+                        },
+                    });
+                }
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -2772,6 +2799,28 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
+                {pendingConflict && (
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="조건 충돌 확인"
+                        className="fixed inset-0 z-[200] grid place-items-center bg-black/30 p-4"
+                    >
+                        <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-xl">
+                            <ConstraintConflictReview
+                                review={pendingConflict.review}
+                                current={useShiftEditorStore.getState().draftRevision === pendingConflict.revision}
+                                disabled={isAiGenerating}
+                                copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
+                                onProceed={pendingConflict.proceed}
+                                onRevise={() => {
+                                    setPendingConflict(null);
+                                    setIsAdjustDialogOpen(true);
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
                     <JourneyObserved observation={lastAppliedObservation}>

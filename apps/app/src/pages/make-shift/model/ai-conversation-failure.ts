@@ -4,6 +4,7 @@ import i18n from '@/i18n';
 export type TAiConversationFailure = {
     observation?: TScheduleObservation;
     message: string;
+    confirmationRequired?: boolean;
     blocked: boolean;
     /** A local input issue does not need an execution-history lookup. */
     checkOutcome?: boolean;
