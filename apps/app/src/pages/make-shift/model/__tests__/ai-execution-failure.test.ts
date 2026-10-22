@@ -132,14 +132,60 @@ describe('verified generation alternatives', () => {
     });
 });
 
-
 it('allows only an explicitly confirmed server exception through the failure gate', () => {
     const response = {
-        operationType: 'ADJUST' as const, applicable: true, approvable: true, confirmedConstraintException: true,
-        changedCells: [], validation: {summary: {hardCount: 1}}, engineResult: {status: 'ACCEPTED', reviewRequired: false},
+        operationType: 'ADJUST' as const,
+        applicable: true,
+        approvable: true,
+        confirmedConstraintException: true,
+        changedCells: [],
+        validation: {summary: {hardCount: 1}},
+        engineResult: {status: 'ACCEPTED', reviewRequired: false},
     } as unknown as Parameters<typeof aiExecutionFailure>[0];
     expect(aiExecutionFailure(response)).toBeNull();
     expect(aiExecutionFailure({...response, confirmedConstraintException: false})).not.toBeNull();
     expect(aiExecutionFailure({...response, engineResult: {status: 'REJECTED'}})).not.toBeNull();
     expect(aiExecutionFailure({...response, applicable: false})).not.toBeNull();
+});
+
+describe('fixed rest target conflict', () => {
+    it.each(['ko', 'en'])('shows the conflicting counts and a review action in %s', async (language) => {
+        const previous = i18n.language;
+        try {
+            await i18n.changeLanguage(language);
+            const response = {
+                operationType: 'GENERATE',
+                applicable: false,
+                changedCells: [],
+                draftRevision: 1,
+                resultType: 'PATCH',
+                unmetInstructions: [],
+                sameAsPrevious: true,
+                validation: {
+                    draftRevision: 1,
+                    rulesHash: 'test',
+                    summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                    violations: [],
+                },
+                engineResult: {status: 'INFEASIBLE'},
+                failure: {
+                    reasonCode: 'MONTHLY_REST_TARGET_CONFLICT',
+                    message: 'internal text must not be displayed',
+                    restTargetConflicts: [
+                        {shiftNurseId: 1, name: 'Nurse A', minimum: 9, maximum: 9, fixedRestDays: 10, availableRestDays: 20},
+                    ],
+                },
+            } as TAutofillResponse;
+            const failure = aiExecutionFailure(response);
+            expect(failure?.recovery).toBe('review');
+            expect(failure?.message).toContain('Nurse A');
+            expect(failure?.message).toContain('10');
+            expect(failure?.message).toContain('9');
+            expect(failure?.message).not.toContain('internal text');
+            response.failure!.restTargetConflicts![0].fixedRestDays = 100;
+            expect(aiExecutionFailure(response)?.message).not.toContain('100');
+        } finally {
+            await i18n.changeLanguage(previous);
+        }
+    });
 });

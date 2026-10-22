@@ -87,6 +87,29 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         };
     }
 
+    if (reason === 'MONTHLY_REST_TARGET_CONFLICT') {
+        const validDays = (value: unknown): value is number =>
+            typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 31;
+        const details = (response.failure?.restTargetConflicts ?? []).flatMap((item) => {
+            if (!item.name?.trim() || !validDays(item.minimum) || !validDays(item.fixedRestDays) || !validDays(item.availableRestDays))
+                return [];
+            const name = item.name.trim().slice(0, 80);
+            if (validDays(item.maximum) && item.fixedRestDays > item.maximum)
+                return [i18n.t('aiAdjust.executionFailure.restTargetExcess', {name, fixed: item.fixedRestDays, target: item.maximum})];
+            if (item.minimum > item.availableRestDays)
+                return [
+                    i18n.t('aiAdjust.executionFailure.restTargetShortage', {name, available: item.availableRestDays, target: item.minimum}),
+                ];
+            return [];
+        });
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: i18n.t('aiAdjust.executionFailure.restTargetConflict', {details: details.join('\n')}),
+            blocked: false,
+            recovery: 'review',
+        };
+    }
+
     const diagnosis = response.failure?.diagnosis;
     const diagnosedNurse = response.failure?.affectedNurses?.find((nurse) => nurse.shiftNurseId === diagnosis?.shiftNurseId);
     if (

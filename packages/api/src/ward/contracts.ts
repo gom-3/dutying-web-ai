@@ -819,6 +819,14 @@ export type TAutofillResponse = {
         message: string;
         suggestions?: TFailureSuggestion[];
         affectedNurses?: {shiftNurseId: number; name: string}[];
+        restTargetConflicts?: {
+            shiftNurseId: number;
+            name: string;
+            minimum: number;
+            maximum?: number | null;
+            fixedRestDays: number;
+            availableRestDays: number;
+        }[];
         diagnosis?: {
             status: 'VERIFIED_ALTERNATIVE';
             ruleId: number;

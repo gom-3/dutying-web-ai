@@ -52,6 +52,10 @@ export const aiAdjustKo = {
         adjustTitle: '근무표를 수정하지 못했어요.',
         conflictTitle: '조건을 확인해 주세요',
         conflictMessage: '일부 조건을 지키지 못하는 결과가 있어요. 조건을 확인한 뒤 이번 수정에 한해 진행할 수 있어요.',
+        restTargetConflict:
+            '미리 정한 근무와 월 휴무 목표가 맞지 않아요.\n{{details}}\n월 휴무 목표 또는 미리 정한 근무를 확인하고 수정한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
+        restTargetExcess: '{{name}}: 미리 정한 휴무 {{fixed}}일 / 월 휴무 목표 최대 {{target}}일',
+        restTargetShortage: '{{name}}: 휴무를 배정할 수 있는 날 {{available}}일 / 필요한 휴무 최소 {{target}}일',
         verifiedNightCap:
             '지금 설정으로는 자동채우기를 완료할 수 없어요.\n{{name}}의 야간근무를 월 최대 {{current}}회에서 {{proposed}}회로 조정하면 근무표를 만들 수 있어요. 미리 정한 근무와 다른 설정은 그대로 유지할 수 있어요.\n야간근무 횟수를 늘려도 괜찮은지 확인해 주세요. 조정하려면 해당 간호사의 야간근무 횟수 설정을 바꾼 뒤 다시 자동채우기를 눌러 주세요.\n아직 설정이나 근무표가 변경되지는 않았어요.',
         infeasible:
@@ -444,6 +448,10 @@ export const aiAdjustEn = {
         adjustTitle: 'The schedule could not be adjusted.',
         conflictTitle: 'Review conflicting conditions',
         conflictMessage: 'A result is available with unmet conditions. Review the exceptions before proceeding with this change.',
+        restTargetConflict:
+            'Fixed assignments conflict with the monthly days-off target.\n{{details}}\nReview and update the target or fixed assignments, then run autofill again. Your schedule has not changed.',
+        restTargetExcess: '{{name}}: {{fixed}} fixed days off / monthly target maximum {{target}}',
+        restTargetShortage: '{{name}}: {{available}} days available for rest / minimum required {{target}}',
         verifiedNightCap:
             'Autofill could not be completed with your current settings.\nA schedule can be made if {{name}}’s monthly night shift limit is increased from {{current}} to {{proposed}}. Shifts you have already set and all other settings can stay as they are.\nPlease check whether more night shifts are acceptable. To make this change, update this nurse’s night shift limit and run autofill again.\nYour settings and schedule have not been changed.',
         infeasible:
