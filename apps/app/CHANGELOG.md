@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.11
+
+### Patch Changes
+
+- 625a554: 자동완성과 조절에서 이해한 요청과 충돌 이유를 설명하고, 설정 수정·검증된 제안 적용·요청 변경 중 진행 방법을 선택합니다.
+- Updated dependencies [625a554]
+    - @dutying/api@1.3.11
+    - @dutying/domain@1.3.11
+    - @dutying/utils@1.3.11
+
 ## 1.3.10
 
 ### Patch Changes
