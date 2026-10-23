@@ -36,6 +36,12 @@ export const aiAdjustKo = {
     },
     executionFailure: {
         staffingConflict: '{{date}} · {{shift}}: 같은 대상에 최소 {{minimum}}명과 최대 {{maximum}}명을 동시에 요구하고 있어요.',
+        monthlyCapacity:
+            '휴무·가능 근무·월 근무 횟수를 함께 지키려면 {{shifts}} 근무가 최소 {{minimum}}회 필요하지만, 날짜별 인원 상한을 합하면 {{maximum}}회까지만 배정할 수 있어요. {{difference}}회 차이가 있어요.',
+        monthlyCapacityReview:
+            '아래는 검증을 통과한 수정 제안이에요. 영향을 확인하고 이번 표에만 반영할지 선택해 주세요. 설정을 직접 수정하거나 요청을 바꿀 수도 있어요. 선택 전에는 기존 표가 바뀌지 않아요.',
+        monthlyCapacityNext:
+            '월 휴무를 더 줄 수 있도록 할지, 해당 근무의 인원 상한을 늘릴지 선택이 필요해요. 설정을 직접 수정하거나 원하는 방식을 다시 알려주세요. 변경한 조건으로 다시 검증하며, 기존 표는 그대로예요.',
         staffingConflictNext:
             '겹치는 날짜의 인원 조건을 하나로 정해야 해요. 특정 요일을 예외로 둘지, 같은 인원으로 통일할지 정한 뒤 요청 또는 설정을 수정해 주세요.\n다른 조건까지 만족하는 수정안은 아직 확인하지 못했어요. 근무표와 설정은 변경하지 않았어요.',
         connection:
@@ -438,6 +444,12 @@ export const aiAdjustEn = {
     },
     executionFailure: {
         staffingConflict: '{{date}} · {{shift}}: the same group requires at least {{minimum}} and at most {{maximum}} people at once.',
+        monthlyCapacity:
+            'Your rest, eligible-shift and monthly shift limits require at least {{minimum}} {{shifts}} assignments, but the daily staffing caps allow only {{maximum}} in total. The difference is {{difference}} assignments.',
+        monthlyCapacityReview:
+            'The proposal below passed validation. Review its impact before applying it to this schedule only. You can also edit settings or revise your request. Your schedule stays unchanged until you choose.',
+        monthlyCapacityNext:
+            'Choose whether to allow more days off or raise the staffing caps for these shifts. Edit your settings or tell us how you want to proceed. The revised conditions will be checked again; your schedule is unchanged.',
         staffingConflictNext:
             'Choose one headcount for the overlapping dates. Decide whether specific weekdays are exceptions or should use the same headcount, then revise the request or edit the settings.\nWe have not yet verified a revised schedule that satisfies the other conditions. Your schedule and settings are unchanged.',
         connection:

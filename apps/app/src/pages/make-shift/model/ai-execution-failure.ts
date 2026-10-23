@@ -37,6 +37,51 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         response.engineResult.reviewRequired !== true
     )
         return null;
+    const capacityEvidence =
+        response.conflictReview && Array.isArray(response.engineResult?.solver?.conflictEvidence)
+            ? (response.engineResult.solver.conflictEvidence as Record<string, unknown>[])
+            : response.engineResult?.violations;
+    const monthlyCapacity = ['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')
+        ? capacityEvidence?.find(
+              (issue) =>
+                  issue != null &&
+                  typeof issue === 'object' &&
+                  issue.type === 'MONTHLY_STAFFING_CAPACITY_CONFLICT' &&
+                  Array.isArray(issue.shiftCodes) &&
+                  issue.shiftCodes.length > 0 &&
+                  issue.shiftCodes.length <= 6 &&
+                  issue.shiftCodes.every(
+                      (code: unknown) =>
+                          typeof code === 'string' && code.length > 0 && code.length <= 32 && !/[\u0000-\u001f\u007f]/.test(code),
+                  ) &&
+                  typeof issue.minimumAssignments === 'number' &&
+                  Number.isInteger(issue.minimumAssignments) &&
+                  issue.minimumAssignments <= 100000 &&
+                  typeof issue.maximumAssignments === 'number' &&
+                  Number.isInteger(issue.maximumAssignments) &&
+                  issue.maximumAssignments >= 0 &&
+                  issue.minimumAssignments > issue.maximumAssignments &&
+                  issue.excessAssignments === issue.minimumAssignments - issue.maximumAssignments,
+          )
+        : undefined;
+    if (monthlyCapacity) {
+        const review = Boolean(response.conflictReview);
+        return {
+            message:
+                i18n.t('aiAdjust.executionFailure.monthlyCapacity', {
+                    shifts: (monthlyCapacity.shiftCodes as string[]).join('·'),
+                    minimum: monthlyCapacity.minimumAssignments,
+                    maximum: monthlyCapacity.maximumAssignments,
+                    difference: monthlyCapacity.excessAssignments,
+                }) +
+                '\n\n' +
+                i18n.t(review ? 'aiAdjust.executionFailure.monthlyCapacityReview' : 'aiAdjust.executionFailure.monthlyCapacityNext'),
+            blocked: false,
+            recovery: review ? 'review' : 'revise',
+            ...(review ? {confirmationRequired: true} : {conditionConflict: true}),
+            ...(response.observation ? {observation: response.observation} : {}),
+        };
+    }
     if (response.conflictReview)
         return {
             message: i18n.t('aiAdjust.executionFailure.conflictMessage'),

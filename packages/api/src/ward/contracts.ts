@@ -881,6 +881,8 @@ export type TAutofillResponse = {
             }>;
         } | null;
         solver?: {
+            /** Original structured conflict retained when a verified proposal is offered. */
+            conflictEvidence?: Record<string, unknown>[];
             /** 바뀐 칸이 없을 때 'ADJUST_NO_CHANGE'. 실패가 아니다. */
             reason?: string;
             metadata?: {
