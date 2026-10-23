@@ -8,11 +8,20 @@ import {AiResultSnapshot} from '../ai-result-snapshot';
 
 const mocks = vi.hoisted(() => ({capture: vi.fn()}));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, options?: {count?: number}) => (key === 'aiAdjust.snapshot.attempt' ? `(${options?.count}회차)` : key),
-    }),
-}));
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await import('@/i18n');
+
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, options?: {count?: number}) =>
+                key.startsWith('aiAutofillUi.')
+                    ? i18n.t(key, options)
+                    : key === 'aiAdjust.snapshot.attempt'
+                      ? `(${options?.count}회차)`
+                      : key,
+        }),
+    };
+});
 vi.mock('html-to-image', () => ({toBlob: mocks.capture}));
 vi.mock('../../shared/make-shift-calendar', () => ({
     MakeShiftCalendar: ({doc, shift, readonly}: {doc: TDutyDoc; shift: TShift; readonly: boolean}) => (

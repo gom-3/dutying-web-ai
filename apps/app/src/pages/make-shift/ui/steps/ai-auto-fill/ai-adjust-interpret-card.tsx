@@ -184,12 +184,8 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
                             <li key={index} className="relative min-w-0 space-y-1 rounded-[14px] bg-white px-3 py-3">
                                 <span className="absolute top-3 right-3 text-[12px] leading-5 font-medium text-[#667085]">
                                     {item.severity === 'HARD' || item.required
-                                        ? i18n.language.startsWith('ko')
-                                            ? '필수 조건'
-                                            : 'Required'
-                                        : i18n.language.startsWith('ko')
-                                          ? '선호 조건'
-                                          : 'Preferred'}
+                                        ? t('aiAutofillUi.semanticCondition.required')
+                                        : t('aiAutofillUi.semanticCondition.preferred')}
                                 </span>
                                 {item.kind === 'CELL' || item.kind === 'CELL_SET' ? (
                                     <div className="space-y-1">

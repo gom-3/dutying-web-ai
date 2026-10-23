@@ -2464,6 +2464,36 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
+    it('shows Japanese request examples and sends the selected Japanese request with its locale', async () => {
+        await i18n.changeLanguage('ja');
+        current.operations = [];
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+        useShiftEditorStore.getState().setDoc({
+            columns: ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'],
+            rows: [{workerId: '1', cells: ['O', 'O', 'O', 'O', 'O']}],
+            workerMeta: {'1': {name: '田中花子', nurseId: 1}},
+            fixedCells: {},
+            requestCells: {},
+        });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'ja:1'});
+        renderSidebar();
+
+        expect(i18n.t('aiAdjust.title')).toMatch(/自動/);
+        expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toBeVisible();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+
+        const request = '田中花子さんの1日～5日にはD勤務を入れないでください';
+        const input = screen.getByRole('textbox', {name: '変更したい内容'});
+
+        expect(input).toHaveAttribute('placeholder', `例：${request}`);
+        await userEvent.click(screen.getByRole('button', {name: request}));
+        expect(input).toHaveValue(request);
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret).toHaveBeenCalledWith(1, expect.objectContaining({text: request, language: 'ja'}));
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('binds semantic confirmation and calculation to the reviewed plan without raw items', async () => {
         const proposal = {
             eventId: 2,

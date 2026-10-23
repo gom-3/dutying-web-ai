@@ -28,11 +28,7 @@ function wardConditions(rules: TShiftConstraintRuleResponse[]): TAiWardCondition
                 rule.shiftConstraintRuleId != null
                     ? `rule:${rule.shiftConstraintRuleId}`
                     : `rule:${rule.templateCode}:${rule.sortOrder}:${index}`,
-            label: rule.displayText?.trim().length
-                ? rule.displayText.trim()
-                : i18n.language.startsWith('ko')
-                  ? '제약조건'
-                  : 'Schedule condition',
+            label: rule.displayText?.trim().length ? rule.displayText.trim() : i18n.t('aiAutofillUi.activeConditions.scheduleCondition'),
         }));
 }
 

@@ -13,6 +13,10 @@ describe('interpretation summary', () => {
         expect(formatInterpretationDates(['2026-02-30'], 'ko')).toBe('2026-02-30');
         expect(formatInterpretationDates(['2026-10-01', '2026-10-02'], 'en')).toBe('Oct 1~2');
     });
+    it('uses Japanese month and day labels while preserving gaps and year boundaries', () => {
+        expect(formatInterpretationDates(['2026-10-01', '2026-10-02', '2026-10-04'], 'ja')).toBe('10月1～2日、4日');
+        expect(formatInterpretationDates(['2026-12-31', '2027-01-01'], 'ja-JP')).toBe('2026年12月31日 · 2027年1月1日');
+    });
     it('groups CELL and CELL_SET for display without changing execution data or merging different people', () => {
         const items: TScheduleMonthRequestItem[] = [
             {kind: 'CELL', nurseId: 1, date: '2026-10-01', shiftCode: 'D'},

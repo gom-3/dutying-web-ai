@@ -335,7 +335,6 @@ function resolveSnapshotDisplayTitle(params: {
 export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void} = {}) {
     const [batchKey, setBatchKey] = useState(() => new URLSearchParams(window.location.search).get('commercialBatch'));
     const [loadingBatch, setLoadingBatch] = useState(false);
-    const batchCopy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
     const {t} = useTypedTranslation();
     const language = i18n.resolvedLanguage ?? i18n.language;
     const queryClient = useQueryClient();
@@ -1527,11 +1526,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 setLastAdjustChangedCount(null);
                 setLastAdjustFailure(null);
                 setAiStatus('error');
-                toast.error(
-                    goalResult.required
-                        ? '필수 목표를 달성하지 못해 결과를 적용하지 않았어요.'
-                        : '요청한 방향으로 조절한 근무표를 제공하지 못했어요. 기존 근무표는 그대로예요.',
-                );
+                toast.error(goalResult.required ? t('aiAutofillPage.requiredGoalUnmet') : t('aiAutofillPage.adjustmentUnavailable'));
 
                 void refetchMonthRequests();
 
@@ -1901,7 +1896,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         const currentRevision = useShiftEditorStore.getState().draftRevision;
 
         if (currentRevision !== candidate.baseDraftRevision) {
-            toast.error('표가 변경되어 이전 조절 후보를 적용할 수 없어요. 다시 계산해 주세요.');
+            toast.error(t('aiAutofillPage.candidateStale'));
 
             return;
         }
@@ -1927,7 +1922,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 cells: docToSnapshotCellsDTO(useShiftEditorStore.getState().doc, originalShift),
             });
         } catch {
-            toast.error('표가 변경되었거나 이미 처리된 후보라 적용할 수 없어요.');
+            toast.error(t('aiAutofillPage.candidateUnavailable'));
 
             return;
         }
@@ -2006,7 +2001,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 writeStoredGoalCandidate(goalCandidateStorageKey(wardId, currentShiftTeamId, year, month), null);
                 setPendingGoalCandidateApplyEventId(null);
             } catch {
-                toast.error('다른 편집이 있어 목표 조절 결과를 안전하게 되돌릴 수 없어요.');
+                toast.error(t('aiAutofillPage.undoUnavailable'));
             }
 
             return;
@@ -2540,15 +2535,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             const cells = batchCellsForReview(batch, currentShiftTeamId, year, month, useShiftEditorStore.getState().doc);
 
-            if (
-                !window.confirm(
-                    batchCopy(
-                        `생성 결과 ${cells.length}칸을 현재 임시 근무표에 적용할까요? 직접 편집한 값은 바뀔 수 있습니다. 고정·신청 근무는 유지하며, 저장·확정은 검토 후 별도로 해주세요. 추가 횟수는 사용하지 않습니다.`,
-                        `Apply ${cells.length} generated cells to this draft? Unsaved edits may change. Fixed and requested cells stay protected. Review before saving or confirming. No additional use is charged.`,
-                    ),
-                )
-            )
-                return;
+            if (!window.confirm(t('aiAutofillPage.batchConfirm', {count: cells.length}))) return;
 
             commands.applyChangedCells(cells, ready.originalShift, 'ai');
             markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
@@ -2573,12 +2560,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 commands.setScheduleValidationFromApi,
             );
         } catch {
-            toast.error(
-                batchCopy(
-                    '결과의 팀·편성 월·명단 또는 검증 상태를 확인해 주세요. 저장·확정 전에 현재 규칙으로 다시 검증해야 합니다.',
-                    'Check the result’s team, month, roster and validation status. Validate against current rules before saving or confirming.',
-                ),
-            );
+            toast.error(t('aiAutofillPage.batchInvalid'));
         } finally {
             setLoadingBatch(false);
         }
@@ -2693,12 +2675,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 <AiPlanNotice hasResult={hasCompletedAiFill} />
                 {batchKey && (
                     <div className="rounded-xl bg-purple-50 p-3 text-sm">
-                        <p>
-                            {batchCopy(
-                                '여러 팀 전체 생성 결과가 준비되어 있습니다. 현재 명단과 보호할 근무를 확인한 뒤 불러옵니다.',
-                                'Review the batch result against the current roster and protected shifts.',
-                            )}
-                        </p>
+                        <p>{t('aiAutofillPage.batchReady')}</p>
                         <button
                             type="button"
                             disabled={
@@ -2707,7 +2684,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             onClick={() => void reviewBatchResult()}
                             className="mt-2 rounded-lg bg-purple-600 px-4 py-2 text-white disabled:opacity-50"
                         >
-                            {batchCopy('결과 불러와 검토하기 · 추가 차감 없음', 'Load result for review · no extra use')}
+                            {t('aiAutofillPage.batchReview')}
                         </button>
                     </div>
                 )}

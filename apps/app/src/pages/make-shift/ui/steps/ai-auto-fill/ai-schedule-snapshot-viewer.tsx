@@ -2,7 +2,6 @@ import * as Dialog from '@radix-ui/react-dialog';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import type {TShift} from '@/entities/shift';
 import type {TDutyDoc} from '@/features/shift-editor/model/types';
-import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {AiConversationLoading} from './ai-conversation-loading';
@@ -41,8 +40,6 @@ export function AiScheduleSnapshotViewer<TSource>({
     const [sourceStatus, setSourceStatus] = useState<'idle' | 'loading' | 'error'>('idle');
     const [sourceAttempt, setSourceAttempt] = useState(0);
     const initiatingControl = useRef(document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    const ko = i18n.language.startsWith('ko');
-    const copy = (korean: string, english: string) => (ko ? korean : english);
     const comparisonBefore = before ?? loadedBefore;
     const canCompare = !!(comparisonBefore ?? loadBefore);
     const waitingForBefore = showBefore && !comparisonBefore;
@@ -109,14 +106,11 @@ export function AiScheduleSnapshotViewer<TSource>({
                             <div className="min-w-0">
                                 <Dialog.Title className="text-lg leading-7 font-semibold text-[#333D4B] sm:text-xl">
                                     {year && month
-                                        ? copy(`${year}년 ${month}월 근무표`, `${year} / ${month} schedule`)
-                                        : copy('근무표', 'Schedule')}
+                                        ? t('aiAutofillUi.scheduleSnapshotViewer.schedule', {year, month})
+                                        : t('aiAutofillUi.scheduleSnapshotViewer.schedule2')}
                                 </Dialog.Title>
                                 <Dialog.Description className="mt-1 text-[13px] leading-5 break-keep text-[#667085]">
-                                    {copy(
-                                        '이 결과를 만든 시점의 근무표예요. 여기서는 수정할 수 없어요.',
-                                        'This is the schedule when this result was created. You cannot edit it here.',
-                                    )}
+                                    {t('aiAutofillUi.scheduleSnapshotViewer.thisIsTheScheduleWhenThisResultWasCreatedYouCannotEditItHere')}
                                 </Dialog.Description>
                             </div>
                             <button
@@ -130,11 +124,11 @@ export function AiScheduleSnapshotViewer<TSource>({
                         {canCompare && (
                             <div
                                 role="group"
-                                aria-label={copy('전후 비교', 'Compare')}
+                                aria-label={t('aiAutofillUi.scheduleSnapshotViewer.compare')}
                                 className="grid grid-cols-2 gap-1 rounded-xl bg-[#F4F5F7] p-1 sm:w-fit"
                             >
                                 <button type="button" aria-pressed={showBefore} onClick={selectBefore} className={modeButtonClass}>
-                                    {copy('변경 전', 'Before')}
+                                    {t('aiAutofillUi.scheduleSnapshotViewer.before')}
                                 </button>
                                 <button
                                     type="button"
@@ -142,7 +136,7 @@ export function AiScheduleSnapshotViewer<TSource>({
                                     onClick={() => setShowBefore(false)}
                                     className={modeButtonClass}
                                 >
-                                    {copy('변경 후', 'After')}
+                                    {t('aiAutofillUi.scheduleSnapshotViewer.after')}
                                 </button>
                             </div>
                         )}
@@ -150,12 +144,12 @@ export function AiScheduleSnapshotViewer<TSource>({
                     <div className="flex min-h-0 flex-1 flex-col bg-[#F8F9FB]">
                         {!waitingForBefore && (
                             <p className="shrink-0 px-4 pt-2 pb-1 text-xs leading-5 text-[#667085] sm:hidden">
-                                {copy('좌우로 밀어 전체 날짜를 확인하세요.', 'Swipe horizontally to see all dates.')}
+                                {t('aiAutofillUi.scheduleSnapshotViewer.swipeHorizontallyToSeeAllDates')}
                             </p>
                         )}
                         <div
                             role="region"
-                            aria-label={copy('근무표 전체 보기', 'Full schedule')}
+                            aria-label={t('aiAutofillUi.scheduleSnapshotViewer.fullSchedule')}
                             aria-busy={waitingForBefore && sourceStatus === 'loading'}
                             tabIndex={0}
                             className="min-h-0 flex-1 overflow-auto p-4 focus-visible:bg-[#EDE7FF] focus-visible:text-[#5931B9] focus-visible:outline-none sm:p-6"
@@ -164,20 +158,18 @@ export function AiScheduleSnapshotViewer<TSource>({
                                 <div className="flex h-full min-h-40 items-center justify-center text-center text-[13px] leading-5 text-[#667085]">
                                     {sourceStatus === 'error' ? (
                                         <div role="alert" className="space-y-3">
-                                            <p>
-                                                {copy('변경 전 근무표를 불러오지 못했어요.', 'The earlier schedule could not be loaded.')}
-                                            </p>
+                                            <p>{t('aiAutofillUi.scheduleSnapshotViewer.theEarlierScheduleCouldNotBeLoaded')}</p>
                                             <button
                                                 type="button"
                                                 onClick={selectBefore}
                                                 className="min-h-[44px] rounded-lg bg-[#EDE7FF] px-3 py-2 font-medium text-[#5931B9] hover:bg-[#E3DAFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none"
                                             >
-                                                {copy('다시 불러오기', 'Try again')}
+                                                {t('aiAutofillUi.scheduleSnapshotViewer.tryAgain')}
                                             </button>
                                         </div>
                                     ) : (
                                         <AiConversationLoading
-                                            label={copy('변경 전 근무표 불러오는 중', 'Loading earlier schedule')}
+                                            label={t('aiAutofillUi.scheduleSnapshotViewer.loadingEarlierSchedule')}
                                             className="justify-center"
                                         />
                                     )}
@@ -207,13 +199,10 @@ export function AiScheduleSnapshotViewer<TSource>({
                                 {canCompare
                                     ? showBefore
                                         ? waitingForBefore
-                                            ? copy(
-                                                  '변경 후 근무표는 바로 확인할 수 있어요.',
-                                                  'You can still view the schedule after changes.',
-                                              )
-                                            : copy('변경 전 근무표를 보고 있어요.', 'You are viewing the schedule before changes.')
-                                        : copy('변경 후 근무표를 보고 있어요.', 'You are viewing the schedule after changes.')
-                                    : copy('이 결과를 바탕으로 이어서 작성할 수 있어요.', 'You can continue working from this result.')}
+                                            ? t('aiAutofillUi.scheduleSnapshotViewer.youCanStillViewTheScheduleAfterChanges')
+                                            : t('aiAutofillUi.scheduleSnapshotViewer.youAreViewingTheScheduleBeforeChanges')
+                                        : t('aiAutofillUi.scheduleSnapshotViewer.youAreViewingTheScheduleAfterChanges')
+                                    : t('aiAutofillUi.scheduleSnapshotViewer.youCanContinueWorkingFromThisResult')}
                             </p>
                             <button
                                 type="button"
@@ -222,8 +211,8 @@ export function AiScheduleSnapshotViewer<TSource>({
                                 className="min-h-[44px] w-full shrink-0 rounded-[10px] bg-main-1 px-5 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-[#5931D9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none sm:w-auto"
                             >
                                 {showBefore && comparisonBefore
-                                    ? copy('변경 전 표로 이어서 작성하기', 'Continue from the earlier schedule')
-                                    : copy('이 표로 이어서 작성하기', 'Continue from this result')}
+                                    ? t('aiAutofillUi.scheduleSnapshotViewer.continueFromTheEarlierSchedule')
+                                    : t('aiAutofillUi.scheduleSnapshotViewer.continueFromThisResult')}
                             </button>
                         </footer>
                     )}

@@ -140,8 +140,8 @@ vi.mock('html-to-image', () => ({toBlob: vi.fn().mockResolvedValue(new Blob(['sc
 vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
         t: (key: string, values?: Record<string, unknown>) =>
-            ['aiAdjust.unexpectedOperation', 'aiAdjust.requestsChanged'].includes(key)
-                ? i18n.t(key)
+            key.startsWith('aiAutofillUi.') || ['aiAdjust.unexpectedOperation', 'aiAdjust.requestsChanged'].includes(key)
+                ? i18n.t(key, values)
                 : values
                   ? `${key} ${JSON.stringify(values)}`
                   : key,

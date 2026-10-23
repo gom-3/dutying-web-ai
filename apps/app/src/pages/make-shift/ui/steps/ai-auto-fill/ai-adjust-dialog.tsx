@@ -3,7 +3,6 @@ import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutyi
 import {useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
-import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
@@ -212,7 +211,7 @@ export default function AiAdjustDialog({
                                 .map((request) => ({
                                     id: `request:${request.id}`,
                                     label: request.displayLabel,
-                                    description: i18n.language.startsWith('ko') ? '이번 달에 저장됨' : 'Saved for this month',
+                                    description: t('aiAutofillUi.activeConditions.savedForMonth'),
                                     onRemove: () => activeConditions.removeRequest(request.id),
                                 }))}
                             loading={activeConditions.loading}

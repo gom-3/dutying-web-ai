@@ -9,9 +9,13 @@ export type TReviewReply = {questionId: string; value: TReviewValue};
 export function getReviewQuestions(card: TAdjustCard): TReviewQuestion[] {
     const questions = card.items.flatMap(({item}, itemIndex) => {
         const kinds: TReviewQuestionKind[] = [];
+
         if (item.kind === 'KNOB' || item.kind === 'RULE') kinds.push('lifetime');
+
         if (item.kind === 'RULE') kinds.push('severity');
+
         if (item.kind === 'GOAL') kinds.push('offDifference', 'targetNurses', 'comparisonNurses');
+
         return kinds.map((kind) => ({id: `${itemIndex}:${kind}`, kind, itemIndex}));
     });
 
@@ -33,15 +37,20 @@ export function answerReviewQuestion(card: TAdjustCard, question: TReviewQuestio
     const entry = card.items[question.itemIndex];
 
     if (!entry) return null;
-    let updated = {...entry};
+
+    const updated = {...entry};
+
     if (question.kind === 'lifetime') {
         if (value !== 'MONTH' && value !== 'TEAM') return null;
+
         updated.lifetime = value;
     } else if (question.kind === 'severity') {
         if (value !== 'SOFT' && value !== 'HARD') return null;
+
         updated.severity = value;
     } else if (question.kind === 'offDifference') {
         if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 31) return null;
+
         updated.item = {...entry.item, maxOffDifference: value};
     } else {
         if (
@@ -51,18 +60,23 @@ export function answerReviewQuestion(card: TAdjustCard, question: TReviewQuestio
             value.length < (question.kind === 'comparisonNurses' ? 2 : 1)
         )
             return null;
+
         const field: keyof TScheduleMonthRequestItem = question.kind === 'targetNurses' ? 'targetNurseIds' : 'comparisonNurseIds';
+
         updated.item = {...entry.item, [field]: value};
     }
+
     return {...card, items: card.items.map((item, index) => (index === question.itemIndex ? updated : item))};
 }
 
 export function isReviewComplete(card: TAdjustCard, replies: TReviewReply[]): boolean {
     const questions = getReviewQuestions(card);
+
     return (
         questions.length === replies.length &&
         questions.every((question, index) => {
             const reply = replies[index];
+
             return reply?.questionId === question.id && answerReviewQuestion(card, question, reply.value) !== null;
         })
     );
@@ -71,6 +85,7 @@ export function isReviewComplete(card: TAdjustCard, replies: TReviewReply[]): bo
 /** Only explicit answers to the current question are handled locally. Other text is reinterpreted. */
 export function parseReviewReply(question: TReviewQuestion | undefined, text: string): TReviewValue | null {
     if (!question) return null;
+
     const normalized = text
         .trim()
         .replace(/[.!?。！？]+$/, '')
@@ -78,31 +93,49 @@ export function parseReviewReply(question: TReviewQuestion | undefined, text: st
         .toLowerCase();
 
     if (question.kind === 'proposal') {
-        return /^(네|예|응|좋아요|이대로좋아요|네이대로좋아요|네반영해주세요|반영해주세요|반영해줘|적용해주세요|yes|yesplease|yeslooksgood|looksgood)$/.test(
-            normalized.replace(/[,\s]/g, ''),
+        return /^(네|예|응|좋아요|이대로좋아요|네이대로좋아요|네반영해주세요|반영해주세요|반영해줘|적용해주세요|yes|yesplease|yeslooksgood|looksgood|はい|この内容で大丈夫です|はいこの内容で大丈夫です|この内容でお願いします|はいこの内容でお願いします|この内容だけ反映します|はいこの内容だけ反映します|反映してください|適用してください|はい反映してください|はい適用してください)$/.test(
+            normalized.replace(/[,、，\s]/g, ''),
         )
             ? 'CONFIRM'
             : null;
     }
+
     if (question.kind === 'lifetime') {
         if (
             /^(이번 ?달(만|로)?|한 ?달(만)?)( ?(적용|반영)(해 ?줘|해 ?주세요)?)?$/.test(normalized) ||
-            /^this month( only)?$/.test(normalized)
+            /^this month( only)?$/.test(normalized) ||
+            /^今月(のみ|だけ)?((に)?(適用|反映)(して|してください)?)?$/.test(normalized)
         )
             return 'MONTH';
+
         if (
             /^(매달|계속|앞으로( 계속)?)( ?(적용|반영)(해 ?줘|해 ?주세요)?)?$/.test(normalized) ||
-            /^(every month|ongoing)$/.test(normalized)
+            /^(every month|ongoing)$/.test(normalized) ||
+            /^(毎月|今後も|これからも|継続して)((適用|反映)(して|してください)?)?$/.test(normalized)
         )
             return 'TEAM';
     }
+
     if (question.kind === 'severity') {
-        if (/^(꼭|반드시)( (반영|적용)(해 ?줘|해 ?주세요)?)?$/.test(normalized) || normalized === 'must follow') return 'HARD';
-        if (/^(가능하면( 반영)?|되도록|가능한 만큼|if possible)$/.test(normalized)) return 'SOFT';
+        if (
+            /^(꼭|반드시)( (반영|적용)(해 ?줘|해 ?주세요)?)?$/.test(normalized) ||
+            normalized === 'must follow' ||
+            /^(必須|必須にしてください|必ず|必ず守ってください|必ず(適用|反映)してください)$/.test(normalized)
+        )
+            return 'HARD';
+
+        if (
+            /^(가능하면( 반영)?|되도록|가능한 만큼|if possible)$/.test(normalized) ||
+            /^(できれば|可能であれば|なるべく|できる限り)((適用|反映)してください)?$/.test(normalized)
+        )
+            return 'SOFT';
     }
-    if (question.kind === 'offDifference' && /^\d{1,2}\s*(일)?\s*(이내|이내로|로)?$/.test(normalized)) {
+
+    if (question.kind === 'offDifference' && /^\d{1,2}\s*(일|日)?\s*(이내|이내로|로|以内|以内で|で)?$/.test(normalized)) {
         const value = Number.parseInt(normalized, 10);
+
         return value <= 31 ? value : null;
     }
+
     return null;
 }

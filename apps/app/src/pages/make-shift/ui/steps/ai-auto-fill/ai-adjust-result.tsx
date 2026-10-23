@@ -1,6 +1,5 @@
 import {Undo2} from 'lucide-react';
 import {useRef, useState, type ReactNode} from 'react';
-import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
@@ -68,14 +67,9 @@ export function AiAdjustResult({
     const notices = response.adjustmentNotices?.filter((notice) => notice.message.trim()) ?? [];
     const hasUnmet = unmet.length > 0 || unmetInstructions.length > 0;
     const hasSupplementalDetails = unmetInstructions.length > 0 || notices.length > 0;
-    const ko = i18n.language.startsWith('ko');
     const title = changes.length
-        ? ko
-            ? '근무표를 조정했어요!'
-            : 'Your adjusted schedule is ready!'
-        : ko
-          ? '이번에는 바뀐 근무가 없어요.'
-          : 'No shifts changed this time.';
+        ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady')
+        : t('aiAutofillUi.conversationResult.noShiftsChangedThisTime');
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-3">

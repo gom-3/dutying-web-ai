@@ -1,4 +1,6 @@
 import {useState} from 'react';
+import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {conversationOperationFailure} from '../../../model/ai-execution-failure';
 import {conversationTurnText, operationAttempt, visibleConversationTurns} from '../../../model/conversation-presentation';
 import {
@@ -18,7 +20,8 @@ type TProps = {
 };
 
 /** Earlier split conversations are retained, but never become an executable current plan. */
-export function AiConversationHistory({conversation, load, onView, copy}: TProps) {
+export function AiConversationHistory({conversation, load, onView}: TProps) {
+    const {t} = useTypedTranslation();
     const [detail, setDetail] = useState<TConversationDetail>();
     const [loading, setLoading] = useState(false);
     const [failed, setFailed] = useState(false);
@@ -45,13 +48,14 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
             }}
         >
             <summary className="cursor-pointer text-sm text-[#475467]">
-                {copy('이전 대화 기록', 'Earlier conversation')} · {new Date(conversation.createdAt).toLocaleDateString()}
+                {t('aiAutofillUi.conversationHistory.earlierConversation')} ·{' '}
+                {new Date(conversation.createdAt).toLocaleDateString(i18n.language)}
             </summary>
             <div className="mt-3 space-y-3">
-                {loading && <AiConversationLoading label={copy('이전 대화 불러오는 중', 'Loading earlier conversation')} />}
+                {loading && <AiConversationLoading label={t('aiAutofillUi.conversationHistory.loadingEarlierConversation')} />}
                 {failed && (
                     <button type="button" onClick={() => void fetchHistory()}>
-                        {copy('기록 다시 불러오기', 'Retry history')}
+                        {t('aiAutofillUi.conversationHistory.retryHistory')}
                     </button>
                 )}
                 {detail &&
@@ -59,7 +63,7 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                         if (event.kind === 'turn') {
                             return event.turn.type === 'SEGMENT_START' ? (
                                 <p key={event.id} className="pt-3 text-xs text-gray-4">
-                                    {copy('새 요청 구간', 'New request section')}
+                                    {t('aiAutofillUi.conversationHistory.newRequestSection')}
                                 </p>
                             ) : (
                                 <p key={event.id} className="text-sm whitespace-pre-wrap">
@@ -76,7 +80,7 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                     className="min-h-[44px] rounded-[10px] bg-[#EDE7FF] px-4 py-2 text-[13px] font-medium text-[#5931B9] transition-colors hover:bg-[#E3DAFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none motion-reduce:transition-none"
                                     onClick={() => onView(event.operation)}
                                 >
-                                    {copy('근무표 살펴보기', 'Explore schedule')}
+                                    {t('aiAutofillUi.conversationHistory.exploreSchedule')}
                                 </button>
                             </div>
                         );
@@ -86,10 +90,9 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                 key={event.id}
                                 operationType={event.operation.operationType}
                                 failure={failure}
-                                attemptLabel={copy(
-                                    `${operationAttempt(detail, event.operation.operationId)}회차`,
-                                    `Run ${operationAttempt(detail, event.operation.operationId)}`,
-                                )}
+                                attemptLabel={t('aiAutofillUi.conversationHistory.attemptLabel', {
+                                    attempt: operationAttempt(detail, event.operation.operationId),
+                                })}
                             >
                                 {viewAction}
                             </AiExecutionFailure>
@@ -98,15 +101,15 @@ export function AiConversationHistory({conversation, load, onView, copy}: TProps
                                 <div className="flex items-start gap-2">
                                     <p className="min-w-0 font-semibold">
                                         {event.operation.operationType === 'GENERATE'
-                                            ? copy('자동채우기', 'Autofill')
-                                            : copy('수정', 'Adjustment')}{' '}
+                                            ? t('aiAutofillUi.conversationHistory.autofill')
+                                            : t('aiAutofillUi.conversationHistory.adjustment')}{' '}
                                         {operationAttempt(detail, event.operation.operationId)}
-                                        {copy('회차', ' attempt')} ·{' '}
+                                        {t('aiAutofillUi.conversationHistory.attempt')} ·{' '}
                                         {event.operation.executionStatus === 'SUCCEEDED'
-                                            ? copy('완료', 'Completed')
+                                            ? t('aiAutofillUi.conversationHistory.completed')
                                             : event.operation.executionStatus === 'FAILED'
-                                              ? copy('실패', 'Failed')
-                                              : copy('결과 확인 필요', 'Outcome needs checking')}
+                                              ? t('aiAutofillUi.conversationHistory.failed')
+                                              : t('aiAutofillUi.conversationHistory.outcomeNeedsChecking')}
                                     </p>
                                 </div>
                                 {viewAction}

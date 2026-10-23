@@ -79,6 +79,9 @@ export function formatInterpretationDates(dates: string[], language = 'ko'): str
             if (language.startsWith('ko'))
                 return `${years.size > 1 ? `${year}년 ` : ''}${monthNumber}월 ${ranges.map((range) => `${range}일`).join(', ')}`;
 
+            if (language.startsWith('ja'))
+                return `${years.size > 1 ? `${year}年` : ''}${monthNumber}月${ranges.map((range) => `${range.replace('~', '～')}日`).join('、')}`;
+
             const monthLabel = new Intl.DateTimeFormat(language || 'en', {month: 'short', timeZone: 'UTC'}).format(
                 new Date(`${month}-01T00:00:00Z`),
             );

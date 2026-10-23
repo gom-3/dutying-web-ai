@@ -1,5 +1,4 @@
 import {useState, type ReactNode} from 'react';
-import i18n from '@/i18n';
 import assistantIcon from '@/shared/assets/images/ai-adjust/assistant.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -94,13 +93,9 @@ export function AiAdjustReviewConversation({
     const state = historical || (!editable && !accepted) ? 'history' : accepted ? 'confirmed' : 'preview';
     const heading =
         state === 'history'
-            ? i18n.language.startsWith('ko')
-                ? '이전 요청 내용'
-                : 'Previous request'
+            ? t('aiAutofillUi.semanticReview.previousRequest')
             : state === 'confirmed'
-              ? i18n.language.startsWith('ko')
-                  ? '확인한 조건이에요'
-                  : 'Confirmed conditions'
+              ? t('aiAutofillUi.legacyReview.confirmedConditions')
               : undefined;
     const confirmation = (
         <>

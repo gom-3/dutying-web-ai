@@ -43,6 +43,23 @@ function Fixture({disabled = false, onSubmit = vi.fn(), onClose = vi.fn(), onKey
 }
 
 describe('result feedback dialog', () => {
+    it('renders the result feedback form in Japanese', async () => {
+        await i18n.changeLanguage('ja');
+
+        const user = userEvent.setup();
+
+        render(<Fixture />);
+        await user.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
+
+        const dialog = screen.getByRole('dialog', {name: 'この結果へのフィードバック'});
+        const input = within(dialog).getByRole('textbox', {name: 'フィードバック'});
+
+        expect(input).toHaveFocus();
+        expect(input).toHaveAttribute('placeholder', '例：夜勤後の休みがリクエストより少ないです。');
+        expect(within(dialog).getByRole('button', {name: 'フィードバックを送信'})).toBeDisabled();
+        expect(within(dialog).getByRole('button', {name: 'キャンセル'})).toBeVisible();
+    });
+
     it('focuses the labeled input, prevents whitespace submissions and preserves a selected-result target', async () => {
         const user = userEvent.setup();
         const onSubmit = vi.fn();
