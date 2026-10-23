@@ -51,7 +51,7 @@ export function UserMessage({children}: {children: ReactNode}) {
 type TProps = {
     card: TAdjustCard;
     replies: TReviewReply[];
-    nurses: {nurseId: number; name: string}[];
+    nurses: {nurseId: number; name: string; divisionName?: string | null}[];
     editable: boolean;
     accepted: boolean;
     historical?: boolean;

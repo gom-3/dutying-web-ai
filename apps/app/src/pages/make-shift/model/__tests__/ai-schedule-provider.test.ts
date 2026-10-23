@@ -122,7 +122,7 @@ describe('requestAiSchedule', () => {
         }
     });
 
-    it.each(['REJECTED', 'ACCEPTED'])('applies a verified GENERATE review draft with %s while approval stays blocked', async (status) => {
+    it.each(['REJECTED', 'ACCEPTED'])('rejects a legacy GENERATE review draft with %s even when applicable is true', async (status) => {
         const review = {
             ...response,
             applicable: true,
@@ -138,13 +138,23 @@ describe('requestAiSchedule', () => {
 
         const result = await requestAiSchedule(request);
 
-        expect(result).toMatchObject({ok: true, response: {approvable: false, changedCells: review.changedCells}});
+        expect(result).toMatchObject({ok: false, failure: {recovery: 'revise'}});
 
         apiGenerate.mockResolvedValue({...review, operationType: 'ADJUST'});
 
         const adjustResult = await requestAiSchedule({...request, adjust: {strength: 'NORMAL'}});
 
         expect(adjustResult.ok).toBe(false);
+    });
+
+    it('rejects accepted applicable responses with remaining hard violations even without a review flag', async () => {
+        apiGenerate.mockResolvedValue({
+            ...response,
+            applicable: true,
+            engineResult: {status: 'ACCEPTED'},
+            validation: {...response.validation, summary: {...response.validation.summary, valid: false, hardCount: 1}},
+        });
+        expect(await requestAiSchedule(request)).toMatchObject({ok: false, failure: {recovery: 'revise'}});
     });
 
     it.each([undefined, false])('keeps rejected drafts blocked without explicit reviewRequired=%s', async (reviewRequired) => {

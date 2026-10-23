@@ -1,3 +1,5 @@
+import {AiResultSatisfaction} from './ai-result-satisfaction';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -391,6 +393,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+    const [feedbackObservation, setFeedbackObservation] = useState<TAutofillResponse['observation']>();
     const [lastAppliedObservation, setLastAppliedObservation] = useState<TAutofillResponse['observation']>();
     const [hasGeneratedSchedule, setHasGeneratedSchedule] = useState(false);
     const rememberGeneratedSchedule = useCallback(() => {
@@ -400,6 +403,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
     const generationNoticeContext = useRef<string | null>(null);
     const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
+    const [pendingConflict, setPendingConflict] = useState<{
+        review: NonNullable<TAutofillResponse['conflictReview']>;
+        revision: number;
+        proceed: () => Promise<void>;
+    } | null>(null);
     const [generationReviewMessage, setGenerationReviewMessage] = useState<string | null>(null);
     const generationNoticeShownRef = useRef(false);
     const autofillSequence = useRef(0);
@@ -720,6 +728,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     useEffect(() => {
         setHasCompletedAiFill(false);
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setGenerationReviewMessage(null);
         setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
@@ -1098,6 +1107,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             resetAiStatus();
             setHasCompletedAiFill(false);
             setLastAppliedObservation(undefined);
+            setFeedbackObservation(undefined);
             setHasGeneratedSchedule(false);
             writeAutofillCompletion(completionStorageKey, false);
 
@@ -1341,7 +1351,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         readyContext = getAiFillReadyContext(),
         adjust?: TAutofillAdjustDto,
         prompt?: string,
-        action?: {doc: TDutyDoc; idempotencyKey: string},
+        action?: {doc: TDutyDoc; idempotencyKey: string; conflictReviewToken?: string},
     ) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
@@ -1359,6 +1369,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setIsAiGenerating(true);
         setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
@@ -1386,7 +1397,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 year: requestContext.year,
                 month: requestContext.month,
                 doc: requestDoc,
-                ...(action ? {idempotencyKey: action.idempotencyKey} : {}),
+                ...(action
+                    ? {
+                          idempotencyKey: action.idempotencyKey,
+                          ...(action.conflictReviewToken ? {conflictReviewToken: action.conflictReviewToken, conflictConfirmed: true} : {}),
+                      }
+                    : {}),
                 originalShift: readyContext.originalShift,
                 draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
@@ -1418,6 +1434,22 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             }
 
             if (!result.ok) {
+                if (result.conflictReview) {
+                    const review = result.conflictReview;
+                    setPendingConflict({
+                        review,
+                        revision: stateBeforeRequest.draftRevision,
+                        proceed: async () => {
+                            if (useShiftEditorStore.getState().draftRevision !== stateBeforeRequest.draftRevision) return;
+                            setPendingConflict(null);
+                            await runAiFill(readyContext, adjust, prompt, {
+                                doc: requestDoc,
+                                idempotencyKey: crypto.randomUUID(),
+                                conflictReviewToken: review.token,
+                            });
+                        },
+                    });
+                }
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -1553,6 +1585,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 draftRevision: useShiftEditorStore.getState().draftRevision,
             });
             setLastAppliedObservation(result.response.observation);
+            setFeedbackObservation(
+                result.response.operationType === 'GENERATE' && result.response.changedCells.length > 0
+                    ? result.response.observation
+                    : undefined,
+            );
 
             markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length > 0);
@@ -1691,6 +1728,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         markLastAiGeneratedDoc(null);
         setHasCompletedAiFill(false);
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setHasGeneratedSchedule(false);
         writeAutofillCompletion(completionStorageKey, false);
         resetAiStatus();
@@ -1941,6 +1979,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             draftRevision: useShiftEditorStore.getState().draftRevision,
         });
         setLastAppliedObservation(response.observation);
+        setFeedbackObservation(undefined);
 
         const docAfterApply = useShiftEditorStore.getState().doc;
 
@@ -2749,6 +2788,35 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
+                {pendingConflict && (
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="조건 충돌 확인"
+                        className="fixed inset-0 z-[200] grid place-items-center bg-black/30 p-4"
+                    >
+                        <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-xl">
+                            <ConstraintConflictReview
+                                review={pendingConflict.review}
+                                current={useShiftEditorStore.getState().draftRevision === pendingConflict.revision}
+                                disabled={isAiGenerating}
+                                copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
+                                onProceed={pendingConflict.proceed}
+                                onEditSettings={() => {
+                                    setPendingConflict(null);
+                                    (onOpenConstraints ?? (() => useCase.goToStep(2)))();
+                                }}
+                                onRevise={() => {
+                                    setPendingConflict(null);
+                                    setIsAdjustDialogOpen(true);
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+                {!conversationEnabled && feedbackObservation && !isAiGenerating && !preparationStep && (
+                    <AiResultSatisfaction key={feedbackObservation.serverEventId} observation={feedbackObservation} />
+                )}
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
                     <JourneyObserved observation={lastAppliedObservation}>
@@ -2921,7 +2989,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
                     interpret={interpretAdjustText}
                     onApply={handleApplyTextRequests}
-                    goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
+                    goalNurses={currentTeamNurses.map((nurse) => ({
+                        nurseId: nurse.nurseId,
+                        name: nurse.name,
+                        divisionName: Object.values(editorDoc.workerMeta).find((meta) => meta.nurseId === nurse.nurseId)?.divisionName,
+                    }))}
                     requests={monthRequests}
                     requestsLoading={monthRequestsLoading}
                     requestsError={monthRequestsError}

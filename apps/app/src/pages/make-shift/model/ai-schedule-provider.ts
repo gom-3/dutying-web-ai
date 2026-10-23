@@ -43,7 +43,7 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
 
         const failure = aiExecutionFailure(response);
 
-        if (failure) return {ok: false, message: failure.message, failure};
+        if (failure) return {ok: false, message: failure.message, failure, conflictReview: response.conflictReview};
 
         if (response.changedCells.length === 0 && isAdjustNoChange(request, response)) {
             return {ok: true, response, validation: response.validation, noChange: true};

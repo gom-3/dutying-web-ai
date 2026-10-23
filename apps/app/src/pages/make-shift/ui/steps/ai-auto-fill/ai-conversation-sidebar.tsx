@@ -1,3 +1,5 @@
+import {AiResultSatisfaction} from './ai-result-satisfaction';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
@@ -38,7 +40,7 @@ import {
     type TConversationTurn,
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
-import {reportScheduleJourney} from '../../../model/schedule-journey';
+import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../model/schedule-journey';
 import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
@@ -121,6 +123,7 @@ export default function AiConversationSidebar({
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
     onClose,
+    onOpenConstraints,
     wardId,
     teamId,
     year,
@@ -507,6 +510,7 @@ export default function AiConversationSidebar({
         fillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED',
         interpretationId?: string,
         selection?: {op: TConversationOperation; suggestion: TFailureSuggestion},
+        conflict?: TConversationOperation,
     ) => {
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
@@ -534,6 +538,9 @@ export default function AiConversationSidebar({
                 expectedRevision: current.conversation.revision,
                 idempotencyKey: crypto.randomUUID(),
                 operationType,
+                ...(conflict?.result?.conflictReview
+                    ? {conflictReviewToken: conflict.result.conflictReview.token, conflictConfirmed: true}
+                    : {}),
                 ...(fillPolicy ? {fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'} : {}),
                 ...(interpretationId ? {interpretationId} : {}),
                 ...(() => {
@@ -1546,9 +1553,10 @@ export default function AiConversationSidebar({
                                     strength: turn.interpretation.strength ?? 'NORMAL',
                                     unmapped: turn.interpretation.unmapped ?? [],
                                 }}
-                                nurses={Object.values(doc.workerMeta)
+                                nurses={doc.rows
+                                    .map(({workerId}) => doc.workerMeta[workerId])
                                     .filter((meta) => meta.nurseId !== undefined)
-                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name}))}
+                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
                                 showDetails={false}
                             />
                             {turn.interpretation.items?.some((item) => item.requiresConfirmation) && (
@@ -1558,9 +1566,10 @@ export default function AiConversationSidebar({
                                 <ConversationConfirmation
                                     key={turn.interpretationId ?? turn.eventId}
                                     items={turn.interpretation.items ?? []}
-                                    nurses={Object.values(doc.workerMeta)
+                                    nurses={doc.rows
+                                        .map(({workerId}) => doc.workerMeta[workerId])
                                         .filter((meta) => meta.nurseId !== undefined)
-                                        .map((meta) => ({nurseId: meta.nurseId!, name: meta.name}))}
+                                        .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
                                     disabled={
                                         busy ||
                                         running ||
@@ -1736,7 +1745,59 @@ export default function AiConversationSidebar({
                                                 }
                                                 onReport={(click) => openResultReport(event.operation.operationId, click.currentTarget)}
                                             >
+                                                {event.operation.operationType === 'GENERATE' &&
+                                                    event.operation.operationId === latestOperation?.operationId &&
+                                                    event.operation.result?.observation &&
+                                                    event.operation.result.observation.serverEventId ===
+                                                        lastAppliedScheduleObservation(wardId, teamId, year, month)?.serverEventId && (
+                                                        <AiResultSatisfaction
+                                                            key={event.operation.result.observation.serverEventId}
+                                                            observation={event.operation.result.observation}
+                                                            disabled={busy || running || preparing}
+                                                        />
+                                                    )}
                                                 {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
+                                                {event.operation.result?.conflictReview && (
+                                                    <ConstraintConflictReview
+                                                        review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
+                                                        copy={copy}
+                                                        disabled={busy || running}
+                                                        current={
+                                                            !localDirty &&
+                                                            event.operation.baseRevision === detail.conversation.revision &&
+                                                            event.operation.operationId === latestOperation?.operationId
+                                                        }
+                                                        onProceed={() =>
+                                                            execute(
+                                                                event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                    ? 'REBUILD_UNLOCKED'
+                                                                    : 'EMPTY_ONLY',
+                                                                event.operation.interpretationId ?? undefined,
+                                                                undefined,
+                                                                event.operation,
+                                                            )
+                                                        }
+                                                        onRevise={() => {
+                                                            setDismissedFailureId(event.operation.operationId);
+                                                            setEntryChoice('modify');
+                                                            const turn = detail.turns.find(
+                                                                (entry) => entry.interpretationId === event.operation.interpretationId,
+                                                            );
+                                                            if (turn) editRequest(turn);
+                                                            else {
+                                                                setText('');
+                                                                textarea.current?.focus();
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
                                                 {event.operation.result && (
                                                     <ConversationEvidence
                                                         result={event.operation.result}
@@ -1813,7 +1874,7 @@ export default function AiConversationSidebar({
                                                           }
                                                         : undefined
                                                 }
-                                                onReview={onClose}
+                                                onReview={onOpenConstraints ?? onClose}
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
@@ -1829,6 +1890,47 @@ export default function AiConversationSidebar({
                                                     />
                                                 )}
                                                 {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
+                                                {event.operation.result?.conflictReview && (
+                                                    <ConstraintConflictReview
+                                                        review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
+                                                        copy={copy}
+                                                        disabled={busy || running}
+                                                        current={
+                                                            !localDirty &&
+                                                            event.operation.baseRevision === detail.conversation.revision &&
+                                                            event.operation.operationId === latestOperation?.operationId
+                                                        }
+                                                        onProceed={() =>
+                                                            execute(
+                                                                event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                    ? 'REBUILD_UNLOCKED'
+                                                                    : 'EMPTY_ONLY',
+                                                                event.operation.interpretationId ?? undefined,
+                                                                undefined,
+                                                                event.operation,
+                                                            )
+                                                        }
+                                                        onRevise={() => {
+                                                            setDismissedFailureId(event.operation.operationId);
+                                                            setEntryChoice('modify');
+                                                            const turn = detail.turns.find(
+                                                                (entry) => entry.interpretationId === event.operation.interpretationId,
+                                                            );
+                                                            if (turn) editRequest(turn);
+                                                            else {
+                                                                setText('');
+                                                                textarea.current?.focus();
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
                                                 {event.operation.result && (
                                                     <ConversationEvidence
                                                         result={event.operation.result}
@@ -1882,6 +1984,47 @@ export default function AiConversationSidebar({
                                                     />
                                                 )}
                                                 {event.operation.result && <AiConversationResultDetails result={event.operation.result} />}
+                                                {event.operation.result?.conflictReview && (
+                                                    <ConstraintConflictReview
+                                                        review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
+                                                        copy={copy}
+                                                        disabled={busy || running}
+                                                        current={
+                                                            !localDirty &&
+                                                            event.operation.baseRevision === detail.conversation.revision &&
+                                                            event.operation.operationId === latestOperation?.operationId
+                                                        }
+                                                        onProceed={() =>
+                                                            execute(
+                                                                event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                    ? 'REBUILD_UNLOCKED'
+                                                                    : 'EMPTY_ONLY',
+                                                                event.operation.interpretationId ?? undefined,
+                                                                undefined,
+                                                                event.operation,
+                                                            )
+                                                        }
+                                                        onRevise={() => {
+                                                            setDismissedFailureId(event.operation.operationId);
+                                                            setEntryChoice('modify');
+                                                            const turn = detail.turns.find(
+                                                                (entry) => entry.interpretationId === event.operation.interpretationId,
+                                                            );
+                                                            if (turn) editRequest(turn);
+                                                            else {
+                                                                setText('');
+                                                                textarea.current?.focus();
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
                                                 {event.operation.result && (
                                                     <ConversationEvidence
                                                         result={event.operation.result}

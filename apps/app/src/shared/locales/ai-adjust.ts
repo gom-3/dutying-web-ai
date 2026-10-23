@@ -50,7 +50,16 @@ export const aiAdjustKo = {
         offSettingsTitle: '휴무 설정을 확인해 주세요.',
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
-        infeasible: '지금 조건으로는 근무표를 만들 수 없어요.\n요청이나 고정한 근무를 바꿔 주세요. 기존 근무표는 그대로예요.',
+        conflictTitle: '함께 맞추기 어려운 조건이 있어요',
+        conflictMessage: '아래 내용을 확인하고 진행 방법을 골라 주세요. 직접 설정을 고치거나, 제안한 방식으로 이번 표를 수정하거나, 요청을 바꿀 수 있어요.',
+        restTargetConflict:
+            '미리 정한 근무와 월 휴무 목표가 맞지 않아요.\n{{details}}\n월 휴무 목표 또는 미리 정한 근무를 확인하고 수정한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
+        restTargetExcess: '{{name}}: 미리 정한 휴무 {{fixed}}일 / 월 휴무 목표 최대 {{target}}일',
+        restTargetShortage: '{{name}}: 휴무를 배정할 수 있는 날 {{available}}일 / 필요한 휴무 최소 {{target}}일',
+        verifiedNightCap:
+            '지금 설정으로는 자동채우기를 완료할 수 없어요.\n{{name}}의 야간근무를 월 최대 {{current}}회에서 {{proposed}}회로 조정하면 근무표를 만들 수 있어요. 미리 정한 근무와 다른 설정은 그대로 유지할 수 있어요.\n야간근무 횟수를 늘려도 괜찮은지 확인해 주세요. 조정하려면 해당 간호사의 야간근무 횟수 설정을 바꾼 뒤 다시 자동채우기를 눌러 주세요.\n아직 설정이나 근무표가 변경되지는 않았어요.',
+        infeasible:
+            '지금 조건으로는 근무표를 만들 수 없어요.\n어떤 조건을 바꾸면 만들 수 있을지는 아직 찾지 못했어요. 근무 인원, 휴무, 고정해 둔 근무를 함께 확인해 주세요. 기존 근무표는 그대로예요.',
         unavailable:
             '정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 다시 시도하거나 근무 조건을 조절해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
@@ -437,8 +446,16 @@ export const aiAdjustEn = {
         offSettingsTitle: 'Check rest shift settings.',
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
+        conflictTitle: 'Some conditions cannot be met together',
+        conflictMessage: 'Choose how to continue: edit your settings, apply the proposed change to this schedule, or change your request.',
+        restTargetConflict:
+            'Fixed assignments conflict with the monthly days-off target.\n{{details}}\nReview and update the target or fixed assignments, then run autofill again. Your schedule has not changed.',
+        restTargetExcess: '{{name}}: {{fixed}} fixed days off / monthly target maximum {{target}}',
+        restTargetShortage: '{{name}}: {{available}} days available for rest / minimum required {{target}}',
+        verifiedNightCap:
+            'Autofill could not be completed with your current settings.\nA schedule can be made if {{name}}’s monthly night shift limit is increased from {{current}} to {{proposed}}. Shifts you have already set and all other settings can stay as they are.\nPlease check whether more night shifts are acceptable. To make this change, update this nurse’s night shift limit and run autofill again.\nYour settings and schedule have not been changed.',
         infeasible:
-            'A schedule cannot be made with these conditions.\nChange your requests or fixed shifts. Your previous schedule is unchanged.',
+            'A schedule cannot be made with these conditions.\nWe have not yet identified the specific conflict or a verified solution. Review the required conditions together with fixed shifts. Your schedule is unchanged.',
         unavailable:
             'No schedule meeting the conditions was found within the time limit.\nYour previous schedule is unchanged. Try again or adjust the conditions.',
         validation: 'There was a problem checking the schedule.\nYour previous schedule is unchanged. Please try again.',

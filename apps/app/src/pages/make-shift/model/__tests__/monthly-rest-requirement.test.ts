@@ -41,7 +41,7 @@ describe('monthly rest requirement', () => {
                 11,
                 1,
             ),
-        ).toEqual({minimumDaysByShiftNurseId: {11: 9, 12: 10}, countedWardShiftTypeIds: [4]});
+        ).toEqual({exactForRegularWorkers: true, minimumDaysByShiftNurseId: {11: 9, 12: 10}, countedWardShiftTypeIds: [4]});
     });
     it('omits disabled rest policy', () => {
         expect(monthlyRestRequirement(shift, {...DEFAULT_REST_LEAVE_POLICY, enabled: false}, 2026, 11, 0)).toBeUndefined();

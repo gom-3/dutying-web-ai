@@ -498,6 +498,8 @@ export type TScheduleViolationDto = {
     templateCode: string;
     severity: TShiftConstraintSeverity;
     message: string;
+    messageKey?: string;
+    messageArgs?: Record<string, string | number | boolean | null | undefined>;
     period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
     displayContext?: TScheduleViolationDisplayContextDto | null;
@@ -808,6 +810,14 @@ export type TScheduleObservation = {
 };
 
 export type TAutofillResponse = {
+    confirmedConstraintException?: boolean;
+    conflictReview?: {
+        explanation?: string | null;
+        token: string;
+        expiresAt: string;
+        ruleLabels?: Record<string, string>;
+        violations: TScheduleViolationDto[];
+    };
     observation?: TScheduleObservation;
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     failure?: {
@@ -815,6 +825,21 @@ export type TAutofillResponse = {
         message: string;
         suggestions?: TFailureSuggestion[];
         affectedNurses?: {shiftNurseId: number; name: string}[];
+        restTargetConflicts?: {
+            shiftNurseId: number;
+            name: string;
+            minimum: number;
+            maximum?: number | null;
+            fixedRestDays: number;
+            availableRestDays: number;
+        }[];
+        diagnosis?: {
+            status: 'VERIFIED_ALTERNATIVE';
+            ruleId: number;
+            shiftNurseId: number;
+            currentMax: number;
+            proposedMax: number;
+        };
     };
     applicable?: boolean;
     /** Validation describes the returned draft, a withheld candidate, or the original table. */
@@ -1283,6 +1308,7 @@ export type TCreateShiftTypeDTO = {
 
 /** Same targets and accounting as the schedule's rest-check column. */
 export type TMonthlyRestRequirement = {
+    exactForRegularWorkers?: boolean;
     minimumDaysByShiftNurseId: Record<number, number>;
     countedWardShiftTypeIds: number[];
 };

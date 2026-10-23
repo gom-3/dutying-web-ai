@@ -18,12 +18,16 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         draftRevision,
         rulesHash,
         prompt,
+        conflictReviewToken,
+        conflictConfirmed,
         idempotencyKey,
         adjust,
         lockedCellKeys,
         signal,
     }) => {
         const dto = {
+            conflictReviewToken,
+            conflictConfirmed,
             journeyId: scheduleJourneyId(wardId, shiftTeamId, year, month),
             ...buildAutofillDTO({
                 year,

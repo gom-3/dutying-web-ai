@@ -17,7 +17,7 @@ export type TAdjustCard = {
 
 type TProps = {
     card: TAdjustCard;
-    nurses: {nurseId: number; name: string}[];
+    nurses: {nurseId: number; name: string; divisionName?: string | null}[];
     showDetails?: boolean;
     heading?: string;
     state?: 'preview' | 'confirmed' | 'history';
@@ -32,7 +32,34 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
         new Set(itemsWithSeverity.map((item) => item.severity)).size > 1
             ? itemsWithSeverity
             : summarizeInterpretationItems(itemsWithSeverity);
-    const nurseName = (id: number) => nurses.find((nurse) => nurse.nurseId === id)?.name ?? t('aiAdjust.nurse', {id});
+    const ko = i18n.language.startsWith('ko');
+    const nurseName = (id: number) => {
+        const row = nurses.findIndex((nurse) => nurse.nurseId === id);
+        if (row < 0) return ko ? '현재 명단에서 확인되지 않는 간호사' : 'Nurse not found in this roster';
+        const nurse = nurses[row];
+        return nurses.filter((entry) => entry.name === nurse.name).length > 1
+            ? `${nurse.name} (${ko ? `현재 명단 ${row + 1}번째` : `roster row ${row + 1}`})`
+            : nurse.name;
+    };
+    const targetDescription = (target: unknown): string => {
+        if (target === 'ALL') return ko ? `현재 근무표 전체 ${nurses.length}명` : `All ${nurses.length} nurses in this schedule`;
+        const ids = Array.isArray(target) ? target : typeof target === 'number' ? [target] : [];
+        if (!ids.length || ids.some((id) => typeof id !== 'number' || !nurses.some((nurse) => nurse.nurseId === id)))
+            return ko ? '대상 확인 필요' : 'Confirm which nurses';
+        const group = nurses.find((nurse) => nurse.nurseId === ids[0])?.divisionName;
+        const groupIds = group ? nurses.filter((nurse) => nurse.divisionName === group).map((nurse) => nurse.nurseId) : [];
+        const exactGroup = group && groupIds.length === ids.length && groupIds.every((id) => ids.includes(id));
+        const prefix = exactGroup ? `${ko ? '그룹' : 'Group'} ${group}` : ko ? '지정 간호사' : 'Selected nurses';
+        return `${prefix} ${ids.length}${ko ? '명' : ''}: ${ids.map(nurseName).join(', ')}`;
+    };
+    const ruleTarget = (params: Record<string, unknown> = {}): unknown => {
+        if ('target' in params) return params.target;
+        const ids = ['nurse', 'nurseId', 'nurseIds', 'nurseA', 'nurseB'].flatMap((key) => {
+            const value = params[key];
+            return value === undefined ? [] : Array.isArray(value) ? value : [value];
+        });
+        return [...new Set(ids)];
+    };
     const fieldLabels = {
         target: 'aiAdjust.review.target',
         nurseIds: 'aiAdjust.review.target',
@@ -81,7 +108,11 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
             if (label) return t(label);
         }
 
-        if (value === 'ALL') return t('aiAdjust.allNurses');
+        if (value === 'ALL') {
+            if (['target', 'nurseId', 'nurseIds'].includes(field)) return targetDescription(value);
+            if (field === 'shift') return ko ? '전체 근무' : 'All shifts';
+            return ko ? '전체' : 'All';
+        }
 
         if (typeof value === 'boolean') return t(value ? 'aiAdjust.review.yes' : 'aiAdjust.review.no');
 
@@ -218,6 +249,26 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
                                             : item.knob
                                               ? t(`aiAdjust.knob.${item.knob}`)
                                               : card.requestText}
+                                    </p>
+                                )}
+                                {['RULE', 'KNOB', 'OFF_GOAL', 'GOAL'].includes(item.kind) && (
+                                    <p className="text-[13px] break-words text-[#475467]">
+                                        {t('aiAdjust.review.target')} ·{' '}
+                                        {targetDescription(
+                                            item.kind === 'RULE' ? ruleTarget(item.params) : item.kind === 'GOAL' ? item.targetNurseIds : 'ALL',
+                                        )}
+                                    </p>
+                                )}
+                                {item.kind === 'RULE' && item.params?.target !== undefined && item.params?.nurseIds !== undefined && (
+                                    <p className="text-[13px] break-words text-[#475467]">
+                                        {ko ? '함께 적용할 간호사' : 'Other nurses included in the rule'} ·{' '}
+                                        {targetDescription(item.params.nurseIds)}
+                                    </p>
+                                )}
+                                {item.kind === 'GOAL' && (
+                                    <p className="text-[13px] break-words text-[#475467]">
+                                        {ko ? '휴무 수 비교 대상' : 'Nurses compared for rest counts'} ·{' '}
+                                        {targetDescription(item.comparisonNurseIds)}
                                     </p>
                                 )}
                                 {!!item.applyMonths?.length && (

@@ -12,7 +12,7 @@ export function conversationOperationFailure(operation: TConversationOperation):
     );
 }
 
-/** Only explicit, revalidated GENERATE review drafts may bypass the approval verdict. */
+/** Recognize historical review results for display only; never authorizes applying cells. */
 export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
     return (
         response.operationType === 'GENERATE' &&
@@ -29,22 +29,47 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
-    if (isGenerateReviewDraft(response)) return null;
-
+    if (
+        response.confirmedConstraintException === true &&
+        response.applicable === true &&
+        response.approvable === true &&
+        response.engineResult?.status === 'ACCEPTED' &&
+        response.engineResult.reviewRequired !== true
+    )
+        return null;
+    if (response.conflictReview)
+        return {
+            message: i18n.t('aiAdjust.executionFailure.conflictMessage'),
+            blocked: false,
+            recovery: 'review',
+            confirmationRequired: true,
+            ...(response.observation ? {observation: response.observation} : {}),
+        };
     const status = response.engineResult?.status?.toUpperCase();
+    const hardInvalid = (response.validation?.summary?.hardCount ?? 0) > 0;
     const reason = (
         response.failure?.reasonCode ??
         response.engineResult?.solver?.reason ??
-        (response.engineResult?.reviewRequired === true ? 'SPRING_HARD_VALIDATION' : '')
+        (response.engineResult?.reviewRequired === true || hardInvalid ? 'SPRING_HARD_VALIDATION' : '')
     ).toUpperCase();
 
     if (
         response.applicable !== false &&
+        !hardInvalid &&
         response.engineResult?.reviewRequired !== true &&
         !['REJECTED', 'ERROR', 'INFEASIBLE', 'TIME_LIMIT'].includes(status ?? '') &&
         reason !== 'TIME_LIMIT_NO_SOLUTION'
     )
         return null;
+
+    if (reason === 'WORK_REST_AVAILABILITY_CONFLICT' && response.failure?.message?.trim()) {
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: response.failure.message,
+            blocked: false,
+            recovery: 'revise',
+        };
+    }
 
     const solverReason = response.engineResult?.solver?.reason?.toUpperCase();
 
@@ -68,6 +93,53 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 : i18n.t('aiAdjust.executionFailure.offNotAllowed'),
             blocked: false,
             recovery: 'settings',
+        };
+    }
+
+    if (reason === 'MONTHLY_REST_TARGET_CONFLICT') {
+        const validDays = (value: unknown): value is number =>
+            typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 31;
+        const details = (response.failure?.restTargetConflicts ?? []).flatMap((item) => {
+            if (!item.name?.trim() || !validDays(item.minimum) || !validDays(item.fixedRestDays) || !validDays(item.availableRestDays))
+                return [];
+            const name = item.name.trim().slice(0, 80);
+            if (validDays(item.maximum) && item.fixedRestDays > item.maximum)
+                return [i18n.t('aiAdjust.executionFailure.restTargetExcess', {name, fixed: item.fixedRestDays, target: item.maximum})];
+            if (item.minimum > item.availableRestDays)
+                return [
+                    i18n.t('aiAdjust.executionFailure.restTargetShortage', {name, available: item.availableRestDays, target: item.minimum}),
+                ];
+            return [];
+        });
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: i18n.t('aiAdjust.executionFailure.restTargetConflict', {details: details.join('\n')}),
+            blocked: false,
+            recovery: 'review',
+        };
+    }
+
+    const diagnosis = response.failure?.diagnosis;
+    const diagnosedNurse = response.failure?.affectedNurses?.find((nurse) => nurse.shiftNurseId === diagnosis?.shiftNurseId);
+    if (
+        status === 'INFEASIBLE' &&
+        diagnosis?.status === 'VERIFIED_ALTERNATIVE' &&
+        diagnosedNurse?.name?.trim() &&
+        Number.isInteger(diagnosis.currentMax) &&
+        Number.isInteger(diagnosis.proposedMax) &&
+        diagnosis.currentMax >= 0 &&
+        diagnosis.proposedMax > diagnosis.currentMax &&
+        diagnosis.proposedMax <= 31
+    ) {
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: i18n.t('aiAdjust.executionFailure.verifiedNightCap', {
+                name: diagnosedNurse.name.trim().slice(0, 80),
+                current: diagnosis.currentMax,
+                proposed: diagnosis.proposedMax,
+            }),
+            blocked: false,
+            recovery: 'revise',
         };
     }
 
