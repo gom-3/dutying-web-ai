@@ -1,3 +1,4 @@
+import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
@@ -393,6 +394,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+    const [feedbackObservation, setFeedbackObservation] = useState<TAutofillResponse['observation']>();
     const [lastAppliedObservation, setLastAppliedObservation] = useState<TAutofillResponse['observation']>();
     const [hasGeneratedSchedule, setHasGeneratedSchedule] = useState(false);
     const rememberGeneratedSchedule = useCallback(() => {
@@ -727,6 +729,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     useEffect(() => {
         setHasCompletedAiFill(false);
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setGenerationReviewMessage(null);
         setHasGeneratedSchedule(readAutofillCompletion(completionStorageKey));
         setHasGenerationNotice(false);
@@ -1105,6 +1108,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             resetAiStatus();
             setHasCompletedAiFill(false);
             setLastAppliedObservation(undefined);
+            setFeedbackObservation(undefined);
             setHasGeneratedSchedule(false);
             writeAutofillCompletion(completionStorageKey, false);
 
@@ -1366,6 +1370,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setIsAiGenerating(true);
         setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
@@ -1585,6 +1590,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 draftRevision: useShiftEditorStore.getState().draftRevision,
             });
             setLastAppliedObservation(result.response.observation);
+            setFeedbackObservation(
+                result.response.operationType === 'GENERATE' && result.response.changedCells.length > 0
+                    ? result.response.observation
+                    : undefined,
+            );
 
             markLastAiGeneratedDoc(docAfterApply);
             setHasAiGeneratedUnsavedChanges(describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length > 0);
@@ -1723,6 +1733,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         markLastAiGeneratedDoc(null);
         setHasCompletedAiFill(false);
         setLastAppliedObservation(undefined);
+        setFeedbackObservation(undefined);
         setHasGeneratedSchedule(false);
         writeAutofillCompletion(completionStorageKey, false);
         resetAiStatus();
@@ -1973,6 +1984,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             draftRevision: useShiftEditorStore.getState().draftRevision,
         });
         setLastAppliedObservation(response.observation);
+        setFeedbackObservation(undefined);
 
         const docAfterApply = useShiftEditorStore.getState().doc;
 
@@ -2824,6 +2836,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             />
                         </div>
                     </div>
+                )}
+                {!conversationEnabled && feedbackObservation && !isAiGenerating && !preparationStep && (
+                    <AiResultSatisfaction key={feedbackObservation.serverEventId} observation={feedbackObservation} />
                 )}
                 {/* The latest result stays visible beside the schedule when the conversation is closed. */}
                 {isAdjustAvailable && (
