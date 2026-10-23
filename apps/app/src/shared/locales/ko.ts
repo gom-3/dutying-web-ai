@@ -952,6 +952,9 @@ export const ko = {
                 toast: {
                     duplicatesRemoved: '중복 제약조건 {{count}}개를 정리했어요.',
                     duplicateSkipped: '같은 조건이 이미 있어요.',
+                    periodCountConflict: '같은 대상·근무·기간에 최소 {{minimum}}회와 최대 {{maximum}}회가 함께 설정되어 있어요. 두 조건을 동시에 맞출 수 없어요. 아래에서 조건을 확인하고 원하는 횟수로 수정해 주세요.',
+                    reviewLowerBound: '최소 횟수 조건 보기',
+                    reviewUpperBound: '최대 횟수 조건 보기',
                     staffCountConflict: '같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.',
                     added: '제약조건을 추가했어요.',
                     resetDefaults: '권장 조건 {{count}}개로 초기화했어요.',

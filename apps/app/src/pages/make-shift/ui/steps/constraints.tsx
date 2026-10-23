@@ -1,3 +1,4 @@
+import {findRuleBoundConflicts} from '../../model/rule-bound-conflicts';
 import type {TWardRotationMode} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -5490,6 +5491,7 @@ function ConstraintsContent({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
+    const boundConflicts = findRuleBoundConflicts(rules);
     const softRules = rules.filter(
         (rule) =>
             (rule.severity === 'SOFT' || rule.severity === 'HARD') &&
@@ -6003,6 +6005,31 @@ function ConstraintsContent({
                             </>
                         }
                     >
+                        {boundConflicts.map(({lower, upper, minimum, maximum}) => (
+                            <div
+                                key={`${lower.clientId}-${upper.clientId}`}
+                                role="alert"
+                                className="mb-3 rounded-lg border border-red/30 bg-red/5 p-3 text-sm"
+                            >
+                                <p>{t('page.makeShift.constraints.toast.periodCountConflict', {minimum, maximum})}</p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {[lower, upper].map((rule, index) => (
+                                        <button
+                                            key={rule.clientId}
+                                            type="button"
+                                            className="min-h-11 rounded-lg border px-3 underline"
+                                            onClick={() => revealRuleForEditing(rule.clientId)}
+                                        >
+                                            {t(
+                                                index === 0
+                                                    ? 'page.makeShift.constraints.toast.reviewLowerBound'
+                                                    : 'page.makeShift.constraints.toast.reviewUpperBound',
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
                         <TooltipProvider delayDuration={140} skipDelayDuration={80}>
                             <div className="space-y-2.5">
                                 {softRuleViewModels.length ? (

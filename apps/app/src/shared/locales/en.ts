@@ -959,6 +959,9 @@ export const en: TLocale = {
                 toast: {
                     duplicatesRemoved: 'Cleaned up {{count}} duplicate constraints.',
                     duplicateSkipped: 'The same constraint already exists.',
+                    periodCountConflict: 'The same people, shift and period require at least {{minimum}} and at most {{maximum}} shifts. Both cannot be met. Review the conditions below and choose the intended counts.',
+                    reviewLowerBound: 'Review minimum condition',
+                    reviewUpperBound: 'Review maximum condition',
                     staffCountConflict: 'The minimum, maximum, and exact staffing values conflict for this scope and shift.',
                     added: 'Constraint added.',
                     resetDefaults: 'Reset to {{count}} recommended constraints.',

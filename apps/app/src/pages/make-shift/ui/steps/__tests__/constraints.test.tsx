@@ -309,6 +309,38 @@ describe('Constraints', () => {
         }
     });
 
+    it('shows both conflicting monthly bounds and links to their editable rows', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [21, 20].map((count, index) => ({
+                shiftConstraintRuleId: 901 + index,
+                templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                category: 'NURSE_LIMIT',
+                severity: 'HARD' as const,
+                sortOrder: index,
+                selected: true,
+                isImportant: true,
+                isValid: true,
+                params: {
+                    target: {type: 'ALL'},
+                    shift: {type: 'ALL'},
+                    period: {type: 'MONTH'},
+                    aggregation: {type: 'EACH'},
+                    operator: {type: index === 0 ? 'MIN' : 'MAX'},
+                    count,
+                },
+            })),
+        });
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={11} variant="settings" />);
+        expect(await screen.findByText(/최소 21회와 최대 20회/)).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '최소 횟수 조건 보기'}));
+        expect(scrollIntoViewMock).toHaveBeenCalled();
+        expect(document.getElementById('constraint-rule-saved-901')).not.toBeNull();
+        expect(screen.getByRole('button', {name: '최대 횟수 조건 보기'})).toBeInTheDocument();
+    });
+
     it('shows a constraint-shaped skeleton while rules are loading', () => {
         wardApiMocks.getShiftConstraintRules.mockReturnValueOnce(new Promise(() => {}));
         wardApiMocks.getShiftConstraintRuleCandidates.mockReturnValueOnce(new Promise(() => {}));
