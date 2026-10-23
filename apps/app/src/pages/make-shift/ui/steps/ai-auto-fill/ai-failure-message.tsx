@@ -1,4 +1,5 @@
 import {Children, type ReactNode} from 'react';
+import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {AssistantMessage} from './ai-adjust-review-conversation';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
@@ -17,6 +18,7 @@ export function AiFailureMessage({
     const {t} = useTypedTranslation();
     const resolvedTitle = title ?? t('aiAdjust.failure.title');
     const content = Children.toArray(children);
+    const wrapping = i18n.resolvedLanguage?.startsWith('ja') ? 'break-normal' : 'break-keep';
 
     return (
         <AssistantMessage tone="error" fullWidth>
@@ -25,9 +27,9 @@ export function AiFailureMessage({
                     <div role="alert" className="min-w-0">
                         <div className={`flex items-start gap-2 ${headerAction ? 'min-h-[44px] pr-[52px]' : ''}`}>
                             <AiConversationOutcomeIcon status="failure" label={resolvedTitle} />
-                            <p className="text-base leading-6 font-semibold break-keep text-[#333D4B]">{resolvedTitle}</p>
+                            <p className={`text-base leading-6 font-semibold ${wrapping} text-[#333D4B]`}>{resolvedTitle}</p>
                         </div>
-                        <p className="mt-2 text-[14px] leading-6 break-keep whitespace-pre-line text-[#667085]">{message}</p>
+                        <p className={`mt-2 text-[14px] leading-6 ${wrapping} whitespace-pre-line text-[#667085]`}>{message}</p>
                     </div>
                     {headerAction && <div className="absolute top-0 right-0">{headerAction}</div>}
                 </div>

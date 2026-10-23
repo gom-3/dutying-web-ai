@@ -39,6 +39,9 @@ export const aiAdjustJa = {
         close: '閉じる',
     },
     executionFailure: {
+        staffingConflict: '{{date}}・{{shift}}：同じ対象に最低{{minimum}}名と最大{{maximum}}名が同時に指定されています。',
+        staffingConflictNext:
+            '重なる日付の必要人数を一つに決める必要があります。特定の曜日を例外にするか、人数を統一するかを決め、リクエストまたは設定を変更してください。\n他の条件も満たす変更案はまだ確認できていません。勤務表と設定は変更されていません。',
         conflictTitle: '同時に満たすことが難しい条件があります',
         conflictMessage:
             '以下の内容を確認し、進め方を選んでください。設定を直接変更するか、提案を今回の勤務表に反映するか、リクエストを変更できます。',

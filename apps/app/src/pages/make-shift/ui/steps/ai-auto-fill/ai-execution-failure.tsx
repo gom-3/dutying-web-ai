@@ -14,6 +14,7 @@ export function AiExecutionFailure({
     onRetry,
     onRevise,
     onReview,
+    onEditSettings,
     operationType,
     attemptLabel,
     headerAction,
@@ -25,6 +26,7 @@ export function AiExecutionFailure({
     onRetry?: () => void;
     onRevise?: () => void;
     onReview?: () => void;
+    onEditSettings?: () => void;
     operationType?: 'GENERATE' | 'ADJUST';
     attemptLabel?: string;
     headerAction?: ReactNode;
@@ -43,15 +45,18 @@ export function AiExecutionFailure({
     const showRetry = retryable && Boolean(onRetry);
     const showRevise = !failure.blocked && failure.recovery !== 'review' && !showSettings && Boolean(onRevise);
     const showReview = Boolean(onReview) && (!retryable || !onRevise);
+    const showConditionSettings = !failure.blocked && failure.conditionConflict && Boolean(onEditSettings);
     const content = Children.toArray(children);
-    const showActions = active && !failure.confirmationRequired && (showSettings || showRetry || showRevise || showReview);
-    const title = failure.confirmationRequired
-        ? t('aiAdjust.executionFailure.conflictTitle')
-        : failure.recovery === 'settings'
-          ? t('aiAdjust.executionFailure.offSettingsTitle')
-          : operationType
-            ? t(operationType === 'GENERATE' ? 'aiAdjust.executionFailure.autofillTitle' : 'aiAdjust.executionFailure.adjustTitle')
-            : t('aiAdjust.failure.title');
+    const showActions =
+        active && !failure.confirmationRequired && (showSettings || showRetry || showRevise || showReview || showConditionSettings);
+    const title =
+        failure.confirmationRequired || failure.conditionConflict
+            ? t('aiAdjust.executionFailure.conflictTitle')
+            : failure.recovery === 'settings'
+              ? t('aiAdjust.executionFailure.offSettingsTitle')
+              : operationType
+                ? t(operationType === 'GENERATE' ? 'aiAdjust.executionFailure.autofillTitle' : 'aiAdjust.executionFailure.adjustTitle')
+                : t('aiAdjust.failure.title');
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-4">
@@ -83,7 +88,12 @@ export function AiExecutionFailure({
                                 {t('aiAdjust.issue.edit')}
                             </button>
                         )}
-                        {showReview && (
+                        {showConditionSettings && (
+                            <button type="button" className={secondaryClass} disabled={disabled} onClick={onEditSettings}>
+                                {t('aiAutofillUi.conflictReview.editSettings')}
+                            </button>
+                        )}
+                        {showReview && !showConditionSettings && (
                             <button
                                 type="button"
                                 className={showSettings || showRetry || showRevise ? secondaryClass : primaryClass}
