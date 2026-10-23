@@ -43,7 +43,7 @@ export type TWaitingNurse = {
     nurseId: number;
     name: string;
     gender: string;
-    phoneNum: string;
+    phoneNum: string | null;
     employmentDate: string;
     /** @deprecated use profileImgUrl */
     profileImgBase64?: string;

@@ -2,7 +2,12 @@ import {describe, expect, it} from 'vitest';
 import {type TShiftTeam} from '@/entities/ward';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {ko} from '@/shared/locales/ko';
-import {getConnectionManageResultCopy, getConnectionManageTargetLabel} from '../connection-manage';
+import {
+    getConnectionManageResultCopy,
+    getConnectionManageTargetLabel,
+    getFormattedPhoneNumber,
+    getWaitingNurseSummary,
+} from '../connection-manage';
 
 const t = (key: TI18nKey, values?: Record<string, string | number>) => {
     const template = key.split('.').reduce<unknown>((acc, part) => {
@@ -15,10 +20,7 @@ const t = (key: TI18nKey, values?: Record<string, string | number>) => {
         return key;
     }
 
-    return Object.entries(values ?? {}).reduce(
-        (result, [name, value]) => result.split(`{{${name}}}`).join(String(value)),
-        template,
-    );
+    return Object.entries(values ?? {}).reduce((result, [name, value]) => result.split(`{{${name}}}`).join(String(value)), template);
 };
 
 const shiftTeams: TShiftTeam[] = [
@@ -55,6 +57,32 @@ const shiftTeams: TShiftTeam[] = [
         nurses: [],
     },
 ];
+
+describe('waiting nurse phone number', () => {
+    it.each([null, undefined, '', ' ', '\t'])('uses a placeholder for an omitted phone number: %s', (phoneNum) => {
+        expect(getFormattedPhoneNumber(phoneNum)).toBe('-');
+    });
+
+    it('preserves the existing phone number format when provided', () => {
+        expect(getFormattedPhoneNumber('01012345678')).toBe('010-1234-5678');
+    });
+
+    it('keeps the applicant summary available when the phone number is null', () => {
+        const summary = getWaitingNurseSummary({
+            waitingNurseId: 142,
+            nurseId: 8681,
+            name: '박신청',
+            gender: '',
+            phoneNum: null,
+            employmentDate: '',
+            profileImgUrl: '',
+        });
+
+        expect(summary.formattedPhoneNumber).toBe('-');
+        expect(summary.waitingNurseId).toBe(142);
+        expect(summary.name).toBe('박신청');
+    });
+});
 
 describe('getConnectionManageTargetLabel', () => {
     it('returns nurse and team label for link mode', () => {
