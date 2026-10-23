@@ -35,6 +35,9 @@ export const aiAdjustKo = {
         close: '닫기',
     },
     executionFailure: {
+        staffingConflict: '{{date}} · {{shift}}: 같은 대상에 최소 {{minimum}}명과 최대 {{maximum}}명을 동시에 요구하고 있어요.',
+        staffingConflictNext:
+            '겹치는 날짜의 인원 조건을 하나로 정해야 해요. 특정 요일을 예외로 둘지, 같은 인원으로 통일할지 정한 뒤 요청 또는 설정을 수정해 주세요.\n다른 조건까지 만족하는 수정안은 아직 확인하지 못했어요. 근무표와 설정은 변경하지 않았어요.',
         connection:
             '자동채우기 서버와 연결이 끊겨 결과를 받지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 같은 조건으로 다시 시도해 주세요.',
         busy: '지금은 자동채우기 요청이 많아 시작하지 못했어요.\n기존 근무표는 그대로예요. 잠시 후 다시 시도해 주세요.',
@@ -434,6 +437,9 @@ export const aiAdjustEn = {
         close: 'Close',
     },
     executionFailure: {
+        staffingConflict: '{{date}} · {{shift}}: the same group requires at least {{minimum}} and at most {{maximum}} people at once.',
+        staffingConflictNext:
+            'Choose one headcount for the overlapping dates. Decide whether specific weekdays are exceptions or should use the same headcount, then revise the request or edit the settings.\nWe have not yet verified a revised schedule that satisfies the other conditions. Your schedule and settings are unchanged.',
         connection:
             'The connection to the scheduling server was interrupted before a result arrived.\nYour schedule is unchanged. Wait a moment and retry with the same conditions.',
         busy: 'The scheduling server is busy and could not start this request.\nYour schedule is unchanged. Please try again shortly.',

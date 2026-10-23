@@ -46,3 +46,70 @@ it('keeps the verified alternative visible with a review action and no automatic
     fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.issue.edit')}));
     expect(revise).toHaveBeenCalledTimes(1);
 });
+
+it('explains the proven staffing conflict in Japanese and offers only unapplied choices', async () => {
+    const {aiExecutionFailure} = await import('../../../../model/ai-execution-failure');
+    const {default: translator} = await import('@/i18n');
+    await translator.changeLanguage('ja');
+    try {
+        const failure = aiExecutionFailure({
+            operationType: 'GENERATE',
+            draftRevision: 1,
+            resultType: 'PATCH',
+            changedCells: [],
+            applicable: false,
+            unmetInstructions: [],
+            sameAsPrevious: true,
+            validation: {
+                draftRevision: 1,
+                rulesHash: 'test',
+                summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+                violations: [],
+            },
+            engineResult: {
+                status: 'INFEASIBLE',
+                violations: [{type: 'STAFF_COUNT_BOUNDS_CONFLICT', date: '2026-11-02', shiftCode: 'N12', minimum: 4, maximum: 3}],
+            },
+        });
+        expect(failure).not.toBeNull();
+        expect(failure!.message).toContain('最低4名と最大3名');
+        expect(failure!.message).not.toMatch(/INFEASIBLE|STAFF_COUNT|[가-힣]|could not/);
+        const revise = vi.fn();
+        const settings = vi.fn();
+        const retry = vi.fn();
+        const view = render(
+            <AiExecutionFailure
+                failure={failure!}
+                active
+                onRevise={revise}
+                onEditSettings={settings}
+                onRetry={retry}
+                operationType="GENERATE"
+            />,
+        );
+        expect(screen.getByText(/2026-11-02.*N12/)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: translator.t('aiAdjust.failure.retry')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: translator.t('aiAutofillUi.conflictReview.proceed')})).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: translator.t('aiAdjust.issue.edit')}));
+        fireEvent.click(screen.getByRole('button', {name: translator.t('aiAutofillUi.conflictReview.editSettings')}));
+        expect(revise).toHaveBeenCalledTimes(1);
+        expect(settings).toHaveBeenCalledTimes(1);
+        expect(retry).not.toHaveBeenCalled();
+        view.unmount();
+    } finally {
+        await translator.changeLanguage('ko');
+    }
+});
+
+it('keeps settings available when request adjustment is unavailable', () => {
+    const settings = vi.fn();
+    render(
+        <AiExecutionFailure
+            failure={{message: '確認', blocked: false, recovery: 'revise', conditionConflict: true}}
+            active
+            onEditSettings={settings}
+        />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+    expect(settings).toHaveBeenCalledTimes(1);
+});

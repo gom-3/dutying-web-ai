@@ -5,6 +5,7 @@ export type TAiConversationFailure = {
     observation?: TScheduleObservation;
     message: string;
     confirmationRequired?: boolean;
+    conditionConflict?: boolean;
     blocked: boolean;
     /** A local input issue does not need an execution-history lookup. */
     checkOutcome?: boolean;

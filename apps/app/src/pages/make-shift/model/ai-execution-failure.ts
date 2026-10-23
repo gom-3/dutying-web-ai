@@ -62,6 +62,53 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     )
         return null;
 
+    const staffingConflicts =
+        status === 'INFEASIBLE'
+            ? (response.engineResult?.violations ?? []).filter(
+                  (issue) =>
+                      issue.type === 'STAFF_COUNT_BOUNDS_CONFLICT' &&
+                      typeof issue.date === 'string' &&
+                      /^\d{4}-\d{2}-\d{2}$/.test(issue.date) &&
+                      typeof issue.shiftCode === 'string' &&
+                      issue.shiftCode.length > 0 &&
+                      issue.shiftCode.length <= 40 &&
+                      typeof issue.minimum === 'number' &&
+                      Number.isInteger(issue.minimum) &&
+                      typeof issue.maximum === 'number' &&
+                      Number.isInteger(issue.maximum) &&
+                      issue.maximum >= 0 &&
+                      issue.minimum > issue.maximum,
+              )
+            : [];
+    if (staffingConflicts.length) {
+        const groups = new Map<string, {issue: Record<string, unknown>; dates: Set<string>}>();
+        for (const issue of staffingConflicts) {
+            const key = JSON.stringify([issue.shiftCode, issue.minimum, issue.maximum, issue.ruleIds ?? []]);
+            const group = groups.get(key) ?? {issue, dates: new Set<string>()};
+            group.dates.add(String(issue.date));
+            groups.set(key, group);
+        }
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message:
+                [...groups.values()]
+                    .map(({issue, dates}) =>
+                        i18n.t('aiAdjust.executionFailure.staffingConflict', {
+                            date: [...dates].sort().join(', '),
+                            shift: issue.shiftCode,
+                            minimum: issue.minimum,
+                            maximum: issue.maximum,
+                        }),
+                    )
+                    .join('\n') +
+                '\n\n' +
+                i18n.t('aiAdjust.executionFailure.staffingConflictNext'),
+            blocked: false,
+            recovery: 'revise',
+            conditionConflict: true,
+        };
+    }
+
     if (reason === 'WORK_REST_AVAILABILITY_CONFLICT' && response.failure?.message?.trim()) {
         return {
             ...(response.observation ? {observation: response.observation} : {}),
