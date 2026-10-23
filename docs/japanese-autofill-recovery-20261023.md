@@ -16,3 +16,7 @@ Validate the identified historical request without HTTP apply/approve or databas
 - Baseline validation: 2,447 web tests passed, 3 skipped; type check and production build passed. Focused tests cover Japanese key/placeholder parity, failure explanation, action callbacks, expired/duplicate proposal handling. Final focused checks follow the display grouping/wrapping change.
 - Existing Japanese release: main 87406d3b6621202fb0ec053cc9943c81c9636ad0, Cloudflare Pages dutying-web-ai e8024727-8c30-4233-a92f-cf0cc7ad7b85 succeeded. app.dutying.ai and referenced store-BcKtGUg5.js returned 200 with Japanese failure text. This is separate from the not-yet-released conflict explanation patch.
 - Budget correction: live organization settings confirm an Actions budget of USD 100 with stop-usage enabled; October net usage was USD 15.15. The prior USD 15 blocker was incorrect. Proceed with necessary release checks under the current budget; do not change billing settings.
+
+## Release 1.3.15 verification
+
+PR118 passed remote full Web CI run 39909715327 before merging to develop. The versioned 1.3.15 build passed. Release metadata changes reuse that application validation; no additional application source changes were introduced. Public deployment still requires provider commit and asset verification.
