@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {answerReviewQuestion, getReviewQuestions, isReviewComplete, parseReviewReply, type TReviewReply} from '../ai-adjust-review-flow';
 import type {TAdjustCard} from '../../ui/steps/ai-auto-fill/ai-adjust-interpret-card';
+import {answerReviewQuestion, getReviewQuestions, isReviewComplete, parseReviewReply, type TReviewReply} from '../ai-adjust-review-flow';
 
 const card: TAdjustCard = {
     requestText: '오프 차이 조절',
@@ -8,6 +8,7 @@ const card: TAdjustCard = {
     unmapped: [],
     strength: 'NORMAL',
 };
+
 describe('conversational review answers', () => {
     it('confirms the interpretation before asking for rule scope', () => {
         const ruleCard: TAdjustCard = {...card, items: [{item: {kind: 'RULE'}, lifetime: 'MONTH', severity: 'SOFT'}]};
@@ -31,6 +32,7 @@ describe('conversational review answers', () => {
     });
     it('does not infer a scope when the reply includes another instruction', () => {
         const scope = {id: '0:lifetime', kind: 'lifetime' as const, itemIndex: 0};
+
         expect(parseReviewReply(scope, '이번 달만 적용해줘')).toBe('MONTH');
         expect(parseReviewReply(scope, '매달 적용해주세요')).toBe('TEAM');
         expect(parseReviewReply(scope, '이번 달만 하고 연속 근무도 줄여줘')).toBeNull();
@@ -49,8 +51,43 @@ describe('conversational review answers', () => {
             {questionId: questions[2]!.id, value: [1]},
             {questionId: questions[3]!.id, value: [1, 2]},
         ];
+
         expect(isReviewComplete(card, replies)).toBe(true);
         expect(isReviewComplete(card, [replies[1]!, replies[0]!, replies[2]!, replies[3]!])).toBe(false);
         expect(isReviewComplete(card, replies.slice(1))).toBe(false);
+    });
+
+    it.each([
+        ['proposal', 'はい。', 'CONFIRM'],
+        ['proposal', 'はい、この内容で大丈夫です', 'CONFIRM'],
+        ['proposal', 'はい、この内容だけ反映します', 'CONFIRM'],
+        ['lifetime', '今月のみ', 'MONTH'],
+        ['lifetime', '今月だけ適用してください', 'MONTH'],
+        ['lifetime', '今後も', 'TEAM'],
+        ['lifetime', '毎月適用', 'TEAM'],
+        ['lifetime', '毎月反映してください', 'TEAM'],
+        ['severity', '必ず守ってください', 'HARD'],
+        ['severity', 'できれば', 'SOFT'],
+        ['severity', '可能であれば', 'SOFT'],
+        ['severity', 'できれば反映してください', 'SOFT'],
+        ['offDifference', '3日以内', 3],
+        ['offDifference', '0日', 0],
+        ['offDifference', '31日以内。', 31],
+    ] as const)('accepts an explicit Japanese %s reply: %s', (kind, text, expected) => {
+        expect(parseReviewReply({id: 'reply', kind, itemIndex: 0}, text)).toBe(expected);
+    });
+
+    it.each([
+        ['proposal', 'いいえ'],
+        ['proposal', 'はい、夜勤も減らしてください'],
+        ['proposal', 'はい、この内容で大丈夫ではありません'],
+        ['lifetime', '今月のみで、連続勤務も減らしてください'],
+        ['severity', '必ず守ってください。ただし夜勤は増やさないで'],
+        ['offDifference', '-1日以内'],
+        ['offDifference', '32日以内'],
+        ['offDifference', '3.5日以内'],
+        ['offDifference', '3日以内で、夜勤も減らして'],
+    ] as const)('does not infer a Japanese %s answer from an invalid or additional instruction: %s', (kind, text) => {
+        expect(parseReviewReply({id: 'reply', kind, itemIndex: 0}, text)).toBeNull();
     });
 });

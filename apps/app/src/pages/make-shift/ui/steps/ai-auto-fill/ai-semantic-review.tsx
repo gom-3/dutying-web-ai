@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 import {AiConversationLoading} from './ai-conversation-loading';
@@ -84,6 +85,7 @@ export function AiSemanticReview({
     onSelectConditions,
     onChangeModalities,
 }: TProps) {
+    const {t} = useTypedTranslation();
     const [selection, setSelection] = useState<{planId: string; ids: string[]}>({planId: plan.planId, ids: []});
     const [priorityEdits, setPriorityEdits] = useState<{hash: string; values: Record<string, 'HARD' | 'SOFT'>}>({
         hash: plan.planHash,
@@ -112,14 +114,14 @@ export function AiSemanticReview({
 
     if (cleared)
         return (
-            <section aria-label={copy('조건 삭제 완료', 'Conditions removed')} className="min-w-0 space-y-2">
+            <section aria-label={t('aiAutofillUi.semanticReview.conditionsRemoved')} className="min-w-0 space-y-2">
                 <header className="flex items-start gap-2.5">
-                    <StateIcon kind="success" label={copy('삭제 완료', 'Removed')} />
+                    <StateIcon kind="success" label={t('aiAutofillUi.semanticReview.removed')} />
                     <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">
-                        {copy('요청 조건을 삭제했어요.', 'Your request conditions were removed.')}
+                        {t('aiAutofillUi.semanticReview.yourRequestConditionsWereRemoved')}
                     </p>
                 </header>
-                <p className="text-[13px] leading-6 text-[#667085]">{copy('새 요청을 입력해 주세요.', 'Enter a new request.')}</p>
+                <p className="text-[13px] leading-6 text-[#667085]">{t('aiAutofillUi.semanticReview.enterANewRequest')}</p>
             </section>
         );
 
@@ -142,23 +144,23 @@ export function AiSemanticReview({
     const canSelect = showGroups && Boolean(plan.conditionGroups?.some((group) => group.selectable)) && Boolean(onSelectConditions);
     const title = ready
         ? complete
-            ? copy('이 요청으로 계산을 마쳤어요.', 'The calculation for these conditions is complete.')
+            ? t('aiAutofillUi.semanticReview.theCalculationForTheseConditionsIsComplete')
             : !current
-              ? copy('이전 요청 내용', 'Previous request')
+              ? t('aiAutofillUi.semanticReview.previousRequest')
               : plan.state === 'CONFIRMED'
-                ? copy('확인한 조건이에요', 'Your confirmed conditions')
-                : copy('이렇게 바꿀까요?', 'Shall we adjust it this way?')
+                ? t('aiAutofillUi.semanticReview.yourConfirmedConditions')
+                : t('aiAutofillUi.semanticReview.shallWeAdjustItThisWay')
         : conflict
-          ? copy('고정 근무와 요청이 충돌해요', 'Your request conflicts with fixed shifts')
+          ? t('aiAutofillUi.semanticReview.yourRequestConflictsWithFixedShifts')
           : retry
-            ? copy('요청을 확인하지 못했어요', 'Your request could not be reviewed')
+            ? t('aiAutofillUi.semanticReview.yourRequestCouldNotBeReviewed')
             : expired
-              ? copy('요청을 다시 확인해 주세요', 'Review your request again')
+              ? t('aiAutofillUi.semanticReview.reviewYourRequestAgain')
               : plan.state === 'UNSUPPORTED'
-                ? copy('반영하기 어려운 조건이 있어요', 'Some conditions are not supported yet')
+                ? t('aiAutofillUi.semanticReview.someConditionsAreNotSupportedYet')
                 : plan.state === 'NEEDS_CLARIFICATION'
-                  ? copy('요청을 조금 더 확인할게요', 'A little more detail is needed')
-                  : copy('요청 내용을 확인해 주세요', 'Review your request');
+                  ? t('aiAutofillUi.semanticReview.aLittleMoreDetailIsNeeded')
+                  : t('aiAutofillUi.semanticReview.reviewYourRequest');
     const kind: TIconKind =
         conflict || expired
             ? 'warning'
@@ -174,45 +176,41 @@ export function AiSemanticReview({
                         : 'review'
                     : 'clarify';
     const iconLabel = conflict
-        ? copy('고정 근무 충돌', 'Fixed shift conflict')
+        ? t('aiAutofillUi.semanticReview.fixedShiftConflict')
         : expired
-          ? copy('다시 확인 필요', 'Review needed')
+          ? t('aiAutofillUi.semanticReview.reviewNeeded')
           : retry
-            ? copy('요청 확인 오류', 'Request review failed')
+            ? t('aiAutofillUi.semanticReview.requestReviewFailed')
             : complete
-              ? copy('요청 계산 완료', 'Calculation completed')
+              ? t('aiAutofillUi.semanticReview.calculationCompleted')
               : !current
-                ? copy('이전 요청', 'Previous request')
+                ? t('aiAutofillUi.semanticReview.previousRequest2')
                 : ready
-                  ? copy('요청 조건 확인', 'Review request conditions')
-                  : copy('추가 확인 필요', 'More detail needed');
+                  ? t('aiAutofillUi.semanticReview.reviewRequestConditions')
+                  : t('aiAutofillUi.semanticReview.moreDetailNeeded');
     const description =
         ready || conflict
             ? null
             : retry
-              ? copy('입력한 요청은 유지돼요. 같은 요청으로 다시 시도할 수 있어요.', 'Your request is kept. You can try it again.')
+              ? t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
               : expired
-                ? copy(
-                      '표나 요청이 바뀌어 이전 조건으로 진행할 수 없어요.',
-                      'The schedule or request changed, so the earlier conditions cannot be used.',
-                  )
+                ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
                 : plan.state === 'UNSUPPORTED'
                   ? canSelect
                       ? null
-                      : copy('요청을 수정하거나 근무표에서 직접 바꿔 주세요.', 'Edit your request or change the schedule directly.')
-                  : plan.summary ||
-                    copy('대상이나 조건을 조금 더 자세히 알려 주세요.', 'Add a little more detail about the people or conditions.');
+                      : t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
+                  : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
     const listLabel =
         conflict || !ready
-            ? copy('확인할 요청', 'Request to review')
+            ? t('aiAutofillUi.semanticReview.requestToReview')
             : complete
-              ? copy('계산에 사용한 요청', 'Conditions used for this calculation')
+              ? t('aiAutofillUi.semanticReview.conditionsUsedForThisCalculation')
               : plan.state === 'CONFIRMED'
-                ? copy('확인한 요청', 'Confirmed request')
-                : copy('반영할 요청', 'Requested changes');
+                ? t('aiAutofillUi.semanticReview.confirmedRequest')
+                : t('aiAutofillUi.semanticReview.requestedChanges');
 
     return (
-        <section aria-label={copy('요청 조건 확인', 'Review request conditions')} className="min-w-0 space-y-4">
+        <section aria-label={t('aiAutofillUi.semanticReview.reviewRequestConditions')} className="min-w-0 space-y-4">
             <header className="flex items-start gap-2.5">
                 <StateIcon kind={kind} label={iconLabel} />
                 <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">{title}</p>
@@ -232,7 +230,7 @@ export function AiSemanticReview({
                             >
                                 {canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId) ? (
                                     <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
-                                        <legend className="text-[13px] font-medium">{copy('반영 방식', 'Priority')}</legend>
+                                        <legend className="text-[13px] font-medium">{t('aiAutofillUi.semanticReview.priority')}</legend>
                                         <div className="flex flex-wrap gap-2">
                                             {(['SOFT', 'HARD'] as const).map((value) => (
                                                 <label
@@ -255,34 +253,25 @@ export function AiSemanticReview({
                                                             setPriorityError(false);
                                                         }}
                                                     />
-                                                    {copy(value === 'HARD' ? '필수' : '권장', value === 'HARD' ? 'Required' : 'Preferred')}
+                                                    {value === 'HARD'
+                                                        ? t('aiAutofillUi.semanticReview.required')
+                                                        : t('aiAutofillUi.semanticReview.preferred')}
                                                 </label>
                                             ))}
                                         </div>
                                         <p className="text-[13px] break-keep text-[#475467]">
                                             {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
-                                                ? copy(
-                                                      '충족하지 못한 결과는 적용하지 않아요.',
-                                                      'A result that misses this condition cannot be applied.',
-                                                  )
-                                                : copy(
-                                                      '가능한 만큼 맞추며, 다른 조건 때문에 충족하지 못할 수 있어요.',
-                                                      'We try to meet this preference; other conditions may prevent it.',
-                                                  )}
+                                                ? t('aiAutofillUi.semanticReview.aResultThatMissesThisConditionCannotBeApplied')
+                                                : t('aiAutofillUi.semanticReview.weTryToMeetThisPreferenceOtherConditionsMayPreventIt')}
                                         </p>
                                     </fieldset>
                                 ) : (
                                     <p className="text-[13px] break-keep text-[#475467]">
-                                        {condition.modality === 'HARD' ? copy('필수', 'Required') : copy('권장', 'Preferred')}
+                                        {condition.modality === 'HARD'
+                                            ? t('aiAutofillUi.semanticReview.required')
+                                            : t('aiAutofillUi.semanticReview.preferred')}
                                         {current && ready && condition.action !== 'COUNT' && (
-                                            <>
-                                                {' '}
-                                                ·{' '}
-                                                {copy(
-                                                    '지정·금지한 배정은 필수로 적용해요.',
-                                                    'Explicit assignments and exclusions are required.',
-                                                )}
-                                            </>
+                                            <> · {t('aiAutofillUi.semanticReview.explicitAssignmentsAndExclusionsAreRequired')}</>
                                         )}
                                     </p>
                                 )}
@@ -295,13 +284,10 @@ export function AiSemanticReview({
                 <div className="space-y-2">
                     {current && canSelect && (
                         <p className="text-xs leading-5 text-[#667085]">
-                            {copy(
-                                '이번에 반영할 조건을 선택해 주세요. 선택하지 않은 조건은 제외돼요.',
-                                'Choose conditions for this run. Unselected conditions will be excluded.',
-                            )}
+                            {t('aiAutofillUi.semanticReview.chooseConditionsForThisRunUnselectedConditionsWillBeExcluded')}
                         </p>
                     )}
-                    <ul aria-label={copy('요청 조건 선택', 'Select request conditions')} className="space-y-2">
+                    <ul aria-label={t('aiAutofillUi.semanticReview.selectRequestConditions')} className="space-y-2">
                         {plan.conditionGroups!.map((group) => {
                             const checked = selected.includes(group.conditionId);
                             const Choice = current && canSelect ? 'label' : 'div';
@@ -346,12 +332,12 @@ export function AiSemanticReview({
                                                 {group.selectable
                                                     ? current && canSelect
                                                         ? checked
-                                                            ? copy('선택됨', 'Selected')
-                                                            : copy('선택 가능', 'Available to select')
-                                                        : copy('지원하는 조건', 'Supported condition')
+                                                            ? t('aiAutofillUi.semanticReview.selected')
+                                                            : t('aiAutofillUi.semanticReview.availableToSelect')
+                                                        : t('aiAutofillUi.semanticReview.supportedCondition')
                                                     : group.status === 'UNSUPPORTED'
-                                                      ? copy('아직 지원하지 않아요', 'Not supported yet')
-                                                      : copy('추가 확인이 필요해요', 'Needs more detail')}
+                                                      ? t('aiAutofillUi.semanticReview.notSupportedYet')
+                                                      : t('aiAutofillUi.semanticReview.needsMoreDetail')}
                                             </span>
                                         </span>
                                     </Choice>
@@ -363,16 +349,13 @@ export function AiSemanticReview({
             )}
             {canEditPriority && Boolean(plan.modalityEditableIntentIds?.length) && (
                 <p className="text-[13px] break-keep text-[#475467]">
-                    {copy('반영 방식 변경은 이번 실행에만 적용돼요.', 'Priority changes apply to this run only.')}
+                    {t('aiAutofillUi.semanticReview.priorityChangesApplyToThisRunOnly')}
                 </p>
             )}
             {priorityDirty && current && (
                 <div className="space-y-2">
                     <p role="status" className="text-[13px]">
-                        {copy(
-                            '반영 방식을 바꿨어요. 변경한 조건을 확인한 뒤 실행해 주세요.',
-                            'Priority changed. Save and review the updated conditions before running.',
-                        )}
+                        {t('aiAutofillUi.semanticReview.priorityChangedSaveAndReviewTheUpdatedConditionsBeforeRunning')}
                     </p>
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -381,7 +364,7 @@ export function AiSemanticReview({
                             disabled={disabled || stale || savingPriority}
                             onClick={() => void savePriorities()}
                         >
-                            {copy('변경한 조건 확인하기', 'Review priority changes')}
+                            {t('aiAutofillUi.semanticReview.reviewPriorityChanges')}
                         </button>
                         <button
                             type="button"
@@ -392,26 +375,22 @@ export function AiSemanticReview({
                                 setPriorityError(false);
                             }}
                         >
-                            {copy('변경 취소', 'Cancel changes')}
+                            {t('aiAutofillUi.semanticReview.cancelChanges')}
                         </button>
                     </div>
-                    {priorityError && (
-                        <p role="alert">
-                            {copy('변경 내용을 저장하지 못했어요. 다시 시도해 주세요.', 'Could not save changes. Please try again.')}
-                        </p>
-                    )}
+                    {priorityError && <p role="alert">{t('aiAutofillUi.semanticReview.couldNotSaveChangesPleaseTryAgain')}</p>}
                 </div>
             )}
             {plan.selectionAudit && (
                 <details className="group min-w-0">
                     <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-center justify-between gap-2 rounded-[10px] bg-white px-3 py-2 text-[13px] font-medium text-[#475467] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none">
-                        <span>{copy('선택 내역 보기', 'Selection details')}</span>
+                        <span>{t('aiAutofillUi.semanticReview.selectionDetails')}</span>
                         <span className="flex items-center gap-2 text-xs">
                             <span>
-                                {copy(
-                                    `포함 ${plan.selectionAudit.selectedConditionIds.length} · 제외 ${plan.selectionAudit.excludedConditionIds.length}`,
-                                    `${plan.selectionAudit.selectedConditionIds.length} included · ${plan.selectionAudit.excludedConditionIds.length} excluded`,
-                                )}
+                                {t('aiAutofillUi.semanticReview.includedExcluded', {
+                                    selectedConditionCount: plan.selectionAudit.selectedConditionIds.length,
+                                    excludedConditionCount: plan.selectionAudit.excludedConditionIds.length,
+                                })}
                             </span>
                             <svg
                                 aria-hidden="true"
@@ -424,7 +403,7 @@ export function AiSemanticReview({
                         </span>
                     </summary>
                     <ul
-                        aria-label={copy('적용 및 제외 조건', 'Included and excluded conditions')}
+                        aria-label={t('aiAutofillUi.semanticReview.includedAndExcludedConditions')}
                         className="mt-2 space-y-2 text-[13px] leading-5"
                     >
                         {plan.selectionAudit.conditionGroups.map((group) => {
@@ -433,16 +412,18 @@ export function AiSemanticReview({
                             return (
                                 <li key={group.conditionId} className="rounded-[10px] bg-white p-3">
                                     <p className="break-keep whitespace-pre-wrap text-[#333D4B]">
-                                        <strong>{included ? copy('포함: ', 'Include: ') : copy('제외: ', 'Exclude: ')}</strong>
+                                        <strong>
+                                            {included ? t('aiAutofillUi.semanticReview.include') : t('aiAutofillUi.semanticReview.exclude')}
+                                        </strong>
                                         {group.sourceSpan.quote.trim()}
                                     </p>
                                     {!included && (
                                         <p className="mt-1 text-xs text-[#667085]">
                                             {group.selectable
-                                                ? copy('선택하지 않은 조건', 'Not selected')
+                                                ? t('aiAutofillUi.semanticReview.notSelected')
                                                 : group.status === 'UNSUPPORTED'
-                                                  ? copy('지원하지 않는 조건', 'Unsupported condition')
-                                                  : copy('확인이 필요한 조건', 'Needs clarification')}
+                                                  ? t('aiAutofillUi.semanticReview.unsupportedCondition')
+                                                  : t('aiAutofillUi.semanticReview.needsClarification')}
                                         </p>
                                     )}
                                 </li>
@@ -453,14 +434,14 @@ export function AiSemanticReview({
             )}
             {conflict && (
                 <p className="text-[13px] leading-6 break-keep text-[#667085]">
-                    {copy('고정 근무를 확인하거나 요청을 수정해 주세요.', 'Review the fixed shifts or edit your request.')}
+                    {t('aiAutofillUi.semanticReview.reviewTheFixedShiftsOrEditYourRequest')}
                 </p>
             )}
             {current && (
                 <>
                     {stale && !expired && (
                         <p role="status" className="rounded-[10px] bg-[#FFF4DF] px-3 py-2 text-[13px] leading-5 text-[#8A4B08]">
-                            {copy('표가 바뀌었어요. 요청을 다시 확인해 주세요.', 'The schedule changed. Review the request again.')}
+                            {t('aiAutofillUi.semanticReview.theScheduleChangedReviewTheRequestAgain')}
                         </p>
                     )}
                     <div className="grid gap-2">
@@ -478,12 +459,12 @@ export function AiSemanticReview({
                                 }
                                 onClick={onApply}
                             >
-                                {copy('이대로 수정하기', 'Adjust with these conditions')}
+                                {t('aiAutofillUi.semanticReview.adjustWithTheseConditions')}
                             </button>
                         )}
                         {retry && (
                             <button type="button" className={primary} disabled={disabled} onClick={onRetry}>
-                                {copy('다시 시도하기', 'Try again')}
+                                {t('aiAutofillUi.semanticReview.tryAgain')}
                             </button>
                         )}
                         {canSelect && (
@@ -493,7 +474,7 @@ export function AiSemanticReview({
                                 disabled={disabled || stale || selected.length === 0}
                                 onClick={() => onSelectConditions?.(selected)}
                             >
-                                {copy('선택한 조건만 다시 검증', 'Revalidate only selected conditions')}
+                                {t('aiAutofillUi.semanticReview.revalidateOnlySelectedConditions')}
                             </button>
                         )}
                         <button
@@ -502,7 +483,7 @@ export function AiSemanticReview({
                             disabled={disabled || savingPriority}
                             onClick={onEdit}
                         >
-                            {copy('요청 수정하기', 'Edit request')}
+                            {t('aiAutofillUi.semanticReview.editRequest')}
                         </button>
                     </div>
                 </>
@@ -511,8 +492,8 @@ export function AiSemanticReview({
                 <AiConversationLoading
                     label={
                         processing === 'adjust'
-                            ? copy('근무표 수정 중', 'Adjusting your schedule')
-                            : copy('요청 확인 중', 'Reviewing your request')
+                            ? t('aiAutofillUi.semanticReview.adjustingYourSchedule')
+                            : t('aiAutofillUi.semanticReview.reviewingYourRequest')
                     }
                 />
             )}

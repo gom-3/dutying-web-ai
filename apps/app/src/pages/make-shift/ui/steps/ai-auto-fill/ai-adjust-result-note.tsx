@@ -39,11 +39,12 @@ export default function AiAdjustResultNote({
     const {t} = useTypedTranslation();
     const unmet = ruleResults.find((entry) => (entry.violationCount ?? 0) > 0);
     const offGoalUnmet = offGoal && offGoal.goalStatus !== 'SATISFIED';
-    const offGoalLabel = offGoal?.operation === 'SET_TARGET'
-        ? `${offGoal.targetOff}일 목표에서 총 ${offGoal.totalDeviation ?? 0}일 차이가 남았어요.`
-        : offGoal?.operation === 'INCREASE_TO_BASELINE'
-          ? `기준 오프까지 총 ${offGoal.totalDeficit ?? 0}일이 아직 부족해요.`
-          : `최소 ${offGoal?.minimumOff}일 오프 목표 중 ${offGoal?.totalDeficit ?? 0}일이 아직 부족해요.`;
+    const offGoalLabel =
+        offGoal?.operation === 'SET_TARGET'
+            ? t('aiAutofillUi.resultNote.offTargetDifference', {targetOff: offGoal.targetOff ?? 0, deviation: offGoal.totalDeviation ?? 0})
+            : offGoal?.operation === 'INCREASE_TO_BASELINE'
+              ? t('aiAutofillUi.resultNote.offBaselineDeficit', {deficit: offGoal.totalDeficit ?? 0})
+              : t('aiAutofillUi.resultNote.offMinimumDeficit', {minimumOff: offGoal?.minimumOff ?? 0, deficit: offGoal?.totalDeficit ?? 0});
 
     if (changedCount === null && !failure && !unmet && !goalResult && !offGoal && notices.length === 0) return null;
 
@@ -80,7 +81,12 @@ export default function AiAdjustResultNote({
                 </>
             ) : goalResult ? (
                 <span>
-                    하루짜리 나이트 {goalResult.beforeSingleNightRuns}건 → {goalResult.afterSingleNightRuns}건 · O 편차 {goalResult.actualOffDifference}일 · 월 경계 미확정 {goalResult.boundaryUnknownCount}건
+                    {t('aiAutofillUi.resultNote.goalSummary', {
+                        before: goalResult.beforeSingleNightRuns,
+                        after: goalResult.afterSingleNightRuns,
+                        difference: goalResult.actualOffDifference,
+                        unknown: goalResult.boundaryUnknownCount,
+                    })}
                 </span>
             ) : notices.length > 0 ? (
                 <span>{notices[0].message}</span>

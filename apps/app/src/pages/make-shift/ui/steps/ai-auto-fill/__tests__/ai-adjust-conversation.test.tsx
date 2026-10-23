@@ -5,11 +5,16 @@ import {describe, expect, it, vi} from 'vitest';
 import type {TAdjustApplyResult} from '../../../../model/ai-adjust-conversation';
 import AiAdjustTextInput from '../ai-adjust-text-input';
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, unknown>) => (values ? `${key} ${JSON.stringify(values)}` : key),
-    }),
-}));
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await import('@/i18n');
+
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, unknown>) =>
+                key.startsWith('aiAutofillUi.') ? i18n.t(key, values) : values ? `${key} ${JSON.stringify(values)}` : key,
+        }),
+    };
+});
 
 const nurses = [
     {nurseId: 1, name: '김서현'},
@@ -860,5 +865,80 @@ describe('AI adjustment conversation', () => {
         fireEvent.keyDown(textbox(), {key: 'Enter', isComposing: true});
         expect(interpret).not.toHaveBeenCalled();
         expect(keydown).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['今月のみ', 'MONTH'],
+        ['今後も', 'TEAM'],
+    ] as const)('collects Japanese confirmation, scope (%s), and priority before an explicit apply reply', async (scope, lifetime) => {
+        const interpret = vi.fn().mockResolvedValue({
+            items: [{kind: 'RULE', templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {count: 4}, displayLabel: 'D勤務は連続4日まで'}],
+            unmapped: [],
+        });
+        const apply = vi.fn();
+
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
+        await submit('D勤務は連続4日までにしてください', false);
+        await submit('はい、この内容で大丈夫です', false);
+        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).toBeVisible();
+        await submit(scope, false);
+        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.severity'})).toBeVisible();
+        await submit('はい', false);
+        expect(screen.getByText('aiAdjust.chat.chooseAnswer')).toBeVisible();
+        expect(apply).not.toHaveBeenCalled();
+        await submit('必ず守ってください', false);
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
+        expect(apply).not.toHaveBeenCalled();
+        await submit('反映してください', false);
+        await waitFor(() => expect(apply).toHaveBeenCalledOnce());
+        expect(apply.mock.calls[0]![0][0]).toMatchObject({lifetime, severity: 'HARD'});
+        expect(interpret).toHaveBeenCalledOnce();
+    });
+
+    it('handles an exact Japanese decline without applying or reinterpreting the proposal', async () => {
+        const interpret = vi.fn().mockResolvedValue(interpreted);
+        const apply = vi.fn();
+
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
+        await submit('休日を均等にしてください', false);
+        await submit('いいえ、変更します', false);
+        expect(textbox()).toHaveValue('');
+        expect(screen.getByText('aiAdjust.chat.reviseProposal')).toBeVisible();
+        expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).not.toBeInTheDocument();
+        expect(interpret).toHaveBeenCalledOnce();
+        expect(apply).not.toHaveBeenCalled();
+    });
+
+    it('validates Japanese day units before accepting a typed goal tolerance', async () => {
+        const interpret = vi.fn().mockResolvedValue({items: [{kind: 'GOAL', goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS'}], unmapped: []});
+        const apply = vi.fn();
+
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
+        await submit('単発の夜勤を減らしてください', false);
+        await submit('はい', false);
+        await submit('3.5日以内', false);
+        expect(screen.getAllByText('aiAdjust.chat.typeDays')).toHaveLength(2);
+        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.offDifference'})).toBeVisible();
+        await submit('3日以内', false);
+        expect(screen.getByText('aiAdjust.chat.withinDays {"count":3}')).toBeVisible();
+        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.targetNurses'})).toBeVisible();
+        expect(interpret).toHaveBeenCalledOnce();
+        expect(apply).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['INVALID_DATE', '12日'],
+        ['INVALID_VALUE', '3回'],
+    ])('preserves the original request for a Japanese numeric clarification: %s', async (reasonCode, answer) => {
+        const original = '田中さんの勤務を変更してください';
+        const interpret = vi
+            .fn()
+            .mockResolvedValueOnce({items: [], unmapped: [{text: original, reasonCode}]})
+            .mockResolvedValueOnce(interpreted);
+
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={vi.fn()} goalNurses={nurses} />);
+        await submit(original, false);
+        await submit(answer, false);
+        expect(interpret).toHaveBeenLastCalledWith(`${original}\n추가 설명: ${answer}`);
     });
 });

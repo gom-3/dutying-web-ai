@@ -1,4 +1,5 @@
 import type {ReactNode} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 
 type TProps = {
@@ -9,12 +10,14 @@ type TProps = {
     copy: (ko: string, en: string) => string;
 };
 
-function period(dates: string[], copy: TProps['copy']) {
+type TTranslate = ReturnType<typeof useTypedTranslation>['t'];
+
+function period(dates: string[], t: TTranslate) {
     const sorted = [...dates].sort();
     const format = (date: string) => {
         const [, month, day] = date.split('-').map(Number);
 
-        return copy(`${month}월 ${day}일`, `${month}/${day}`);
+        return t('aiAutofillUi.semanticCondition.dateLabel', {month, day});
     };
 
     if (!sorted.length) return '';
@@ -27,45 +30,46 @@ function period(dates: string[], copy: TProps['copy']) {
         const [, month, day] = first.split('-').map(Number);
 
         return first.slice(0, 7) === last.slice(0, 7)
-            ? copy(`${month}월 ${day}~${Number(last.slice(-2))}일`, `${format(first)}–${format(last)}`)
+            ? t('aiAutofillUi.semanticCondition.dateRange', {month, day, lastDay: Number(last.slice(-2))})
             : `${format(first)} ~ ${format(last)}`;
     }
 
     return sorted.map(format).join(', ');
 }
 
-function description(condition: TProps['condition'], copy: TProps['copy']) {
+function description(condition: TProps['condition'], t: TTranslate) {
     const shifts = condition.shiftCodes.join(', ');
+    const count = String(condition.count);
 
-    if (condition.action === 'FORBID') return copy(`${shifts} 근무 제외`, `Exclude ${shifts} shifts`);
+    if (condition.action === 'FORBID') return t('aiAutofillUi.semanticCondition.excludeShifts', {shifts});
 
     if (condition.action === 'ASSIGN')
         return condition.modality === 'SOFT'
-            ? copy(`${shifts} 근무 선호`, `Prefer ${shifts} shifts`)
-            : copy(`${shifts} 근무 배정`, `Assign ${shifts} shifts`);
+            ? t('aiAutofillUi.semanticCondition.preferShifts', {shifts})
+            : t('aiAutofillUi.semanticCondition.assignShifts', {shifts});
 
-    if (condition.action === 'MAX_CONSECUTIVE_WORK')
-        return copy(`연속 근무 최대 ${condition.count}일`, `At most ${condition.count} consecutive work days`);
+    if (condition.action === 'MAX_CONSECUTIVE_WORK') return t('aiAutofillUi.semanticCondition.atMostConsecutiveWorkDays', {count});
 
     const operator =
         condition.operator === 'MIN'
-            ? copy('최소', 'at least')
+            ? t('aiAutofillUi.semanticCondition.atLeast')
             : condition.operator === 'MAX'
-              ? copy('최대', 'at most')
-              : copy('정확히', 'exactly');
+              ? t('aiAutofillUi.semanticCondition.atMost')
+              : t('aiAutofillUi.semanticCondition.exactly');
 
     if (condition.quantifier === 'GROUP_TOTAL' && condition.dates.length === 1) {
-        const names = condition.shiftCodes.map((code) => (code === 'O' ? copy('휴무', 'off-duty') : code)).join(', ');
+        const names = condition.shiftCodes.map((code) => (code === 'O' ? t('aiAutofillUi.semanticCondition.offDuty') : code)).join(', ');
 
-        return copy(`${names} 인원 · ${operator} ${condition.count}명`, `${names} headcount · ${operator} ${condition.count} nurses`);
+        return t('aiAutofillUi.semanticCondition.headcountNurses', {names, operator, count});
     }
 
     return condition.quantifier === 'GROUP_TOTAL'
-        ? copy(`${shifts} 근무 · 합계 ${operator} ${condition.count}회`, `${shifts} shifts · ${operator} ${condition.count} total`)
-        : copy(`${shifts} 근무 · ${operator} ${condition.count}회씩`, `${shifts} shifts · ${operator} ${condition.count} times each`);
+        ? t('aiAutofillUi.semanticCondition.shiftsTotal', {shifts, operator, count})
+        : t('aiAutofillUi.semanticCondition.shiftsTimesEach', {shifts, operator, count});
 }
 
-export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy, children}: TProps) {
+export function AiSemanticCondition({condition, nurseName, rosterNurseIds, children}: TProps) {
+    const {t} = useTypedTranslation();
     const everyone =
         rosterNurseIds.length > 0 &&
         new Set(condition.nurseIds).size === new Set(rosterNurseIds).size &&
@@ -75,18 +79,20 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy,
         condition.action === 'CATALOG_RULE'
             ? catalogDescription?.length
                 ? catalogDescription
-                : copy('요청 조건을 다시 확인해 주세요.', 'Review the request conditions again.')
+                : t('aiAutofillUi.semanticCondition.reviewTheRequestConditionsAgain')
             : everyone
-              ? copy('전체 간호사', 'All nurses')
-              : condition.nurseIds.map((id) => copy(`${nurseName(id)}님`, nurseName(id))).join(', ');
-    const dates = period(condition.dates, copy);
+              ? t('aiAutofillUi.semanticCondition.allNurses')
+              : condition.nurseIds.map((id) => t('aiAutofillUi.semanticCondition.nurseName', {name: nurseName(id)})).join(', ');
+    const dates = period(condition.dates, t);
 
     return (
         <li className="rounded-xl bg-white px-3.5 py-3">
             <div className="flex items-start justify-between gap-3">
                 <p className="min-w-0 text-[13.5px] leading-5 font-semibold break-keep text-[#333D4B]">{subject}</p>
                 <span className="shrink-0 text-[11px] leading-5 text-[#667085]">
-                    {condition.modality === 'HARD' ? copy('필수 조건', 'Required') : copy('선호 조건', 'Preferred')}
+                    {condition.modality === 'HARD'
+                        ? t('aiAutofillUi.semanticCondition.required')
+                        : t('aiAutofillUi.semanticCondition.preferred')}
                 </span>
             </div>
             <p className="mt-1.5 text-[13px] leading-5 break-keep text-[#667085]">
@@ -96,7 +102,7 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, copy,
                         {condition.action !== 'CATALOG_RULE' && ' · '}
                     </>
                 )}
-                {condition.action !== 'CATALOG_RULE' && description(condition, copy)}
+                {condition.action !== 'CATALOG_RULE' && description(condition, t)}
             </p>
             {children}
         </li>

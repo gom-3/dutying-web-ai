@@ -4,7 +4,9 @@ import i18n from '@/i18n';
 import {sendScheduleResultFeedback} from '../../../../model/schedule-result-feedback';
 import {AiResultSatisfaction} from '../ai-result-satisfaction';
 vi.mock('../../../../model/schedule-result-feedback', () => ({sendScheduleResultFeedback: vi.fn()}));
+
 const observation = {flowId: 'flow', serverEventId: 'result', wardId: 1, shiftTeamId: 2, year: 2026, month: 11};
+
 beforeEach(async () => {
     vi.resetAllMocks();
     await i18n.changeLanguage('ko');
@@ -17,14 +19,18 @@ it('allows skipping without submitting or changing a schedule', () => {
 });
 it('preserves feedback and idempotency key on retry, then acknowledges receipt', async () => {
     vi.mocked(sendScheduleResultFeedback).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce();
+
     const hotkey = vi.fn();
+
     render(
         <div onKeyDown={hotkey}>
             <AiResultSatisfaction observation={observation} />
         </div>,
     );
     fireEvent.click(screen.getByRole('button', {name: '아쉬워요'}));
+
     const input = screen.getByRole('textbox');
+
     fireEvent.change(input, {target: {value: ' 야간이 몰려 있어요 '}});
     fireEvent.keyDown(input, {key: 'Delete'});
     expect(hotkey).not.toHaveBeenCalled();
@@ -33,13 +39,16 @@ it('preserves feedback and idempotency key on retry, then acknowledges receipt',
     expect(input).toHaveValue(' 야간이 몰려 있어요 ');
     fireEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
     await screen.findByRole('status');
+
     const calls = vi.mocked(sendScheduleResultFeedback).mock.calls;
+
     expect(calls).toHaveLength(2);
     expect(calls[0]).toEqual(calls[1]);
     expect(calls[0]).toEqual([observation, expect.objectContaining({satisfaction: 'NEEDS_WORK', feedbackNote: '야간이 몰려 있어요'})]);
 });
 it('allows rating without a reason and prevents duplicate in-flight submission', async () => {
     let done!: () => void;
+
     vi.mocked(sendScheduleResultFeedback).mockImplementation(
         () =>
             new Promise<void>((resolve) => {
@@ -48,7 +57,9 @@ it('allows rating without a reason and prevents duplicate in-flight submission',
     );
     render(<AiResultSatisfaction observation={observation} />);
     fireEvent.click(screen.getByRole('button', {name: '마음에 들어요'}));
+
     const send = screen.getByRole('button', {name: '의견 보내기'});
+
     fireEvent.click(send);
     fireEvent.click(send);
     expect(sendScheduleResultFeedback).toHaveBeenCalledOnce();
@@ -61,9 +72,28 @@ it('allows rating without a reason and prevents duplicate in-flight submission',
 });
 it('uses English and resets for a different result', async () => {
     await i18n.changeLanguage('en');
+
     const {rerender} = render(<AiResultSatisfaction key="one" observation={observation} />);
+
     fireEvent.click(screen.getByRole('button', {name: 'Not now'}));
     rerender(<AiResultSatisfaction key="two" observation={{...observation, serverEventId: 'next'}} />);
     expect(screen.getByRole('heading', {name: 'How do you like the schedule we just made?'})).toBeVisible();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+});
+
+it('shows Japanese feedback choices and preserves the satisfaction API value', async () => {
+    await i18n.changeLanguage('ja');
+    vi.mocked(sendScheduleResultFeedback).mockResolvedValueOnce();
+    render(<AiResultSatisfaction observation={observation} />);
+    expect(screen.getByRole('heading', {name: '作成した勤務表はいかがですか？'})).toBeVisible();
+    expect(screen.getByRole('group', {name: '勤務表の満足度'})).toBeVisible();
+    expect(sendScheduleResultFeedback).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: '改善してほしいです'}));
+    fireEvent.change(screen.getByRole('textbox'), {target: {value: '夜勤が連続しています'}});
+    fireEvent.click(screen.getByRole('button', {name: '意見を送信'}));
+    expect(await screen.findByRole('status')).toHaveTextContent('ご意見を送信しました。勤務表の改善に役立てます。');
+    expect(sendScheduleResultFeedback).toHaveBeenCalledWith(
+        observation,
+        expect.objectContaining({satisfaction: 'NEEDS_WORK', feedbackNote: '夜勤が連続しています'}),
+    );
 });

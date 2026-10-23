@@ -1,8 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import {type CSSProperties, useCallback, useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
 import toast, {resolveValue, useToaster} from 'react-hot-toast';
-import {useTranslation} from 'react-i18next';
-import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiWardCondition} from '../../../model/use-ai-active-conditions';
 import {Constraints, type TConstraintsEditorHandle, type TConstraintsEditorState} from '../constraints';
 import {AiConversationLoading} from './ai-conversation-loading';
@@ -43,10 +42,7 @@ export function AiActiveConditions({
     onWardRulesApplied,
     onBusyChange,
 }: TProps) {
-    useTranslation();
-
-    const ko = i18n.language.startsWith('ko');
-    const copy = (korean: string, english: string) => (ko ? korean : english);
+    const {t} = useTypedTranslation();
     const id = useId();
     const toastId = `ai-conditions:${id}`;
     const {toasts, handlers: notificationHandlers} = useToaster({}, toastId);
@@ -137,7 +133,7 @@ export function AiActiveConditions({
                     </p>
                     <button
                         type="button"
-                        aria-label={copy('알림 닫기', 'Dismiss notification')}
+                        aria-label={t('aiAutofillUi.activeConditions.dismissNotification')}
                         onClick={() => toast.remove(toastId, toastId)}
                         className="grid size-[44px] shrink-0 place-items-center rounded-[8px] text-white hover:bg-[#4E5968] focus-visible:bg-[#EDE7FF] focus-visible:text-[#5931B9] focus-visible:outline-none"
                     >
@@ -161,10 +157,9 @@ export function AiActiveConditions({
         try {
             await condition.onRemove();
 
-            if (mounted.current) notify(copy('조건을 삭제했어요.', 'Condition removed.'));
+            if (mounted.current) notify(t('aiAutofillUi.activeConditions.conditionRemoved'));
         } catch {
-            if (mounted.current)
-                notify(copy('삭제하지 못했어요. 다시 시도해 주세요.', 'Could not remove this condition. Please try again.'));
+            if (mounted.current) notify(t('aiAutofillUi.activeConditions.couldNotRemoveThisConditionPleaseTryAgain'));
         } finally {
             pending.current = null;
 
@@ -172,7 +167,7 @@ export function AiActiveConditions({
         }
     };
     const count = wardRules.length + aiConditions.length;
-    const summary = copy(`조건 ${count}개`, `${count} conditions`);
+    const summary = t('aiAutofillUi.activeConditions.conditions', {count});
     const controlDisabled = disabled || loading || pendingId !== null || editorState.saving;
     const showAiOrigin = new Set(aiConditions.map((condition) => condition.description)).size > 1;
     const apply = async () => {
@@ -183,7 +178,7 @@ export function AiActiveConditions({
         try {
             if (await editor.current.apply()) finishClose();
         } catch {
-            notify(copy('적용하지 못했어요. 다시 시도해 주세요.', 'Could not apply changes. Please try again.'));
+            notify(t('aiAutofillUi.activeConditions.couldNotApplyChangesPleaseTryAgain'));
         } finally {
             applyPending.current = false;
         }
@@ -215,7 +210,7 @@ export function AiActiveConditions({
                             <path d="M5 2h3v6H5zm7 5h3v6h-3zm-6 5h3v6H6z" />
                         </svg>
                         <span className="min-w-0 flex-1 text-[14px] leading-[22px] font-semibold [overflow-wrap:anywhere] break-keep">
-                            {copy('현재 적용된 제약조건 보기', 'View active constraints')}
+                            {t('aiAutofillUi.activeConditions.viewActiveConstraints')}
                         </span>
                         <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px] shrink-0" fill="currentColor">
                             <path d="m7 3 7 7-7 7-1.4-1.4L11.2 10 5.6 4.4z" />
@@ -270,19 +265,16 @@ export function AiActiveConditions({
                         <header className="flex shrink-0 items-center justify-between gap-3 pt-5 pr-4 pb-4 pl-6 sm:pl-7">
                             <div className="min-w-0 pt-1">
                                 <Dialog.Title className="text-[22px] leading-8 font-semibold tracking-[-0.02em] text-[#242B36]">
-                                    {copy('제약조건', 'Constraints')}
+                                    {t('aiAutofillUi.activeConditions.constraints')}
                                 </Dialog.Title>
                                 <Dialog.Description className="sr-only">
-                                    {copy(
-                                        '제약조건을 수정해 적용하거나 AI 요청으로 추가한 조건을 삭제할 수 있어요.',
-                                        'Edit and apply constraints or remove conditions added through AI.',
-                                    )}
+                                    {t('aiAutofillUi.activeConditions.editAndApplyConstraintsOrRemoveConditionsAddedThroughAi')}
                                 </Dialog.Description>
                             </div>
                             <button
                                 ref={closeButton}
                                 type="button"
-                                aria-label={copy('조건 목록 닫기', 'Close conditions')}
+                                aria-label={t('aiAutofillUi.activeConditions.closeConditions')}
                                 onClick={close}
                                 disabled={editorState.saving}
                                 className="grid size-[44px] shrink-0 place-items-center rounded-[10px] text-[#667085] hover:bg-[#F3F5F7] hover:text-[#333D4B] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none"
@@ -293,11 +285,13 @@ export function AiActiveConditions({
                             </button>
                         </header>
                         <div className="min-h-[min(120px,24dvh)] overflow-y-auto overscroll-contain px-6 pb-5 [overflow-wrap:anywhere] sm:px-7">
-                            {loading && <AiConversationLoading label={copy('조건 확인 중', 'Loading conditions')} className="mb-2" />}
+                            {loading && (
+                                <AiConversationLoading label={t('aiAutofillUi.activeConditions.loadingConditions')} className="mb-2" />
+                            )}
                             {error && (
                                 <div className="mb-3 flex flex-wrap items-center gap-2 py-2">
                                     <p role="alert" className="min-w-0 flex-1 text-[13px] leading-5 text-[#667085]">
-                                        {copy('조건을 불러오지 못했어요.', 'Could not load conditions.')}
+                                        {t('aiAutofillUi.activeConditions.couldNotLoadConditions')}
                                     </p>
                                     <button
                                         type="button"
@@ -305,15 +299,15 @@ export function AiActiveConditions({
                                         onClick={() => {
                                             void Promise.resolve()
                                                 .then(() => onRetry?.())
-                                                .catch(() => notify(copy('조건을 불러오지 못했어요.', 'Could not load conditions.')));
+                                                .catch(() => notify(t('aiAutofillUi.activeConditions.couldNotLoadConditions')));
                                         }}
                                         className="min-h-[44px] shrink-0 rounded-[8px] px-3 text-[13px] font-medium text-main-1 hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
                                     >
-                                        {copy('다시 불러오기', 'Retry')}
+                                        {t('aiAutofillUi.activeConditions.retry')}
                                     </button>
                                 </div>
                             )}
-                            <section aria-label={copy('제약조건 탭의 조건', 'Conditions from the conditions tab')}>
+                            <section aria-label={t('aiAutofillUi.activeConditions.conditionsFromTheConditionsTab')}>
                                 <Constraints
                                     key={`${wardId}:${teamId}:${year}:${month}`}
                                     variant="dialog"
@@ -328,14 +322,16 @@ export function AiActiveConditions({
                                 />
                             </section>
                             <section
-                                aria-label={copy('AI로 추가한 조건', 'Conditions added with AI')}
+                                aria-label={t('aiAutofillUi.activeConditions.conditionsAddedWithAi')}
                                 className="mt-5 rounded-[18px] bg-[#F8F9FB] px-3 pt-4 pb-5"
                             >
                                 <header className="mb-3 flex flex-wrap items-center justify-between gap-2 px-3">
                                     <h3 className="text-[13px] leading-5 font-semibold text-[#667085]">
-                                        {copy('AI 요청', 'AI requests')} <span className="ml-1">{aiConditions.length}</span>
+                                        {t('aiAutofillUi.activeConditions.aiRequests')} <span className="ml-1">{aiConditions.length}</span>
                                     </h3>
-                                    <span className="text-[12px] leading-5 text-[#667085]">{copy('삭제만 가능', 'Remove only')}</span>
+                                    <span className="text-[12px] leading-5 text-[#667085]">
+                                        {t('aiAutofillUi.activeConditions.removeOnly')}
+                                    </span>
                                 </header>
                                 {aiConditions.length ? (
                                     <ul className="space-y-2.5">
@@ -353,7 +349,7 @@ export function AiActiveConditions({
                                                 <button
                                                     type="button"
                                                     data-ai-condition={condition.id}
-                                                    aria-label={copy(`${condition.label} 삭제`, `Remove ${condition.label}`)}
+                                                    aria-label={t('aiAutofillUi.activeConditions.remove', {label: condition.label})}
                                                     aria-busy={pendingId === condition.id}
                                                     disabled={controlDisabled}
                                                     onClick={(event) => {
@@ -368,7 +364,7 @@ export function AiActiveConditions({
                                     </ul>
                                 ) : !loading && !error ? (
                                     <p className="rounded-[10px] bg-white px-4 py-5 text-center text-[13px] leading-5 text-[#667085]">
-                                        {copy('AI로 추가한 조건이 없어요.', 'No AI conditions added.')}
+                                        {t('aiAutofillUi.activeConditions.noAiConditionsAdded')}
                                     </p>
                                 ) : null}
                             </section>
@@ -393,7 +389,7 @@ export function AiActiveConditions({
                                 disabled={editorState.saving}
                                 className="min-h-[44px] grow rounded-[10px] bg-[#F3F5F7] px-6 py-3 text-[14px] leading-5 font-semibold text-[#475467] transition-colors hover:bg-[#E5E8EB] focus-visible:bg-[#333D4B] focus-visible:text-white focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none sm:grow-0"
                             >
-                                {copy('닫기', 'Close')}
+                                {t('aiAutofillUi.activeConditions.close')}
                             </button>
                             <button
                                 type="button"
@@ -402,10 +398,10 @@ export function AiActiveConditions({
                                 className="min-h-[44px] grow rounded-[10px] bg-main-1 px-6 py-3 text-[14px] leading-5 font-semibold text-white transition-colors hover:bg-[#5931B9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none sm:grow-0"
                             >
                                 {editorState.saving
-                                    ? copy('적용 중', 'Applying')
+                                    ? t('aiAutofillUi.activeConditions.applying')
                                     : editorState.refreshPending
-                                      ? copy('다시 확인하기', 'Retry refresh')
-                                      : copy('변경사항 적용', 'Apply changes')}
+                                      ? t('aiAutofillUi.activeConditions.retryRefresh')
+                                      : t('aiAutofillUi.activeConditions.applyChanges')}
                             </button>
                         </footer>
                     </Dialog.Content>
@@ -421,10 +417,10 @@ export function AiActiveConditions({
                             className="w-full max-w-[420px] rounded-[18px] bg-white p-6 focus-visible:outline-none"
                         >
                             <Dialog.Title className="text-[20px] leading-7 font-semibold text-[#242B36]">
-                                {copy('변경사항을 버릴까요?', 'Discard changes?')}
+                                {t('aiAutofillUi.activeConditions.discardChanges')}
                             </Dialog.Title>
                             <Dialog.Description className="mt-2 text-[14px] leading-6 text-[#667085]">
-                                {copy('아직 적용하지 않은 제약조건 변경사항이 있어요.', 'You have unapplied constraint changes.')}
+                                {t('aiAutofillUi.activeConditions.youHaveUnappliedConstraintChanges')}
                             </Dialog.Description>
                             <div className="mt-5 flex flex-wrap gap-2">
                                 <button
@@ -432,14 +428,14 @@ export function AiActiveConditions({
                                     onClick={() => setDiscardOpen(false)}
                                     className="min-h-[44px] grow rounded-[10px] bg-[#F3F5F7] px-4 py-3 text-[14px] font-semibold text-[#475467] focus-visible:bg-[#333D4B] focus-visible:text-white focus-visible:outline-none"
                                 >
-                                    {copy('계속 수정하기', 'Keep editing')}
+                                    {t('aiAutofillUi.activeConditions.keepEditing')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={finishClose}
                                     className="min-h-[44px] grow rounded-[10px] bg-[#C83F36] px-4 py-3 text-[14px] font-semibold text-white focus-visible:bg-[#982F28] focus-visible:text-[#FFF1D6] focus-visible:outline-none"
                                 >
-                                    {copy('변경사항 버리기', 'Discard changes')}
+                                    {t('aiAutofillUi.activeConditions.discardChanges2')}
                                 </button>
                             </div>
                         </Dialog.Content>

@@ -1,5 +1,5 @@
 import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
-import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TProps = {
     children: ReactNode;
@@ -10,6 +10,7 @@ type TProps = {
 };
 
 export function AiChatScroll({children, open = true, composerHidden, className, contentClassName = ''}: TProps) {
+    const {t} = useTypedTranslation();
     const viewport = useRef<HTMLDivElement>(null);
     const content = useRef<HTMLDivElement>(null);
     const following = useRef(true);
@@ -73,8 +74,8 @@ export function AiChatScroll({children, open = true, composerHidden, className, 
                 <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
                     <button
                         type="button"
-                        aria-label={i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
-                        title={i18n.language.startsWith('ko') ? '최근 대화로 이동' : 'Go to latest message'}
+                        aria-label={t('aiAutofillUi.chatScroll.latestMessage')}
+                        title={t('aiAutofillUi.chatScroll.latestMessage')}
                         className="pointer-events-auto grid size-[44px] shrink-0 place-items-center rounded-full bg-[#F0EBFF] text-[#5931B9] transition-colors hover:bg-[#E6DEFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none motion-reduce:transition-none"
                         onClick={() => {
                             following.current = true;

@@ -1,8 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import {LoaderCircle, X} from 'lucide-react';
 import {type CSSProperties, useId, useRef} from 'react';
-import {useTranslation} from 'react-i18next';
-import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TProps = {
     open: boolean;
@@ -42,10 +41,7 @@ export function AiConversationFeedbackDialog({
     onSubmit,
     onClose,
 }: TProps) {
-    useTranslation();
-
-    const ko = i18n.language.startsWith('ko');
-    const copy = (korean: string, english: string) => (ko ? korean : english);
+    const {t} = useTypedTranslation();
     const id = useId();
     const content = useRef<HTMLDivElement>(null);
     const input = useRef<HTMLTextAreaElement>(null);
@@ -91,11 +87,11 @@ export function AiConversationFeedbackDialog({
                         <header className="shrink-0 px-5 pt-5 sm:px-7 sm:pt-6">
                             <div className="flex items-start justify-between gap-2">
                                 <Dialog.Title className="min-w-0 self-center text-[20px] leading-7 font-semibold [overflow-wrap:anywhere] break-keep">
-                                    {copy('결과에 의견 보내기', 'Feedback on this result')}
+                                    {t('aiAutofillUi.conversationFeedbackDialog.feedbackOnThisResult')}
                                 </Dialog.Title>
                                 <button
                                     type="button"
-                                    aria-label={copy('의견 작성 닫기', 'Close feedback')}
+                                    aria-label={t('aiAutofillUi.conversationFeedbackDialog.closeFeedback')}
                                     disabled={disabled}
                                     onClick={onClose}
                                     className="group relative -mr-2 grid size-[44px] shrink-0 place-items-center bg-transparent text-[#667085] transition-colors hover:text-[#5931B9] focus-visible:text-[#5931B9] focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none"
@@ -111,10 +107,7 @@ export function AiConversationFeedbackDialog({
                                 {target}
                             </p>
                             <Dialog.Description className="mt-2 text-[14px] leading-[22px] [overflow-wrap:anywhere] break-keep text-[#667085]">
-                                {copy(
-                                    '요청과 다른 점이나 개선할 점을 알려 주세요.',
-                                    'Tell us what differed from your request or could be improved.',
-                                )}
+                                {t('aiAutofillUi.conversationFeedbackDialog.tellUsWhatDifferedFromYourRequestOrCouldBeImproved')}
                             </Dialog.Description>
                         </header>
                         <form
@@ -127,7 +120,7 @@ export function AiConversationFeedbackDialog({
                         >
                             <div className="min-h-[min(160px,30dvh)] overflow-y-auto overscroll-contain px-5 pt-6 sm:px-7">
                                 <label htmlFor={`${id}-note`} className="block text-[14px] leading-5 font-semibold">
-                                    {copy('의견', 'Your feedback')}
+                                    {t('aiAutofillUi.conversationFeedbackDialog.yourFeedback')}
                                 </label>
                                 <textarea
                                     id={`${id}-note`}
@@ -138,15 +131,14 @@ export function AiConversationFeedbackDialog({
                                     rows={5}
                                     aria-invalid={Boolean(error)}
                                     aria-describedby={`${id}-count${error ? ` ${id}-error` : ''}${retryHint ? ` ${id}-retry` : ''}`}
-                                    placeholder={copy(
-                                        '예: 야간 근무 뒤 휴무가 요청보다 적어요.',
-                                        'For example, there are fewer days off after night shifts than requested.',
+                                    placeholder={t(
+                                        'aiAutofillUi.conversationFeedbackDialog.forExampleThereAreFewerDaysOffAfterNightShiftsThanRequested',
                                     )}
                                     onChange={(event) => onChange(event.target.value)}
                                     className="mt-2 min-h-[148px] w-full resize-y rounded-[12px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-[24px] text-[#333D4B] placeholder:text-[#7C8798] focus:bg-[#F1EDFF] focus:text-[#3F2A69] focus:outline-none disabled:opacity-60"
                                 />
                                 <div id={`${id}-count`} className="mt-1 text-right text-[12px] leading-5 text-[#667085] tabular-nums">
-                                    <span className="sr-only">{copy('입력 글자 수', 'Character count')} </span>
+                                    <span className="sr-only">{t('aiAutofillUi.conversationFeedbackDialog.characterCount')} </span>
                                     {value.length} / 500
                                 </div>
                                 {error && (
@@ -172,7 +164,7 @@ export function AiConversationFeedbackDialog({
                                     onClick={onClose}
                                     className="min-h-[44px] min-w-0 flex-1 rounded-[10px] bg-[#F2F4F6] px-4 py-3 text-[14px] leading-5 font-medium text-[#475467] hover:bg-[#E9E3FA] hover:text-[#5931B9] focus-visible:bg-[#DCCEFF] focus-visible:text-[#45238E] focus-visible:outline-none disabled:opacity-40"
                                 >
-                                    {copy('취소', 'Cancel')}
+                                    {t('aiAutofillUi.conversationFeedbackDialog.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -186,7 +178,7 @@ export function AiConversationFeedbackDialog({
                                             className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
                                         />
                                     )}
-                                    {copy('의견 보내기', 'Send feedback')}
+                                    {t('aiAutofillUi.conversationFeedbackDialog.sendFeedback')}
                                 </button>
                             </footer>
                         </form>

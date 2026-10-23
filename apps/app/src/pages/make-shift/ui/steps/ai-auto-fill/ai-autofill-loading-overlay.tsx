@@ -1,6 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
-import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const INITIAL_PROGRESS = 8;
@@ -48,7 +47,6 @@ export function AiAutofillLoadingOverlay({
     isAdjusting = false,
 }: TAiAutofillLoadingOverlayProps) {
     const {t} = useTypedTranslation();
-    const copy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
     const [mountedAt] = useState(Date.now);
     const progressStartedAt = startedAt ?? mountedAt;
     const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(progressStartedAt)));
@@ -113,11 +111,14 @@ export function AiAutofillLoadingOverlay({
 
     const progressValue = Math.round(progress);
     const title = isFinishing
-        ? copy('근무표가 준비됐어요', 'Your schedule is ready')
+        ? t('aiAutofillUi.autofillLoadingOverlay.yourScheduleIsReady')
         : isAdjusting
-          ? copy('근무표를 수정하고 있어요', 'Updating your schedule')
-          : copy('근무표를 채우고 있어요', 'Filling your schedule');
-    const progressLabel = isFinishing && progressValue === 100 ? copy('완료', 'Complete') : copy('예상 진행률', 'Estimated progress');
+          ? t('aiAutofillUi.autofillLoadingOverlay.updatingYourSchedule')
+          : t('aiAutofillUi.autofillLoadingOverlay.fillingYourSchedule');
+    const progressLabel =
+        isFinishing && progressValue === 100
+            ? t('aiAutofillUi.autofillLoadingOverlay.complete')
+            : t('aiAutofillUi.autofillLoadingOverlay.estimatedProgress');
 
     return createPortal(
         <div
@@ -148,8 +149,8 @@ export function AiAutofillLoadingOverlay({
                     aria-live="polite"
                 >
                     {isFinishing
-                        ? copy('결과를 곧 보여드릴게요.', 'Your result will appear shortly.')
-                        : copy('신청·고정 근무를 유지하며 계산해요.', 'Requested and fixed shifts stay in place.')}
+                        ? t('aiAutofillUi.autofillLoadingOverlay.yourResultWillAppearShortly')
+                        : t('aiAutofillUi.autofillLoadingOverlay.requestedAndFixedShiftsStayInPlace')}
                 </p>
                 <div className="mt-5 sm:mt-7">
                     <div

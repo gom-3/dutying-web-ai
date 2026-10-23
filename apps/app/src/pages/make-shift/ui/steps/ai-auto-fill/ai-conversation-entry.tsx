@@ -1,6 +1,5 @@
 import {ChevronRight, RotateCw, SlidersHorizontal} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
-import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -84,11 +83,10 @@ export function AiConversationEntry({
     onChoose: (choice: TConversationEntryChoice) => void;
 }) {
     const {t} = useTypedTranslation();
-    const ko = i18n.language.startsWith('ko');
     const choices: TConversationEntryChoice[] = compact ? ['modify', 'regenerate'] : ['regenerate', 'modify'];
     const compactLabels = {
-        modify: ko ? '수정 요청하기' : 'Request changes',
-        regenerate: ko ? '다시 채우기' : 'Refill',
+        modify: t('aiAutofillUi.conversationEntry.requestChanges'),
+        regenerate: t('aiAutofillUi.conversationEntry.refill'),
     };
 
     return (
@@ -114,9 +112,7 @@ export function AiConversationEntry({
                         attached
                             ? t('aiAdjust.snapshot.nextAction')
                             : compact
-                              ? ko
-                                  ? '현재 근무표에서 계속하기'
-                                  : 'Continue with the current schedule'
+                              ? t('aiAutofillUi.conversationEntry.continueCurrentSchedule')
                               : t('aiAdjust.chat.welcome')
                     }
                     className={
@@ -129,7 +125,7 @@ export function AiConversationEntry({
                 >
                     {compact && (
                         <p className="col-span-2 px-1 text-xs leading-5 text-[#667085]">
-                            {ko ? '현재 근무표에서 계속하기' : 'Continue with the current schedule'}
+                            {t('aiAutofillUi.conversationEntry.continueCurrentSchedule')}
                         </p>
                     )}
                     {choices.map((value) => (

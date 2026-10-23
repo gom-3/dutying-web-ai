@@ -681,6 +681,8 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('shows historical rejected review drafts as failures', async () => {
+        const docBefore = useShiftEditorStore.getState().doc;
+
         current.operations = [
             {
                 ...operation,
@@ -695,10 +697,14 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        expect(await screen.findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
+        expect(
+            await screen.findByText(/AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요/),
+        ).toBeVisible();
+        expect(screen.getByRole('alert')).toHaveTextContent('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
         expect(screen.queryByRole('region', {name: '근무표 결과'})).not.toBeInTheDocument();
         expect(screen.queryByText('근무표를 채웠어요!')).not.toBeInTheDocument();
-
+        expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+        expect(mocks.execute).not.toHaveBeenCalled();
     });
 
     it('does not claim local application after refreshing a saved APPLIED result', async () => {
@@ -1418,6 +1424,7 @@ describe('persistent schedule sidebar', () => {
         async (reason) => {
             const onGenerated = vi.fn();
             const onPrepareGeneration = vi.fn();
+            const docBefore = useShiftEditorStore.getState().doc;
 
             current.operations = [
                 {
@@ -1448,15 +1455,14 @@ describe('persistent schedule sidebar', () => {
             expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
             expect(onGenerated).not.toHaveBeenCalled();
 
-            if (reason === 'solver_result_validation_unavailable') {
-                await userEvent.click(screen.getByRole('button', {name: /다시 시도하기|Try again/}));
-                expect(onPrepareGeneration).toHaveBeenCalledOnce();
-            } else {
-                expect(screen.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
-                await userEvent.click(screen.getByRole('button', {name: /요청 수정하기|Edit request/}));
-                expect(screen.getByRole('textbox')).toHaveValue('');
-                expect(screen.getByRole('textbox')).toHaveFocus();
-            }
+            if (reason === 'solver_result_failed_final_gate')
+                expect(screen.getByRole('alert')).toHaveTextContent('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
+
+            expect(screen.getByRole('button', {name: /요청 수정하기|Edit request/})).toBeEnabled();
+            await userEvent.click(screen.getByRole('button', {name: /다시 시도하기|Try again/}));
+            expect(onPrepareGeneration).toHaveBeenCalledOnce();
+            expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+            expect(onGenerated).not.toHaveBeenCalled();
 
             expect(mocks.execute).not.toHaveBeenCalled();
         },
@@ -2458,6 +2464,36 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(example);
         expect(input).toHaveValue('첫 행 간호사 1~5일 N12 근무 없게 해줘');
         expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('shows Japanese request examples and sends the selected Japanese request with its locale', async () => {
+        await i18n.changeLanguage('ja');
+        current.operations = [];
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+        useShiftEditorStore.getState().setDoc({
+            columns: ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'],
+            rows: [{workerId: '1', cells: ['O', 'O', 'O', 'O', 'O']}],
+            workerMeta: {'1': {name: '田中花子', nurseId: 1}},
+            fixedCells: {},
+            requestCells: {},
+        });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'ja:1'});
+        renderSidebar();
+
+        expect(i18n.t('aiAdjust.title')).toMatch(/自動/);
+        expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toBeVisible();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+
+        const request = '1日～5日は田中花子さんにD勤務を入れないでください';
+        const input = screen.getByRole('textbox', {name: '変更したい内容'});
+
+        expect(input).toHaveAttribute('placeholder', `例：${request}`);
+        await userEvent.click(screen.getByRole('button', {name: request}));
+        expect(input).toHaveValue(request);
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret).toHaveBeenCalledWith(1, expect.objectContaining({text: request, language: 'ja'}));
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
