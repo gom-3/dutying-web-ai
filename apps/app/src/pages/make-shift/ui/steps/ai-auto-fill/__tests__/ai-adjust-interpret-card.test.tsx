@@ -78,3 +78,49 @@ describe('readable interpretation', () => {
         expect(screen.queryByText(/MONTH|MIN|EACH|PATIENT_COUNT|period|aggregation|operator/)).not.toBeInTheDocument();
     });
 });
+
+describe('explicit execution target', () => {
+    it('shows actual membership even when the model label omits the target', () => {
+        show({
+            ...item,
+            templateCode: 'MAX_CONSECUTIVE_SHIFT',
+            displayLabel: '연속 근무 4일까지',
+            params: {target: [2], shift: 'D', count: 4},
+        });
+        expect(screen.getByText('대상 · 지정 간호사 1명: 신규 간호사 2')).toBeVisible();
+    });
+    it('limits ALL to the currently displayed roster', () => {
+        show({...item, templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {target: 'ALL', shift: 'D', count: 4}});
+        expect(screen.getByText('대상 · 현재 근무표 전체 2명')).toBeVisible();
+    });
+    it.each([undefined, [], [999]])('never describes an unresolved target as everyone (%s)', (target) => {
+        show({...item, templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {target, shift: 'D', count: 4}});
+        expect(screen.getByText('대상 · 대상 확인 필요')).toBeVisible();
+        expect(screen.queryByText(/현재 근무표 전체/)).not.toBeInTheDocument();
+    });
+    it('identifies an exact stored group and its members', () => {
+        render(
+            <AiAdjustInterpretCard
+                nurses={nurses.map((nurse) => ({...nurse, divisionName: '나이트킵'}))}
+                card={{
+                    requestText: '나이트킵 연속 야간 4일까지',
+                    items: [
+                        {
+                            item: {...item, templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {target: [1, 2], shift: 'N', count: 4}},
+                            lifetime: 'MONTH',
+                            severity: 'SOFT',
+                        },
+                    ],
+                    unmapped: [],
+                    strength: 'NORMAL',
+                }}
+            />,
+        );
+        expect(screen.getByText('대상 · 그룹 나이트킵 2명: 신규 간호사 1, 신규 간호사 2')).toBeVisible();
+    });
+});
+
+it('shows both people in a paired-nurse rule', () => {
+    show({...item, templateCode: 'NURSE_PAIR_NOT_SAME_SHIFT', params: {nurseA: 1, nurseB: 2, shift: 'N'}});
+    expect(screen.getByText('대상 · 지정 간호사 2명: 신규 간호사 1, 신규 간호사 2')).toBeVisible();
+});

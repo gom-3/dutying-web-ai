@@ -2997,7 +2997,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
                     interpret={interpretAdjustText}
                     onApply={handleApplyTextRequests}
-                    goalNurses={currentTeamNurses.map((nurse) => ({nurseId: nurse.nurseId, name: nurse.name}))}
+                    goalNurses={currentTeamNurses.map((nurse) => ({
+                        nurseId: nurse.nurseId,
+                        name: nurse.name,
+                        divisionName: Object.values(editorDoc.workerMeta).find((meta) => meta.nurseId === nurse.nurseId)?.divisionName,
+                    }))}
                     requests={monthRequests}
                     requestsLoading={monthRequestsLoading}
                     requestsError={monthRequestsError}
