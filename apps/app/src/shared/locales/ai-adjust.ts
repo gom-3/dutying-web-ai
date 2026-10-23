@@ -63,6 +63,7 @@ export const aiAdjustKo = {
         unavailable:
             '정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 다시 시도하거나 근무 조건을 조절해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
+        resultCheck: 'AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요.\n조건끼리 충돌하는지는 아직 확인되지 않았어요. 기존 근무표는 그대로예요. 다시 시도해 주세요.',
         incomplete: '빈칸을 모두 채우지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         rules: '필수 조건을 모두 지킨 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 요청이나 고정한 근무를 확인해 주세요.',
         unsupported: '이 요청은 아직 자동채우기로 반영할 수 없어요.\n요청을 바꾸거나 표에서 직접 수정해 주세요. 기존 근무표는 그대로예요.',
@@ -459,6 +460,7 @@ export const aiAdjustEn = {
         unavailable:
             'No schedule meeting the conditions was found within the time limit.\nYour previous schedule is unchanged. Try again or adjust the conditions.',
         validation: 'There was a problem checking the schedule.\nYour previous schedule is unchanged. Please try again.',
+        resultCheck: 'The AI-generated schedule did not pass the checks for your requirements, so it was not applied.\nWe have not established that your requirements conflict. Your previous schedule is unchanged. Please try again.',
         incomplete: 'Some empty shifts could not be filled.\nYour previous schedule is unchanged. Please try again.',
         rules: 'We could not find a schedule meeting all required conditions.\nYour previous schedule is unchanged. Review your requests or fixed shifts.',
         unsupported:
