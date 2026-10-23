@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.12
+
+### Patch Changes
+
+- 3deabdc: 자동완성 결과 적용 후 만족도와 선택 의견을 보낼 수 있습니다.
+- 03cc09b: 요청 확인 화면에서 현재 근무표 전체·저장된 그룹·지정 간호사의 실제 적용 대상을 인원과 이름으로 표시합니다.
+    - @dutying/api@1.3.12
+    - @dutying/domain@1.3.12
+    - @dutying/utils@1.3.12
+
 ## 1.3.11
 
 ### Patch Changes

@@ -6,6 +6,11 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.12 - 2026-10-23
+
+- `@dutying/app` (patch): 자동완성 결과 적용 후 만족도와 선택 의견을 보낼 수 있습니다.
+- `@dutying/app` (patch): 요청 확인 화면에서 현재 근무표 전체·저장된 그룹·지정 간호사의 실제 적용 대상을 인원과 이름으로 표시합니다.
+
 ## 1.3.11 - 2026-10-23
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 자동완성과 조절에서 이해한 요청과 충돌 이유를 설명하고, 설정 수정·검증된 제안 적용·요청 변경 중 진행 방법을 선택합니다.
