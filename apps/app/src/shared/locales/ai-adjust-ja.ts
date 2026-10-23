@@ -6,7 +6,7 @@ export const aiAdjustJa = {
     title: 'AI自動入力',
     autofill: '自動入力',
     allFixed: 'すべての勤務が固定されています。固定を解除して、もう一度押してください。',
-    generationCompleted: '勤務表を入力しました！',
+    generationCompleted: '勤務表を作成しました！',
     regenerateTitle: 'もう一度自動入力しますか？',
     regenerateDescription: '固定した勤務は維持され、その他の勤務は変更される場合があります。',
     close: 'AI自動入力を閉じる',
@@ -39,6 +39,15 @@ export const aiAdjustJa = {
         close: '閉じる',
     },
     executionFailure: {
+        conflictTitle: '同時に満たすことが難しい条件があります',
+        conflictMessage:
+            '以下の内容を確認し、進め方を選んでください。設定を直接変更するか、提案を今回の勤務表に反映するか、リクエストを変更できます。',
+        restTargetConflict:
+            'あらかじめ指定した勤務と、月の休み日数の目標が一致していません。\n{{details}}\n月の休み日数の目標または指定済みの勤務を見直してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
+        restTargetExcess: '{{name}}：指定済みの休み{{fixed}}日 / 月の休み日数の上限{{target}}日',
+        restTargetShortage: '{{name}}：休みを割り当てられる日{{available}}日 / 必要な休み日数{{target}}日以上',
+        verifiedNightCap:
+            '現在の設定では自動入力を完了できません。\n{{name}}さんの月の夜勤回数の上限を{{current}}回から{{proposed}}回に増やすと、勤務表を作成できます。指定済みの勤務とその他の設定は維持できます。\n夜勤回数を増やしてよいか確認してください。変更する場合は、この看護師の夜勤回数の上限を変更してから、もう一度自動入力してください。\n設定と勤務表はまだ変更されていません。',
         connection:
             '自動入力サーバーとの接続が切れ、結果を受信できませんでした。\n現在の勤務表は変更されていません。しばらくしてから同じ条件でお試しください。',
         busy: '自動入力のリクエストが多く、開始できませんでした。\n現在の勤務表は変更されていません。しばらくしてからもう一度お試しください。',
@@ -47,12 +56,12 @@ export const aiAdjustJa = {
         response:
             '自動入力サーバーの応答に問題があり、結果を反映できませんでした。\n現在の勤務表は変更されていません。再試行しても続く場合は、サポートにご連絡ください。',
         offNotAllowed:
-            '一部の看護師の勤務可能な種類に、休日が含まれていません。\nスタッフ設定で休日を許可してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
+            '一部の看護師の対応可能な勤務に、休みが含まれていません。\nスタッフ設定で休みを選択してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
         offNotAllowedNamed:
-            '{{names}}の勤務可能な種類に、休日が含まれていません。\nスタッフ設定で休日を許可してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
+            '{{names}}の対応可能な勤務に、休みが含まれていません。\nスタッフ設定で休みを選択してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
         moreNurses: ' ほか{{count}}名',
         memberSettings: 'スタッフ設定を確認（新しいタブ）',
-        offSettingsTitle: '休日の設定を確認してください。',
+        offSettingsTitle: '休みの設定を確認してください。',
         autofillTitle: '自動入力を完了できませんでした。',
         adjustTitle: '勤務表を変更できませんでした。',
         infeasible:
@@ -113,7 +122,7 @@ export const aiAdjustJa = {
         previousReady: '先月の勤務はすべて入力されています。\n続けますか？',
         next: '続ける',
         editPrevious: '先月の勤務を入力',
-        fixed: 'AIに変更してほしくない勤務はありますか？\n勤務表で押して固定してください。',
+        fixed: 'AIに変更してほしくない勤務はありますか？\n勤務表のマスを押して固定してください。',
         empty: '固定する勤務はありません。\n自動入力を開始しますか？',
         fill: 'このまま自動入力',
         fixAll: 'すべて固定',
@@ -138,7 +147,7 @@ export const aiAdjustJa = {
     understood: 'このように変更しますか？',
     chat: {
         welcome: '勤務表をどのように変更しますか？',
-        regenerate: 'もう一度入力してみます',
+        regenerate: '勤務表をもう一度作成してください',
         modify: '変更したいところがあります',
         confirmSchedule: '勤務表を確定',
         askChanges: 'どのように変更したいですか？',
@@ -174,18 +183,18 @@ export const aiAdjustJa = {
     review: {
         request: '変更内容',
         details: '適用内容を見る',
-        countRule: '{{shift}}勤務を{{aggregation}}{{frequency}}配置',
+        countRule: '{{shift}}勤務：{{aggregation}}{{frequency}}',
         countSuggestion: '回数の指定がないため、{{value}}を提案しました。',
         suggestion: 'AIが提案する{{field}}：{{value}}',
         frequency: {
-            DAY: '1日あたり{{limit}}',
-            WEEK: '1週間あたり{{limit}}',
+            DAY: '1日{{limit}}',
+            WEEK: '週{{limit}}',
             ROLLING_7_DAYS: '連続する7日間で{{limit}}',
-            MONTH: '1か月あたり{{limit}}',
+            MONTH: '月{{limit}}',
         },
         countLimit: {MIN: '{{count}}回以上', MAX: '{{count}}回以下', EXACT: '{{count}}回', TARGET: '{{count}}回を目標'},
-        perNurse: '1人あたり',
-        groupTotal: '全員で合計',
+        perNurse: '1人につき',
+        groupTotal: '全員の合計で',
         countPeriod: '回数を数える期間',
         countOperator: '回数の条件',
         aggregation: '集計方法',
@@ -290,7 +299,7 @@ export const aiAdjustJa = {
     knob: {
         OFF_BALANCE: '休日のバランス',
         CLUSTERING: '連続勤務の配置',
-        SENIORITY_MIX: '経験年数の構成',
+        SENIORITY_MIX: '経験レベルのバランス',
         TWO_DAY_OFF_BALANCE: '2連休のバランス',
     },
     operation: {

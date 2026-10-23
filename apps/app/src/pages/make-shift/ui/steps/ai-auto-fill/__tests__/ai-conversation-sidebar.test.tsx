@@ -698,7 +698,6 @@ describe('persistent schedule sidebar', () => {
         expect(await screen.findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
         expect(screen.queryByRole('region', {name: '근무표 결과'})).not.toBeInTheDocument();
         expect(screen.queryByText('근무표를 채웠어요!')).not.toBeInTheDocument();
-
     });
 
     it('does not claim local application after refreshing a saved APPLIED result', async () => {
@@ -2479,7 +2478,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toBeVisible();
         await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
 
-        const request = '田中花子さんの1日～5日にはD勤務を入れないでください';
+        const request = '1日～5日は田中花子さんにD勤務を入れないでください';
         const input = screen.getByRole('textbox', {name: '変更したい内容'});
 
         expect(input).toHaveAttribute('placeholder', `例：${request}`);

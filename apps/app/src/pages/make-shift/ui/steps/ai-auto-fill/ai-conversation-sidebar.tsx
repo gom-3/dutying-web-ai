@@ -1,5 +1,3 @@
-import {AiResultSatisfaction} from './ai-result-satisfaction';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
@@ -50,6 +48,7 @@ import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
@@ -65,6 +64,7 @@ import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
+import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiSemanticReview} from './ai-semantic-review';
 import {JourneyObserved} from './journey-observed';
 
@@ -1787,9 +1787,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');
@@ -1920,9 +1922,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');
@@ -2014,9 +2018,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');

@@ -1,5 +1,6 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
 
 const copy = (ko: string) => ko;
@@ -23,6 +24,7 @@ describe('conflicting condition consent', () => {
     it('shows the exact violation and never executes without Yes', () => {
         const proceed = vi.fn(async () => {});
         const revise = vi.fn();
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -62,6 +64,7 @@ describe('conflicting condition consent', () => {
     });
     it('proceeds on Yes and permits recovery after a failed send', async () => {
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -79,6 +82,7 @@ describe('conflicting condition consent', () => {
     });
     it.each([false, true])('blocks stale or expired candidates (expired=%s)', (expired) => {
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={{...review, expiresAt: expired ? '2000-01-01T00:00:00Z' : review.expiresAt}}
@@ -98,6 +102,7 @@ describe('conflicting condition consent', () => {
     it('shows understood intent and opens settings without applying a proposal', () => {
         const settings = vi.fn();
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -114,5 +119,43 @@ describe('conflicting condition consent', () => {
         fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
         expect(settings).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['proceed', 'この提案を今回の勤務表に反映'],
+        ['revise', 'リクエストを変更'],
+        ['settings', '設定を直接変更'],
+    ] as const)('shows Japanese conflict details and keeps the %s choice explicit', async (choice, label) => {
+        await i18n.changeLanguage('ja');
+
+        const proceed = vi.fn(async () => {});
+        const revise = vi.fn();
+        const settings = vi.fn();
+
+        render(
+            <ConstraintConflictReview
+                review={{
+                    ...review,
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                    violations: [{...review.violations[0], messageArgs: {operator: 'MAX', expected: 2, actual: 4}}],
+                }}
+                current
+                disabled={false}
+                onProceed={proceed}
+                onRevise={revise}
+                onEditSettings={settings}
+                copy={copy}
+            />,
+        );
+        expect(screen.getByRole('region', {name: '条件の競合を確認'})).toBeVisible();
+        expect(screen.getByText('設定：2回以下 / 結果：4回')).toBeVisible();
+        expect(screen.getByRole('button', {name: 'この提案を今回の勤務表に反映'})).toBeEnabled();
+        expect(proceed).not.toHaveBeenCalled();
+        expect(revise).not.toHaveBeenCalled();
+        expect(settings).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: label}));
+        await waitFor(() => expect({proceed, revise, settings}[choice]).toHaveBeenCalledOnce());
+
+        if (choice !== 'proceed') expect(proceed).not.toHaveBeenCalled();
     });
 });

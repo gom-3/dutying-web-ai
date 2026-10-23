@@ -1,5 +1,3 @@
-import {AiResultSatisfaction} from './ai-result-satisfaction';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
@@ -103,9 +101,11 @@ import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiConversationSidebar from './ai-conversation-sidebar';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
+import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {JourneyObserved} from './journey-observed';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
@@ -1436,11 +1436,13 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             if (!result.ok) {
                 if (result.conflictReview) {
                     const review = result.conflictReview;
+
                     setPendingConflict({
                         review,
                         revision: stateBeforeRequest.draftRevision,
                         proceed: async () => {
                             if (useShiftEditorStore.getState().draftRevision !== stateBeforeRequest.draftRevision) return;
+
                             setPendingConflict(null);
                             await runAiFill(readyContext, adjust, prompt, {
                                 doc: requestDoc,
@@ -1450,6 +1452,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         },
                     });
                 }
+
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -2792,7 +2795,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     <div
                         role="dialog"
                         aria-modal="true"
-                        aria-label="조건 충돌 확인"
+                        aria-label={t('aiAutofillUi.conflictReview.title')}
                         className="fixed inset-0 z-[200] grid place-items-center bg-black/30 p-4"
                     >
                         <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-xl">

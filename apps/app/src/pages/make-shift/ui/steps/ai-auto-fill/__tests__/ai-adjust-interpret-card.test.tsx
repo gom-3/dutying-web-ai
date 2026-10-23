@@ -7,9 +7,14 @@ vi.mock('@/i18n', () => ({default: {language: 'ko'}}));
 vi.mock('@/shared/hook/use-typed-translation', async () => {
     const {createInstance} = await import('i18next');
     const {aiAdjustKo} = await import('@/shared/locales/ai-adjust');
+    const {aiAutofillUiKo} = await import('@/shared/locales/ai-autofill-ui');
     const translator = createInstance();
 
-    await translator.init({lng: 'ko', resources: {ko: {translation: {aiAdjust: aiAdjustKo}}}, interpolation: {escapeValue: false}});
+    await translator.init({
+        lng: 'ko',
+        resources: {ko: {translation: {aiAdjust: aiAdjustKo, aiAutofillUi: aiAutofillUiKo}}},
+        interpolation: {escapeValue: false},
+    });
 
     return {useTypedTranslation: () => ({t: translator.t.bind(translator)})};
 });
