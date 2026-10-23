@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.19
+
+### Patch Changes
+
+- 034255e: 조건 편집 중 서로 맞지 않는 월 최소·최대 근무 횟수를 함께 안내하고 해당 조건으로 이동할 수 있도록 개선했습니다.
+    - @dutying/api@1.3.19
+    - @dutying/domain@1.3.19
+    - @dutying/utils@1.3.19
+
 ## 1.3.18
 
 ### Patch Changes
