@@ -122,6 +122,7 @@ export default function AiConversationSidebar({
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
     onClose,
+    onOpenConstraints,
     wardId,
     teamId,
     year,
@@ -1788,6 +1789,8 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={
@@ -1897,7 +1900,7 @@ export default function AiConversationSidebar({
                                                           }
                                                         : undefined
                                                 }
-                                                onReview={onClose}
+                                                onReview={onOpenConstraints ?? onClose}
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>
@@ -1921,6 +1924,8 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={
@@ -2017,6 +2022,8 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
+                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={

@@ -50,8 +50,8 @@ export const aiAdjustKo = {
         offSettingsTitle: '휴무 설정을 확인해 주세요.',
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
-        conflictTitle: '조건을 확인해 주세요',
-        conflictMessage: '일부 조건을 지키지 못하는 결과가 있어요. 조건을 확인한 뒤 이번 수정에 한해 진행할 수 있어요.',
+        conflictTitle: '함께 맞추기 어려운 조건이 있어요',
+        conflictMessage: '아래 내용을 확인하고 진행 방법을 골라 주세요. 직접 설정을 고치거나, 제안한 방식으로 이번 표를 수정하거나, 요청을 바꿀 수 있어요.',
         restTargetConflict:
             '미리 정한 근무와 월 휴무 목표가 맞지 않아요.\n{{details}}\n월 휴무 목표 또는 미리 정한 근무를 확인하고 수정한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
         restTargetExcess: '{{name}}: 미리 정한 휴무 {{fixed}}일 / 월 휴무 목표 최대 {{target}}일',
@@ -446,8 +446,8 @@ export const aiAdjustEn = {
         offSettingsTitle: 'Check rest shift settings.',
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
-        conflictTitle: 'Review conflicting conditions',
-        conflictMessage: 'A result is available with unmet conditions. Review the exceptions before proceeding with this change.',
+        conflictTitle: 'Some conditions cannot be met together',
+        conflictMessage: 'Choose how to continue: edit your settings, apply the proposed change to this schedule, or change your request.',
         restTargetConflict:
             'Fixed assignments conflict with the monthly days-off target.\n{{details}}\nReview and update the target or fixed assignments, then run autofill again. Your schedule has not changed.',
         restTargetExcess: '{{name}}: {{fixed}} fixed days off / monthly target maximum {{target}}',
