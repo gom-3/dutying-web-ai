@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.14
+
+### Patch Changes
+
+- aa7f1a5: 자동채우기 채팅 시트에 일본어 안내, 요청 예시, 조건 검토, 결과 비교 및 피드백 문구를 추가합니다.
+    - @dutying/api@1.3.14
+    - @dutying/domain@1.3.14
+    - @dutying/utils@1.3.14
+
 ## 1.3.13
 
 ### Patch Changes

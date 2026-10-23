@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.14 - 2026-10-23
+
+- `@dutying/app` (patch): 자동채우기 채팅 시트에 일본어 안내, 요청 예시, 조건 검토, 결과 비교 및 피드백 문구를 추가합니다.
+
 ## 1.3.13 - 2026-10-23
 
 - `@dutying/app` (patch): 자동완성·조절의 충돌 제안에서 요청 변경 후 다른 선택, 적용 진행 표시, 실패 재시도와 만료 안내를 개선합니다.
