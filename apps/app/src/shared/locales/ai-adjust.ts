@@ -51,7 +51,8 @@ export const aiAdjustKo = {
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
         conflictTitle: '함께 맞추기 어려운 조건이 있어요',
-        conflictMessage: '아래 내용을 확인하고 진행 방법을 골라 주세요. 직접 설정을 고치거나, 제안한 방식으로 이번 표를 수정하거나, 요청을 바꿀 수 있어요.',
+        conflictMessage:
+            '아래 내용을 확인하고 진행 방법을 골라 주세요. 직접 설정을 고치거나, 제안한 방식으로 이번 표를 수정하거나, 요청을 바꿀 수 있어요.',
         restTargetConflict:
             '미리 정한 근무와 월 휴무 목표가 맞지 않아요.\n{{details}}\n월 휴무 목표 또는 미리 정한 근무를 확인하고 수정한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
         restTargetExcess: '{{name}}: 미리 정한 휴무 {{fixed}}일 / 월 휴무 목표 최대 {{target}}일',
@@ -63,6 +64,8 @@ export const aiAdjustKo = {
         unavailable:
             '정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 다시 시도하거나 근무 조건을 조절해 주세요.',
         validation: '근무표를 확인하는 중 문제가 생겼어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
+        resultCheck:
+            'AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요.\n조건끼리 충돌하는지는 아직 확인되지 않았어요. 기존 근무표는 그대로예요. 다시 시도해 주세요.',
         incomplete: '빈칸을 모두 채우지 못했어요.\n기존 근무표는 그대로예요. 다시 시도해 주세요.',
         rules: '필수 조건을 모두 지킨 근무표를 찾지 못했어요.\n기존 근무표는 그대로예요. 요청이나 고정한 근무를 확인해 주세요.',
         unsupported: '이 요청은 아직 자동채우기로 반영할 수 없어요.\n요청을 바꾸거나 표에서 직접 수정해 주세요. 기존 근무표는 그대로예요.',
@@ -459,6 +462,8 @@ export const aiAdjustEn = {
         unavailable:
             'No schedule meeting the conditions was found within the time limit.\nYour previous schedule is unchanged. Try again or adjust the conditions.',
         validation: 'There was a problem checking the schedule.\nYour previous schedule is unchanged. Please try again.',
+        resultCheck:
+            'The AI-generated schedule did not pass the checks for your requirements, so it was not applied.\nWe have not established that your requirements conflict. Your previous schedule is unchanged. Please try again.',
         incomplete: 'Some empty shifts could not be filled.\nYour previous schedule is unchanged. Please try again.',
         rules: 'We could not find a schedule meeting all required conditions.\nYour previous schedule is unchanged. Review your requests or fixed shifts.',
         unsupported:

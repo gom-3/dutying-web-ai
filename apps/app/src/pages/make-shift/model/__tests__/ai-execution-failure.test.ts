@@ -11,7 +11,9 @@ describe('execution failure reasons', () => {
         ['ENGINE_INVALID_RESPONSE', 'response'],
         ['ENGINE_RESPONSE_ERROR', 'response'],
         ['HARD_RULE_CONFLICT', 'infeasible'],
-        ['SEMANTIC_RESULT_UNSATISFIED', 'rules'],
+        ['SEMANTIC_RESULT_UNSATISFIED', 'resultCheck'],
+        ['SOLVER_RESULT_FAILED_FINAL_GATE', 'resultCheck'],
+        ['SPRING_HARD_VALIDATION', 'resultCheck'],
         ['TIME_LIMIT', 'unavailable'],
         ['UNKNOWN', 'unknown'],
     ])('explains %s without guessing a condition conflict', (reason, key) => {
@@ -35,7 +37,7 @@ describe('execution failure reasons', () => {
         const failure = aiExecutionFailure(response);
 
         expect(failure?.message).toBe(i18n.t(`aiAdjust.executionFailure.${key}`));
-        expect(failure?.recovery).toBe(['HARD_RULE_CONFLICT', 'SEMANTIC_RESULT_UNSATISFIED'].includes(reason) ? 'revise' : 'retry');
+        expect(failure?.recovery).toBe(reason === 'HARD_RULE_CONFLICT' ? 'revise' : 'retry');
     });
 });
 

@@ -1,5 +1,5 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
@@ -16,9 +16,35 @@ type TProps = {
 
 export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, onEditSettings, requestSummary}: TProps) {
     const {t} = useTypedTranslation();
-    const [choice, setChoice] = useState<'proceed' | 'revise'>();
+    const [submitting, setSubmitting] = useState(false);
+    const inFlight = useRef(false);
+    const [failed, setFailed] = useState(false);
+    const [now, setNow] = useState(Date.now);
     const expiry = Date.parse(review.expiresAt);
-    const available = current && Number.isFinite(expiry) && expiry > Date.now();
+    const available = current && Number.isFinite(expiry) && expiry > now;
+    useEffect(() => {
+        if (!Number.isFinite(expiry) || expiry <= now) return;
+        const timer = window.setTimeout(() => setNow(Date.now()), Math.min(expiry - Date.now(), 2147483647));
+        return () => window.clearTimeout(timer);
+    }, [expiry, now]);
+    const proceed = async () => {
+        if (disabled || !current || inFlight.current) return;
+        if (!Number.isFinite(expiry) || expiry <= Date.now()) {
+            setNow(Date.now());
+            return;
+        }
+        inFlight.current = true;
+        setSubmitting(true);
+        setFailed(false);
+        try {
+            await onProceed();
+        } catch {
+            setFailed(true);
+        } finally {
+            inFlight.current = false;
+            setSubmitting(false);
+        }
+    };
     const message = (violation: TProps['review']['violations'][number]) => {
         const args = violation.messageArgs;
         const operator = args?.operator;
@@ -49,6 +75,7 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
         <section
             className="mt-3 space-y-3 rounded-xl border border-red/30 bg-red/5 p-4"
             aria-label={t('aiAutofillUi.conflictReview.title')}
+            aria-busy={submitting}
         >
             <p className="font-medium">{t('aiAutofillUi.conflictReview.question')}</p>
             {review.explanation && <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>}
@@ -72,31 +99,32 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
             </ul>
             <p className="text-sm">{t('aiAutofillUi.conflictReview.applyNotice')}</p>
             {!available && <p className="text-sm">{t('aiAutofillUi.conflictReview.expired')}</p>}
+            {failed && (
+                <p role="alert" className="text-sm">
+                    {t('aiAutofillUi.conflictReview.applyFailed')}
+                </p>
+            )}
             <div className="flex flex-wrap gap-2">
                 <button
-                    className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white disabled:opacity-40"
-                    disabled={disabled || !available || choice !== undefined}
-                    onClick={() => {
-                        setChoice('proceed');
-                        void onProceed().finally(() => setChoice(undefined));
-                    }}
+                    type="button"
+                    className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || !available || submitting}
+                    onClick={() => void proceed()}
                 >
-                    {t('aiAutofillUi.conflictReview.proceed')}
+                    {submitting ? t('aiAutofillUi.conflictReview.applying') : t('aiAutofillUi.conflictReview.proceed')}
                 </button>
                 <button
-                    className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
-                    disabled={disabled || choice !== undefined}
-                    onClick={() => {
-                        setChoice('revise');
-                        onRevise();
-                    }}
+                    type="button"
+                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || submitting}
+                    onClick={onRevise}
                 >
                     {t('aiAutofillUi.conflictReview.revise')}
                 </button>
                 <button
                     type="button"
-                    className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
-                    disabled={disabled || choice !== undefined}
+                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || submitting}
                     onClick={onEditSettings}
                 >
                     {t('aiAutofillUi.conflictReview.editSettings')}

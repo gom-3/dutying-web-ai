@@ -15,6 +15,8 @@ export const aiAutofillUiKo = {
     },
     conflictReview: {
         title: '조건 충돌 확인',
+        applying: '제안 적용 중…',
+        applyFailed: '제안 적용을 완료했는지 확인하지 못했어요. 다시 시도하거나 요청·설정을 수정해 주세요.',
         question: '함께 맞추기 어려운 조건이 있어요. 어떻게 진행할까요?',
         understood: '이렇게 이해했어요. 맞나요?',
         reviseHint: '의도와 다르면 아래에서 요청을 바꿔 주세요.',
@@ -314,6 +316,8 @@ export const aiAutofillUiEn = {
     },
     conflictReview: {
         title: 'Review conflicting conditions',
+        applying: 'Applying proposal…',
+        applyFailed: 'Could not confirm that the proposal was applied. Try again, or edit your request or settings.',
         question: 'Some conditions conflict. How would you like to proceed?',
         understood: 'Is this what you meant?',
         reviseHint: 'If this is not what you meant, change your request below.',
@@ -618,6 +622,8 @@ export const aiAutofillUiJa = {
     },
     conflictReview: {
         title: '条件の競合を確認',
+        applying: '提案を反映中…',
+        applyFailed: '提案の反映が完了したか確認できませんでした。再試行するか、リクエストや設定を変更してください。',
         question: '同時に満たすことが難しい条件があります。どのように進めますか？',
         understood: 'このように理解しました。合っていますか？',
         reviseHint: '意図と異なる場合は、下のボタンからリクエストを変更してください。',
