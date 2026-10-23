@@ -1577,9 +1577,10 @@ export default function AiConversationSidebar({
                                     strength: turn.interpretation.strength ?? 'NORMAL',
                                     unmapped: turn.interpretation.unmapped ?? [],
                                 }}
-                                nurses={Object.values(doc.workerMeta)
+                                nurses={doc.rows
+                                    .map(({workerId}) => doc.workerMeta[workerId])
                                     .filter((meta) => meta.nurseId !== undefined)
-                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name}))}
+                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
                                 showDetails={false}
                             />
                             {turn.interpretation.items?.some((item) => item.requiresConfirmation) && (
@@ -1594,9 +1595,10 @@ export default function AiConversationSidebar({
                                 <ConversationConfirmation
                                     key={turn.interpretationId ?? turn.eventId}
                                     items={turn.interpretation.items ?? []}
-                                    nurses={Object.values(doc.workerMeta)
+                                    nurses={doc.rows
+                                        .map(({workerId}) => doc.workerMeta[workerId])
                                         .filter((meta) => meta.nurseId !== undefined)
-                                        .map((meta) => ({nurseId: meta.nurseId!, name: meta.name}))}
+                                        .map((meta) => ({nurseId: meta.nurseId!, name: meta.name, divisionName: meta.divisionName}))}
                                     disabled={
                                         busy ||
                                         running ||
@@ -1802,7 +1804,11 @@ export default function AiConversationSidebar({
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
                                                         onEditSettings={onOpenConstraints ?? onClose}
-                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={
@@ -1937,7 +1943,11 @@ export default function AiConversationSidebar({
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
                                                         onEditSettings={onOpenConstraints ?? onClose}
-                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={
@@ -2035,7 +2045,11 @@ export default function AiConversationSidebar({
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
                                                         onEditSettings={onOpenConstraints ?? onClose}
-                                                        requestSummary={detail.turns.find((turn) => turn.interpretationId === event.operation.interpretationId)?.semanticPlan?.summary}
+                                                        requestSummary={
+                                                            detail.turns.find(
+                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                            )?.semanticPlan?.summary
+                                                        }
                                                         copy={copy}
                                                         disabled={busy || running}
                                                         current={
