@@ -62,6 +62,15 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     )
         return null;
 
+    if (reason === 'WORK_REST_AVAILABILITY_CONFLICT' && response.failure?.message?.trim()) {
+        return {
+            ...(response.observation ? {observation: response.observation} : {}),
+            message: response.failure.message,
+            blocked: false,
+            recovery: 'revise',
+        };
+    }
+
     const solverReason = response.engineResult?.solver?.reason?.toUpperCase();
 
     if (
