@@ -226,3 +226,56 @@ describe('proven staffing conflict details', () => {
         expect(aiExecutionFailure(response(String(status), minimum, maximum))?.conditionConflict).not.toBe(true);
     });
 });
+
+describe('monthly staffing capacity evidence', () => {
+    const issue = {
+        type: 'MONTHLY_STAFFING_CAPACITY_CONFLICT',
+        shiftCodes: ['D', 'E'],
+        minimumAssignments: 204,
+        maximumAssignments: 180,
+        excessAssignments: 24,
+    };
+    function response(review = false): TAutofillResponse {
+        return {
+            operationType: 'GENERATE',
+            draftRevision: 1,
+            resultType: 'PATCH',
+            changedCells: [],
+            applicable: false,
+            sameAsPrevious: true,
+            unmetInstructions: [],
+            validation: {draftRevision: 1, rulesHash: 'test', summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
+            engineResult: {
+                status: review ? 'CONFLICT_REVIEW' : 'INFEASIBLE',
+                violations: review ? [] : [issue],
+                solver: review ? {conflictEvidence: [issue]} : {},
+            },
+            ...(review ? {conflictReview: {token: 'test', expiresAt: '2026-11-01T00:00:00Z', violations: []}} : {}),
+        } as TAutofillResponse;
+    }
+    it.each(['ko', 'ja', 'en'])('explains counts and preserves explicit review in %s', async (locale) => {
+        const previous = i18n.language;
+        try {
+            await i18n.changeLanguage(locale);
+            const failure = aiExecutionFailure(response(true));
+            expect(failure?.message).toContain('204');
+            expect(failure?.message).toContain('180');
+            expect(failure?.message).toContain('24');
+            expect(failure?.message).not.toContain('aiAdjust.');
+            expect(failure?.recovery).toBe('review');
+            expect(failure?.confirmationRequired).toBe(true);
+            if (locale === 'ja') expect(failure?.message).toContain('検証済み');
+        } finally {
+            await i18n.changeLanguage(previous);
+        }
+    });
+    it('still offers request/settings revision without a verified proposal', () => {
+        expect(aiExecutionFailure(response())?.recovery).toBe('revise');
+        expect(aiExecutionFailure(response())?.conditionConflict).toBe(true);
+    });
+    it('does not present inconsistent arithmetic as a proven conflict', () => {
+        const value = response();
+        value.engineResult!.violations = [{...issue, excessAssignments: 25}];
+        expect(aiExecutionFailure(value)?.message).not.toContain('204');
+    });
+});
