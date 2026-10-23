@@ -1567,6 +1567,9 @@ export const ja: TLocale = {
                 toast: {
                     duplicatesRemoved: '重複する制約条件{{count}}件を整理しました。',
                     duplicateSkipped: '同じ条件がすでにあります。',
+                    periodCountConflict: '同じ対象・勤務・期間に最低{{minimum}}回と最大{{maximum}}回が設定されています。両方は満たせません。以下の条件を確認し、希望する回数に修正してください。',
+                    reviewLowerBound: '最低回数の条件を確認',
+                    reviewUpperBound: '最大回数の条件を確認',
                     staffCountConflict: '同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。',
                     added: '制約条件を追加しました。',
                     resetDefaults: '推奨条件{{count}}件に初期化しました。',
