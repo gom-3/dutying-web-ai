@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.16 - 2026-10-23
+
+- `@dutying/app` (patch), `@dutying/domain` (patch): 전화번호를 입력하지 않은 병동 연동 신청도 대기 목록에서 확인하고 팀에 추가할 수 있도록 수정했어요.
+
 ## 1.3.15 - 2026-10-23
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 자동채우기·조절에서 인원 조건이 충돌하면 날짜·근무·인원수를 안내하고 요청 변경 또는 설정 수정으로 이어집니다. 일본어 안내의 줄바꿈과 반복 설명도 개선합니다.
