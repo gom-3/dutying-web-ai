@@ -6,6 +6,62 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.12 - 2026-10-23
+
+- `@dutying/app` (patch): 자동완성 결과 적용 후 만족도와 선택 의견을 보낼 수 있습니다.
+- `@dutying/app` (patch): 요청 확인 화면에서 현재 근무표 전체·저장된 그룹·지정 간호사의 실제 적용 대상을 인원과 이름으로 표시합니다.
+
+## 1.3.11 - 2026-10-23
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동완성과 조절에서 이해한 요청과 충돌 이유를 설명하고, 설정 수정·검증된 제안 적용·요청 변경 중 진행 방법을 선택합니다.
+
+## 1.3.10 - 2026-10-22
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동채우기 실패 이유와 수정할 조건을 안내하고, 충돌하는 조건을 확인한 뒤 이번 결과에만 예외 적용 여부를 선택할 수 있습니다.
+
+## 1.3.9 - 2026-10-21
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 휴무 계산 월 이동과 일반 근무자 고정 휴무 요청을 지원하고, 필수 규칙을 위반한 AI 근무표가 적용되지 않도록 차단합니다.
+
+## 1.3.8 - 2026-10-20
+
+- `@dutying/app` (patch): 기존 근무표를 수정하는 자동채우기에서도 계산 중 로딩 모달을 표시합니다. 오른쪽 대화창을 유지하고 성공·실패 결과가 도착하면 모달을 닫습니다.
+
+## 1.3.7 - 2026-10-20
+
+- `@dutying/app` (patch): 자연어 조절 조건의 필수·권장 선택을 복구하고, 카탈로그 규칙과 연속 근무일을 정확히 표시합니다. 저장하지 않은 조건 변경이나 설명이 없는 규칙은 실행을 막습니다.
+- `@dutying/app` (patch): 공개 Plus 요금 응답의 금액·통화 검증과 요금제 준비 상태 안내를 운영 버전에 반영합니다.
+
+## 1.3.6 - 2026-10-19
+
+- `@dutying/app` (patch): 자동채우기 대화와 진행·결과 화면을 정리하고, 제약조건 편집과 결과 의견 작성을 모달로 제공합니다. 이전 결과의 미리보기와 변경 비교, 조건 삭제 및 실행 준비 이후 계획 갱신을 안전하게 연결합니다.
+
+## 1.3.5 - 2026-10-18
+
+- `@dutying/app` (patch): Show independent plan restriction states and distinguish unrestricted AI use from exhausted allowance.
+
+## 1.3.4 - 2026-10-18
+
+- `@dutying/app` (patch): Separate billing access from existing ward plan limits while preserving older-server behavior.
+
+## 1.3.3 - 2026-10-18
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
+- `@dutying/app` (patch): 새 결과 의견을 작성할 때 이전 신고 접수 안내를 지워 아직 보내지 않은 의견과 구분하고, 과거 계산 완료를 현재 표 반영과 구분합니다.
+- `@dutying/app` (patch): 근무자 이름의 입력 오류를 저장 전에 안내하고, 기본정보 저장이 거절되면 가능근무 변경도 보내지 않도록 수정했습니다. 기존 이름을 그대로 둔 정보 편집은 계속 사용할 수 있습니다.
+- `@dutying/app` (patch): 날짜·요일별 개인 배정 제한을 인원수 설정과 분리하고, 저장된 조건도 직원·적용일·근무만 선택하는 문장으로 표시합니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동완성·조절 결과의 화면 표시와 표 적용을 운영 기록에 연결합니다.
+- `@dutying/app` (patch): 결과 의견 전송 실패 후 새로고침하더라도 같은 탭에서 24시간 안에 같은 내용을 다시 입력하면 세션에 보관한 신고 키를 복구해, 지원하는 서버에서 중복 접수를 방지합니다.
+- `@dutying/app` (patch): 자동채우기·조절 결과마다 변경 범위와 의견 대상을 안내하고, 의견 입력과 전송 후 키보드 초점을 보존합니다.
+
+## 1.3.2 - 2026-10-18
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동완성·조절 결과의 화면 표시와 표 적용을 운영 기록에 연결합니다.
+
+## 1.3.1 - 2026-10-18
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 휴무가 허용되지 않은 간호사의 이름과 구성원 설정 확인 방법을 안내하고, 작성 중인 표를 유지한 채 설정을 새 탭에서 열 수 있습니다.
+
 ## 1.3.0 - 2026-10-17
 
 - `@dutying/app` (patch): AI 근무표 진입 버튼을 통합하고 사이드바 글자·대비와 해석 대기 상태를 개선합니다.
