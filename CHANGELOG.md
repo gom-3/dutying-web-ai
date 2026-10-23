@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.18 - 2026-10-24
+
+- `@dutying/app` (patch): 여러 근무 조건 충돌의 대상과 근거를 함께 표시하고 검증된 수정안을 선택할 수 있도록 안내합니다.
+
 ## 1.3.17 - 2026-10-23
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 월 휴무와 근무 인원 상한의 충돌을 구체적인 횟수로 설명하고 검증된 수정 제안과 다음 선택을 안내합니다.
