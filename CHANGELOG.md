@@ -6,6 +6,11 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.13 - 2026-10-23
+
+- `@dutying/app` (patch): 자동완성·조절의 충돌 제안에서 요청 변경 후 다른 선택, 적용 진행 표시, 실패 재시도와 만료 안내를 개선합니다.
+- `@dutying/app` (patch): AI가 만든 결과의 검사 실패를 사용자 조건 충돌과 구분해 안내하고, 조건 수정 대신 다시 시도할 수 있도록 합니다.
+
 ## 1.3.12 - 2026-10-23
 
 - `@dutying/app` (patch): 자동완성 결과 적용 후 만족도와 선택 의견을 보낼 수 있습니다.

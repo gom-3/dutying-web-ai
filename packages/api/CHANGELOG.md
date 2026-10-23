@@ -1,5 +1,11 @@
 # @dutying/api
 
+## 1.3.13
+
+### Patch Changes
+
+- @dutying/domain@1.3.13
+
 ## 1.3.12
 
 ### Patch Changes
