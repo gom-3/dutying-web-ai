@@ -7,8 +7,11 @@ export type TConnectionManageStep = 0 | 1 | 2 | 3;
 export type TConnectMode = 'link' | 'add';
 export type TConnectionManageSubmitStatus = 'idle' | 'loading' | 'success' | 'error';
 
-export const getFormattedPhoneNumber = (phoneNumber: string) =>
-    `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 7)}-${phoneNumber.slice(7, 11)}`;
+export const getFormattedPhoneNumber = (phoneNumber: string | null | undefined) => {
+    if (!phoneNumber?.trim()) return '-';
+
+    return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 7)}-${phoneNumber.slice(7, 11)}`;
+};
 
 export const getWaitingNurseSummary = (waitingNurse: TWaitingNurse) => ({
     ...waitingNurse,
