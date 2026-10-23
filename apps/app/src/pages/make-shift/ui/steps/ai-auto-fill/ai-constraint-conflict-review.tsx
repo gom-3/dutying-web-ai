@@ -1,5 +1,5 @@
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import type {TAutofillResponse} from '@dutying/api/ward';
 
 type TProps = {
@@ -14,9 +14,35 @@ type TProps = {
 };
 
 export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, onEditSettings, requestSummary, copy}: TProps) {
-    const [choice, setChoice] = useState<'proceed' | 'revise'>();
+    const [submitting, setSubmitting] = useState(false);
+    const inFlight = useRef(false);
+    const [failed, setFailed] = useState(false);
+    const [now, setNow] = useState(Date.now);
     const expiry = Date.parse(review.expiresAt);
-    const available = current && Number.isFinite(expiry) && expiry > Date.now();
+    const available = current && Number.isFinite(expiry) && expiry > now;
+    useEffect(() => {
+        if (!Number.isFinite(expiry) || expiry <= now) return;
+        const timer = window.setTimeout(() => setNow(Date.now()), Math.min(expiry - Date.now(), 2147483647));
+        return () => window.clearTimeout(timer);
+    }, [expiry, now]);
+    const proceed = async () => {
+        if (disabled || !current || inFlight.current) return;
+        if (!Number.isFinite(expiry) || expiry <= Date.now()) {
+            setNow(Date.now());
+            return;
+        }
+        inFlight.current = true;
+        setSubmitting(true);
+        setFailed(false);
+        try {
+            await onProceed();
+        } catch {
+            setFailed(true);
+        } finally {
+            inFlight.current = false;
+            setSubmitting(false);
+        }
+    };
     const message = (violation: TProps['review']['violations'][number]) => {
         const args = violation.messageArgs;
         const operator = args?.operator;
@@ -41,6 +67,7 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
         <section
             className="mt-3 space-y-3 rounded-xl border border-red/30 bg-red/5 p-4"
             aria-label={copy('조건 충돌 확인', 'Review conflicting conditions')}
+            aria-busy={submitting}
         >
             <p className="font-medium">
                 {copy('함께 맞추기 어려운 조건이 있어요. 어떻게 진행할까요?', 'Some conditions conflict. How would you like to proceed?')}
@@ -80,31 +107,37 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
                     )}
                 </p>
             )}
+            {failed && (
+                <p role="alert" className="text-sm">
+                    {copy(
+                        '제안 적용을 완료했는지 확인하지 못했어요. 다시 시도하거나 요청·설정을 수정해 주세요.',
+                        'Could not confirm that the proposal was applied. Try again, or edit your request or settings.',
+                    )}
+                </p>
+            )}
             <div className="flex flex-wrap gap-2">
                 <button
-                    className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white disabled:opacity-40"
-                    disabled={disabled || !available || choice !== undefined}
-                    onClick={() => {
-                        setChoice('proceed');
-                        void onProceed().finally(() => setChoice(undefined));
-                    }}
+                    type="button"
+                    className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || !available || submitting}
+                    onClick={() => void proceed()}
                 >
-                    {copy('제안대로 이번 표 수정', 'Apply this proposal to the schedule')}
+                    {submitting
+                        ? copy('제안 적용 중…', 'Applying proposal…')
+                        : copy('제안대로 이번 표 수정', 'Apply this proposal to the schedule')}
                 </button>
                 <button
-                    className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
-                    disabled={disabled || choice !== undefined}
-                    onClick={() => {
-                        setChoice('revise');
-                        onRevise();
-                    }}
+                    type="button"
+                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || submitting}
+                    onClick={onRevise}
                 >
                     {copy('요청 바꾸기', 'Change my request')}
                 </button>
                 <button
                     type="button"
-                    className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
-                    disabled={disabled || choice !== undefined}
+                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    disabled={disabled || submitting}
                     onClick={onEditSettings}
                 >
                     {copy('설정 직접 수정', 'Edit settings myself')}

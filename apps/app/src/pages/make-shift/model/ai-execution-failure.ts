@@ -153,6 +153,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         | 'validation'
         | 'incomplete'
         | 'rules'
+        | 'resultCheck'
         | 'unsupported'
         | 'lockedEmpty'
         | 'input'
@@ -176,6 +177,8 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     } else if (/^(CONTRACT_|INVALID_|MISSING_)/.test(reason)) {
         key = 'input';
         recovery = 'review';
+    } else if (['SOLVER_RESULT_FAILED_FINAL_GATE', 'SPRING_HARD_VALIDATION', 'SEMANTIC_RESULT_UNSATISFIED'].includes(reason)) {
+        key = 'resultCheck';
     } else if (status === 'INFEASIBLE' || reason === 'HARD_RULE_CONFLICT') {
         key = 'infeasible';
         recovery = 'revise';
@@ -185,9 +188,6 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         key = 'validation';
     } else if (reason === 'SOLVER_RESULT_INCOMPLETE') {
         key = 'incomplete';
-    } else if (['SOLVER_RESULT_FAILED_FINAL_GATE', 'SPRING_HARD_VALIDATION', 'SEMANTIC_RESULT_UNSATISFIED'].includes(reason)) {
-        key = 'rules';
-        recovery = 'revise';
     }
 
     return {
