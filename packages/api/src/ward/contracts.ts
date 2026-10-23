@@ -811,7 +811,13 @@ export type TScheduleObservation = {
 
 export type TAutofillResponse = {
     confirmedConstraintException?: boolean;
-    conflictReview?: {token: string; expiresAt: string; ruleLabels?: Record<string, string>; violations: TScheduleViolationDto[]};
+    conflictReview?: {
+        explanation?: string | null;
+        token: string;
+        expiresAt: string;
+        ruleLabels?: Record<string, string>;
+        violations: TScheduleViolationDto[];
+    };
     observation?: TScheduleObservation;
     operationType: 'GENERATE' | 'REPAIR' | 'ADJUST';
     failure?: {

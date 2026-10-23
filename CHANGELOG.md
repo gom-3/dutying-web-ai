@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.11 - 2026-10-23
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 자동완성과 조절에서 이해한 요청과 충돌 이유를 설명하고, 설정 수정·검증된 제안 적용·요청 변경 중 진행 방법을 선택합니다.
+
 ## 1.3.10 - 2026-10-22
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 자동채우기 실패 이유와 수정할 조건을 안내하고, 충돌하는 조건을 확인한 뒤 이번 결과에만 예외 적용 여부를 선택할 수 있습니다.

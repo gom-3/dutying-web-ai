@@ -44,7 +44,7 @@ export function AiExecutionFailure({
     const showRevise = !failure.blocked && failure.recovery !== 'review' && !showSettings && Boolean(onRevise);
     const showReview = Boolean(onReview) && (!retryable || !onRevise);
     const content = Children.toArray(children);
-    const showActions = active && (showSettings || showRetry || showRevise || showReview);
+    const showActions = active && !failure.confirmationRequired && (showSettings || showRetry || showRevise || showReview);
     const title = failure.confirmationRequired
         ? t('aiAdjust.executionFailure.conflictTitle')
         : failure.recovery === 'settings'
