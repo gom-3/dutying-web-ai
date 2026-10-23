@@ -1,6 +1,8 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {describe, expect, it, vi} from 'vitest';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
+
+afterEach(() => vi.useRealTimers());
 
 const copy = (ko: string) => ko;
 const review = {
@@ -38,6 +40,8 @@ describe('conflicting condition consent', () => {
         expect(proceed).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', {name: '요청 바꾸기'}));
         expect(revise).toHaveBeenCalledOnce();
+        expect(screen.getByRole('button', {name: '설정 직접 수정'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeEnabled();
         expect(proceed).not.toHaveBeenCalled();
     });
     it('uses the condition label and familiar counts rather than operator codes', () => {
@@ -60,7 +64,7 @@ describe('conflicting condition consent', () => {
         expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeInTheDocument();
         expect(screen.queryByText(/MAX/)).not.toBeInTheDocument();
     });
-    it('proceeds on Yes and permits recovery after a failed send', async () => {
+    it('proceeds only after choosing the proposal', async () => {
         const proceed = vi.fn(async () => {});
         render(
             <ConstraintConflictReview
@@ -114,5 +118,62 @@ describe('conflicting condition consent', () => {
         fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
         expect(settings).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
+    });
+});
+
+describe('conflict review recovery', () => {
+    const props = () => ({
+        review: {...review, expiresAt: new Date(Date.now() + 60000).toISOString()},
+        current: true,
+        disabled: false,
+        onProceed: vi.fn(async () => {}),
+        onRevise: vi.fn(),
+        onEditSettings: vi.fn(),
+        copy,
+    });
+    it('announces a failed application and lets the user retry', async () => {
+        const p = props();
+        p.onProceed.mockRejectedValueOnce(new Error('network'));
+        render(<ConstraintConflictReview {...p} />);
+        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('다시 시도');
+        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+        expect(p.onProceed).toHaveBeenCalledTimes(2);
+    });
+    it('shows progress, blocks duplicate requests and does not submit a parent form', async () => {
+        let finish!: () => void;
+        const p = props();
+        p.onProceed.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    finish = resolve;
+                }),
+        );
+        const submit = vi.fn((event) => event.preventDefault());
+        render(
+            <form onSubmit={submit}>
+                <ConstraintConflictReview {...p} />
+            </form>,
+        );
+        fireEvent.click(screen.getByRole('button', {name: '요청 바꾸기'}));
+        fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        const pending = screen.getByRole('button', {name: '제안 적용 중…'});
+        expect(pending).toBeDisabled();
+        fireEvent.click(pending);
+        expect(p.onProceed).toHaveBeenCalledOnce();
+        expect(submit).not.toHaveBeenCalled();
+        await act(async () => finish());
+    });
+    it('disables a proposal when its expiry passes without another render', () => {
+        vi.useFakeTimers();
+        const p = props();
+        render(<ConstraintConflictReview {...p} />);
+        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeEnabled();
+        act(() => vi.advanceTimersByTime(60001));
+        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled();
+        expect(screen.getByText(/확인 시간이 지났어요/)).toBeVisible();
     });
 });
