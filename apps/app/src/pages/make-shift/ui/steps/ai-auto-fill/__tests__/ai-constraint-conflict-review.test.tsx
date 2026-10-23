@@ -1,5 +1,6 @@
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
 
 afterEach(() => vi.useRealTimers());
@@ -25,6 +26,7 @@ describe('conflicting condition consent', () => {
     it('shows the exact violation and never executes without Yes', () => {
         const proceed = vi.fn(async () => {});
         const revise = vi.fn();
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -66,6 +68,7 @@ describe('conflicting condition consent', () => {
     });
     it('proceeds only after choosing the proposal', async () => {
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -83,6 +86,7 @@ describe('conflicting condition consent', () => {
     });
     it.each([false, true])('blocks stale or expired candidates (expired=%s)', (expired) => {
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={{...review, expiresAt: expired ? '2000-01-01T00:00:00Z' : review.expiresAt}}
@@ -102,6 +106,7 @@ describe('conflicting condition consent', () => {
     it('shows understood intent and opens settings without applying a proposal', () => {
         const settings = vi.fn();
         const proceed = vi.fn(async () => {});
+
         render(
             <ConstraintConflictReview
                 review={review}
@@ -118,6 +123,44 @@ describe('conflicting condition consent', () => {
         fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
         expect(settings).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ['proceed', 'この提案を今回の勤務表に反映'],
+        ['revise', 'リクエストを変更'],
+        ['settings', '設定を直接変更'],
+    ] as const)('shows Japanese conflict details and keeps the %s choice explicit', async (choice, label) => {
+        await i18n.changeLanguage('ja');
+
+        const proceed = vi.fn(async () => {});
+        const revise = vi.fn();
+        const settings = vi.fn();
+
+        render(
+            <ConstraintConflictReview
+                review={{
+                    ...review,
+                    expiresAt: new Date(Date.now() + 60000).toISOString(),
+                    violations: [{...review.violations[0], messageArgs: {operator: 'MAX', expected: 2, actual: 4}}],
+                }}
+                current
+                disabled={false}
+                onProceed={proceed}
+                onRevise={revise}
+                onEditSettings={settings}
+                copy={copy}
+            />,
+        );
+        expect(screen.getByRole('region', {name: '条件の競合を確認'})).toBeVisible();
+        expect(screen.getByText('設定：2回以下 / 結果：4回')).toBeVisible();
+        expect(screen.getByRole('button', {name: 'この提案を今回の勤務表に反映'})).toBeEnabled();
+        expect(proceed).not.toHaveBeenCalled();
+        expect(revise).not.toHaveBeenCalled();
+        expect(settings).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: label}));
+        await waitFor(() => expect({proceed, revise, settings}[choice]).toHaveBeenCalledOnce());
+
+        if (choice !== 'proceed') expect(proceed).not.toHaveBeenCalled();
     });
 });
 
@@ -138,6 +181,31 @@ describe('conflict review recovery', () => {
         fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('다시 시도');
         fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+        expect(p.onProceed).toHaveBeenCalledTimes(2);
+    });
+    it('shows Japanese progress and failure recovery without changing retry behavior', async () => {
+        await i18n.changeLanguage('ja');
+        let fail!: (reason: Error) => void;
+        const p = props();
+        p.onProceed.mockImplementationOnce(
+            () =>
+                new Promise<void>((_resolve, reject) => {
+                    fail = reject;
+                }),
+        );
+        render(<ConstraintConflictReview {...p} />);
+        fireEvent.click(screen.getByRole('button', {name: 'この提案を今回の勤務表に反映'}));
+        expect(screen.getByRole('region', {name: '条件の競合を確認'})).toHaveAttribute('aria-busy', 'true');
+        const pending = screen.getByRole('button', {name: '提案を反映中…'});
+        expect(pending).toBeDisabled();
+        fireEvent.click(pending);
+        expect(p.onProceed).toHaveBeenCalledOnce();
+        await act(async () => fail(new Error('network')));
+        expect(screen.getByRole('alert')).toHaveTextContent('提案の反映が完了したか確認できませんでした。');
+        expect(screen.getByRole('button', {name: 'リクエストを変更'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '設定を直接変更'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: 'この提案を今回の勤務表に反映'}));
         await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
         expect(p.onProceed).toHaveBeenCalledTimes(2);
     });

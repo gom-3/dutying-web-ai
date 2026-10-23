@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
 import type {TDutyDoc} from '@/features/shift-editor/model/types';
 import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {queueConversationCapture, readConversationImage, saveConversationImage} from '../../../model/conversation-image-cache';
 import {buildConversationSnapshot} from '../../../model/conversation-snapshot';
 import type {TResultVersion} from '../../../model/schedule-conversation-api';
@@ -25,8 +26,7 @@ export const AiConversationImage = memo(function AiConversationImage(props: TPro
 });
 
 function AiConversationImageSource({cacheKey, versionId, loadVersion, snapshot: capturedSnapshot, onOpen, disabled = false}: TProps) {
-    const ko = i18n.language.startsWith('ko');
-    const copy = (kr: string, en: string) => (ko ? kr : en);
+    const {t} = useTypedTranslation();
     const key = `${cacheKey}:${versionId}:${i18n.language}`;
     const host = useRef<HTMLDivElement>(null);
     const capture = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ function AiConversationImageSource({cacheKey, versionId, loadVersion, snapshot: 
     const snapshot = useMemo(() => capturedSnapshot ?? (version ? buildConversationSnapshot(version) : null), [capturedSnapshot, version]);
     const [year, month] = snapshot?.doc.columns[0]?.split('-').map(Number) ?? [];
     const violations = useMemo(() => new Map(), []);
-    const title = copy('근무표 결과 이미지', 'Schedule result image');
+    const title = t('aiAutofillUi.conversationImage.scheduleResultImage');
 
     useEffect(() => {
         if (!host.current) return;
@@ -166,19 +166,19 @@ function AiConversationImageSource({cacheKey, versionId, loadVersion, snapshot: 
                 disabled={disabled}
                 onClick={(event) => onOpen(event.currentTarget)}
                 className="group block min-h-11 w-full overflow-hidden rounded-xl bg-white p-2 text-left transition-colors hover:bg-[#F2EFFF] focus-visible:bg-[#E9E1FF] focus-visible:text-[#5931B9] focus-visible:outline-none disabled:cursor-wait disabled:opacity-60 motion-reduce:transition-none"
-                aria-label={copy('근무표 살펴보기', 'Explore schedule')}
-                title={copy('근무표 크게 보기', 'Enlarge schedule')}
+                aria-label={t('aiAutofillUi.conversationImage.exploreSchedule')}
+                title={t('aiAutofillUi.conversationImage.enlargeSchedule')}
             >
                 <div className="relative flex min-h-32 items-center justify-center overflow-hidden rounded-lg bg-[#F7F8FA]">
                     {url ? (
                         <img src={url} alt={title} decoding="async" className="max-h-56 w-full object-contain" />
                     ) : failed ? (
                         <span className="px-12 py-8 text-center text-[13px] leading-5 text-[#667085]" role="status">
-                            {copy('미리보기 없이도 근무표를 살펴볼 수 있어요.', 'You can explore the schedule without a preview.')}
+                            {t('aiAutofillUi.conversationImage.youCanExploreTheScheduleWithoutAPreview')}
                         </span>
                     ) : (
                         <AiConversationLoading
-                            label={copy('미리보기 준비 중', 'Preparing preview')}
+                            label={t('aiAutofillUi.conversationImage.preparingPreview')}
                             className="justify-center px-12 py-8"
                         />
                     )}
@@ -197,7 +197,7 @@ function AiConversationImageSource({cacheKey, versionId, loadVersion, snapshot: 
                     className="mt-1 min-h-11 rounded-lg px-3 text-xs font-medium text-[#667085] hover:bg-[#E9E1FF] hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
                     onClick={() => setAttempt((value) => value + 1)}
                 >
-                    {copy('미리보기 다시 불러오기', 'Retry preview')}
+                    {t('aiAutofillUi.conversationImage.retryPreview')}
                 </button>
             )}
             {visible &&
@@ -208,9 +208,9 @@ function AiConversationImageSource({cacheKey, versionId, loadVersion, snapshot: 
                         <div ref={capture} style={{width: 1280, padding: 24, background: 'white'}}>
                             <p className="mb-3 text-xl font-semibold">
                                 {year}
-                                {copy('년 ', ' / ')}
+                                {t('aiAutofillUi.conversationImage.scheduleYearSeparator')}
                                 {month}
-                                {copy('월 근무표', ' schedule')}
+                                {t('aiAutofillUi.conversationImage.schedule')}
                             </p>
                             <div className="[container-type:inline-size]">
                                 <MakeShiftCalendar

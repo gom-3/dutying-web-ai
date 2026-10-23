@@ -12,6 +12,10 @@ import {
     zh as generatedZh,
 } from '@/shared/i18n/resources.generated';
 import {aiAdjustKo, aiAdjustEn} from '@/shared/locales/ai-adjust';
+import {aiAdjustJa} from '@/shared/locales/ai-adjust-ja';
+import {aiAutofillPageKo, aiAutofillPageEn, aiAutofillPageJa} from '@/shared/locales/ai-autofill-page';
+import {aiAutofillUiKo, aiAutofillUiEn, aiAutofillUiJa} from '@/shared/locales/ai-autofill-ui';
+import {aiConversationSidebarKo, aiConversationSidebarEn, aiConversationSidebarJa} from '@/shared/locales/ai-conversation-sidebar';
 import {annualLeaveKo, annualLeaveEn} from '@/shared/locales/annual-leave';
 import {en} from '@/shared/locales/en';
 import {ja} from '@/shared/locales/ja';
@@ -140,6 +144,9 @@ const resources = {
             ...fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo),
             annualLeave: annualLeaveKo,
             aiAdjust: aiAdjustKo,
+            aiAutofillPage: aiAutofillPageKo,
+            aiAutofillUi: aiAutofillUiKo,
+            aiConversationSidebar: aiConversationSidebarKo,
         },
     },
     en: {
@@ -148,6 +155,9 @@ const resources = {
             ...fillMissingTranslations(generatedEn, en),
             annualLeave: annualLeaveEn,
             aiAdjust: aiAdjustEn,
+            aiAutofillPage: aiAutofillPageEn,
+            aiAutofillUi: aiAutofillUiEn,
+            aiConversationSidebar: aiConversationSidebarEn,
         },
     },
     ja: {
@@ -155,7 +165,10 @@ const resources = {
             requestCapacity: requestCapacityJa,
             ...fillMissingTranslations(generatedJa, ja),
             annualLeave: annualLeaveEn,
-            aiAdjust: aiAdjustEn,
+            aiAdjust: aiAdjustJa,
+            aiAutofillPage: aiAutofillPageJa,
+            aiAutofillUi: aiAutofillUiJa,
+            aiConversationSidebar: aiConversationSidebarJa,
         },
     },
     zh: {
@@ -164,6 +177,9 @@ const resources = {
             ...fillMissingTranslations(generatedZh, zh),
             annualLeave: annualLeaveEn,
             aiAdjust: aiAdjustEn,
+            aiAutofillPage: aiAutofillPageEn,
+            aiAutofillUi: aiAutofillUiEn,
+            aiConversationSidebar: aiConversationSidebarEn,
         },
     },
     th: {
@@ -172,6 +188,9 @@ const resources = {
             ...fillMissingTranslations(generatedTh, th),
             annualLeave: annualLeaveEn,
             aiAdjust: aiAdjustEn,
+            aiAutofillPage: aiAutofillPageEn,
+            aiAutofillUi: aiAutofillUiEn,
+            aiConversationSidebar: aiConversationSidebarEn,
         },
     },
     vi: {
@@ -180,6 +199,9 @@ const resources = {
             ...fillMissingTranslations(generatedVi, vi),
             annualLeave: annualLeaveEn,
             aiAdjust: aiAdjustEn,
+            aiAutofillPage: aiAutofillPageEn,
+            aiAutofillUi: aiAutofillUiEn,
+            aiConversationSidebar: aiConversationSidebarEn,
         },
     },
 } as const;

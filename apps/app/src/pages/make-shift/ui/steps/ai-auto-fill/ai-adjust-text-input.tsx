@@ -9,7 +9,6 @@ import {v4 as uuid} from 'uuid';
 import type {TShift} from '@/entities/shift';
 import {useShiftEditorStore} from '@/features/shift-editor';
 import type {TDutyDoc} from '@/features/shift-editor/model/types';
-import i18n from '@/i18n';
 import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -177,7 +176,7 @@ export default function AiAdjustTextInput({
     ref,
 }: TProps) {
     const {t} = useTypedTranslation();
-    const attemptLabel = (attempt: number) => (i18n.language.startsWith('ko') ? `${attempt}회차` : `Run ${attempt}`);
+    const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
     const [text, setText] = useState('');
     const [noticeDismissed, setNoticeDismissed] = useState(false);
@@ -384,8 +383,8 @@ export default function AiAdjustTextInput({
             ((issueCodes.includes('NURSE_NOT_RESOLVED') &&
                 goalNurses.some(({name}) => name.replace(/\s/g, '') === enteredText.replace(/\s/g, ''))) ||
                 (issueCodes.includes('SHIFT_NOT_RESOLVED') && shiftCodes?.includes(enteredText)) ||
-                (issueCodes.includes('INVALID_DATE') && /^\d{1,2}일$/.test(enteredText)) ||
-                (issueCodes.includes('INVALID_VALUE') && /^\d+\s*(회|번|일)?$/.test(enteredText)));
+                (issueCodes.includes('INVALID_DATE') && /^\d{1,2}(일|日)$/.test(enteredText)) ||
+                (issueCodes.includes('INVALID_VALUE') && /^\d+\s*(회|번|일|回|日)?$/.test(enteredText)));
         const requestText = shortClarification ? `${failedCard.requestText}\n추가 설명: ${enteredText}` : enteredText;
 
         if (!requestText || disabled || busy.current) return;
@@ -410,8 +409,8 @@ export default function AiAdjustTextInput({
 
             if (
                 question?.kind === 'proposal' &&
-                /^(아니요|아니오|수정할게요|수정할 게 있어요|아니요 수정할게요|no|no thanks)$/i.test(
-                    requestText.replace(/[,!.?]/g, '').trim(),
+                /^(아니요|아니오|수정할게요|수정할 게 있어요|아니요 수정할게요|no|no thanks|いいえ|修正します|変更します|いいえ修正します|いいえ変更します)$/i.test(
+                    requestText.replace(/[,、，!.?。！？]/g, '').trim(),
                 )
             ) {
                 revise();
@@ -419,7 +418,10 @@ export default function AiAdjustTextInput({
                 return;
             }
 
-            if (question?.kind === 'offDifference' && /^[+-]?\d+(?:\.\d+)?\s*(일)?\s*(이내|이내로|로)?[.!?\s]*$/.test(requestText)) {
+            if (
+                question?.kind === 'offDifference' &&
+                /^[+-]?\d+(?:\.\d+)?\s*(일|日)?\s*(이내|이내로|로|以内|以内で|で)?[.!?。！？\s]*$/.test(requestText)
+            ) {
                 updateTurn(active.id, {followups: [...(active.followups ?? []), {text: requestText, reply: t('aiAdjust.chat.typeDays')}]});
                 setText('');
 
@@ -439,7 +441,19 @@ export default function AiAdjustTextInput({
                     'yes',
                     'apply',
                     'yesapplyit',
-                ].includes(requestText.toLowerCase().replace(/[,!.?\s]/g, ''))
+                    'はい',
+                    'この内容で大丈夫です',
+                    'はいこの内容で大丈夫です',
+                    'この内容でお願いします',
+                    'はいこの内容でお願いします',
+                    'この内容だけ反映します',
+                    'はいこの内容だけ反映します',
+                    '反映してください',
+                    '適用してください',
+                    'はい反映してください',
+                    'はい適用してください',
+                    '変更内容を反映',
+                ].includes(requestText.toLowerCase().replace(/[,、，!.?。！？\s]/g, ''))
             ) {
                 if (isReviewComplete(active.card, active.replies ?? []) && (active.card.items.length || active.card.llmPrompt)) {
                     setText('');
@@ -538,7 +552,7 @@ export default function AiAdjustTextInput({
                         (item.comparisonNurseIds?.length ?? 0) < 2),
             )
         ) {
-            updateTurn(id, {error: '목표 대상, 비교 집단, 오프 차이 허용치를 모두 확인해 주세요.'});
+            updateTurn(id, {error: t('aiAutofillUi.conversationConfirmation.confirmGoalDetails')});
 
             return;
         }

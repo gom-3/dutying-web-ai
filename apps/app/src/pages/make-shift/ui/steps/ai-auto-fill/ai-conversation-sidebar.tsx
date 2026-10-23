@@ -1,5 +1,3 @@
-import {AiResultSatisfaction} from './ai-result-satisfaction';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
@@ -50,6 +48,7 @@ import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
@@ -65,6 +64,7 @@ import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
+import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiSemanticReview} from './ai-semantic-review';
 import {JourneyObserved} from './journey-observed';
 
@@ -170,6 +170,7 @@ export default function AiConversationSidebar({
     const busyRef = useRef(false);
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const feedbackNotice = useRef<string | null>(null);
     const [text, setText] = useState('');
     const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
@@ -233,19 +234,12 @@ export default function AiConversationSidebar({
     const lastGeneration = useRef(0);
     const lastRebuild = useRef(0);
     const pendingKey = `dutying.conversation:${isWardAdminAccessToken(useAuthStore.getState().accessToken) ? 'admin' : 'account'}:${useAuthStore.getState().accountId}:${wardId}:${teamId}:${year}:${month}`;
-    const ko = i18n.language.startsWith('ko');
-    const copy = (korean: string, english: string) => (ko ? korean : english);
+    const copy = (korean: string, english: string) => (i18n.language.startsWith('ko') ? korean : english);
     const preferenceSaveLabel =
-        editingPreferenceId === undefined
-            ? copy('자주 쓰는 요청으로 저장하기', 'Save request')
-            : copy('저장한 요청 수정하기', 'Update saved request');
+        editingPreferenceId === undefined ? t('aiConversationSidebar.saveRequest') : t('aiConversationSidebar.updateSavedRequest');
     const openResultReport = (operationId: string, trigger: HTMLButtonElement) => {
         reportAttempt.reset();
-        setNotice((currentNotice) =>
-            ['의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'].includes(currentNotice ?? '')
-                ? null
-                : currentNotice,
-        );
+        setNotice((currentNotice) => (currentNotice === feedbackNotice.current ? null : currentNotice));
         setReportRecovery(undefined);
         setReportError(null);
         reportTrigger.current = trigger;
@@ -430,15 +424,13 @@ export default function AiConversationSidebar({
 
                     if (!mounted.current) return;
 
-                    setNotice(copy('의견을 보냈어요. 확인해서 개선할게요.', 'Your feedback was sent. Thank you.'));
+                    feedbackNotice.current = t('aiConversationSidebar.feedbackSent');
+                    setNotice(feedbackNotice.current);
                     trackScheduleSignal('feedback_sent');
                     await closeReport(false);
                     setReportNote('');
                 } catch {
-                    if (mounted.current)
-                        setReportError(
-                            copy('의견을 보내지 못했어요. 다시 시도해 주세요.', 'Could not send your feedback. Please try again.'),
-                        );
+                    if (mounted.current) setReportError(t('aiConversationSidebar.feedbackFailed'));
                 }
             },
             false,
@@ -488,20 +480,9 @@ export default function AiConversationSidebar({
                     changedCellCount: describeAdjustChanges(before, useShiftEditorStore.getState().doc).length,
                     draftRevision: useShiftEditorStore.getState().draftRevision,
                 });
-            } else
-                setNotice(
-                    copy(
-                        '작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.',
-                        'Your draft changed. The result is saved for comparison.',
-                    ),
-                );
+            } else setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
         } else if (operation.executionStatus === 'SUCCEEDED' && !operationFailure(operation)) {
-            setNotice(
-                copy(
-                    '작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.',
-                    'Your draft changed. The result is saved for comparison.',
-                ),
-            );
+            setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
         }
 
         await refresh();
@@ -868,12 +849,7 @@ export default function AiConversationSidebar({
                     (refreshed.interpretation.strength ?? 'NORMAL') !== (confirmed.strength ?? 'NORMAL')
                 ) {
                     reviewedPreparation.current = preparationKey();
-                    setNotice(
-                        copy(
-                            '입력한 근무를 반영했어요. 수정 조건을 한 번 더 확인해 주세요.',
-                            'Your shift changes are ready. Please review the updated conditions.',
-                        ),
-                    );
+                    setNotice(t('aiConversationSidebar.reviewUpdatedConditions'));
 
                     return;
                 }
@@ -969,12 +945,7 @@ export default function AiConversationSidebar({
                 const state = current.conversationState;
 
                 if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
-                    throw new Error(
-                        copy(
-                            '요청이 변경됐어요. 현재 조건을 확인한 뒤 다시 보내 주세요.',
-                            'The request changed. Review current conditions before sending again.',
-                        ),
-                    );
+                    throw new Error(t('aiConversationSidebar.requestChanged'));
 
                 const original = !state && priorPlan && !editingRequest ? requestTextForTurn(current, priorPlan) : '';
                 const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
@@ -1112,12 +1083,7 @@ export default function AiConversationSidebar({
                 install(nextDetail); // Keep the advanced server revision without overwriting manual edits.
                 setPendingBranch(nextDetail);
                 setPreview(null);
-                setNotice(
-                    copy(
-                        '작성 중인 표가 바뀌어서 전환하지 않았어요. 선택한 표로 이어서 작성하려면 아래 버튼을 눌러 주세요.',
-                        'The draft changed. The new branch is saved without replacing your edits.',
-                    ),
-                );
+                setNotice(t('aiConversationSidebar.draftChangedBranchSaved'));
 
                 return;
             }
@@ -1242,7 +1208,7 @@ export default function AiConversationSidebar({
                         expectedStateVersion: state.version,
                         change: 'REMOVE',
                         targetConditionIds: [conditionId],
-                        text: copy('이 조건을 삭제해 주세요.', 'Remove this condition.'),
+                        text: t('aiConversationSidebar.removeConditionRequest'),
                         language: i18n.language,
                     });
 
@@ -1273,7 +1239,7 @@ export default function AiConversationSidebar({
         ...(detail?.conversationState?.conditions.map((condition) => ({
             id: `semantic:${condition.conditionId}`,
             label: condition.text,
-            description: copy('현재 대화', 'Current conversation'),
+            description: t('aiConversationSidebar.currentConversation'),
             onRemove: () => removeCondition(condition.conditionId),
         })) ?? []),
         ...activeConditions.requests
@@ -1281,7 +1247,7 @@ export default function AiConversationSidebar({
             .map((request) => ({
                 id: `request:${request.id}`,
                 label: request.displayLabel,
-                description: copy('이번 달에 저장됨', 'Saved for this month'),
+                description: t('aiConversationSidebar.savedForMonth'),
                 onRemove: async () => {
                     if (conditionsDisabled || busyRef.current || awaitingAdjustmentRef.current)
                         throw new AiConversationInputError('loading');
@@ -1401,32 +1367,38 @@ export default function AiConversationSidebar({
     const exampleFirst = exampleNurses[0]?.name;
     const exampleSecond = exampleNurses[1]?.name ?? exampleFirst;
     const dayOf = (index: number) => Number(doc.columns[Math.min(index, doc.columns.length - 1)]?.slice(-2));
-    const examplePeriod = dayOf(0) === dayOf(4) ? `${dayOf(0)}일` : `${dayOf(0)}~${dayOf(4)}일`;
+    const examplePeriod =
+        dayOf(0) === dayOf(4)
+            ? t('aiConversationSidebar.exampleDay', {day: dayOf(0)})
+            : t('aiConversationSidebar.exampleDayRange', {start: dayOf(0), end: dayOf(4)});
     const requestExamples =
         exampleFirst && doc.columns.length
             ? [
                   ...(exampleWork
                       ? [
-                            copy(
-                                `${exampleFirst} ${examplePeriod} ${exampleWork.shortName} 근무 없게 해줘`,
-                                `No ${exampleWork.shortName} shifts for ${exampleFirst} on days ${examplePeriod.replace('일', '')}`,
-                            ),
+                            t('aiConversationSidebar.exampleNoShifts', {
+                                name: exampleFirst,
+                                period: examplePeriod,
+                                shift: exampleWork.shortName,
+                            }),
                         ]
                       : []),
                   ...(exampleOff
                       ? [
-                            copy(
-                                `${exampleSecond} ${dayOf(11)}일 ${exampleOff.shortName} 근무 배정해줘`,
-                                `Assign ${exampleOff.shortName} to ${exampleSecond} on day ${dayOf(11)}`,
-                            ),
+                            t('aiConversationSidebar.exampleAssignShift', {
+                                name: exampleSecond,
+                                day: dayOf(11),
+                                shift: exampleOff.shortName,
+                            }),
                         ]
                       : []),
                   ...(exampleDayWork
                       ? [
-                            copy(
-                                `${exampleFirst} ${dayOf(14)}일 ${exampleDayWork.shortName} 근무 배정해줘`,
-                                `Assign ${exampleDayWork.shortName} to ${exampleFirst} on day ${dayOf(14)}`,
-                            ),
+                            t('aiConversationSidebar.exampleAssignShift', {
+                                name: exampleFirst,
+                                day: dayOf(14),
+                                shift: exampleDayWork.shortName,
+                            }),
                         ]
                       : []),
               ]
@@ -1499,8 +1471,8 @@ export default function AiConversationSidebar({
                     <span className="h-px flex-1 bg-gray-6" />
                     <span>
                         {turn.text === 'SAVED_RESULT'
-                            ? copy('여기서부터 새 요청 · 선택한 표 기준', 'New requests · selected result')
-                            : copy('여기서부터 새 요청 · 현재 표 기준', 'New requests · current schedule')}
+                            ? t('aiConversationSidebar.newRequestsSelectedResult')
+                            : t('aiConversationSidebar.newRequestsCurrentSchedule')}
                     </span>
                     <span className="h-px flex-1 bg-gray-6" />
                 </div>
@@ -1524,9 +1496,13 @@ export default function AiConversationSidebar({
                     <div role="separator" className="my-5 flex items-center gap-3 text-xs text-[#667085]">
                         <span className="h-px flex-1 bg-gray-6" />
                         <span>
-                            {previousRun.operationType === 'GENERATE' ? copy('자동채우기', 'Autofill') : copy('수정', 'Adjustment')}{' '}
-                            {operationAttempt(detail, previousRun.operationId)}
-                            {copy('회차 이후 · 추가 요청', ' · follow-up request')}
+                            {t('aiConversationSidebar.followupAfterRun', {
+                                operation:
+                                    previousRun.operationType === 'GENERATE'
+                                        ? t('aiConversationSidebar.autofill')
+                                        : t('aiConversationSidebar.adjustment'),
+                                count: operationAttempt(detail, previousRun.operationId),
+                            })}
                         </span>
                         <span className="h-px flex-1 bg-gray-6" />
                     </div>
@@ -1547,7 +1523,7 @@ export default function AiConversationSidebar({
                             )}
                             nurseName={(id) =>
                                 Object.values(doc.workerMeta).find((meta) => meta.nurseId === id)?.name ??
-                                copy('명단에서 확인되지 않은 간호사', 'Nurse unavailable in this roster')
+                                t('aiConversationSidebar.nurseUnavailable')
                             }
                             copy={copy}
                             onChangeModalities={(overrides) => changeModalities(turn, overrides)}
@@ -1584,12 +1560,7 @@ export default function AiConversationSidebar({
                                 showDetails={false}
                             />
                             {turn.interpretation.items?.some((item) => item.requiresConfirmation) && (
-                                <p className="text-red">
-                                    {copy(
-                                        '대상 또는 수치를 명확히 적어 다시 확인해 주세요.',
-                                        'Specify the missing group or value and request a new interpretation.',
-                                    )}
-                                </p>
+                                <p className="text-red">{t('aiConversationSidebar.clarifyTargetOrValue')}</p>
                             )}
                             {currentRequest && (
                                 <ConversationConfirmation
@@ -1628,21 +1599,9 @@ export default function AiConversationSidebar({
                             {currentRequest ? (
                                 <p className="mt-3">{t('aiAdjust.chat.applyQuestion')}</p>
                             ) : (
-                                <p className="mt-2 text-xs text-[#475467]">
-                                    {copy(
-                                        '이전 요청이에요. 새 요청에서 내용을 확인해 주세요.',
-                                        'Previous interpretation · unavailable for execution',
-                                    )}
-                                </p>
+                                <p className="mt-2 text-xs text-[#475467]">{t('aiConversationSidebar.previousInterpretation')}</p>
                             )}
-                            {localDirty && currentRequest && (
-                                <p role="status">
-                                    {copy(
-                                        '표가 바뀌었어요. 최신 표 기준으로 다시 확인해 주세요.',
-                                        'The draft changed. Confirm a new interpretation.',
-                                    )}
-                                </p>
-                            )}
+                            {localDirty && currentRequest && <p role="status">{t('aiConversationSidebar.draftChangedReview')}</p>}
                         </>
                     )}
                 </Message>
@@ -1716,7 +1675,7 @@ export default function AiConversationSidebar({
                     {polling.issue && (
                         <AiFailureMessage message={t(`aiAdjust.polling.${polling.issue}`)}>
                             <button className={buttonClass} onClick={polling.retry}>
-                                {copy('결과 다시 확인하기', 'Check outcome again')}
+                                {t('aiConversationSidebar.checkOutcomeAgain')}
                             </button>
                         </AiFailureMessage>
                     )}
@@ -1732,9 +1691,7 @@ export default function AiConversationSidebar({
                         className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
                         contentClassName="space-y-3"
                     >
-                        {!detail && !error && (
-                            <AiConversationLoadingPlaceholder label={copy('대화 불러오는 중', 'Loading your conversation')} />
-                        )}
+                        {!detail && !error && <AiConversationLoadingPlaceholder label={t('aiConversationSidebar.loadingConversation')} />}
                         {segmentStart === 0 &&
                             earlierConversations.map((conversation) => (
                                 <AiConversationHistory
@@ -1830,9 +1787,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');
@@ -1857,14 +1816,13 @@ export default function AiConversationSidebar({
                                     ) : operationFailure(event.operation) ? (
                                         <div key={event.id} inert={preparing}>
                                             <AiExecutionFailure
-                                                attemptLabel={copy(
-                                                    `${operationAttempt(detail, event.operation.operationId)}회차`,
-                                                    `Run ${operationAttempt(detail, event.operation.operationId)}`,
-                                                )}
+                                                attemptLabel={t('aiConversationSidebar.runAttempt', {
+                                                    count: operationAttempt(detail, event.operation.operationId),
+                                                })}
                                                 headerAction={
                                                     ['FAILED', 'SUCCEEDED'].includes(event.operation.executionStatus) ? (
                                                         <AiConversationFeedbackButton
-                                                            label={copy('이 결과에 의견 보내기', 'Send feedback on this result')}
+                                                            label={t('aiConversationSidebar.sendResultFeedback')}
                                                             disabled={busy || running || preparing || reportOperation !== null}
                                                             onClick={(click) =>
                                                                 openResultReport(event.operation.operationId, click.currentTarget)
@@ -1921,12 +1879,7 @@ export default function AiConversationSidebar({
                                                 onReview={onOpenConstraints ?? onClose}
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
-                                                    <p>
-                                                        {copy(
-                                                            '현재 표가 바뀌어 반영하지 않았어요.',
-                                                            'The source changed; result was not applied.',
-                                                        )}
-                                                    </p>
+                                                    <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
                                                 )}
                                                 {event.operation.resultVersionId && (
                                                     <AiConversationImage
@@ -1969,9 +1922,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');
@@ -2012,23 +1967,15 @@ export default function AiConversationSidebar({
                                                 {event.operation.executionStatus === 'UNKNOWN' && (
                                                     <div className="mt-3 space-y-2">
                                                         <p className="text-[13px] leading-6 text-[#475467]">
-                                                            {copy(
-                                                                '이전 요청의 결과를 아직 확인하지 못했어요. 새로 계산하지 않고 결과를 다시 확인할게요.',
-                                                                'The server needs to confirm the outcome. This request will not run again.',
-                                                            )}
+                                                            {t('aiConversationSidebar.outcomeUnconfirmed')}
                                                         </p>
                                                         <button className={buttonClass} onClick={() => void retryPending()}>
-                                                            {copy('결과 다시 확인하기', 'Check outcome')}
+                                                            {t('aiConversationSidebar.checkOutcome')}
                                                         </button>
                                                     </div>
                                                 )}
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
-                                                    <p>
-                                                        {copy(
-                                                            '현재 표가 바뀌어 반영하지 않았어요.',
-                                                            'The source changed; result was not applied.',
-                                                        )}
-                                                    </p>
+                                                    <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
                                                 )}
                                                 {event.operation.resultVersionId && (
                                                     <AiConversationImage
@@ -2071,9 +2018,11 @@ export default function AiConversationSidebar({
                                                         onRevise={() => {
                                                             setDismissedFailureId(event.operation.operationId);
                                                             setEntryChoice('modify');
+
                                                             const turn = detail.turns.find(
                                                                 (entry) => entry.interpretationId === event.operation.interpretationId,
                                                             );
+
                                                             if (turn) editRequest(turn);
                                                             else {
                                                                 setText('');
@@ -2120,7 +2069,7 @@ export default function AiConversationSidebar({
                                             setEntryChoice(null);
                                         }}
                                     >
-                                        {copy('취소', 'Cancel')}
+                                        {t('aiConversationSidebar.cancel')}
                                     </button>
                                 </div>
                             </AssistantMessage>
@@ -2177,16 +2126,16 @@ export default function AiConversationSidebar({
                                 className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"
                                 label={
                                     awaitingAdjustment
-                                        ? copy('수정 준비 중', 'Preparing your changes')
+                                        ? t('aiConversationSidebar.preparingChanges')
                                         : activity === 'reviewing'
-                                          ? copy('요청 확인 중', 'Reviewing your request')
+                                          ? t('aiConversationSidebar.reviewingRequest')
                                           : activity === 'viewing'
-                                            ? copy('근무표 불러오는 중', 'Loading the schedule')
+                                            ? t('aiConversationSidebar.loadingSchedule')
                                             : activity === 'recovering'
-                                              ? copy('결과 확인 중', 'Checking the result')
+                                              ? t('aiConversationSidebar.checkingResult')
                                               : activity === 'sending'
-                                                ? copy('의견 보내는 중', 'Sending your feedback')
-                                                : copy('변경 사항 반영 중', 'Updating your changes')
+                                                ? t('aiConversationSidebar.sendingFeedback')
+                                                : t('aiConversationSidebar.updatingChanges')
                                 }
                             />
                         )}
@@ -2194,7 +2143,7 @@ export default function AiConversationSidebar({
                             <AiFailureMessage message={error.message}>
                                 {!error.blocked && error.checkOutcome !== false && (
                                     <button className={buttonClass} disabled={busy} onClick={() => void retryPending()}>
-                                        {copy('결과 다시 확인하기', 'Check execution history')}
+                                        {t('aiConversationSidebar.checkExecutionHistory')}
                                     </button>
                                 )}
                             </AiFailureMessage>
@@ -2204,23 +2153,19 @@ export default function AiConversationSidebar({
                         open={open && reportOperation !== null}
                         target={
                             detail && reportOperation
-                                ? copy(
-                                      `${detail.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE' ? '자동채우기' : '수정'} ${operationAttempt(detail, reportOperation)}회차 결과`,
-                                      `${detail.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE' ? 'Autofill' : 'Adjustment'} ${operationAttempt(detail, reportOperation)} result`,
-                                  )
+                                ? t('aiConversationSidebar.reportTarget', {
+                                      operation:
+                                          detail.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE'
+                                              ? t('aiConversationSidebar.autofill')
+                                              : t('aiConversationSidebar.adjustment'),
+                                      count: operationAttempt(detail, reportOperation),
+                                  })
                                 : ''
                         }
                         value={reportNote}
                         disabled={busy}
                         error={reportError}
-                        retryHint={
-                            reportError && reportRecovery === false
-                                ? copy(
-                                      '작성한 내용은 유지돼요. 이 창에서 다시 보내 주세요.',
-                                      'Your feedback is still here. Please try sending it again from this window.',
-                                  )
-                                : null
-                        }
+                        retryHint={reportError && reportRecovery === false ? t('aiConversationSidebar.feedbackRetryHint') : null}
                         returnFocusTo={open ? reportTrigger.current : null}
                         onChange={(value) => {
                             reportAttempt.noteChanged(value);
@@ -2231,11 +2176,11 @@ export default function AiConversationSidebar({
                         onClose={() => void run(closeReport)}
                     />
                     {selectedSuggestion && (
-                        <section className="rounded-xl bg-gray-7 p-3" aria-label={copy('제안 확인', 'Review suggestion')}>
+                        <section className="rounded-xl bg-gray-7 p-3" aria-label={t('aiConversationSidebar.reviewSuggestion')}>
                             <p>{t('aiAdjust.chat.applyQuestion')}</p>
                             <ConversationSuggestionChanges suggestion={selectedSuggestion.suggestion} />
                             <button className={buttonClass} disabled={busy} onClick={() => setSelectedSuggestion(undefined)}>
-                                {copy('취소', 'Cancel')}
+                                {t('aiConversationSidebar.cancel')}
                             </button>
                             <button
                                 className={buttonClass}
@@ -2246,7 +2191,7 @@ export default function AiConversationSidebar({
                                     void execute('ADJUST', undefined, selected.op.interpretationId ?? undefined, selected);
                                 }}
                             >
-                                {copy('이 변경으로 수정하기', 'Apply these changes')}
+                                {t('aiConversationSidebar.applySuggestedChanges')}
                             </button>
                         </section>
                     )}
@@ -2282,13 +2227,13 @@ export default function AiConversationSidebar({
                                     })
                                 }
                             >
-                                {copy('이 표로 이어서 작성하기', 'Open the saved new branch')}
+                                {t('aiConversationSidebar.openSavedBranch')}
                             </button>
                         )}
                         <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
                             {!!preferences.length && (
                                 <details>
-                                    <summary className="text-sm">{copy('자주 쓰는 요청', 'Saved requests')}</summary>
+                                    <summary className="text-sm">{t('aiConversationSidebar.savedRequests')}</summary>
                                     {preferences.map((p) => (
                                         <div className="flex gap-2" key={p.id}>
                                             <button
@@ -2310,7 +2255,7 @@ export default function AiConversationSidebar({
                                                     setEditingPreferenceId(p.id);
                                                 }}
                                             >
-                                                {copy('수정', 'Edit')}
+                                                {t('aiConversationSidebar.edit')}
                                             </button>
                                             <button
                                                 className="text-sm"
@@ -2325,7 +2270,7 @@ export default function AiConversationSidebar({
                                                     })
                                                 }
                                             >
-                                                {copy('삭제', 'Delete')}
+                                                {t('aiConversationSidebar.delete')}
                                             </button>
                                         </div>
                                     ))}
@@ -2337,7 +2282,7 @@ export default function AiConversationSidebar({
                                     active?.semanticPlan?.reasonCodes.includes('EMPTY_CONDITIONS')
                                 ) && (
                                     <fieldset className="space-y-2 rounded border p-2 text-sm" disabled={busy || running}>
-                                        <legend>{copy('현재 요청 조건', 'Current request conditions')}</legend>
+                                        <legend>{t('aiConversationSidebar.currentConditions')}</legend>
                                         {detail.conversationState.pendingQuestion && (
                                             <p>{detail.conversationState.pendingQuestion.question}</p>
                                         )}
@@ -2358,45 +2303,41 @@ export default function AiConversationSidebar({
                                             </label>
                                         ))}
                                         <select
-                                            aria-label={copy('조건 수정 방식', 'Condition edit mode')}
+                                            aria-label={t('aiConversationSidebar.conditionEditMode')}
                                             value={conditionEdit}
                                             onChange={(event) => setConditionEdit(event.target.value as typeof conditionEdit)}
                                             className="w-full rounded border p-2"
                                         >
                                             <option value="ANSWER">
                                                 {detail.conversationState.pendingQuestion
-                                                    ? copy('질문에 답변', 'Answer question')
-                                                    : copy('조건 추가', 'Add condition')}
+                                                    ? t('aiConversationSidebar.answerQuestion')
+                                                    : t('aiConversationSidebar.addCondition')}
                                             </option>
                                             {detail.conversationState.pendingQuestion && (
-                                                <option value="ADD">{copy('별도 조건 추가', 'Add a separate condition')}</option>
+                                                <option value="ADD">{t('aiConversationSidebar.addSeparateCondition')}</option>
                                             )}
-                                            <option value="UPDATE">{copy('선택한 조건 수정', 'Update selected conditions')}</option>
-                                            <option value="REMOVE">{copy('선택한 조건 삭제', 'Remove selected conditions')}</option>
-                                            <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
+                                            <option value="UPDATE">{t('aiConversationSidebar.updateSelectedConditions')}</option>
+                                            <option value="REMOVE">{t('aiConversationSidebar.removeSelectedConditions')}</option>
+                                            <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
                                         </select>
                                     </fieldset>
                                 )}
                             {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select
-                                    aria-label={copy('조건 수정 방식', 'Revision mode')}
+                                    aria-label={t('aiConversationSidebar.revisionMode')}
                                     value={change}
                                     onChange={(event) => setChange(event.target.value as typeof change)}
                                     className="w-full rounded border p-2 text-sm"
                                 >
-                                    <option value="REPLACE">{copy('이전 제안을 교체', 'Replace the previous proposal')}</option>
-                                    <option value="ADD">{copy('이전 제안에 추가', 'Add to the previous proposal')}</option>
-                                    <option value="RESET">{copy('새 요청으로 시작', 'Start a new request')}</option>
+                                    <option value="REPLACE">{t('aiConversationSidebar.replacePreviousProposal')}</option>
+                                    <option value="ADD">{t('aiConversationSidebar.addToPreviousProposal')}</option>
+                                    <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
                                 </select>
                             )}
-                            {editingRequest && (
-                                <p className="text-[13px] text-[#6B7280]">
-                                    {copy('바꾸고 싶은 부분을 수정해 주세요.', 'Edit the part you want to change.')}
-                                </p>
-                            )}
+                            {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
                             <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
                                 <label className="block text-sm">
-                                    <span className="sr-only">{copy('바꾸고 싶은 내용', 'Your changes')}</span>
+                                    <span className="sr-only">{t('aiConversationSidebar.yourChanges')}</span>
                                     <textarea
                                         ref={textarea}
                                         className="text-gray-1 w-full resize-none bg-transparent text-[14.5px] leading-6 outline-none placeholder:text-[#475467] disabled:opacity-50"
@@ -2410,8 +2351,8 @@ export default function AiConversationSidebar({
                                                 ? t('aiAdjust.chat.replyPlaceholder')
                                                 : semanticExecutionEnabled
                                                   ? requestExamples[0]
-                                                      ? copy(`예: ${requestExamples[0]}`, `E.g. ${requestExamples[0]}`)
-                                                      : copy('바꾸고 싶은 내용을 적어 주세요.', 'Describe what you want to change.')
+                                                      ? t('aiConversationSidebar.examplePlaceholder', {example: requestExamples[0]})
+                                                      : t('aiConversationSidebar.describeChanges')
                                                   : t('aiAdjust.placeholder')
                                         }
                                     />
@@ -2427,12 +2368,12 @@ export default function AiConversationSidebar({
                                                 setEntryChoice(null);
                                             }}
                                         >
-                                            {copy('취소', 'Cancel')}
+                                            {t('aiConversationSidebar.cancel')}
                                         </button>
                                     )}
                                     <button
                                         type="button"
-                                        aria-label={editingRequest ? copy('수정한 요청 확인', 'Review changes') : t('aiAdjust.send')}
+                                        aria-label={editingRequest ? t('aiConversationSidebar.reviewChanges') : t('aiAdjust.send')}
                                         className="ml-auto grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:bg-gray-3"
                                         disabled={busy || running || !text.trim() || !adjustEnabled}
                                         onClick={() => void interpret()}
@@ -2455,9 +2396,7 @@ export default function AiConversationSidebar({
                             </div>
                             {requestToolsOpen && !!text.trim() && (
                                 <div className="rounded-xl bg-[#F7F8FA] p-3">
-                                    <p className="mb-2 text-[13px] text-[#6B7280]">
-                                        {copy('다음에도 쓰고 싶은 요청을 저장해 둘 수 있어요.', 'Save this request to use it again.')}
-                                    </p>
+                                    <p className="mb-2 text-[13px] text-[#6B7280]">{t('aiConversationSidebar.saveRequestHint')}</p>
                                     <button
                                         className={buttonClass}
                                         disabled={busy || !text.trim()}
