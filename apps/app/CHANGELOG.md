@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.18
+
+### Patch Changes
+
+- b6d925b: 여러 근무 조건 충돌의 대상과 근거를 함께 표시하고 검증된 수정안을 선택할 수 있도록 안내합니다.
+    - @dutying/api@1.3.18
+    - @dutying/domain@1.3.18
+    - @dutying/utils@1.3.18
+
 ## 1.3.17
 
 ### Patch Changes

@@ -41,8 +41,8 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         response.conflictReview && Array.isArray(response.engineResult?.solver?.conflictEvidence)
             ? (response.engineResult.solver.conflictEvidence as Record<string, unknown>[])
             : response.engineResult?.violations;
-    const monthlyCapacity = ['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')
-        ? capacityEvidence?.find(
+    const monthlyCapacities = ['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')
+        ? capacityEvidence?.filter(
               (issue) =>
                   issue != null &&
                   typeof issue === 'object' &&
@@ -63,19 +63,82 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                   issue.minimumAssignments > issue.maximumAssignments &&
                   issue.excessAssignments === issue.minimumAssignments - issue.maximumAssignments,
           )
-        : undefined;
-    if (monthlyCapacity) {
+        : [];
+    const explanations = (monthlyCapacities ?? []).map((monthlyCapacity) =>
+        i18n.t('aiAdjust.executionFailure.monthlyCapacity', {
+            shifts: (monthlyCapacity.shiftCodes as string[]).join('·'),
+            minimum: monthlyCapacity.minimumAssignments,
+            maximum: monthlyCapacity.maximumAssignments,
+            difference: monthlyCapacity.excessAssignments,
+        }),
+    );
+    const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
+    const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if (['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')) {
+        for (const issue of capacityEvidence ?? []) {
+            const name =
+                typeof issue.nurseName === 'string' && issue.nurseName.trim()
+                    ? issue.nurseName.trim().slice(0, 80)
+                    : i18n.t('aiAdjust.executionFailure.affectedNurse');
+            if (
+                issue.type === 'WORK_REST_AVAILABILITY_CONFLICT' &&
+                validCount(issue.forcedWorkDays) &&
+                validCount(issue.maximum) &&
+                issue.forcedWorkDays > issue.maximum &&
+                validDate(issue.startDate) &&
+                validDate(issue.endDate)
+            ) {
+                explanations.push(
+                    i18n.t('aiAdjust.executionFailure.workRestEvidence', {
+                        name,
+                        start: issue.startDate,
+                        end: issue.endDate,
+                        days: issue.forcedWorkDays,
+                        maximum: issue.maximum,
+                    }),
+                );
+            }
+            if (
+                issue.type === 'MONTHLY_ASSIGNMENT_CAPACITY_CONFLICT' &&
+                validCount(issue.minimumAssignments) &&
+                validCount(issue.maximumAssignments) &&
+                issue.minimumAssignments > issue.maximumAssignments
+            ) {
+                explanations.push(
+                    i18n.t('aiAdjust.executionFailure.monthlyAssignmentEvidence', {
+                        name,
+                        minimum: issue.minimumAssignments,
+                        maximum: issue.maximumAssignments,
+                    }),
+                );
+            }
+            if (
+                issue.type === 'STAFF_COUNT_BOUNDS_CONFLICT' &&
+                validDate(issue.date) &&
+                typeof issue.shiftCode === 'string' &&
+                issue.shiftCode.length <= 40 &&
+                validCount(issue.minimum) &&
+                validCount(issue.maximum) &&
+                issue.minimum > issue.maximum
+            ) {
+                explanations.push(
+                    i18n.t('aiAdjust.executionFailure.staffingConflict', {
+                        date: issue.date,
+                        shift: issue.shiftCode,
+                        minimum: issue.minimum,
+                        maximum: issue.maximum,
+                    }),
+                );
+            }
+        }
+    }
+    if (explanations.length) {
         const review = Boolean(response.conflictReview);
         return {
             message:
-                i18n.t('aiAdjust.executionFailure.monthlyCapacity', {
-                    shifts: (monthlyCapacity.shiftCodes as string[]).join('·'),
-                    minimum: monthlyCapacity.minimumAssignments,
-                    maximum: monthlyCapacity.maximumAssignments,
-                    difference: monthlyCapacity.excessAssignments,
-                }) +
+                [...new Set(explanations)].map((line, index) => `${index + 1}. ${line}`).join('\n\n') +
                 '\n\n' +
-                i18n.t(review ? 'aiAdjust.executionFailure.monthlyCapacityReview' : 'aiAdjust.executionFailure.monthlyCapacityNext'),
+                i18n.t(review ? 'aiAdjust.executionFailure.monthlyCapacityReview' : 'aiAdjust.executionFailure.combinedConflictNext'),
             blocked: false,
             recovery: review ? 'review' : 'revise',
             ...(review ? {confirmationRequired: true} : {conditionConflict: true}),

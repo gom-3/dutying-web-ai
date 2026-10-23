@@ -244,7 +244,12 @@ describe('monthly staffing capacity evidence', () => {
             applicable: false,
             sameAsPrevious: true,
             unmetInstructions: [],
-            validation: {draftRevision: 1, rulesHash: 'test', summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
+            validation: {
+                draftRevision: 1,
+                rulesHash: 'test',
+                summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                violations: [],
+            },
             engineResult: {
                 status: review ? 'CONFLICT_REVIEW' : 'INFEASIBLE',
                 violations: review ? [] : [issue],
@@ -277,5 +282,47 @@ describe('monthly staffing capacity evidence', () => {
         const value = response();
         value.engineResult!.violations = [{...issue, excessAssignments: 25}];
         expect(aiExecutionFailure(value)?.message).not.toContain('204');
+    });
+});
+
+describe('combined conflict evidence', () => {
+    it.each(['ko', 'ja', 'en'])('shows all proven conflicts before consent in %s', async (locale) => {
+        const previous = i18n.language;
+        try {
+            await i18n.changeLanguage(locale);
+            const result = aiExecutionFailure({
+                engineResult: {
+                    status: 'CONFLICT_REVIEW',
+                    solver: {
+                        conflictEvidence: [
+                            {
+                                type: 'WORK_REST_AVAILABILITY_CONFLICT',
+                                nurseName: 'A',
+                                forcedWorkDays: 19,
+                                maximum: 5,
+                                startDate: '2026-11-01',
+                                endDate: '2026-11-19',
+                            },
+                            {type: 'MONTHLY_ASSIGNMENT_CAPACITY_CONFLICT', nurseName: 'A', minimumAssignments: 28, maximumAssignments: 21},
+                            {
+                                type: 'MONTHLY_STAFFING_CAPACITY_CONFLICT',
+                                shiftCodes: ['D', 'E'],
+                                minimumAssignments: 213,
+                                maximumAssignments: 180,
+                                excessAssignments: 33,
+                            },
+                        ],
+                    },
+                },
+                conflictReview: {token: 'verified', expiresAt: '2026-11-01T00:00:00Z', violations: []},
+            } as unknown as TAutofillResponse);
+            for (const value of ['19', '5', '28', '21', '213', '180', '33', '2026-11-01']) expect(result?.message).toContain(value);
+            expect(result?.confirmationRequired).toBe(true);
+            expect(result?.recovery).toBe('review');
+            expect(result?.message).not.toContain('aiAdjust.');
+            if (locale === 'ja') expect(result?.message).not.toMatch(/[가-힣]/);
+        } finally {
+            await i18n.changeLanguage(previous);
+        }
     });
 });

@@ -39,6 +39,14 @@ export const aiAdjustJa = {
         close: '閉じる',
     },
     executionFailure: {
+        affectedNurse: '該当する看護師',
+        workRestEvidence:
+            '{{name}}：勤務可能な種類と固定勤務を守ると、{{start}}〜{{end}}は{{days}}日連続の勤務が必要ですが、連続勤務の上限は{{maximum}}日です。',
+        monthlyAssignmentEvidence:
+            '{{name}}：勤務可能な種類と固定勤務を守るには月に最低{{minimum}}回の配置が必要ですが、月の上限は{{maximum}}回です。',
+        combinedConflictNext:
+            '上記の条件を一緒に解決する必要があります。他の必須条件も満たす修正案はまだ確認できていません。設定を直接変更するか、依頼を変更してください。勤務表と設定は変更されていません。',
+
         staffingConflict: '{{date}}・{{shift}}：同じ対象に最低{{minimum}}名と最大{{maximum}}名が同時に指定されています。',
         monthlyCapacity:
             '休日数・勤務可能な種類・月間の勤務回数を守るには、{{shifts}}勤務が合計で最低{{minimum}}回必要ですが、日ごとの人数の上限では合計{{maximum}}回までしか配置できません。{{difference}}回の差があります。',
