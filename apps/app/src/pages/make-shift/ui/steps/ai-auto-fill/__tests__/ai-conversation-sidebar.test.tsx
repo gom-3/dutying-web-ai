@@ -681,6 +681,8 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('shows historical rejected review drafts as failures', async () => {
+        const docBefore = useShiftEditorStore.getState().doc;
+
         current.operations = [
             {
                 ...operation,
@@ -695,9 +697,14 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        expect(await screen.findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
+        expect(
+            await screen.findByText(/AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요/),
+        ).toBeVisible();
+        expect(screen.getByRole('alert')).toHaveTextContent('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
         expect(screen.queryByRole('region', {name: '근무표 결과'})).not.toBeInTheDocument();
         expect(screen.queryByText('근무표를 채웠어요!')).not.toBeInTheDocument();
+        expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+        expect(mocks.execute).not.toHaveBeenCalled();
     });
 
     it('does not claim local application after refreshing a saved APPLIED result', async () => {
@@ -1417,6 +1424,7 @@ describe('persistent schedule sidebar', () => {
         async (reason) => {
             const onGenerated = vi.fn();
             const onPrepareGeneration = vi.fn();
+            const docBefore = useShiftEditorStore.getState().doc;
 
             current.operations = [
                 {
@@ -1447,15 +1455,14 @@ describe('persistent schedule sidebar', () => {
             expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
             expect(onGenerated).not.toHaveBeenCalled();
 
-            if (reason === 'solver_result_validation_unavailable') {
-                await userEvent.click(screen.getByRole('button', {name: /다시 시도하기|Try again/}));
-                expect(onPrepareGeneration).toHaveBeenCalledOnce();
-            } else {
-                expect(screen.queryByRole('button', {name: /다시 시도하기|Try again/})).not.toBeInTheDocument();
-                await userEvent.click(screen.getByRole('button', {name: /요청 수정하기|Edit request/}));
-                expect(screen.getByRole('textbox')).toHaveValue('');
-                expect(screen.getByRole('textbox')).toHaveFocus();
-            }
+            if (reason === 'solver_result_failed_final_gate')
+                expect(screen.getByRole('alert')).toHaveTextContent('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
+
+            expect(screen.getByRole('button', {name: /요청 수정하기|Edit request/})).toBeEnabled();
+            await userEvent.click(screen.getByRole('button', {name: /다시 시도하기|Try again/}));
+            expect(onPrepareGeneration).toHaveBeenCalledOnce();
+            expect(useShiftEditorStore.getState().doc).toBe(docBefore);
+            expect(onGenerated).not.toHaveBeenCalled();
 
             expect(mocks.execute).not.toHaveBeenCalled();
         },

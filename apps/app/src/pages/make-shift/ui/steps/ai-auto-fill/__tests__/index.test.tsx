@@ -515,52 +515,86 @@ describe('AiAutofill blank preview', () => {
     it.each([
         {adjustEnabled: false, warning: '기존 고정표의 11일은 D가 1명씩 부족해요.'},
         {adjustEnabled: false, warning: undefined},
-    ])('blocks legacy review drafts and preserves the table (adjustEnabled=$adjustEnabled, warning=$warning)', async ({adjustEnabled, warning}) => {
-        const doc = makeDoc();
+    ])(
+        'blocks legacy review drafts and preserves the table (adjustEnabled=$adjustEnabled, warning=$warning)',
+        async ({adjustEnabled, warning}) => {
+            const doc = makeDoc();
 
-        seedEditor({...doc, rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})), fixedCells: {}, requestCells: {}});
-        useShiftEditorStore.getState().setAutofillAdjustEnabled(adjustEnabled);
-        mocks.requestAiSchedule.mockImplementation(async (request) => ({
-            ok: true,
-            response: {
-                operationType: 'GENERATE',
-                draftRevision: request.draftRevision,
-                applicable: true,
-                approvable: false,
-                validationTarget: 'RESULT',
-                changedCells: [{cellKey: '10:2026-07-01', shiftNurseId: 10, date: '2026-07-01', wardShiftTypeId: 1, shiftCode: 'D'}],
-                unmetInstructions: warning ? [warning] : [],
-                engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
-            },
-            validation: {
-                draftRevision: request.draftRevision,
-                rulesHash: 'sha256:test',
-                summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
-                violations: [],
-            },
-        }));
+            seedEditor({
+                ...doc,
+                rows: doc.rows.map((row) => ({...row, cells: row.cells.map(() => null)})),
+                fixedCells: {},
+                requestCells: {},
+            });
+            useShiftEditorStore.getState().setAutofillAdjustEnabled(adjustEnabled);
 
-        const user = userEvent.setup();
+            const originalDraft = useShiftEditorStore.getState().doc;
+            const originalRevision = useShiftEditorStore.getState().draftRevision;
 
-        render(<AiAutofill />);
-        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+            mocks.requestAiSchedule.mockImplementation(async (request) => ({
+                ok: true,
+                response: {
+                    operationType: 'GENERATE',
+                    draftRevision: request.draftRevision,
+                    applicable: true,
+                    approvable: false,
+                    validationTarget: 'RESULT',
+                    changedCells: [{cellKey: '10:2026-07-01', shiftNurseId: 10, date: '2026-07-01', wardShiftTypeId: 1, shiftCode: 'D'}],
+                    unmetInstructions: warning ? [warning] : [],
+                    engineResult: {status: 'REJECTED', candidateVisible: true, reviewRequired: true},
+                },
+                validation: {
+                    draftRevision: request.draftRevision,
+                    rulesHash: 'sha256:test',
+                    summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                    violations: [],
+                },
+            }));
 
-        if (screen.queryByRole('button', {name: 'aiAdjust.preparation.fill'})) {
-            await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
-        }
+            const user = userEvent.setup();
 
-        const sidebar = await screen.findByRole('dialog', {name: 'aiAdjust.title'});
+            render(<AiAutofill />);
+            await user.click(screen.getByRole('button', {name: 'auto fill'}));
 
-        expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(adjustEnabled);
-        expect(await within(sidebar).findByText(/필수 조건을 모두 지킨 근무표를 찾지 못했어요/)).toBeVisible();
-        expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '안내 닫기'})).not.toBeInTheDocument();
-        expect(within(sidebar).queryByText('aiAdjust.generationCompleted')).not.toBeInTheDocument();
-        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
-        expect(toast.error).not.toHaveBeenCalled();
-        await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.close'}));
-        expect(screen.queryByRole('dialog', {name: 'aiAdjust.title'})).not.toBeInTheDocument();
-    });
+            if (screen.queryByRole('button', {name: 'aiAdjust.preparation.fill'})) {
+                await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
+            }
+
+            const sidebar = await screen.findByRole('dialog', {name: 'aiAdjust.title'});
+
+            expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(adjustEnabled);
+            expect(
+                await within(sidebar).findByText(
+                    /AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요/,
+                ),
+            ).toBeVisible();
+            expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: '안내 닫기'})).not.toBeInTheDocument();
+            expect(within(sidebar).queryByText('aiAdjust.generationCompleted')).not.toBeInTheDocument();
+            expect(useShiftEditorStore.getState().doc).toBe(originalDraft);
+            expect(useShiftEditorStore.getState().draftRevision).toBe(originalRevision);
+            expect(toast.error).not.toHaveBeenCalled();
+
+            const failedRequest = mocks.requestAiSchedule.mock.calls[0]?.[0];
+
+            await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.failure.retry'}));
+            await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+
+            const retriedRequest = mocks.requestAiSchedule.mock.calls[1]?.[0];
+
+            expect(retriedRequest).toMatchObject({
+                doc: failedRequest.doc,
+                draftRevision: failedRequest.draftRevision,
+                rulesHash: failedRequest.rulesHash,
+            });
+            expect(useShiftEditorStore.getState().doc).toBe(originalDraft);
+            expect(useShiftEditorStore.getState().draftRevision).toBe(originalRevision);
+            expect(failedRequest.doc).toEqual(originalDraft);
+
+            await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.close'}));
+            expect(screen.queryByRole('dialog', {name: 'aiAdjust.title'})).not.toBeInTheDocument();
+        },
+    );
 
     it('shows every shift cell in the preparation chat before autofill starts', async () => {
         const user = userEvent.setup();

@@ -93,12 +93,13 @@ describe('requestAiSchedule', () => {
 
     it.each([
         ['INFEASIBLE', 'HARD_RULE_CONFLICT', 'revise'],
-        ['REJECTED', 'solver_result_failed_final_gate', 'revise'],
+        ['REJECTED', 'solver_result_failed_final_gate', 'retry'],
         ['REJECTED', 'solver_result_validation_unavailable', 'retry'],
         ['REJECTED', 'solver_result_incomplete', 'retry'],
         ['REJECTED', 'contract_locked_empty_cell', 'review'],
         ['REJECTED', 'unsupported_hard_rule', 'revise'],
-        ['ACCEPTED', 'SPRING_HARD_VALIDATION', 'revise'],
+        ['ACCEPTED', 'SPRING_HARD_VALIDATION', 'retry'],
+        ['REJECTED', 'SEMANTIC_RESULT_UNSATISFIED', 'retry'],
         ['REJECTED', 'unrecognized_reason', 'retry'],
     ])('does not apply a candidate rejected by %s / %s and gives a relevant next step', async (status, reason, recovery) => {
         for (const operationType of ['GENERATE', 'ADJUST'] as const) {
@@ -111,12 +112,16 @@ describe('requestAiSchedule', () => {
                 engineResult: {status, solver: {reason}},
             });
 
-            const result = await requestAiSchedule({
+            const operationRequest = {
                 ...request,
                 ...(operationType === 'ADJUST' ? {adjust: {strength: 'NORMAL' as const}} : {}),
-            });
+            };
+            const originalRequest = structuredClone(operationRequest);
+            const result = await requestAiSchedule(operationRequest);
 
             expect(result).toMatchObject({ok: false, failure: {recovery, blocked: false}});
+            expect(result).not.toHaveProperty('response');
+            expect(operationRequest).toEqual(originalRequest);
             expect(!result.ok && result.message).not.toMatch(/검토용|승인 조건|unrecognized_reason/);
             expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
         }
@@ -138,13 +143,15 @@ describe('requestAiSchedule', () => {
 
         const result = await requestAiSchedule(request);
 
-        expect(result).toMatchObject({ok: false, failure: {recovery: 'revise'}});
+        expect(result).toMatchObject({ok: false, failure: {recovery: 'retry'}});
+        expect(result).not.toHaveProperty('response');
 
         apiGenerate.mockResolvedValue({...review, operationType: 'ADJUST'});
 
         const adjustResult = await requestAiSchedule({...request, adjust: {strength: 'NORMAL'}});
 
-        expect(adjustResult.ok).toBe(false);
+        expect(adjustResult).toMatchObject({ok: false, failure: {recovery: 'retry'}});
+        expect(adjustResult).not.toHaveProperty('response');
     });
 
     it('rejects accepted applicable responses with remaining hard violations even without a review flag', async () => {
@@ -154,7 +161,7 @@ describe('requestAiSchedule', () => {
             engineResult: {status: 'ACCEPTED'},
             validation: {...response.validation, summary: {...response.validation.summary, valid: false, hardCount: 1}},
         });
-        expect(await requestAiSchedule(request)).toMatchObject({ok: false, failure: {recovery: 'revise'}});
+        expect(await requestAiSchedule(request)).toMatchObject({ok: false, failure: {recovery: 'retry'}});
     });
 
     it.each([undefined, false])('keeps rejected drafts blocked without explicit reviewRequired=%s', async (reviewRequired) => {

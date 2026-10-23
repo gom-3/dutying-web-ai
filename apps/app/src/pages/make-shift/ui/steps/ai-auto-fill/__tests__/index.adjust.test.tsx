@@ -1465,31 +1465,31 @@ describe('AiAutofill adjust panel', () => {
             expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
 
-            if (reason === 'solver_result_failed_final_gate') {
-                expect(screen.queryByRole('button', {name: 'aiAdjust.failure.retry'})).not.toBeInTheDocument();
-                await user.click(screen.getByRole('button', {name: 'aiAdjust.executionFailure.review'}));
-                expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
-                await user.click(screen.getByRole('button', {name: 'aiAdjust.executionFailure.openChat'}));
-                await user.click(screen.getByRole('button', {name: 'aiAdjust.issue.edit'}));
-                expect(screen.getByRole('textbox')).toHaveValue('');
-                expect(screen.getByRole('textbox')).toHaveFocus();
-                expect(screen.getByRole('log').textContent).toContain(message);
-                expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
-            } else {
-                mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-01', 'O')], 'ADJUST'));
-                await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
-                await screen.findByRole('region', {name: DECISION_TITLE});
-                expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
-                await finishAdjustmentPreparation(user);
-                await waitFor(() => expect(rowCells('11')?.[0]).toBe('O'));
-                expect(mocks.requestAiSchedule.mock.calls[2]?.[0].idempotencyKey).not.toBe(
-                    mocks.requestAiSchedule.mock.calls[1]?.[0].idempotencyKey,
-                );
-                expect(screen.getByRole('log').textContent).toContain(message);
-                expect(screen.getByRole('log').textContent).toMatch(
-                    /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*근무표를 조정했어요!/,
-                );
-            }
+            if (reason === 'solver_result_failed_final_gate') expect(message).toContain('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
+
+            const failedRequest = mocks.requestAiSchedule.mock.calls[1]![0];
+
+            expect(screen.getByRole('button', {name: 'aiAdjust.issue.edit'})).toBeEnabled();
+            mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-01', 'O')], 'ADJUST'));
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
+            await screen.findByRole('region', {name: DECISION_TITLE});
+            expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
+            expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
+            await finishAdjustmentPreparation(user);
+            await waitFor(() => expect(rowCells('11')?.[0]).toBe('O'));
+
+            const retriedRequest = mocks.requestAiSchedule.mock.calls[2]![0];
+
+            expect(failedRequest.idempotencyKey).toEqual(expect.any(String));
+            expect(retriedRequest.idempotencyKey).toEqual(expect.any(String));
+            expect(retriedRequest.idempotencyKey).not.toBe(failedRequest.idempotencyKey);
+            expect(retriedRequest.adjust).toEqual(failedRequest.adjust);
+            expect(retriedRequest.doc).toEqual(failedRequest.doc);
+            expect(retriedRequest.lockedCellKeys).toEqual(failedRequest.lockedCellKeys);
+            expect(screen.getByRole('log').textContent).toContain(message);
+            expect(screen.getByRole('log').textContent).toMatch(
+                /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*근무표를 조정했어요!/,
+            );
         },
     );
 
