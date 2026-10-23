@@ -1,5 +1,6 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
@@ -16,6 +17,7 @@ type TProps = {
 
 export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, onEditSettings, requestSummary}: TProps) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const [submitting, setSubmitting] = useState(false);
     const inFlight = useRef(false);
     const [failed, setFailed] = useState(false);
@@ -78,7 +80,7 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
             aria-busy={submitting}
         >
             <p className="font-medium">{t('aiAutofillUi.conflictReview.question')}</p>
-            {review.explanation && <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>}
+            {i18n.language.startsWith('ko') && review.explanation && <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>}
             {requestSummary && (
                 <div className="rounded-lg bg-white p-3 text-sm">
                     <p className="font-medium">{t('aiAutofillUi.conflictReview.understood')}</p>
