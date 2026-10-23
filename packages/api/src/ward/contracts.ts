@@ -854,6 +854,8 @@ export type TAutofillResponse = {
     sameAsPrevious: boolean;
     /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
+        /** Structured, proven preflight conflicts; never infer from arbitrary error text. */
+        violations?: Array<Record<string, unknown>>;
         /** Complete generated draft with known unmet rules; approval remains separate. */
         candidateVisible?: boolean;
         reviewRequired?: boolean;

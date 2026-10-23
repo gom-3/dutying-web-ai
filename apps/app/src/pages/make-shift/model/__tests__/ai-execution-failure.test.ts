@@ -191,3 +191,38 @@ describe('fixed rest target conflict', () => {
         }
     });
 });
+
+describe('proven staffing conflict details', () => {
+    const response = (status: string, minimum: unknown, maximum: unknown): TAutofillResponse => ({
+        operationType: 'GENERATE',
+        draftRevision: 1,
+        resultType: 'PATCH',
+        applicable: false,
+        changedCells: [],
+        unmetInstructions: [],
+        sameAsPrevious: true,
+        validation: {
+            draftRevision: 1,
+            rulesHash: 'test',
+            summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+            violations: [],
+        },
+        engineResult: {status, violations: [{type: 'STAFF_COUNT_BOUNDS_CONFLICT', date: '2026-11-02', shiftCode: 'N12', minimum, maximum}]},
+    });
+    it('keeps the concrete conflict visible even when no verified proposal exists', () => {
+        const failure = aiExecutionFailure(response('INFEASIBLE', 4, 3));
+        expect(failure?.message).toContain('2026-11-02');
+        expect(failure?.message).toContain('최소 4명과 최대 3명');
+        expect(failure?.conditionConflict).toBe(true);
+        expect(failure?.confirmationRequired).not.toBe(true);
+        expect(failure?.recovery).toBe('revise');
+    });
+    it.each([
+        ['REJECTED', 4, 3],
+        ['INFEASIBLE', 3, 4],
+        ['INFEASIBLE', '4', 3],
+        ['INFEASIBLE', 4, -1],
+    ])('does not claim a proven conflict from invalid evidence %s %s %s', (status, minimum, maximum) => {
+        expect(aiExecutionFailure(response(String(status), minimum, maximum))?.conditionConflict).not.toBe(true);
+    });
+});
