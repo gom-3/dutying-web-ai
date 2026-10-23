@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.16
+
+### Patch Changes
+
+- d58b70b: 전화번호를 입력하지 않은 병동 연동 신청도 대기 목록에서 확인하고 팀에 추가할 수 있도록 수정했어요.
+- Updated dependencies [d58b70b]
+    - @dutying/domain@1.3.16
+    - @dutying/api@1.3.16
+    - @dutying/utils@1.3.16
+
 ## 1.3.14
 
 ### Patch Changes
