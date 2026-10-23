@@ -2813,6 +2813,10 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                 disabled={isAiGenerating}
                                 copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
                                 onProceed={pendingConflict.proceed}
+                                onEditSettings={() => {
+                                    setPendingConflict(null);
+                                    (onOpenConstraints ?? (() => useCase.goToStep(2)))();
+                                }}
                                 onRevise={() => {
                                     setPendingConflict(null);
                                     setIsAdjustDialogOpen(true);

@@ -23,10 +23,20 @@ describe('conflicting condition consent', () => {
     it('shows the exact violation and never executes without Yes', () => {
         const proceed = vi.fn(async () => {});
         const revise = vi.fn();
-        render(<ConstraintConflictReview review={review} current disabled={false} onProceed={proceed} onRevise={revise} copy={copy} />);
+        render(
+            <ConstraintConflictReview
+                review={review}
+                current
+                disabled={false}
+                onProceed={proceed}
+                onRevise={revise}
+                onEditSettings={vi.fn()}
+                copy={copy}
+            />,
+        );
         expect(screen.getByText(review.violations[0].message)).toBeInTheDocument();
         expect(proceed).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: '요청 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '요청 바꾸기'}));
         expect(revise).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
     });
@@ -42,6 +52,7 @@ describe('conflicting condition consent', () => {
                 disabled={false}
                 onProceed={vi.fn(async () => {})}
                 onRevise={vi.fn()}
+                onEditSettings={vi.fn()}
                 copy={copy}
             />,
         );
@@ -51,10 +62,20 @@ describe('conflicting condition consent', () => {
     });
     it('proceeds on Yes and permits recovery after a failed send', async () => {
         const proceed = vi.fn(async () => {});
-        render(<ConstraintConflictReview review={review} current disabled={false} onProceed={proceed} onRevise={vi.fn()} copy={copy} />);
-        fireEvent.click(screen.getByRole('button', {name: '이번에는 진행'}));
+        render(
+            <ConstraintConflictReview
+                review={review}
+                current
+                disabled={false}
+                onProceed={proceed}
+                onRevise={vi.fn()}
+                onEditSettings={vi.fn()}
+                copy={copy}
+            />,
+        );
+        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
         expect(proceed).toHaveBeenCalledOnce();
-        await waitFor(() => expect(screen.getByRole('button', {name: '요청 수정'})).toBeEnabled());
+        await waitFor(() => expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled());
     });
     it.each([false, true])('blocks stale or expired candidates (expired=%s)', (expired) => {
         const proceed = vi.fn(async () => {});
@@ -65,12 +86,33 @@ describe('conflicting condition consent', () => {
                 disabled={false}
                 onProceed={proceed}
                 onRevise={vi.fn()}
+                onEditSettings={vi.fn()}
                 copy={copy}
             />,
         );
-        expect(screen.getByRole('button', {name: '이번에는 진행'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '요청 수정'})).toBeEnabled();
-        fireEvent.click(screen.getByRole('button', {name: '이번에는 진행'}));
+        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        expect(proceed).not.toHaveBeenCalled();
+    });
+    it('shows understood intent and opens settings without applying a proposal', () => {
+        const settings = vi.fn();
+        const proceed = vi.fn(async () => {});
+        render(
+            <ConstraintConflictReview
+                review={review}
+                current
+                disabled={false}
+                requestSummary="월요일은 3명, 나머지 평일은 4명"
+                onProceed={proceed}
+                onRevise={vi.fn()}
+                onEditSettings={settings}
+                copy={copy}
+            />,
+        );
+        expect(screen.getByText('월요일은 3명, 나머지 평일은 4명')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
+        expect(settings).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
     });
 });

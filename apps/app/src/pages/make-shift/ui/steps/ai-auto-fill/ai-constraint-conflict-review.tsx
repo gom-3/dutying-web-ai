@@ -8,10 +8,12 @@ type TProps = {
     current: boolean;
     onProceed: () => Promise<void>;
     onRevise: () => void;
+    onEditSettings: () => void;
+    requestSummary?: string;
     copy: (ko: string, en: string) => string;
 };
 
-export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, copy}: TProps) {
+export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, onEditSettings, requestSummary, copy}: TProps) {
     const [choice, setChoice] = useState<'proceed' | 'revise'>();
     const expiry = Date.parse(review.expiresAt);
     const available = current && Number.isFinite(expiry) && expiry > Date.now();
@@ -41,11 +43,19 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
             aria-label={copy('조건 충돌 확인', 'Review conflicting conditions')}
         >
             <p className="font-medium">
-                {copy(
-                    '다음 조건을 지키지 못해요. 이번 수정에 한해 진행할까요?',
-                    'These conditions cannot be met. Proceed with these exceptions for this change?',
-                )}
+                {copy('함께 맞추기 어려운 조건이 있어요. 어떻게 진행할까요?', 'Some conditions conflict. How would you like to proceed?')}
             </p>
+            {review.explanation && <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>}
+            {requestSummary && (
+                <div className="rounded-lg bg-white p-3 text-sm">
+                    <p className="font-medium">{copy('이렇게 이해했어요. 맞나요?', 'Is this what you meant?')}</p>
+                    <p className="mt-1 whitespace-pre-wrap">{requestSummary}</p>
+                    <p className="mt-2">
+                        {copy('의도와 다르면 아래에서 요청을 바꿔 주세요.', 'If this is not what you meant, change your request below.')}
+                    </p>
+                </div>
+            )}
+            <p className="text-sm font-medium">{copy('제가 제안한 표에서는 이렇게 달라져요', 'What changes in the proposed schedule')}</p>
             <ul className="list-disc space-y-1 pl-5">
                 {review.violations.map((violation, index) => (
                     <li key={violation.violationId ?? index}>
@@ -58,7 +68,7 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
             </ul>
             <p className="text-sm">
                 {copy(
-                    '진행하면 이 결과를 적용하고, 지키지 못한 조건은 빨간색으로 표시해요. 원래 조건 설정은 유지돼요.',
+                    '제안대로 수정하면 위 내용을 이번 표에만 반영해요. 맞추지 못한 조건은 빨간색으로 표시하고, 병동의 원래 설정은 바꾸지 않아요.',
                     'Proceeding applies this result and marks unmet conditions in red. Your original settings stay the same.',
                 )}
             </p>
@@ -79,7 +89,7 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
                         void onProceed().finally(() => setChoice(undefined));
                     }}
                 >
-                    {copy('이번에는 진행', 'Proceed this time')}
+                    {copy('제안대로 이번 표 수정', 'Apply this proposal to the schedule')}
                 </button>
                 <button
                     className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
@@ -89,7 +99,15 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
                         onRevise();
                     }}
                 >
-                    {copy('요청 수정', 'Edit request')}
+                    {copy('요청 바꾸기', 'Change my request')}
+                </button>
+                <button
+                    type="button"
+                    className="min-h-11 rounded-lg border px-4 py-2 disabled:opacity-40"
+                    disabled={disabled || choice !== undefined}
+                    onClick={onEditSettings}
+                >
+                    {copy('설정 직접 수정', 'Edit settings myself')}
                 </button>
             </div>
         </section>
