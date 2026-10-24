@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.22
+
+### Patch Changes
+
+- 6c64b90: 연차 유형이 없을 때 입력할 수 없는 이유와 다음 설정 위치를 안내합니다.
+    - @dutying/api@1.3.22
+    - @dutying/domain@1.3.22
+    - @dutying/utils@1.3.22
+
 ## 1.3.21
 
 ### Patch Changes

@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.22 - 2026-10-25
+
+- `@dutying/app` (patch): 연차 유형이 없을 때 입력할 수 없는 이유와 다음 설정 위치를 안내합니다.
+
 ## 1.3.21 - 2026-10-24
 
 - `@dutying/app` (patch), `@dutying/domain` (patch): 가능 근무에서 휴무 유형을 분리하고 개인별 월 OFF 목표와 연차 배정 일수를 관리합니다. 기존 근무표와 휴무 설정은 보존합니다.
