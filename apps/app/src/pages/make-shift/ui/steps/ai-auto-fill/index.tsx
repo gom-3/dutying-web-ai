@@ -14,6 +14,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import {useAnnualLeaveSchedule} from '@/features/annual-leave/queries';
 import {useAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import useAuth from '@/features/auth';
+import {PersonalRestTeamPanel} from '@/features/personal-rest-policy';
 import useAuthStore from '@/features/auth/model/store';
 import {commercialGet} from '@/features/commercial/api';
 import {batchCellsForReview, type CommercialBatchResult} from '@/features/commercial/batch-result';
@@ -2730,6 +2731,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         </button>
                     </div>
                 )}
+                {orderedShift && <PersonalRestTeamPanel shift={orderedShift} year={year} month={month} disabled={isAiGenerating} />}
                 <AiAutofillToolbar
                     displaySettings={
                         <ScheduleDisplayMenu

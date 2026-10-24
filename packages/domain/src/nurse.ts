@@ -5,6 +5,8 @@ export type TNurseShiftType = {
     wardShiftTypeId?: number;
     name: string;
     shortName: string;
+    classification?: string;
+    isOff?: boolean;
     isPossible: boolean;
     isPreferred: boolean;
     targetRatioWeight?: number;
