@@ -9,6 +9,8 @@ import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {getNurseDrawerFeedback, hasNurseChanges} from '../model/nurse-edit';
 
+import {isRestShiftOption} from '../model/nurse-shift-types';
+
 const GENDER_MALE = '\uB0A8';
 const GENDER_FEMALE = '\uC5EC';
 
@@ -148,7 +150,7 @@ function NurseEditDrawer() {
                     <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">{t('page.member.detail.shiftTypesHint')}</p>
                 </div>
                 <div className="flex gap-5.5">
-                    {writeNurse?.nurseShiftTypes.slice(0, 3).map(({nurseShiftTypeId, isPossible, name}) => (
+                    {writeNurse?.nurseShiftTypes.filter((type) => !isRestShiftOption(type)).map(({nurseShiftTypeId, isPossible, name}) => (
                         <div
                             key={nurseShiftTypeId}
                             className={`flex h-10 flex-1 items-center justify-center rounded-[.3125rem] border-[.0625rem] font-apple text-[1.25rem] ${isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} ${isPossible ? 'border-main-1 text-main-1' : 'border-sub-4 text-sub-3'} `}
