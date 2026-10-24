@@ -1,3 +1,4 @@
+import {failureMessagePoints} from '../../../model/failure-message-points';
 import {Children, type ReactNode} from 'react';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -16,6 +17,7 @@ export function AiFailureMessage({
     headerAction?: ReactNode;
 }) {
     const {t} = useTypedTranslation();
+    const points = failureMessagePoints(message);
     const resolvedTitle = title ?? t('aiAdjust.failure.title');
     const content = Children.toArray(children);
     const wrapping = i18n.resolvedLanguage?.startsWith('ja') ? 'break-normal' : 'break-keep';
@@ -29,7 +31,9 @@ export function AiFailureMessage({
                             <AiConversationOutcomeIcon status="failure" label={resolvedTitle} />
                             <p className={`text-base leading-6 font-semibold ${wrapping} text-[#333D4B]`}>{resolvedTitle}</p>
                         </div>
-                        <p className={`mt-2 text-[14px] leading-6 ${wrapping} whitespace-pre-line text-[#667085]`}>{message}</p>
+                        <ul className={`mt-2 list-disc space-y-2 pl-5 text-[14px] leading-6 ${wrapping} text-[#667085]`}>
+                            {points.map((point, index) => <li key={index}>{point}</li>)}
+                        </ul>
                     </div>
                     {headerAction && <div className="absolute top-0 right-0">{headerAction}</div>}
                 </div>

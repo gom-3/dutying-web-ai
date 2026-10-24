@@ -113,3 +113,10 @@ it('keeps settings available when request adjustment is unavailable', () => {
     fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
     expect(settings).toHaveBeenCalledTimes(1);
 });
+
+it('renders failure reasons as semantic bullet items', () => {
+    render(<AiExecutionFailure failure={{message: '생성을 완료하지 못했어요.\n• 기존 표는 그대로예요.', blocked: false}} />);
+    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+        '생성을 완료하지 못했어요.', '기존 표는 그대로예요.',
+    ]);
+});
