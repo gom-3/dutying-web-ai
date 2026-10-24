@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.20
+
+### Patch Changes
+
+- dbb4068: 자동완성·조절 실패 안내를 문장별 목록으로 표시해 원인과 다음 행동을 읽기 쉽게 개선했습니다.
+    - @dutying/api@1.3.20
+    - @dutying/domain@1.3.20
+    - @dutying/utils@1.3.20
+
 ## 1.3.19
 
 ### Patch Changes

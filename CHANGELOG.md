@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.20 - 2026-10-24
+
+- `@dutying/app` (patch): 자동완성·조절 실패 안내를 문장별 목록으로 표시해 원인과 다음 행동을 읽기 쉽게 개선했습니다.
+
 ## 1.3.19 - 2026-10-24
 
 - `@dutying/app` (patch): 조건 편집 중 서로 맞지 않는 월 최소·최대 근무 횟수를 함께 안내하고 해당 조건으로 이동할 수 있도록 개선했습니다.
