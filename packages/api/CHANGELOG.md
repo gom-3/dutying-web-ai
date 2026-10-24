@@ -1,5 +1,12 @@
 # @dutying/api
 
+## 1.3.21
+
+### Patch Changes
+
+- Updated dependencies [4d4649f]
+    - @dutying/domain@1.3.21
+
 ## 1.3.20
 
 ### Patch Changes
