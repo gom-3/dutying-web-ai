@@ -29,6 +29,16 @@ beforeEach(() => {
     put.mockResolvedValue({data: {...policy, offDays: 9, annualDaysByWardShiftTypeId: {'3': 2}, version: 0}});
 });
 describe('personal monthly rest targets', () => {
+    it('explains the missing annual type and next setting without saving', async () => {
+        render(<PersonalRestPolicy nurseId={1} nurseName="합성" shiftTypes={[]} year={2026} month={11} />);
+
+        const details = screen.getByText(/합성 ·/).closest('details')!;
+
+        details.open = true;
+        fireEvent(details, new Event('toggle'));
+        expect(await screen.findByText(/연차 유형이 등록되어 있지 않아/)).toHaveTextContent('근무 설정에서 연차 유형을 등록');
+        expect(put).not.toHaveBeenCalled();
+    });
     it('saves separate OFF and annual targets without any schedule mutation request', async () => {
         render(<PersonalRestPolicy nurseId={1} nurseName="합성" shiftTypes={[annual]} year={2026} month={11} />);
 

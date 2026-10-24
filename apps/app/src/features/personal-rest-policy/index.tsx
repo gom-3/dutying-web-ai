@@ -12,6 +12,7 @@ const copy = {
         month: '적용 월',
         off: '일반 OFF 목표',
         annual: '연차 배정 일수',
+        noAnnualTypes: '연차 유형이 등록되어 있지 않아 연차 일수를 입력할 수 없어요. 근무 설정에서 연차 유형을 등록해 주세요.',
         inherit: '기존 설정 유지',
         save: '이번 달 목표 저장',
         reset: '입력 취소',
@@ -39,6 +40,7 @@ const copy = {
         month: '対象月',
         off: '通常の公休（OFF）日数',
         annual: '年休の割当日数',
+        noAnnualTypes: '年休の種類が登録されていないため、日数を入力できません。勤務設定で年休の種類を登録してください。',
         inherit: '既存の設定を維持',
         save: '今月の目標を保存',
         reset: '入力を取り消す',
@@ -66,6 +68,8 @@ const copy = {
         month: 'Month',
         off: 'Regular OFF target',
         annual: 'Annual leave days',
+        noAnnualTypes:
+            'Annual leave days are unavailable because no annual-leave type is registered. Add an annual-leave type in Shift settings.',
         inherit: 'Keep existing settings',
         save: 'Save targets for this month',
         reset: 'Discard edits',
@@ -269,6 +273,11 @@ export function PersonalRestPolicy({
                             className="min-h-11 rounded border border-gray-5 px-3"
                         />
                     </label>
+                    {annualTypes.length === 0 && (
+                        <ul className="my-3 list-disc pl-5 text-sm">
+                            <li>{text.noAnnualTypes}</li>
+                        </ul>
+                    )}
                     {annualTypes.map((type) => (
                         <label key={type.wardShiftTypeId} className="my-2 grid gap-2">
                             {type.name} · {text.annual}
