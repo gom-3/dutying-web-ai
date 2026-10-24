@@ -25,8 +25,11 @@ import {
     isDefaultMonthlyNurseShiftRatioWeight,
     isMonthlyNurseShiftRatioClassification,
     resolveNurseShiftTypeOptions,
+    isRestShiftOption,
     type TNurseShiftTypeOption,
 } from '../model/nurse-shift-types';
+
+import {PersonalRestPolicy, usePersonalRestText} from '@/features/personal-rest-policy';
 
 export type TNurseDetailDraftActions = {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean};
 
@@ -205,6 +208,7 @@ function NurseDetailPanel({
         actions: {saveNurseDetails, deleteNurse, setNurseDraftDirty, disconnectNurse},
     } = useEditShiftTeam();
     const {t} = useTypedTranslation();
+    const restText = usePersonalRestText();
     const [savedNurseBaseline, setSavedNurseBaseline] = useState<TNurse | null>(null);
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [nameError, setNameError] = useState<'required' | 'invalid' | null>(null);
@@ -848,7 +852,7 @@ function NurseDetailPanel({
                             </Tooltip>
                         </div>
                         <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
-                            {shiftTypeOptions.map((shiftType) => {
+                            {shiftTypeOptions.filter((type) => !isRestShiftOption(type)).map((shiftType) => {
                                 const {isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId} = shiftType;
                                 const baseColor = toShiftTypeColor(
                                     typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined,
@@ -976,6 +980,29 @@ function NurseDetailPanel({
                                 );
                             })}
                         </div>
+                        <details className="mt-4 border-t border-gray-7 pt-3">
+                            <summary className="cursor-pointer py-2 font-semibold">{restText.legacyTitle}</summary>
+                            <p className="my-2 text-sm">{restText.legacyHint}</p>
+                            <ul className="space-y-2">
+                                {shiftTypeOptions.filter(isRestShiftOption).map((type) => (
+                                    <li key={type.apiShiftTypeId}>
+                                        <label className="flex min-h-11 items-center gap-3">
+                                            <input type="checkbox" checked={type.isPossible} disabled={isBusy}
+                                                onChange={(event) => {
+                                                    const checked = event.target.checked;
+                                                    setWriteNurse((previous) => previous ? {...previous,
+                                                        nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
+                                                            item.nurseShiftTypeId === type.apiShiftTypeId ? {...item, isPossible: checked} : item),
+                                                    } : previous);
+                                                }} />
+                                            <span>{type.name} · {type.isPossible ? restText.allowed : restText.blocked}</span>
+                                        </label>
+                                    </li>
+                                ))}
+                            </ul>
+                        </details>
+                        {selectedNurse && selectedNurse.nurseId > 0 && <PersonalRestPolicy key={selectedNurse.nurseId}
+                            nurseId={selectedNurse.nurseId} nurseName={selectedNurse.name} shiftTypes={wardShiftTypes ?? []} />}
                         {ENABLE_MONTHLY_SHIFT_RATIO ? (
                             <div className="mt-3 border-t border-gray-7 pt-3">
                                 <div className="flex items-center justify-between gap-2">

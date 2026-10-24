@@ -102,6 +102,7 @@ export const isDefaultMonthlyNurseShiftRatioWeight = (
     weight: number | null | undefined,
 ) => {
     if (typeof weight !== 'number' || !Number.isFinite(weight)) return true;
+
     if (!isMonthlyNurseShiftRatioClassification(classification)) return Math.round(weight) === DEFAULT_NURSE_SHIFT_RATIO_WEIGHT;
 
     return MONTHLY_NURSE_SHIFT_RATIO_DEFAULTISH_WEIGHTS[classification].has(Math.round(weight));
@@ -177,9 +178,9 @@ export const resolveNurseShiftTypeOptions = (
                 targetRatioWeight: matched?.targetRatioWeight,
                 apiShiftTypeId: matched?.nurseShiftTypeId ?? wardShiftType.wardShiftTypeId,
                 classification: wardShiftType.classification,
+                isOff: wardShiftType.isOff,
             };
         });
-
     const possibleMonthlyOptions = options.flatMap((shiftType) =>
         shiftType.isPossible && isMonthlyNurseShiftRatioClassification(shiftType.classification)
             ? [{...shiftType, classification: shiftType.classification}]
@@ -222,9 +223,14 @@ export const resolveNurseShiftTypeOptions = (
 
         return {
             ...shiftType,
+            classification,
             targetRatioWeight: shouldUseComputedDefaultWeight
                 ? getDefaultMonthlyNurseShiftRatioWeight(classification, possibleClassifications)
                 : shiftType.targetRatioWeight,
         };
     });
 };
+
+/** Missing metadata is not guessed from labels: the API/catalog supplies classification. */
+export const isRestShiftOption = (type: Pick<TNurseShiftType, 'classification' | 'isOff'>) =>
+    type.isOff === true || ['OFF', 'ANNUAL_LEAVE', 'OTHER_LEAVE'].includes(type.classification ?? '');

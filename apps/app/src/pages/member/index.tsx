@@ -35,7 +35,7 @@ import {
     hasNursePreceptorRole,
     type TNurseRoleHelpType,
 } from './model/nurse-role';
-import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
+import {isRestShiftOption, resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
 import {createMoveNurseOrderPayload, createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
 import NurseDetailPanel, {type TNurseDetailDraftActions} from './ui/nurse-detail-panel';
@@ -1941,7 +1941,7 @@ function MemberNurseRow({
         return new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType.color]));
     }, [wardShiftTypes]);
     const shiftTypeOptions = useMemo(() => {
-        return resolveNurseShiftTypeOptions(nurse.nurseShiftTypes, wardShiftTypes);
+        return resolveNurseShiftTypeOptions(nurse.nurseShiftTypes, wardShiftTypes).filter((type) => !isRestShiftOption(type));
     }, [nurse.nurseShiftTypes, wardShiftTypes]);
     const isPreceptor = hasNursePreceptorRole(nurse);
     const isPreceptee = hasNursePrecepteeRole(nurse);
