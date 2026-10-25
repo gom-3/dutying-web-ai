@@ -1877,6 +1877,7 @@ export default function AiConversationSidebar({
                                                         : undefined
                                                 }
                                                 onReview={onOpenConstraints ?? onClose}
+                                                onInspectSchedule={onClose}
                                                 onEditSettings={onOpenConstraints}
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (

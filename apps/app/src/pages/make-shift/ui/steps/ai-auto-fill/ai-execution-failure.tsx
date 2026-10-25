@@ -4,6 +4,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
+import {AiConflictEvidence} from './ai-conflict-evidence';
 import {AiFailureMessage} from './ai-failure-message';
 
 /** The failed result and the next decision belong after the preparation replies. */
@@ -15,6 +16,7 @@ export function AiExecutionFailure({
     onRevise,
     onReview,
     onEditSettings,
+    onInspectSchedule,
     operationType,
     attemptLabel,
     headerAction,
@@ -27,6 +29,7 @@ export function AiExecutionFailure({
     onRevise?: () => void;
     onReview?: () => void;
     onEditSettings?: () => void;
+    onInspectSchedule?: () => void;
     operationType?: 'GENERATE' | 'ADJUST';
     attemptLabel?: string;
     headerAction?: ReactNode;
@@ -65,6 +68,9 @@ export function AiExecutionFailure({
                 title={attemptLabel ? `${title} (${attemptLabel})` : title}
                 headerAction={headerAction}
             >
+                {!!failure.conflicts?.length && (
+                    <AiConflictEvidence failure={failure} active={active} disabled={disabled} onInspect={onInspectSchedule} />
+                )}
                 {!!content.length && <div className="space-y-3">{content}</div>}
                 {showActions && (
                     <div className={`grid w-full gap-2 ${content.length ? 'mt-4' : ''}`}>
