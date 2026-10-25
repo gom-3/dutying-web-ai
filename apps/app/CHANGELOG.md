@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.23
+
+### Patch Changes
+
+- d28d66c: 근무자 확인의 가능 근무에서 OFF·연차·기타휴무를 제외해 개인별 휴무 정책과 구분합니다.
+    - @dutying/api@1.3.23
+    - @dutying/domain@1.3.23
+    - @dutying/utils@1.3.23
+
 ## 1.3.22
 
 ### Patch Changes

@@ -9,6 +9,8 @@ const createNurseShiftType = (params: Partial<TNurseShiftType> & Pick<TNurseShif
     shortName: params.shortName ?? `S${params.nurseShiftTypeId}`,
     isPossible: params.isPossible ?? true,
     isPreferred: params.isPreferred ?? false,
+    classification: params.classification,
+    isOff: params.isOff,
 });
 const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'nurseShiftTypes'>): TNurse => ({
     nurseId: params.nurseId,
@@ -43,6 +45,29 @@ const createWardShiftType = (params: Partial<TWardShiftType> & Pick<TWardShiftTy
 });
 
 describe('buildShiftTypeBadges', () => {
+    it('excludes all rest categories from possible work without excluding a work type named O', () => {
+        const types = ['OFF', 'ANNUAL_LEAVE', 'OTHER_LEAVE', 'OTHER_WORK'] as const;
+        const nurse = createNurse({
+            nurseId: 1,
+            nurseShiftTypes: types.map((classification, index) =>
+                createNurseShiftType({nurseShiftTypeId: index + 1, wardShiftTypeId: index + 1, shortName: 'O', classification}),
+            ),
+        });
+        expect(buildShiftTypeBadges(nurse, undefined).map((badge) => badge.key)).toEqual(['ward-4']);
+        const legacyNurse = createNurse({
+            nurseId: 1,
+            nurseShiftTypes: types.map((_, index) =>
+                createNurseShiftType({nurseShiftTypeId: index + 1, wardShiftTypeId: index + 1, shortName: 'O'}),
+            ),
+        });
+        expect(
+            buildShiftTypeBadges(
+                legacyNurse,
+                types.map((classification, index) => createWardShiftType({wardShiftTypeId: index + 1, shortName: 'O', classification})),
+            ).map((badge) => badge.key),
+        ).toEqual(['ward-4']);
+    });
+
     it('uses ward shift type colors for custom possible shift chips', () => {
         const nurse = createNurse({
             nurseId: 1,
