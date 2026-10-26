@@ -24,7 +24,6 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {interpretIssueCode} from '../../../model/ai-interpret-issues';
-import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {readScheduleChat, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
 import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
@@ -189,9 +188,7 @@ export default function AiAdjustTextInput({
     const {t} = useTypedTranslation();
     const recoveredFailure = useRef<TAiConversationFailure | null>(null);
     const settingsAction = (failure: TAiConversationFailure | undefined) =>
-        failure && onEditFailureSettings && (failure.settingsTarget !== 'rest' || resolveRestConflicts(failure, goalNurses).length)
-            ? () => onEditFailureSettings(failure)
-            : undefined;
+        failure && onEditFailureSettings ? () => onEditFailureSettings(failure) : undefined;
     const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
     const {

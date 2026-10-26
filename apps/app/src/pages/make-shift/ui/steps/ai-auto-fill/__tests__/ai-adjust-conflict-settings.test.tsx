@@ -1,6 +1,6 @@
 import type {TScheduleAdjustInterpretRes} from '@dutying/api/ward';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createRef} from 'react';
 import {beforeEach, expect, it, vi} from 'vitest';
@@ -27,6 +27,8 @@ vi.mock('../../../../model/use-ai-active-conditions', () => ({
         refreshAfterRuleChange: mocks.refresh,
     }),
 }));
+
+vi.mock('../../constraints', () => ({Constraints: () => <p>공통 제약조건 편집기</p>}));
 
 const failure: TAiConversationFailure = {
     message: '이간호: 휴무 목표 9일, 배정 가능 0~8일',
@@ -78,38 +80,23 @@ beforeEach(async () => {
     mocks.put.mockResolvedValue({data: {nurseId: 2, year: 2026, month: 11, offDays: 8, annualDaysByWardShiftTypeId: {}, version: 1}});
     mocks.refresh.mockResolvedValue(undefined);
 });
-it('repairs only the affected setting from the legacy conversation without executing or resetting the conversation', async () => {
+it('opens the common rule editor for a legacy monthly-rest failure without using the separate policy API', async () => {
     mount();
-    await userEvent.click(await screen.findByRole('button', {name: '휴무 설정 수정'}));
+    await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
 
-    const modal = screen.getByRole('dialog', {name: '휴무 설정 충돌'});
+    const modal = screen.getByRole('dialog', {name: '제약조건'});
 
-    expect(within(modal).getByText('이간호')).toBeVisible();
-    expect(within(modal).queryByRole('combobox')).not.toBeInTheDocument();
-
-    const off = await within(modal).findByRole('spinbutton', {name: 'OFF'});
-
-    await userEvent.clear(off);
-    await userEvent.type(off, '8');
-    await userEvent.click(within(modal).getByRole('button', {name: '설정 저장'}));
-    await waitFor(() => expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument());
-    expect(mocks.put).toHaveBeenCalledExactlyOnceWith('/nurses/2/monthly-rest-policy/2026/11', {
-        offDays: 8,
-        annualDaysByWardShiftTypeId: {},
-        version: 0,
-    });
-    expect(mocks.refresh).toHaveBeenCalledOnce();
-    expect(screen.getByText(failure.message)).toBeVisible();
+    expect(modal).toBeVisible();
+    expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+    expect(mocks.get).not.toHaveBeenCalled();
+    expect(mocks.put).not.toHaveBeenCalled();
     expect(generate).not.toHaveBeenCalled();
     expect(interpret).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
 });
-it('links ambiguous rest evidence to the team of the current schedule', async () => {
+it('keeps an unknown old rest identity in the common team rule editor instead of selecting another nurse', async () => {
     mount({...failure, restConflicts: [{...failure.restConflicts![0], nurseId: 999}]});
-
-    const link = await screen.findByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
-
-    expect(link).toHaveAttribute('href', '/member?shiftTeamId=7');
-    expect(screen.queryByRole('button', {name: '휴무 설정 수정'})).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+    expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
     expect(mocks.get).not.toHaveBeenCalled();
 });

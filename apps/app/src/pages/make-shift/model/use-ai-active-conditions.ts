@@ -60,7 +60,7 @@ export function useAiActiveConditions({wardId, teamId, year, month, enabled, onC
 
         const [wardResult, requestResult] = await Promise.allSettled([
             Promise.resolve()
-                .then(() => WardAPI.getShiftConstraintRules(wardId, teamId))
+                .then(() => WardAPI.getShiftConstraintRules(wardId, teamId, year, month))
                 .then((result) => {
                     if (!result || !Array.isArray(result.rules)) throw new Error('Conditions are unavailable');
 

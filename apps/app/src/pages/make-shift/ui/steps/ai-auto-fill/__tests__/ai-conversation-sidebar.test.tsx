@@ -396,13 +396,13 @@ afterEach(() => {
 
 describe('persistent schedule sidebar', () => {
     it('opens personal rest conflict settings in the same sidebar and refreshes the condition context without executing', async () => {
-        const get = vi
-            .spyOn(adminAxiosInstance, 'get')
-            .mockResolvedValue({data: {nurseId: 1, year: 2026, month: 11, offDays: 9, annualDaysByWardShiftTypeId: {}, version: 0}});
-        const put = vi.spyOn(adminAxiosInstance, 'put').mockImplementation(async () => {
+        const get = vi.spyOn(adminAxiosInstance, 'get');
+        const put = vi.spyOn(adminAxiosInstance, 'put');
+
+        mocks.applyConstraints.mockImplementationOnce(async () => {
             current = {...current, contextHash: 'rest:updated'};
 
-            return {data: {nurseId: 1, year: 2026, month: 11, offDays: 8, annualDaysByWardShiftTypeId: {}, version: 1}};
+            return true;
         });
 
         current = {
@@ -437,29 +437,32 @@ describe('persistent schedule sidebar', () => {
         };
 
         const external = vi.fn();
+        const prepareGeneration = vi.fn();
 
-        renderSidebar({onOpenConstraints: external});
-        await userEvent.click(await screen.findByRole('button', {name: '휴무 설정 수정'}));
+        renderSidebar({onOpenConstraints: external, onPrepareGeneration: prepareGeneration});
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
 
-        const off = await screen.findByRole('spinbutton', {name: 'OFF'});
-
-        expect(screen.getByText('김 간호사', {exact: true})).toBeVisible();
-        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-        expect(get).toHaveBeenCalledWith('/nurses/1/monthly-rest-policy/2026/11');
-        await userEvent.clear(off);
-        await userEvent.type(off, '8');
+        expect(await screen.findByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 수정'}));
 
         const previousDoc = structuredClone(useShiftEditorStore.getState().doc);
 
-        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
-        expect(await screen.findByText('휴무 목표를 저장했어요. 다음 자동채우기에서 다른 조건과 함께 확인할게요.')).toBeVisible();
-        expect(put).toHaveBeenCalledOnce();
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        expect(put).not.toHaveBeenCalled();
+        expect(get.mock.calls.some(([url]) => String(url).includes('monthly-rest-policy'))).toBe(false);
         expect(mocks.detail).toHaveBeenCalledTimes(2);
         expect(current.contextHash).toBe('rest:updated');
         expect(useShiftEditorStore.getState().doc).toEqual(previousDoc);
         expect(external).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(await screen.findByText(i18n.t('aiConversationSidebar.conditionsSaved'))).toBeVisible();
+        expect(prepareGeneration).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.retryWithUpdatedConditions')}));
+        expect(prepareGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
     });
 
     it.each(['unknown-rest', 'availability'] as const)(
@@ -508,12 +511,17 @@ describe('persistent schedule sidebar', () => {
 
             renderSidebar();
 
-            const link = await screen.findByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
+            if (kind === 'availability') {
+                const link = await screen.findByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
 
-            expect(link).toHaveAttribute('href', '/member?shiftTeamId=2');
-            expect(link).toHaveAttribute('target', '_blank');
-            expect(screen.queryByRole('button', {name: '휴무 설정 수정'})).not.toBeInTheDocument();
-            expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+                expect(link).toHaveAttribute('href', '/member?shiftTeamId=2');
+                expect(link).toHaveAttribute('target', '_blank');
+            } else {
+                await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+                expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+                expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+            }
+
             expect(get.mock.calls.some(([url]) => String(url).includes('monthly-rest-policy'))).toBe(false);
             expect(mocks.execute).not.toHaveBeenCalled();
         },
@@ -3791,7 +3799,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByText('선택하지 않은 제약조건')).not.toBeInTheDocument();
         expect(screen.queryByText('이미 해제한 AI 요청')).not.toBeInTheDocument();
         expect(screen.queryByText('제약조건으로 옮긴 AI 요청')).not.toBeInTheDocument();
-        expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2);
+        expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.getScheduleMonthRequests).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -3877,13 +3885,10 @@ describe('persistent schedule sidebar', () => {
                 },
             ],
         };
-        vi.spyOn(adminAxiosInstance, 'get').mockResolvedValue({
-            data: {nurseId: 1, year: 2026, month: 11, offDays: 9, annualDaysByWardShiftTypeId: {}, version: 0},
-        });
-        vi.spyOn(adminAxiosInstance, 'put').mockImplementation(async () => {
+        mocks.applyConstraints.mockImplementationOnce(async () => {
             current = {...current, contextHash: 'rules:after-rest-edit'};
 
-            return {data: {nurseId: 1, year: 2026, month: 11, offDays: 8, annualDaysByWardShiftTypeId: {}, version: 1}};
+            return true;
         });
 
         const initialDoc = useShiftEditorStore.getState().doc;
@@ -3893,14 +3898,11 @@ describe('persistent schedule sidebar', () => {
         const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
 
         await waitFor(() => expect(oldPreview).toBeEnabled());
-        await userEvent.click(screen.getByRole('button', {name: '휴무 설정 수정'}));
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
 
-        const off = await screen.findByRole('spinbutton', {name: 'OFF'});
-
-        await userEvent.clear(off);
-        await userEvent.type(off, '8');
-        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument());
+        await userEvent.click(await screen.findByRole('button', {name: '제약조건 수정'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
         expect(oldPreview).toBeDisabled();
         await userEvent.click(oldPreview);
         expect(mocks.confirmPlan).not.toHaveBeenCalled();

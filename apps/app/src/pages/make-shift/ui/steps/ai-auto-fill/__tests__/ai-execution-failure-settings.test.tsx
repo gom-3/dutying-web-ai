@@ -144,7 +144,7 @@ it('opens only the contextual rest repair action when a valid target is availabl
             onEditSettings={settings}
         />,
     );
-    fireEvent.click(screen.getByRole('button', {name: '휴무 설정 수정'}));
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
     expect(settings).toHaveBeenCalledOnce();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
 });

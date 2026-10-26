@@ -7,7 +7,6 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
-import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -208,7 +207,6 @@ export default function AiAdjustDialog({
                     <div className="shrink-0 px-[25px] pb-1">
                         <AiActiveConditions
                             ref={conditionEditor}
-                            restTargets={snapshotShift ? {nurses: goalNurses, shiftTypes: snapshotShift.wardShiftTypes ?? []} : undefined}
                             wardId={wardId!}
                             teamId={teamId!}
                             year={year!}
@@ -246,16 +244,7 @@ export default function AiAdjustDialog({
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
                         settingsHref={teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : undefined}
-                        onEditFailureSettings={
-                            hasConditionContext && snapshotShift
-                                ? (failure) => {
-                                      const conflicts = resolveRestConflicts(failure, goalNurses);
-
-                                      if (conflicts.length) conditionEditor.current?.openRestTargets(conflicts);
-                                      else conditionEditor.current?.openConditions();
-                                  }
-                                : undefined
-                        }
+                        onEditFailureSettings={hasConditionContext ? () => conditionEditor.current?.openConditions() : undefined}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
                         onRecoverGeneration={onRecoverGeneration}
                         disabled={disabled || conditionEditorBusy || activeConditions.removingId !== null}
