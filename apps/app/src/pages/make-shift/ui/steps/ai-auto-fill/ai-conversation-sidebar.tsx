@@ -77,6 +77,7 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    onRecoverGeneration?: () => void;
     onPrepareAdjustment?: () => Promise<void>;
     generationFillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     onClose: () => void;
@@ -120,6 +121,7 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    onRecoverGeneration,
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
     onClose,
@@ -144,6 +146,7 @@ export default function AiConversationSidebar({
     const reviewedPreparation = useRef<string | null>(null);
     const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
+    const recoveredFailures = useRef(new Set<string>());
     const [localEvents, setLocalEvents] = useState<TLocalEvent[]>([]);
     const discardedPreparationId = useRef<number | null>(null);
     const localSequence = useRef(0);
@@ -1338,6 +1341,48 @@ export default function AiConversationSidebar({
             dismissedFailureId !== latestOperation.operationId &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
+    const failure = latestOperation ? operationFailure(latestOperation) : null;
+    const canReviewFixedAfterFailure = Boolean(latestOperation?.operationType === 'GENERATE' && failure?.reviewFixed);
+
+    useEffect(() => {
+        if (
+            !onRecoverGeneration ||
+            !canReviewFixedAfterFailure ||
+            !failureNeedsAction ||
+            !latestOperation ||
+            !open ||
+            loading ||
+            preparing ||
+            busy ||
+            running ||
+            awaitingAdjustment ||
+            error ||
+            entryChoice ||
+            text.trim() ||
+            recoveredFailures.current.has(latestOperation.operationId)
+        )
+            return;
+
+        // Open a review once, never a calculation. Refreshing the failed record
+        // or closing its preparation must not start another attempt.
+        recoveredFailures.current.add(latestOperation.operationId);
+        onRecoverGeneration();
+    }, [
+        onRecoverGeneration,
+        canReviewFixedAfterFailure,
+        failureNeedsAction,
+        latestOperation,
+        open,
+        loading,
+        preparing,
+        busy,
+        running,
+        awaitingAdjustment,
+        error,
+        entryChoice,
+        text,
+    ]);
+
     // Once a request has an execution record, its preview is history. Further
     // actions belong to that execution's result or recovery controls.
     const executedInterpretationIds = new Set(detail?.operations.flatMap((op) => (op.interpretationId ? [op.interpretationId] : [])));
@@ -1876,7 +1921,16 @@ export default function AiConversationSidebar({
                                                           }
                                                         : undefined
                                                 }
-                                                onReview={onOpenConstraints ?? onClose}
+                                                onReview={
+                                                    event.operation === latestOperation && canReviewFixedAfterFailure && onRecoverGeneration
+                                                        ? onRecoverGeneration
+                                                        : (onOpenConstraints ?? onClose)
+                                                }
+                                                reviewLabel={
+                                                    event.operation === latestOperation && canReviewFixedAfterFailure && onRecoverGeneration
+                                                        ? t('aiAdjust.preparation.reviewFixed')
+                                                        : undefined
+                                                }
                                                 onInspectSchedule={onClose}
                                                 onEditSettings={onOpenConstraints}
                                             >

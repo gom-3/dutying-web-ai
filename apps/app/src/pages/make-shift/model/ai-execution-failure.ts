@@ -123,7 +123,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 issue.shiftCodes.length <= 6 &&
                 issue.shiftCodes.every(
                     (code: unknown) =>
-                        typeof code === 'string' && code.length > 0 && code.length <= 32 && !/[\u0000-\u001f\u007f]/.test(code),
+                        typeof code === 'string' &&
+                        code.length > 0 &&
+                        code.length <= 32 &&
+                        [...code].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
                 )
             ) {
                 explanations.push(
@@ -136,6 +139,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     }),
                 );
             }
+
             if (
                 issue.type === 'WORK_REST_AVAILABILITY_CONFLICT' &&
                 validCount(issue.forcedWorkDays) &&
@@ -422,5 +426,6 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         message: i18n.t(`aiAdjust.executionFailure.${key}`),
         blocked: false,
         recovery,
+        ...(key === 'infeasible' && !response.conflictReview && !response.failure?.suggestions?.length ? {reviewFixed: true} : {}),
     };
 }

@@ -15,6 +15,7 @@ export function AiExecutionFailure({
     onRetry,
     onRevise,
     onReview,
+    reviewLabel,
     onEditSettings,
     onInspectSchedule,
     operationType,
@@ -28,6 +29,7 @@ export function AiExecutionFailure({
     onRetry?: () => void;
     onRevise?: () => void;
     onReview?: () => void;
+    reviewLabel?: string;
     onEditSettings?: () => void;
     onInspectSchedule?: () => void;
     operationType?: 'GENERATE' | 'ADJUST';
@@ -106,7 +108,7 @@ export function AiExecutionFailure({
                                 disabled={disabled}
                                 onClick={onReview}
                             >
-                                {t('aiAdjust.executionFailure.review')}
+                                {reviewLabel ?? t('aiAdjust.executionFailure.review')}
                             </button>
                         )}
                     </div>

@@ -77,6 +77,7 @@ type TProps = {
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     onRegenerate?: () => void;
+    onRecoverGeneration?: () => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
 type TTurn = {
@@ -173,9 +174,11 @@ export default function AiAdjustTextInput({
     generationFailure,
     onDismissFailure,
     onRegenerate,
+    onRecoverGeneration,
     ref,
 }: TProps) {
     const {t} = useTypedTranslation();
+    const recoveredFailure = useRef<TAiConversationFailure | null>(null);
     const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
     const [text, setText] = useState('');
@@ -315,6 +318,22 @@ export default function AiAdjustTextInput({
 
         return () => onBusyChange?.(false);
     }, [isBusy, onBusyChange]);
+
+    useEffect(() => {
+        if (
+            !generationFailure?.reviewFixed ||
+            !onRecoverGeneration ||
+            !open ||
+            disabled ||
+            isBusy ||
+            preparing ||
+            recoveredFailure.current === generationFailure
+        )
+            return;
+
+        recoveredFailure.current = generationFailure;
+        onRecoverGeneration();
+    }, [generationFailure, onRecoverGeneration, open, disabled, isBusy, preparing]);
 
     const isConfirming = active?.status === 'confirm';
     const activeRequests = requests.filter((request) => request.status === 'ACTIVE');
@@ -958,7 +977,12 @@ export default function AiAdjustTextInput({
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
                                         onRetry={onRegenerate}
-                                        onReview={onReviewSchedule}
+                                        onReview={turn.failure?.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
+                                        reviewLabel={
+                                            turn.failure?.reviewFixed && onRecoverGeneration
+                                                ? t('aiAdjust.preparation.reviewFixed')
+                                                : undefined
+                                        }
                                         onInspectSchedule={onReviewSchedule}
                                     />
                                 )}
@@ -1015,10 +1039,13 @@ export default function AiAdjustTextInput({
                         operationType="GENERATE"
                         attemptLabel={attemptLabel(1)}
                         failure={generationFailure}
+                        reviewLabel={
+                            generationFailure.reviewFixed && onRecoverGeneration ? t('aiAdjust.preparation.reviewFixed') : undefined
+                        }
                         active
                         disabled={disabled || isBusy}
                         onRetry={onRegenerate}
-                        onReview={onReviewSchedule}
+                        onReview={generationFailure.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
                         onInspectSchedule={onReviewSchedule}
                     />
                 )}

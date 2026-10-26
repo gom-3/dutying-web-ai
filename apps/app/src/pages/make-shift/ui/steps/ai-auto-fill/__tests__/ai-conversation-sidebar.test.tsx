@@ -566,6 +566,124 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
+    it('returns a generic infeasible generation to fixed review once while preserving its failure history', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            },
+        ];
+
+        const onRecoverGeneration = vi.fn();
+        const sidebar = renderSidebar({onRecoverGeneration});
+
+        expect(await screen.findByText('자동채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        await waitFor(() => expect(onRecoverGeneration).toHaveBeenCalledOnce());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        sidebar.rerender(sidebarElement({onRecoverGeneration, preparation: <div>고정한 근무 재확인</div>}));
+        expect(screen.getByText('고정한 근무 재확인')).toBeVisible();
+        expect(screen.getByText('자동채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        sidebar.rerender(sidebarElement({onRecoverGeneration, open: false}));
+        sidebar.rerender(sidebarElement({onRecoverGeneration}));
+        expect(onRecoverGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('waits for the page to finish generation before consuming the recovery transition', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            },
+        ];
+
+        const onRecoverGeneration = vi.fn();
+        const sidebar = renderSidebar({onRecoverGeneration, loading: true});
+
+        await screen.findByRole('alert');
+        expect(onRecoverGeneration).not.toHaveBeenCalled();
+        sidebar.rerender(sidebarElement({onRecoverGeneration, loading: false}));
+        await waitFor(() => expect(onRecoverGeneration).toHaveBeenCalledOnce());
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it.each(['adjustment', 'newer_request', 'settings', 'consent', 'specific_conflict', 'suggestion'])(
+        'preserves the existing recovery route for %s',
+        async (kind) => {
+            const failed: TConversationOperation = {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            };
+
+            if (kind === 'adjustment') failed.operationType = 'ADJUST';
+
+            if (kind === 'newer_request')
+                current.turns = [
+                    {
+                        eventId: 2,
+                        sequence: 2,
+                        actor: 'USER',
+                        type: 'REQUEST_SUBMITTED',
+                        text: '새 요청',
+                        baseRevision: 0,
+                        interpretationId: null,
+                        contextHash: null,
+                        interpretation: null,
+                        createdAt: source.createdAt,
+                    },
+                ];
+
+            if (kind === 'settings') failed.result!.failure = {reasonCode: 'NURSE_OFF_NOT_ALLOWED', message: ''};
+
+            if (kind === 'consent') failed.result!.conflictReview = {token: 'token', expiresAt: '2099-01-01T00:00:00Z', violations: []};
+
+            if (kind === 'specific_conflict')
+                failed.result!.engineResult!.violations = [
+                    {
+                        type: 'WORK_REST_AVAILABILITY_CONFLICT',
+                        nurseName: '합성 간호사',
+                        forcedWorkDays: 6,
+                        maximum: 5,
+                        startDate: '2026-11-01',
+                        endDate: '2026-11-06',
+                    },
+                ];
+
+            if (kind === 'suggestion')
+                failed.result!.failure = {
+                    reasonCode: 'INFEASIBLE',
+                    message: '',
+                    suggestions: [
+                        {
+                            suggestionId: 's',
+                            verificationStatus: 'VERIFIED_FEASIBLE',
+                            applyEnabled: true,
+                            expiresAt: '2099-01-01T00:00:00Z',
+                            baseRevision: 0,
+                            inputDigest: 'digest',
+                            changes: [],
+                        },
+                    ],
+                };
+
+            current.operations = [failed];
+
+            const onRecoverGeneration = vi.fn();
+
+            renderSidebar({onRecoverGeneration});
+            await screen.findByRole('alert');
+            expect(mocks.execute).not.toHaveBeenCalled();
+            expect(onRecoverGeneration).not.toHaveBeenCalled();
+        },
+    );
+
     it('uses natural English while refilling', async () => {
         await i18n.changeLanguage('en');
         current.operations = [
