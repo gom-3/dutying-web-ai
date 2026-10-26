@@ -3,11 +3,13 @@ import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutyi
 import {useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
-import {AiActiveConditions} from './ai-active-conditions';
+import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
 import type {TAutofillFlow} from './ai-autofill-preparation';
@@ -110,6 +112,7 @@ export default function AiAdjustDialog({
 }: TProps) {
     const {t} = useTypedTranslation();
     const panel = useRef<HTMLElement>(null);
+    const conditionEditor = useRef<TActiveConditionsHandle>(null);
     const input = useRef<TAdjustTextInputHandle>(null);
     const [inputBusy, setInputBusy] = useState(false);
     const [conditionEditorBusy, setConditionEditorBusy] = useState(false);
@@ -204,6 +207,7 @@ export default function AiAdjustDialog({
                 {hasConditionContext && (
                     <div className="shrink-0 px-[25px] pb-1">
                         <AiActiveConditions
+                            ref={conditionEditor}
                             restTargets={snapshotShift ? {nurses: goalNurses, shiftTypes: snapshotShift.wardShiftTypes ?? []} : undefined}
                             wardId={wardId!}
                             teamId={teamId!}
@@ -241,6 +245,17 @@ export default function AiAdjustDialog({
                         historyKey={historyKey}
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
+                        settingsHref={teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : undefined}
+                        onEditFailureSettings={
+                            hasConditionContext && snapshotShift
+                                ? (failure) => {
+                                      const conflicts = resolveRestConflicts(failure, goalNurses);
+
+                                      if (conflicts.length) conditionEditor.current?.openRestTargets(conflicts);
+                                      else conditionEditor.current?.openConditions();
+                                  }
+                                : undefined
+                        }
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
                         onRecoverGeneration={onRecoverGeneration}
                         disabled={disabled || conditionEditorBusy || activeConditions.removingId !== null}

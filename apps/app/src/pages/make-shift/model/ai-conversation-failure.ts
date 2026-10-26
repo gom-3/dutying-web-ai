@@ -1,7 +1,18 @@
 import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
+export type TPersonalRestConflict = {
+    nurseId?: number;
+    nurseName?: string;
+    shiftCodes: string[];
+    expected: number;
+    minimumAssignments: number;
+    maximumAssignments: number;
+};
+
 export type TAiConversationFailure = {
+    restConflicts?: TPersonalRestConflict[];
+    settingsTarget?: 'rest' | 'member';
     conflicts?: TScheduleConflict[];
     sourceRevision?: number;
     sourceRulesHash?: string;

@@ -10,12 +10,24 @@ type TProps = {
     current: boolean;
     onProceed: () => Promise<void>;
     onRevise: () => void;
-    onEditSettings: () => void;
+    onEditSettings?: () => void;
+    settingsHref?: string;
+    settingsLabel?: string;
     requestSummary?: string;
     copy: (ko: string, en: string) => string;
 };
 
-export function ConstraintConflictReview({review, disabled, current, onProceed, onRevise, onEditSettings, requestSummary}: TProps) {
+export function ConstraintConflictReview({
+    review,
+    disabled,
+    current,
+    onProceed,
+    onRevise,
+    onEditSettings,
+    settingsHref,
+    settingsLabel,
+    requestSummary,
+}: TProps) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
     const [submitting, setSubmitting] = useState(false);
@@ -24,20 +36,28 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
     const [now, setNow] = useState(Date.now);
     const expiry = Date.parse(review.expiresAt);
     const available = current && Number.isFinite(expiry) && expiry > now;
+
     useEffect(() => {
         if (!Number.isFinite(expiry) || expiry <= now) return;
+
         const timer = window.setTimeout(() => setNow(Date.now()), Math.min(expiry - Date.now(), 2147483647));
+
         return () => window.clearTimeout(timer);
     }, [expiry, now]);
+
     const proceed = async () => {
         if (disabled || !current || inFlight.current) return;
+
         if (!Number.isFinite(expiry) || expiry <= Date.now()) {
             setNow(Date.now());
+
             return;
         }
+
         inFlight.current = true;
         setSubmitting(true);
         setFailed(false);
+
         try {
             await onProceed();
         } catch {
@@ -80,7 +100,9 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
             aria-busy={submitting}
         >
             <p className="font-medium">{t('aiAutofillUi.conflictReview.question')}</p>
-            {i18n.language.startsWith('ko') && review.explanation && <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>}
+            {i18n.language.startsWith('ko') && review.explanation && (
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>
+            )}
             {requestSummary && (
                 <div className="rounded-lg bg-white p-3 text-sm">
                     <p className="font-medium">{t('aiAutofillUi.conflictReview.understood')}</p>
@@ -123,14 +145,25 @@ export function ConstraintConflictReview({review, disabled, current, onProceed, 
                 >
                     {t('aiAutofillUi.conflictReview.revise')}
                 </button>
-                <button
-                    type="button"
-                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
-                    disabled={disabled || submitting}
-                    onClick={onEditSettings}
-                >
-                    {t('aiAutofillUi.conflictReview.editSettings')}
-                </button>
+                {settingsHref ? (
+                    <a
+                        className="flex min-h-11 items-center rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+                        href={settingsHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
+                    </a>
+                ) : (
+                    <button
+                        type="button"
+                        className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                        disabled={disabled || submitting}
+                        onClick={onEditSettings}
+                    >
+                        {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
+                    </button>
+                )}
             </div>
         </section>
     );

@@ -9,12 +9,13 @@ import {
     type TRestEditorState,
 } from '@/features/personal-rest-policy/sidebar-rest-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import type {TResolvedRestConflict} from '../../../model/rest-conflict-settings';
 import type {TAiWardCondition} from '../../../model/use-ai-active-conditions';
 import {Constraints, type TConstraintsEditorHandle, type TConstraintsEditorState} from '../constraints';
 import {AiConversationLoading} from './ai-conversation-loading';
 
 export type TAiActiveCondition = {id: string; label: string; description?: string; onRemove: () => Promise<void> | void};
-export type TActiveConditionsHandle = {openRestTargets: (nurseId?: number) => void};
+export type TActiveConditionsHandle = {openConditions: () => void; openRestTargets: (conflicts: TResolvedRestConflict[]) => void};
 type TProps = {
     ref?: Ref<TActiveConditionsHandle>;
     restTargets?: TRestEditorContext;
@@ -59,7 +60,8 @@ export function AiActiveConditions({
     const {t} = useTypedTranslation();
     const restText = useRestEditorCopy();
     const [section, setSection] = useState<'conditions' | 'rest'>('conditions');
-    const [restNurseId, setRestNurseId] = useState<number>();
+    const [restConflicts, setRestConflicts] = useState<TResolvedRestConflict[]>([]);
+    const returnFocus = useRef<HTMLElement | null>(null);
     const [restState, setRestState] = useState<TRestEditorState>({dirty: false, saving: false, ready: false, refreshPending: false});
     const restStateRef = useRef(restState);
     const restEditor = useRef<TRestEditorHandle>(null);
@@ -92,10 +94,22 @@ export function AiActiveConditions({
     useImperativeHandle(
         ref,
         () => ({
-            openRestTargets: (nurseId) => {
+            openConditions: () => {
+                if (!available || disabled || hasChanges || editorSaving) return;
+
+                returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                setSection('conditions');
+                setOpen(true);
+            },
+            openRestTargets: (conflicts) => {
                 if (!available || disabled || !restTargets?.nurses.length || hasChanges || editorSaving) return;
 
-                setRestNurseId(nurseId);
+                const targets = conflicts.filter((conflict) => restTargets.nurses.some((nurse) => nurse.nurseId === conflict.nurseId));
+
+                if (!targets.length) return;
+
+                returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                setRestConflicts(targets);
                 setSection('rest');
                 setOpen(true);
             },
@@ -110,8 +124,7 @@ export function AiActiveConditions({
         setOpen(false);
         setEditorState(emptyEditorState);
         setRestState({dirty: false, saving: false, ready: false, refreshPending: false});
-        setSection('conditions');
-        setRestNurseId(undefined);
+        setRestConflicts([]);
     }, [toastId]);
     const close = useCallback(() => {
         if (editorStateRef.current.saving || restStateRef.current.saving || applyPending.current) return;
@@ -237,6 +250,8 @@ export function AiActiveConditions({
             open={open && available}
             onOpenChange={(next) => {
                 if (next) {
+                    returnFocus.current = null;
+                    setSection('conditions');
                     setOpen(true);
                 } else close();
             }}
@@ -273,7 +288,7 @@ export function AiActiveConditions({
             <Dialog.Portal>
                 <Dialog.Overlay
                     data-testid="ai-conditions-overlay"
-                    className={`fixed inset-0 z-[1550] flex ${section === 'rest' ? 'items-stretch justify-end bg-[#121726]/15' : 'items-center justify-center bg-[#121726]/55 p-4'}`}
+                    className="fixed inset-0 z-[1550] flex items-center justify-center bg-[#121726]/55 p-4"
                 >
                     <Dialog.Content
                         ref={popup}
@@ -288,7 +303,11 @@ export function AiActiveConditions({
                         onCloseAutoFocus={(event) => {
                             event.preventDefault();
 
-                            if (available && trigger.current?.isConnected) trigger.current.focus();
+                            const target = returnFocus.current?.isConnected ? returnFocus.current : trigger.current;
+
+                            returnFocus.current = null;
+
+                            if (available && target?.isConnected) target.focus();
                         }}
                         onEscapeKeyDown={(event) => {
                             if (popup.current?.querySelector('[data-constraint-layer-open="true"]')) {
@@ -310,7 +329,7 @@ export function AiActiveConditions({
                             // Keep modal key presses out of the calendar and chat shortcuts.
                             event.stopPropagation();
                         }}
-                        className={`ai-conditions-modal relative flex ${section === 'rest' ? 'h-dvh w-[407px] max-w-full' : 'max-h-[min(86dvh,780px)] w-full max-w-[960px] rounded-[20px]'} min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-white text-[14px] focus-visible:outline-none`}
+                        className={`ai-conditions-modal relative flex max-h-[min(86dvh,780px)] w-full ${section === 'rest' ? 'max-w-[480px]' : 'max-w-[960px]'} min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-[20px] bg-white text-[14px] focus-visible:outline-none`}
                     >
                         <header className="flex shrink-0 items-center justify-between gap-3 pt-5 pr-4 pb-4 pl-6 sm:pl-7">
                             <div className="min-w-0 pt-1">
@@ -336,36 +355,13 @@ export function AiActiveConditions({
                                 </svg>
                             </button>
                         </header>
-                        {restTargets?.nurses.length ? (
-                            <div
-                                className="mx-6 mb-5 grid shrink-0 grid-cols-2 gap-1 rounded-[12px] bg-[#F3F5F7] p-1 sm:mx-7"
-                                role="group"
-                                aria-label={t('aiAutofillUi.activeConditions.constraints')}
-                            >
-                                {(['conditions', 'rest'] as const).map((tab) => (
-                                    <button
-                                        key={tab}
-                                        type="button"
-                                        aria-pressed={section === tab}
-                                        disabled={controlDisabled || hasChanges}
-                                        onClick={() => {
-                                            setSection(tab);
-                                            setRestState({dirty: false, saving: false, ready: false, refreshPending: false});
-                                        }}
-                                        className={`min-h-[44px] rounded-[9px] px-3 text-[14px] font-semibold focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50 ${section === tab ? 'bg-white text-[#5931B9] shadow-sm' : 'text-[#667085] hover:bg-white/70'}`}
-                                    >
-                                        {tab === 'rest' ? restText.tab : restText.conditions}
-                                    </button>
-                                ))}
-                            </div>
-                        ) : null}
                         <div
                             className={`${section === 'rest' ? 'flex-1' : ''} min-h-[min(120px,24dvh)] overflow-y-auto overscroll-contain px-6 pb-5 [overflow-wrap:anywhere] sm:px-7`}
                         >
-                            {loading && (
+                            {section === 'conditions' && loading && (
                                 <AiConversationLoading label={t('aiAutofillUi.activeConditions.loadingConditions')} className="mb-2" />
                             )}
-                            {error && (
+                            {section === 'conditions' && error && (
                                 <div className="mb-3 flex flex-wrap items-center gap-2 py-2">
                                     <p role="alert" className="min-w-0 flex-1 text-[13px] leading-5 text-[#667085]">
                                         {t('aiAutofillUi.activeConditions.couldNotLoadConditions')}
@@ -386,11 +382,11 @@ export function AiActiveConditions({
                             )}
                             {section === 'rest' && restTargets ? (
                                 <SidebarRestEditor
-                                    key={`${wardId}:${teamId}:${year}:${month}:${restNurseId ?? ''}`}
-                                    {...restTargets}
+                                    key={`${wardId}:${teamId}:${year}:${month}:${restConflicts.map((conflict) => conflict.nurseId).join(',')}`}
+                                    conflicts={restConflicts}
+                                    shiftTypes={restTargets.shiftTypes}
                                     year={year}
                                     month={month}
-                                    initialNurseId={restNurseId}
                                     disabled={disabled || pendingId !== null}
                                     editorRef={restEditor}
                                     onStateChange={setRestState}

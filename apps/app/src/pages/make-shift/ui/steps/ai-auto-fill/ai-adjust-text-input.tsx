@@ -24,6 +24,7 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {interpretIssueCode} from '../../../model/ai-interpret-issues';
+import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {readScheduleChat, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
 import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
@@ -57,6 +58,8 @@ type TProps = {
     historyKey?: string | null;
     onNewConversation?: () => void;
     onReviewSchedule?: () => void;
+    onEditFailureSettings?: (failure: TAiConversationFailure) => void;
+    settingsHref?: string;
     hideRestartButton?: boolean;
     onBusyChange?: (busy: boolean) => void;
     conditionsVersion?: number;
@@ -155,6 +158,8 @@ export default function AiAdjustTextInput({
     historyKey = null,
     onNewConversation,
     onReviewSchedule,
+    onEditFailureSettings,
+    settingsHref,
     hideRestartButton = false,
     onBusyChange,
     conditionsVersion = 0,
@@ -183,6 +188,10 @@ export default function AiAdjustTextInput({
 }: TProps) {
     const {t} = useTypedTranslation();
     const recoveredFailure = useRef<TAiConversationFailure | null>(null);
+    const settingsAction = (failure: TAiConversationFailure | undefined) =>
+        failure && onEditFailureSettings && (failure.settingsTarget !== 'rest' || resolveRestConflicts(failure, goalNurses).length)
+            ? () => onEditFailureSettings(failure)
+            : undefined;
     const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
     const {
@@ -968,6 +977,8 @@ export default function AiAdjustTextInput({
                                         operationType="ADJUST"
                                         attemptLabel={attemptLabel(turn.attempt ?? 1)}
                                         failure={turn.failure}
+                                        settingsHref={settingsHref}
+                                        onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id}
                                         disabled={disabled || isBusy || requestsLoading || requestsError}
                                         onRetry={() => void handleApply()}
@@ -1041,6 +1052,8 @@ export default function AiAdjustTextInput({
                                                 .length,
                                         )}
                                         failure={turn.failure ?? {message: turn.error, blocked: false}}
+                                        settingsHref={settingsHref}
+                                        onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
                                         onRetry={onRegenerate}
@@ -1106,6 +1119,8 @@ export default function AiAdjustTextInput({
                         operationType="GENERATE"
                         attemptLabel={attemptLabel(1)}
                         failure={generationFailure}
+                        settingsHref={settingsHref}
+                        onEditSettings={settingsAction(generationFailure)}
                         reviewLabel={
                             generationFailure.reviewFixed && onRecoverGeneration ? t('aiAdjust.preparation.reviewFixed') : undefined
                         }

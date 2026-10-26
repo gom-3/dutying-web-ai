@@ -1,7 +1,7 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createRef, type Ref} from 'react';
+import {createRef, type RefObject} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TWardShiftType} from '@/entities';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
@@ -36,10 +36,17 @@ const restTargets = {
 const applied = vi.fn();
 const saved = vi.fn();
 const busy = vi.fn();
+const conflicts = restTargets.nurses.map((nurse) => ({
+    ...nurse,
+    explanations: [`${nurse.name}: OFF 목표 9일이지만 이번 요청과 고정 근무를 지키면 최대 8일만 배정할 수 있어요.`],
+}));
 
-function mount(ref?: Ref<TActiveConditionsHandle>) {
+function mount(ref: RefObject<TActiveConditionsHandle | null> = createRef<TActiveConditionsHandle>(), shiftTypes = restTargets.shiftTypes) {
     return render(
         <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false}}})}>
+            <button type="button" onClick={() => ref.current?.openRestTargets(conflicts)}>
+                휴무 설정 수정
+            </button>
             <AiActiveConditions
                 ref={ref}
                 wardId={4}
@@ -48,7 +55,7 @@ function mount(ref?: Ref<TActiveConditionsHandle>) {
                 month={11}
                 wardRules={[]}
                 aiConditions={[]}
-                restTargets={restTargets}
+                restTargets={{...restTargets, shiftTypes}}
                 onWardRulesApplied={applied}
                 onRestTargetsApplied={saved}
                 onBusyChange={busy}
@@ -58,8 +65,7 @@ function mount(ref?: Ref<TActiveConditionsHandle>) {
 }
 
 async function openRest() {
-    await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
-    await userEvent.click(screen.getByRole('button', {name: '개인별 휴무'}));
+    await userEvent.click(screen.getByRole('button', {name: '휴무 설정 수정'}));
 
     return screen.findByRole('spinbutton', {name: 'OFF'});
 }
@@ -73,13 +79,21 @@ beforeEach(async () => {
 });
 
 describe('rest targets in the conversation conditions flow', () => {
+    it('does not show a rest management tab or load personal policies in normal conditions', async () => {
+        mount();
+        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        expect(screen.queryByRole('button', {name: '개인별 휴무'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('spinbutton', {name: 'OFF'})).not.toBeInTheDocument();
+        expect(api.get).not.toHaveBeenCalled();
+    });
+
     it('opens only when needed, saves separate targets, refreshes conditions and returns to the same conversation without editing cells', async () => {
         const doc = structuredClone(useShiftEditorStore.getState().doc);
 
         mount();
         expect(api.get).not.toHaveBeenCalled();
 
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '휴무 설정 수정'});
         const off = await openRest();
 
         expect(off).toHaveValue(9);
@@ -91,7 +105,7 @@ describe('rest targets in the conversation conditions flow', () => {
         await userEvent.clear(screen.getByRole('spinbutton', {name: '연차'}));
         await userEvent.type(screen.getByRole('spinbutton', {name: '연차'}), '1');
         expect(screen.getByText('OFF·연차 목표 합계 9일')).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         expect(api.put).toHaveBeenCalledExactlyOnceWith('/nurses/1/monthly-rest-policy/2026/11', {
             offDays: 8,
@@ -108,11 +122,42 @@ describe('rest targets in the conversation conditions flow', () => {
         const ref = createRef<TActiveConditionsHandle>();
 
         mount(ref);
-        act(() => ref.current?.openRestTargets(2));
+        act(() => ref.current?.openRestTargets([conflicts[1]]));
         await screen.findByRole('spinbutton', {name: 'OFF'});
-        expect(screen.getByRole('combobox', {name: '간호사'})).toHaveValue('2');
+        expect(screen.getByText('이간호')).toBeVisible();
+        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
         expect(api.get).toHaveBeenCalledExactlyOnceWith('/nurses/2/monthly-rest-policy/2026/11');
         expect(api.put).not.toHaveBeenCalled();
+    });
+
+    it('rejects annual leave without OFF while retaining the input', async () => {
+        mount();
+
+        const off = await openRest();
+
+        await userEvent.clear(off);
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('별도의 OFF 목표');
+        expect(screen.getByRole('spinbutton', {name: '연차'})).toHaveValue(2);
+        expect(api.put).not.toHaveBeenCalled();
+    });
+
+    it('explains missing annual types without inventing a leave input or writing data', async () => {
+        api.get.mockResolvedValue({data: {...policy, annualDaysByWardShiftTypeId: {}}});
+        mount(createRef<TActiveConditionsHandle>(), []);
+        await openRest();
+        expect(screen.getByText(/연차 유형이 등록되어 있지 않아/)).toBeVisible();
+        expect(screen.queryByRole('spinbutton', {name: '연차'})).not.toBeInTheDocument();
+        expect(api.put).not.toHaveBeenCalled();
+    });
+
+    it('does not open an editor for a nurse outside the current roster', () => {
+        const ref = createRef<TActiveConditionsHandle>();
+
+        mount(ref);
+        act(() => ref.current?.openRestTargets([{nurseId: 999, name: '없는 사람', explanations: ['충돌']}]));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(api.get).not.toHaveBeenCalled();
     });
 
     it('protects unsaved input when changing nurse, switching sections or returning to chat', async () => {
@@ -123,8 +168,8 @@ describe('rest targets in the conversation conditions flow', () => {
         await userEvent.clear(off);
         await userEvent.type(off, '8');
         expect(screen.getByRole('combobox', {name: '간호사'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '근무 조건'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '대화로 돌아가기'}));
+        expect(screen.queryByRole('button', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '취소'}));
         expect(screen.getByRole('alertdialog')).toBeVisible();
         await userEvent.click(screen.getByRole('button', {name: '계속 수정하기'}));
         expect(off).toHaveValue(8);
@@ -138,7 +183,7 @@ describe('rest targets in the conversation conditions flow', () => {
 
         await userEvent.clear(off);
         await userEvent.type(off, '30');
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('합계가 월 일수를 넘지');
         expect(off).toHaveValue(30);
         expect(api.put).not.toHaveBeenCalled();
@@ -146,12 +191,12 @@ describe('rest targets in the conversation conditions flow', () => {
         await userEvent.type(off, '0');
         await userEvent.clear(screen.getByRole('spinbutton', {name: '연차'}));
         await userEvent.type(screen.getByRole('spinbutton', {name: '연차'}), '0');
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         await waitFor(() => expect(saved).toHaveBeenCalledOnce());
         expect(api.put.mock.calls[0][1]).toMatchObject({offDays: 0, annualDaysByWardShiftTypeId: {'3': 0}});
         await openRest();
         await userEvent.click(screen.getByRole('button', {name: '기존 설정 사용'}));
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         await waitFor(() => expect(saved).toHaveBeenCalledTimes(2));
         expect(api.put.mock.calls[1][1]).toMatchObject({offDays: null, annualDaysByWardShiftTypeId: {}});
     });
@@ -171,12 +216,12 @@ describe('rest targets in the conversation conditions flow', () => {
 
         await userEvent.clear(off);
         await userEvent.type(off, '8');
-        await userEvent.dblClick(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.dblClick(screen.getByRole('button', {name: '설정 저장'}));
         expect(api.put).toHaveBeenCalledOnce();
-        expect(screen.getByRole('button', {name: '대화로 돌아가기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '취소'})).toBeDisabled();
         expect(busy).toHaveBeenLastCalledWith(true);
         await userEvent.keyboard('{Escape}');
-        expect(screen.getByRole('dialog', {name: '개인별 휴무'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '휴무 설정 충돌'})).toBeVisible();
         await act(async () => fail(new Error('offline')));
         expect(await screen.findByRole('alert')).toHaveTextContent('저장하지 못했어요');
         expect(off).toHaveValue(8);
@@ -192,11 +237,11 @@ describe('rest targets in the conversation conditions flow', () => {
 
         await userEvent.clear(off);
         await userEvent.type(off, '8');
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('다른 곳에서 설정이 바뀌었어요');
         expect(off).toHaveValue(8);
         expect(saved).not.toHaveBeenCalled();
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         await waitFor(() => expect(saved).toHaveBeenCalledOnce());
         expect(api.put.mock.calls[1][1]).toMatchObject({offDays: 8, version: 4});
     });
@@ -209,7 +254,7 @@ describe('rest targets in the conversation conditions flow', () => {
 
         await userEvent.clear(off);
         await userEvent.type(off, '8');
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('목표는 저장했지만');
         expect(saved).not.toHaveBeenCalled();
         expect(screen.getByRole('combobox', {name: '간호사'})).toBeDisabled();
