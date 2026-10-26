@@ -329,6 +329,7 @@ const sidebarElement = (overrides: Partial<ComponentProps<typeof AiConversationS
 const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSidebar>> = {}) => render(sidebarElement(overrides));
 
 beforeEach(() => {
+    window.localStorage.clear();
     vi.clearAllMocks();
     vi.stubGlobal('crypto', webcrypto);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({matches: false}));
@@ -583,11 +584,31 @@ describe('persistent schedule sidebar', () => {
         await waitFor(() => expect(onRecoverGeneration).toHaveBeenCalledOnce());
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        sidebar.rerender(sidebarElement({onRecoverGeneration, preparation: <div>고정한 근무 재확인</div>}));
+        sidebar.rerender(
+            sidebarElement({
+                onRecoverGeneration,
+                preparation: <div>고정한 근무 재확인</div>,
+                autofillFlow: {
+                    id: 73,
+                    status: 'preparing',
+                    messages: [
+                        {role: 'assistant', text: '이전 고정 질문'},
+                        {role: 'user', text: '이전 준비 응답'},
+                    ],
+                },
+            }),
+        );
         expect(screen.getByText('고정한 근무 재확인')).toBeVisible();
         expect(screen.getByText('자동채우기를 마치지 못했어요. (1회차)')).toBeVisible();
         sidebar.rerender(sidebarElement({onRecoverGeneration, open: false}));
         sidebar.rerender(sidebarElement({onRecoverGeneration}));
+        expect(onRecoverGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        sidebar.unmount();
+        renderSidebar({onRecoverGeneration});
+        expect(await screen.findByRole('alert')).toBeVisible();
+        expect(screen.getByText('이전 고정 질문')).toBeVisible();
+        expect(screen.getByText('이전 준비 응답')).toBeVisible();
         expect(onRecoverGeneration).toHaveBeenCalledOnce();
         expect(mocks.execute).not.toHaveBeenCalled();
     });

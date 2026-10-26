@@ -631,7 +631,7 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
     });
 
-    it.each([false, true])('blocks entry only when the protected schedule has no blanks (blank: %s)', async (hasBlank) => {
+    it.each([false, true])('allows reviewing protection but only generates when editable cells remain (blank: %s)', async (hasBlank) => {
         const doc = makeDoc();
 
         seedEditor({
@@ -654,8 +654,8 @@ describe('AiAutofill blank preview', () => {
         } else {
             expect(entry).toBeEnabled();
             await user.click(entry);
-            expect(toast).toHaveBeenCalledWith('aiAdjust.allFixed', {id: 'ai-autofill-all-fixed'});
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeVisible();
+            expect(screen.getByRole('button', {name: 'aiAdjust.autofill'})).toBeDisabled();
         }
 
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
@@ -734,6 +734,7 @@ describe('AiAutofill blank preview', () => {
         await screen.findByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'}));
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.cancelSelection'}));
 
         await waitFor(() =>
             expect(screen.queryByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),
@@ -741,7 +742,7 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
     });
 
-    it('rolls back unfinished fixed choices when leaving the page', async () => {
+    it('keeps deliberate fixed choices when leaving the page', async () => {
         const user = userEvent.setup();
         const view = render(<AiAutofill />);
 
@@ -749,7 +750,7 @@ describe('AiAutofill blank preview', () => {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fixAll'}));
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
         view.unmount();
-        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
@@ -779,6 +780,7 @@ describe('AiAutofill blank preview', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
 
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.cancelSelection'}));
 
         await waitFor(() =>
             expect(screen.queryByRole('region', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).not.toBeInTheDocument(),

@@ -24,6 +24,7 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {interpretIssueCode} from '../../../model/ai-interpret-issues';
+import {readScheduleChat, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
 import type {TAdjustCard} from './ai-adjust-interpret-card';
 import {AiAdjustResult, type TAdjustResultActions} from './ai-adjust-result';
@@ -52,6 +53,7 @@ type TProps = {
     open?: boolean;
     preparation?: ReactNode;
     autofillFlow?: TAutofillFlow | null;
+    historyKey?: string | null;
     onNewConversation?: () => void;
     onReviewSchedule?: () => void;
     hideRestartButton?: boolean;
@@ -149,6 +151,7 @@ export default function AiAdjustTextInput({
     open = true,
     preparation,
     autofillFlow,
+    historyKey = null,
     onNewConversation,
     onReviewSchedule,
     hideRestartButton = false,
@@ -184,17 +187,42 @@ export default function AiAdjustTextInput({
     const [text, setText] = useState('');
     const [noticeDismissed, setNoticeDismissed] = useState(false);
     const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
-    const [turns, setTurns] = useState<TTurn[]>([]);
-    const [group, setGroup] = useState(0);
+    const [restoredTurns] = useState(
+        () =>
+            readScheduleChat<TTurn[]>(
+                historyKey,
+                (value): value is TTurn[] =>
+                    Array.isArray(value) &&
+                    value.every(
+                        (turn) =>
+                            turn &&
+                            Number.isSafeInteger(turn.id) &&
+                            Number.isSafeInteger(turn.group) &&
+                            typeof turn.text === 'string' &&
+                            typeof turn.status === 'string',
+                    ),
+            ) ?? [],
+    );
+    const [turns, setTurns] = useState<TTurn[]>(() =>
+        restoredTurns.map((turn) =>
+            ['interpreting', 'applying'].includes(turn.status)
+                ? {...turn, status: 'error', error: t('aiAdjust.preparation.interruptedHistory')}
+                : ['confirm', 'revising', 'applyFailed'].includes(turn.status)
+                  ? {...turn, status: 'superseded'}
+                  : turn,
+        ),
+    );
+    const [group, setGroup] = useState(() => (restoredTurns.length ? Math.max(...restoredTurns.map((turn) => turn.group)) + 1 : 0));
+    const [historySaveFailed, setHistorySaveFailed] = useState(false);
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const sequence = useRef(0);
+    const sequence = useRef(Math.max(0, ...restoredTurns.map((turn) => turn.id)));
     // Message IDs do not invalidate in-flight interpretation requests.
-    const messageSequence = useRef(0);
+    const messageSequence = useRef(Math.min(0, ...restoredTurns.map((turn) => turn.id)));
     const lastAutofillId = useRef<number | undefined>(undefined);
     const dismissedAutofillIds = useRef(new Set<number>());
     const generationBefore = useRef(new Map<number, {doc: TDutyDoc; shift?: TShift}>());
-    const adjustmentAttempt = useRef(0);
+    const adjustmentAttempt = useRef(Math.max(0, ...restoredTurns.map((turn) => turn.attempt ?? 0)));
     const busy = useRef(false);
     const mounted = useRef(true);
     const textarea = useRef<HTMLTextAreaElement>(null);
@@ -202,6 +230,11 @@ export default function AiAdjustTextInput({
     const previousConditionsVersion = useRef(conditionsVersion);
     const lastTurn = turns[turns.length - 1];
     const active = lastTurn?.group === group ? lastTurn : undefined;
+
+    useEffect(() => {
+        setHistorySaveFailed(!writeScheduleChat(historyKey, turns.length ? turns : null));
+    }, [historyKey, turns]);
+
     const hasRequestTurns = turns.some((turn) => turn.status !== 'messages');
     const flowCompleted = Boolean(generationCompleted && !noticeDismissed && !generationFailure);
     const waitingForGeneration = Boolean(
@@ -233,6 +266,25 @@ export default function AiAdjustTextInput({
             (generationCompleted && !noticeDismissed && !generationFailure ? {id: -1, status: 'running' as const, messages: []} : null);
 
         if (!flow || dismissedAutofillIds.current.has(flow.id)) return;
+
+        if (flow.status === 'completed') {
+            // Restore display-only messages without erasing a recorded failure or
+            // treating an interrupted request as a new executable action.
+            setTurns((current) => {
+                const existing = current.find((turn) => turn.autofillId === flow.id);
+
+                if (existing && JSON.stringify(existing.messages) === JSON.stringify(flow.messages)) return current;
+
+                if (existing) return current.map((turn) => (turn.id === existing.id ? {...turn, messages: flow.messages} : turn));
+
+                return [
+                    ...current,
+                    {id: --messageSequence.current, group, text: '', status: 'messages', autofillId: flow.id, messages: flow.messages},
+                ];
+            });
+
+            return;
+        }
 
         if (flow.kind !== 'adjustment' && !generationCompleted && !generationFailure && !generationBefore.current.has(flow.id)) {
             generationBefore.current.set(flow.id, {
@@ -765,6 +817,11 @@ export default function AiAdjustTextInput({
 
     return (
         <div className="ai-adjust-text-input flex min-h-0 flex-1 flex-col" data-preserve-duty-selection="true">
+            {historySaveFailed && (
+                <p role="status" className="px-6 py-2 text-xs text-[#667085]">
+                    {t('aiAdjust.preparation.historyUnavailable')}
+                </p>
+            )}
             <AiChatScroll
                 open={open}
                 composerHidden={composerHidden}
@@ -995,7 +1052,11 @@ export default function AiAdjustTextInput({
                                 )}
                             </div>
                         ))}
-                        {!active && <AssistantMessage>{t('aiAdjust.chat.restarted')}</AssistantMessage>}
+                        {!active && (
+                            <AssistantMessage>
+                                {t(restoredTurns.length ? 'aiAdjust.preparation.restoredHistory' : 'aiAdjust.chat.restarted')}
+                            </AssistantMessage>
+                        )}
                     </div>
                 )}
                 {preparation && (

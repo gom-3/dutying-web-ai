@@ -48,7 +48,7 @@ describe('autofill recovery choices', () => {
         const props = {step: 'fixed' as const, recovery: true, fixableCount: 0, onConfirm, onCancel: vi.fn(), onFixAll: vi.fn()};
         const view = render(<AiAutofillPreparation {...props} canAutofill={false} />);
 
-        expect(screen.getByRole('status')).toHaveTextContent('모든 근무가 고정돼 있어요.');
+        expect(screen.getByRole('status')).toHaveTextContent('AI가 바꿀 수 있는 칸이 없어요.');
         expect(screen.getByRole('button', {name: '다시 자동채우기'})).toBeDisabled();
         expect(screen.queryByRole('button', {name: '입력한 근무 모두 고정하기'})).not.toBeInTheDocument();
         view.rerender(<AiAutofillPreparation {...props} canAutofill />);
