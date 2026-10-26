@@ -81,6 +81,31 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     ? issue.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
             if (
+                issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT' &&
+                validCount(issue.expected) &&
+                validCount(issue.minimumAssignments) &&
+                validCount(issue.maximumAssignments) &&
+                issue.minimumAssignments <= issue.maximumAssignments &&
+                (issue.expected < issue.minimumAssignments || issue.expected > issue.maximumAssignments) &&
+                Array.isArray(issue.shiftCodes) &&
+                issue.shiftCodes.length > 0 &&
+                issue.shiftCodes.length <= 6 &&
+                issue.shiftCodes.every(
+                    (code: unknown) =>
+                        typeof code === 'string' && code.length > 0 && code.length <= 32 && !/[\u0000-\u001f\u007f]/.test(code),
+                )
+            ) {
+                explanations.push(
+                    i18n.t('aiAdjust.executionFailure.personalRestEvidence', {
+                        name,
+                        shifts: issue.shiftCodes.join('·'),
+                        target: issue.expected,
+                        minimum: issue.minimumAssignments,
+                        maximum: issue.maximumAssignments,
+                    }),
+                );
+            }
+            if (
                 issue.type === 'WORK_REST_AVAILABILITY_CONFLICT' &&
                 validCount(issue.forcedWorkDays) &&
                 validCount(issue.maximum) &&
