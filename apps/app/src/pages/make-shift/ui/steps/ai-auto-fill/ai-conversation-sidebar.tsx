@@ -43,6 +43,7 @@ import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../mo
 import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
+import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
 import {AiActiveConditions} from './ai-active-conditions';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
@@ -97,7 +98,14 @@ type TProps = {
     resultActions?: TAdjustResultActions;
 };
 type TLocalEvent = {kind: 'local'; id: string; sequence: number; messages: TAutofillMessage[]};
-type TLocalTranscript = {conversationId: number; events: TLocalEvent[]; recoveredFailures: string[]};
+type TComposerContext = {
+    editingEventId?: number;
+    previousId?: string;
+    change: 'REPLACE' | 'ADD' | 'RESET';
+    conditionEdit: 'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET';
+    conditionTargets: string[];
+};
+type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; recoveredFailures: string[]; composer?: TComposerContext};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
@@ -146,18 +154,24 @@ export default function AiConversationSidebar({
     const [awaitingAdjustment, setAwaitingAdjustment] = useState(false);
     const awaitingAdjustmentRef = useRef(false);
     const reviewedPreparation = useRef<string | null>(null);
-    const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
     const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
     const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
     const transcriptKey = chatKey ? `${chatKey}:server-transcript` : null;
+    const {
+        text,
+        setText,
+        entryChoice,
+        setEntryChoice,
+        saveFailed: composerSaveFailed,
+    } = useScheduleChatComposer(chatKey ? `${chatKey}:composer` : null);
     const [storedTranscript] = useState(() =>
         readScheduleChat<TLocalTranscript>(transcriptKey, (value): value is TLocalTranscript => {
             const transcript = value as TLocalTranscript | null;
 
             return Boolean(
                 transcript &&
-                    Number.isSafeInteger(transcript.conversationId) &&
+                    (transcript.conversationId === null || Number.isSafeInteger(transcript.conversationId)) &&
                     Array.isArray(transcript.events) &&
                     transcript.events.every(
                         (event) =>
@@ -170,7 +184,14 @@ export default function AiConversationSidebar({
                             ),
                     ) &&
                     Array.isArray(transcript.recoveredFailures) &&
-                    transcript.recoveredFailures.every((id) => typeof id === 'string'),
+                    transcript.recoveredFailures.every((id) => typeof id === 'string') &&
+                    (!transcript.composer ||
+                        (['REPLACE', 'ADD', 'RESET'].includes(transcript.composer.change) &&
+                            ['ANSWER', 'ADD', 'UPDATE', 'REMOVE', 'RESET'].includes(transcript.composer.conditionEdit) &&
+                            Array.isArray(transcript.composer.conditionTargets) &&
+                            transcript.composer.conditionTargets.every((id) => typeof id === 'string') &&
+                            (transcript.composer.previousId == null || typeof transcript.composer.previousId === 'string') &&
+                            (transcript.composer.editingEventId == null || Number.isSafeInteger(transcript.composer.editingEventId)))),
             );
         }),
     );
@@ -179,9 +200,7 @@ export default function AiConversationSidebar({
     const [localEvents, setLocalEvents] = useState<TLocalEvent[]>(storedTranscript?.events ?? []);
     const [historySaveFailed, setHistorySaveFailed] = useState(false);
     const discardedPreparationId = useRef<number | null>(null);
-    const localSequence = useRef(
-        Math.max(0, ...localEvents.filter((event) => event.id.startsWith('choice:')).map((event) => Number(event.id.slice(7)) || 0)),
-    );
+    const localSequence = useRef(Math.max(0, ...localEvents.map((event) => Number(event.id.slice(event.id.lastIndexOf(':') + 1)) || 0)));
     const textarea = useRef<HTMLTextAreaElement>(null);
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
@@ -205,8 +224,8 @@ export default function AiConversationSidebar({
     const busyRef = useRef(false);
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const recordedFeedback = useRef<{notice: string | null; error: string | null}>({notice: null, error: null});
     const feedbackNotice = useRef<string | null>(null);
-    const [text, setText] = useState('');
     const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
@@ -251,10 +270,12 @@ export default function AiConversationSidebar({
         setReportOperation(null);
         setReportError(null);
     };
-    const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
-    const [conditionEdit, setConditionEdit] = useState<'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET'>('ANSWER');
-    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
-    const [previousId, setPreviousId] = useState<string>();
+    const [change, setChange] = useState<TComposerContext['change']>(storedTranscript?.composer?.change ?? 'ADD');
+    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>(
+        storedTranscript?.composer?.conditionEdit ?? 'ANSWER',
+    );
+    const [conditionTargets, setConditionTargets] = useState<string[]>(storedTranscript?.composer?.conditionTargets ?? []);
+    const [previousId, setPreviousId] = useState<string | undefined>(storedTranscript?.composer?.previousId);
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
     const sidebarOpen = useRef(open);
@@ -292,9 +313,35 @@ export default function AiConversationSidebar({
         if (transcriptConversation.current !== null && transcriptConversation.current !== next.conversation.conversationId) {
             setLocalEvents([]);
             recoveredFailures.current.clear();
+            setEditingRequest(null);
+            setPreviousId(undefined);
+            setChange('ADD');
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
         }
 
         transcriptConversation.current = next.conversation.conversationId;
+
+        if (
+            !detailRef.current &&
+            storedTranscript?.conversationId === next.conversation.conversationId &&
+            storedTranscript.composer?.editingEventId != null
+        ) {
+            const previousRequest = next.turns.find((turn) => turn.eventId === storedTranscript.composer?.editingEventId);
+
+            setEditingRequest(previousRequest ?? null);
+
+            if (previousRequest) {
+                const execution = [...next.operations].reverse().find((op) => op.interpretationId === previousRequest.interpretationId);
+
+                if (execution) setDismissedFailureId(execution.operationId);
+            } else {
+                setPreviousId(undefined);
+                setChange('ADD');
+                setConditionEdit('ANSWER');
+                setConditionTargets([]);
+            }
+        }
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             reportAttempt.reset();
@@ -1097,6 +1144,8 @@ export default function AiConversationSidebar({
         setRebuild(false);
         setPreview(null);
         setNotice(null);
+        setError(null);
+        recordedFeedback.current = {notice: null, error: null};
         setPendingBranch(null);
         reportAttempt.reset();
         setReportOperation(null);
@@ -1306,16 +1355,53 @@ export default function AiConversationSidebar({
     const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh);
 
     useEffect(() => {
-        if (!detail) return;
+        for (const [kind, text] of [
+            ['notice', notice],
+            ['error', error?.message ?? null],
+        ] as const) {
+            if (recordedFeedback.current[kind] === text) continue;
+
+            recordedFeedback.current[kind] = text;
+
+            if (!text || (kind === 'notice' && [t('aiAdjust.recovery.running'), t('aiAdjust.recovery.unknown')].includes(text))) continue;
+
+            const id = `feedback:${kind}:${++localSequence.current}`;
+
+            setLocalEvents((current) => [
+                ...current,
+                {
+                    kind: 'local',
+                    id,
+                    sequence:
+                        Math.max(
+                            0,
+                            ...(detail ? conversationEvents(detail).map((event) => event.sequence) : []),
+                            ...current.map((event) => event.sequence),
+                        ) + 0.001,
+                    messages: [{role: 'assistant', text}],
+                },
+            ]);
+        }
+    }, [notice, error, detail]);
+
+    useEffect(() => {
+        if (!detail && !localEvents.length) return;
 
         setHistorySaveFailed(
             !writeScheduleChat(transcriptKey, {
-                conversationId: detail.conversation.conversationId,
+                conversationId: detail?.conversation.conversationId ?? transcriptConversation.current,
                 events: localEvents,
                 recoveredFailures: [...recoveredFailures.current],
+                composer: {
+                    editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
+                    previousId,
+                    change,
+                    conditionEdit,
+                    conditionTargets,
+                },
             }),
         );
-    }, [transcriptKey, localEvents, detail]);
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, conditionEdit, conditionTargets]);
 
     useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
@@ -1359,7 +1445,7 @@ export default function AiConversationSidebar({
     }, [onBusyChange]);
 
     useEffect(() => {
-        if (autofillFlow?.kind === 'adjustment' || (!preparing && !autofillFlow)) return;
+        if (autofillFlow?.kind === 'adjustment' || !preparing) return;
 
         setEntryChoice(null);
         setRebuild(false);
@@ -1370,7 +1456,15 @@ export default function AiConversationSidebar({
     }, [preparing, autofillFlow?.id]);
 
     const activeTurns = detail ? currentConversationTurns(detail) : [];
-    const visibleLocalEvents = localEvents.filter((event) => event.sequence > segmentStart);
+    const liveFeedbackIds = [
+        ['notice', notice],
+        ['error', error?.message],
+    ].map(([kind, text]) =>
+        text
+            ? [...localEvents].reverse().find((event) => event.id.startsWith(`feedback:${kind}:`) && event.messages[0]?.text === text)?.id
+            : undefined,
+    );
+    const visibleLocalEvents = localEvents.filter((event) => event.sequence > segmentStart && !liveFeedbackIds.includes(event.id));
     const canChooseNextAction = Boolean(
         detail &&
             ((executionSucceeded &&
@@ -1421,6 +1515,7 @@ export default function AiConversationSidebar({
             conversationId: detail!.conversation.conversationId,
             events: localEvents,
             recoveredFailures: [...recoveredFailures.current],
+            composer: {editingEventId: editingRequest?.eventId, previousId, change, conditionEdit, conditionTargets},
         });
         onRecoverGeneration();
     }, [
@@ -1787,6 +1882,8 @@ export default function AiConversationSidebar({
                     )}
                     <AiChatScroll
                         key={`${detail?.conversation.conversationId ?? 'loading'}:${segmentStart}`}
+                        historyKey={chatKey && detail ? `${chatKey}:scroll:${detail.conversation.conversationId}:${segmentStart}` : null}
+                        ready={Boolean(detail)}
                         open={open}
                         composerHidden={composerHidden}
                         className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
@@ -1808,7 +1905,11 @@ export default function AiConversationSidebar({
                                 .sort((a, b) => a.sequence - b.sequence)
                                 .map((event) =>
                                     event.kind === 'local' ? (
-                                        <AiAutofillMessages key={event.id} messages={event.messages} />
+                                        event.id.startsWith('feedback:error:') ? (
+                                            <AiFailureMessage key={event.id} message={event.messages[0]?.text ?? ''} announce={false} />
+                                        ) : (
+                                            <AiAutofillMessages key={event.id} messages={event.messages} />
+                                        )
                                     ) : event.kind === 'turn' ? (
                                         <div key={event.id} inert={preparing}>
                                             {renderTurn(event.turn)}
@@ -2186,7 +2287,7 @@ export default function AiConversationSidebar({
                                 </div>
                             </AssistantMessage>
                         )}
-                        {historySaveFailed && (
+                        {(historySaveFailed || composerSaveFailed) && (
                             <p role="status" className="text-xs text-[#667085]">
                                 {t('aiAdjust.preparation.historyUnavailable')}
                             </p>
@@ -2202,6 +2303,7 @@ export default function AiConversationSidebar({
                             ) : (
                                 <AiConversationEntry
                                     choice={null}
+                                    hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
                                     confirmation={
