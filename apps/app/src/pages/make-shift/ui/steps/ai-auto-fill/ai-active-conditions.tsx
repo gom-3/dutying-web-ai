@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import {type CSSProperties, useCallback, useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
+import {type CSSProperties, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type Ref} from 'react';
 import toast, {resolveValue, useToaster} from 'react-hot-toast';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiWardCondition} from '../../../model/use-ai-active-conditions';
@@ -7,7 +7,9 @@ import {Constraints, type TConstraintsEditorHandle, type TConstraintsEditorState
 import {AiConversationLoading} from './ai-conversation-loading';
 
 export type TAiActiveCondition = {id: string; label: string; description?: string; onRemove: () => Promise<void> | void};
+export type TActiveConditionsHandle = {openConditions: () => void};
 type TProps = {
+    ref?: Ref<TActiveConditionsHandle>;
     wardId: number;
     teamId: number;
     year: number;
@@ -28,6 +30,7 @@ const emptyEditorState: TConstraintsEditorState = {dirty: false, saving: false, 
 
 /** The step-two editor manages ward rules; AI requests keep their own deletion path. */
 export function AiActiveConditions({
+    ref,
     wardId,
     teamId,
     year,
@@ -50,6 +53,7 @@ export function AiActiveConditions({
     const [discardOpen, setDiscardOpen] = useState(false);
     const [editorState, setEditorState] = useState<TConstraintsEditorState>(emptyEditorState);
     const editorStateRef = useRef(editorState);
+    const returnFocus = useRef<HTMLElement | null>(null);
     const editor = useRef<TConstraintsEditorHandle>(null);
     const applyPending = useRef(false);
     const [pendingId, setPendingId] = useState<string | null>(null);
@@ -63,6 +67,19 @@ export function AiActiveConditions({
 
     editorStateRef.current = editorState;
     modalVisible.current = open && available;
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            openConditions: () => {
+                if (!available || disabled || editorState.dirty || editorState.saving) return;
+
+                returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+                setOpen(true);
+            },
+        }),
+        [available, disabled, editorState.dirty, editorState.saving],
+    );
 
     const finishClose = useCallback(() => {
         modalVisible.current = false;
@@ -240,7 +257,11 @@ export function AiActiveConditions({
                         onCloseAutoFocus={(event) => {
                             event.preventDefault();
 
-                            if (available && trigger.current?.isConnected) trigger.current.focus();
+                            const target = returnFocus.current?.isConnected ? returnFocus.current : trigger.current;
+
+                            returnFocus.current = null;
+
+                            if (available && target?.isConnected) target.focus();
                         }}
                         onEscapeKeyDown={(event) => {
                             if (popup.current?.querySelector('[data-constraint-layer-open="true"]')) {

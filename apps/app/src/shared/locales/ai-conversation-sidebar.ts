@@ -1,4 +1,6 @@
 export const aiConversationSidebarKo = {
+    conditionsSaved: '제약조건을 저장했어요. 근무표는 그대로예요. 바뀐 조건으로 다시 채울 수 있어요.',
+    retryWithUpdatedConditions: '바뀐 조건으로 자동채우기',
     saveRequest: '자주 쓰는 요청으로 저장하기',
     updateSavedRequest: '저장한 요청 수정하기',
     feedbackSent: '의견을 보냈어요. 확인해서 개선할게요.',
@@ -66,6 +68,8 @@ export const aiConversationSidebarKo = {
 } as const;
 
 export const aiConversationSidebarEn = {
+    conditionsSaved: 'Conditions saved. Your schedule is unchanged. You can fill it again with the updated conditions.',
+    retryWithUpdatedConditions: 'Fill with updated conditions',
     saveRequest: 'Save request',
     updateSavedRequest: 'Update saved request',
     feedbackSent: 'Your feedback was sent. Thank you.',
@@ -133,6 +137,8 @@ export const aiConversationSidebarEn = {
 } as const;
 
 export const aiConversationSidebarJa = {
+    conditionsSaved: '制約条件を保存しました。勤務表は変更されていません。変更した条件でもう一度自動入力できます。',
+    retryWithUpdatedConditions: '変更した条件で自動入力',
     saveRequest: 'よく使うリクエストとして保存',
     updateSavedRequest: '保存したリクエストを更新',
     feedbackSent: 'ご意見を送信しました。確認して改善に役立てます。',

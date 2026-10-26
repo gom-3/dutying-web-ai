@@ -180,6 +180,7 @@ export type TShiftConstraintOption = {
     name?: string;
     divisionNum?: number;
     wardShiftTypeId?: number;
+    wardShiftTypeIds?: number[];
     code?: string;
     day?: number;
     rotationSystem?: 'THREE' | 'TWO' | 'NONE';
@@ -245,6 +246,7 @@ export type TShiftConstraintRuleWarning = {
 };
 
 export type TShiftConstraintRulesResponse = {
+    revision?: string;
     schemaVersion: number;
     wardId: number;
     shiftTeamId: number;
@@ -253,6 +255,9 @@ export type TShiftConstraintRulesResponse = {
 };
 
 export type TUpdateShiftConstraintRulesDTO = {
+    revision?: string;
+    year?: number;
+    month?: number;
     rules?: {
         shiftConstraintRuleId?: number;
         templateCode: string;
@@ -982,7 +987,7 @@ export interface IWardAPI extends IAnnualLeaveApi, IReqShiftCapacityApi {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;
-    getShiftConstraintRules: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRulesResponse>;
+    getShiftConstraintRules: (wardId: number, shiftTeamId: number, year?: number, month?: number) => Promise<TShiftConstraintRulesResponse>;
     updateShiftConstraintRules: (
         wardId: number,
         shiftTeamId: number,

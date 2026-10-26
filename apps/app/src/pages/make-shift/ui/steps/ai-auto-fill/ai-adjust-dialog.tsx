@@ -3,11 +3,12 @@ import type {TScheduleAdjustInterpretRes, TScheduleMonthRequestRes} from '@dutyi
 import {useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type Ref, type ReactNode} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
-import {AiActiveConditions} from './ai-active-conditions';
+import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
 import type {TAutofillFlow} from './ai-autofill-preparation';
@@ -20,6 +21,7 @@ type TProps = {
     loading?: boolean;
     preparation?: ReactNode;
     autofillFlow?: TAutofillFlow | null;
+    historyKey?: string | null;
     onNewConversation?: () => void;
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
@@ -31,6 +33,7 @@ type TProps = {
     month?: number;
     onRegenerate: () => void;
     onGenerate?: () => void;
+    onRecoverGeneration?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
     generationCompletedMessage?: string;
@@ -68,6 +71,7 @@ export default function AiAdjustDialog({
     loading = false,
     preparation,
     autofillFlow,
+    historyKey,
     onNewConversation,
     spotlightSelector,
     spotlightInteractive,
@@ -78,6 +82,7 @@ export default function AiAdjustDialog({
     month,
     onRegenerate,
     onGenerate,
+    onRecoverGeneration,
     hasGeneratedSchedule = false,
     generationCompleted = false,
     generationCompletedMessage,
@@ -106,6 +111,7 @@ export default function AiAdjustDialog({
 }: TProps) {
     const {t} = useTypedTranslation();
     const panel = useRef<HTMLElement>(null);
+    const conditionEditor = useRef<TActiveConditionsHandle>(null);
     const input = useRef<TAdjustTextInputHandle>(null);
     const [inputBusy, setInputBusy] = useState(false);
     const [conditionEditorBusy, setConditionEditorBusy] = useState(false);
@@ -200,6 +206,7 @@ export default function AiAdjustDialog({
                 {hasConditionContext && (
                     <div className="shrink-0 px-[25px] pb-1">
                         <AiActiveConditions
+                            ref={conditionEditor}
                             wardId={wardId!}
                             teamId={teamId!}
                             year={year!}
@@ -233,9 +240,13 @@ export default function AiAdjustDialog({
                         hideRestartButton
                         preparation={preparation}
                         autofillFlow={autofillFlow}
+                        historyKey={historyKey}
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
+                        settingsHref={teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : undefined}
+                        onEditFailureSettings={hasConditionContext ? () => conditionEditor.current?.openConditions() : undefined}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
+                        onRecoverGeneration={onRecoverGeneration}
                         disabled={disabled || conditionEditorBusy || activeConditions.removingId !== null}
                         onBusyChange={setInputBusy}
                         conditionsVersion={conditionsVersion}

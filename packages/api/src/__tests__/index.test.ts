@@ -484,6 +484,9 @@ describe('@dutying/api public entry', () => {
         await expect(wardApi.updateShiftConstraintRules(7, 3, payload)).resolves.toEqual(response);
 
         expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules');
+        getMock.mockResolvedValueOnce({data: response});
+        await expect(wardApi.getShiftConstraintRules(7, 3, 2026, 11)).resolves.toEqual(response);
+        expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules?year=2026&month=11');
         expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules/candidates');
         expect(putMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules', payload);
     });

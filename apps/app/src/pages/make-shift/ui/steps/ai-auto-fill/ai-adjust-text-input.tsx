@@ -24,7 +24,9 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {interpretIssueCode} from '../../../model/ai-interpret-issues';
+import {readScheduleChat, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
+import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
 import type {TAdjustCard} from './ai-adjust-interpret-card';
 import {AiAdjustResult, type TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustReviewConversation, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
@@ -52,8 +54,11 @@ type TProps = {
     open?: boolean;
     preparation?: ReactNode;
     autofillFlow?: TAutofillFlow | null;
+    historyKey?: string | null;
     onNewConversation?: () => void;
     onReviewSchedule?: () => void;
+    onEditFailureSettings?: (failure: TAiConversationFailure) => void;
+    settingsHref?: string;
     hideRestartButton?: boolean;
     onBusyChange?: (busy: boolean) => void;
     conditionsVersion?: number;
@@ -77,6 +82,7 @@ type TProps = {
     generationFailure?: TAiConversationFailure | null;
     onDismissFailure?: () => void;
     onRegenerate?: () => void;
+    onRecoverGeneration?: () => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
 type TTurn = {
@@ -148,8 +154,11 @@ export default function AiAdjustTextInput({
     open = true,
     preparation,
     autofillFlow,
+    historyKey = null,
     onNewConversation,
     onReviewSchedule,
+    onEditFailureSettings,
+    settingsHref,
     hideRestartButton = false,
     onBusyChange,
     conditionsVersion = 0,
@@ -173,25 +182,60 @@ export default function AiAdjustTextInput({
     generationFailure,
     onDismissFailure,
     onRegenerate,
+    onRecoverGeneration,
     ref,
 }: TProps) {
     const {t} = useTypedTranslation();
+    const recoveredFailure = useRef<TAiConversationFailure | null>(null);
+    const settingsAction = (failure: TAiConversationFailure | undefined) =>
+        failure && onEditFailureSettings ? () => onEditFailureSettings(failure) : undefined;
     const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
-    const [text, setText] = useState('');
+    const {
+        text,
+        setText,
+        entryChoice,
+        setEntryChoice,
+        saveFailed: composerSaveFailed,
+    } = useScheduleChatComposer(historyKey ? `${historyKey}:composer` : null);
     const [noticeDismissed, setNoticeDismissed] = useState(false);
-    const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
-    const [turns, setTurns] = useState<TTurn[]>([]);
-    const [group, setGroup] = useState(0);
+    const [restoredTurns] = useState(
+        () =>
+            readScheduleChat<TTurn[]>(
+                historyKey,
+                (value): value is TTurn[] =>
+                    Array.isArray(value) &&
+                    value.every(
+                        (turn) =>
+                            turn &&
+                            Number.isSafeInteger(turn.id) &&
+                            Number.isSafeInteger(turn.group) &&
+                            typeof turn.text === 'string' &&
+                            typeof turn.status === 'string',
+                    ),
+            ) ?? [],
+    );
+    const [turns, setTurns] = useState<TTurn[]>(() =>
+        restoredTurns.map((turn) =>
+            ['interpreting', 'applying'].includes(turn.status)
+                ? {...turn, status: 'error', error: t('aiAdjust.preparation.interruptedHistory')}
+                : ['confirm', 'revising', 'applyFailed'].includes(turn.status)
+                  ? {...turn, status: 'superseded'}
+                  : turn,
+        ),
+    );
+    const [group, setGroup] = useState(() => (restoredTurns.length ? Math.max(...restoredTurns.map((turn) => turn.group)) + 1 : 0));
+    const [historySaveFailed, setHistorySaveFailed] = useState(false);
+    const [scrollReset, setScrollReset] = useState(0);
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const sequence = useRef(0);
+    const sequence = useRef(Math.max(0, ...restoredTurns.map((turn) => turn.id)));
     // Message IDs do not invalidate in-flight interpretation requests.
-    const messageSequence = useRef(0);
+    const messageSequence = useRef(Math.min(0, ...restoredTurns.map((turn) => turn.id)));
     const lastAutofillId = useRef<number | undefined>(undefined);
     const dismissedAutofillIds = useRef(new Set<number>());
     const generationBefore = useRef(new Map<number, {doc: TDutyDoc; shift?: TShift}>());
-    const adjustmentAttempt = useRef(0);
+    const adjustmentAttempt = useRef(Math.max(0, ...restoredTurns.map((turn) => turn.attempt ?? 0)));
     const busy = useRef(false);
     const mounted = useRef(true);
     const textarea = useRef<HTMLTextAreaElement>(null);
@@ -199,6 +243,11 @@ export default function AiAdjustTextInput({
     const previousConditionsVersion = useRef(conditionsVersion);
     const lastTurn = turns[turns.length - 1];
     const active = lastTurn?.group === group ? lastTurn : undefined;
+
+    useEffect(() => {
+        setHistorySaveFailed(!writeScheduleChat(historyKey, turns.length ? turns : null));
+    }, [historyKey, turns]);
+
     const hasRequestTurns = turns.some((turn) => turn.status !== 'messages');
     const flowCompleted = Boolean(generationCompleted && !noticeDismissed && !generationFailure);
     const waitingForGeneration = Boolean(
@@ -230,6 +279,25 @@ export default function AiAdjustTextInput({
             (generationCompleted && !noticeDismissed && !generationFailure ? {id: -1, status: 'running' as const, messages: []} : null);
 
         if (!flow || dismissedAutofillIds.current.has(flow.id)) return;
+
+        if (flow.status === 'completed') {
+            // Restore display-only messages without erasing a recorded failure or
+            // treating an interrupted request as a new executable action.
+            setTurns((current) => {
+                const existing = current.find((turn) => turn.autofillId === flow.id);
+
+                if (existing && JSON.stringify(existing.messages) === JSON.stringify(flow.messages)) return current;
+
+                if (existing) return current.map((turn) => (turn.id === existing.id ? {...turn, messages: flow.messages} : turn));
+
+                return [
+                    ...current,
+                    {id: --messageSequence.current, group, text: '', status: 'messages', autofillId: flow.id, messages: flow.messages},
+                ];
+            });
+
+            return;
+        }
 
         if (flow.kind !== 'adjustment' && !generationCompleted && !generationFailure && !generationBefore.current.has(flow.id)) {
             generationBefore.current.set(flow.id, {
@@ -315,6 +383,22 @@ export default function AiAdjustTextInput({
 
         return () => onBusyChange?.(false);
     }, [isBusy, onBusyChange]);
+
+    useEffect(() => {
+        if (
+            !generationFailure?.reviewFixed ||
+            !onRecoverGeneration ||
+            !open ||
+            disabled ||
+            isBusy ||
+            preparing ||
+            recoveredFailure.current === generationFailure
+        )
+            return;
+
+        recoveredFailure.current = generationFailure;
+        onRecoverGeneration();
+    }, [generationFailure, onRecoverGeneration, open, disabled, isBusy, preparing]);
 
     const isConfirming = active?.status === 'confirm';
     const activeRequests = requests.filter((request) => request.status === 'ACTIVE');
@@ -696,6 +780,7 @@ export default function AiAdjustTextInput({
         setEntryChoice(null);
         setNoticeDismissed(true);
         setGroup(0);
+        setScrollReset((value) => value + 1);
         setText('');
         setEditing(false);
         setError(null);
@@ -719,7 +804,7 @@ export default function AiAdjustTextInput({
                 text: '',
                 status: 'messages',
                 messages: [
-                    ...(!flowCompleted
+                    ...(!flowCompleted && turns.length === 0
                         ? [
                               {
                                   role: 'assistant' as const,
@@ -746,7 +831,14 @@ export default function AiAdjustTextInput({
 
     return (
         <div className="ai-adjust-text-input flex min-h-0 flex-1 flex-col" data-preserve-duty-selection="true">
+            {(historySaveFailed || composerSaveFailed) && (
+                <p role="status" className="px-6 py-2 text-xs text-[#667085]">
+                    {t('aiAdjust.preparation.historyUnavailable')}
+                </p>
+            )}
             <AiChatScroll
+                historyKey={historyKey ? `${historyKey}:scroll` : null}
+                resetKey={scrollReset}
                 open={open}
                 composerHidden={composerHidden}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[25px] pt-8 pb-6"
@@ -882,6 +974,8 @@ export default function AiAdjustTextInput({
                                         operationType="ADJUST"
                                         attemptLabel={attemptLabel(turn.attempt ?? 1)}
                                         failure={turn.failure}
+                                        settingsHref={settingsHref}
+                                        onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id}
                                         disabled={disabled || isBusy || requestsLoading || requestsError}
                                         onRetry={() => void handleApply()}
@@ -955,10 +1049,17 @@ export default function AiAdjustTextInput({
                                                 .length,
                                         )}
                                         failure={turn.failure ?? {message: turn.error, blocked: false}}
+                                        settingsHref={settingsHref}
+                                        onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
                                         onRetry={onRegenerate}
-                                        onReview={onReviewSchedule}
+                                        onReview={turn.failure?.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
+                                        reviewLabel={
+                                            turn.failure?.reviewFixed && onRecoverGeneration
+                                                ? t('aiAdjust.preparation.reviewFixed')
+                                                : undefined
+                                        }
                                         onInspectSchedule={onReviewSchedule}
                                     />
                                 )}
@@ -971,7 +1072,7 @@ export default function AiAdjustTextInput({
                                 )}
                             </div>
                         ))}
-                        {!active && <AssistantMessage>{t('aiAdjust.chat.restarted')}</AssistantMessage>}
+                        {!active && !restoredTurns.length && <AssistantMessage>{t('aiAdjust.chat.restarted')}</AssistantMessage>}
                     </div>
                 )}
                 {preparation && (
@@ -994,7 +1095,7 @@ export default function AiAdjustTextInput({
                                 choice={null}
                                 disabled={disabled || isBusy}
                                 modifyDisabled={modifyDisabled}
-                                hideIntro={flowCompleted}
+                                hideIntro={flowCompleted || turns.length > 0}
                                 generationCompleted={generationCompleted && !noticeDismissed}
                                 generationCompletedMessage={completedMessage}
                                 confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
@@ -1015,10 +1116,15 @@ export default function AiAdjustTextInput({
                         operationType="GENERATE"
                         attemptLabel={attemptLabel(1)}
                         failure={generationFailure}
+                        settingsHref={settingsHref}
+                        onEditSettings={settingsAction(generationFailure)}
+                        reviewLabel={
+                            generationFailure.reviewFixed && onRecoverGeneration ? t('aiAdjust.preparation.reviewFixed') : undefined
+                        }
                         active
                         disabled={disabled || isBusy}
                         onRetry={onRegenerate}
-                        onReview={onReviewSchedule}
+                        onReview={generationFailure.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
                         onInspectSchedule={onReviewSchedule}
                     />
                 )}

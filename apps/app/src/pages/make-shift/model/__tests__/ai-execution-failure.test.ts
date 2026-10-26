@@ -61,16 +61,21 @@ describe('rest eligibility is a configuration issue', () => {
             engineResult: {status, solver: {reason: solverReason}},
         };
     }
+
     it.each(['contract_nurse_off_not_allowed', 'nurse_has_no_assignable_off'])('handles %s before generic infeasibility', (reason) => {
         const response = rejected(reason, 'INFEASIBLE');
+
         response.failure = {reasonCode: 'HARD_RULE_CONFLICT', message: 'java.lang.INTERNAL_ERROR'};
+
         const failure = aiExecutionFailure(response);
+
         expect(failure?.recovery).toBe('settings');
         expect(failure?.message).toContain('구성원 설정');
         expect(failure?.message).not.toMatch(/고정한 근무|java\.|INFEASIBLE/);
     });
     it('names affected nurses from structured data and ignores arbitrary server text', () => {
         const response = rejected('contract_nurse_off_not_allowed');
+
         response.failure = {
             reasonCode: 'NURSE_OFF_NOT_ALLOWED',
             message: 'traceback: INTERNAL',
@@ -79,7 +84,9 @@ describe('rest eligibility is a configuration issue', () => {
                 {shiftNurseId: 2, name: '책임간호사'},
             ],
         };
+
         const failure = aiExecutionFailure(response);
+
         expect(failure?.message).toContain('수간호사, 책임간호사');
         expect(failure?.message).not.toContain('traceback');
         expect(failure?.recovery).toBe('settings');
@@ -111,8 +118,10 @@ describe('verified generation alternatives', () => {
             },
         };
     }
+
     it('shows the nurse, exact change, verification and a review step', () => {
         const failure = aiExecutionFailure(rejected());
+
         expect(failure?.message).toContain('테스트 간호사');
         expect(failure?.message).toContain('2회에서 4회');
         expect(failure?.message).toContain('미리 정한 근무와 다른 설정');
@@ -123,14 +132,17 @@ describe('verified generation alternatives', () => {
     });
     it('does not show stale alternatives for timeouts', () => {
         const response = rejected();
+
         response.engineResult!.status = 'TIME_LIMIT';
         response.failure!.reasonCode = 'TIME_LIMIT';
         expect(aiExecutionFailure(response)?.message).not.toContain('2회에서 4회');
     });
     it.each(['missing-nurse', 'invalid-count'] as const)('falls back safely for %s', (mode) => {
         const response = rejected();
+
         if (mode === 'missing-nurse') response.failure!.affectedNurses = [];
         else response.failure!.diagnosis!.proposedMax = -1;
+
         expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.infeasible'));
     });
 });
@@ -145,6 +157,7 @@ it('allows only an explicitly confirmed server exception through the failure gat
         validation: {summary: {hardCount: 1}},
         engineResult: {status: 'ACCEPTED', reviewRequired: false},
     } as unknown as Parameters<typeof aiExecutionFailure>[0];
+
     expect(aiExecutionFailure(response)).toBeNull();
     expect(aiExecutionFailure({...response, confirmedConstraintException: false})).not.toBeNull();
     expect(aiExecutionFailure({...response, engineResult: {status: 'REJECTED'}})).not.toBeNull();
@@ -154,8 +167,10 @@ it('allows only an explicitly confirmed server exception through the failure gat
 describe('fixed rest target conflict', () => {
     it.each(['ko', 'en'])('shows the conflicting counts and a review action in %s', async (language) => {
         const previous = i18n.language;
+
         try {
             await i18n.changeLanguage(language);
+
             const response = {
                 operationType: 'GENERATE',
                 applicable: false,
@@ -180,6 +195,7 @@ describe('fixed rest target conflict', () => {
                 },
             } as TAutofillResponse;
             const failure = aiExecutionFailure(response);
+
             expect(failure?.recovery).toBe('review');
             expect(failure?.message).toContain('Nurse A');
             expect(failure?.message).toContain('10');
@@ -210,8 +226,10 @@ describe('proven staffing conflict details', () => {
         },
         engineResult: {status, violations: [{type: 'STAFF_COUNT_BOUNDS_CONFLICT', date: '2026-11-02', shiftCode: 'N12', minimum, maximum}]},
     });
+
     it('keeps the concrete conflict visible even when no verified proposal exists', () => {
         const failure = aiExecutionFailure(response('INFEASIBLE', 4, 3));
+
         expect(failure?.message).toContain('2026-11-02');
         expect(failure?.message).toContain('최소 4명과 최대 3명');
         expect(failure?.conditionConflict).toBe(true);
@@ -236,6 +254,7 @@ describe('monthly staffing capacity evidence', () => {
         maximumAssignments: 180,
         excessAssignments: 24,
     };
+
     function response(review = false): TAutofillResponse {
         return {
             operationType: 'GENERATE',
@@ -259,17 +278,22 @@ describe('monthly staffing capacity evidence', () => {
             ...(review ? {conflictReview: {token: 'test', expiresAt: '2026-11-01T00:00:00Z', violations: []}} : {}),
         } as TAutofillResponse;
     }
+
     it.each(['ko', 'ja', 'en'])('explains counts and preserves explicit review in %s', async (locale) => {
         const previous = i18n.language;
+
         try {
             await i18n.changeLanguage(locale);
+
             const failure = aiExecutionFailure(response(true));
+
             expect(failure?.message).toContain('204');
             expect(failure?.message).toContain('180');
             expect(failure?.message).toContain('24');
             expect(failure?.message).not.toContain('aiAdjust.');
             expect(failure?.recovery).toBe('review');
             expect(failure?.confirmationRequired).toBe(true);
+
             if (locale === 'ja') expect(failure?.message).toContain('検証済み');
         } finally {
             await i18n.changeLanguage(previous);
@@ -281,6 +305,7 @@ describe('monthly staffing capacity evidence', () => {
     });
     it('does not present inconsistent arithmetic as a proven conflict', () => {
         const value = response();
+
         value.engineResult!.violations = [{...issue, excessAssignments: 25}];
         expect(aiExecutionFailure(value)?.message).not.toContain('204');
     });
@@ -289,8 +314,10 @@ describe('monthly staffing capacity evidence', () => {
 describe('combined conflict evidence', () => {
     it.each(['ko', 'ja', 'en'])('shows all proven conflicts before consent in %s', async (locale) => {
         const previous = i18n.language;
+
         try {
             await i18n.changeLanguage(locale);
+
             const result = aiExecutionFailure({
                 engineResult: {
                     status: 'CONFLICT_REVIEW',
@@ -317,10 +344,14 @@ describe('combined conflict evidence', () => {
                 },
                 conflictReview: {token: 'verified', expiresAt: '2026-11-01T00:00:00Z', violations: []},
             } as unknown as TAutofillResponse);
+
             for (const value of ['19', '5', '28', '21', '213', '180', '33', '2026-11-01']) expect(result?.message).toContain(value);
+
+            expect(result?.settingsTarget).toBe('member');
             expect(result?.confirmationRequired).toBe(true);
             expect(result?.recovery).toBe('review');
             expect(result?.message).not.toContain('aiAdjust.');
+
             if (locale === 'ja') expect(result?.message).not.toMatch(/[가-힣]/);
         } finally {
             await i18n.changeLanguage(previous);
@@ -367,11 +398,15 @@ describe('personal rest capacity evidence', () => {
                 ],
             },
         }) as TAutofillResponse;
+
     it.each(['ko', 'ja', 'en'])('shows both conflicts and a next action in %s', async (locale) => {
         const previous = i18n.language;
+
         try {
             await i18n.changeLanguage(locale);
+
             const failure = aiExecutionFailure(response());
+
             expect(failure?.message).toContain(
                 i18n.t('aiAdjust.executionFailure.personalRestEvidence', {
                     name: 'QA nurse',
@@ -395,9 +430,18 @@ describe('personal rest capacity evidence', () => {
             expect(failure?.recovery).toBe('revise');
             expect(failure?.conditionConflict).toBe(true);
             expect(failure?.confirmationRequired).not.toBe(true);
+            expect(failure?.settingsTarget).toBe('rest');
+            expect(failure?.restConflicts).toHaveLength(2);
         } finally {
             await i18n.changeLanguage(previous);
         }
+    });
+    it.each(['TIME_LIMIT', 'ERROR', 'REJECTED'])('does not diagnose settings from incidental evidence on %s', (status) => {
+        const value = response();
+
+        value.engineResult!.status = status;
+        expect(aiExecutionFailure(value)?.settingsTarget).toBeUndefined();
+        expect(aiExecutionFailure(value)?.restConflicts).toBeUndefined();
     });
     it('does not assert conflict when the targets fit', () => {
         expect(aiExecutionFailure(response(10))?.conditionConflict).not.toBe(true);

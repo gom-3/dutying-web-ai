@@ -230,6 +230,12 @@
     .ai-adjust-sidebar:is([data-preparing='true'], [data-loading='true']) > header {
         height: 64px;
     }
+    /* Fixed selection has an explicit full-table editing mode. Keep its question,
+       protection summary and actions together instead of clipping them in a half sheet. */
+    .ai-adjust-sidebar[data-preparing='true']:has([data-fixed-selection='true']) {
+        top: 0;
+        height: 100dvh;
+    }
     html[data-make-ai-preparing='true'] .ai-autofill-root__main {
         padding-bottom: 52dvh;
     }

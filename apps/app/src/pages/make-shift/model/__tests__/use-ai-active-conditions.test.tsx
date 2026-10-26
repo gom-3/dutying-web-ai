@@ -59,7 +59,7 @@ describe('active AI conditions', () => {
         await waitFor(() => expect(result.current.loading).toBe(false));
         expect(result.current.wardRules).toEqual([{id: 'rule:17', label: '야간 4일 연속 금지'}]);
         expect(result.current.requests).toEqual([request]);
-        expect(api.rules).toHaveBeenCalledWith(1, 10);
+        expect(api.rules).toHaveBeenCalledWith(1, 10, 2026, 11);
         expect(api.requests).toHaveBeenCalledWith(1, 10, 2026, 11);
         expect(api.update).not.toHaveBeenCalled();
     });

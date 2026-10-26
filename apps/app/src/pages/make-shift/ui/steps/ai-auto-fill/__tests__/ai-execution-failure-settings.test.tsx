@@ -1,7 +1,7 @@
 import {fireEvent, render, screen} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
-import {AiExecutionFailure} from '../ai-execution-failure';
 import i18n from '@/i18n';
+import {AiExecutionFailure} from '../ai-execution-failure';
 
 vi.mock('../../../../model/make-shift-store', () => ({
     useMakeShiftStore: (selector: (state: {currentShiftTeamId: number}) => unknown) => selector({currentShiftTeamId: 12}),
@@ -18,7 +18,9 @@ describe('rest eligibility recovery', () => {
                 onReview={vi.fn()}
             />,
         );
+
         const link = screen.getByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
+
         expect(link).toHaveAttribute('href', '/member?shiftTeamId=12');
         expect(link).toHaveAttribute('target', '_blank');
         expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -31,6 +33,7 @@ describe('rest eligibility recovery', () => {
 it('keeps the verified alternative visible with a review action and no automatic retry', () => {
     const revise = vi.fn();
     const message = i18n.t('aiAdjust.executionFailure.verifiedNightCap', {name: '테스트 간호사', current: 2, proposed: 4});
+
     render(
         <AiExecutionFailure
             failure={{message, blocked: false, recovery: 'revise'}}
@@ -50,7 +53,9 @@ it('keeps the verified alternative visible with a review action and no automatic
 it('explains the proven staffing conflict in Japanese and offers only unapplied choices', async () => {
     const {aiExecutionFailure} = await import('../../../../model/ai-execution-failure');
     const {default: translator} = await import('@/i18n');
+
     await translator.changeLanguage('ja');
+
     try {
         const failure = aiExecutionFailure({
             operationType: 'GENERATE',
@@ -71,9 +76,11 @@ it('explains the proven staffing conflict in Japanese and offers only unapplied 
                 violations: [{type: 'STAFF_COUNT_BOUNDS_CONFLICT', date: '2026-11-02', shiftCode: 'N12', minimum: 4, maximum: 3}],
             },
         });
+
         expect(failure).not.toBeNull();
         expect(failure!.message).toContain('最低4名と最大3名');
         expect(failure!.message).not.toMatch(/INFEASIBLE|STAFF_COUNT|[가-힣]|could not/);
+
         const revise = vi.fn();
         const settings = vi.fn();
         const retry = vi.fn();
@@ -87,6 +94,7 @@ it('explains the proven staffing conflict in Japanese and offers only unapplied 
                 operationType="GENERATE"
             />,
         );
+
         expect(screen.getByText(/2026-11-02.*N12/)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: translator.t('aiAdjust.failure.retry')})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: translator.t('aiAutofillUi.conflictReview.proceed')})).not.toBeInTheDocument();
@@ -103,6 +111,7 @@ it('explains the proven staffing conflict in Japanese and offers only unapplied 
 
 it('keeps settings available when request adjustment is unavailable', () => {
     const settings = vi.fn();
+
     render(
         <AiExecutionFailure
             failure={{message: '確認', blocked: false, recovery: 'revise', conditionConflict: true}}
@@ -116,7 +125,40 @@ it('keeps settings available when request adjustment is unavailable', () => {
 
 it('renders failure reasons as semantic bullet items', () => {
     render(<AiExecutionFailure failure={{message: '생성을 완료하지 못했어요.\n• 기존 표는 그대로예요.', blocked: false}} />);
-    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-        '생성을 완료하지 못했어요.', '기존 표는 그대로예요.',
-    ]);
+    expect(screen.getAllByRole('listitem').map((item) => item.textContent)).toEqual(['생성을 완료하지 못했어요.', '기존 표는 그대로예요.']);
+});
+
+it('opens only the contextual rest repair action when a valid target is available', () => {
+    const settings = vi.fn();
+
+    render(
+        <AiExecutionFailure
+            failure={{
+                message: '김간호: O 목표 9일, 가능 0~8일',
+                blocked: false,
+                recovery: 'revise',
+                conditionConflict: true,
+                settingsTarget: 'rest',
+            }}
+            active
+            onEditSettings={settings}
+        />,
+    );
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+    expect(settings).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+});
+
+it.each(['rest', 'member'] as const)('uses the existing member page when a %s conflict cannot be edited here', (settingsTarget) => {
+    render(
+        <AiExecutionFailure
+            failure={{message: '충돌 근거', blocked: false, recovery: 'revise', conditionConflict: true, settingsTarget}}
+            active
+        />,
+    );
+    expect(screen.getByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')})).toHaveAttribute(
+        'href',
+        '/member?shiftTeamId=12',
+    );
+    expect(screen.queryByRole('button', {name: '휴무 설정 수정'})).not.toBeInTheDocument();
 });
