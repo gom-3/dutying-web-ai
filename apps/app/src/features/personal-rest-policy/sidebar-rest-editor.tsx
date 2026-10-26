@@ -1,6 +1,7 @@
 import {useEffect, useId, useImperativeHandle, useState, type Ref} from 'react';
 import type {TWardShiftType} from '@/entities';
 import {usePersonalRestText} from './copy';
+import type {TResolvedRestConflict} from './rest-conflict';
 import {useRestEditorCopy} from './rest-editor-copy';
 import {usePersonalRestForm} from './use-personal-rest-form';
 
@@ -8,10 +9,11 @@ export type TRestEditorState = {dirty: boolean; saving: boolean; ready: boolean;
 export type TRestEditorHandle = {apply: () => Promise<boolean>};
 export type TRestEditorContext = {nurses: {nurseId: number; name: string}[]; shiftTypes: TWardShiftType[]};
 
-type TProps = TRestEditorContext & {
+type TProps = {
+    conflicts: TResolvedRestConflict[];
+    shiftTypes: TWardShiftType[];
     year: number;
     month: number;
-    initialNurseId?: number;
     disabled: boolean;
     editorRef: Ref<TRestEditorHandle>;
     onStateChange: (state: TRestEditorState) => void;
@@ -20,9 +22,9 @@ type TProps = TRestEditorContext & {
 
 export function SidebarRestEditor(props: TProps) {
     const text = useRestEditorCopy();
-    const [selected, setSelected] = useState(props.initialNurseId ?? props.nurses[0]?.nurseId);
+    const [selected, setSelected] = useState(props.conflicts[0]?.nurseId);
     const [locked, setLocked] = useState(false);
-    const nurse = props.nurses.find((nurse) => nurse.nurseId === selected) ?? props.nurses[0];
+    const nurse = props.conflicts.find((nurse) => nurse.nurseId === selected) ?? props.conflicts[0];
 
     if (!nurse) return null;
 
@@ -32,21 +34,33 @@ export function SidebarRestEditor(props: TProps) {
                 <p className="text-[15px] font-semibold text-[#333D4B]">{text.month(props.year, props.month)}</p>
                 <p className="mt-1 text-[13px] leading-5 text-[#667085]">{text.intro}</p>
             </div>
-            <label className="grid gap-2 text-[14px] font-medium text-[#333D4B]">
-                {text.nurse}
-                <select
-                    value={nurse.nurseId}
-                    disabled={props.disabled || locked}
-                    onChange={(event) => setSelected(Number(event.target.value))}
-                    className="min-h-[44px] w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-[15px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                >
-                    {props.nurses.map((nurse) => (
-                        <option key={nurse.nurseId} value={nurse.nurseId}>
-                            {nurse.name}
-                        </option>
-                    ))}
-                </select>
-            </label>
+            {props.conflicts.length > 1 ? (
+                <label className="grid gap-2 text-[14px] font-medium text-[#333D4B]">
+                    {text.nurse}
+                    <select
+                        value={nurse.nurseId}
+                        disabled={props.disabled || locked}
+                        onChange={(event) => setSelected(Number(event.target.value))}
+                        className="min-h-[44px] w-full rounded-[10px] border border-[#D0D5DD] bg-white px-3 text-[15px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
+                    >
+                        {props.conflicts.map((nurse) => (
+                            <option key={nurse.nurseId} value={nurse.nurseId}>
+                                {nurse.name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            ) : (
+                <p className="text-[17px] font-semibold text-[#333D4B]">{nurse.name}</p>
+            )}
+            <ul
+                aria-label={text.reason}
+                className="list-disc space-y-2 rounded-[10px] bg-[#FFF8EB] py-3 pr-3 pl-7 text-[13px] leading-6 text-[#7A4B12]"
+            >
+                {nurse.explanations.map((explanation) => (
+                    <li key={explanation}>{explanation}</li>
+                ))}
+            </ul>
             <RestFields
                 key={`${nurse.nurseId}:${props.year}:${props.month}`}
                 {...props}

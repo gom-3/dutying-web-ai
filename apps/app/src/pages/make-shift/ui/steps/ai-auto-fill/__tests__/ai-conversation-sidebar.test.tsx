@@ -439,18 +439,19 @@ describe('persistent schedule sidebar', () => {
         const external = vi.fn();
 
         renderSidebar({onOpenConstraints: external});
-        await userEvent.click(await screen.findByRole('button', {name: '설정 직접 수정'}));
+        await userEvent.click(await screen.findByRole('button', {name: '휴무 설정 수정'}));
 
         const off = await screen.findByRole('spinbutton', {name: 'OFF'});
 
-        expect(screen.getByRole('combobox', {name: '간호사'})).toHaveValue('1');
+        expect(screen.getByText('김 간호사', {exact: true})).toBeVisible();
+        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
         expect(get).toHaveBeenCalledWith('/nurses/1/monthly-rest-policy/2026/11');
         await userEvent.clear(off);
         await userEvent.type(off, '8');
 
         const previousDoc = structuredClone(useShiftEditorStore.getState().doc);
 
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
         expect(await screen.findByText('휴무 목표를 저장했어요. 다음 자동채우기에서 다른 조건과 함께 확인할게요.')).toBeVisible();
         expect(put).toHaveBeenCalledOnce();
         expect(mocks.detail).toHaveBeenCalledTimes(2);
@@ -460,6 +461,63 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.interpret).not.toHaveBeenCalled();
     });
+
+    it.each(['unknown-rest', 'availability'] as const)(
+        'links %s evidence to the existing member settings instead of guessing a nurse',
+        async (kind) => {
+            current.operations = [
+                {
+                    ...operation,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations:
+                                kind === 'unknown-rest'
+                                    ? [
+                                          {
+                                              type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                              nurseId: 999,
+                                              nurseName: '김 간호사',
+                                              shiftCodes: ['O'],
+                                              expected: 9,
+                                              minimumAssignments: 0,
+                                              maximumAssignments: 8,
+                                          },
+                                      ]
+                                    : [
+                                          {
+                                              type: 'WORK_REST_AVAILABILITY_CONFLICT',
+                                              nurseName: '김 간호사',
+                                              forcedWorkDays: 19,
+                                              maximum: 5,
+                                              startDate: '2026-11-01',
+                                              endDate: '2026-11-19',
+                                          },
+                                      ],
+                        },
+                    },
+                },
+            ];
+
+            const get = vi.spyOn(adminAxiosInstance, 'get');
+
+            renderSidebar();
+
+            const link = await screen.findByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
+
+            expect(link).toHaveAttribute('href', '/member?shiftTeamId=2');
+            expect(link).toHaveAttribute('target', '_blank');
+            expect(screen.queryByRole('button', {name: '휴무 설정 수정'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+            expect(get.mock.calls.some(([url]) => String(url).includes('monthly-rest-policy'))).toBe(false);
+            expect(mocks.execute).not.toHaveBeenCalled();
+        },
+    );
 
     it('restores the selected composer and unfinished text without adding another introduction or sending it', async () => {
         current.operations = [];
@@ -3789,6 +3847,36 @@ describe('persistent schedule sidebar', () => {
     });
     it('retires the old preview after saving a monthly rest target without regenerating or changing cells', async () => {
         semanticRequest();
+        current = {
+            ...current,
+            operations: [
+                {
+                    ...operation,
+                    sequence: 3,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    interpretationId: null,
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations: [
+                                {
+                                    type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                    nurseId: 1,
+                                    shiftCodes: ['O'],
+                                    expected: 9,
+                                    minimumAssignments: 0,
+                                    maximumAssignments: 8,
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        };
         vi.spyOn(adminAxiosInstance, 'get').mockResolvedValue({
             data: {nurseId: 1, year: 2026, month: 11, offDays: 9, annualDaysByWardShiftTypeId: {}, version: 0},
         });
@@ -3805,15 +3893,14 @@ describe('persistent schedule sidebar', () => {
         const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
 
         await waitFor(() => expect(oldPreview).toBeEnabled());
-        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: '개인별 휴무'}));
+        await userEvent.click(screen.getByRole('button', {name: '휴무 설정 수정'}));
 
         const off = await screen.findByRole('spinbutton', {name: 'OFF'});
 
         await userEvent.clear(off);
         await userEvent.type(off, '8');
-        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '개인별 휴무'})).not.toBeInTheDocument());
+        await userEvent.click(screen.getByRole('button', {name: '설정 저장'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument());
         expect(oldPreview).toBeDisabled();
         await userEvent.click(oldPreview);
         expect(mocks.confirmPlan).not.toHaveBeenCalled();

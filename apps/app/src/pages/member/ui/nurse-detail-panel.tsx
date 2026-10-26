@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
+import {usePersonalRestText} from '@/features/personal-rest-policy';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
@@ -28,8 +29,6 @@ import {
     isRestShiftOption,
     type TNurseShiftTypeOption,
 } from '../model/nurse-shift-types';
-
-import {PersonalRestPolicy, usePersonalRestText} from '@/features/personal-rest-policy';
 
 export type TNurseDetailDraftActions = {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean};
 
@@ -852,133 +851,139 @@ function NurseDetailPanel({
                             </Tooltip>
                         </div>
                         <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
-                            {shiftTypeOptions.filter((type) => !isRestShiftOption(type)).map((shiftType) => {
-                                const {isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId} = shiftType;
-                                const baseColor = toShiftTypeColor(
-                                    typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined,
-                                );
-                                const nextIsPossible = !isPossible;
-                                const defaultTargetRatioWeight = getTargetShiftRatioDefaultWeight(shiftType, nextIsPossible);
-                                const nextPossibleClassifications = getNextPossibleShiftRatioClassifications(shiftType, nextIsPossible);
+                            {shiftTypeOptions
+                                .filter((type) => !isRestShiftOption(type))
+                                .map((shiftType) => {
+                                    const {isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId} = shiftType;
+                                    const baseColor = toShiftTypeColor(
+                                        typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined,
+                                    );
+                                    const nextIsPossible = !isPossible;
+                                    const defaultTargetRatioWeight = getTargetShiftRatioDefaultWeight(shiftType, nextIsPossible);
+                                    const nextPossibleClassifications = getNextPossibleShiftRatioClassifications(shiftType, nextIsPossible);
 
-                                return (
-                                    <button
-                                        key={apiShiftTypeId}
-                                        type="button"
-                                        disabled={isBusy}
-                                        aria-pressed={isPossible}
-                                        title={`${shortName ? `${shortName} ` : ''}${name}`.trim()}
-                                        className={cn(
-                                            'inline-flex w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden py-1 font-apple whitespace-nowrap transition-[background-color,color,opacity,filter] duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50',
-                                            isModal
-                                                ? 'min-h-10 rounded-[10px] border-0 px-3 text-[14px] focus-visible:bg-[#E5DEFF] focus-visible:text-main-1 focus-visible:outline-none'
-                                                : 'min-h-7 rounded-[5px] border px-1.5 text-[13px] hover:-translate-y-[1px] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
-                                        )}
-                                        style={
-                                            isPossible
-                                                ? {borderColor: baseColor, backgroundColor: baseColor, color: '#FFFFFF'}
-                                                : {borderColor: 'transparent', backgroundColor: '#ECEFF3', color: '#6B7280'}
-                                        }
-                                        onClick={() => {
-                                            setWriteNurse((prev) =>
-                                                prev
-                                                    ? {
-                                                          ...prev,
-                                                          nurseShiftTypes: produce(prev.nurseShiftTypes, (draft) => {
-                                                              const target = draft.find(
-                                                                  (x) =>
-                                                                      (typeof wardShiftTypeId === 'number' &&
-                                                                          x.wardShiftTypeId === wardShiftTypeId) ||
-                                                                      x.nurseShiftTypeId === apiShiftTypeId,
-                                                              );
+                                    return (
+                                        <button
+                                            key={apiShiftTypeId}
+                                            type="button"
+                                            disabled={isBusy}
+                                            aria-pressed={isPossible}
+                                            title={`${shortName ? `${shortName} ` : ''}${name}`.trim()}
+                                            className={cn(
+                                                'inline-flex w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden py-1 font-apple whitespace-nowrap transition-[background-color,color,opacity,filter] duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50',
+                                                isModal
+                                                    ? 'min-h-10 rounded-[10px] border-0 px-3 text-[14px] focus-visible:bg-[#E5DEFF] focus-visible:text-main-1 focus-visible:outline-none'
+                                                    : 'min-h-7 rounded-[5px] border px-1.5 text-[13px] hover:-translate-y-[1px] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
+                                            )}
+                                            style={
+                                                isPossible
+                                                    ? {borderColor: baseColor, backgroundColor: baseColor, color: '#FFFFFF'}
+                                                    : {borderColor: 'transparent', backgroundColor: '#ECEFF3', color: '#6B7280'}
+                                            }
+                                            onClick={() => {
+                                                setWriteNurse((prev) =>
+                                                    prev
+                                                        ? {
+                                                              ...prev,
+                                                              nurseShiftTypes: produce(prev.nurseShiftTypes, (draft) => {
+                                                                  const target = draft.find(
+                                                                      (x) =>
+                                                                          (typeof wardShiftTypeId === 'number' &&
+                                                                              x.wardShiftTypeId === wardShiftTypeId) ||
+                                                                          x.nurseShiftTypeId === apiShiftTypeId,
+                                                                  );
 
-                                                              if (target) {
-                                                                  target.isPossible = nextIsPossible;
-                                                              } else {
-                                                                  draft.push({
-                                                                      nurseShiftTypeId: apiShiftTypeId,
-                                                                      wardShiftTypeId,
-                                                                      name,
-                                                                      shortName: shortName ?? '',
-                                                                      isPossible: nextIsPossible,
-                                                                      isPreferred: false,
-                                                                      targetRatioWeight: defaultTargetRatioWeight,
+                                                                  if (target) {
+                                                                      target.isPossible = nextIsPossible;
+                                                                  } else {
+                                                                      draft.push({
+                                                                          nurseShiftTypeId: apiShiftTypeId,
+                                                                          wardShiftTypeId,
+                                                                          name,
+                                                                          shortName: shortName ?? '',
+                                                                          isPossible: nextIsPossible,
+                                                                          isPreferred: false,
+                                                                          targetRatioWeight: defaultTargetRatioWeight,
+                                                                      });
+                                                                  }
+
+                                                                  draft.forEach((draftShiftType) => {
+                                                                      const option = shiftTypeOptions.find(
+                                                                          (candidate) =>
+                                                                              (typeof candidate.wardShiftTypeId === 'number' &&
+                                                                                  candidate.wardShiftTypeId ===
+                                                                                      draftShiftType.wardShiftTypeId) ||
+                                                                              candidate.apiShiftTypeId === draftShiftType.nurseShiftTypeId,
+                                                                      );
+                                                                      const classification =
+                                                                          typeof option?.wardShiftTypeId === 'number'
+                                                                              ? wardShiftTypeById.get(option.wardShiftTypeId)
+                                                                                    ?.classification
+                                                                              : undefined;
+
+                                                                      if (!isMonthlyNurseShiftRatioClassification(classification)) return;
+
+                                                                      const isTarget =
+                                                                          (typeof wardShiftTypeId === 'number' &&
+                                                                              draftShiftType.wardShiftTypeId === wardShiftTypeId) ||
+                                                                          draftShiftType.nurseShiftTypeId === apiShiftTypeId;
+                                                                      const isPossibleAfterToggle = isTarget
+                                                                          ? nextIsPossible
+                                                                          : draftShiftType.isPossible;
+
+                                                                      if (!isPossibleAfterToggle) return;
+
+                                                                      if (
+                                                                          manualShiftRatioWeightKeys.has(
+                                                                              getNurseShiftTypeKey(draftShiftType),
+                                                                          )
+                                                                      ) {
+                                                                          return;
+                                                                      }
+
+                                                                      if (
+                                                                          !isDefaultMonthlyNurseShiftRatioWeight(
+                                                                              classification,
+                                                                              draftShiftType.targetRatioWeight,
+                                                                          )
+                                                                      ) {
+                                                                          return;
+                                                                      }
+
+                                                                      draftShiftType.targetRatioWeight =
+                                                                          getDefaultMonthlyNurseShiftRatioWeight(
+                                                                              classification,
+                                                                              nextPossibleClassifications,
+                                                                          );
                                                                   });
-                                                              }
-
-                                                              draft.forEach((draftShiftType) => {
-                                                                  const option = shiftTypeOptions.find(
-                                                                      (candidate) =>
-                                                                          (typeof candidate.wardShiftTypeId === 'number' &&
-                                                                              candidate.wardShiftTypeId ===
-                                                                                  draftShiftType.wardShiftTypeId) ||
-                                                                          candidate.apiShiftTypeId === draftShiftType.nurseShiftTypeId,
-                                                                  );
-                                                                  const classification =
-                                                                      typeof option?.wardShiftTypeId === 'number'
-                                                                          ? wardShiftTypeById.get(option.wardShiftTypeId)?.classification
-                                                                          : undefined;
-
-                                                                  if (!isMonthlyNurseShiftRatioClassification(classification)) return;
-
-                                                                  const isTarget =
-                                                                      (typeof wardShiftTypeId === 'number' &&
-                                                                          draftShiftType.wardShiftTypeId === wardShiftTypeId) ||
-                                                                      draftShiftType.nurseShiftTypeId === apiShiftTypeId;
-                                                                  const isPossibleAfterToggle = isTarget
-                                                                      ? nextIsPossible
-                                                                      : draftShiftType.isPossible;
-
-                                                                  if (!isPossibleAfterToggle) return;
-
-                                                                  if (
-                                                                      manualShiftRatioWeightKeys.has(getNurseShiftTypeKey(draftShiftType))
-                                                                  ) {
-                                                                      return;
-                                                                  }
-
-                                                                  if (
-                                                                      !isDefaultMonthlyNurseShiftRatioWeight(
-                                                                          classification,
-                                                                          draftShiftType.targetRatioWeight,
-                                                                      )
-                                                                  ) {
-                                                                      return;
-                                                                  }
-
-                                                                  draftShiftType.targetRatioWeight = getDefaultMonthlyNurseShiftRatioWeight(
-                                                                      classification,
-                                                                      nextPossibleClassifications,
-                                                                  );
-                                                              });
-                                                          }),
-                                                      }
-                                                    : prev,
-                                            );
-                                            sendEvent(events.memberPage.editNurseDrawer.changeNurseShiftTypes);
-                                        }}
-                                    >
-                                        <span className="relative inline-flex h-5 w-[22px] shrink-0 items-center justify-center overflow-visible min-[1600px]:w-6">
-                                            <span
-                                                className={cn(
-                                                    'absolute inset-x-0 flex min-w-0 items-center justify-center truncate px-0.5 font-medium transition-all duration-200',
-                                                    isPossible ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
-                                                )}
-                                            >
-                                                {shortName || ''}
+                                                              }),
+                                                          }
+                                                        : prev,
+                                                );
+                                                sendEvent(events.memberPage.editNurseDrawer.changeNurseShiftTypes);
+                                            }}
+                                        >
+                                            <span className="relative inline-flex h-5 w-[22px] shrink-0 items-center justify-center overflow-visible min-[1600px]:w-6">
+                                                <span
+                                                    className={cn(
+                                                        'absolute inset-x-0 flex min-w-0 items-center justify-center truncate px-0.5 font-medium transition-all duration-200',
+                                                        isPossible ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
+                                                    )}
+                                                >
+                                                    {shortName || ''}
+                                                </span>
+                                                <Check
+                                                    className={cn(
+                                                        'absolute h-4 w-4 transition-all duration-200',
+                                                        isPossible ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
+                                                    )}
+                                                    strokeWidth={3}
+                                                />
                                             </span>
-                                            <Check
-                                                className={cn(
-                                                    'absolute h-4 w-4 transition-all duration-200',
-                                                    isPossible ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
-                                                )}
-                                                strokeWidth={3}
-                                            />
-                                        </span>
-                                        <span className="min-w-0 flex-1 truncate text-left font-normal">{name}</span>
-                                    </button>
-                                );
-                            })}
+                                            <span className="min-w-0 flex-1 truncate text-left font-normal">{name}</span>
+                                        </button>
+                                    );
+                                })}
                         </div>
                         <details className="mt-4 border-t border-gray-7 pt-3">
                             <summary className="cursor-pointer py-2 font-semibold">{restText.legacyTitle}</summary>
@@ -987,22 +992,35 @@ function NurseDetailPanel({
                                 {shiftTypeOptions.filter(isRestShiftOption).map((type) => (
                                     <li key={type.apiShiftTypeId}>
                                         <label className="flex min-h-11 items-center gap-3">
-                                            <input type="checkbox" checked={type.isPossible} disabled={isBusy}
+                                            <input
+                                                type="checkbox"
+                                                checked={type.isPossible}
+                                                disabled={isBusy}
                                                 onChange={(event) => {
                                                     const checked = event.target.checked;
-                                                    setWriteNurse((previous) => previous ? {...previous,
-                                                        nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
-                                                            item.nurseShiftTypeId === type.apiShiftTypeId ? {...item, isPossible: checked} : item),
-                                                    } : previous);
-                                                }} />
-                                            <span>{type.name} · {type.isPossible ? restText.allowed : restText.blocked}</span>
+
+                                                    setWriteNurse((previous) =>
+                                                        previous
+                                                            ? {
+                                                                  ...previous,
+                                                                  nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
+                                                                      item.nurseShiftTypeId === type.apiShiftTypeId
+                                                                          ? {...item, isPossible: checked}
+                                                                          : item,
+                                                                  ),
+                                                              }
+                                                            : previous,
+                                                    );
+                                                }}
+                                            />
+                                            <span>
+                                                {type.name} · {type.isPossible ? restText.allowed : restText.blocked}
+                                            </span>
                                         </label>
                                     </li>
                                 ))}
                             </ul>
                         </details>
-                        {selectedNurse && selectedNurse.nurseId > 0 && <PersonalRestPolicy key={selectedNurse.nurseId}
-                            nurseId={selectedNurse.nurseId} nurseName={selectedNurse.name} shiftTypes={wardShiftTypes ?? []} />}
                         {ENABLE_MONTHLY_SHIFT_RATIO ? (
                             <div className="mt-3 border-t border-gray-7 pt-3">
                                 <div className="flex items-center justify-between gap-2">

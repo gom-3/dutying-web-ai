@@ -9,6 +9,7 @@ import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring
 import i18n from '@/i18n';
 import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
@@ -26,6 +27,7 @@ import {
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
+import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
     conversationApi,
@@ -1663,28 +1665,27 @@ export default function AiConversationSidebar({
             else setRebuild(true);
         } else textarea.current?.focus();
     };
-    const openConflictSettings = (operation: TConversationOperation) => {
-        const engine = operation.result?.engineResult;
-        const capacities =
-            operation.result?.conflictReview && Array.isArray(engine?.solver?.conflictEvidence)
-                ? (engine.solver.conflictEvidence as Record<string, unknown>[])
-                : engine?.violations;
-        const personal = Array.isArray(capacities)
-            ? capacities.find(
-                  (issue) => issue != null && typeof issue === 'object' && issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
-              )
+    const restConflictsFor = (operation: TConversationOperation) =>
+        resolveRestConflicts(
+            operationFailure(operation),
+            doc.rows
+                .map((row) => doc.workerMeta[row.workerId])
+                .filter((meta) => meta.nurseId != null)
+                .map((meta) => ({nurseId: meta.nurseId!, name: meta.name})),
+        );
+    const settingsHrefFor = (operation: TConversationOperation) => {
+        const failure = operationFailure(operation);
+        const target = failure?.settingsTarget;
+
+        return failure?.recovery === 'settings' || target === 'member' || (target === 'rest' && !restConflictsFor(operation).length)
+            ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}`
             : undefined;
+    };
+    const openConflictSettings = (operation: TConversationOperation) => {
+        const conflicts = restConflictsFor(operation);
 
-        if (personal) {
-            const nurses = doc.rows.map((row) => doc.workerMeta[row.workerId]).filter((meta) => meta.nurseId != null);
-            const matches = nurses.filter((meta) =>
-                typeof personal.nurseId === 'number'
-                    ? meta.nurseId === personal.nurseId
-                    : typeof personal.nurseName === 'string' && meta.name === personal.nurseName,
-            );
-
-            conditionsEditor.current?.openRestTargets(matches.length === 1 ? matches[0].nurseId : undefined);
-        } else (onOpenConstraints ?? onClose)();
+        if (conflicts.length) conditionsEditor.current?.openRestTargets(conflicts);
+        else conditionsEditor.current?.openConditions();
     };
     const renderTurn = (turn: TConversationTurn) => {
         if (turn.type === 'SEGMENT_START')
@@ -1997,7 +1998,17 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={() => openConflictSettings(event.operation)}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
+                                                        settingsLabel={
+                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
+                                                                ? restText.action
+                                                                : undefined
+                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2124,7 +2135,12 @@ export default function AiConversationSidebar({
                                                         : undefined
                                                 }
                                                 onInspectSchedule={onClose}
-                                                onEditSettings={() => openConflictSettings(event.operation)}
+                                                settingsHref={settingsHrefFor(event.operation)}
+                                                onEditSettings={
+                                                    settingsHrefFor(event.operation)
+                                                        ? undefined
+                                                        : () => openConflictSettings(event.operation)
+                                                }
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
@@ -2143,7 +2159,17 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={() => openConflictSettings(event.operation)}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
+                                                        settingsLabel={
+                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
+                                                                ? restText.action
+                                                                : undefined
+                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2239,7 +2265,17 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={() => openConflictSettings(event.operation)}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
+                                                        settingsLabel={
+                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
+                                                                ? restText.action
+                                                                : undefined
+                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,

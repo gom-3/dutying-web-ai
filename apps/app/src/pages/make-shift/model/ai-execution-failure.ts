@@ -1,6 +1,6 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import i18n from '@/i18n';
-import {aiConversationFailure, type TAiConversationFailure} from './ai-conversation-failure';
+import {aiConversationFailure, type TAiConversationFailure, type TPersonalRestConflict} from './ai-conversation-failure';
 import {readScheduleConflicts} from './schedule-conflicts';
 import type {TConversationOperation} from './schedule-conversation-api';
 
@@ -103,6 +103,9 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     );
     const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
     const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const restConflicts: TPersonalRestConflict[] = [];
+
+    let availabilityConflict = false;
 
     if (['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')) {
         for (const issue of capacityEvidence ?? []) {
@@ -129,6 +132,16 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                         [...code].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
                 )
             ) {
+                restConflicts.push({
+                    ...(typeof issue.nurseId === 'number' && Number.isSafeInteger(issue.nurseId) && issue.nurseId > 0
+                        ? {nurseId: issue.nurseId}
+                        : {}),
+                    ...(typeof issue.nurseName === 'string' && issue.nurseName.trim() ? {nurseName: issue.nurseName.trim()} : {}),
+                    shiftCodes: issue.shiftCodes as string[],
+                    expected: issue.expected,
+                    minimumAssignments: issue.minimumAssignments,
+                    maximumAssignments: issue.maximumAssignments,
+                });
                 explanations.push(
                     i18n.t('aiAdjust.executionFailure.personalRestEvidence', {
                         name,
@@ -148,6 +161,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 validDate(issue.startDate) &&
                 validDate(issue.endDate)
             ) {
+                availabilityConflict = true;
                 explanations.push(
                     i18n.t('aiAdjust.executionFailure.workRestEvidence', {
                         name,
@@ -205,6 +219,8 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 i18n.t(review ? 'aiAdjust.executionFailure.monthlyCapacityReview' : 'aiAdjust.executionFailure.combinedConflictNext'),
             blocked: false,
             recovery: review ? 'review' : 'revise',
+            ...(restConflicts.length ? {restConflicts} : {}),
+            ...(availabilityConflict ? {settingsTarget: 'member' as const} : restConflicts.length ? {settingsTarget: 'rest' as const} : {}),
             ...(review ? {confirmationRequired: true} : {conditionConflict: true}),
             ...(response.observation ? {observation: response.observation} : {}),
         };
