@@ -2,6 +2,7 @@ import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
 import {aiExecutionFailure} from '../ai-execution-failure';
+import {failureMessagePoints} from '../failure-message-points';
 
 describe('execution failure reasons', () => {
     it.each([
@@ -390,6 +391,7 @@ describe('personal rest capacity evidence', () => {
                 }),
             );
             expect(failure?.message).not.toContain('internal text');
+            expect(failureMessagePoints(failure?.message ?? '').some((point) => /^\d+\.$/.test(point))).toBe(false);
             expect(failure?.recovery).toBe('revise');
             expect(failure?.conditionConflict).toBe(true);
             expect(failure?.confirmationRequired).not.toBe(true);
