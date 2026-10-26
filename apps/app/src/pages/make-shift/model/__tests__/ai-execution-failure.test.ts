@@ -337,6 +337,12 @@ describe('personal rest capacity evidence', () => {
             changedCells: [],
             unmetInstructions: [],
             sameAsPrevious: true,
+            validation: {
+                draftRevision: 1,
+                rulesHash: 'qa',
+                summary: {valid: false, hardCount: 2, softCount: 0, totalCount: 2},
+                violations: [],
+            },
             engineResult: {
                 status: 'INFEASIBLE',
                 violations: [
