@@ -31,6 +31,7 @@ type TProps = {
     month?: number;
     onRegenerate: () => void;
     onGenerate?: () => void;
+    onRecoverGeneration?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
     generationCompletedMessage?: string;
@@ -78,6 +79,7 @@ export default function AiAdjustDialog({
     month,
     onRegenerate,
     onGenerate,
+    onRecoverGeneration,
     hasGeneratedSchedule = false,
     generationCompleted = false,
     generationCompletedMessage,
@@ -236,6 +238,7 @@ export default function AiAdjustDialog({
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
+                        onRecoverGeneration={onRecoverGeneration}
                         disabled={disabled || conditionEditorBusy || activeConditions.removingId !== null}
                         onBusyChange={setInputBusy}
                         conditionsVersion={conditionsVersion}

@@ -14,11 +14,11 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import {useAnnualLeaveSchedule} from '@/features/annual-leave/queries';
 import {useAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
 import useAuth from '@/features/auth';
-import {PersonalRestTeamPanel} from '@/features/personal-rest-policy';
 import useAuthStore from '@/features/auth/model/store';
 import {commercialGet} from '@/features/commercial/api';
 import {batchCellsForReview, type CommercialBatchResult} from '@/features/commercial/batch-result';
 import {AiPlanNotice} from '@/features/commercial/entry';
+import {PersonalRestTeamPanel} from '@/features/personal-rest-policy';
 import {
     buildSaveSnapshotDTO,
     docToShift,
@@ -2182,7 +2182,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         });
         setLastShiftBlankWarningIntent('aiFill');
     };
-    const showFixedPreparation = (skipWhenEmpty = true) => {
+    const showFixedPreparation = (skipWhenEmpty = true, recovery = autofillFlow?.recovery === true) => {
         const doc = useShiftEditorStore.getState().doc;
         const hasFilledCells = doc.rows.some((row) => row.cells.some((cell) => cell != null));
 
@@ -2194,7 +2194,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         appendAutofillPrompt({
             role: 'assistant',
-            text: t(hasFilledCells ? 'aiAdjust.preparation.fixed' : 'aiAdjust.preparation.empty'),
+            text: t(
+                recovery
+                    ? hasFilledCells
+                        ? 'aiAdjust.preparation.recoveryFixed'
+                        : 'aiAdjust.preparation.recoveryEmpty'
+                    : hasFilledCells
+                      ? 'aiAdjust.preparation.fixed'
+                      : 'aiAdjust.preparation.empty',
+            ),
             ...(hasFilledCells ? {help: t('aiAdjust.preparation.fixedHelp')} : {}),
         });
         openAiFillDecision({cellCount: getUnprotectedFilledCells(doc).length});
@@ -2299,8 +2307,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         carryOptions,
     ]);
 
-    const beginAutofillPreparation = (kind: 'generation' | 'adjustment') => {
-        if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
+    const beginAutofillPreparation = (kind: 'generation' | 'adjustment', recovery = false) => {
+        if (!recovery && isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
 
         if (!getAiFillReadyContext()) return;
 
@@ -2323,12 +2331,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         generationNoticeShownRef.current = false;
         autofillContext.current = currentContextKey;
         trackScheduleSignal('preparation_started');
-        setAutofillFlow({id: ++autofillSequence.current, kind, messages: [], status: 'preparing'});
+        setAutofillFlow({id: ++autofillSequence.current, kind, recovery, messages: [], status: 'preparing'});
         setIsSnapshotSidebarOpen(false);
         setIsAdjustDialogOpen(true);
         setIsAiBlankPreviewVisible(true);
 
-        if (carryOver.needsReview) {
+        if (recovery) {
+            // A failure opens review only. Even an empty table must wait for a
+            // fresh click, or this transition could loop into automatic retries.
+            showFixedPreparation(false, true);
+        } else if (carryOver.needsReview) {
             setIsReviewingCarryOver(true);
         } else if (getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null) {
             showPreviousPreparation();
@@ -2415,9 +2427,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             text: t(
                 autofillFlow?.kind === 'adjustment'
                     ? 'aiAdjust.preparation.next'
-                    : aiFillDecisionFixableCells.length === 0
-                      ? 'aiAdjust.autofill'
-                      : 'aiAdjust.preparation.fill',
+                    : autofillFlow?.recovery
+                      ? 'aiAdjust.preparation.retryFill'
+                      : aiFillDecisionFixableCells.length === 0
+                        ? 'aiAdjust.autofill'
+                        : 'aiAdjust.preparation.fill',
             ),
         });
         startPreparedFill();
@@ -2662,12 +2676,19 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             <AiAutofillPreparation
                 step={preparationStep}
                 kind={autofillFlow?.kind}
+                recovery={autofillFlow?.recovery}
                 fixableCount={aiFillDecisionFixableCells.length}
                 hasFilledCells={hasFilledPreparationCells}
                 canAutofill={!isAutofillBlocked}
                 previousHasBlanks={lastShiftBlankWarningKey !== null}
                 disabled={isAiGenerating || isAiLoadingOverlayFinishing}
                 onFixAll={handleFixAllAiFillDecisionCells}
+                onEditConditions={() => {
+                    closePreparation();
+
+                    if (onOpenConstraints) onOpenConstraints();
+                    else useCase.goToStep(2);
+                }}
                 onUndoFixAll={
                     bulkFixEntry && history.past[history.past.length - 1] === bulkFixEntry ? handleUndoFixAllAiFillDecisionCells : undefined
                 }
@@ -2945,6 +2966,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     rebuildRequest={0}
                     generationFillPolicy="REBUILD_UNLOCKED"
                     onPrepareGeneration={handleAiFill}
+                    onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     onPrepareAdjustment={prepareAdjustment}
                     preparation={preparation}
                     autofillFlow={autofillContext.current === currentContextKey ? autofillFlow : null}
@@ -2979,6 +3001,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onRegenerate={handleRequestRegenerate}
                     onGenerate={handleAiFill}
+                    onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     hasGeneratedSchedule={hasGeneratedSchedule}
                     generationCompleted={hasGenerationNotice && generationNoticeContext.current === currentContextKey}
                     generationCompletedMessage={generationReviewMessage ?? undefined}

@@ -8,6 +8,7 @@ export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?:
 export type TAutofillFlow = {
     id: number;
     kind?: 'generation' | 'adjustment';
+    recovery?: boolean;
     messages: TAutofillMessage[];
     status: 'preparing' | 'running' | 'paused';
     resumeStep?: TAutofillPreparationStep;
@@ -37,6 +38,7 @@ export function AiAutofillMessages({messages}: {messages: TAutofillMessage[]}) {
 export function AiAutofillPreparation({
     step,
     kind = 'generation',
+    recovery = false,
     fixableCount,
     hasFilledCells = true,
     previousHasBlanks = true,
@@ -46,9 +48,11 @@ export function AiAutofillPreparation({
     onCancel,
     onFixAll,
     onUndoFixAll,
+    onEditConditions,
 }: {
     step: Exclude<TAutofillPreparationStep, 'carryOver'>;
     kind?: 'generation' | 'adjustment';
+    recovery?: boolean;
     fixableCount: number;
     hasFilledCells?: boolean;
     previousHasBlanks?: boolean;
@@ -58,6 +62,7 @@ export function AiAutofillPreparation({
     onCancel: () => void;
     onFixAll: () => void;
     onUndoFixAll?: () => void;
+    onEditConditions?: () => void;
 }) {
     const {t} = useTypedTranslation();
     const title =
@@ -79,6 +84,11 @@ export function AiAutofillPreparation({
                 </button>
             )}
             <div className="ml-auto flex max-w-full flex-col gap-2">
+                {step === 'fixed' && !canAutofill && (
+                    <p role="status" className="text-[13px] leading-5 text-[#667085]">
+                        {t('aiAdjust.allFixed')}
+                    </p>
+                )}
                 <button
                     type="button"
                     className={replyClass}
@@ -93,14 +103,21 @@ export function AiAutofillPreparation({
                                 : 'aiAdjust.preparation.next'
                             : kind === 'adjustment'
                               ? 'aiAdjust.preparation.next'
-                              : fixableCount === 0
-                              ? 'aiAdjust.autofill'
-                              : 'aiAdjust.preparation.fill',
+                              : recovery
+                                ? 'aiAdjust.preparation.retryFill'
+                                : fixableCount === 0
+                                  ? 'aiAdjust.autofill'
+                                  : 'aiAdjust.preparation.fill',
                     )}
                 </button>
                 {step === 'fixed' && hasFilledCells && fixableCount > 0 && (
                     <button type="button" className={replyClass} disabled={disabled} onClick={onFixAll}>
                         {t('aiAdjust.preparation.fixAll')}
+                    </button>
+                )}
+                {step === 'fixed' && recovery && onEditConditions && (
+                    <button type="button" className={replyClass} disabled={disabled} onClick={onEditConditions}>
+                        {t('aiAdjust.preparation.editConditions')}
                     </button>
                 )}
                 {step === 'previous' && previousHasBlanks && (
