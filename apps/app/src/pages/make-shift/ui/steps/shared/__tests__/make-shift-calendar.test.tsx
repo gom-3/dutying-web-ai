@@ -79,6 +79,41 @@ describe('MakeShiftCalendar', () => {
         useUIConfigStore.getState().reset();
     });
 
+    it('supports one tab stop and arrow-key navigation while protecting requested and blank shifts in fixed preview', async () => {
+        const onCellClick = vi.fn();
+        const user = userEvent.setup();
+        const props = {
+            shift,
+            doc,
+            violationMap: new Map(),
+            showFaults: false,
+            readonly: true,
+            staticPreview: true,
+            interactivePreview: true,
+            fixedCellPreview: true,
+            onCellClick,
+        };
+        const view = render(<MakeShiftCalendar {...props} />);
+        const blank = screen.getByRole('button', {name: 'Kim · 2026-05-01 · 빈칸 · AI 변경 가능'});
+        const assigned = screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · AI 변경 가능'});
+
+        await user.tab();
+        expect(blank).toHaveFocus();
+        await user.keyboard('{Enter}{ArrowRight}{Enter}');
+        expect(assigned).toHaveFocus();
+        expect(onCellClick).toHaveBeenCalledExactlyOnceWith(0, 1);
+        expect(blank).toHaveAttribute('tabindex', '-1');
+        expect(assigned).toHaveAttribute('tabindex', '0');
+        view.rerender(<MakeShiftCalendar {...props} doc={{...doc, fixedCells: {'2|2026-05-02': true}}} />);
+        expect(screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · 고정됨'})).toHaveAttribute('aria-pressed', 'true');
+        view.rerender(<MakeShiftCalendar {...props} doc={{...doc, requestCells: {'2|2026-05-02': true}}} />);
+        expect(screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · 신청근무, 변경 불가'})).toHaveAttribute('aria-disabled', 'true');
+        await user.keyboard(' {Home}{End}{Enter}');
+        expect(onCellClick).toHaveBeenCalledTimes(1);
+        expect(assigned).toHaveFocus();
+        expect(document.querySelectorAll('[data-preview-row][tabindex="0"]')).toHaveLength(1);
+    });
+
     it('aligns optional annual leave columns across the header, worker rows and footer independently of OFF', () => {
         const renderRow = vi.fn((nurseId: number) => (
             <>

@@ -25,6 +25,7 @@ import {
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
+import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
     conversationApi,
     conversationEvents,
@@ -96,6 +97,7 @@ type TProps = {
     resultActions?: TAdjustResultActions;
 };
 type TLocalEvent = {kind: 'local'; id: string; sequence: number; messages: TAutofillMessage[]};
+type TLocalTranscript = {conversationId: number; events: TLocalEvent[]; recoveredFailures: string[]};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
@@ -146,10 +148,40 @@ export default function AiConversationSidebar({
     const reviewedPreparation = useRef<string | null>(null);
     const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
-    const recoveredFailures = useRef(new Set<string>());
-    const [localEvents, setLocalEvents] = useState<TLocalEvent[]>([]);
+    const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
+    const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
+    const transcriptKey = chatKey ? `${chatKey}:server-transcript` : null;
+    const [storedTranscript] = useState(() =>
+        readScheduleChat<TLocalTranscript>(transcriptKey, (value): value is TLocalTranscript => {
+            const transcript = value as TLocalTranscript | null;
+
+            return Boolean(
+                transcript &&
+                    Number.isSafeInteger(transcript.conversationId) &&
+                    Array.isArray(transcript.events) &&
+                    transcript.events.every(
+                        (event) =>
+                            event?.kind === 'local' &&
+                            typeof event.id === 'string' &&
+                            Number.isFinite(event.sequence) &&
+                            Array.isArray(event.messages) &&
+                            event.messages.every(
+                                (message) => message && ['user', 'assistant'].includes(message.role) && typeof message.text === 'string',
+                            ),
+                    ) &&
+                    Array.isArray(transcript.recoveredFailures) &&
+                    transcript.recoveredFailures.every((id) => typeof id === 'string'),
+            );
+        }),
+    );
+    const transcriptConversation = useRef(storedTranscript?.conversationId ?? null);
+    const recoveredFailures = useRef(new Set(storedTranscript?.recoveredFailures ?? []));
+    const [localEvents, setLocalEvents] = useState<TLocalEvent[]>(storedTranscript?.events ?? []);
+    const [historySaveFailed, setHistorySaveFailed] = useState(false);
     const discardedPreparationId = useRef<number | null>(null);
-    const localSequence = useRef(0);
+    const localSequence = useRef(
+        Math.max(0, ...localEvents.filter((event) => event.id.startsWith('choice:')).map((event) => Number(event.id.slice(7)) || 0)),
+    );
     const textarea = useRef<HTMLTextAreaElement>(null);
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
@@ -256,6 +288,13 @@ export default function AiConversationSidebar({
             next.conversation.revision < detailRef.current.conversation.revision
         )
             return;
+
+        if (transcriptConversation.current !== null && transcriptConversation.current !== next.conversation.conversationId) {
+            setLocalEvents([]);
+            recoveredFailures.current.clear();
+        }
+
+        transcriptConversation.current = next.conversation.conversationId;
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             reportAttempt.reset();
@@ -1267,6 +1306,18 @@ export default function AiConversationSidebar({
     const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh);
 
     useEffect(() => {
+        if (!detail) return;
+
+        setHistorySaveFailed(
+            !writeScheduleChat(transcriptKey, {
+                conversationId: detail.conversation.conversationId,
+                events: localEvents,
+                recoveredFailures: [...recoveredFailures.current],
+            }),
+        );
+    }, [transcriptKey, localEvents, detail]);
+
+    useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
 
         setLocalEvents((current) => {
@@ -1366,6 +1417,11 @@ export default function AiConversationSidebar({
         // Open a review once, never a calculation. Refreshing the failed record
         // or closing its preparation must not start another attempt.
         recoveredFailures.current.add(latestOperation.operationId);
+        writeScheduleChat(transcriptKey, {
+            conversationId: detail!.conversation.conversationId,
+            events: localEvents,
+            recoveredFailures: [...recoveredFailures.current],
+        });
         onRecoverGeneration();
     }, [
         onRecoverGeneration,
@@ -2129,6 +2185,11 @@ export default function AiConversationSidebar({
                                     </button>
                                 </div>
                             </AssistantMessage>
+                        )}
+                        {historySaveFailed && (
+                            <p role="status" className="text-xs text-[#667085]">
+                                {t('aiAdjust.preparation.historyUnavailable')}
+                            </p>
                         )}
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {showNextActions &&

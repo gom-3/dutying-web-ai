@@ -20,6 +20,7 @@ type TProps = {
     loading?: boolean;
     preparation?: ReactNode;
     autofillFlow?: TAutofillFlow | null;
+    historyKey?: string | null;
     onNewConversation?: () => void;
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
@@ -69,6 +70,7 @@ export default function AiAdjustDialog({
     loading = false,
     preparation,
     autofillFlow,
+    historyKey,
     onNewConversation,
     spotlightSelector,
     spotlightInteractive,
@@ -235,6 +237,7 @@ export default function AiAdjustDialog({
                         hideRestartButton
                         preparation={preparation}
                         autofillFlow={autofillFlow}
+                        historyKey={historyKey}
                         onNewConversation={onNewConversation}
                         onReviewSchedule={onClose}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}

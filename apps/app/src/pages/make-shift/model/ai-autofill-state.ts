@@ -83,6 +83,24 @@ export function writeAutofillCompletion(key: string | null, completed: boolean):
     }
 }
 
+export type TAutofillCellSummary = {fixed: number; requested: number; editable: number};
+
+export function getAutofillCellSummary(doc: TDutyDoc): TAutofillCellSummary {
+    const summary = {fixed: 0, requested: 0, editable: 0};
+
+    for (const row of doc.rows) {
+        doc.columns.forEach((date, index) => {
+            const key = `${row.workerId}|${date}`;
+
+            if (row.cells[index] != null && doc.requestCells[key]) summary.requested += 1;
+            else if (row.cells[index] != null && doc.fixedCells[key]) summary.fixed += 1;
+            else summary.editable += 1;
+        });
+    }
+
+    return summary;
+}
+
 /** A blank cell still needs autofill even when all existing assignments are protected. */
 export function isScheduleFullyProtected(doc: TDutyDoc): boolean {
     return (
