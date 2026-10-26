@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.25 - 2026-10-26
+
+- `@dutying/app` (patch): 고정 배정과 연속 근무 제한에 따른 인원 부족 근거를 보여주고 관련 근무표 칸으로 이동합니다.
+
 ## 1.3.24 - 2026-10-26
 
 - `@dutying/app` (patch): 개인별 OFF·연차 목표와 요청이 충돌할 때 대상과 목표·가능 일수를 함께 안내합니다.

@@ -39,6 +39,20 @@ export const aiAdjustJa = {
         close: '閉じる',
     },
     executionFailure: {
+        propagatedCapacity:
+            '{{date}}は{{required}}人必要ですが、固定配置と連続勤務の制限を守ると最大{{available}}人しか配置できません。関連する配置を確認し、勤務表を編集してください。',
+        conflictDate: '{{date}}の条件の矛盾',
+        conflictCounts: '{{shifts}}の合計：必要{{required}}人 / 配置可能な人数は最大{{available}}人',
+        fixedEvidence: '矛盾の根拠となる固定配置',
+        inspectCell: '勤務表で確認',
+        priorReadOnly: '前月の記録・閲覧のみ',
+        acceptedReadOnly: '承認済みの希望勤務',
+        conflictReasonFIXED_ASSIGNMENT: '他の勤務・休みに固定済み',
+        conflictReasonCONSECUTIVE_WORK_LIMIT: '連続勤務を最大{{count}}日以内にするため休みが必要',
+        conflictReasonSHIFT_NOT_ALLOWED: '該当する勤務に配置できません',
+        conflictStale: '実行後に勤務表や条件が変わりました。以下は以前の入力に対する根拠です。現在の勤務表で再確認してください。',
+        conflictEditHelp:
+            '確認ボタンで該当セルを選択します。既存の編集ツールで修正してください。前月の記録と承認済み希望の保護は維持されます。自動で変更することはなく、1セルの修正ですべて解決するとは限りません。',
         affectedNurse: '該当する看護師',
         workRestEvidence:
             '{{name}}：勤務可能な種類と固定勤務を守ると、{{start}}〜{{end}}は{{days}}日連続の勤務が必要ですが、連続勤務の上限は{{maximum}}日です。',

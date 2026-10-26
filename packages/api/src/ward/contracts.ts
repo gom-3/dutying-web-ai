@@ -809,6 +809,21 @@ export type TScheduleObservation = {
     month: number;
 };
 
+export type TScheduleConflict = {
+    date: string;
+    shiftCodes: string[];
+    required: number;
+    available: number;
+    ruleIds: number[];
+    nurses: {
+        shiftNurseId: number;
+        name: string;
+        reason: 'FIXED_ASSIGNMENT' | 'CONSECUTIVE_WORK_LIMIT' | 'SHIFT_NOT_ALLOWED';
+        maximumWorkDays?: number | null;
+    }[];
+    fixedAssignments: {shiftNurseId: number; name: string; date: string; wardShiftTypeId: number; shiftCode: string; readOnly: boolean}[];
+};
+
 export type TAutofillResponse = {
     confirmedConstraintException?: boolean;
     conflictReview?: {
@@ -825,6 +840,7 @@ export type TAutofillResponse = {
         message: string;
         suggestions?: TFailureSuggestion[];
         affectedNurses?: {shiftNurseId: number; name: string}[];
+        conflicts?: TScheduleConflict[];
         restTargetConflicts?: {
             shiftNurseId: number;
             name: string;

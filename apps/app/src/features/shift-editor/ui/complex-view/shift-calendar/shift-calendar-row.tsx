@@ -193,6 +193,9 @@ export function ShiftCalendarRow({
                             return (
                                 <div
                                     key={j}
+                                    id={!readonly ? `schedule-cell-${row.shiftNurse.shiftNurseId}-${_date}` : undefined}
+                                    tabIndex={-1}
+                                    aria-label={`${row.shiftNurse.name}, ${_date}, ${shiftType?.shortName ?? ''}`}
                                     className={`group relative flex h-full min-w-0 items-center justify-center px-[.125rem] ${weekendBg} ${
                                         effectiveFocus?.day === j ? 'bg-main-4' : ''
                                     }`}

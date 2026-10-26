@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.25
+
+### Patch Changes
+
+- 고정 배정과 연속 근무 제한에 따른 인원 부족 근거를 보여주고 관련 근무표 칸으로 이동합니다.
+    - @dutying/api@1.3.25
+    - @dutying/domain@1.3.25
+    - @dutying/utils@1.3.25
+
 ## 1.3.23
 
 ### Patch Changes
