@@ -26,6 +26,7 @@ import {aiConversationFailure, type TAiConversationFailure} from '../../../model
 import {interpretIssueCode} from '../../../model/ai-interpret-issues';
 import {readScheduleChat, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
+import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
 import type {TAdjustCard} from './ai-adjust-interpret-card';
 import {AiAdjustResult, type TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustReviewConversation, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
@@ -184,9 +185,14 @@ export default function AiAdjustTextInput({
     const recoveredFailure = useRef<TAiConversationFailure | null>(null);
     const attemptLabel = (attempt: number) => t('aiAutofillUi.conversationEntry.attemptLabel', {attempt});
     const preparing = Boolean(preparation);
-    const [text, setText] = useState('');
+    const {
+        text,
+        setText,
+        entryChoice,
+        setEntryChoice,
+        saveFailed: composerSaveFailed,
+    } = useScheduleChatComposer(historyKey ? `${historyKey}:composer` : null);
     const [noticeDismissed, setNoticeDismissed] = useState(false);
-    const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
     const [restoredTurns] = useState(
         () =>
             readScheduleChat<TTurn[]>(
@@ -214,6 +220,7 @@ export default function AiAdjustTextInput({
     );
     const [group, setGroup] = useState(() => (restoredTurns.length ? Math.max(...restoredTurns.map((turn) => turn.group)) + 1 : 0));
     const [historySaveFailed, setHistorySaveFailed] = useState(false);
+    const [scrollReset, setScrollReset] = useState(0);
     const [editing, setEditing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const sequence = useRef(Math.max(0, ...restoredTurns.map((turn) => turn.id)));
@@ -767,6 +774,7 @@ export default function AiAdjustTextInput({
         setEntryChoice(null);
         setNoticeDismissed(true);
         setGroup(0);
+        setScrollReset((value) => value + 1);
         setText('');
         setEditing(false);
         setError(null);
@@ -790,7 +798,7 @@ export default function AiAdjustTextInput({
                 text: '',
                 status: 'messages',
                 messages: [
-                    ...(!flowCompleted
+                    ...(!flowCompleted && turns.length === 0
                         ? [
                               {
                                   role: 'assistant' as const,
@@ -817,12 +825,14 @@ export default function AiAdjustTextInput({
 
     return (
         <div className="ai-adjust-text-input flex min-h-0 flex-1 flex-col" data-preserve-duty-selection="true">
-            {historySaveFailed && (
+            {(historySaveFailed || composerSaveFailed) && (
                 <p role="status" className="px-6 py-2 text-xs text-[#667085]">
                     {t('aiAdjust.preparation.historyUnavailable')}
                 </p>
             )}
             <AiChatScroll
+                historyKey={historyKey ? `${historyKey}:scroll` : null}
+                resetKey={scrollReset}
                 open={open}
                 composerHidden={composerHidden}
                 className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[25px] pt-8 pb-6"
@@ -1052,11 +1062,7 @@ export default function AiAdjustTextInput({
                                 )}
                             </div>
                         ))}
-                        {!active && (
-                            <AssistantMessage>
-                                {t(restoredTurns.length ? 'aiAdjust.preparation.restoredHistory' : 'aiAdjust.chat.restarted')}
-                            </AssistantMessage>
-                        )}
+                        {!active && !restoredTurns.length && <AssistantMessage>{t('aiAdjust.chat.restarted')}</AssistantMessage>}
                     </div>
                 )}
                 {preparation && (
@@ -1079,7 +1085,7 @@ export default function AiAdjustTextInput({
                                 choice={null}
                                 disabled={disabled || isBusy}
                                 modifyDisabled={modifyDisabled}
-                                hideIntro={flowCompleted}
+                                hideIntro={flowCompleted || turns.length > 0}
                                 generationCompleted={generationCompleted && !noticeDismissed}
                                 generationCompletedMessage={completedMessage}
                                 confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}

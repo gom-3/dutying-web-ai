@@ -876,6 +876,35 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
+    it('keeps the exact conversation and unfinished request when returning to the sidebar', async () => {
+        useAuthStore.setState({accountId: 1001});
+
+        const user = userEvent.setup();
+
+        let view = render(<AiAutofill />);
+
+        await completeFirstFill(user);
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.type(screen.getByRole('textbox'), '김 간호사의 12일 휴무를 유지해줘');
+
+        const conversation = screen.getByRole('log').textContent;
+
+        view.unmount();
+        view = render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        expect(await screen.findByRole('textbox')).toHaveValue('김 간호사의 12일 휴무를 유지해줘');
+        expect(screen.getByRole('log').textContent).toBe(conversation);
+        expect(screen.queryByText('aiAdjust.chat.welcome')).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAdjust.preparation.restoredHistory')).not.toBeInTheDocument();
+        expect(mocks.interpretScheduleAdjust).not.toHaveBeenCalled();
+        expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
+        view.unmount();
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        expect(screen.queryByDisplayValue('김 간호사의 12일 휴무를 유지해줘')).not.toBeInTheDocument();
+    });
+
     it('keeps failed responses on reentry and isolates chat history by account and month', async () => {
         useAuthStore.setState({accountId: 1001});
 
