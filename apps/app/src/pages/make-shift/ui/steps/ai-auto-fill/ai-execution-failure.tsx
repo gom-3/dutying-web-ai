@@ -1,5 +1,4 @@
 import {Children, type ReactNode} from 'react';
-import {useRestEditorCopy} from '@/features/personal-rest-policy/rest-editor-copy';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
@@ -41,7 +40,6 @@ export function AiExecutionFailure({
     children?: ReactNode;
 }) {
     const {t} = useTypedTranslation();
-    const restText = useRestEditorCopy();
     const displayRef = useScheduleJourneyDisplay(failure.observation);
     const teamId = useMakeShiftStore((state) => state.currentShiftTeamId);
     const settingsUrl = settingsHref ?? (teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : ROUTE.MEMBER);
@@ -108,7 +106,7 @@ export function AiExecutionFailure({
                                 </a>
                             ) : (
                                 <button type="button" className={secondaryClass} disabled={disabled} onClick={onEditSettings}>
-                                    {failure.settingsTarget === 'rest' ? restText.action : t('aiAutofillUi.conflictReview.editSettings')}
+                                    {t('aiAutofillUi.conflictReview.editSettings')}
                                 </button>
                             ))}
                         {showReview && !showConditionSettings && (

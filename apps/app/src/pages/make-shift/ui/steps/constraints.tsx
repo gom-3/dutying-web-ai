@@ -1,4 +1,3 @@
-import {findRuleBoundConflicts} from '../../model/rule-bound-conflicts';
 import type {TWardRotationMode} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
@@ -27,6 +26,7 @@ import {Skeleton} from '@/shared/ui/primitives/skeleton';
 import {TooltipProvider} from '@/shared/ui/primitives/tooltip';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
+import {findRuleBoundConflicts} from '../../model/rule-bound-conflicts';
 import {
     getShiftConstraintRuleCandidates,
     getShiftConstraintRules,
@@ -1586,7 +1586,10 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
                 (MIXED_SHIFT_TEMPLATE_CODES.has(template.templateCode)
                     ? (getMixedTemplateFallbackLabel(template.templateCode) ?? t(getTemplateTranslationKey(template.templateCode, 'label')))
                     : getCategoryLabel(t, template.category)),
-            controls,
+            controls:
+                template.templateCode === 'SHIFT_COUNT_PER_PERIOD'
+                    ? controls.map((control) => (control.key === 'shift' ? {...control, optionsKey: 'quotaDuty'} : control))
+                    : controls,
             sentence,
             buildText,
             isRecommended: isRecommendedTemplateCode(template.templateCode, template.category, rotationMode),
@@ -1620,7 +1623,18 @@ function personalDateExclusionTemplate(template: TSoftRuleTemplate, t: TTypedT):
 }
 
 function createLegacySoftRuleTemplates(t: TTypedT, rotationMode: TWardRotationMode = 'THREE') {
-    return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => createLocalizedSoftRuleTemplate(template, t, rotationMode));
+    return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => {
+        const localized = createLocalizedSoftRuleTemplate(template, t, rotationMode);
+
+        return template.id === 'SHIFT_COUNT_PER_PERIOD'
+            ? {
+                  ...localized,
+                  controls: localized.controls.map((control) =>
+                      control.key === 'shift' ? {...control, optionsKey: 'quotaDuty'} : control,
+                  ),
+              }
+            : localized;
+    });
 }
 
 function createClientId(rule: {shiftConstraintRuleId?: number; templateCode: string}) {
@@ -1660,6 +1674,8 @@ function getSelectOptionParamValue(option: TSelectOption | undefined) {
     if (option.raw.divisionNum != null) value.divisionNum = option.raw.divisionNum;
 
     if (option.raw.wardShiftTypeId != null) value.wardShiftTypeId = option.raw.wardShiftTypeId;
+
+    if (option.raw.wardShiftTypeIds) value.wardShiftTypeIds = [...option.raw.wardShiftTypeIds];
 
     if (option.raw.day != null) value.day = option.raw.day;
 
@@ -2006,6 +2022,7 @@ function toRulesQueryData(
     previous?: TShiftConstraintRulesResponse,
 ): TShiftConstraintRulesResponse {
     return {
+        revision: previous?.revision,
         schemaVersion: previous?.schemaVersion ?? 1,
         wardId,
         shiftTeamId,
@@ -2324,11 +2341,11 @@ function getAliasConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
 function getConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
     const staffingDuplicateKey = getStaffingDuplicateKey(rule);
 
-    if (staffingDuplicateKey) return staffingDuplicateKey;
+    if (staffingDuplicateKey) return `${staffingDuplicateKey}:${JSON.stringify(rule.params.monthScope ?? null)}`;
 
     const aliasDuplicateKey = getAliasConstraintDuplicateKey(rule);
 
-    if (aliasDuplicateKey) return aliasDuplicateKey;
+    if (aliasDuplicateKey) return `${aliasDuplicateKey}:${JSON.stringify(rule.params.monthScope ?? null)}`;
 
     if (rule.templateCode === 'NURSE_PAIR_NOT_SAME_SHIFT' || rule.templateCode === 'NURSE_PAIR_PREFER_SAME_SHIFT') {
         const nursePair = [rule.params.nurseA, rule.params.nurseB]
@@ -3897,6 +3914,7 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
 }
 
 type TRuleRowProps = {
+    scopeMonth?: {year: number; month: number};
     rule: TShiftConstraintRuleDraft;
     rotationMode: TWardRotationMode;
     template?: TShiftConstraintTemplate;
@@ -3972,6 +3990,7 @@ function StaticImportantBadge({isRecommended}: {isRecommended: boolean}) {
 }
 
 const RuleRow = memo(function RuleRow({
+    scopeMonth,
     rule,
     rotationMode,
     template,
@@ -4004,8 +4023,17 @@ const RuleRow = memo(function RuleRow({
     ) : isImportant ? (
         <StaticImportantBadge isRecommended={isRecommended} />
     ) : null;
+    const storedMonth = rule.params.monthScope as {year?: number; month?: number} | undefined;
+    const language = useTranslation().i18n.resolvedLanguage ?? 'ko';
+    const monthLabel =
+        storedMonth?.year && storedMonth.month
+            ? new Intl.DateTimeFormat(language, {year: 'numeric', month: 'long'}).format(
+                  new Date(storedMonth.year, storedMonth.month - 1, 1),
+              )
+            : null;
     const sentence = (
         <>
+            {monthLabel && <span className="rounded-md bg-[#F0EBFF] px-2 py-1 text-[13px] text-[#5931B9]">{monthLabel}</span>}
             {presentationTemplate ? (
                 <SoftSentence
                     template={presentationTemplate}
@@ -4015,6 +4043,16 @@ const RuleRow = memo(function RuleRow({
                 />
             ) : (
                 <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
+            )}
+            {scopeMonth && rule.templateCode === 'SHIFT_COUNT_PER_PERIOD' && rule.params.source !== 'PERSONAL_MONTHLY_REST_POLICY' && (
+                <label className="flex min-h-11 items-center gap-2 text-[13px] text-[#667085]">
+                    <input
+                        type="checkbox"
+                        checked={Boolean(storedMonth)}
+                        onChange={(event) => onParamChange('monthScope', event.target.checked ? scopeMonth : undefined)}
+                    />
+                    {language.startsWith('ko') ? '이번 달에만 적용' : language.startsWith('ja') ? '今月のみ適用' : 'Apply only this month'}
+                </label>
             )}
             {!softTemplate && slots.length ? (
                 <div className="flex flex-wrap items-center gap-2">
@@ -4930,7 +4968,7 @@ function ConstraintsContent({
     const saveRulesRequestSeqRef = useRef(0);
     const recommendedDefaultsSeedKeyRef = useRef<string | null>(null);
     const languageQueryKey = i18n.resolvedLanguage ?? i18n.language ?? 'default';
-    const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey);
+    const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey, year, month);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey),
         queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -4941,7 +4979,7 @@ function ConstraintsContent({
     });
     const rulesQuery = useQuery({
         queryKey: rulesQueryKey,
-        queryFn: () => getShiftConstraintRules(wardId ?? -1, currentShiftTeamId ?? -1),
+        queryFn: () => getShiftConstraintRules(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
         refetchOnWindowFocus: false,
     });
@@ -5253,6 +5291,9 @@ function ConstraintsContent({
         const filteredDutyOptions = (mergedOptionMap.duty ?? []).filter((option) => {
             if (isAllSelectOption(option)) return true;
 
+            if (option.raw?.type === 'SET')
+                return Boolean(option.raw.wardShiftTypeIds?.length) && option.raw.wardShiftTypeIds!.every((id) => allowedDutyIds.has(id));
+
             if (option.raw?.wardShiftTypeId != null) return allowedDutyIds.has(option.raw.wardShiftTypeId);
 
             return [option.raw?.code, option.shortName, option.name].filter(Boolean).some((value) => allowedDutyCodes.has(String(value)));
@@ -5265,6 +5306,12 @@ function ConstraintsContent({
             ...mergedOptionMap,
             nurse: eligibleNurseOptions,
             duty: filteredDutyOptions,
+            quotaDuty: uniqueByValue([
+                ...filteredDutyOptions,
+                ...(mergedOptionMap.duty ?? []).filter(
+                    (option) => ['OFF', 'ANNUAL_LEAVE'].includes(option.classification ?? '') || option.raw?.type === 'SET',
+                ),
+            ]),
             dutyStrict: filteredDutyOptions.filter((option) => !isAllSelectOption(option)),
             date: (mergedOptionMap.date ?? []).filter(isOptionInCurrentMonth),
             dateScope: (mergedOptionMap.dateScope ?? []).filter(isOptionInCurrentMonth),
@@ -5278,6 +5325,9 @@ function ConstraintsContent({
             }
 
             return putShiftConstraintRules(wardId, currentShiftTeamId, {
+                year,
+                month,
+                revision: queryClient.getQueryData<TShiftConstraintRulesResponse>(rulesQueryKey)?.revision,
                 rules: rules.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
             });
         },
@@ -5510,6 +5560,9 @@ function ConstraintsContent({
             if (!enabled || wardId == null || currentShiftTeamId == null) throw new Error('Constraint scope is unavailable');
 
             return putShiftConstraintRules(wardId, currentShiftTeamId, {
+                year,
+                month,
+                revision: queryClient.getQueryData<TShiftConstraintRulesResponse>(rulesQueryKey)?.revision,
                 rules: draft.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
             });
         },
@@ -6038,6 +6091,7 @@ function ConstraintsContent({
                                             <RuleRow
                                                 key={rule.clientId}
                                                 rule={rule}
+                                                scopeMonth={{year, month}}
                                                 rotationMode={rotationMode}
                                                 template={template}
                                                 softTemplate={softTemplate}

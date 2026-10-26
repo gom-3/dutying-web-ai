@@ -55,7 +55,7 @@ export const aiAdjustKo = {
         monthlyAssignmentEvidence:
             '{{name}}: 가능한 근무와 고정 근무를 지키면 월 최소 {{minimum}}회 배정해야 하지만, 월 배정 상한은 {{maximum}}회예요.',
         personalRestEvidence:
-            '{{name}}: 휴무({{shifts}}) 목표는 {{target}}일인데, 이번 요청과 고정 근무를 지키면 {{minimum}}~{{maximum}}일만 배정할 수 있어요. 요청한 근무 날짜를 줄이거나 개인별 OFF·연차 목표를 확인해 주세요.',
+            '{{name}}: 휴무({{shifts}}) 목표는 {{target}}일인데, 이번 요청과 고정 근무를 지키면 {{minimum}}~{{maximum}}일만 배정할 수 있어요. 고정 근무를 확인하거나 제약조건에서 해당 월의 근무 횟수를 수정해 주세요.',
         combinedConflictNext:
             '위 조건들을 함께 해결해야 해요. 다른 필수 조건까지 지키는 수정안은 아직 확인하지 못했어요. 설정을 직접 수정하거나 요청을 바꿔 주세요. 근무표와 설정은 변경되지 않았어요.',
 
@@ -510,7 +510,7 @@ export const aiAdjustEn = {
         monthlyAssignmentEvidence:
             '{{name}}: available and fixed shifts require at least {{minimum}} assignments this month, but the limit is {{maximum}}.',
         personalRestEvidence:
-            '{{name}}: the rest ({{shifts}}) target is {{target}} days, but this request and fixed shifts allow only {{minimum}}–{{maximum}} days. Reduce the requested work dates or review the personal OFF/annual-leave targets.',
+            '{{name}}: the rest ({{shifts}}) target is {{target}} days, but this request and fixed shifts allow only {{minimum}}–{{maximum}} days. Review fixed shifts or edit the monthly shift count in Constraints.',
         combinedConflictNext:
             'These conditions need to be resolved together. No proposal that satisfies the remaining required conditions has been verified yet. Edit settings or change your request. Your schedule and settings have not changed.',
 

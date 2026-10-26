@@ -35,6 +35,7 @@ export type TShiftConstraintRuleDraft = TShiftConstraintRule & {
 };
 
 export type TShiftConstraintRulesResponse = {
+    revision?: string;
     schemaVersion: number;
     wardId: number;
     shiftTeamId: number;
@@ -48,8 +49,8 @@ export const shiftConstraintRuleQueryKeys = {
     all: () => ['shiftConstraintRules'] as const,
     candidates: (wardId: number, shiftTeamId: number, language?: string) =>
         [...shiftConstraintRuleQueryKeys.all(), 'candidates', wardId, shiftTeamId, language ?? 'default'] as const,
-    rules: (wardId: number, shiftTeamId: number, language?: string) =>
-        [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId, language ?? 'default'] as const,
+    rules: (wardId: number, shiftTeamId: number, language?: string, year?: number, month?: number) =>
+        [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId, language ?? 'default', year, month] as const,
     save: (wardId: number | null | undefined, shiftTeamId: number | null | undefined) =>
         [...shiftConstraintRuleQueryKeys.all(), 'save', wardId, shiftTeamId] as const,
 };
@@ -59,8 +60,8 @@ export const getShiftConstraintRuleCandidates = async (
     shiftTeamId: number,
 ): Promise<TShiftConstraintRuleCandidatesResponse> => WardAPI.getShiftConstraintRuleCandidates(wardId, shiftTeamId);
 
-export const getShiftConstraintRules = async (wardId: number, shiftTeamId: number) => {
-    return WardAPI.getShiftConstraintRules(wardId, shiftTeamId);
+export const getShiftConstraintRules = async (wardId: number, shiftTeamId: number, year?: number, month?: number) => {
+    return WardAPI.getShiftConstraintRules(wardId, shiftTeamId, year, month);
 };
 
 export const putShiftConstraintRules = async (wardId: number, shiftTeamId: number, payload: TShiftConstraintRulesSavePayload) => {

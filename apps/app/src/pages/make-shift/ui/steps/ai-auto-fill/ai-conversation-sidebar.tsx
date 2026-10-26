@@ -3,7 +3,6 @@ import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
 import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
-import {useRestEditorCopy} from '@/features/personal-rest-policy/rest-editor-copy';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
@@ -27,7 +26,6 @@ import {
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
-import {resolveRestConflicts} from '../../../model/rest-conflict-settings';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
     conversationApi,
@@ -152,7 +150,6 @@ export default function AiConversationSidebar({
     onBusyChange,
     resultActions,
 }: TProps) {
-    const restText = useRestEditorCopy();
     const conditionsEditor = useRef<TActiveConditionsHandle>(null);
     const {t} = useTypedTranslation();
     const preparing = Boolean(preparation);
@@ -1665,28 +1662,14 @@ export default function AiConversationSidebar({
             else setRebuild(true);
         } else textarea.current?.focus();
     };
-    const restConflictsFor = (operation: TConversationOperation) =>
-        resolveRestConflicts(
-            operationFailure(operation),
-            doc.rows
-                .map((row) => doc.workerMeta[row.workerId])
-                .filter((meta) => meta.nurseId != null)
-                .map((meta) => ({nurseId: meta.nurseId!, name: meta.name})),
-        );
     const settingsHrefFor = (operation: TConversationOperation) => {
         const failure = operationFailure(operation);
-        const target = failure?.settingsTarget;
 
-        return failure?.recovery === 'settings' || target === 'member' || (target === 'rest' && !restConflictsFor(operation).length)
+        return failure?.recovery === 'settings' || failure?.settingsTarget === 'member'
             ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}`
             : undefined;
     };
-    const openConflictSettings = (operation: TConversationOperation) => {
-        const conflicts = restConflictsFor(operation);
-
-        if (conflicts.length) conditionsEditor.current?.openRestTargets(conflicts);
-        else conditionsEditor.current?.openConditions();
-    };
+    const openConflictSettings = (_operation: TConversationOperation) => conditionsEditor.current?.openConditions();
     const renderTurn = (turn: TConversationTurn) => {
         if (turn.type === 'SEGMENT_START')
             return (
@@ -1877,14 +1860,6 @@ export default function AiConversationSidebar({
                     <div className="mb-1 shrink-0">
                         <AiActiveConditions
                             ref={conditionsEditor}
-                            restTargets={{
-                                nurses: doc.rows
-                                    .map((row) => doc.workerMeta[row.workerId])
-                                    .filter((meta) => meta.nurseId != null)
-                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name})),
-                                shiftTypes: shift.wardShiftTypes ?? [],
-                            }}
-                            onRestTargetsApplied={() => setNotice(restText.saved)}
                             wardId={wardId}
                             teamId={teamId}
                             year={year}
@@ -1900,7 +1875,10 @@ export default function AiConversationSidebar({
                                 if (conditionsContextInvalid) await refresh();
                             }}
                             disabled={conditionsDisabled}
-                            onWardRulesApplied={activeConditions.refreshAfterRuleChange}
+                            onWardRulesApplied={async () => {
+                                await activeConditions.refreshAfterRuleChange();
+                                setNotice(t('aiConversationSidebar.conditionsSaved'));
+                            }}
                             onBusyChange={setConditionEditorBusy}
                         />
                     </div>
@@ -1912,9 +1890,26 @@ export default function AiConversationSidebar({
                         </AiFailureMessage>
                     )}
                     {notice && (
-                        <p role="status" className="mb-2 text-sm">
-                            {notice}
-                        </p>
+                        <div role="status" className="mb-2 space-y-2 text-sm">
+                            <p>{notice}</p>
+                            {notice === t('aiConversationSidebar.conditionsSaved') &&
+                                latestOperation?.operationType === 'GENERATE' &&
+                                operationFailure(latestOperation) && (
+                                    <button
+                                        type="button"
+                                        className={buttonClass}
+                                        disabled={conditionsDisabled || isAutofillBlocked}
+                                        onClick={() => {
+                                            setNotice(null);
+
+                                            if (onPrepareGeneration) onPrepareGeneration();
+                                            else setRebuild(true);
+                                        }}
+                                    >
+                                        {t('aiConversationSidebar.retryWithUpdatedConditions')}
+                                    </button>
+                                )}
+                        </div>
                     )}
                     <AiChatScroll
                         key={`${detail?.conversation.conversationId ?? 'loading'}:${segmentStart}`}
@@ -2004,11 +1999,6 @@ export default function AiConversationSidebar({
                                                                 : () => openConflictSettings(event.operation)
                                                         }
                                                         settingsHref={settingsHrefFor(event.operation)}
-                                                        settingsLabel={
-                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
-                                                                ? restText.action
-                                                                : undefined
-                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2165,11 +2155,6 @@ export default function AiConversationSidebar({
                                                                 : () => openConflictSettings(event.operation)
                                                         }
                                                         settingsHref={settingsHrefFor(event.operation)}
-                                                        settingsLabel={
-                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
-                                                                ? restText.action
-                                                                : undefined
-                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2271,11 +2256,6 @@ export default function AiConversationSidebar({
                                                                 : () => openConflictSettings(event.operation)
                                                         }
                                                         settingsHref={settingsHrefFor(event.operation)}
-                                                        settingsLabel={
-                                                            operationFailure(event.operation)?.settingsTarget === 'rest'
-                                                                ? restText.action
-                                                                : undefined
-                                                        }
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
