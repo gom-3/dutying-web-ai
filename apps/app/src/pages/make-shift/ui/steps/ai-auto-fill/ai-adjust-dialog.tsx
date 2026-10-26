@@ -204,6 +204,7 @@ export default function AiAdjustDialog({
                 {hasConditionContext && (
                     <div className="shrink-0 px-[25px] pb-1">
                         <AiActiveConditions
+                            restTargets={snapshotShift ? {nurses: goalNurses, shiftTypes: snapshotShift.wardShiftTypes ?? []} : undefined}
                             wardId={wardId!}
                             teamId={teamId!}
                             year={year!}

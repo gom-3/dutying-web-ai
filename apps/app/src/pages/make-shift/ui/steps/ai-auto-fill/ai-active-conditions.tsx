@@ -1,13 +1,24 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import {type CSSProperties, useCallback, useEffect, useId, useLayoutEffect, useRef, useState} from 'react';
+import {type CSSProperties, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useImperativeHandle, type Ref} from 'react';
 import toast, {resolveValue, useToaster} from 'react-hot-toast';
+import {useRestEditorCopy} from '@/features/personal-rest-policy/rest-editor-copy';
+import {
+    SidebarRestEditor,
+    type TRestEditorContext,
+    type TRestEditorHandle,
+    type TRestEditorState,
+} from '@/features/personal-rest-policy/sidebar-rest-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiWardCondition} from '../../../model/use-ai-active-conditions';
 import {Constraints, type TConstraintsEditorHandle, type TConstraintsEditorState} from '../constraints';
 import {AiConversationLoading} from './ai-conversation-loading';
 
 export type TAiActiveCondition = {id: string; label: string; description?: string; onRemove: () => Promise<void> | void};
+export type TActiveConditionsHandle = {openRestTargets: (nurseId?: number) => void};
 type TProps = {
+    ref?: Ref<TActiveConditionsHandle>;
+    restTargets?: TRestEditorContext;
+    onRestTargetsApplied?: () => void;
     wardId: number;
     teamId: number;
     year: number;
@@ -28,6 +39,9 @@ const emptyEditorState: TConstraintsEditorState = {dirty: false, saving: false, 
 
 /** The step-two editor manages ward rules; AI requests keep their own deletion path. */
 export function AiActiveConditions({
+    ref,
+    restTargets,
+    onRestTargetsApplied,
     wardId,
     teamId,
     year,
@@ -43,6 +57,15 @@ export function AiActiveConditions({
     onBusyChange,
 }: TProps) {
     const {t} = useTypedTranslation();
+    const restText = useRestEditorCopy();
+    const [section, setSection] = useState<'conditions' | 'rest'>('conditions');
+    const [restNurseId, setRestNurseId] = useState<number>();
+    const [restState, setRestState] = useState<TRestEditorState>({dirty: false, saving: false, ready: false, refreshPending: false});
+    const restStateRef = useRef(restState);
+    const restEditor = useRef<TRestEditorHandle>(null);
+
+    restStateRef.current = restState;
+
     const id = useId();
     const toastId = `ai-conditions:${id}`;
     const {toasts, handlers: notificationHandlers} = useToaster({}, toastId);
@@ -60,9 +83,25 @@ export function AiActiveConditions({
     const removalFocus = useRef<{index: number; button: HTMLButtonElement} | null>(null);
     const modalVisible = useRef(false);
     const mounted = useRef(true);
+    const editorSaving = editorState.saving || restState.saving;
+    const hasChanges = editorState.dirty || restState.dirty || Boolean(editorState.refreshPending) || restState.refreshPending;
 
     editorStateRef.current = editorState;
     modalVisible.current = open && available;
+
+    useImperativeHandle(
+        ref,
+        () => ({
+            openRestTargets: (nurseId) => {
+                if (!available || disabled || !restTargets?.nurses.length || hasChanges || editorSaving) return;
+
+                setRestNurseId(nurseId);
+                setSection('rest');
+                setOpen(true);
+            },
+        }),
+        [available, disabled, restTargets, hasChanges, editorSaving],
+    );
 
     const finishClose = useCallback(() => {
         modalVisible.current = false;
@@ -70,11 +109,14 @@ export function AiActiveConditions({
         setDiscardOpen(false);
         setOpen(false);
         setEditorState(emptyEditorState);
+        setRestState({dirty: false, saving: false, ready: false, refreshPending: false});
+        setSection('conditions');
+        setRestNurseId(undefined);
     }, [toastId]);
     const close = useCallback(() => {
-        if (editorStateRef.current.saving || applyPending.current) return;
+        if (editorStateRef.current.saving || restStateRef.current.saving || applyPending.current) return;
 
-        if (editorStateRef.current.dirty) setDiscardOpen(true);
+        if (editorStateRef.current.dirty || restStateRef.current.dirty) setDiscardOpen(true);
         else finishClose();
     }, [finishClose]);
 
@@ -82,10 +124,10 @@ export function AiActiveConditions({
         if (!available) finishClose();
     }, [available, finishClose]);
     useEffect(() => {
-        onBusyChange?.(editorState.saving);
+        onBusyChange?.(editorSaving);
 
         return () => onBusyChange?.(false);
-    }, [editorState.saving, onBusyChange]);
+    }, [editorSaving, onBusyChange]);
 
     useLayoutEffect(() => {
         if (pendingId !== null || !removalFocus.current) return;
@@ -168,15 +210,21 @@ export function AiActiveConditions({
     };
     const count = wardRules.length + aiConditions.length;
     const summary = t('aiAutofillUi.activeConditions.conditions', {count});
-    const controlDisabled = disabled || loading || pendingId !== null || editorState.saving;
+    const controlDisabled = disabled || loading || pendingId !== null || editorSaving;
     const showAiOrigin = new Set(aiConditions.map((condition) => condition.description)).size > 1;
     const apply = async () => {
-        if (controlDisabled || applyPending.current || !editor.current) return;
+        if (controlDisabled || applyPending.current || (section === 'rest' ? !restEditor.current : !editor.current)) return;
 
         applyPending.current = true;
 
         try {
-            if (await editor.current.apply()) finishClose();
+            const applied = section === 'rest' ? await restEditor.current!.apply() : await editor.current!.apply();
+
+            if (applied) {
+                if (section === 'rest') onRestTargetsApplied?.();
+
+                finishClose();
+            }
         } catch {
             notify(t('aiAutofillUi.activeConditions.couldNotApplyChangesPleaseTryAgain'));
         } finally {
@@ -225,7 +273,7 @@ export function AiActiveConditions({
             <Dialog.Portal>
                 <Dialog.Overlay
                     data-testid="ai-conditions-overlay"
-                    className="fixed inset-0 z-[1550] flex items-center justify-center bg-[#121726]/55 p-4"
+                    className={`fixed inset-0 z-[1550] flex ${section === 'rest' ? 'items-stretch justify-end bg-[#121726]/15' : 'items-center justify-center bg-[#121726]/55 p-4'}`}
                 >
                     <Dialog.Content
                         ref={popup}
@@ -251,24 +299,28 @@ export function AiActiveConditions({
 
                             event.stopPropagation();
 
-                            if (editorStateRef.current.saving || applyPending.current) event.preventDefault();
+                            if (editorStateRef.current.saving || restStateRef.current.saving || applyPending.current)
+                                event.preventDefault();
                         }}
                         onInteractOutside={(event) => {
-                            if (editorStateRef.current.saving || applyPending.current) event.preventDefault();
+                            if (editorStateRef.current.saving || restStateRef.current.saving || applyPending.current)
+                                event.preventDefault();
                         }}
                         onKeyDown={(event) => {
                             // Keep modal key presses out of the calendar and chat shortcuts.
                             event.stopPropagation();
                         }}
-                        className="ai-conditions-modal relative flex max-h-[min(86dvh,780px)] w-full max-w-[960px] min-w-0 flex-col overflow-x-hidden overflow-y-auto rounded-[20px] bg-white text-[14px] focus-visible:outline-none"
+                        className={`ai-conditions-modal relative flex ${section === 'rest' ? 'h-dvh w-[407px] max-w-full' : 'max-h-[min(86dvh,780px)] w-full max-w-[960px] rounded-[20px]'} min-w-0 flex-col overflow-x-hidden overflow-y-auto bg-white text-[14px] focus-visible:outline-none`}
                     >
                         <header className="flex shrink-0 items-center justify-between gap-3 pt-5 pr-4 pb-4 pl-6 sm:pl-7">
                             <div className="min-w-0 pt-1">
                                 <Dialog.Title className="text-[22px] leading-8 font-semibold tracking-[-0.02em] text-[#242B36]">
-                                    {t('aiAutofillUi.activeConditions.constraints')}
+                                    {section === 'rest' ? restText.tab : t('aiAutofillUi.activeConditions.constraints')}
                                 </Dialog.Title>
                                 <Dialog.Description className="sr-only">
-                                    {t('aiAutofillUi.activeConditions.editAndApplyConstraintsOrRemoveConditionsAddedThroughAi')}
+                                    {section === 'rest'
+                                        ? restText.next
+                                        : t('aiAutofillUi.activeConditions.editAndApplyConstraintsOrRemoveConditionsAddedThroughAi')}
                                 </Dialog.Description>
                             </div>
                             <button
@@ -276,7 +328,7 @@ export function AiActiveConditions({
                                 type="button"
                                 aria-label={t('aiAutofillUi.activeConditions.closeConditions')}
                                 onClick={close}
-                                disabled={editorState.saving}
+                                disabled={editorSaving}
                                 className="grid size-[44px] shrink-0 place-items-center rounded-[10px] text-[#667085] hover:bg-[#F3F5F7] hover:text-[#333D4B] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none"
                             >
                                 <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[16px]" fill="currentColor">
@@ -284,7 +336,32 @@ export function AiActiveConditions({
                                 </svg>
                             </button>
                         </header>
-                        <div className="min-h-[min(120px,24dvh)] overflow-y-auto overscroll-contain px-6 pb-5 [overflow-wrap:anywhere] sm:px-7">
+                        {restTargets?.nurses.length ? (
+                            <div
+                                className="mx-6 mb-5 grid shrink-0 grid-cols-2 gap-1 rounded-[12px] bg-[#F3F5F7] p-1 sm:mx-7"
+                                role="group"
+                                aria-label={t('aiAutofillUi.activeConditions.constraints')}
+                            >
+                                {(['conditions', 'rest'] as const).map((tab) => (
+                                    <button
+                                        key={tab}
+                                        type="button"
+                                        aria-pressed={section === tab}
+                                        disabled={controlDisabled || hasChanges}
+                                        onClick={() => {
+                                            setSection(tab);
+                                            setRestState({dirty: false, saving: false, ready: false, refreshPending: false});
+                                        }}
+                                        className={`min-h-[44px] rounded-[9px] px-3 text-[14px] font-semibold focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50 ${section === tab ? 'bg-white text-[#5931B9] shadow-sm' : 'text-[#667085] hover:bg-white/70'}`}
+                                    >
+                                        {tab === 'rest' ? restText.tab : restText.conditions}
+                                    </button>
+                                ))}
+                            </div>
+                        ) : null}
+                        <div
+                            className={`${section === 'rest' ? 'flex-1' : ''} min-h-[min(120px,24dvh)] overflow-y-auto overscroll-contain px-6 pb-5 [overflow-wrap:anywhere] sm:px-7`}
+                        >
                             {loading && (
                                 <AiConversationLoading label={t('aiAutofillUi.activeConditions.loadingConditions')} className="mb-2" />
                             )}
@@ -307,67 +384,88 @@ export function AiActiveConditions({
                                     </button>
                                 </div>
                             )}
-                            <section aria-label={t('aiAutofillUi.activeConditions.conditionsFromTheConditionsTab')}>
-                                <Constraints
-                                    key={`${wardId}:${teamId}:${year}:${month}`}
-                                    variant="dialog"
-                                    wardId={wardId}
-                                    shiftTeamId={teamId}
+                            {section === 'rest' && restTargets ? (
+                                <SidebarRestEditor
+                                    key={`${wardId}:${teamId}:${year}:${month}:${restNurseId ?? ''}`}
+                                    {...restTargets}
                                     year={year}
                                     month={month}
-                                    editorRef={editor}
-                                    onEditorStateChange={setEditorState}
-                                    onApplied={onWardRulesApplied}
+                                    initialNurseId={restNurseId}
                                     disabled={disabled || pendingId !== null}
+                                    editorRef={restEditor}
+                                    onStateChange={setRestState}
+                                    onApplied={onWardRulesApplied}
                                 />
-                            </section>
-                            <section
-                                aria-label={t('aiAutofillUi.activeConditions.conditionsAddedWithAi')}
-                                className="mt-5 rounded-[18px] bg-[#F8F9FB] px-3 pt-4 pb-5"
-                            >
-                                <header className="mb-3 flex flex-wrap items-center justify-between gap-2 px-3">
-                                    <h3 className="text-[13px] leading-5 font-semibold text-[#667085]">
-                                        {t('aiAutofillUi.activeConditions.aiRequests')} <span className="ml-1">{aiConditions.length}</span>
-                                    </h3>
-                                    <span className="text-[12px] leading-5 text-[#667085]">
-                                        {t('aiAutofillUi.activeConditions.removeOnly')}
-                                    </span>
-                                </header>
-                                {aiConditions.length ? (
-                                    <ul className="space-y-2.5">
-                                        {aiConditions.map((condition) => (
-                                            <li
-                                                key={condition.id}
-                                                className="flex min-w-0 items-start gap-3 rounded-[10px] bg-white px-3 py-2.5"
-                                            >
-                                                <div className="min-w-0 flex-1 pt-[10px] pl-2">
-                                                    <p className="text-[15px] leading-6 break-words text-[#333D4B]">{condition.label}</p>
-                                                    {showAiOrigin && condition.description && (
-                                                        <p className="mt-1 text-[12px] leading-5 text-[#667085]">{condition.description}</p>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    data-ai-condition={condition.id}
-                                                    aria-label={t('aiAutofillUi.activeConditions.remove', {label: condition.label})}
-                                                    aria-busy={pendingId === condition.id}
-                                                    disabled={controlDisabled}
-                                                    onClick={(event) => {
-                                                        void remove(condition, event.currentTarget);
-                                                    }}
-                                                    className="grid size-[44px] shrink-0 place-items-center rounded-[10px] text-[#667085] transition-colors hover:bg-[#FFF1F0] hover:text-[#C83F36] focus-visible:bg-[#C83F36] focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-                                                >
-                                                    <TrashIcon />
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : !loading && !error ? (
-                                    <p className="rounded-[10px] bg-white px-4 py-5 text-center text-[13px] leading-5 text-[#667085]">
-                                        {t('aiAutofillUi.activeConditions.noAiConditionsAdded')}
-                                    </p>
-                                ) : null}
-                            </section>
+                            ) : (
+                                <>
+                                    <section aria-label={t('aiAutofillUi.activeConditions.conditionsFromTheConditionsTab')}>
+                                        <Constraints
+                                            key={`${wardId}:${teamId}:${year}:${month}`}
+                                            variant="dialog"
+                                            wardId={wardId}
+                                            shiftTeamId={teamId}
+                                            year={year}
+                                            month={month}
+                                            editorRef={editor}
+                                            onEditorStateChange={setEditorState}
+                                            onApplied={onWardRulesApplied}
+                                            disabled={disabled || pendingId !== null}
+                                        />
+                                    </section>
+                                    <section
+                                        aria-label={t('aiAutofillUi.activeConditions.conditionsAddedWithAi')}
+                                        className="mt-5 rounded-[18px] bg-[#F8F9FB] px-3 pt-4 pb-5"
+                                    >
+                                        <header className="mb-3 flex flex-wrap items-center justify-between gap-2 px-3">
+                                            <h3 className="text-[13px] leading-5 font-semibold text-[#667085]">
+                                                {t('aiAutofillUi.activeConditions.aiRequests')}{' '}
+                                                <span className="ml-1">{aiConditions.length}</span>
+                                            </h3>
+                                            <span className="text-[12px] leading-5 text-[#667085]">
+                                                {t('aiAutofillUi.activeConditions.removeOnly')}
+                                            </span>
+                                        </header>
+                                        {aiConditions.length ? (
+                                            <ul className="space-y-2.5">
+                                                {aiConditions.map((condition) => (
+                                                    <li
+                                                        key={condition.id}
+                                                        className="flex min-w-0 items-start gap-3 rounded-[10px] bg-white px-3 py-2.5"
+                                                    >
+                                                        <div className="min-w-0 flex-1 pt-[10px] pl-2">
+                                                            <p className="text-[15px] leading-6 break-words text-[#333D4B]">
+                                                                {condition.label}
+                                                            </p>
+                                                            {showAiOrigin && condition.description && (
+                                                                <p className="mt-1 text-[12px] leading-5 text-[#667085]">
+                                                                    {condition.description}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            data-ai-condition={condition.id}
+                                                            aria-label={t('aiAutofillUi.activeConditions.remove', {label: condition.label})}
+                                                            aria-busy={pendingId === condition.id}
+                                                            disabled={controlDisabled}
+                                                            onClick={(event) => {
+                                                                void remove(condition, event.currentTarget);
+                                                            }}
+                                                            className="grid size-[44px] shrink-0 place-items-center rounded-[10px] text-[#667085] transition-colors hover:bg-[#FFF1F0] hover:text-[#C83F36] focus-visible:bg-[#C83F36] focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                                                        >
+                                                            <TrashIcon />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : !loading && !error ? (
+                                            <p className="rounded-[10px] bg-white px-4 py-5 text-center text-[13px] leading-5 text-[#667085]">
+                                                {t('aiAutofillUi.activeConditions.noAiConditionsAdded')}
+                                            </p>
+                                        ) : null}
+                                    </section>
+                                </>
+                            )}
                         </div>
                         {toasts.some((item) => item.visible) && (
                             <div
@@ -386,22 +484,31 @@ export function AiActiveConditions({
                             <button
                                 type="button"
                                 onClick={close}
-                                disabled={editorState.saving}
+                                disabled={editorSaving}
                                 className="min-h-[44px] grow rounded-[10px] bg-[#F3F5F7] px-6 py-3 text-[14px] leading-5 font-semibold text-[#475467] transition-colors hover:bg-[#E5E8EB] focus-visible:bg-[#333D4B] focus-visible:text-white focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none sm:grow-0"
                             >
-                                {t('aiAutofillUi.activeConditions.close')}
+                                {section === 'rest' ? restText.back : t('aiAutofillUi.activeConditions.close')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => void apply()}
-                                disabled={controlDisabled || !editorState.ready || (!editorState.dirty && !editorState.refreshPending)}
+                                disabled={
+                                    controlDisabled ||
+                                    (section === 'rest'
+                                        ? !restState.ready || (!restState.dirty && !restState.refreshPending)
+                                        : !editorState.ready || (!editorState.dirty && !editorState.refreshPending))
+                                }
                                 className="min-h-[44px] grow rounded-[10px] bg-main-1 px-6 py-3 text-[14px] leading-5 font-semibold text-white transition-colors hover:bg-[#5931B9] focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none sm:grow-0"
                             >
-                                {editorState.saving
+                                {editorSaving
                                     ? t('aiAutofillUi.activeConditions.applying')
-                                    : editorState.refreshPending
-                                      ? t('aiAutofillUi.activeConditions.retryRefresh')
-                                      : t('aiAutofillUi.activeConditions.applyChanges')}
+                                    : section === 'rest'
+                                      ? restState.refreshPending
+                                          ? restText.refresh
+                                          : restText.save
+                                      : editorState.refreshPending
+                                        ? t('aiAutofillUi.activeConditions.retryRefresh')
+                                        : t('aiAutofillUi.activeConditions.applyChanges')}
                             </button>
                         </footer>
                     </Dialog.Content>

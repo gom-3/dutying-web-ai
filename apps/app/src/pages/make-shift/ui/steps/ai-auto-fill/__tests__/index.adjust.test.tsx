@@ -883,6 +883,7 @@ describe('AiAutofill adjust panel', () => {
 
         let view = render(<AiAutofill />);
 
+        expect(screen.queryByText(/개인별 월 OFF·연차 목표/)).not.toBeInTheDocument();
         await completeFirstFill(user);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
         await user.type(screen.getByRole('textbox'), '김 간호사의 12일 휴무를 유지해줘');

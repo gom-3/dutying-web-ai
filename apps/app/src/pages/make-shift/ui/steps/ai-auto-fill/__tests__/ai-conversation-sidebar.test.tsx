@@ -21,6 +21,7 @@ import useAuthStore from '@/features/auth/model/store';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
 import i18n from '@/i18n';
+import {adminAxiosInstance} from '@/shared/api/client';
 import type * as WardApiModule from '@/shared/api/ward';
 import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import type * as ConversationApiModule from '../../../../model/schedule-conversation-api';
@@ -394,6 +395,72 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('opens personal rest conflict settings in the same sidebar and refreshes the condition context without executing', async () => {
+        const get = vi
+            .spyOn(adminAxiosInstance, 'get')
+            .mockResolvedValue({data: {nurseId: 1, year: 2026, month: 11, offDays: 9, annualDaysByWardShiftTypeId: {}, version: 0}});
+        const put = vi.spyOn(adminAxiosInstance, 'put').mockImplementation(async () => {
+            current = {...current, contextHash: 'rest:updated'};
+
+            return {data: {nurseId: 1, year: 2026, month: 11, offDays: 8, annualDaysByWardShiftTypeId: {}, version: 1}};
+        });
+
+        current = {
+            ...current,
+            contextHash: 'rest:old',
+            operations: [
+                {
+                    ...operation,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations: [
+                                {
+                                    type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                    nurseId: 1,
+                                    nurseName: '김 간호사',
+                                    shiftCodes: ['O'],
+                                    expected: 9,
+                                    minimumAssignments: 0,
+                                    maximumAssignments: 8,
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        };
+
+        const external = vi.fn();
+
+        renderSidebar({onOpenConstraints: external});
+        await userEvent.click(await screen.findByRole('button', {name: '설정 직접 수정'}));
+
+        const off = await screen.findByRole('spinbutton', {name: 'OFF'});
+
+        expect(screen.getByRole('combobox', {name: '간호사'})).toHaveValue('1');
+        expect(get).toHaveBeenCalledWith('/nurses/1/monthly-rest-policy/2026/11');
+        await userEvent.clear(off);
+        await userEvent.type(off, '8');
+
+        const previousDoc = structuredClone(useShiftEditorStore.getState().doc);
+
+        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        expect(await screen.findByText('휴무 목표를 저장했어요. 다음 자동채우기에서 다른 조건과 함께 확인할게요.')).toBeVisible();
+        expect(put).toHaveBeenCalledOnce();
+        expect(mocks.detail).toHaveBeenCalledTimes(2);
+        expect(current.contextHash).toBe('rest:updated');
+        expect(useShiftEditorStore.getState().doc).toEqual(previousDoc);
+        expect(external).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+
     it('restores the selected composer and unfinished text without adding another introduction or sending it', async () => {
         current.operations = [];
         current.turns = [];
@@ -3715,6 +3782,40 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('button', {name: `${removedLabel} 삭제`})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: `${keptLabel} 삭제`})).toBeVisible();
         expect(mocks.updateScheduleMonthRequest).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
+    });
+    it('retires the old preview after saving a monthly rest target without regenerating or changing cells', async () => {
+        semanticRequest();
+        vi.spyOn(adminAxiosInstance, 'get').mockResolvedValue({
+            data: {nurseId: 1, year: 2026, month: 11, offDays: 9, annualDaysByWardShiftTypeId: {}, version: 0},
+        });
+        vi.spyOn(adminAxiosInstance, 'put').mockImplementation(async () => {
+            current = {...current, contextHash: 'rules:after-rest-edit'};
+
+            return {data: {nurseId: 1, year: 2026, month: 11, offDays: 8, annualDaysByWardShiftTypeId: {}, version: 1}};
+        });
+
+        const initialDoc = useShiftEditorStore.getState().doc;
+
+        renderSidebar();
+
+        const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
+
+        await waitFor(() => expect(oldPreview).toBeEnabled());
+        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await userEvent.click(screen.getByRole('button', {name: '개인별 휴무'}));
+
+        const off = await screen.findByRole('spinbutton', {name: 'OFF'});
+
+        await userEvent.clear(off);
+        await userEvent.type(off, '8');
+        await userEvent.click(screen.getByRole('button', {name: '목표 저장하고 대화로'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '개인별 휴무'})).not.toBeInTheDocument());
+        expect(oldPreview).toBeDisabled();
+        await userEvent.click(oldPreview);
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
