@@ -887,6 +887,7 @@ export default function AiAdjustTextInput({
                                         onRetry={() => void handleApply()}
                                         onRevise={revise}
                                         onReview={onReviewSchedule}
+                                        onInspectSchedule={onReviewSchedule}
                                     />
                                 )}
                                 {(turn.status === 'interpreting' || (turn.status === 'applying' && !preparing && !paused)) && (
@@ -958,6 +959,7 @@ export default function AiAdjustTextInput({
                                         disabled={disabled || isBusy}
                                         onRetry={onRegenerate}
                                         onReview={onReviewSchedule}
+                                        onInspectSchedule={onReviewSchedule}
                                     />
                                 )}
                                 {turn.error && turn.status !== 'messages' && turn.status !== 'error' && turn.status !== 'applyFailed' && (
@@ -1017,6 +1019,7 @@ export default function AiAdjustTextInput({
                         disabled={disabled || isBusy}
                         onRetry={onRegenerate}
                         onReview={onReviewSchedule}
+                        onInspectSchedule={onReviewSchedule}
                     />
                 )}
                 {!hideRestartButton &&

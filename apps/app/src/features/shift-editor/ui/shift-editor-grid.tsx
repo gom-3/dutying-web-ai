@@ -29,7 +29,12 @@ export function ShiftEditorGrid() {
     }, [selection]);
 
     return (
-        <div className="flex w-full flex-col gap-2 overflow-auto outline-none" tabIndex={0} onKeyDown={onKeyDown} onPasteCapture={onPasteCapture}>
+        <div
+            className="flex w-full flex-col gap-2 overflow-auto outline-none"
+            tabIndex={0}
+            onKeyDown={onKeyDown}
+            onPasteCapture={onPasteCapture}
+        >
             <div className="flex items-center gap-2">
                 <button
                     className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-sub-2.5"
@@ -94,6 +99,9 @@ export function ShiftEditorGrid() {
                                 return (
                                     <td
                                         key={col}
+                                        id={`schedule-cell-${row.workerId}-${doc.columns[col]}`}
+                                        tabIndex={-1}
+                                        aria-label={`${doc.workerMeta[row.workerId]?.name ?? row.workerId}, ${doc.columns[col]}, ${value ?? ''}`}
                                         className={`cursor-pointer border border-sub-5 px-2 py-1 text-center ${
                                             isSelected ? 'bg-main-4' : isInRange ? 'bg-main-4' : 'bg-white'
                                         } ${hasViolation ? 'text-red-600' : 'text-sub-1'}`}

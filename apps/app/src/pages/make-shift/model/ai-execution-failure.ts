@@ -1,6 +1,7 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import {aiConversationFailure, type TAiConversationFailure} from './ai-conversation-failure';
+import {readScheduleConflicts} from './schedule-conflicts';
 import type {TConversationOperation} from './schedule-conversation-api';
 
 export function conversationOperationFailure(operation: TConversationOperation): TAiConversationFailure | null {
@@ -29,6 +30,30 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    const conflicts =
+        response.engineResult?.status === 'INFEASIBLE' && response.applicable === false
+            ? readScheduleConflicts(response.failure?.conflicts)
+            : [];
+
+    if (conflicts.length) {
+        const first = conflicts[0];
+
+        return {
+            message: i18n.t('aiAdjust.executionFailure.propagatedCapacity', {
+                date: first.date,
+                required: first.required,
+                available: first.available,
+            }),
+            blocked: false,
+            conditionConflict: true,
+            recovery: 'review',
+            conflicts,
+            sourceRevision: response.draftRevision,
+            sourceRulesHash: response.validation?.rulesHash ?? undefined,
+            ...(response.observation ? {observation: response.observation} : {}),
+        };
+    }
+
     if (
         response.confirmedConstraintException === true &&
         response.applicable === true &&
@@ -37,6 +62,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         response.engineResult.reviewRequired !== true
     )
         return null;
+
     const capacityEvidence =
         response.conflictReview && Array.isArray(response.engineResult?.solver?.conflictEvidence)
             ? (response.engineResult.solver.conflictEvidence as Record<string, unknown>[])
@@ -52,7 +78,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                   issue.shiftCodes.length <= 6 &&
                   issue.shiftCodes.every(
                       (code: unknown) =>
-                          typeof code === 'string' && code.length > 0 && code.length <= 32 && !/[\u0000-\u001f\u007f]/.test(code),
+                          typeof code === 'string' &&
+                          code.length > 0 &&
+                          code.length <= 32 &&
+                          [...code].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
                   ) &&
                   typeof issue.minimumAssignments === 'number' &&
                   Number.isInteger(issue.minimumAssignments) &&
@@ -74,12 +103,14 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     );
     const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
     const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
     if (['INFEASIBLE', 'CONFLICT_REVIEW'].includes(response.engineResult?.status ?? '')) {
         for (const issue of capacityEvidence ?? []) {
             const name =
                 typeof issue.nurseName === 'string' && issue.nurseName.trim()
                     ? issue.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
+
             if (
                 issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT' &&
                 validCount(issue.expected) &&
@@ -92,7 +123,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 issue.shiftCodes.length <= 6 &&
                 issue.shiftCodes.every(
                     (code: unknown) =>
-                        typeof code === 'string' && code.length > 0 && code.length <= 32 && !/[\u0000-\u001f\u007f]/.test(code),
+                        typeof code === 'string' &&
+                        code.length > 0 &&
+                        code.length <= 32 &&
+                        [...code].every((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127),
                 )
             ) {
                 explanations.push(
@@ -105,6 +139,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     }),
                 );
             }
+
             if (
                 issue.type === 'WORK_REST_AVAILABILITY_CONFLICT' &&
                 validCount(issue.forcedWorkDays) &&
@@ -123,6 +158,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     }),
                 );
             }
+
             if (
                 issue.type === 'MONTHLY_ASSIGNMENT_CAPACITY_CONFLICT' &&
                 validCount(issue.minimumAssignments) &&
@@ -137,6 +173,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     }),
                 );
             }
+
             if (
                 issue.type === 'STAFF_COUNT_BOUNDS_CONFLICT' &&
                 validDate(issue.date) &&
@@ -157,8 +194,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             }
         }
     }
+
     if (explanations.length) {
         const review = Boolean(response.conflictReview);
+
         return {
             message:
                 [...new Set(explanations)].join('\n\n') +
@@ -170,6 +209,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             ...(response.observation ? {observation: response.observation} : {}),
         };
     }
+
     if (response.conflictReview)
         return {
             message: i18n.t('aiAdjust.executionFailure.conflictMessage'),
@@ -178,6 +218,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             confirmationRequired: true,
             ...(response.observation ? {observation: response.observation} : {}),
         };
+
     const status = response.engineResult?.status?.toUpperCase();
     const hardInvalid = (response.validation?.summary?.hardCount ?? 0) > 0;
     const reason = (
@@ -213,14 +254,18 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                       issue.minimum > issue.maximum,
               )
             : [];
+
     if (staffingConflicts.length) {
         const groups = new Map<string, {issue: Record<string, unknown>; dates: Set<string>}>();
+
         for (const issue of staffingConflicts) {
             const key = JSON.stringify([issue.shiftCode, issue.minimum, issue.maximum, issue.ruleIds ?? []]);
             const group = groups.get(key) ?? {issue, dates: new Set<string>()};
+
             group.dates.add(String(issue.date));
             groups.set(key, group);
         }
+
         return {
             ...(response.observation ? {observation: response.observation} : {}),
             message:
@@ -282,15 +327,20 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         const details = (response.failure?.restTargetConflicts ?? []).flatMap((item) => {
             if (!item.name?.trim() || !validDays(item.minimum) || !validDays(item.fixedRestDays) || !validDays(item.availableRestDays))
                 return [];
+
             const name = item.name.trim().slice(0, 80);
+
             if (validDays(item.maximum) && item.fixedRestDays > item.maximum)
                 return [i18n.t('aiAdjust.executionFailure.restTargetExcess', {name, fixed: item.fixedRestDays, target: item.maximum})];
+
             if (item.minimum > item.availableRestDays)
                 return [
                     i18n.t('aiAdjust.executionFailure.restTargetShortage', {name, available: item.availableRestDays, target: item.minimum}),
                 ];
+
             return [];
         });
+
         return {
             ...(response.observation ? {observation: response.observation} : {}),
             message: i18n.t('aiAdjust.executionFailure.restTargetConflict', {details: details.join('\n')}),
@@ -301,6 +351,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
 
     const diagnosis = response.failure?.diagnosis;
     const diagnosedNurse = response.failure?.affectedNurses?.find((nurse) => nurse.shiftNurseId === diagnosis?.shiftNurseId);
+
     if (
         status === 'INFEASIBLE' &&
         diagnosis?.status === 'VERIFIED_ALTERNATIVE' &&
