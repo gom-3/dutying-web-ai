@@ -18,7 +18,6 @@ import useAuthStore from '@/features/auth/model/store';
 import {commercialGet} from '@/features/commercial/api';
 import {batchCellsForReview, type CommercialBatchResult} from '@/features/commercial/batch-result';
 import {AiPlanNotice} from '@/features/commercial/entry';
-import {PersonalRestTeamPanel} from '@/features/personal-rest-policy';
 import {
     buildSaveSnapshotDTO,
     docToShift,
@@ -2826,7 +2825,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         </button>
                     </div>
                 )}
-                {orderedShift && <PersonalRestTeamPanel shift={orderedShift} year={year} month={month} disabled={isAiGenerating} />}
                 <AiAutofillToolbar
                     displaySettings={
                         <ScheduleDisplayMenu

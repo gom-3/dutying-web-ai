@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
 import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
+import {useRestEditorCopy} from '@/features/personal-rest-policy/rest-editor-copy';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
@@ -44,7 +45,7 @@ import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedul
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
-import {AiActiveConditions} from './ai-active-conditions';
+import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
@@ -149,6 +150,8 @@ export default function AiConversationSidebar({
     onBusyChange,
     resultActions,
 }: TProps) {
+    const restText = useRestEditorCopy();
+    const conditionsEditor = useRef<TActiveConditionsHandle>(null);
     const {t} = useTypedTranslation();
     const preparing = Boolean(preparation);
     const [awaitingAdjustment, setAwaitingAdjustment] = useState(false);
@@ -1660,6 +1663,29 @@ export default function AiConversationSidebar({
             else setRebuild(true);
         } else textarea.current?.focus();
     };
+    const openConflictSettings = (operation: TConversationOperation) => {
+        const engine = operation.result?.engineResult;
+        const capacities =
+            operation.result?.conflictReview && Array.isArray(engine?.solver?.conflictEvidence)
+                ? (engine.solver.conflictEvidence as Record<string, unknown>[])
+                : engine?.violations;
+        const personal = Array.isArray(capacities)
+            ? capacities.find(
+                  (issue) => issue != null && typeof issue === 'object' && issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+              )
+            : undefined;
+
+        if (personal) {
+            const nurses = doc.rows.map((row) => doc.workerMeta[row.workerId]).filter((meta) => meta.nurseId != null);
+            const matches = nurses.filter((meta) =>
+                typeof personal.nurseId === 'number'
+                    ? meta.nurseId === personal.nurseId
+                    : typeof personal.nurseName === 'string' && meta.name === personal.nurseName,
+            );
+
+            conditionsEditor.current?.openRestTargets(matches.length === 1 ? matches[0].nurseId : undefined);
+        } else (onOpenConstraints ?? onClose)();
+    };
     const renderTurn = (turn: TConversationTurn) => {
         if (turn.type === 'SEGMENT_START')
             return (
@@ -1849,6 +1875,15 @@ export default function AiConversationSidebar({
                 <div className="flex min-h-0 flex-1 flex-col px-[25px] pb-5">
                     <div className="mb-1 shrink-0">
                         <AiActiveConditions
+                            ref={conditionsEditor}
+                            restTargets={{
+                                nurses: doc.rows
+                                    .map((row) => doc.workerMeta[row.workerId])
+                                    .filter((meta) => meta.nurseId != null)
+                                    .map((meta) => ({nurseId: meta.nurseId!, name: meta.name})),
+                                shiftTypes: shift.wardShiftTypes ?? [],
+                            }}
+                            onRestTargetsApplied={() => setNotice(restText.saved)}
                             wardId={wardId}
                             teamId={teamId}
                             year={year}
@@ -1962,7 +1997,7 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={() => openConflictSettings(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2089,7 +2124,7 @@ export default function AiConversationSidebar({
                                                         : undefined
                                                 }
                                                 onInspectSchedule={onClose}
-                                                onEditSettings={onOpenConstraints}
+                                                onEditSettings={() => openConflictSettings(event.operation)}
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
@@ -2108,7 +2143,7 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={() => openConflictSettings(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2204,7 +2239,7 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={() => openConflictSettings(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
