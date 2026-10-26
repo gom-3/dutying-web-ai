@@ -1845,7 +1845,11 @@ describe('AiAutofill adjust panel', () => {
 
         mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-01', 'D')], 'GENERATE'));
         await adjustBySentence(user, [CLUSTER_ITEM]);
-        await screen.findByText(i18n.t('aiAdjust.unexpectedOperation'));
+        await waitFor(() => {
+            const expected = i18n.t('aiAdjust.unexpectedOperation').replace(/\s+/g, '');
+
+            expect(screen.getAllByRole('alert').some((alert) => alert.textContent?.replace(/\s+/g, '').includes(expected))).toBe(true);
+        });
         expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
     });
 

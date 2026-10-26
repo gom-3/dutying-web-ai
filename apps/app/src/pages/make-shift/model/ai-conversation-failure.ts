@@ -1,7 +1,10 @@
-import type {TScheduleObservation} from '@dutying/api/ward';
+import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
 export type TAiConversationFailure = {
+    conflicts?: TScheduleConflict[];
+    sourceRevision?: number;
+    sourceRulesHash?: string;
     observation?: TScheduleObservation;
     message: string;
     confirmationRequired?: boolean;

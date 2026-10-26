@@ -1845,9 +1845,8 @@ describe('persistent schedule sidebar', () => {
                 await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
                 expect(mocks.execute.mock.calls[0]![1]).toMatchObject({failureSuggestionId: 'suggestion:1', suggestionConfirmed: true});
             } else {
-                expect(
-                    await screen.findByText('표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요. 최신 요청으로 다시 수정해 주세요.'),
-                ).toBeVisible();
+                expect(await screen.findByText('표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요.')).toBeVisible();
+                expect(screen.getByText('최신 요청으로 다시 수정해 주세요.')).toBeVisible();
                 expect(mocks.execute).not.toHaveBeenCalled();
                 expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
             }
@@ -2390,7 +2389,8 @@ describe('persistent schedule sidebar', () => {
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         await userEvent.click(pending);
-        await screen.findByText('표가 바뀌어서 이전 결과로 전환하지 않았어요. 작성 중인 내용을 확인한 뒤 다시 눌러 주세요.');
+        await screen.findByText('표가 바뀌어서 이전 결과로 전환하지 않았어요.');
+        expect(screen.getByText('작성 중인 내용을 확인한 뒤 다시 눌러 주세요.')).toBeVisible();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['N']);
         expect(mocks.sync).toHaveBeenCalled();

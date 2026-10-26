@@ -35,6 +35,20 @@ export const aiAdjustKo = {
         close: '닫기',
     },
     executionFailure: {
+        propagatedCapacity:
+            '{{date}}에 {{required}}명이 필요하지만, 고정 배정과 연속 근무 조건을 지키면 최대 {{available}}명만 배정할 수 있어요. 관련 배정을 확인하고 직접 수정해 주세요.',
+        conflictDate: '{{date}} 조건 충돌',
+        conflictCounts: '{{shifts}} 합계: 필요 {{required}}명 / 배정 가능 최대 {{available}}명',
+        fixedEvidence: '근거가 된 고정 배정',
+        inspectCell: '근무표에서 보기',
+        priorReadOnly: '전월 기록 · 읽기 전용',
+        acceptedReadOnly: '수락된 신청근무',
+        conflictReasonFIXED_ASSIGNMENT: '다른 근무·휴무로 고정됨',
+        conflictReasonCONSECUTIVE_WORK_LIMIT: '최대 {{count}}일 연속 근무를 지키려면 휴무 필요',
+        conflictReasonSHIFT_NOT_ALLOWED: '해당 근무 배정 불가',
+        conflictStale: '실행 후 표나 조건이 바뀌었어요. 아래는 이전 입력의 근거이며, 현재 표로 다시 확인해야 해요.',
+        conflictEditHelp:
+            '보기를 누르면 해당 칸을 선택해요. 수정은 근무표의 기존 편집 도구로 진행해 주세요. 전월 기록과 수락된 신청은 보호 상태를 유지해요. 표나 설정을 자동으로 변경하지 않으며, 한 칸 수정만으로 전체 충돌이 해결된다는 뜻은 아니에요.',
         affectedNurse: '해당 간호사',
         workRestEvidence:
             '{{name}}: {{start}}~{{end}}에는 현재 가능한 근무와 고정 근무를 지키면 {{days}}일 연속 근무해야 하지만, 연속 근무 상한은 {{maximum}}일이에요.',
@@ -453,6 +467,21 @@ export const aiAdjustEn = {
         close: 'Close',
     },
     executionFailure: {
+        propagatedCapacity:
+            '{{date}} needs {{required}} nurses, but fixed assignments and consecutive-work limits allow at most {{available}}. Review the linked assignments and edit the schedule.',
+        conflictDate: '{{date}} constraint conflict',
+        conflictCounts: '{{shifts}} total: {{required}} required / at most {{available}} available',
+        fixedEvidence: 'Fixed assignments behind this conflict',
+        inspectCell: 'View in schedule',
+        priorReadOnly: 'Previous month · read only',
+        acceptedReadOnly: 'Accepted shift request',
+        conflictReasonFIXED_ASSIGNMENT: 'Fixed to another shift or rest',
+        conflictReasonCONSECUTIVE_WORK_LIMIT: 'Rest needed to keep consecutive work within {{count}} days',
+        conflictReasonSHIFT_NOT_ALLOWED: 'Not eligible for these shifts',
+        conflictStale:
+            'The schedule or conditions changed after this run. This evidence describes the previous input; check the current schedule again.',
+        conflictEditHelp:
+            'View selects the cell. Use the existing schedule tools to edit it. Previous-month records and accepted requests keep their protections. Nothing changes automatically, and editing one cell may not resolve every conflict.',
         affectedNurse: 'Affected nurse',
         workRestEvidence:
             '{{name}}: available and fixed shifts require {{days}} consecutive working days from {{start}} to {{end}}, but the limit is {{maximum}} days.',
