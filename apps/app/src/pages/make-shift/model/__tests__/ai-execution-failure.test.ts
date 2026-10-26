@@ -326,3 +326,78 @@ describe('combined conflict evidence', () => {
         }
     });
 });
+
+describe('personal rest capacity evidence', () => {
+    const response = (maximum = 0) =>
+        ({
+            operationType: 'ADJUST',
+            draftRevision: 1,
+            resultType: 'PATCH',
+            applicable: false,
+            changedCells: [],
+            unmetInstructions: [],
+            sameAsPrevious: true,
+            validation: {
+                draftRevision: 1,
+                rulesHash: 'qa',
+                summary: {valid: false, hardCount: 2, softCount: 0, totalCount: 2},
+                violations: [],
+            },
+            engineResult: {
+                status: 'INFEASIBLE',
+                violations: [
+                    {
+                        type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                        nurseName: 'QA nurse',
+                        shiftCodes: ['O'],
+                        expected: 9,
+                        minimumAssignments: 0,
+                        maximumAssignments: maximum,
+                        title: 'internal text',
+                    },
+                    {
+                        type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                        nurseName: 'QA nurse',
+                        shiftCodes: ['A'],
+                        expected: 2,
+                        minimumAssignments: 0,
+                        maximumAssignments: maximum,
+                    },
+                ],
+            },
+        }) as TAutofillResponse;
+    it.each(['ko', 'ja', 'en'])('shows both conflicts and a next action in %s', async (locale) => {
+        const previous = i18n.language;
+        try {
+            await i18n.changeLanguage(locale);
+            const failure = aiExecutionFailure(response());
+            expect(failure?.message).toContain(
+                i18n.t('aiAdjust.executionFailure.personalRestEvidence', {
+                    name: 'QA nurse',
+                    shifts: 'O',
+                    target: 9,
+                    minimum: 0,
+                    maximum: 0,
+                }),
+            );
+            expect(failure?.message).toContain(
+                i18n.t('aiAdjust.executionFailure.personalRestEvidence', {
+                    name: 'QA nurse',
+                    shifts: 'A',
+                    target: 2,
+                    minimum: 0,
+                    maximum: 0,
+                }),
+            );
+            expect(failure?.message).not.toContain('internal text');
+            expect(failure?.recovery).toBe('revise');
+            expect(failure?.conditionConflict).toBe(true);
+            expect(failure?.confirmationRequired).not.toBe(true);
+        } finally {
+            await i18n.changeLanguage(previous);
+        }
+    });
+    it('does not assert conflict when the targets fit', () => {
+        expect(aiExecutionFailure(response(10))?.conditionConflict).not.toBe(true);
+    });
+});

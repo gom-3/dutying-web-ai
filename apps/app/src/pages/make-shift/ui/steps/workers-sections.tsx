@@ -1,6 +1,7 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {Check, Pencil} from 'lucide-react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
+import {isRestShiftOption} from '@/pages/member/model/nurse-shift-types';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
@@ -65,7 +66,9 @@ function findWardShiftType(nurseShiftType: TNurseShiftType, wardShiftTypes: TWar
 
 export function buildShiftTypeBadges(nurse: TNurse, wardShiftTypes: TWardShiftType[] | undefined): TShiftTypeBadge[] {
     return nurse.nurseShiftTypes
-        .filter((shift) => shift.isPossible)
+        .filter(
+            (shift) => shift.isPossible && !isRestShiftOption(shift) && !isRestShiftOption(findWardShiftType(shift, wardShiftTypes) ?? {}),
+        )
         .map((shift) => {
             const wardShiftType = findWardShiftType(shift, wardShiftTypes);
             const code = getFirstShiftTypeCode(wardShiftType?.shortName, shift.shortName, shift.name);
