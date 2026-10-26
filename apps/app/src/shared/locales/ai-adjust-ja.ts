@@ -59,7 +59,7 @@ export const aiAdjustJa = {
         monthlyAssignmentEvidence:
             '{{name}}：勤務可能な種類と固定勤務を守るには月に最低{{minimum}}回の配置が必要ですが、月の上限は{{maximum}}回です。',
         personalRestEvidence:
-            '{{name}}：{{shifts}}の目標は{{target}}日ですが、今回の依頼と固定勤務を守ると{{minimum}}〜{{maximum}}日しか割り当てられません。依頼した勤務日を減らすか、個人別の公休・有休目標を確認してください。',
+            '{{name}}：休暇（{{shifts}}）の目標は{{target}}日ですが、今回の依頼と固定勤務を守ると{{minimum}}〜{{maximum}}日しか割り当てられません。依頼した勤務日を減らすか、個人別の公休・有休目標を確認してください。',
         combinedConflictNext:
             '上記の条件を一緒に解決する必要があります。他の必須条件も満たす修正案はまだ確認できていません。設定を直接変更するか、依頼を変更してください。勤務表と設定は変更されていません。',
 
