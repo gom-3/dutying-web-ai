@@ -1,0 +1,877 @@
+{
+  "provenance": "Actual local HTTP QA response, synthetic roster; unchanged candidate.violations projection only. No token, observation, or account/session data copied.",
+  "cases": [
+    {
+      "case": "C",
+      "source": "intent-http-20261027-c/material-valid-operation.json",
+      "sourceSha256": "522d2c3973c4605469658331b2a792085b1a6a66ccb37bb74c4e019533bfa7e9",
+      "violations": [
+        {
+          "comparisonKey": [
+            "rule:1:28655acabbdd01103e0b62f56a5cef77f708ce1c3662db90bce27ddee88c1adf",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              1
+            ]
+          ],
+          "ruleIdentity": "rule:1:28655acabbdd01103e0b62f56a5cef77f708ce1c3662db90bce27ddee88c1adf",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0001",
+          "ruleId": 1,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "D 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "D",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "rule:2:ce72636bb255625a020c0fddbd97a9cfcbdda2e7e88deb34e52375b210041991",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              2
+            ]
+          ],
+          "ruleIdentity": "rule:2:ce72636bb255625a020c0fddbd97a9cfcbdda2e7e88deb34e52375b210041991",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0002",
+          "ruleId": 2,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "E 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "E",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "rule:3:80a8617d0ceb69bf1b2b0af88a2b036d3bf67ed72a5b651faa0923b0a2f64df4",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              3
+            ]
+          ],
+          "ruleIdentity": "rule:3:80a8617d0ceb69bf1b2b0af88a2b036d3bf67ed72a5b651faa0923b0a2f64df4",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0003",
+          "ruleId": 3,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "N 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "N",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              1
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:1",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "D",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              2
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:2",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "E",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              3
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:3",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "N",
+            "actual": 0,
+            "expected": 1
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        }
+      ]
+    },
+    {
+      "case": "D",
+      "source": "intent-http-20261027-d/material-cachefixed-operation.json",
+      "sourceSha256": "b356e885bbf338586705489af4a889977fdc4d579e67e82cfe931209ecbb92a9",
+      "violations": [
+        {
+          "comparisonKey": [
+            "rule:1:28655acabbdd01103e0b62f56a5cef77f708ce1c3662db90bce27ddee88c1adf",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              1
+            ]
+          ],
+          "ruleIdentity": "rule:1:28655acabbdd01103e0b62f56a5cef77f708ce1c3662db90bce27ddee88c1adf",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0001",
+          "ruleId": 1,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "D 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "D",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "rule:2:ce72636bb255625a020c0fddbd97a9cfcbdda2e7e88deb34e52375b210041991",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              2
+            ]
+          ],
+          "ruleIdentity": "rule:2:ce72636bb255625a020c0fddbd97a9cfcbdda2e7e88deb34e52375b210041991",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0002",
+          "ruleId": 2,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "E 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "E",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "rule:3:80a8617d0ceb69bf1b2b0af88a2b036d3bf67ed72a5b651faa0923b0a2f64df4",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              3
+            ]
+          ],
+          "ruleIdentity": "rule:3:80a8617d0ceb69bf1b2b0af88a2b036d3bf67ed72a5b651faa0923b0a2f64df4",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "v-202610-0003",
+          "ruleId": 3,
+          "templateCode": "MIN_STAFF_BY_SHIFT",
+          "severity": "HARD",
+          "message": "N 근무 인원이 0명이에요. 최소 1명이 필요해요.",
+          "messageKey": "schedule.validation.minStaffByShift",
+          "messageArgs": {
+            "shift": "N",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "1:2026-10-03",
+              "shiftNurseId": 1,
+              "nurseId": 1,
+              "nurseName": "합성 간호사 1",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "2:2026-10-03",
+              "shiftNurseId": 2,
+              "nurseId": 2,
+              "nurseName": "합성 간호사 2",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "3:2026-10-03",
+              "shiftNurseId": 3,
+              "nurseId": 3,
+              "nurseName": "합성 간호사 3",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "4:2026-10-03",
+              "shiftNurseId": 4,
+              "nurseId": 4,
+              "nurseName": "합성 간호사 4",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "5:2026-10-03",
+              "shiftNurseId": 5,
+              "nurseId": 5,
+              "nurseName": "합성 간호사 5",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            },
+            {
+              "cellKey": "6:2026-10-03",
+              "shiftNurseId": 6,
+              "nurseId": 6,
+              "nurseName": "합성 간호사 6",
+              "date": "2026-10-03",
+              "wardShiftTypeId": 4,
+              "shiftCode": "O"
+            }
+          ],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              1
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:1",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "D",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              2
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:2",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "E",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        },
+        {
+          "comparisonKey": [
+            "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+            "STAFFING_SHORTAGE",
+            {
+              "group": {
+                "target": {},
+                "division": null
+              }
+            },
+            [
+              "2026-10-03",
+              "2026-10-03"
+            ],
+            [
+              3
+            ]
+          ],
+          "ruleIdentity": "builtin:L3_ZERO_CORE_COVERAGE:d3e64b4594a8b91024928faadead3e2446a45e71015abd4afa688d95118fe7a6",
+          "magnitude": 1.0,
+          "unit": "NURSE",
+          "comparisonAvailable": true,
+          "violationId": "core:2026-10-03:3",
+          "ruleId": null,
+          "templateCode": "L3_ZERO_CORE_COVERAGE",
+          "severity": "HARD",
+          "message": "필요한 근무에 배정된 인원이 없습니다.",
+          "messageKey": null,
+          "messageArgs": {
+            "shift": "N",
+            "expected": 1,
+            "actual": 0
+          },
+          "period": {
+            "startDate": "2026-10-03",
+            "endDate": "2026-10-03",
+            "dates": [
+              "2026-10-03"
+            ]
+          },
+          "affectedCells": [],
+          "displayContext": null,
+          "fixable": true
+        }
+      ]
+    }
+  ]
+}

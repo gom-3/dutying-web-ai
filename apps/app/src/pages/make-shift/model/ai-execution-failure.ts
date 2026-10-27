@@ -1,6 +1,7 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import {aiConversationFailure, type TAiConversationFailure, type TPersonalRestConflict} from './ai-conversation-failure';
+import {authoringOutcome, canApplyAuthoringResult, authoringMessageKey} from './intent-first-authoring';
 import {readScheduleConflicts} from './schedule-conflicts';
 import type {TConversationOperation} from './schedule-conversation-api';
 
@@ -30,6 +31,32 @@ export function isGenerateReviewDraft(response: TAutofillResponse): boolean {
 
 /** Explain a rejected result without treating an unverified result as proven infeasibility. */
 export function aiExecutionFailure(response: TAutofillResponse): TAiConversationFailure | null {
+    const outcome = authoringOutcome(response);
+
+    if (outcome) {
+        if (
+            canApplyAuthoringResult(response) ||
+            (response.changedCells.length === 0 &&
+                ['FEASIBLE', 'NOT_RUN'].includes(outcome.solveState) &&
+                ['ALREADY_SATISFIED', 'NO_IMPROVEMENT'].includes(outcome.requestState)) ||
+            (response.changedCells.length === 0 &&
+                outcome.solveState === 'NOT_RUN' &&
+                outcome.requestState === 'NEEDS_REVIEW' &&
+                outcome.draftState === 'NONE') ||
+            (response.changedCells.length === 0 && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(outcome.draftState))
+        )
+            return null;
+
+        return {
+            message: i18n.t(`aiConversationSidebar.authoring.${authoringMessageKey(response) ?? 'UNKNOWN'}`),
+            blocked: false,
+            recovery: ['BUSY', 'UNKNOWN', 'ERROR'].includes(outcome.solveState) ? 'retry' : 'revise',
+        };
+    }
+
+    if (response.authoringOutcome || response.engineResult?.authoringOutcome)
+        return {message: i18n.t('aiAdjust.executionFailure.validation'), blocked: false, recovery: 'retry'};
+
     const conflicts =
         response.engineResult?.status === 'INFEASIBLE' && response.applicable === false
             ? readScheduleConflicts(response.failure?.conflicts)

@@ -47,6 +47,22 @@ export type TSelectionAudit = {
 export type TSemanticPlan = {
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
+    authoringContractVersion?: 'intent-first-v1';
+    interactionId?: string;
+    deadlineAt?: string;
+    planExpiresAt?: string;
+    autoExecutable?: boolean;
+    lifetime?: 'OPERATION' | 'ROSTER';
+    requestClauses?: {
+        clauseId: string;
+        kind: 'EXACT' | 'DIRECTIONAL' | 'REVIEW';
+        sourceSpan: {start: number; end: number; quote: string};
+        scope: {nurseIds: number[]; dateRanges: {startDate: string; endDate: string}[]; shiftIds: number[]};
+        intentIds: string[];
+        qualitativeText?: string;
+        metricKey?: string;
+        direction?: 'INCREASE' | 'DECREASE';
+    }[];
     planId: string;
     refreshedFromPlanId?: string | null;
     planHash: string;
@@ -104,6 +120,7 @@ export type TConversationState = {
     sourceVersionId: string;
     contextHash: string | null;
     expiresAt: string | null;
+    executionPlanExpiresAt?: string | null;
     conditions: {conditionId: string; text: string; preview: {status: string}}[];
     pendingQuestion: {conditionId: string; question: string} | null;
 };
@@ -124,6 +141,10 @@ export type TConversationPreference = {
     confirmedAt: string;
 };
 export type TConversationExecute = {
+    authoringContractVersion?: 'intent-first-v1';
+    interactionId?: string;
+    candidateDigest?: string;
+    sourceOperationId?: string;
     conflictReviewToken?: string;
     conflictConfirmed?: boolean;
     monthlyRestRequirement?: TMonthlyRestRequirement;
@@ -144,7 +165,12 @@ export function conversationApi(wardId: number, teamId: number) {
     const base = `/wards/${wardId}/shift-teams/${teamId}/schedule`;
     const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true, timeout: 15000})).data;
     const post = async <T>(path: string, data: unknown) =>
-        (await client.post<T>(`${base}${path}`, data, {suppressErrorToast: true, timeout: 330000})).data;
+        (
+            await client.post<T>(`${base}${path}`, data, {
+                suppressErrorToast: true,
+                timeout: (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1' ? 17000 : 330000,
+            })
+        ).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;
 
     return {
@@ -163,6 +189,7 @@ export function conversationApi(wardId: number, teamId: number) {
         interpret: (
             id: number,
             request: {
+                authoringContractVersion?: 'intent-first-v1';
                 expectedRevision: number;
                 text: string;
                 language: string;
@@ -253,11 +280,35 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
     );
 }
 
-export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+/** The new contract has one execution window, including after explicit confirmation. */
+export function hasCurrentIntentFirstExecutionWindow(plan: TSemanticPlan, now = Date.now()) {
     return (
-        isConversationConfirmationCurrent(detail, turn, localDirty) &&
-        turn.type === 'SEMANTIC_PLAN_CONFIRMED' &&
-        turn.semanticPlan?.state === 'CONFIRMED' &&
-        turn.semanticPlan.sourceVersionId === detail.conversation.currentVersionId
+        plan.authoringContractVersion === 'intent-first-v1' &&
+        Boolean(plan.interactionId) &&
+        Boolean(plan.deadlineAt) &&
+        Date.parse(plan.deadlineAt!) > now &&
+        Boolean(plan.planExpiresAt) &&
+        Date.parse(plan.planExpiresAt!) > now
+    );
+}
+
+export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+    const plan = turn.semanticPlan;
+
+    if (
+        !plan ||
+        !isConversationConfirmationCurrent(detail, turn, localDirty) ||
+        plan.sourceVersionId !== detail.conversation.currentVersionId
+    )
+        return false;
+
+    const confirmed = turn.type === 'SEMANTIC_PLAN_CONFIRMED' && plan.state === 'CONFIRMED';
+
+    if (!plan.authoringContractVersion) return confirmed;
+
+    return (
+        hasCurrentIntentFirstExecutionWindow(plan) &&
+        ['PREVIEW_READY', 'CONFIRMED'].includes(plan.state) &&
+        (confirmed || plan.autoExecutable === true)
     );
 }

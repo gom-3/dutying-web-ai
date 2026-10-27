@@ -1,6 +1,11 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {
+    response as intentResponse,
+    candidate as intentCandidate,
+    outcome as intentOutcome,
+} from '../../../../model/__tests__/fixtures/intent-first';
 import {AiConversationResultDetails} from '../ai-conversation-result-details';
 
 const result = {
@@ -100,6 +105,64 @@ describe('conversation result review', () => {
                 }}
             />,
         );
+
+        expect(container).toBeEmptyDOMElement();
+    });
+});
+
+describe('plain authoring result details', () => {
+    it('hides anonymous clause states, numbers and counts without a concrete rule or label', () => {
+        const {container} = render(<AiConversationResultDetails result={intentResponse()} />);
+
+        expect(container).toBeEmptyDOMElement();
+    });
+    it('keeps named requests in collapsed details and suppresses unlabelled scalar metrics', async () => {
+        const {container} = render(<AiConversationResultDetails result={intentResponse()} clauseText={() => '김 간호사 1일 D로 바꿔줘'} />);
+
+        expect(container.querySelector('details')).not.toHaveAttribute('open');
+        await userEvent.click(screen.getByText('변경 내용 더 보기'));
+        expect(screen.getByText(/김 간호사 1일 D로 바꿔줘 · 요청대로예요/)).toBeVisible();
+        expect(container).not.toHaveTextContent('0 → 1');
+        expect(container).not.toHaveTextContent(/미검증|충족|검사/);
+    });
+    it('shows a new staffing difference with its nurse/date while deduplicating its validation message', () => {
+        const issue = {
+            ...result.validation.violations[0]!,
+            violationId: 'new:1',
+            message: '11월 1일 D 근무가 1명 부족해요.',
+            affectedCells: [
+                {
+                    cellKey: '1:2026-11-01',
+                    shiftNurseId: 1,
+                    nurseName: '합성 간호사 A',
+                    date: '2026-11-01',
+                    wardShiftTypeId: 1,
+                    shiftCode: 'D',
+                },
+            ],
+        };
+        const res = intentResponse();
+
+        res.authoringOutcome!.violationDelta.new = [issue];
+        res.validation.violations = [issue];
+        render(<AiConversationResultDetails result={res} />);
+        expect(screen.getByText('11월 1일 D 근무가 1명 부족해요.')).toBeVisible();
+        expect(screen.getAllByText('11월 1일 D 근무가 1명 부족해요.')).toHaveLength(1);
+        expect(screen.getByText(/합성 간호사 A 2026-11-01 D/)).toBeVisible();
+        expect(screen.queryByText(/규칙 1건/)).toBeNull();
+    });
+    it('leaves the candidate condition beside its diff instead of repeating it in details', () => {
+        const res = intentResponse({
+            applicable: false,
+            changedCells: [],
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+        });
+
+        res.validation.violations = result.validation.violations;
+
+        const {container} = render(<AiConversationResultDetails result={res} />);
 
         expect(container).toBeEmptyDOMElement();
     });

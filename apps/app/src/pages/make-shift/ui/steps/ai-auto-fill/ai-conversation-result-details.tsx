@@ -1,13 +1,16 @@
-import type {TAutofillResponse} from '@dutying/api/ward';
+import type {TAutofillResponse, TScheduleViolationDto} from '@dutying/api/ward';
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
+import {authoringOutcome} from '../../../model/intent-first-authoring';
+import {AiScheduleWarningList} from './ai-schedule-warning-list';
 
-export function AiConversationResultDetails({result}: {result: TAutofillResponse}) {
+export function AiConversationResultDetails({result, clauseText}: {result: TAutofillResponse; clauseText?: (clauseId: string) => string}) {
     const {t} = useTypedTranslation();
     const hard = result.validation?.summary?.hardCount ?? 0;
     const soft = result.validation?.summary?.softCount ?? 0;
     const rules = result.requestRuleResults?.filter((rule) => rule.violationCount > 0) ?? [];
+    const outcome = authoringOutcome(result);
     const goals = result.goalResults ?? [];
     const messages = [
         ...new Set(
@@ -20,7 +23,105 @@ export function AiConversationResultDetails({result}: {result: TAutofillResponse
     const baseline = result.validationTarget === 'BASELINE';
     const candidate = result.validationTarget === 'CANDIDATE';
 
-    if (!review && hard === 0 && soft === 0 && rules.length === 0 && goals.length === 0 && messages.length === 0) return null;
+    if (outcome) {
+        const labelFor = (id: string, fallback?: string) => [clauseText?.(id), fallback].find((label) => label?.trim())?.trim() ?? '';
+        const clauses = outcome.clauses.filter((clause) => clause.kind !== 'REVIEW' && labelFor(clause.clauseId, clause.displayText));
+        const uniqueIssues = (issues: TScheduleViolationDto[]) => [
+            ...new Map(
+                issues
+                    .filter((issue) => {
+                        const message = localizeScheduleValidationMessage(issue)?.trim();
+
+                        return message && !/^[A-Z][A-Z_]+$/.test(message);
+                    })
+                    .map((issue) => [issue.violationId || JSON.stringify([issue.message, issue.affectedCells]), issue]),
+            ).values(),
+        ];
+        // Candidate-specific conditions are already beside its before/after table.
+        const important =
+            candidate && result.candidate ? [] : uniqueIssues([...outcome.violationDelta.new, ...outcome.violationDelta.worsened]);
+        const importantIds = new Set(important.map((issue) => issue.violationId));
+        const otherIssues =
+            candidate && result.candidate
+                ? []
+                : uniqueIssues([
+                      ...(result.blockingViolations ?? []),
+                      ...(result.validation?.violations ?? []),
+                      ...outcome.violationDelta.unchanged,
+                  ]).filter((issue) => !importantIds.has(issue.violationId));
+        const measuredGoals = goals.filter(
+            (goal) =>
+                goal.goalType === 'MINIMIZE_SINGLE_NIGHT_RUNS' &&
+                Number.isFinite(goal.beforeSingleNightRuns) &&
+                Number.isFinite(goal.afterSingleNightRuns),
+        );
+        const namedRules = rules.filter((rule) => rule.displayLabel?.trim());
+        const betterGroups = (['improved', 'resolved'] as const)
+            .map((category) => ({category, issues: uniqueIssues(outcome.violationDelta[category])}))
+            .filter((group) => group.issues.length > 0);
+        const betterIds = new Set(betterGroups.flatMap((group) => group.issues.map((issue) => issue.violationId)));
+        const remainingIssues = otherIssues.filter((issue) => !betterIds.has(issue.violationId));
+        const hasDetails =
+            betterGroups.length > 0 ||
+            clauses.length > 0 ||
+            remainingIssues.length > 0 ||
+            namedRules.length > 0 ||
+            measuredGoals.length > 0 ||
+            outcome.appliedConcessionIds.length > 0;
+        const issueList = (issues: TScheduleViolationDto[]) => <AiScheduleWarningList violations={issues} />;
+
+        if (!hasDetails && important.length === 0) return null;
+
+        return (
+            <div className="mt-3 space-y-3 text-[13px] leading-6">
+                {important.length > 0 && (
+                    <div className="rounded-xl bg-white p-3">
+                        <p className="font-medium">{t('aiConversationSidebar.authoring.warnings')}</p>
+                        {issueList(important)}
+                    </div>
+                )}
+                {hasDetails && (
+                    <details className="rounded-xl bg-white p-3">
+                        <summary className="min-h-11 cursor-pointer rounded-lg px-2 py-2 font-medium focus-visible:outline-2 focus-visible:outline-main-1">
+                            {t('aiConversationSidebar.authoring.details')}
+                        </summary>
+                        {outcome.appliedConcessionIds.length > 0 && <p>{t('aiConversationSidebar.authoring.concessions')}</p>}
+                        {clauses.map((clause) => (
+                            <p key={clause.clauseId}>
+                                {labelFor(clause.clauseId, clause.displayText)} ·{' '}
+                                {t(`aiConversationSidebar.authoring.clause.${clause.status}`)}
+                            </p>
+                        ))}
+                        {issueList(remainingIssues)}
+                        {betterGroups.map((group) => (
+                            <div key={group.category}>
+                                <p>{t(`aiConversationSidebar.authoring.delta.${group.category}`)}</p>
+                                {issueList(group.issues)}
+                            </div>
+                        ))}
+                        {namedRules.map((rule) => (
+                            <p key={rule.requestId}>
+                                {t('aiAdjust.resultInfo.remaining', {
+                                    label: rule.displayLabel?.trim() ?? '',
+                                    count: rule.violationCount,
+                                })}
+                            </p>
+                        ))}
+                        {measuredGoals.map((goal, index) => (
+                            <p key={index}>
+                                {t('aiAdjust.resultInfo.singleNight', {
+                                    before: goal.beforeSingleNightRuns,
+                                    after: goal.afterSingleNightRuns,
+                                })}
+                            </p>
+                        ))}
+                    </details>
+                )}
+            </div>
+        );
+    }
+
+    if (!outcome && !review && hard === 0 && soft === 0 && rules.length === 0 && goals.length === 0 && messages.length === 0) return null;
 
     return (
         <details

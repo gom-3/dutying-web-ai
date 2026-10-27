@@ -25,3 +25,43 @@ describe('condition selection API', () => {
         );
     });
 });
+
+describe('intent-first negotiated conversation wire', () => {
+    it('sends one-operation interpretation negotiation with the bounded transport timeout', async () => {
+        post.mockResolvedValueOnce({data: {interpretationId: 'i:1'}});
+        await conversationApi(5, 7).interpret(9, {
+            expectedRevision: 2,
+            text: '3일 D로 바꿔줘',
+            language: 'ko',
+            authoringContractVersion: 'intent-first-v1',
+        });
+        expect(post).toHaveBeenLastCalledWith(
+            '/wards/5/shift-teams/7/schedule/conversations/9/interpretations',
+            {expectedRevision: 2, text: '3일 D로 바꿔줘', language: 'ko', authoringContractVersion: 'intent-first-v1'},
+            {suppressErrorToast: true, timeout: 17000},
+        );
+    });
+    it('sends exact cached candidate binding without creating a new interpretation or altering rule lifetime', async () => {
+        const body = {
+            expectedRevision: 2,
+            idempotencyKey: 'retry:1',
+            operationType: 'ADJUST' as const,
+            authoringContractVersion: 'intent-first-v1' as const,
+            interactionId: 'interaction:1',
+            interpretationId: 'i:1',
+            planHash: 'a'.repeat(64),
+            sourceVersionId: 'version:1',
+            sourceOperationId: 'operation:1',
+            candidateDigest: 'candidate:1',
+            conflictReviewToken: 'token:1',
+            conflictConfirmed: true,
+        };
+
+        post.mockResolvedValueOnce({data: {operationId: 'op:2'}});
+        await conversationApi(5, 7).execute(9, body);
+        expect(post).toHaveBeenLastCalledWith('/wards/5/shift-teams/7/schedule/conversations/9/operations', body, {
+            suppressErrorToast: true,
+            timeout: 17000,
+        });
+    });
+});

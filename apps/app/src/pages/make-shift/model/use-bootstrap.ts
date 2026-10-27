@@ -264,6 +264,12 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 setAutofillAdjustEnabled(workspace?.autofillAdjustEnabled === true);
                 useShiftEditorStore.getState().setConversationEnabled(workspace?.conversationEnabled === true);
                 useShiftEditorStore.getState().setSemanticExecutionEnabled(workspace?.semanticExecutionEnabled === true);
+                useShiftEditorStore
+                    .getState()
+                    .setIntentFirstAuthoringEnabled(
+                        workspace?.intentFirstAuthoringEnabled === true &&
+                            workspace?.authoringContractVersions?.includes('intent-first-v1') === true,
+                    );
 
                 const rosterReconciliation = workspace?.rosterReconciliation;
                 const requiresRosterReview = rosterReconciliation?.requiresReview === true;

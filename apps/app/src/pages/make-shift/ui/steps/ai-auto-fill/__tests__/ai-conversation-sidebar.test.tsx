@@ -24,6 +24,11 @@ import i18n from '@/i18n';
 import {adminAxiosInstance} from '@/shared/api/client';
 import type * as WardApiModule from '@/shared/api/ward';
 import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
+import {
+    response as intentResponse,
+    outcome as intentOutcome,
+    candidate as intentCandidate,
+} from '../../../../model/__tests__/fixtures/intent-first';
 import type * as ConversationApiModule from '../../../../model/schedule-conversation-api';
 import type {
     TConversationDetail,
@@ -50,6 +55,7 @@ const mocks = vi.hoisted(() => ({
     deletePreference: vi.fn(),
     applyAdjustedDoc: vi.fn(),
     clearScheduleValidationFromApi: vi.fn(),
+    setScheduleValidationFromApi: vi.fn(),
     confirm: vi.fn(),
     confirmPlan: vi.fn(),
     refreshPlan: vi.fn(),
@@ -61,6 +67,7 @@ const mocks = vi.hoisted(() => ({
     getScheduleMonthRequests: vi.fn(),
     updateScheduleMonthRequest: vi.fn(),
     draftFixed: false,
+    draftShiftTypeId: 4,
 }));
 
 vi.mock('../../constraints', async () => {
@@ -148,13 +155,14 @@ vi.mock('@/features/shift-editor', async (original) => ({
     useShiftEditorCommands: () => ({
         applyAdjustedDoc: mocks.applyAdjustedDoc,
         clearScheduleValidationFromApi: mocks.clearScheduleValidationFromApi,
+        setScheduleValidationFromApi: mocks.setScheduleValidationFromApi,
     }),
 }));
 vi.mock('@/features/shift-editor/model/schedule-authoring', () => ({
     buildAutofillDTO: () => ({
         year: 2026,
         month: 11,
-        cells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: 4, fixed: mocks.draftFixed}],
+        cells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: mocks.draftShiftTypeId, fixed: mocks.draftFixed}],
         rowOrder: [],
         carryOverCells: [],
     }),
@@ -355,6 +363,7 @@ beforeEach(() => {
     mocks.updateScheduleMonthRequest.mockReset();
     mocks.applyConstraints.mockReset().mockResolvedValue(true);
     mocks.draftFixed = false;
+    mocks.draftShiftTypeId = 4;
     sessionStorage.clear();
     current = {
         contextHash: 'rules:1',
@@ -4423,4 +4432,552 @@ describe('interrupted execution recovery', () => {
         },
         12000,
     );
+});
+
+describe('intent-first sidebar integration', () => {
+    const enable = () => {
+        useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+    };
+    const autoTurn = (): TConversationTurn => ({
+        eventId: 200,
+        sequence: 2,
+        actor: 'ASSISTANT',
+        type: 'SEMANTIC_PLAN_PREVIEW',
+        text: null,
+        interpretationId: 'intent:1',
+        baseRevision: 0,
+        contextHash: 'rules:1',
+        interpretation: null,
+        semanticPlan: {
+            authoringContractVersion: 'intent-first-v1',
+            autoExecutable: true,
+            interactionId: 'interaction:1',
+            deadlineAt: new Date(Date.now() + 15000).toISOString(),
+            planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+            planId: 'plan:1',
+            planHash: 'plan-hash',
+            sourceVersionId: source.versionId,
+            state: 'PREVIEW_READY',
+            summary: '1일 D로 바꿔줘',
+            confirmationAllowed: true,
+            conditions: [],
+            reasonCodes: [],
+        },
+        createdAt: source.createdAt,
+    });
+    const installPlan = (turn = autoTurn()) => {
+        current = {
+            ...current,
+            operations: [],
+            turns: [turn],
+            conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+        };
+    };
+
+    it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
+        enable();
+        installPlan();
+
+        const unchanged = intentResponse({
+            changedCells: [],
+            applicable: false,
+            authoringOutcome: intentOutcome({requestState: 'NO_IMPROVEMENT', draftState: 'NONE'}),
+        });
+
+        mocks.execute.mockImplementationOnce(async () => {
+            const next = {
+                ...operation,
+                operationType: 'ADJUST' as const,
+                interpretationId: 'intent:1',
+                applyStatus: 'NOT_APPLIED_NO_CHANGE',
+                resultVersionId: null,
+                result: unchanged,
+            };
+
+            current = {...current, operations: [next]};
+
+            return next;
+        });
+
+        const rendered = renderSidebar();
+
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            authoringContractVersion: 'intent-first-v1',
+            interactionId: 'interaction:1',
+            interpretationId: 'intent:1',
+            planHash: 'plan-hash',
+            sourceVersionId: 'source:1',
+        });
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.confirm).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        await screen.findByText(i18n.t('aiConversationSidebar.authoring.NO_IMPROVEMENT'));
+        rendered.rerender(sidebarElement({open: false}));
+        rendered.rerender(sidebarElement());
+        expect(mocks.execute).toHaveBeenCalledOnce();
+    });
+    it.each(['feature-off', 'expired', 'deadline-expired', 'stale-source', 'not-auto'] as const)(
+        'does not automatically execute %s plans',
+        async (scenario) => {
+            enable();
+
+            const turn = autoTurn();
+
+            if (scenario === 'feature-off') useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(false);
+
+            if (scenario === 'expired') turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+
+            if (scenario === 'deadline-expired') turn.semanticPlan!.deadlineAt = '2000-01-01T00:00:00Z';
+
+            if (scenario === 'stale-source') turn.semanticPlan!.sourceVersionId = 'another';
+
+            if (scenario === 'not-auto') turn.semanticPlan!.autoExecutable = false;
+
+            installPlan(turn);
+            renderSidebar();
+            await screen.findByRole('region', {name: i18n.t('aiAutofillUi.semanticReview.reviewRequestConditions')});
+            expect(mocks.execute).not.toHaveBeenCalled();
+        },
+    );
+    it('keeps candidate changes out of the roster and sends exact cached selection binding once', async () => {
+        enable();
+
+        const proposal = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+        });
+
+        current.operations = [
+            {...operation, operationType: 'ADJUST', result: proposal, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW'},
+        ];
+        mocks.execute.mockImplementationOnce(async () => {
+            const applied = {
+                ...operation,
+                operationType: 'ADJUST' as const,
+                result: intentResponse({authoringOutcome: intentOutcome({candidateDigest: 'digest:1'})}),
+            };
+
+            current = {
+                ...current,
+                operations: [...current.operations, {...applied, operationId: 'op:2', sequence: 2}],
+                conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
+                draft: {...source, versionId: 'result:1', cells: proposal.candidate!.changedCells},
+            };
+
+            return applied;
+        });
+        renderSidebar();
+
+        const apply = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')});
+
+        expect(screen.getByRole('table')).toHaveTextContent('D');
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        await userEvent.dblClick(apply);
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.execute).toHaveBeenCalledOnce();
+        expect(mocks.setScheduleValidationFromApi).toHaveBeenCalledOnce();
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            authoringContractVersion: 'intent-first-v1',
+            sourceOperationId: 'operation:1',
+            candidateDigest: 'digest:1',
+            sourceVersionId: 'source:1',
+            conflictReviewToken: 'synthetic-token',
+            conflictConfirmed: true,
+        });
+        expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+    it('preserves expired proposal history and the unsent composer across unmount/reentry', async () => {
+        enable();
+        current.operations = [
+            {
+                ...operation,
+                operationType: 'ADJUST',
+                resultVersionId: null,
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                result: intentResponse({
+                    changedCells: [],
+                    applicable: false,
+                    validationTarget: 'CANDIDATE',
+                    candidate: intentCandidate({expiresAt: '2000-01-01T00:00:00Z'}),
+                    authoringOutcome: intentOutcome({
+                        draftState: 'PREVIEW_ONLY',
+                        requestState: 'NEEDS_REVIEW',
+                        candidateDigest: 'digest:1',
+                    }),
+                }),
+            },
+        ];
+
+        const rendered = renderSidebar();
+
+        await screen.findByRole('table');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await userEvent.type(screen.getByRole('textbox'), '다음 요청 초안');
+        rendered.unmount();
+        renderSidebar();
+        expect(await screen.findByRole('table')).toBeVisible();
+        expect(await screen.findByRole('textbox')).toHaveValue('다음 요청 초안');
+        expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).toBeDisabled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('undoes through a revision-checked draft update while preserving conversation history', async () => {
+        enable();
+
+        const result = intentResponse();
+
+        mocks.draftShiftTypeId = 1;
+        current = {
+            ...current,
+            conversation: {...current.conversation, currentVersionId: 'result:1', revision: 1},
+            draft: {...source, versionId: 'result:1', cells: result.changedCells},
+            operations: [{...operation, operationType: 'ADJUST', result}],
+        };
+        useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['D']}]});
+        mocks.version.mockResolvedValueOnce(source);
+        mocks.sync.mockImplementationOnce(async (_id, request) => {
+            current = {
+                ...current,
+                conversation: {...current.conversation, revision: 2, currentVersionId: 'undo:1'},
+                draft: {...source, versionId: 'undo:1', cells: request.cells},
+            };
+
+            return current;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.undo')}));
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.sync.mock.calls[0]?.[1]).toMatchObject({expectedRevision: 1, cells: source.cells});
+        expect(current.operations).toHaveLength(1);
+        expect(mocks.startSegment).not.toHaveBeenCalled();
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it('clears a definitively expired candidate request without erasing its result history', async () => {
+        enable();
+        current.operations = [
+            {
+                ...operation,
+                operationType: 'ADJUST',
+                resultVersionId: null,
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                result: intentResponse({
+                    changedCells: [],
+                    applicable: false,
+                    validationTarget: 'CANDIDATE',
+                    candidate: intentCandidate(),
+                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+                }),
+            },
+        ];
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_EXPIRED'});
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await screen.findAllByText(i18n.t('aiConversationSidebar.authoring.expired'));
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+        expect(current.operations).toHaveLength(1);
+        expect(screen.getByRole('table')).toBeVisible();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('recovers a completed application after remount by comparing the source grid rather than a reset revision counter', async () => {
+        enable();
+
+        const result = intentResponse();
+        const completed = {...operation, operationType: 'ADJUST' as const, result};
+
+        current = {
+            ...current,
+            conversation: {...current.conversation, currentVersionId: 'result:1', revision: 1},
+            draft: {...source, versionId: 'result:1', cells: result.changedCells},
+            operations: [completed],
+        };
+        sessionStorage.setItem(
+            'dutying.conversation:account:4:1:2:2026:11',
+            JSON.stringify({
+                conversationId: 1,
+                request: {
+                    authoringContractVersion: 'intent-first-v1',
+                    sourceVersionId: 'source:1',
+                    expectedRevision: 0,
+                    idempotencyKey: 'pending:1',
+                    operationType: 'ADJUST',
+                },
+                operationId: 'operation:1',
+                uiRevision: 999,
+            }),
+        );
+        mocks.version.mockImplementation(async (id) =>
+            id === 'source:1' ? source : {...source, versionId: 'result:1', cells: result.changedCells},
+        );
+        renderSidebar();
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.version).toHaveBeenCalledWith('source:1');
+        expect(mocks.version).toHaveBeenCalledWith('result:1');
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
+    it('preserves manual input instead of recovering an applied result over a changed source grid', async () => {
+        enable();
+        mocks.draftFixed = true;
+        current = {
+            ...current,
+            conversation: {...current.conversation, currentVersionId: 'result:1', revision: 1},
+            draft: {...source, versionId: 'result:1', cells: intentCandidate().changedCells},
+            operations: [{...operation, operationType: 'ADJUST', result: intentResponse()}],
+        };
+        sessionStorage.setItem(
+            'dutying.conversation:account:4:1:2:2026:11',
+            JSON.stringify({
+                conversationId: 1,
+                request: {
+                    authoringContractVersion: 'intent-first-v1',
+                    sourceVersionId: 'source:1',
+                    expectedRevision: 0,
+                    idempotencyKey: 'pending:1',
+                    operationType: 'ADJUST',
+                },
+                operationId: 'operation:1',
+                uiRevision: 999,
+            }),
+        );
+        mocks.version.mockResolvedValueOnce(source);
+        renderSidebar();
+        await screen.findAllByText(i18n.t('aiConversationSidebar.draftChangedResultSaved'));
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(current.operations).toHaveLength(1);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('resumes a running request after remount and applies the completed receipt without another execution', async () => {
+        enable();
+
+        const result = intentResponse();
+        const pendingOperation = {
+            ...operation,
+            operationType: 'ADJUST' as const,
+            resultVersionId: null,
+            executionStatus: 'RUNNING' as const,
+            applyStatus: 'NOT_APPLIED',
+            result: null,
+        };
+
+        current = {...current, operations: [pendingOperation]};
+        sessionStorage.setItem(
+            'dutying.conversation:account:4:1:2:2026:11',
+            JSON.stringify({
+                conversationId: 1,
+                request: {
+                    authoringContractVersion: 'intent-first-v1',
+                    sourceVersionId: 'source:1',
+                    expectedRevision: 0,
+                    idempotencyKey: 'pending:1',
+                    operationType: 'ADJUST',
+                },
+                operationId: 'operation:1',
+                uiRevision: 999,
+            }),
+        );
+        mocks.version.mockImplementation(async (id) =>
+            id === 'source:1' ? source : {...source, versionId: 'result:1', cells: result.changedCells},
+        );
+        mocks.detail.mockImplementation(async () => {
+            if (mocks.detail.mock.calls.length >= 2)
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, currentVersionId: 'result:1', revision: 1},
+                    draft: {...source, versionId: 'result:1', cells: result.changedCells},
+                    operations: [{...operation, operationType: 'ADJUST', result}],
+                };
+
+            return current;
+        });
+        renderSidebar();
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce(), {timeout: 5000});
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
+    it('QA rejects expired confirmed negotiated plans before automatic execution', async () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.type = 'SEMANTIC_PLAN_CONFIRMED';
+        turn.semanticPlan!.state = 'CONFIRMED';
+        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        installPlan(turn);
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+        });
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('QA releases pending state after a definitive candidate revision conflict', async () => {
+        enable();
+        current.operations = [
+            {
+                ...operation,
+                operationType: 'ADJUST',
+                resultVersionId: null,
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                result: intentResponse({
+                    changedCells: [],
+                    applicable: false,
+                    validationTarget: 'CANDIDATE',
+                    candidate: intentCandidate(),
+                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+                }),
+            },
+        ];
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_REVISION_CONFLICT'});
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+        });
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
+
+    const preparedCandidate = () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.semanticPlan!.deadlineAt = '2000-01-01T00:00:00Z';
+        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        current = {
+            ...current,
+            turns: [turn],
+            conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            operations: [
+                {
+                    ...operation,
+                    operationType: 'ADJUST',
+                    interpretationId: turn.interpretationId,
+                    resultVersionId: null,
+                    applyStatus: 'NOT_APPLIED_REVIEW',
+                    result: intentResponse({
+                        applicable: false,
+                        changedCells: [],
+                        validationTarget: 'CANDIDATE',
+                        candidate: intentCandidate(),
+                        authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+                    }),
+                },
+            ],
+        };
+    };
+
+    it('selects a live cached candidate even after the original calculation window expires', async () => {
+        preparedCandidate();
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            conflictConfirmed: true,
+            candidateDigest: 'digest:1',
+            sourceOperationId: 'operation:1',
+        });
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+    });
+    it.each(['CANDIDATE_STALE', 'PLAN_EXPIRED', 'SCHEDULE_STALE_DRAFT_REVISION', 'SCHEDULE_ADJUST_CONTEXT_CHANGED'])(
+        'reconciles a definitive %s rejection and releases only the unaccepted request',
+        async (serverCode) => {
+            preparedCandidate();
+            mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
+            renderSidebar();
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+            await waitFor(() => expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull());
+            expect(mocks.execute).toHaveBeenCalledOnce();
+            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        },
+    );
+    it.each(['OPERATION_KEY_CONFLICT', 'IDEMPOTENCY_KEY_REUSED', 'AI_RECONCILING', 'UNRECOGNIZED_CONFLICT', undefined])(
+        'retains recovery for a possibly accepted or unknown 409: %s',
+        async (serverCode) => {
+            preparedCandidate();
+            mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
+            renderSidebar();
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+            await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+            expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        },
+    );
+    it('retains the original key when the definitive-conflict lookup is unavailable', async () => {
+        preparedCandidate();
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_STALE'});
+        mocks.detail.mockImplementation(async () => {
+            if (mocks.detail.mock.calls.length === 3) throw new Error('unavailable');
+
+            return current;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+        expect(mocks.execute).toHaveBeenCalledOnce();
+    });
+    it('retains an ambiguous matching new operation instead of discarding a possible accepted result', async () => {
+        preparedCandidate();
+        mocks.execute.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                operations: [
+                    ...current.operations,
+                    {
+                        ...operation,
+                        operationId: 'possibly-accepted',
+                        sequence: 2,
+                        operationType: 'ADJUST',
+                        interpretationId: 'intent:1',
+                        executionStatus: 'RUNNING',
+                        applyStatus: 'NOT_APPLIED',
+                        resultVersionId: null,
+                    },
+                ],
+            };
+            throw {code: 409, serverCode: 'CANDIDATE_STALE'};
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+        expect(mocks.execute).toHaveBeenCalledOnce();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('checks the calculation window again after asynchronous input loading', async () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.type = 'SEMANTIC_PLAN_CONFIRMED';
+        turn.semanticPlan!.state = 'CONFIRMED';
+        installPlan(turn);
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar();
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 400000);
+        await act(async () => complete());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
 });

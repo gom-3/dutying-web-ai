@@ -1,6 +1,7 @@
 import type {MouseEventHandler, ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
+import {authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
@@ -24,10 +25,17 @@ export function AiConversationResult({
     copy: (ko: string, en: string) => string;
 }) {
     const {t} = useTypedTranslation();
+    const authoring = operation.result ? authoringOutcome(operation.result) : undefined;
+    const messageKey = operation.result ? authoringMessageKey(operation.result) : undefined;
     const review = operation.result && isGenerateReviewDraft(operation.result);
     const applied = operation.applyStatus === 'APPLIED';
-    const succeeded = operation.executionStatus === 'SUCCEEDED' && applied && !review;
+    const succeeded =
+        operation.executionStatus === 'SUCCEEDED' &&
+        applied &&
+        !review &&
+        (!authoring || ['SATISFIED', 'IMPROVED'].includes(authoring.requestState));
     const changedCount = operation.result?.changedCells.length;
+    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = review
         ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
         : !applied
@@ -45,18 +53,44 @@ export function AiConversationResult({
 
     return (
         <AiScheduleResultCard
-            title={title}
+            title={
+                applied && authoring?.requestState === 'NEEDS_REVIEW'
+                    ? t('aiConversationSidebar.authoring.selectedReview')
+                    : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
+                      ? t('aiConversationSidebar.sourceChangedNotApplied')
+                      : messageKey
+                        ? t(`aiConversationSidebar.authoring.${messageKey}`)
+                        : title
+            }
             attempt={attempt}
-            outcome={review ? 'review' : succeeded ? 'success' : 'neutral'}
+            outcome={
+                review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState))
+                    ? 'review'
+                    : succeeded
+                      ? 'success'
+                      : 'neutral'
+            }
             outcomeLabel={
-                review
-                    ? t('aiAutofillUi.conversationResult.scheduleNeedsReview')
-                    : operation.operationType === 'GENERATE'
-                      ? t('aiAutofillUi.conversationResult.autofillSucceeded')
-                      : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
+                messageKey
+                    ? t(`aiConversationSidebar.authoring.${messageKey}`)
+                    : review
+                      ? t('aiAutofillUi.conversationResult.scheduleNeedsReview')
+                      : operation.operationType === 'GENERATE'
+                        ? t('aiAutofillUi.conversationResult.autofillSucceeded')
+                        : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
             changedCount={changedCount}
-            description={review ? t('aiAutofillUi.conversationResult.reviewTheHighlightedRulesAndAdjustShiftsWhereNeeded') : scope}
+            description={
+                authoring
+                    ? applied
+                        ? null
+                        : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
+                          ? scope
+                          : null
+                    : review
+                      ? t('aiAutofillUi.conversationResult.reviewTheHighlightedRulesAndAdjustShiftsWhereNeeded')
+                      : scope
+            }
             preview={preview}
             headerAction={
                 <AiConversationFeedbackButton
@@ -67,6 +101,11 @@ export function AiConversationResult({
             }
             actions={actions}
         >
+            {showPartialCoverage && (
+                <p role="status" className="mt-3 text-[13px] leading-6">
+                    {t('aiConversationSidebar.authoring.partialCoverage')}
+                </p>
+            )}
             {children}
         </AiScheduleResultCard>
     );

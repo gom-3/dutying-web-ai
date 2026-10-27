@@ -4,6 +4,7 @@ import {aiExecutionFailure} from './ai-execution-failure';
 import {apiAiScheduleProvider} from './ai-schedule-api-provider';
 import {type TAiScheduleProvider, type TAiScheduleRequest, type TAiScheduleResult} from './ai-schedule-contract';
 import {mockAiScheduleProvider} from './ai-schedule-mock';
+import {authoringOutcome} from './intent-first-authoring';
 
 type TProviderName = 'mock' | 'api';
 
@@ -44,6 +45,9 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
         const failure = aiExecutionFailure(response);
 
         if (failure) return {ok: false, message: failure.message, failure, conflictReview: response.conflictReview};
+
+        if (authoringOutcome(response) && response.changedCells.length === 0)
+            return {ok: true, response, validation: response.validation, noChange: true};
 
         if (response.changedCells.length === 0 && isAdjustNoChange(request, response)) {
             return {ok: true, response, validation: response.validation, noChange: true};

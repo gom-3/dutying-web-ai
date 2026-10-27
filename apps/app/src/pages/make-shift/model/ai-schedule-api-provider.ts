@@ -4,8 +4,8 @@ import {commercialGet} from '@/features/commercial/api';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import WardAPI from '@/shared/api/ward';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
-import {scheduleJourneyId} from './schedule-journey';
 import {loadMonthlyRestRequirement} from './monthly-rest-requirement';
+import {scheduleJourneyId} from './schedule-journey';
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
     generate: async ({
@@ -18,6 +18,8 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         draftRevision,
         rulesHash,
         prompt,
+        authoringContractVersion,
+        interactionId,
         conflictReviewToken,
         conflictConfirmed,
         idempotencyKey,
@@ -26,6 +28,8 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         signal,
     }) => {
         const dto = {
+            authoringContractVersion,
+            interactionId,
             conflictReviewToken,
             conflictConfirmed,
             journeyId: scheduleJourneyId(wardId, shiftTeamId, year, month),

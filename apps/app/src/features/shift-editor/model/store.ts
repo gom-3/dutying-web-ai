@@ -20,6 +20,7 @@ export type TShiftEditorStore = {
     autofillAdjustEnabled: boolean;
     conversationEnabled: boolean;
     semanticExecutionEnabled: boolean;
+    intentFirstAuthoringEnabled: boolean;
     selection: TSelection | null;
     /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
     scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
@@ -42,6 +43,7 @@ export type TShiftEditorStore = {
     setRulesHash: (rulesHash: string | null) => void;
     setConversationEnabled: (enabled: boolean) => void;
     setSemanticExecutionEnabled: (enabled: boolean) => void;
+    setIntentFirstAuthoringEnabled: (enabled: boolean) => void;
     setAutofillAdjustEnabled: (autofillAdjustEnabled: boolean) => void;
 
     reset: (opts?: {maxHistoryDepth?: number}) => void;
@@ -58,6 +60,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         autofillAdjustEnabled: false,
         conversationEnabled: false,
         semanticExecutionEnabled: false,
+        intentFirstAuthoringEnabled: false,
         selection: null,
         scheduleValidationSnapshot: null,
         legacyDisplayViolations: [],
@@ -77,6 +80,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         setRulesHash: (rulesHash) => set(() => ({rulesHash})),
         setConversationEnabled: (conversationEnabled) => set(() => ({conversationEnabled})),
         setSemanticExecutionEnabled: (semanticExecutionEnabled) => set(() => ({semanticExecutionEnabled})),
+        setIntentFirstAuthoringEnabled: (intentFirstAuthoringEnabled) => set(() => ({intentFirstAuthoringEnabled})),
         setAutofillAdjustEnabled: (autofillAdjustEnabled) => set(() => ({autofillAdjustEnabled})),
 
         reset: (opts) => {
@@ -88,6 +92,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
                 rulesHash: null,
                 conversationEnabled: false,
                 semanticExecutionEnabled: false,
+                intentFirstAuthoringEnabled: false,
                 selection: null,
                 scheduleValidationSnapshot: null,
                 legacyDisplayViolations: [],
