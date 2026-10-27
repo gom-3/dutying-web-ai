@@ -406,6 +406,28 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('switches from changes to autofill preparation and preserves the unsent draft when returning', async () => {
+        current.operations = [];
+
+        const prepare = vi.fn();
+        const props = {onPrepareGeneration: prepare};
+        const view = renderSidebar(props);
+
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.switchToAutofill')}));
+        expect(prepare).toHaveBeenCalledOnce();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        view.rerender(sidebarElement({...props, preparation: <p>자동채우기 준비</p>}));
+        expect(screen.getByText('자동채우기 준비')).toBeVisible();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        view.rerender(sidebarElement(props));
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        expect(screen.getByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('keeps conflict evidence and recovery after settings edits, without confirming or executing automatically', async () => {
         const prepare = vi.fn();
         const confirm = vi.fn();

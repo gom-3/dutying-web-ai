@@ -4,6 +4,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import type {TAiConversationFailure} from '../../../../model/ai-conversation-failure';
 import AiAdjustDialog from '../ai-adjust-dialog';
+import type {TAdjustTextInputHandle} from '../ai-adjust-text-input';
 import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({useTypedTranslation: () => ({t: (key: string) => key})}));
@@ -148,4 +149,42 @@ it('keeps legacy conflict evidence and opens request editing without offering co
     expect(screen.queryByRole('button', {name: 'aiAdjust.chat.confirmSchedule'})).not.toBeInTheDocument();
     expect(apply).not.toHaveBeenCalled();
     expect(confirm).not.toHaveBeenCalled();
+});
+
+it('switches legacy changes back to generation without sending or clearing the typed request', async () => {
+    const generate = vi.fn();
+    const interpret = vi.fn();
+    const apply = vi.fn();
+    const props = {
+        open: true,
+        onClose: vi.fn(),
+        onGenerate: generate,
+        onRegenerate: generate,
+        disabled: false,
+        textInputRef: createRef<TAdjustTextInputHandle>(),
+        onPickExample: vi.fn(),
+        interpret,
+        onApply: apply,
+        goalNurses: [],
+        requests: [],
+        disablingRequestId: null,
+        onDisableRequest: vi.fn(),
+    };
+    const view = render(<AiAdjustDialog {...props} />);
+
+    await userEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+    await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
+    await userEvent.click(screen.getByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'}));
+    expect(generate).toHaveBeenCalledOnce();
+
+    const flow = {id: 1, kind: 'generation' as const, status: 'preparing' as const, messages: []};
+
+    view.rerender(<AiAdjustDialog {...props} preparation={<p>자동채우기 준비</p>} autofillFlow={flow} />);
+    expect(screen.getByText('자동채우기 준비')).toBeVisible();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    view.rerender(<AiAdjustDialog {...props} autofillFlow={{...flow, status: 'completed'}} />);
+    await userEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.modify'}));
+    expect(screen.getByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+    expect(interpret).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
 });

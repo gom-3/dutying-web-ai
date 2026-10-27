@@ -281,6 +281,7 @@ export const aiAutofillUiKo = {
         scheduleCondition: '제약조건',
     },
     conversationEntry: {
+        switchToAutofill: '자동채우기로 전환',
         requestChanges: '수정 요청하기',
         refill: '다시 채우기',
         continueCurrentSchedule: '현재 근무표에서 계속하기',
@@ -604,6 +605,7 @@ export const aiAutofillUiEn = {
         scheduleCondition: 'Schedule condition',
     },
     conversationEntry: {
+        switchToAutofill: 'Switch to autofill',
         requestChanges: 'Request changes',
         refill: 'Refill',
         continueCurrentSchedule: 'Continue with the current schedule',
@@ -927,6 +929,7 @@ export const aiAutofillUiJa = {
         scheduleCondition: '制約条件',
     },
     conversationEntry: {
+        switchToAutofill: '自動作成に切り替える',
         requestChanges: '修正をリクエスト',
         refill: '再作成',
         continueCurrentSchedule: '現在の勤務表から続ける',
