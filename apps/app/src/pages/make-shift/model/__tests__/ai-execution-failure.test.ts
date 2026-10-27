@@ -447,3 +447,27 @@ describe('personal rest capacity evidence', () => {
         expect(aiExecutionFailure(response(10))?.conditionConflict).not.toBe(true);
     });
 });
+
+describe('withheld background results', () => {
+    it.each(['SATISFIED', 'IMPROVED', 'PARTIAL'] as const)('does not claim success for an unverified %s candidate', (requestState) => {
+        const response = {
+            applicable: false,
+            changedCells: [],
+            engineResult: {status: 'REJECTED'},
+            authoringOutcome: {
+                contractVersion: 'intent-first-v1',
+                requestState,
+                solveState: 'FEASIBLE',
+                draftState: 'NONE',
+                clauses: [],
+                validation: {python: 'UNAVAILABLE', spring: 'VERIFIED', protection: 'PASS', completeTarget: true},
+                violationDelta: {unchanged: [], improved: [], resolved: [], new: [], worsened: []},
+                appliedConcessionIds: [],
+                reasonCodes: ['PYTHON_SPRING_DELTA_MISMATCH', 'PYTHON_CONTRACT_UNVERIFIED'],
+            },
+        } as unknown as TAutofillResponse;
+
+        expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.validation'));
+        expect(aiExecutionFailure(response)?.recovery).toBe('retry');
+    });
+});

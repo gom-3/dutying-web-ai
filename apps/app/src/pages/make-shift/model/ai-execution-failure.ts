@@ -34,6 +34,14 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     const outcome = authoringOutcome(response);
 
     if (outcome) {
+        // A solver candidate is not a successful result when verification withheld the draft.
+        if (
+            outcome.solveState === 'FEASIBLE' &&
+            outcome.draftState === 'NONE' &&
+            ['SATISFIED', 'IMPROVED', 'PARTIAL'].includes(outcome.requestState)
+        )
+            return {message: i18n.t('aiAdjust.executionFailure.validation'), blocked: false, recovery: 'retry'};
+
         if (
             canApplyAuthoringResult(response) ||
             (response.changedCells.length === 0 &&
