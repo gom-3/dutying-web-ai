@@ -495,6 +495,8 @@ export type TScheduleViolationPeriodDto = {
 };
 
 export type TScheduleViolationDisplayContextDto = {
+    /** The observed consecutive run may extend beyond the reported context. */
+    runLengthIsLowerBound?: boolean;
     period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
 };

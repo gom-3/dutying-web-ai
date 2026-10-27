@@ -129,7 +129,7 @@ export function AiConflictViolationList({review}: {review: TReview}) {
             const subject = typeof args?.nurseName === 'string' ? args.nurseName : names.length === 1 ? names[0] : undefined;
 
             message = t(
-                issue.magnitudeIsLowerBound === true
+                issue.magnitudeIsLowerBound === true || issue.displayContext?.runLengthIsLowerBound === true
                     ? 'aiAutofillUi.conflictReview.consecutiveLowerBound'
                     : 'aiAutofillUi.conflictReview.consecutive',
                 {
