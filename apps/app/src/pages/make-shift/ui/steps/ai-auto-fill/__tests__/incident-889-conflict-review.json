@@ -1,0 +1,521 @@
+{
+  "source": {
+    "kind": "Further-anonymized display fixture from sanitized production response, incident 889",
+    "sourceSha256": "e925205d0ce71d2ea2b760781993cce1e28a0929b37ebeb08ea1de8a285f6ba9",
+    "notes": "No token, expiry or production person/rule/shift identifiers. Dates, counts, operators, nullable comparison metadata and reported display periods preserved."
+  },
+  "review": {
+    "explanation": "간호사 9님은 현재 가능한 근무와 미리 정한 근무대로 배정하면 6일 연속 근무하게 돼요. 연속 근무는 최대 5일로 설정되어 있어 두 조건을 함께 맞출 수 없어요.",
+    "ruleLabels": {
+      "1": "모든 간호사 대상은 매일 D 근무 인원이 정확히 4명이어야 해요",
+      "2": "모든 간호사 대상은 매일 E 근무 인원이 정확히 4명이어야 해요",
+      "3": "모든 간호사는 최대 5일까지 연속으로 근무할 수 있어요."
+    },
+    "violations": [
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:1",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0001",
+        "ruleId": 1,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "D 근무 인원이 2명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 2,
+          "operator": "EXACT",
+          "shift": "D"
+        },
+        "period": {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-01",
+          "dates": [
+            "2026-11-01"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "1:2026-11-01",
+            "shiftNurseId": 1,
+            "nurseId": 1,
+            "nurseName": "간호사 1",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          },
+          {
+            "cellKey": "2:2026-11-01",
+            "shiftNurseId": 2,
+            "nurseId": 2,
+            "nurseName": "간호사 2",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:1",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0002",
+        "ruleId": 1,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "D 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "D"
+        },
+        "period": {
+          "startDate": "2026-11-03",
+          "endDate": "2026-11-03",
+          "dates": [
+            "2026-11-03"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "3:2026-11-03",
+            "shiftNurseId": 3,
+            "nurseId": 3,
+            "nurseName": "간호사 3",
+            "date": "2026-11-03",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          },
+          {
+            "cellKey": "4:2026-11-03",
+            "shiftNurseId": 4,
+            "nurseId": 4,
+            "nurseName": "간호사 4",
+            "date": "2026-11-03",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          },
+          {
+            "cellKey": "5:2026-11-03",
+            "shiftNurseId": 5,
+            "nurseId": 5,
+            "nurseName": "간호사 5",
+            "date": "2026-11-03",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:1",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0003",
+        "ruleId": 1,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "D 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "D"
+        },
+        "period": {
+          "startDate": "2026-11-27",
+          "endDate": "2026-11-27",
+          "dates": [
+            "2026-11-27"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "3:2026-11-27",
+            "shiftNurseId": 3,
+            "nurseId": 3,
+            "nurseName": "간호사 3",
+            "date": "2026-11-27",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          },
+          {
+            "cellKey": "4:2026-11-27",
+            "shiftNurseId": 4,
+            "nurseId": 4,
+            "nurseName": "간호사 4",
+            "date": "2026-11-27",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          },
+          {
+            "cellKey": "6:2026-11-27",
+            "shiftNurseId": 6,
+            "nurseId": 6,
+            "nurseName": "간호사 6",
+            "date": "2026-11-27",
+            "wardShiftTypeId": 1,
+            "shiftCode": "D"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:2",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0004",
+        "ruleId": 2,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "E 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "E"
+        },
+        "period": {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-01",
+          "dates": [
+            "2026-11-01"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "7:2026-11-01",
+            "shiftNurseId": 7,
+            "nurseId": 7,
+            "nurseName": "간호사 7",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "6:2026-11-01",
+            "shiftNurseId": 6,
+            "nurseId": 6,
+            "nurseName": "간호사 6",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "8:2026-11-01",
+            "shiftNurseId": 8,
+            "nurseId": 8,
+            "nurseName": "간호사 8",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:2",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0005",
+        "ruleId": 2,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "E 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "E"
+        },
+        "period": {
+          "startDate": "2026-11-05",
+          "endDate": "2026-11-05",
+          "dates": [
+            "2026-11-05"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "9:2026-11-05",
+            "shiftNurseId": 9,
+            "nurseId": 9,
+            "nurseName": "간호사 9",
+            "date": "2026-11-05",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "4:2026-11-05",
+            "shiftNurseId": 4,
+            "nurseId": 4,
+            "nurseName": "간호사 4",
+            "date": "2026-11-05",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "10:2026-11-05",
+            "shiftNurseId": 10,
+            "nurseId": 10,
+            "nurseName": "간호사 10",
+            "date": "2026-11-05",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:2",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0006",
+        "ruleId": 2,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "E 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "E"
+        },
+        "period": {
+          "startDate": "2026-11-07",
+          "endDate": "2026-11-07",
+          "dates": [
+            "2026-11-07"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "11:2026-11-07",
+            "shiftNurseId": 11,
+            "nurseId": 11,
+            "nurseName": "간호사 11",
+            "date": "2026-11-07",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "1:2026-11-07",
+            "shiftNurseId": 1,
+            "nurseId": 1,
+            "nurseName": "간호사 1",
+            "date": "2026-11-07",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "2:2026-11-07",
+            "shiftNurseId": 2,
+            "nurseId": 2,
+            "nurseName": "간호사 2",
+            "date": "2026-11-07",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:2",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0007",
+        "ruleId": 2,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "E 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "E"
+        },
+        "period": {
+          "startDate": "2026-11-15",
+          "endDate": "2026-11-15",
+          "dates": [
+            "2026-11-15"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "12:2026-11-15",
+            "shiftNurseId": 12,
+            "nurseId": 12,
+            "nurseName": "간호사 12",
+            "date": "2026-11-15",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "11:2026-11-15",
+            "shiftNurseId": 11,
+            "nurseId": 11,
+            "nurseName": "간호사 11",
+            "date": "2026-11-15",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "13:2026-11-15",
+            "shiftNurseId": 13,
+            "nurseId": 13,
+            "nurseName": "간호사 13",
+            "date": "2026-11-15",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:2",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0008",
+        "ruleId": 2,
+        "templateCode": "STAFF_COUNT_BY_SHIFT",
+        "severity": "HARD",
+        "message": "E 근무 인원이 3명이에요. 정확히 4명이어야 해요.",
+        "messageKey": "schedule.validation.exactStaffByShift",
+        "messageArgs": {
+          "expected": 4,
+          "actual": 3,
+          "operator": "EXACT",
+          "shift": "E"
+        },
+        "period": {
+          "startDate": "2026-11-17",
+          "endDate": "2026-11-17",
+          "dates": [
+            "2026-11-17"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "4:2026-11-17",
+            "shiftNurseId": 4,
+            "nurseId": 4,
+            "nurseName": "간호사 4",
+            "date": "2026-11-17",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "6:2026-11-17",
+            "shiftNurseId": 6,
+            "nurseId": 6,
+            "nurseName": "간호사 6",
+            "date": "2026-11-17",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          },
+          {
+            "cellKey": "11:2026-11-17",
+            "shiftNurseId": 11,
+            "nurseId": 11,
+            "nurseName": "간호사 11",
+            "date": "2026-11-17",
+            "wardShiftTypeId": 2,
+            "shiftCode": "E"
+          }
+        ],
+        "displayContext": null,
+        "fixable": true
+      },
+      {
+        "comparisonKey": null,
+        "ruleIdentity": "synthetic-rule:3",
+        "magnitude": null,
+        "unit": null,
+        "comparisonAvailable": null,
+        "violationId": "v-202611-0009",
+        "ruleId": 3,
+        "templateCode": "CORE_MAX_CONTINUOUS_WORK",
+        "severity": "HARD",
+        "message": "간호사 9님은 근무가 7일 연속이에요. 최대 5일까지 가능해요.",
+        "messageKey": "schedule.validation.maxConsecutiveWork",
+        "messageArgs": {
+          "expected": 5,
+          "actual": 7,
+          "nurseName": "간호사 9"
+        },
+        "period": {
+          "startDate": "2026-11-01",
+          "endDate": "2026-11-01",
+          "dates": [
+            "2026-11-01"
+          ]
+        },
+        "affectedCells": [
+          {
+            "cellKey": "9:2026-11-01",
+            "shiftNurseId": 9,
+            "nurseId": 9,
+            "nurseName": "간호사 9",
+            "date": "2026-11-01",
+            "wardShiftTypeId": 3,
+            "shiftCode": "N"
+          }
+        ],
+        "displayContext": {
+          "period": {
+            "startDate": "2026-11-01",
+            "endDate": "2026-11-01",
+            "dates": [
+              "2026-11-01"
+            ]
+          },
+          "affectedCells": [
+            {
+              "cellKey": "9:2026-11-01",
+              "shiftNurseId": 9,
+              "nurseId": 9,
+              "nurseName": "간호사 9",
+              "date": "2026-11-01",
+              "wardShiftTypeId": 3,
+              "shiftCode": "N"
+            }
+          ]
+        },
+        "fixable": true
+      }
+    ]
+  }
+}
