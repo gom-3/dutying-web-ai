@@ -16,7 +16,7 @@ import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
-import {isExecutionFinished, readPendingExecution} from '../../../model/conversation-pending-execution';
+import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
 import {
     conversationTurnText,
     currentConversationTurns,
@@ -38,6 +38,7 @@ import {
     conversationEvents,
     isConversationConfirmationCurrent,
     isSemanticExecutionCurrent,
+    hasCurrentIntentFirstExecutionWindow,
     type TConversation,
     type TConversationDetail,
     type TConversationExecute,
@@ -617,6 +618,15 @@ export default function AiConversationSidebar({
         await refresh();
     };
     const sendExecution = async (id: number, request: TConversationExecute) => {
+        const beforeRequest = detailRef.current;
+        const savedBeforeRequest = readPendingExecution(sessionStorage, pendingKey);
+        const knownOperationIds =
+            savedBeforeRequest?.conversationId === id &&
+            savedBeforeRequest.request.idempotencyKey === request.idempotencyKey &&
+            Array.isArray(savedBeforeRequest.operationIdsBeforeRequest)
+                ? new Set(savedBeforeRequest.operationIdsBeforeRequest)
+                : null;
+
         try {
             const operation = await api.execute(id, request);
             const pending = readPendingExecution(sessionStorage, pendingKey);
@@ -628,6 +638,43 @@ export default function AiConversationSidebar({
 
             return operation;
         } catch (e) {
+            if (request.authoringContractVersion === INTENT_FIRST_CONTRACT && isDefinitiveExecutionConflict(e)) {
+                // Reconcile once by reading current state. Never replay a stale operation here.
+                // If a prior receipt or an ambiguous new operation exists, retain the original key.
+                try {
+                    const latest = await api.detail(id);
+
+                    if (
+                        latest.conversation.conversationId !== id ||
+                        (beforeRequest && latest.conversation.revision < beforeRequest.conversation.revision)
+                    )
+                        throw new AiConversationInputError('staleRequest');
+
+                    const saved = readPendingExecution(sessionStorage, pendingKey);
+                    const matchingRequest = saved?.conversationId === id && saved.request.idempotencyKey === request.idempotencyKey;
+                    const possibleReceipt = latest.operations.some(
+                        (operation) =>
+                            operation.operationId === saved?.operationId ||
+                            (!knownOperationIds?.has(operation.operationId) &&
+                                operation.baseRevision === request.expectedRevision &&
+                                operation.operationType === request.operationType &&
+                                (!request.sourceVersionId || operation.sourceVersionId === request.sourceVersionId) &&
+                                operation.interpretationId === (request.interpretationId ?? null)),
+                    );
+
+                    if (mounted.current && detailRef.current?.conversation.conversationId === id) install(latest);
+
+                    if (matchingRequest && knownOperationIds && !possibleReceipt) {
+                        sessionStorage.removeItem(pendingKey);
+
+                        if (request.conflictReviewToken)
+                            setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
+                    }
+                } catch {
+                    /* An unavailable lookup leaves the original request available for reconciliation. */
+                }
+            }
+
             if ((e as {serverCode?: string}).serverCode === 'CANDIDATE_EXPIRED' && request.conflictReviewToken)
                 setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
 
@@ -725,7 +772,40 @@ export default function AiConversationSidebar({
                     : {}),
             };
 
-            sessionStorage.setItem(pendingKey, JSON.stringify({conversationId: current.conversation.conversationId, request, uiRevision}));
+            if (request.authoringContractVersion === INTENT_FIRST_CONTRACT) {
+                const latest = detailRef.current;
+                const draft = dto();
+
+                if (
+                    !latest ||
+                    latest.conversation.conversationId !== current.conversation.conversationId ||
+                    latest.conversation.revision !== current.conversation.revision ||
+                    latest.contextHash !== current.contextHash ||
+                    latest.conversation.currentVersionId !== current.conversation.currentVersionId ||
+                    latest.conversation.latestInterpretationId !== current.conversation.latestInterpretationId ||
+                    useShiftEditorStore.getState().draftRevision !== uiRevision ||
+                    signature({...draft, carryOverCells: draft.carryOverCells ?? []}) !== signature(current.draft)
+                )
+                    throw new AiConversationInputError('staleRequest');
+
+                const selectedPlan = latest.turns.find((turn) => turn.interpretationId === interpretationId && turn.semanticPlan);
+
+                if (!conflict?.result?.candidate && selectedPlan && !isSemanticExecutionCurrent(latest, selectedPlan, false))
+                    throw new AiConversationInputError('staleRequest');
+
+                if (conflict?.result?.candidate && !canSelectAuthoringCandidate(conflict.result, latest.conversation.currentVersionId))
+                    throw new AiConversationInputError('expiredSuggestion');
+            }
+
+            sessionStorage.setItem(
+                pendingKey,
+                JSON.stringify({
+                    conversationId: current.conversation.conversationId,
+                    request,
+                    uiRevision,
+                    operationIdsBeforeRequest: current.operations.map((operation) => operation.operationId),
+                }),
+            );
 
             const operation = await sendExecution(current.conversation.conversationId, request);
 
@@ -848,7 +928,8 @@ export default function AiConversationSidebar({
 
                 if (
                     !isConversationConfirmationCurrent(synced, turn, false) ||
-                    plan.sourceVersionId !== synced.conversation.currentVersionId
+                    plan.sourceVersionId !== synced.conversation.currentVersionId ||
+                    (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
                 ) {
                     reviewed = await api.refreshPlan(conversationId, plan.planId, synced.conversation.revision, plan.planHash);
                     await refresh();

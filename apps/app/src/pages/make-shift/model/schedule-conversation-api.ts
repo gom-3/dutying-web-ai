@@ -280,18 +280,35 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
     );
 }
 
-export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+/** The new contract has one execution window, including after explicit confirmation. */
+export function hasCurrentIntentFirstExecutionWindow(plan: TSemanticPlan, now = Date.now()) {
     return (
-        isConversationConfirmationCurrent(detail, turn, localDirty) &&
-        ((turn.type === 'SEMANTIC_PLAN_CONFIRMED' && turn.semanticPlan?.state === 'CONFIRMED') ||
-            (turn.semanticPlan?.autoExecutable === true &&
-                ['PREVIEW_READY', 'CONFIRMED'].includes(turn.semanticPlan.state) &&
-                Boolean(turn.semanticPlan.deadlineAt) &&
-                Date.parse(turn.semanticPlan.deadlineAt!) > Date.now() &&
-                turn.semanticPlan.authoringContractVersion === 'intent-first-v1' &&
-                Boolean(turn.semanticPlan.interactionId) &&
-                Boolean(turn.semanticPlan.planExpiresAt) &&
-                Date.parse(turn.semanticPlan.planExpiresAt!) > Date.now())) &&
-        turn.semanticPlan.sourceVersionId === detail.conversation.currentVersionId
+        plan.authoringContractVersion === 'intent-first-v1' &&
+        Boolean(plan.interactionId) &&
+        Boolean(plan.deadlineAt) &&
+        Date.parse(plan.deadlineAt!) > now &&
+        Boolean(plan.planExpiresAt) &&
+        Date.parse(plan.planExpiresAt!) > now
+    );
+}
+
+export function isSemanticExecutionCurrent(detail: TConversationDetail, turn: TConversationTurn, localDirty: boolean) {
+    const plan = turn.semanticPlan;
+
+    if (
+        !plan ||
+        !isConversationConfirmationCurrent(detail, turn, localDirty) ||
+        plan.sourceVersionId !== detail.conversation.currentVersionId
+    )
+        return false;
+
+    const confirmed = turn.type === 'SEMANTIC_PLAN_CONFIRMED' && plan.state === 'CONFIRMED';
+
+    if (!plan.authoringContractVersion) return confirmed;
+
+    return (
+        hasCurrentIntentFirstExecutionWindow(plan) &&
+        ['PREVIEW_READY', 'CONFIRMED'].includes(plan.state) &&
+        (confirmed || plan.autoExecutable === true)
     );
 }

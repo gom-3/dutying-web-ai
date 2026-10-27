@@ -261,3 +261,54 @@ it('requires a confirmed immutable semantic plan bound to the current source', (
         isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, currentVersionId: 'edited'}}, confirmed, false),
     ).toBe(false);
 });
+
+const negotiatedConfirmed = (): TConversationTurn => ({
+    ...turn,
+    type: 'SEMANTIC_PLAN_CONFIRMED',
+    semanticPlan: {
+        authoringContractVersion: 'intent-first-v1',
+        interactionId: 'interaction:window',
+        deadlineAt: new Date(Date.now() + 15000).toISOString(),
+        planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+        autoExecutable: true,
+        planId: 'window:1',
+        planHash: 'a'.repeat(64),
+        sourceVersionId: 'result:1',
+        state: 'CONFIRMED',
+        summary: '1일 D',
+        conditions: [],
+        reasonCodes: [],
+        confirmationAllowed: true,
+    },
+});
+
+it.each(['planExpiresAt', 'deadlineAt'] as const)(
+    'enforces %s on confirmed negotiated plans without changing legacy confirmation',
+    (field) => {
+        const confirmed = negotiatedConfirmed();
+
+        expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(true);
+        confirmed.semanticPlan![field] = '2000-01-01T00:00:00Z';
+        expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(false);
+        delete confirmed.semanticPlan!.authoringContractVersion;
+        expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(true);
+    },
+);
+it.each(['interactionId', 'deadlineAt', 'planExpiresAt'] as const)('does not infer missing %s from confirmation', (field) => {
+    const confirmed = negotiatedConfirmed();
+
+    delete confirmed.semanticPlan![field];
+    expect(isSemanticExecutionCurrent(detail, confirmed, false)).toBe(false);
+});
+it('checks the latest interpretation, source, revision, and context for negotiated confirmation', () => {
+    const confirmed = negotiatedConfirmed();
+
+    expect(isSemanticExecutionCurrent({...detail, contextHash: 'changed'}, confirmed, false)).toBe(false);
+    expect(isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, revision: 4}}, confirmed, false)).toBe(false);
+    expect(
+        isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, currentVersionId: 'other'}}, confirmed, false),
+    ).toBe(false);
+    expect(
+        isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, latestInterpretationId: 'other'}}, confirmed, false),
+    ).toBe(false);
+});

@@ -4800,4 +4800,184 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
     });
+    it('QA rejects expired confirmed negotiated plans before automatic execution', async () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.type = 'SEMANTIC_PLAN_CONFIRMED';
+        turn.semanticPlan!.state = 'CONFIRMED';
+        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        installPlan(turn);
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+        });
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('QA releases pending state after a definitive candidate revision conflict', async () => {
+        enable();
+        current.operations = [
+            {
+                ...operation,
+                operationType: 'ADJUST',
+                resultVersionId: null,
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                result: intentResponse({
+                    changedCells: [],
+                    applicable: false,
+                    validationTarget: 'CANDIDATE',
+                    candidate: intentCandidate(),
+                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+                }),
+            },
+        ];
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_REVISION_CONFLICT'});
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 30));
+        });
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
+
+    const preparedCandidate = () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.semanticPlan!.deadlineAt = '2000-01-01T00:00:00Z';
+        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        current = {
+            ...current,
+            turns: [turn],
+            conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            operations: [
+                {
+                    ...operation,
+                    operationType: 'ADJUST',
+                    interpretationId: turn.interpretationId,
+                    resultVersionId: null,
+                    applyStatus: 'NOT_APPLIED_REVIEW',
+                    result: intentResponse({
+                        applicable: false,
+                        changedCells: [],
+                        validationTarget: 'CANDIDATE',
+                        candidate: intentCandidate(),
+                        authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
+                    }),
+                },
+            ],
+        };
+    };
+
+    it('selects a live cached candidate even after the original calculation window expires', async () => {
+        preparedCandidate();
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            conflictConfirmed: true,
+            candidateDigest: 'digest:1',
+            sourceOperationId: 'operation:1',
+        });
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+    });
+    it.each(['CANDIDATE_STALE', 'PLAN_EXPIRED', 'SCHEDULE_STALE_DRAFT_REVISION', 'SCHEDULE_ADJUST_CONTEXT_CHANGED'])(
+        'reconciles a definitive %s rejection and releases only the unaccepted request',
+        async (serverCode) => {
+            preparedCandidate();
+            mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
+            renderSidebar();
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+            await waitFor(() => expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull());
+            expect(mocks.execute).toHaveBeenCalledOnce();
+            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        },
+    );
+    it.each(['OPERATION_KEY_CONFLICT', 'IDEMPOTENCY_KEY_REUSED', 'AI_RECONCILING', 'UNRECOGNIZED_CONFLICT', undefined])(
+        'retains recovery for a possibly accepted or unknown 409: %s',
+        async (serverCode) => {
+            preparedCandidate();
+            mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
+            renderSidebar();
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+            await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+            expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        },
+    );
+    it('retains the original key when the definitive-conflict lookup is unavailable', async () => {
+        preparedCandidate();
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_STALE'});
+        mocks.detail.mockImplementation(async () => {
+            if (mocks.detail.mock.calls.length === 3) throw new Error('unavailable');
+
+            return current;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+        expect(mocks.execute).toHaveBeenCalledOnce();
+    });
+    it('retains an ambiguous matching new operation instead of discarding a possible accepted result', async () => {
+        preparedCandidate();
+        mocks.execute.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                operations: [
+                    ...current.operations,
+                    {
+                        ...operation,
+                        operationId: 'possibly-accepted',
+                        sequence: 2,
+                        operationType: 'ADJUST',
+                        interpretationId: 'intent:1',
+                        executionStatus: 'RUNNING',
+                        applyStatus: 'NOT_APPLIED',
+                        resultVersionId: null,
+                    },
+                ],
+            };
+            throw {code: 409, serverCode: 'CANDIDATE_STALE'};
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
+        expect(mocks.execute).toHaveBeenCalledOnce();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+    it('checks the calculation window again after asynchronous input loading', async () => {
+        enable();
+
+        const turn = autoTurn();
+
+        turn.type = 'SEMANTIC_PLAN_CONFIRMED';
+        turn.semanticPlan!.state = 'CONFIRMED';
+        installPlan(turn);
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar();
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 400000);
+        await act(async () => complete());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+    });
 });
