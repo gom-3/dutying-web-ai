@@ -881,6 +881,9 @@ export type TAuthoringOutcome = {
         spring: 'VERIFIED' | 'UNAVAILABLE';
         protection: 'PASS' | 'FAIL' | 'UNKNOWN';
         completeTarget: boolean;
+        /** Spring-owned coverage of the existing table; absent for the full-validation contract. */
+        coverage?: 'PARTIAL';
+        unknownCellKeys?: string[];
     };
     violationDelta: TAuthoringViolationDelta;
     appliedConcessionIds: string[];

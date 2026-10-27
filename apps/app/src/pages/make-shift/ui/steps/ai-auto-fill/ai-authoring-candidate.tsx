@@ -2,7 +2,7 @@ import type {TAutofillResponse, TSnapshotCellDTO} from '@dutying/api/ward';
 import {useEffect, useState} from 'react';
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
+import {authoringOutcome, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
 
 const action =
     'min-h-11 rounded-lg px-4 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40';
@@ -48,6 +48,9 @@ export function AiAuthoringCandidate({
 
     return (
         <section className="mt-3 space-y-3 rounded-xl bg-white p-3 text-sm" aria-label={t('aiConversationSidebar.authoring.changes')}>
+            {authoringOutcome(result)?.validation.coverage === 'PARTIAL' && (
+                <p role="status">{t('aiConversationSidebar.authoring.partialCoverage')}</p>
+            )}
             {(candidate.selectionReason === 'QUALITATIVE_REVIEW' ||
                 result.authoringOutcome?.clauses.some((clause) => clause.kind === 'REVIEW')) && (
                 <p>{t('aiConversationSidebar.authoring.qualitative')}</p>

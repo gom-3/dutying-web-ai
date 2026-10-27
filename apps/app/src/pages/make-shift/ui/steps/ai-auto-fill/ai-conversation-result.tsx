@@ -35,6 +35,7 @@ export function AiConversationResult({
         !review &&
         (!authoring || ['SATISFIED', 'IMPROVED'].includes(authoring.requestState));
     const changedCount = operation.result?.changedCells.length;
+    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = review
         ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
         : !applied
@@ -100,6 +101,11 @@ export function AiConversationResult({
             }
             actions={actions}
         >
+            {showPartialCoverage && (
+                <p role="status" className="mt-3 text-[13px] leading-6">
+                    {t('aiConversationSidebar.authoring.partialCoverage')}
+                </p>
+            )}
             {children}
         </AiScheduleResultCard>
     );

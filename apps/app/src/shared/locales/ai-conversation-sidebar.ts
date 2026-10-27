@@ -1,5 +1,6 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        partialCoverage: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.',
         details: '변경 내용 더 보기',
         candidateUnavailable: '이 변경안을 확인할 수 없어 반영하지 않았어요. 최신 표로 다시 요청해 주세요.',
         STRATEGY_ONLY: '검토할 방향만 준비했어요. 표는 그대로예요. 대상이나 조건을 더 알려 주세요.',
@@ -118,6 +119,7 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        partialCoverage: 'Some conditions could not be checked yet because there are blank cells.',
         details: 'More about these changes',
         candidateUnavailable: 'This proposal could not be verified and was not applied. Request again using the current schedule.',
         STRATEGY_ONLY: 'A direction for review is ready. Your schedule is unchanged. Add details about the target or conditions.',
@@ -236,6 +238,7 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        partialCoverage: '空欄があるため、まだ確認できていない条件があります。',
         details: '変更内容を詳しく見る',
         candidateUnavailable: '変更案を確認できなかったため反映していません。最新の勤務表で再度ご依頼ください。',
         STRATEGY_ONLY: '検討する方向性を用意しました。勤務表はそのままです。対象や条件を詳しくお知らせください。',
