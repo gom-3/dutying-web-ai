@@ -58,21 +58,45 @@ beforeEach(() => {
 afterEach(() => {
     cleanup();
     clients.splice(0).forEach((client) => client.clear());
+    vi.useRealTimers();
 });
 
 describe('shared rest leave policy editor', () => {
     it('moves the preview across year boundaries without changing or saving the policy', async () => {
         mount();
+
         const next = await screen.findByRole('button', {name: 'page.duty.nextMonth'});
         const today = new Date();
         const year = today.getFullYear();
         const month = today.getMonth() + 1;
 
         expect(screen.getByText(`${year}-${month}`)).toBeInTheDocument();
+
         for (let i = month; i <= 12; i++) fireEvent.click(next);
+
         expect(screen.getByText(`${year + 1}-1`)).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'page.duty.prevMonth'}));
+
         expect(screen.getByText(`${year}-12`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: key('save')})).toBeDisabled();
+        expect(put).not.toHaveBeenCalled();
+    });
+
+    it('recalculates the example for the next two months from a month-end date without saving', async () => {
+        vi.useFakeTimers({toFake: ['Date']});
+        vi.setSystemTime(new Date(2026, 0, 31, 12));
+        shared = {...shared, targetMode: 'weekly', weeklyOffDays: 2, includeHolidays: false};
+        mount();
+
+        const next = await screen.findByRole('button', {name: 'page.duty.nextMonth'});
+
+        expect(screen.getByRole('status', {name: key('previewLabel')})).toHaveTextContent('9');
+        fireEvent.click(next);
+        expect(screen.getByRole('group', {name: '2026-2'})).toContainElement(next);
+        expect(screen.getByRole('status', {name: key('previewLabel')})).toHaveTextContent('8');
+        fireEvent.click(next);
+        expect(screen.getByRole('group', {name: '2026-3'})).toContainElement(next);
+        expect(screen.getByRole('status', {name: key('previewLabel')})).toHaveTextContent('9');
         expect(screen.getByRole('button', {name: key('save')})).toBeDisabled();
         expect(put).not.toHaveBeenCalled();
     });
