@@ -457,6 +457,8 @@ export type TWorkspaceScheduleResponse = {
     autofillAdjustEnabled?: boolean;
     conversationEnabled?: boolean;
     semanticExecutionEnabled?: boolean;
+    intentFirstAuthoringEnabled?: boolean;
+    authoringContractVersions?: string[];
 };
 
 export type TUpdateShiftWorkflowDTO = {
@@ -498,6 +500,11 @@ export type TScheduleViolationDisplayContextDto = {
 };
 
 export type TScheduleViolationDto = {
+    comparisonKey?: unknown[];
+    ruleIdentity?: string;
+    magnitude?: number;
+    unit?: string;
+    comparisonAvailable?: boolean;
     violationId: string;
     ruleId: number;
     templateCode: string;
@@ -781,6 +788,10 @@ export type TAutofillAdjustDto = {
 };
 
 export type TAutofillDTO = {
+    authoringContractVersion?: 'intent-first-v1';
+    interactionId?: string;
+    conflictReviewToken?: string;
+    conflictConfirmed?: boolean;
     journeyId?: string;
     monthlyRestRequirement?: TMonthlyRestRequirement;
     year: number;
@@ -829,7 +840,77 @@ export type TScheduleConflict = {
     fixedAssignments: {shiftNurseId: number; name: string; date: string; wardShiftTypeId: number; shiftCode: string; readOnly: boolean}[];
 };
 
+/** Negotiated editable-draft contract. Final top-level outcome is authoritative. */
+export type TAuthoringClauseResult = {
+    clauseId: string;
+    kind: 'EXACT' | 'DIRECTIONAL' | 'REVIEW';
+    status: 'SATISFIED' | 'ALREADY_SATISFIED' | 'IMPROVED' | 'UNCHANGED' | 'UNSATISFIED' | 'UNVERIFIED';
+    before: number | null;
+    after: number | null;
+    affectedCells: TAffectedCellDto[];
+    displayText?: string;
+    reasonCodes?: string[];
+};
+export type TAuthoringViolationDelta = {
+    unchanged: TScheduleViolationDto[];
+    improved: TScheduleViolationDto[];
+    resolved: TScheduleViolationDto[];
+    new: TScheduleViolationDto[];
+    worsened: TScheduleViolationDto[];
+};
+export type TAuthoringOutcome = {
+    contractVersion: 'intent-first-v1';
+    solveState: 'NOT_RUN' | 'FEASIBLE' | 'INFEASIBLE_PROVEN' | 'UNKNOWN' | 'BUSY' | 'INVALID_INPUT' | 'ERROR';
+    optimalityProven: boolean;
+    requestState:
+        | 'SATISFIED'
+        | 'ALREADY_SATISFIED'
+        | 'IMPROVED'
+        | 'PARTIAL'
+        | 'NEEDS_REVIEW'
+        | 'UNSATISFIED'
+        | 'NO_IMPROVEMENT'
+        | 'AMBIGUOUS';
+    draftState: 'APPLICABLE' | 'CONSENT_REQUIRED' | 'PREVIEW_ONLY' | 'NONE';
+    reasonCodes: string[];
+    clauses: TAuthoringClauseResult[];
+    candidateDigest?: string;
+    baselineVersionId: string;
+    validation: {
+        python: 'VERIFIED' | 'UNAVAILABLE';
+        spring: 'VERIFIED' | 'UNAVAILABLE';
+        protection: 'PASS' | 'FAIL' | 'UNKNOWN';
+        completeTarget: boolean;
+    };
+    violationDelta: TAuthoringViolationDelta;
+    appliedConcessionIds: string[];
+    timing: {
+        interactionId: string;
+        totalMs: number;
+        interpretMs: number;
+        queueMs: number;
+        modelBuildMs: number;
+        searchMs: number;
+        verificationMs: number;
+        recoveryMs: number;
+        deadlineExceeded: boolean;
+    };
+};
+export type TAuthoringCandidate = {
+    candidateDigest: string;
+    sourceVersionId: string;
+    changedCells: TSnapshotCellDTO[];
+    violations: TScheduleViolationDto[];
+    violationDelta: TAuthoringViolationDelta;
+    expiresAt: string;
+    token: string;
+    selectionReason: 'MATERIAL_TRADEOFF' | 'QUALITATIVE_REVIEW' | 'STRENGTH_ESCALATION';
+};
+
 export type TAutofillResponse = {
+    authoringOutcome?: TAuthoringOutcome;
+    candidate?: TAuthoringCandidate;
+    reviewRequired?: boolean;
     confirmedConstraintException?: boolean;
     conflictReview?: {
         explanation?: string | null;
@@ -875,6 +956,7 @@ export type TAutofillResponse = {
     sameAsPrevious: boolean;
     /** 엔진 판정. 무변경은 최적성 증명이 아니라 이번 실행에서 변경안을 찾지 못했다는 뜻이다. */
     engineResult?: {
+        authoringOutcome?: TAuthoringOutcome;
         /** Structured, proven preflight conflicts; never infer from arbitrary error text. */
         violations?: Array<Record<string, unknown>>;
         /** Complete generated draft with known unmet rules; approval remains separate. */
@@ -882,6 +964,7 @@ export type TAutofillResponse = {
         reviewRequired?: boolean;
         qualitySidebar?: TQualitySidebar;
         status?: string;
+        traceStatus?: string;
         offGoal?: {
             operation: 'INCREASE_TO_BASELINE' | 'SET_TARGET' | 'SET_MINIMUM';
             minimumOff?: number | null;

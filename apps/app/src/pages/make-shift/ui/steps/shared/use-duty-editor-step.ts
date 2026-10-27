@@ -353,6 +353,12 @@ export function useDutyEditorStep({
         setAutofillAdjustEnabled(workspaceQuery.data.autofillAdjustEnabled === true);
         useShiftEditorStore.getState().setConversationEnabled(workspaceQuery.data.conversationEnabled === true);
         useShiftEditorStore.getState().setSemanticExecutionEnabled(workspaceQuery.data.semanticExecutionEnabled === true);
+        useShiftEditorStore
+            .getState()
+            .setIntentFirstAuthoringEnabled(
+                workspaceQuery.data.intentFirstAuthoringEnabled === true &&
+                    workspaceQuery.data.authoringContractVersions?.includes('intent-first-v1') === true,
+            );
     }, [workspaceQuery.data, setAutofillAdjustEnabled]);
 
     useEffect(() => {

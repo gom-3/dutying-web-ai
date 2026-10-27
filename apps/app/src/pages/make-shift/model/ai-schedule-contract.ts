@@ -13,6 +13,8 @@ export type TAiScheduleRequest = {
     draftRevision: number;
     rulesHash: string;
     prompt?: string;
+    authoringContractVersion?: 'intent-first-v1';
+    interactionId?: string;
     conflictReviewToken?: string;
     conflictConfirmed?: boolean;
     idempotencyKey?: string;

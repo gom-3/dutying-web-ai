@@ -79,6 +79,9 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
     if (source?.code === 403 || ['ACCESS_DENIED', 'SCOPE_ACCESS_DENIED', 'WARD_ADMIN_MEMBERSHIP_REQUIRED'].includes(code ?? ''))
         return {message: i18n.t('aiAdjust.failure.access'), blocked: true};
 
+    if (code === 'CANDIDATE_EXPIRED')
+        return {message: i18n.t('aiConversationSidebar.authoring.expired'), blocked: false, checkOutcome: false, recovery: 'revise'};
+
     if (source?.code === 409) return {message: i18n.t('aiAdjust.stale'), blocked: false};
 
     const localExplanation =

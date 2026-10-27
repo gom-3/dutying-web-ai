@@ -2,12 +2,14 @@ import type {TAutofillResponse} from '@dutying/api/ward';
 import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
+import {authoringOutcome} from '../../../model/intent-first-authoring';
 
-export function AiConversationResultDetails({result}: {result: TAutofillResponse}) {
+export function AiConversationResultDetails({result, clauseText}: {result: TAutofillResponse; clauseText?: (clauseId: string) => string}) {
     const {t} = useTypedTranslation();
     const hard = result.validation?.summary?.hardCount ?? 0;
     const soft = result.validation?.summary?.softCount ?? 0;
     const rules = result.requestRuleResults?.filter((rule) => rule.violationCount > 0) ?? [];
+    const outcome = authoringOutcome(result);
     const goals = result.goalResults ?? [];
     const messages = [
         ...new Set(
@@ -20,7 +22,7 @@ export function AiConversationResultDetails({result}: {result: TAutofillResponse
     const baseline = result.validationTarget === 'BASELINE';
     const candidate = result.validationTarget === 'CANDIDATE';
 
-    if (!review && hard === 0 && soft === 0 && rules.length === 0 && goals.length === 0 && messages.length === 0) return null;
+    if (!outcome && !review && hard === 0 && soft === 0 && rules.length === 0 && goals.length === 0 && messages.length === 0) return null;
 
     return (
         <details
@@ -36,6 +38,51 @@ export function AiConversationResultDetails({result}: {result: TAutofillResponse
                           : 'aiAdjust.resultInfo.title',
                 )}
             </summary>
+            {outcome?.appliedConcessionIds.length ? <p>{t('aiConversationSidebar.authoring.concessions')}</p> : null}
+            {outcome?.clauses.map((clause) => {
+                const label = clauseText?.(clause.clauseId) ?? clause.displayText;
+
+                return (
+                    <p key={clause.clauseId}>
+                        {label ? `${label} · ` : ''}
+                        {t(`aiConversationSidebar.authoring.clause.${clause.status}`)}
+                        {typeof clause.before === 'number' && typeof clause.after === 'number' && (
+                            <span>
+                                {' '}
+                                · {clause.before} → {clause.after}
+                            </span>
+                        )}
+                    </p>
+                );
+            })}
+            {outcome &&
+                (['new', 'worsened', 'unchanged', 'improved', 'resolved'] as const).map(
+                    (category) =>
+                        outcome.violationDelta[category].length > 0 && (
+                            <div key={category} className="mt-2">
+                                <p className="font-medium">{t(`aiConversationSidebar.authoring.delta.${category}`)}</p>
+                                <ul className="list-disc space-y-1 pl-4">
+                                    {outcome.violationDelta[category].map((issue, index) => (
+                                        <li key={`${issue.violationId}:${index}`}>
+                                            {localizeScheduleValidationMessage(issue)}
+                                            {issue.affectedCells?.length > 0 && (
+                                                <span>
+                                                    {' '}
+                                                    ·{' '}
+                                                    {issue.affectedCells
+                                                        .map(
+                                                            (cell) =>
+                                                                `${cell.nurseName ?? cell.shiftNurseId} ${cell.date} ${cell.shiftCode ?? ''}`,
+                                                        )
+                                                        .join(', ')}
+                                                </span>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        ),
+                )}
             {baseline && <p className="mb-2 text-[#667085]">{t('aiAdjust.resultInfo.baselineNote')}</p>}
             {candidate && <p className="mb-2 text-[#667085]">{t('aiAdjust.resultInfo.candidateNote')}</p>}
             {review && <p>{t('aiAdjust.reviewDraft.notice')}</p>}
