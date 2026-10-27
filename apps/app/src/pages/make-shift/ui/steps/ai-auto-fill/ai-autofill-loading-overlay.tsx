@@ -47,7 +47,6 @@ type TAiAutofillLoadingOverlayProps = {
 
 export function AiAutofillLoadingOverlay({
     sidebarOpen = false,
-    operation,
     onBackground,
     onOpenConversation,
     onCancel,
@@ -109,8 +108,6 @@ export function AiAutofillLoadingOverlay({
             };
         }
 
-        if (backgroundMode) return;
-
         setProgress(getSimulatedProgress(getElapsedMs(progressStartedAt)));
 
         let animationFrameId = 0;
@@ -123,7 +120,7 @@ export function AiAutofillLoadingOverlay({
         animationFrameId = window.requestAnimationFrame(updateProgress);
 
         return () => window.cancelAnimationFrame(animationFrameId);
-    }, [isFinishing, onFinish, progressStartedAt, backgroundMode]);
+    }, [isFinishing, onFinish, progressStartedAt]);
 
     const portalContainer = typeof document === 'undefined' ? null : (document.getElementById('modal-root') ?? document.body);
 
@@ -196,75 +193,51 @@ export function AiAutofillLoadingOverlay({
                         ? t('aiAutofillUi.autofillLoadingOverlay.yourResultWillAppearShortly')
                         : t('aiAutofillUi.autofillLoadingOverlay.requestedAndFixedShiftsStayInPlace')}
                 </p>
-                {onBackground && !isFinishing ? (
-                    <div className="mt-5 space-y-3 text-[13px] leading-5 text-[#667085]">
-                        <p role="status" aria-live="polite">
-                            {operation?.progress
-                                ? t(
-                                      operation.progress?.phase === 'QUEUED'
-                                          ? 'aiAutofillUi.executionPresentation.queued'
-                                          : operation.progress?.phase === 'VALIDATING'
-                                            ? 'aiAutofillUi.executionPresentation.validating'
-                                            : 'aiAutofillUi.executionPresentation.computing',
-                                  )
-                                : t('aiAutofillUi.executionPresentation.submitting')}
-                        </p>
-                        {operation?.progress && (
-                            <p aria-hidden="true" className="tabular-nums">
-                                {t('aiAutofillUi.conversationOperationStatus.elapsed', {
-                                    seconds: Math.floor(operation.progress.elapsedMs / 1000),
-                                })}
-                            </p>
-                        )}
-                        {operation?.progress?.phase === 'COMPUTING' && operation.progress.elapsedMs >= 30000 && (
-                            <p>{t('aiAutofillUi.conversationOperationStatus.continuing')}</p>
-                        )}
-                        <p>{t('aiAutofillUi.conversationOperationStatus.backgroundHint')}</p>
+                <div className="mt-5 sm:mt-7">
+                    <div
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={progressValue}
+                        aria-valuetext={`${progressLabel} ${progressValue}%`}
+                        aria-label={t('page.makeShift.aiRefill.loadingOverlay.ariaLabel')}
+                        className="h-2 overflow-hidden rounded-full bg-[#ECE6FF]"
+                    >
+                        <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
+                    </div>
+                    <div className="mt-3 flex justify-end gap-2 font-apple text-[13px] font-semibold">
+                        <span className="font-normal text-gray-3">{progressLabel}</span>
+                        <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
+                    </div>
+                </div>
+                {onBackground && !isFinishing && (
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 border-t border-gray-6 pt-1 font-apple text-[13px] leading-5 sm:text-sm">
                         <button
                             type="button"
                             onClick={onBackground}
-                            className="min-h-11 w-full rounded-xl bg-main-1 px-4 font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+                            className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1"
                         >
                             {t('aiAutofillUi.executionPresentation.continueInBackground')}
                         </button>
-                        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-                            {onOpenConversation && (
-                                <button
-                                    type="button"
-                                    onClick={onOpenConversation}
-                                    className="min-h-11 rounded-lg px-3 text-main-1 hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1"
-                                >
-                                    {t('aiAutofillUi.executionPresentation.openConversation')}
-                                </button>
-                            )}
-                            {onCancel && (
-                                <button
-                                    type="button"
-                                    onClick={onCancel}
-                                    disabled={cancelling}
-                                    className="min-h-11 rounded-lg px-3 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                >
-                                    {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="mt-5 sm:mt-7">
-                        <div
-                            role="progressbar"
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                            aria-valuenow={progressValue}
-                            aria-valuetext={`${progressLabel} ${progressValue}%`}
-                            aria-label={t('page.makeShift.aiRefill.loadingOverlay.ariaLabel')}
-                            className="h-2 overflow-hidden rounded-full bg-[#ECE6FF]"
-                        >
-                            <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
-                        </div>
-                        <div className="mt-3 flex justify-end font-apple text-[13px] font-semibold">
-                            <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
-                        </div>
+                        {onOpenConversation && (
+                            <button
+                                type="button"
+                                onClick={onOpenConversation}
+                                className="min-h-11 rounded-lg px-2 text-main-1 hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1"
+                            >
+                                {t('aiAutofillUi.executionPresentation.openConversation')}
+                            </button>
+                        )}
+                        {onCancel && (
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                disabled={cancelling}
+                                className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
+                            >
+                                {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

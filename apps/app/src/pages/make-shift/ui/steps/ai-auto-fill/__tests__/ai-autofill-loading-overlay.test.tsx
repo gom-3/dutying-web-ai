@@ -94,7 +94,7 @@ describe('autofill loading overlay', () => {
         act(() => vi.advanceTimersByTime(1000));
         expect(onFinish).not.toHaveBeenCalled();
     });
-    it('keeps the existing central card but offers distinct background, conversation and cancel actions without simulated progress', () => {
+    it('retains the original estimated progress bar and uses only compact background, conversation and cancel actions', () => {
         const onBackground = vi.fn();
         const onCancel = vi.fn();
         const onOpenConversation = vi.fn();
@@ -108,11 +108,12 @@ describe('autofill loading overlay', () => {
             />,
         );
         expect(screen.getByRole('dialog')).toHaveAccessibleName('근무표를 채우고 있어요');
-        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: '창을 닫고 계속 계산'}));
+        expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', expect.stringContaining('예상 진행률'));
+        expect(progress()).toBeLessThan(100);
+        fireEvent.click(screen.getByRole('button', {name: '닫고 계속 계산'}));
         expect(onBackground).toHaveBeenCalledOnce();
         expect(onCancel).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: '대화에서 진행 상황 보기'}));
+        fireEvent.click(screen.getByRole('button', {name: '대화 보기'}));
         expect(onOpenConversation).toHaveBeenCalledOnce();
         fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
         expect(onCancel).toHaveBeenCalledOnce();

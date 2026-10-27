@@ -647,7 +647,7 @@ describe('persistent schedule sidebar', () => {
     });
 
     it.each([
-        {status: 'RUNNING', title: '근무표를 다시 채우고 있어요', animated: true},
+        {status: 'RUNNING', title: '근무표를 채우기 시작했어요. 신청·고정근무는 그대로 유지해요.', animated: true},
         {status: 'RESULT_READY', title: '근무표를 마무리하고 있어요', animated: true},
         {status: 'UNKNOWN', title: '결과를 확인하고 있어요', animated: false},
     ] as const)('presents a quiet, readable pending status: $status', async ({status, title, animated}) => {
@@ -664,9 +664,9 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const statusMessage = await screen.findByRole('status', {name: title});
+        const statusMessage = await screen.findByRole('log', {name: '자동채우기 진행 대화'});
 
-        expect(statusMessage).toHaveTextContent('(2회차)');
+        expect(statusMessage).toHaveTextContent(title);
         expect(statusMessage).not.toHaveTextContent(/2026|11월|번째/);
         expect(statusMessage).not.toHaveTextContent(/실행 중|대상:|오전|오후/);
         expect(statusMessage.querySelectorAll('.ai-adjust-review-dot')).toHaveLength(animated ? 3 : 0);
@@ -679,7 +679,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('describes an adjustment using its own attempt count', async () => {
+    it('adds a separate assistant message describing an adjustment', async () => {
         current.operations = [
             operation,
             {
@@ -693,7 +693,7 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        expect(await screen.findByRole('status', {name: '요청에 맞게 조정하고 있어요'})).toHaveTextContent('(1회차)');
+        expect(await screen.findByRole('log', {name: '자동채우기 진행 대화'})).toHaveTextContent('요청에 맞게 근무표 조정을 시작했어요.');
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
@@ -723,7 +723,7 @@ describe('persistent schedule sidebar', () => {
     it('can recheck an unknown result without starting a new calculation', async () => {
         current.operations = [{...operation, executionStatus: 'UNKNOWN', resultVersionId: null}];
         renderSidebar();
-        await screen.findByRole('status', {name: '결과를 확인하고 있어요'});
+        await screen.findByRole('log', {name: '자동채우기 진행 대화'});
         mocks.detail.mockClear();
         await userEvent.click(screen.getByRole('button', {name: '결과 다시 확인하기'}));
 
@@ -877,10 +877,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const statusMessage = await screen.findByRole('status', {name: 'Refilling your schedule'});
+        const statusMessage = await screen.findByRole('log', {name: 'Autofill progress conversation'});
 
         expect(statusMessage).toHaveTextContent('Requested and fixed shifts stay in place.');
-        expect(statusMessage).toHaveTextContent('(Run 2)');
+        expect(statusMessage).toHaveTextContent('I have started filling your schedule.');
         expect(statusMessage).not.toHaveTextContent('2026-11');
     });
 
