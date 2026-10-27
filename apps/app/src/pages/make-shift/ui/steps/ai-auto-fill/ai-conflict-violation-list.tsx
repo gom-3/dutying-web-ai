@@ -128,11 +128,16 @@ export function AiConflictViolationList({review}: {review: TReview}) {
             ];
             const subject = typeof args?.nurseName === 'string' ? args.nurseName : names.length === 1 ? names[0] : undefined;
 
-            message = t('aiAutofillUi.conflictReview.consecutive', {
-                subject: subject ?? t('aiAutofillUi.conflictReview.subjectUnavailable'),
-                actual,
-                expected,
-            });
+            message = t(
+                issue.magnitudeIsLowerBound === true
+                    ? 'aiAutofillUi.conflictReview.consecutiveLowerBound'
+                    : 'aiAutofillUi.conflictReview.consecutive',
+                {
+                    subject: subject ?? t('aiAutofillUi.conflictReview.subjectUnavailable'),
+                    actual,
+                    expected,
+                },
+            );
         } else if (issue.templateCode === 'SHIFT_COUNT_PER_PERIOD' && numeric && ['MIN', 'MAX', 'EXACT'].includes(String(args?.operator))) {
             const limit = t(
                 args?.operator === 'MAX'
