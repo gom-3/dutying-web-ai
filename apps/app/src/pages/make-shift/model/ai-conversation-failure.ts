@@ -1,7 +1,18 @@
 import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
+export type TPersonalRestConflict = {
+    nurseId?: number;
+    nurseName?: string;
+    shiftCodes: string[];
+    expected: number;
+    minimumAssignments: number;
+    maximumAssignments: number;
+};
+
 export type TAiConversationFailure = {
+    restConflicts?: TPersonalRestConflict[];
+    settingsTarget?: 'rest' | 'member';
     conflicts?: TScheduleConflict[];
     sourceRevision?: number;
     sourceRulesHash?: string;
@@ -9,6 +20,8 @@ export type TAiConversationFailure = {
     message: string;
     confirmationRequired?: boolean;
     conditionConflict?: boolean;
+    /** A generic infeasible generation can return to explicit fixed-shift review. */
+    reviewFixed?: boolean;
     blocked: boolean;
     /** A local input issue does not need an execution-history lookup. */
     checkOutcome?: boolean;

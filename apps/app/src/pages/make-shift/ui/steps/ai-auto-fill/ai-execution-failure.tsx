@@ -15,7 +15,9 @@ export function AiExecutionFailure({
     onRetry,
     onRevise,
     onReview,
+    reviewLabel,
     onEditSettings,
+    settingsHref,
     onInspectSchedule,
     operationType,
     attemptLabel,
@@ -28,7 +30,9 @@ export function AiExecutionFailure({
     onRetry?: () => void;
     onRevise?: () => void;
     onReview?: () => void;
+    reviewLabel?: string;
     onEditSettings?: () => void;
+    settingsHref?: string;
     onInspectSchedule?: () => void;
     operationType?: 'GENERATE' | 'ADJUST';
     attemptLabel?: string;
@@ -38,7 +42,7 @@ export function AiExecutionFailure({
     const {t} = useTypedTranslation();
     const displayRef = useScheduleJourneyDisplay(failure.observation);
     const teamId = useMakeShiftStore((state) => state.currentShiftTeamId);
-    const settingsUrl = teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : ROUTE.MEMBER;
+    const settingsUrl = settingsHref ?? (teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : ROUTE.MEMBER);
     const actionClass =
         'flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-center text-[13.5px] leading-5 font-medium break-keep transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none';
     const primaryClass = `${actionClass} bg-main-1 text-white hover:bg-[#5931B9] focus-visible:bg-main-light focus-visible:text-[#43208D]`;
@@ -48,7 +52,8 @@ export function AiExecutionFailure({
     const showRetry = retryable && Boolean(onRetry);
     const showRevise = !failure.blocked && failure.recovery !== 'review' && !showSettings && Boolean(onRevise);
     const showReview = Boolean(onReview) && (!retryable || !onRevise);
-    const showConditionSettings = !failure.blocked && failure.conditionConflict && Boolean(onEditSettings);
+    const showConditionSettings =
+        !failure.blocked && failure.conditionConflict && (Boolean(onEditSettings) || Boolean(failure.settingsTarget));
     const content = Children.toArray(children);
     const showActions =
         active && !failure.confirmationRequired && (showSettings || showRetry || showRevise || showReview || showConditionSettings);
@@ -94,11 +99,16 @@ export function AiExecutionFailure({
                                 {t('aiAdjust.issue.edit')}
                             </button>
                         )}
-                        {showConditionSettings && (
-                            <button type="button" className={secondaryClass} disabled={disabled} onClick={onEditSettings}>
-                                {t('aiAutofillUi.conflictReview.editSettings')}
-                            </button>
-                        )}
+                        {showConditionSettings &&
+                            (failure.settingsTarget === 'member' || !onEditSettings ? (
+                                <a className={secondaryClass} href={settingsUrl} target="_blank" rel="noopener noreferrer">
+                                    {t('aiAdjust.executionFailure.memberSettings')}
+                                </a>
+                            ) : (
+                                <button type="button" className={secondaryClass} disabled={disabled} onClick={onEditSettings}>
+                                    {t('aiAutofillUi.conflictReview.editSettings')}
+                                </button>
+                            ))}
                         {showReview && !showConditionSettings && (
                             <button
                                 type="button"
@@ -106,7 +116,7 @@ export function AiExecutionFailure({
                                 disabled={disabled}
                                 onClick={onReview}
                             >
-                                {t('aiAdjust.executionFailure.review')}
+                                {reviewLabel ?? t('aiAdjust.executionFailure.review')}
                             </button>
                         )}
                     </div>

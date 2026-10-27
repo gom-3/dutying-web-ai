@@ -8,6 +8,7 @@ import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring
 import i18n from '@/i18n';
 import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
@@ -25,6 +26,7 @@ import {
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
+import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
     conversationApi,
     conversationEvents,
@@ -42,7 +44,8 @@ import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../mo
 import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
-import {AiActiveConditions} from './ai-active-conditions';
+import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
+import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
@@ -77,6 +80,7 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    onRecoverGeneration?: () => void;
     onPrepareAdjustment?: () => Promise<void>;
     generationFillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     onClose: () => void;
@@ -95,6 +99,14 @@ type TProps = {
     resultActions?: TAdjustResultActions;
 };
 type TLocalEvent = {kind: 'local'; id: string; sequence: number; messages: TAutofillMessage[]};
+type TComposerContext = {
+    editingEventId?: number;
+    previousId?: string;
+    change: 'REPLACE' | 'ADD' | 'RESET';
+    conditionEdit: 'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET';
+    conditionTargets: string[];
+};
+type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; recoveredFailures: string[]; composer?: TComposerContext};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
@@ -120,6 +132,7 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    onRecoverGeneration,
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
     onClose,
@@ -137,16 +150,59 @@ export default function AiConversationSidebar({
     onBusyChange,
     resultActions,
 }: TProps) {
+    const conditionsEditor = useRef<TActiveConditionsHandle>(null);
     const {t} = useTypedTranslation();
     const preparing = Boolean(preparation);
     const [awaitingAdjustment, setAwaitingAdjustment] = useState(false);
     const awaitingAdjustmentRef = useRef(false);
     const reviewedPreparation = useRef<string | null>(null);
-    const [entryChoice, setEntryChoice] = useState<TConversationEntryChoice | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
-    const [localEvents, setLocalEvents] = useState<TLocalEvent[]>([]);
+    const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
+    const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
+    const transcriptKey = chatKey ? `${chatKey}:server-transcript` : null;
+    const {
+        text,
+        setText,
+        entryChoice,
+        setEntryChoice,
+        saveFailed: composerSaveFailed,
+    } = useScheduleChatComposer(chatKey ? `${chatKey}:composer` : null);
+    const [storedTranscript] = useState(() =>
+        readScheduleChat<TLocalTranscript>(transcriptKey, (value): value is TLocalTranscript => {
+            const transcript = value as TLocalTranscript | null;
+
+            return Boolean(
+                transcript &&
+                    (transcript.conversationId === null || Number.isSafeInteger(transcript.conversationId)) &&
+                    Array.isArray(transcript.events) &&
+                    transcript.events.every(
+                        (event) =>
+                            event?.kind === 'local' &&
+                            typeof event.id === 'string' &&
+                            Number.isFinite(event.sequence) &&
+                            Array.isArray(event.messages) &&
+                            event.messages.every(
+                                (message) => message && ['user', 'assistant'].includes(message.role) && typeof message.text === 'string',
+                            ),
+                    ) &&
+                    Array.isArray(transcript.recoveredFailures) &&
+                    transcript.recoveredFailures.every((id) => typeof id === 'string') &&
+                    (!transcript.composer ||
+                        (['REPLACE', 'ADD', 'RESET'].includes(transcript.composer.change) &&
+                            ['ANSWER', 'ADD', 'UPDATE', 'REMOVE', 'RESET'].includes(transcript.composer.conditionEdit) &&
+                            Array.isArray(transcript.composer.conditionTargets) &&
+                            transcript.composer.conditionTargets.every((id) => typeof id === 'string') &&
+                            (transcript.composer.previousId == null || typeof transcript.composer.previousId === 'string') &&
+                            (transcript.composer.editingEventId == null || Number.isSafeInteger(transcript.composer.editingEventId)))),
+            );
+        }),
+    );
+    const transcriptConversation = useRef(storedTranscript?.conversationId ?? null);
+    const recoveredFailures = useRef(new Set(storedTranscript?.recoveredFailures ?? []));
+    const [localEvents, setLocalEvents] = useState<TLocalEvent[]>(storedTranscript?.events ?? []);
+    const [historySaveFailed, setHistorySaveFailed] = useState(false);
     const discardedPreparationId = useRef<number | null>(null);
-    const localSequence = useRef(0);
+    const localSequence = useRef(Math.max(0, ...localEvents.map((event) => Number(event.id.slice(event.id.lastIndexOf(':') + 1)) || 0)));
     const textarea = useRef<HTMLTextAreaElement>(null);
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
@@ -170,8 +226,8 @@ export default function AiConversationSidebar({
     const busyRef = useRef(false);
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+    const recordedFeedback = useRef<{notice: string | null; error: string | null}>({notice: null, error: null});
     const feedbackNotice = useRef<string | null>(null);
-    const [text, setText] = useState('');
     const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
     const [requestToolsOpen, setRequestToolsOpen] = useState(false);
     const [reportOperation, setReportOperation] = useState<string | null>(null);
@@ -216,10 +272,12 @@ export default function AiConversationSidebar({
         setReportOperation(null);
         setReportError(null);
     };
-    const [change, setChange] = useState<'REPLACE' | 'ADD' | 'RESET'>('ADD');
-    const [conditionEdit, setConditionEdit] = useState<'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET'>('ANSWER');
-    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
-    const [previousId, setPreviousId] = useState<string>();
+    const [change, setChange] = useState<TComposerContext['change']>(storedTranscript?.composer?.change ?? 'ADD');
+    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>(
+        storedTranscript?.composer?.conditionEdit ?? 'ANSWER',
+    );
+    const [conditionTargets, setConditionTargets] = useState<string[]>(storedTranscript?.composer?.conditionTargets ?? []);
+    const [previousId, setPreviousId] = useState<string | undefined>(storedTranscript?.composer?.previousId);
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
     const sidebarOpen = useRef(open);
@@ -253,6 +311,39 @@ export default function AiConversationSidebar({
             next.conversation.revision < detailRef.current.conversation.revision
         )
             return;
+
+        if (transcriptConversation.current !== null && transcriptConversation.current !== next.conversation.conversationId) {
+            setLocalEvents([]);
+            recoveredFailures.current.clear();
+            setEditingRequest(null);
+            setPreviousId(undefined);
+            setChange('ADD');
+            setConditionEdit('ANSWER');
+            setConditionTargets([]);
+        }
+
+        transcriptConversation.current = next.conversation.conversationId;
+
+        if (
+            !detailRef.current &&
+            storedTranscript?.conversationId === next.conversation.conversationId &&
+            storedTranscript.composer?.editingEventId != null
+        ) {
+            const previousRequest = next.turns.find((turn) => turn.eventId === storedTranscript.composer?.editingEventId);
+
+            setEditingRequest(previousRequest ?? null);
+
+            if (previousRequest) {
+                const execution = [...next.operations].reverse().find((op) => op.interpretationId === previousRequest.interpretationId);
+
+                if (execution) setDismissedFailureId(execution.operationId);
+            } else {
+                setPreviousId(undefined);
+                setChange('ADD');
+                setConditionEdit('ANSWER');
+                setConditionTargets([]);
+            }
+        }
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             reportAttempt.reset();
@@ -1055,6 +1146,8 @@ export default function AiConversationSidebar({
         setRebuild(false);
         setPreview(null);
         setNotice(null);
+        setError(null);
+        recordedFeedback.current = {notice: null, error: null};
         setPendingBranch(null);
         reportAttempt.reset();
         setReportOperation(null);
@@ -1264,6 +1357,55 @@ export default function AiConversationSidebar({
     const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh);
 
     useEffect(() => {
+        for (const [kind, text] of [
+            ['notice', notice],
+            ['error', error?.message ?? null],
+        ] as const) {
+            if (recordedFeedback.current[kind] === text) continue;
+
+            recordedFeedback.current[kind] = text;
+
+            if (!text || (kind === 'notice' && [t('aiAdjust.recovery.running'), t('aiAdjust.recovery.unknown')].includes(text))) continue;
+
+            const id = `feedback:${kind}:${++localSequence.current}`;
+
+            setLocalEvents((current) => [
+                ...current,
+                {
+                    kind: 'local',
+                    id,
+                    sequence:
+                        Math.max(
+                            0,
+                            ...(detail ? conversationEvents(detail).map((event) => event.sequence) : []),
+                            ...current.map((event) => event.sequence),
+                        ) + 0.001,
+                    messages: [{role: 'assistant', text}],
+                },
+            ]);
+        }
+    }, [notice, error, detail]);
+
+    useEffect(() => {
+        if (!detail && !localEvents.length) return;
+
+        setHistorySaveFailed(
+            !writeScheduleChat(transcriptKey, {
+                conversationId: detail?.conversation.conversationId ?? transcriptConversation.current,
+                events: localEvents,
+                recoveredFailures: [...recoveredFailures.current],
+                composer: {
+                    editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
+                    previousId,
+                    change,
+                    conditionEdit,
+                    conditionTargets,
+                },
+            }),
+        );
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, conditionEdit, conditionTargets]);
+
+    useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
 
         setLocalEvents((current) => {
@@ -1305,7 +1447,7 @@ export default function AiConversationSidebar({
     }, [onBusyChange]);
 
     useEffect(() => {
-        if (autofillFlow?.kind === 'adjustment' || (!preparing && !autofillFlow)) return;
+        if (autofillFlow?.kind === 'adjustment' || !preparing) return;
 
         setEntryChoice(null);
         setRebuild(false);
@@ -1316,7 +1458,15 @@ export default function AiConversationSidebar({
     }, [preparing, autofillFlow?.id]);
 
     const activeTurns = detail ? currentConversationTurns(detail) : [];
-    const visibleLocalEvents = localEvents.filter((event) => event.sequence > segmentStart);
+    const liveFeedbackIds = [
+        ['notice', notice],
+        ['error', error?.message],
+    ].map(([kind, text]) =>
+        text
+            ? [...localEvents].reverse().find((event) => event.id.startsWith(`feedback:${kind}:`) && event.messages[0]?.text === text)?.id
+            : undefined,
+    );
+    const visibleLocalEvents = localEvents.filter((event) => event.sequence > segmentStart && !liveFeedbackIds.includes(event.id));
     const canChooseNextAction = Boolean(
         detail &&
             ((executionSucceeded &&
@@ -1338,6 +1488,54 @@ export default function AiConversationSidebar({
             dismissedFailureId !== latestOperation.operationId &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
+    const failure = latestOperation ? operationFailure(latestOperation) : null;
+    const canReviewFixedAfterFailure = Boolean(latestOperation?.operationType === 'GENERATE' && failure?.reviewFixed);
+
+    useEffect(() => {
+        if (
+            !onRecoverGeneration ||
+            !canReviewFixedAfterFailure ||
+            !failureNeedsAction ||
+            !latestOperation ||
+            !open ||
+            loading ||
+            preparing ||
+            busy ||
+            running ||
+            awaitingAdjustment ||
+            error ||
+            entryChoice ||
+            text.trim() ||
+            recoveredFailures.current.has(latestOperation.operationId)
+        )
+            return;
+
+        // Open a review once, never a calculation. Refreshing the failed record
+        // or closing its preparation must not start another attempt.
+        recoveredFailures.current.add(latestOperation.operationId);
+        writeScheduleChat(transcriptKey, {
+            conversationId: detail!.conversation.conversationId,
+            events: localEvents,
+            recoveredFailures: [...recoveredFailures.current],
+            composer: {editingEventId: editingRequest?.eventId, previousId, change, conditionEdit, conditionTargets},
+        });
+        onRecoverGeneration();
+    }, [
+        onRecoverGeneration,
+        canReviewFixedAfterFailure,
+        failureNeedsAction,
+        latestOperation,
+        open,
+        loading,
+        preparing,
+        busy,
+        running,
+        awaitingAdjustment,
+        error,
+        entryChoice,
+        text,
+    ]);
+
     // Once a request has an execution record, its preview is history. Further
     // actions belong to that execution's result or recovery controls.
     const executedInterpretationIds = new Set(detail?.operations.flatMap((op) => (op.interpretationId ? [op.interpretationId] : [])));
@@ -1464,6 +1662,14 @@ export default function AiConversationSidebar({
             else setRebuild(true);
         } else textarea.current?.focus();
     };
+    const settingsHrefFor = (operation: TConversationOperation) => {
+        const failure = operationFailure(operation);
+
+        return failure?.recovery === 'settings' || failure?.settingsTarget === 'member'
+            ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}`
+            : undefined;
+    };
+    const openConflictSettings = (_operation: TConversationOperation) => conditionsEditor.current?.openConditions();
     const renderTurn = (turn: TConversationTurn) => {
         if (turn.type === 'SEGMENT_START')
             return (
@@ -1653,6 +1859,7 @@ export default function AiConversationSidebar({
                 <div className="flex min-h-0 flex-1 flex-col px-[25px] pb-5">
                     <div className="mb-1 shrink-0">
                         <AiActiveConditions
+                            ref={conditionsEditor}
                             wardId={wardId}
                             teamId={teamId}
                             year={year}
@@ -1668,7 +1875,10 @@ export default function AiConversationSidebar({
                                 if (conditionsContextInvalid) await refresh();
                             }}
                             disabled={conditionsDisabled}
-                            onWardRulesApplied={activeConditions.refreshAfterRuleChange}
+                            onWardRulesApplied={async () => {
+                                await activeConditions.refreshAfterRuleChange();
+                                setNotice(t('aiConversationSidebar.conditionsSaved'));
+                            }}
                             onBusyChange={setConditionEditorBusy}
                         />
                     </div>
@@ -1680,12 +1890,31 @@ export default function AiConversationSidebar({
                         </AiFailureMessage>
                     )}
                     {notice && (
-                        <p role="status" className="mb-2 text-sm">
-                            {notice}
-                        </p>
+                        <div role="status" className="mb-2 space-y-2 text-sm">
+                            <p>{notice}</p>
+                            {notice === t('aiConversationSidebar.conditionsSaved') &&
+                                latestOperation?.operationType === 'GENERATE' &&
+                                operationFailure(latestOperation) && (
+                                    <button
+                                        type="button"
+                                        className={buttonClass}
+                                        disabled={conditionsDisabled || isAutofillBlocked}
+                                        onClick={() => {
+                                            setNotice(null);
+
+                                            if (onPrepareGeneration) onPrepareGeneration();
+                                            else setRebuild(true);
+                                        }}
+                                    >
+                                        {t('aiConversationSidebar.retryWithUpdatedConditions')}
+                                    </button>
+                                )}
+                        </div>
                     )}
                     <AiChatScroll
                         key={`${detail?.conversation.conversationId ?? 'loading'}:${segmentStart}`}
+                        historyKey={chatKey && detail ? `${chatKey}:scroll:${detail.conversation.conversationId}:${segmentStart}` : null}
+                        ready={Boolean(detail)}
                         open={open}
                         composerHidden={composerHidden}
                         className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
@@ -1707,7 +1936,11 @@ export default function AiConversationSidebar({
                                 .sort((a, b) => a.sequence - b.sequence)
                                 .map((event) =>
                                     event.kind === 'local' ? (
-                                        <AiAutofillMessages key={event.id} messages={event.messages} />
+                                        event.id.startsWith('feedback:error:') ? (
+                                            <AiFailureMessage key={event.id} message={event.messages[0]?.text ?? ''} announce={false} />
+                                        ) : (
+                                            <AiAutofillMessages key={event.id} messages={event.messages} />
+                                        )
                                     ) : event.kind === 'turn' ? (
                                         <div key={event.id} inert={preparing}>
                                             {renderTurn(event.turn)}
@@ -1760,7 +1993,12 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -1876,9 +2114,23 @@ export default function AiConversationSidebar({
                                                           }
                                                         : undefined
                                                 }
-                                                onReview={onOpenConstraints ?? onClose}
+                                                onReview={
+                                                    event.operation === latestOperation && canReviewFixedAfterFailure && onRecoverGeneration
+                                                        ? onRecoverGeneration
+                                                        : (onOpenConstraints ?? onClose)
+                                                }
+                                                reviewLabel={
+                                                    event.operation === latestOperation && canReviewFixedAfterFailure && onRecoverGeneration
+                                                        ? t('aiAdjust.preparation.reviewFixed')
+                                                        : undefined
+                                                }
                                                 onInspectSchedule={onClose}
-                                                onEditSettings={onOpenConstraints}
+                                                settingsHref={settingsHrefFor(event.operation)}
+                                                onEditSettings={
+                                                    settingsHrefFor(event.operation)
+                                                        ? undefined
+                                                        : () => openConflictSettings(event.operation)
+                                                }
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
@@ -1897,7 +2149,12 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -1993,7 +2250,12 @@ export default function AiConversationSidebar({
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
                                                         review={event.operation.result.conflictReview}
-                                                        onEditSettings={onOpenConstraints ?? onClose}
+                                                        onEditSettings={
+                                                            settingsHrefFor(event.operation)
+                                                                ? undefined
+                                                                : () => openConflictSettings(event.operation)
+                                                        }
+                                                        settingsHref={settingsHrefFor(event.operation)}
                                                         requestSummary={
                                                             detail.turns.find(
                                                                 (turn) => turn.interpretationId === event.operation.interpretationId,
@@ -2076,6 +2338,11 @@ export default function AiConversationSidebar({
                                 </div>
                             </AssistantMessage>
                         )}
+                        {(historySaveFailed || composerSaveFailed) && (
+                            <p role="status" className="text-xs text-[#667085]">
+                                {t('aiAdjust.preparation.historyUnavailable')}
+                            </p>
+                        )}
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {showNextActions &&
                             (attachNextActions ? (
@@ -2087,6 +2354,7 @@ export default function AiConversationSidebar({
                             ) : (
                                 <AiConversationEntry
                                     choice={null}
+                                    hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
                                     confirmation={

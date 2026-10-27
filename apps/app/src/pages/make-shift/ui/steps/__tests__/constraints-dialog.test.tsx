@@ -184,6 +184,112 @@ describe('Constraints dialog editor', () => {
             });
     });
 
+    it('edits migrated OFF and annual leave rules through the common editor with month and revision preserved', async () => {
+        const shifts = [
+            {type: 'SET', wardShiftTypeIds: [4], label: 'OFF', classification: 'OFF'},
+            {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5, label: '연차', classification: 'ANNUAL_LEAVE'},
+        ];
+        const rules = shifts.map((_, index) => ({
+            shiftConstraintRuleId: 101 + index,
+            templateCode: 'SHIFT_COUNT_PER_PERIOD',
+            category: 'FORBIDDEN_PATTERN',
+            severity: 'HARD' as const,
+            sortOrder: index + 1,
+            selected: true,
+            isImportant: true,
+            params: {
+                target: nurseA,
+                shift: index === 0 ? {type: 'SET', wardShiftTypeIds: [4]} : {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5},
+                count: index === 0 ? 9 : 2,
+                period: {type: 'MONTH'},
+                operator: {type: 'EXACT'},
+                aggregation: {type: 'EACH'},
+                monthScope: {year: 2026, month: 6},
+                source: 'PERSONAL_MONTHLY_REST_POLICY',
+            },
+        }));
+
+        api.getShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, revision: 'original-r1', rules});
+        api.getShiftConstraintRuleCandidates.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [{...nurseA, label: 'Nurse A'}],
+                nurses: [{...nurseA, label: 'Nurse A'}],
+                shiftsWithAll: shifts,
+                periods: [{type: 'MONTH', label: '한 달'}],
+                countOperators: [{type: 'EXACT', label: '정확히'}],
+                mixedAssignmentAggregations: [{type: 'EACH', label: '개인별'}],
+            },
+            templates: [
+                {
+                    templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    displayTemplate: '{target}의 {shift} 근무는 {period}에 {operator} {count}회예요.',
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'target', label: '대상', inputType: 'SELECT', optionGroup: 'targets'},
+                        {key: 'shift', label: '근무', inputType: 'SELECT', optionGroup: 'shiftsWithAll'},
+                        {key: 'period', label: '기간', inputType: 'SELECT', optionGroup: 'periods'},
+                        {key: 'operator', label: '조건', inputType: 'SELECT', optionGroup: 'countOperators'},
+                        {key: 'aggregation', label: '집계', inputType: 'SELECT', optionGroup: 'mixedAssignmentAggregations'},
+                        {key: 'count', label: '횟수', inputType: 'NUMBER', min: 0, max: 31},
+                    ],
+                },
+            ],
+        } as never);
+        api.getShiftTypes.mockResolvedValue([
+            {wardShiftTypeId: 1, shortName: 'D', classification: 'DAY', rotationSystem: 'THREE', isActive: true},
+            {wardShiftTypeId: 4, shortName: 'O', classification: 'OFF', rotationSystem: 'NONE', isActive: true},
+            {wardShiftTypeId: 5, shortName: 'A', classification: 'ANNUAL_LEAVE', rotationSystem: 'NONE', isActive: true},
+        ] as never);
+
+        const ref = createRef<TConstraintsEditorHandle>();
+        const stateChanged = vi.fn();
+
+        renderEditor(<Constraints {...editorProps} editorRef={ref} onEditorStateChange={stateChanged} />);
+        await ready(stateChanged);
+        expect(api.getShiftConstraintRules).toHaveBeenCalledWith(1, 10, 2026, 6);
+        expect(screen.getAllByText('2026년 6월')).toHaveLength(2);
+
+        const offInput = screen.getAllByRole('spinbutton').find((input) => (input as HTMLInputElement).value === '9')!;
+
+        expect(offInput).toBeDefined();
+        expect(screen.getByRole('button', {name: 'OFF'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '연차'})).toBeInTheDocument();
+        fireEvent.change(offInput, {target: {value: '8'}});
+        fireEvent.blur(offInput);
+        expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
+        expect(await apply(ref)).toBe(true);
+        expect(api.updateShiftConstraintRules).toHaveBeenCalledWith(
+            1,
+            10,
+            expect.objectContaining({
+                year: 2026,
+                month: 6,
+                revision: 'original-r1',
+                rules: expect.arrayContaining([
+                    expect.objectContaining({
+                        shiftConstraintRuleId: 101,
+                        params: expect.objectContaining({
+                            count: 8,
+                            shift: {type: 'SET', wardShiftTypeIds: [4]},
+                            monthScope: {year: 2026, month: 6},
+                        }),
+                    }),
+                    expect.objectContaining({
+                        shiftConstraintRuleId: 102,
+                        params: expect.objectContaining({count: 2, shift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5}}),
+                    }),
+                ]),
+            }),
+        );
+    });
+
     it('loads an empty editor without writing recommended defaults or migrations', async () => {
         api.getShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, rules: []});
 
@@ -221,6 +327,9 @@ describe('Constraints dialog editor', () => {
         expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
         expect(await apply(ref)).toBe(true);
         expect(api.updateShiftConstraintRules).toHaveBeenCalledExactlyOnceWith(1, 10, {
+            year: 2026,
+            month: 6,
+            revision: undefined,
             rules: [
                 {
                     shiftConstraintRuleId: 41,

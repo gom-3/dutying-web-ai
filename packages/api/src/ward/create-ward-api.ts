@@ -264,9 +264,14 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`),
                 )
             ).data,
-        getShiftConstraintRules: async (wardId: number, shiftTeamId: number) =>
-            (await client.get<TShiftConstraintRulesResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`)))
-                .data,
+        getShiftConstraintRules: async (wardId: number, shiftTeamId: number, year?: number, month?: number) =>
+            (
+                await client.get<TShiftConstraintRulesResponse>(
+                    wardPath(
+                        `/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules${year != null && month != null ? `?year=${year}&month=${month}` : ''}`,
+                    ),
+                )
+            ).data,
         updateShiftConstraintRules: async (wardId: number, shiftTeamId: number, constraintRules: TUpdateShiftConstraintRulesDTO) =>
             (
                 await client.put<TShiftConstraintRulesResponse>(

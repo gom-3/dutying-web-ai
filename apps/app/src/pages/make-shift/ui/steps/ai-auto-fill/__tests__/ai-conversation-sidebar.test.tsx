@@ -21,6 +21,7 @@ import useAuthStore from '@/features/auth/model/store';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {useShiftEditorStore} from '@/features/shift-editor/model/store';
 import i18n from '@/i18n';
+import {adminAxiosInstance} from '@/shared/api/client';
 import type * as WardApiModule from '@/shared/api/ward';
 import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import type * as ConversationApiModule from '../../../../model/schedule-conversation-api';
@@ -329,6 +330,7 @@ const sidebarElement = (overrides: Partial<ComponentProps<typeof AiConversationS
 const renderSidebar = (overrides: Partial<ComponentProps<typeof AiConversationSidebar>> = {}) => render(sidebarElement(overrides));
 
 beforeEach(() => {
+    window.localStorage.clear();
     vi.clearAllMocks();
     vi.stubGlobal('crypto', webcrypto);
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({matches: false}));
@@ -393,6 +395,158 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('opens personal rest conflict settings in the same sidebar and refreshes the condition context without executing', async () => {
+        const get = vi.spyOn(adminAxiosInstance, 'get');
+        const put = vi.spyOn(adminAxiosInstance, 'put');
+
+        mocks.applyConstraints.mockImplementationOnce(async () => {
+            current = {...current, contextHash: 'rest:updated'};
+
+            return true;
+        });
+
+        current = {
+            ...current,
+            contextHash: 'rest:old',
+            operations: [
+                {
+                    ...operation,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations: [
+                                {
+                                    type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                    nurseId: 1,
+                                    nurseName: '김 간호사',
+                                    shiftCodes: ['O'],
+                                    expected: 9,
+                                    minimumAssignments: 0,
+                                    maximumAssignments: 8,
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        };
+
+        const external = vi.fn();
+        const prepareGeneration = vi.fn();
+
+        renderSidebar({onOpenConstraints: external, onPrepareGeneration: prepareGeneration});
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+
+        expect(await screen.findByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '제약조건 수정'}));
+
+        const previousDoc = structuredClone(useShiftEditorStore.getState().doc);
+
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        expect(put).not.toHaveBeenCalled();
+        expect(get.mock.calls.some(([url]) => String(url).includes('monthly-rest-policy'))).toBe(false);
+        expect(mocks.detail).toHaveBeenCalledTimes(2);
+        expect(current.contextHash).toBe('rest:updated');
+        expect(useShiftEditorStore.getState().doc).toEqual(previousDoc);
+        expect(external).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(await screen.findByText(i18n.t('aiConversationSidebar.conditionsSaved'))).toBeVisible();
+        expect(prepareGeneration).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.retryWithUpdatedConditions')}));
+        expect(prepareGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it.each(['unknown-rest', 'availability'] as const)(
+        'links %s evidence to the existing member settings instead of guessing a nurse',
+        async (kind) => {
+            current.operations = [
+                {
+                    ...operation,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations:
+                                kind === 'unknown-rest'
+                                    ? [
+                                          {
+                                              type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                              nurseId: 999,
+                                              nurseName: '김 간호사',
+                                              shiftCodes: ['O'],
+                                              expected: 9,
+                                              minimumAssignments: 0,
+                                              maximumAssignments: 8,
+                                          },
+                                      ]
+                                    : [
+                                          {
+                                              type: 'WORK_REST_AVAILABILITY_CONFLICT',
+                                              nurseName: '김 간호사',
+                                              forcedWorkDays: 19,
+                                              maximum: 5,
+                                              startDate: '2026-11-01',
+                                              endDate: '2026-11-19',
+                                          },
+                                      ],
+                        },
+                    },
+                },
+            ];
+
+            const get = vi.spyOn(adminAxiosInstance, 'get');
+
+            renderSidebar();
+
+            if (kind === 'availability') {
+                const link = await screen.findByRole('link', {name: i18n.t('aiAdjust.executionFailure.memberSettings')});
+
+                expect(link).toHaveAttribute('href', '/member?shiftTeamId=2');
+                expect(link).toHaveAttribute('target', '_blank');
+            } else {
+                await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+                expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+                expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+            }
+
+            expect(get.mock.calls.some(([url]) => String(url).includes('monthly-rest-policy'))).toBe(false);
+            expect(mocks.execute).not.toHaveBeenCalled();
+        },
+    );
+
+    it('restores the selected composer and unfinished text without adding another introduction or sending it', async () => {
+        current.operations = [];
+        current.turns = [];
+
+        const props = {autofillFlow: {id: 99, status: 'completed' as const, messages: []}};
+        const first = renderSidebar(props);
+
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await userEvent.type(screen.getByRole('textbox'), '12일 휴무를 유지해줘');
+        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
+        first.unmount();
+        renderSidebar(props);
+        expect(await screen.findByRole('textbox')).toHaveValue('12일 휴무를 유지해줘');
+        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
+        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
+        expect(screen.queryByText(i18n.t('aiAdjust.chat.welcome'))).not.toBeInTheDocument();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('replaces the conversation loading state with a usable retry after initialization fails', async () => {
         let rejectList!: (reason: Error) => void;
 
@@ -565,6 +719,144 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.detail).toHaveBeenCalledOnce();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+
+    it('returns a generic infeasible generation to fixed review once while preserving its failure history', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            },
+        ];
+
+        const onRecoverGeneration = vi.fn();
+        const sidebar = renderSidebar({onRecoverGeneration});
+
+        expect(await screen.findByText('자동채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        await waitFor(() => expect(onRecoverGeneration).toHaveBeenCalledOnce());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        sidebar.rerender(
+            sidebarElement({
+                onRecoverGeneration,
+                preparation: <div>고정한 근무 재확인</div>,
+                autofillFlow: {
+                    id: 73,
+                    status: 'preparing',
+                    messages: [
+                        {role: 'assistant', text: '이전 고정 질문'},
+                        {role: 'user', text: '이전 준비 응답'},
+                    ],
+                },
+            }),
+        );
+        expect(screen.getByText('고정한 근무 재확인')).toBeVisible();
+        expect(screen.getByText('자동채우기를 마치지 못했어요. (1회차)')).toBeVisible();
+        sidebar.rerender(sidebarElement({onRecoverGeneration, open: false}));
+        sidebar.rerender(sidebarElement({onRecoverGeneration}));
+        expect(onRecoverGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        sidebar.unmount();
+        renderSidebar({onRecoverGeneration});
+        expect(await screen.findByRole('alert')).toBeVisible();
+        expect(screen.getByText('이전 고정 질문')).toBeVisible();
+        expect(screen.getByText('이전 준비 응답')).toBeVisible();
+        expect(onRecoverGeneration).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('waits for the page to finish generation before consuming the recovery transition', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            },
+        ];
+
+        const onRecoverGeneration = vi.fn();
+        const sidebar = renderSidebar({onRecoverGeneration, loading: true});
+
+        await screen.findByRole('alert');
+        expect(onRecoverGeneration).not.toHaveBeenCalled();
+        sidebar.rerender(sidebarElement({onRecoverGeneration, loading: false}));
+        await waitFor(() => expect(onRecoverGeneration).toHaveBeenCalledOnce());
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it.each(['adjustment', 'newer_request', 'settings', 'consent', 'specific_conflict', 'suggestion'])(
+        'preserves the existing recovery route for %s',
+        async (kind) => {
+            const failed: TConversationOperation = {
+                ...operation,
+                executionStatus: 'FAILED',
+                resultVersionId: null,
+                result: {...successfulResult, applicable: false, changedCells: [], engineResult: {status: 'INFEASIBLE'}},
+            };
+
+            if (kind === 'adjustment') failed.operationType = 'ADJUST';
+
+            if (kind === 'newer_request')
+                current.turns = [
+                    {
+                        eventId: 2,
+                        sequence: 2,
+                        actor: 'USER',
+                        type: 'REQUEST_SUBMITTED',
+                        text: '새 요청',
+                        baseRevision: 0,
+                        interpretationId: null,
+                        contextHash: null,
+                        interpretation: null,
+                        createdAt: source.createdAt,
+                    },
+                ];
+
+            if (kind === 'settings') failed.result!.failure = {reasonCode: 'NURSE_OFF_NOT_ALLOWED', message: ''};
+
+            if (kind === 'consent') failed.result!.conflictReview = {token: 'token', expiresAt: '2099-01-01T00:00:00Z', violations: []};
+
+            if (kind === 'specific_conflict')
+                failed.result!.engineResult!.violations = [
+                    {
+                        type: 'WORK_REST_AVAILABILITY_CONFLICT',
+                        nurseName: '합성 간호사',
+                        forcedWorkDays: 6,
+                        maximum: 5,
+                        startDate: '2026-11-01',
+                        endDate: '2026-11-06',
+                    },
+                ];
+
+            if (kind === 'suggestion')
+                failed.result!.failure = {
+                    reasonCode: 'INFEASIBLE',
+                    message: '',
+                    suggestions: [
+                        {
+                            suggestionId: 's',
+                            verificationStatus: 'VERIFIED_FEASIBLE',
+                            applyEnabled: true,
+                            expiresAt: '2099-01-01T00:00:00Z',
+                            baseRevision: 0,
+                            inputDigest: 'digest',
+                            changes: [],
+                        },
+                    ],
+                };
+
+            current.operations = [failed];
+
+            const onRecoverGeneration = vi.fn();
+
+            renderSidebar({onRecoverGeneration});
+            await screen.findByRole('alert');
+            expect(mocks.execute).not.toHaveBeenCalled();
+            expect(onRecoverGeneration).not.toHaveBeenCalled();
+        },
+    );
 
     it('uses natural English while refilling', async () => {
         await i18n.changeLanguage('en');
@@ -784,14 +1076,15 @@ describe('persistent schedule sidebar', () => {
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
-    it('clears the previous receipt notice when starting another report', async () => {
+    it('retains the previous receipt in history without claiming another report was sent', async () => {
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
         await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '첫 번째 합성 의견');
         await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
         expect(await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.')).toBeVisible();
         await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
-        expect(screen.queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
+        expect(screen.getAllByText('의견을 보냈어요. 확인해서 개선할게요.')).toHaveLength(1);
+        expect(within(screen.getByRole('dialog')).queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
         expect(screen.getByRole('textbox', {name: '의견'})).toHaveValue('');
         expect(mocks.report).toHaveBeenCalledOnce();
     });
@@ -1677,7 +1970,9 @@ describe('persistent schedule sidebar', () => {
 
     it('retains the typed request and shows permission errors in the conversation', async () => {
         mocks.interpret.mockRejectedValue(Object.assign(new Error('forbidden'), {code: 403}));
-        renderSidebar();
+
+        const first = renderSidebar();
+
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
         await userEvent.click(
             screen.getByRole('button', {
@@ -1688,6 +1983,17 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
         expect(await screen.findByRole('alert')).toHaveTextContent(/권한|access/);
         expect(screen.getByRole('textbox')).toHaveValue('오프 균형을 맞춰줘');
+        expect(mocks.execute).not.toHaveBeenCalled();
+
+        const message = screen.getByRole('alert').textContent!;
+
+        first.unmount();
+        renderSidebar();
+        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
+        expect(screen.getByRole('textbox')).toHaveValue('오프 균형을 맞춰줘');
+        expect(await screen.findByRole('region', {name: i18n.t('aiAdjust.failure.title')})).toHaveTextContent(message);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(mocks.interpret).toHaveBeenCalledOnce();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
@@ -3081,8 +3387,8 @@ describe('persistent schedule sidebar', () => {
 
     it('opens the original failed request for editing while the executed conditions remain read-only', async () => {
         const {raw} = executedSemanticRequest('FAILED');
+        const first = renderSidebar();
 
-        renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
 
         const input = screen.getByRole('textbox', {name: '바꾸고 싶은 내용'});
@@ -3094,6 +3400,13 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        first.unmount();
+        renderSidebar();
+        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
+        expect(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue(raw);
+        expect(screen.getByRole('button', {name: '수정한 요청 확인'})).toBeEnabled();
+        expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
@@ -3486,7 +3799,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByText('선택하지 않은 제약조건')).not.toBeInTheDocument();
         expect(screen.queryByText('이미 해제한 AI 요청')).not.toBeInTheDocument();
         expect(screen.queryByText('제약조건으로 옮긴 AI 요청')).not.toBeInTheDocument();
-        expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2);
+        expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.getScheduleMonthRequests).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -3535,6 +3848,63 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('button', {name: `${removedLabel} 삭제`})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: `${keptLabel} 삭제`})).toBeVisible();
         expect(mocks.updateScheduleMonthRequest).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
+    });
+    it('retires the old preview after saving a monthly rest target without regenerating or changing cells', async () => {
+        semanticRequest();
+        current = {
+            ...current,
+            operations: [
+                {
+                    ...operation,
+                    sequence: 3,
+                    executionStatus: 'FAILED',
+                    applyStatus: 'NOT_APPLIED',
+                    interpretationId: null,
+                    result: {
+                        ...successfulResult,
+                        applicable: false,
+                        changedCells: [],
+                        engineResult: {
+                            status: 'INFEASIBLE',
+                            violations: [
+                                {
+                                    type: 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT',
+                                    nurseId: 1,
+                                    shiftCodes: ['O'],
+                                    expected: 9,
+                                    minimumAssignments: 0,
+                                    maximumAssignments: 8,
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        };
+        mocks.applyConstraints.mockImplementationOnce(async () => {
+            current = {...current, contextHash: 'rules:after-rest-edit'};
+
+            return true;
+        });
+
+        const initialDoc = useShiftEditorStore.getState().doc;
+
+        renderSidebar();
+
+        const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
+
+        await waitFor(() => expect(oldPreview).toBeEnabled());
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+
+        await userEvent.click(await screen.findByRole('button', {name: '제약조건 수정'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        expect(oldPreview).toBeDisabled();
+        await userEvent.click(oldPreview);
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();

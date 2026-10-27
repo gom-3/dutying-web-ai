@@ -1248,6 +1248,12 @@ export function MakeShiftCalendar({
     const selection = useShiftEditorStore((s) => s.selection);
     const selectionRect = useMemo(() => (selection ? normalizeSelection(selection) : null), [selection]);
     const [readonlySelectionRect, setReadonlySelectionRect] = useState<TSelectionRect | null>(null);
+    const [fixedPreviewFocus, setFixedPreviewFocus] = useState<string | null>(null);
+    const fixedPreviewInstructionId = useId();
+    const fixedPreviewTabStop =
+        fixedPreviewFocus && doc.rows.some((row) => doc.columns.some((date) => `${row.workerId}|${date}` === fixedPreviewFocus))
+            ? fixedPreviewFocus
+            : `${doc.rows[0]?.workerId}|${doc.columns[0]}`;
     const controlledSelectionRect = useMemo<TSelectionRect | null>(
         () => (focusedCell ? {top: focusedCell.row, left: focusedCell.col, bottom: focusedCell.row, right: focusedCell.col} : null),
         [focusedCell],
@@ -1653,6 +1659,39 @@ export function MakeShiftCalendar({
             //     <row-summary>(D/E/N/O/WO 합계) — 카드 밖, 우측에 분리 배치
             //   </row>
             aria-busy={isShimmering || undefined}
+            role={fixedCellPreview && interactivePreview ? 'group' : undefined}
+            aria-label={fixedCellPreview && interactivePreview ? t('aiAdjust.preparation.editSchedule') : undefined}
+            aria-describedby={fixedCellPreview && interactivePreview ? fixedPreviewInstructionId : undefined}
+            onKeyDown={
+                fixedCellPreview && interactivePreview
+                    ? (event) => {
+                          const target =
+                              event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-preview-row]') : null;
+
+                          if (!target || event.altKey || event.metaKey) return;
+
+                          let row = Number(target.dataset.previewRow);
+                          let col = Number(target.dataset.dayIndex);
+
+                          if (event.key === 'ArrowLeft') col -= 1;
+                          else if (event.key === 'ArrowRight') col += 1;
+                          else if (event.key === 'ArrowUp') row -= 1;
+                          else if (event.key === 'ArrowDown') row += 1;
+                          else if (event.key === 'Home') {
+                              col = 0;
+
+                              if (event.ctrlKey) row = 0;
+                          } else if (event.key === 'End') {
+                              col = doc.columns.length - 1;
+
+                              if (event.ctrlKey) row = doc.rows.length - 1;
+                          } else return;
+
+                          event.preventDefault();
+                          event.currentTarget.querySelector<HTMLElement>(`[data-preview-row="${row}"][data-day-index="${col}"]`)?.focus();
+                      }
+                    : undefined
+            }
             data-shimmer={isShimmering ? 'true' : undefined}
             className={cn(
                 'make-shift-calendar @container relative isolate flex w-full min-w-0 flex-col gap-2',
@@ -1660,6 +1699,11 @@ export function MakeShiftCalendar({
                 staticPreview && !interactivePreview && 'pointer-events-none select-none',
             )}
         >
+            {fixedCellPreview && interactivePreview && (
+                <p id={fixedPreviewInstructionId} className="sr-only">
+                    {t('aiAdjust.preparation.keyboardHelp')}
+                </p>
+            )}
             {/* HEADER */}
             <div
                 className={cn(
@@ -2015,6 +2059,8 @@ export function MakeShiftCalendar({
                                                                         showCellStatusPins={showCellStatusPins}
                                                                         cellAttention={cellAttention}
                                                                         fixedCellPreview={fixedCellPreview}
+                                                                        fixedPreviewTabStop={fixedPreviewTabStop}
+                                                                        onFixedPreviewFocus={setFixedPreviewFocus}
                                                                         borderlessPreview={borderlessPreview}
                                                                         showCarryColumn={showCarryColumn}
                                                                         leftGridTemplateColumns={leftGridTemplateColumns}
@@ -2176,6 +2222,8 @@ type TCalendarRowLeftProps = {
     showCellStatusPins: boolean;
     cellAttention: TCellAttention | null;
     fixedCellPreview: boolean;
+    fixedPreviewTabStop: string;
+    onFixedPreviewFocus: (key: string) => void;
     borderlessPreview: boolean;
     showCarryColumn: boolean;
     leftGridTemplateColumns: string;
@@ -2228,6 +2276,8 @@ function CalendarRowLeft({
     showCellStatusPins,
     cellAttention,
     fixedCellPreview,
+    fixedPreviewTabStop,
+    onFixedPreviewFocus,
     borderlessPreview,
     showCarryColumn,
     leftGridTemplateColumns,
@@ -2573,9 +2623,10 @@ function CalendarRowLeft({
                             <button
                                 key={j}
                                 type="button"
-                                tabIndex={-1}
+                                tabIndex={fixedCellPreview && cellLockKey === fixedPreviewTabStop ? 0 : -1}
                                 id={tutorialCellId && j === 0 ? tutorialCellId : undefined}
                                 data-day-index={j}
+                                data-preview-row={fixedCellPreview ? rowIndex : undefined}
                                 data-day-type={normalizedDayType}
                                 data-duty-cell="true"
                                 data-selected={isSelected || undefined}
@@ -2590,7 +2641,25 @@ function CalendarRowLeft({
                                 data-attention-kind={attentionKind ?? undefined}
                                 data-attention-muted={isAttentionMuted ? 'true' : undefined}
                                 data-attention-nonce={attentionKind ? cellAttention?.nonce : undefined}
-                                aria-disabled={fixedCellPreview && isRequestedCell ? true : undefined}
+                                aria-disabled={fixedCellPreview && (isRequestedCell || cells[j] == null) ? true : undefined}
+                                aria-pressed={fixedCellPreview && !isRequestedCell && cells[j] != null ? isFixedCell : undefined}
+                                aria-label={
+                                    fixedCellPreview
+                                        ? t('aiAdjust.preparation.fixedCellLabel', {
+                                              name: nurseName,
+                                              date,
+                                              shift: cells[j] ?? t('aiAdjust.preparation.emptyState'),
+                                              state: t(
+                                                  isRequestedCell
+                                                      ? 'aiAdjust.preparation.requestedState'
+                                                      : isFixedCell && cells[j] != null
+                                                        ? 'aiAdjust.preparation.fixedState'
+                                                        : 'aiAdjust.preparation.editableState',
+                                              ),
+                                          })
+                                        : undefined
+                                }
+                                onFocus={fixedCellPreview && cellLockKey ? () => onFixedPreviewFocus(cellLockKey) : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);
@@ -2612,6 +2681,8 @@ function CalendarRowLeft({
                                 onPointerLeave={hasCellViolations ? onViolationHoverEnd : undefined}
                                 onPointerCancel={hasCellViolations ? onViolationHoverEnd : undefined}
                                 onClick={(event) => {
+                                    if (fixedCellPreview && (isRequestedCell || cells[j] == null)) return;
+
                                     onCellClick?.(rowIndex, j);
 
                                     if (hasCellViolations) {
@@ -2640,7 +2711,7 @@ function CalendarRowLeft({
                                           ? 'cursor-default'
                                           : 'cursor-pointer',
                                     fixedCellPreview &&
-                                        'outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none',
+                                        'focus-visible:z-[60] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-main-1',
                                     activeCellViolation && 'z-[50]',
                                     weekendBg,
                                 )}
