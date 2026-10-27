@@ -92,7 +92,7 @@ export function AiConversationEntry({
     return (
         <div className="flex min-w-0 flex-col gap-4">
             {!hideIntro && (
-                <AssistantMessage>
+                <AssistantMessage showTime>
                     <span className="whitespace-pre-line">
                         {generationCompleted
                             ? (generationCompletedMessage ?? t('aiAdjust.generationCompleted'))
@@ -102,8 +102,10 @@ export function AiConversationEntry({
             )}
             {choice ? (
                 <>
-                    <UserMessage>{t(`aiAdjust.chat.${choice}`)}</UserMessage>
-                    {choice === 'modify' && <AssistantMessage>{t('aiAdjust.chat.askChanges')}</AssistantMessage>}
+                    <UserMessage key={choice} showTime>
+                        {t(`aiAdjust.chat.${choice}`)}
+                    </UserMessage>
+                    {choice === 'modify' && <AssistantMessage showTime>{t('aiAdjust.chat.askChanges')}</AssistantMessage>}
                 </>
             ) : (
                 <div
