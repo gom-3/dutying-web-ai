@@ -3,7 +3,9 @@ import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/s
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {scheduleWarningRows} from '../../../model/schedule-warning-presentation';
 
-type TReview = NonNullable<TAutofillResponse['conflictReview']>;
+type TReview =
+    | NonNullable<TAutofillResponse['conflictReview']>
+    | Pick<NonNullable<TAutofillResponse['conflictReview']>, 'violations' | 'ruleLabels'>;
 
 function validDate(value: unknown): value is string {
     return (

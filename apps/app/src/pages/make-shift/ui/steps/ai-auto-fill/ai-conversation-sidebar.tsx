@@ -2410,6 +2410,7 @@ export default function AiConversationSidebar({
                                                 }
                                                 operationType={event.operation.operationType}
                                                 failure={operationFailure(event.operation)!}
+                                                detailsInChildren={Boolean(event.operation.result?.conflictReview)}
                                                 active={
                                                     failureNeedsAction &&
                                                     event.operation === latestOperation &&
@@ -2710,7 +2711,8 @@ export default function AiConversationSidebar({
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {showNextActions &&
                             (attachNextActions ? (
-                                resultActions && (
+                                resultActions &&
+                                !failure && (
                                     <AiConversationConfirmation
                                         confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}}
                                     />
@@ -2722,7 +2724,9 @@ export default function AiConversationSidebar({
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
                                     confirmation={
-                                        resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                        !failure && resultActions
+                                            ? {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                            : undefined
                                     }
                                     onChoose={chooseNextAction}
                                 />

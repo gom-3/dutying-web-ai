@@ -1437,6 +1437,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiRequestSeqRef.current = requestSeq;
         setLastAppliedObservation(undefined);
         setFeedbackObservation(undefined);
+        setPendingConflict(null);
         setIsAiGenerating(true);
         setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
@@ -2904,32 +2905,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
-                {pendingConflict && (
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label={t('aiAutofillUi.conflictReview.title')}
-                        className="fixed inset-0 z-[200] grid place-items-center bg-black/30 p-4"
-                    >
-                        <div className="max-h-[85vh] w-full max-w-lg overflow-auto rounded-2xl bg-white p-4 shadow-xl">
-                            <ConstraintConflictReview
-                                review={pendingConflict.review}
-                                current={useShiftEditorStore.getState().draftRevision === pendingConflict.revision}
-                                disabled={isAiGenerating}
-                                copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
-                                onProceed={pendingConflict.proceed}
-                                onEditSettings={() => {
-                                    setPendingConflict(null);
-                                    (onOpenConstraints ?? (() => useCase.goToStep(2)))();
-                                }}
-                                onRevise={() => {
-                                    setPendingConflict(null);
-                                    setIsAdjustDialogOpen(true);
-                                }}
-                            />
-                        </div>
-                    </div>
-                )}
                 {!conversationEnabled && feedbackObservation && !isAiGenerating && !preparationStep && (
                     <AiResultSatisfaction key={feedbackObservation.serverEventId} observation={feedbackObservation} />
                 )}
@@ -3110,6 +3085,27 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     snapshotShift={orderedShift}
                     generationObservation={lastAppliedObservation}
                     generationFailure={generationFailure}
+                    renderConflictReview={
+                        pendingConflict
+                            ? (onRevise, onEditSettings) => (
+                                  <ConstraintConflictReview
+                                      review={pendingConflict.review}
+                                      current={useShiftEditorStore.getState().draftRevision === pendingConflict.revision}
+                                      disabled={isAiGenerating || Boolean(preparationStep)}
+                                      copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
+                                      onProceed={pendingConflict.proceed}
+                                      onEditSettings={() => {
+                                          setPendingConflict(null);
+                                          (onEditSettings ?? onOpenConstraints ?? (() => useCase.goToStep(2)))();
+                                      }}
+                                      onRevise={() => {
+                                          setPendingConflict(null);
+                                          onRevise();
+                                      }}
+                                  />
+                              )
+                            : undefined
+                    }
                     onDismissFailure={() => setGenerationFailure(null)}
                     disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
                     conditionsDisabled={isAiGenerating || isCarryingOver || disablingRequestId !== null}

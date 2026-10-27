@@ -10,7 +10,7 @@ import type {TAiConversationFailure} from '../../../model/ai-conversation-failur
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
-import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
+import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle, type TConflictReviewRenderer} from './ai-adjust-text-input';
 import type {TAutofillFlow} from './ai-autofill-preparation';
 import {AiConversationHeader} from './ai-conversation-header';
 import AiMonthRequestList from './ai-month-request-list';
@@ -41,6 +41,7 @@ type TProps = {
     snapshotShift?: TShift;
     generationObservation?: TScheduleObservation;
     generationFailure?: TAiConversationFailure | null;
+    renderConflictReview?: TConflictReviewRenderer;
     onDismissFailure?: () => void;
     disabled: boolean;
     conditionsDisabled?: boolean;
@@ -90,6 +91,7 @@ export default function AiAdjustDialog({
     snapshotShift,
     generationObservation,
     generationFailure,
+    renderConflictReview,
     onDismissFailure,
     disabled,
     conditionsDisabled = disabled,
@@ -256,6 +258,7 @@ export default function AiAdjustDialog({
                         generationReviewRequired={generationReviewRequired}
                         snapshotShift={snapshotShift}
                         generationFailure={generationFailure}
+                        renderConflictReview={renderConflictReview}
                         onDismissFailure={onDismissFailure}
                         interpret={interpret}
                         onApply={onApply}

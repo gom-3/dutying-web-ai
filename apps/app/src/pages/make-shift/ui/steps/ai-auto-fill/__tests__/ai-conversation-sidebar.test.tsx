@@ -406,6 +406,98 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('keeps conflict evidence and recovery after settings edits, without confirming or executing automatically', async () => {
+        const prepare = vi.fn();
+        const confirm = vi.fn();
+        const review = {
+            token: 'synthetic-review-token',
+            expiresAt: '2099-01-01T00:00:00Z',
+            explanation: '야간 필요 인원과 월 야간 횟수 조건이 맞지 않아요.',
+            violations: [
+                {
+                    violationId: 'v1',
+                    ruleId: 9,
+                    templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                    severity: 'HARD' as const,
+                    message: '합성 간호사 야간 횟수',
+                    messageArgs: {operator: 'MAX', expected: 2, actual: 4},
+                    affectedCells: [],
+                    fixable: true,
+                },
+            ],
+        };
+
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                applyStatus: 'NOT_APPLIED',
+                resultVersionId: null,
+                result: {
+                    ...successfulResult,
+                    applicable: false,
+                    changedCells: [],
+                    engineResult: {status: 'CONFLICT_REVIEW'},
+                    conflictReview: review,
+                },
+            },
+        ];
+
+        const props = {
+            onPrepareGeneration: prepare,
+            generationFillPolicy: 'REBUILD_UNLOCKED' as const,
+            resultActions: {canConfirm: true, onConfirm: confirm},
+        };
+        const sidebar = renderSidebar(props);
+
+        expect(await screen.findByText(review.explanation)).toBeVisible();
+        expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeVisible();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+        await userEvent.click(await screen.findByRole('button', {name: '제약조건 수정'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(prepare).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.executionFailure.retryConditions')}));
+        expect(prepare).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(confirm).not.toHaveBeenCalled();
+        // The page finishes its existing preparation before requesting a fresh run.
+        mocks.sync.mockImplementation(async () => current);
+        sidebar.rerender(sidebarElement({...props, generationRequest: 1}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({operationType: 'GENERATE', fillPolicy: 'REBUILD_UNLOCKED'});
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('conflictReviewToken');
+    });
+
+    it('keeps confirmation hidden after a conflict is dismissed to change the request', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                applyStatus: 'NOT_APPLIED',
+                resultVersionId: null,
+                result: {
+                    ...successfulResult,
+                    applicable: false,
+                    changedCells: [],
+                    engineResult: {status: 'CONFLICT_REVIEW'},
+                    conflictReview: {token: 'synthetic', expiresAt: '2000-01-01T00:00:00Z', violations: []},
+                },
+            },
+        ];
+        renderSidebar({resultActions: {canConfirm: true, onConfirm: vi.fn()}});
+        expect(await screen.findAllByText(i18n.t('aiAdjust.executionFailure.conflictDetailsMissing'))).not.toHaveLength(0);
+        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.proceed')})).toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.revise')}));
+        expect(await screen.findByRole('textbox')).toHaveFocus();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+        await userEvent.type(screen.getByRole('textbox'), '야간은 최대 4회로 바꿔 주세요');
+        expect(screen.getByRole('textbox')).toHaveValue('야간은 최대 4회로 바꿔 주세요');
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('opens personal rest conflict settings in the same sidebar and refreshes the condition context without executing', async () => {
         const get = vi.spyOn(adminAxiosInstance, 'get');
         const put = vi.spyOn(adminAxiosInstance, 'put');

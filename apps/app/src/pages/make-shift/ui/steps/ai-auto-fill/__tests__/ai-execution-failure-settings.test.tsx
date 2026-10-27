@@ -162,3 +162,49 @@ it.each(['rest', 'member'] as const)('uses the existing member page when a %s co
     );
     expect(screen.queryByRole('button', {name: '휴무 설정 수정'})).not.toBeInTheDocument();
 });
+
+it('retains conflict evidence and explicit recovery even without a consent card', () => {
+    const retry = vi.fn();
+    const revise = vi.fn();
+    const settings = vi.fn();
+
+    render(
+        <AiExecutionFailure
+            active
+            operationType="GENERATE"
+            failure={{
+                message: '조건을 확인해 주세요.',
+                blocked: false,
+                recovery: 'review',
+                confirmationRequired: true,
+                conflictDetails: {
+                    explanation: '야간 횟수와 필요 인원이 맞지 않아요.',
+                    violations: [
+                        {
+                            violationId: 'v1',
+                            ruleId: 9,
+                            templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                            severity: 'HARD',
+                            message: '합성 야간 조건',
+                            messageArgs: {operator: 'MAX', actual: 4, expected: 2},
+                            affectedCells: [],
+                            fixable: true,
+                        },
+                    ],
+                },
+            }}
+            onRetry={retry}
+            onRevise={revise}
+            onEditSettings={settings}
+        />,
+    );
+    expect(screen.getByText('야간 횟수와 필요 인원이 맞지 않아요.')).toBeVisible();
+    expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeVisible();
+    expect(retry).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.executionFailure.retryConditions')}));
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.issue.edit')}));
+    fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+    expect(retry).toHaveBeenCalledOnce();
+    expect(revise).toHaveBeenCalledOnce();
+    expect(settings).toHaveBeenCalledOnce();
+});
