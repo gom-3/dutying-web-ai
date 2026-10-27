@@ -957,7 +957,7 @@ describe('AiAutofill adjust panel', () => {
     it('requires review of a restored adjustment instead of accidentally starting full generation', async () => {
         useAuthStore.setState({accountId: 1001});
         localStorage.setItem(
-            'dutying:schedule-chat:v1:account:1001:1:10:2026:7',
+            'dutying:schedule-chat:v2:account:1001:1:10:2026:7',
             JSON.stringify({
                 id: 8,
                 kind: 'adjustment',

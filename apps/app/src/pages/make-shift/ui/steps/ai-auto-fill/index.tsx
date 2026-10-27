@@ -425,14 +425,18 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const autofillContext = useRef<string | null>(null);
     const [autofillFlow, setAutofillFlow] = useState<TAutofillFlow | null>(null);
     const appendAutofillMessage = (message: TAutofillMessage) =>
-        setAutofillFlow((flow) => (flow ? {...flow, messages: [...flow.messages, message]} : flow));
+        setAutofillFlow((flow) =>
+            flow ? {...flow, messages: [...flow.messages, {...message, createdAt: message.createdAt ?? new Date().toISOString()}]} : flow,
+        );
     const appendAutofillPrompt = (message: TAutofillMessage) =>
         setAutofillFlow((flow) => {
             if (!flow) return flow;
 
             const last = flow.messages[flow.messages.length - 1];
 
-            return last?.role === 'assistant' && last.text === message.text ? flow : {...flow, messages: [...flow.messages, message]};
+            return last?.role === 'assistant' && last.text === message.text
+                ? flow
+                : {...flow, messages: [...flow.messages, {...message, createdAt: message.createdAt ?? new Date().toISOString()}]};
         });
     const [disablingRequestId, setDisablingRequestId] = useState<number | null>(null);
     const [isCarryingOver, setIsCarryingOver] = useState(false);
@@ -765,9 +769,23 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                       status: resumeStoredPreparation ? 'paused' : 'completed',
                       messages:
                           storedFlow.kind === 'adjustment' && ['preparing', 'paused'].includes(storedFlow.status)
-                              ? [...storedFlow.messages, {role: 'assistant', text: t('aiAdjust.preparation.reviewAdjustmentAgain')}]
+                              ? [
+                                    ...storedFlow.messages,
+                                    {
+                                        role: 'assistant',
+                                        text: t('aiAdjust.preparation.reviewAdjustmentAgain'),
+                                        createdAt: new Date().toISOString(),
+                                    },
+                                ]
                               : storedFlow.status === 'running'
-                                ? [...storedFlow.messages, {role: 'assistant', text: t('aiAdjust.preparation.interruptedHistory')}]
+                                ? [
+                                      ...storedFlow.messages,
+                                      {
+                                          role: 'assistant',
+                                          text: t('aiAdjust.preparation.interruptedHistory'),
+                                          createdAt: new Date().toISOString(),
+                                      },
+                                  ]
                                 : storedFlow.messages,
                   }
                 : null,

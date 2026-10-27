@@ -33,6 +33,18 @@ describe('schedule chat cache', () => {
         expect(scheduleChatKey(null, 2, 3, 2026, 7)).toBeNull();
     });
 
+    it('removes obsolete v1 conversations without touching current chats or other browser data', () => {
+        localStorage.setItem('dutying:schedule-chat:v1:account:1:2:3:2026:7', '["old"]');
+        localStorage.setItem('dutying:schedule-chat:v1:account:1:2:3:2026:7:transcript', '{}');
+        localStorage.setItem('unrelated', 'keep');
+        const key = scheduleChatKey(1, 2, 3, 2026, 7);
+
+        writeScheduleChat(key, ['new']);
+        expect(readScheduleChat(key, isMessages)).toEqual(['new']);
+        expect(Object.keys(localStorage).some((key) => key.startsWith('dutying:schedule-chat:v1:'))).toBe(false);
+        expect(localStorage.getItem('unrelated')).toBe('keep');
+    });
+
     it('recovers from malformed or unavailable storage without breaking the schedule', () => {
         localStorage.setItem('chat', '{broken');
         expect(readScheduleChat('chat', isMessages)).toBeNull();
