@@ -1,8 +1,8 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {AiConflictViolationList} from './ai-conflict-violation-list';
 
 type TProps = {
     review: NonNullable<TAutofillResponse['conflictReview']>;
@@ -67,31 +67,6 @@ export function ConstraintConflictReview({
             setSubmitting(false);
         }
     };
-    const message = (violation: TProps['review']['violations'][number]) => {
-        const args = violation.messageArgs;
-        const operator = args?.operator;
-
-        if (
-            violation.templateCode === 'SHIFT_COUNT_PER_PERIOD' &&
-            typeof args?.expected === 'number' &&
-            typeof args.actual === 'number' &&
-            ['MIN', 'MAX', 'EXACT'].includes(String(operator))
-        ) {
-            const limit = t(
-                operator === 'MAX'
-                    ? 'aiAutofillUi.conflictReview.maximum'
-                    : operator === 'MIN'
-                      ? 'aiAutofillUi.conflictReview.minimum'
-                      : 'aiAutofillUi.conflictReview.exact',
-                {count: args.expected},
-            );
-            const subject = typeof args.subject === 'string' ? `${args.subject} · ` : '';
-
-            return t('aiAutofillUi.conflictReview.countComparison', {subject, limit, actual: args.actual});
-        }
-
-        return localizeScheduleValidationMessage(violation);
-    };
 
     return (
         <section
@@ -101,7 +76,10 @@ export function ConstraintConflictReview({
         >
             <p className="font-medium">{t('aiAutofillUi.conflictReview.question')}</p>
             {i18n.language.startsWith('ko') && review.explanation && (
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{review.explanation}</p>
+                <div className="space-y-1 text-sm">
+                    <h3 className="font-medium">{t('aiAutofillUi.conflictReview.cause')}</h3>
+                    <p className="leading-relaxed whitespace-pre-wrap">{review.explanation}</p>
+                </div>
             )}
             {requestSummary && (
                 <div className="rounded-lg bg-white p-3 text-sm">
@@ -110,17 +88,9 @@ export function ConstraintConflictReview({
                     <p className="mt-2">{t('aiAutofillUi.conflictReview.reviseHint')}</p>
                 </div>
             )}
-            <p className="text-sm font-medium">{t('aiAutofillUi.conflictReview.changes')}</p>
-            <ul className="list-disc space-y-1 pl-5">
-                {review.violations.map((violation, index) => (
-                    <li key={violation.violationId ?? index}>
-                        {review.ruleLabels?.[String(violation.ruleId)] && (
-                            <strong className="block">{review.ruleLabels[String(violation.ruleId)]}</strong>
-                        )}
-                        {message(violation)}
-                    </li>
-                ))}
-            </ul>
+            <h3 className="text-sm font-medium">{t('aiAutofillUi.conflictReview.changes')}</h3>
+            <p className="text-sm leading-relaxed">{t('aiAutofillUi.conflictReview.resultContext')}</p>
+            <AiConflictViolationList review={review} />
             <p className="text-sm">{t('aiAutofillUi.conflictReview.applyNotice')}</p>
             {!available && <p className="text-sm">{t('aiAutofillUi.conflictReview.expired')}</p>}
             {failed && (
