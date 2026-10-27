@@ -41,6 +41,7 @@ const DutyingNoticeDetailPage = lazy(() => import('@/pages/dutying/notice-detail
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
 const AuthLayout = lazy(() => import('@/widgets/layouts/auth-layout').then((module) => ({default: module.AuthLayout})));
 const MainLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.MainLayout})));
+const ProfileLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.ProfileLayout})));
 const NotAuthLayout = lazy(() => import('@/widgets/layouts/not-auth-layout').then((module) => ({default: module.NotAuthLayout})));
 
 export const Router = () => {
@@ -132,7 +133,9 @@ export const Router = () => {
                 {/* 인증되지 않은 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<AuthLayout />}>
                     <Route path="/workspace/*" element={<WorkspacePage />} />
-                    <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
+                    <Route element={<ProfileLayout />}>
+                        <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
+                    </Route>
                     <Route path={ROUTE.REGISTER} element={<RegisterPage />} />
                     <Route path={ROUTE.ENTER_WARD} element={<EnterWard />} />
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />

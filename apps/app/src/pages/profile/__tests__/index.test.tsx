@@ -189,7 +189,8 @@ describe('ProfilePage account actions', () => {
             </MemoryRouter>,
         );
 
-        await userEvent.selectOptions(screen.getByRole('combobox', {name: '화면 언어 / Language'}), 'ja');
+        await userEvent.click(screen.getByRole('button', {name: /화면 언어/}));
+        await userEvent.click(screen.getByRole('option', {name: '日本語 (Japanese)'}));
         expect(screen.queryByRole('button', {name: '언어 설정 저장'})).not.toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
@@ -209,8 +210,9 @@ describe('ProfilePage account actions', () => {
         expect(screen.getByRole('button', {name: '변경사항 저장'})).toBeDisabled();
         expect(screen.getByRole('textbox', {name: '이름'})).toHaveValue('홍길동');
         expect(screen.getByRole('textbox', {name: '전화번호'})).toHaveValue('01012345678');
-        expect(screen.getByRole('combobox', {name: '화면 언어 / Language'})).toHaveValue('ko');
-        expect(screen.getByRole('status')).toHaveTextContent('최신 정보가 저장되어 있어요.');
+        expect(screen.getByRole('button', {name: /화면 언어/})).toHaveTextContent('한국어 (Korean)');
+        expect(screen.getByRole('heading', {name: '마이페이지', level: 1})).toBeVisible();
+        expect(screen.queryByText('계정 관리')).not.toBeInTheDocument();
     });
 
     it('shows field validation and does not submit an invalid phone number', async () => {
@@ -249,7 +251,8 @@ describe('ProfilePage account actions', () => {
         expect(screen.getByRole('heading', {level: 1, name: '마이페이지'})).toBeVisible();
         expect(screen.queryByRole('button', {name: '병동 나가기'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
-        await userEvent.selectOptions(screen.getByRole('combobox', {name: '화면 언어 / Language'}), 'en');
+        await userEvent.click(screen.getByRole('button', {name: /화면 언어/}));
+        await userEvent.click(screen.getByRole('option', {name: 'English'}));
         await userEvent.click(screen.getByRole('button', {name: '저장하기'}));
         await waitFor(() => expect(mockUpdateAccountPreferences).toHaveBeenCalledWith({preferredLanguage: 'en', serviceRegion: 'EN'}));
     });

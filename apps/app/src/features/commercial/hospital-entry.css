@@ -67,6 +67,36 @@
     font-size: 14px;
     overflow-wrap: anywhere;
 }
+.hospital-entry-footer {
+    flex-basis: 100%;
+    min-width: 0;
+}
+.hospital-entry-footer .hospital-entry-button {
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 4px;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--color-gray-3, #6b7684);
+    text-align: center;
+}
+.hospital-entry-footer .hospital-entry-button strong {
+    font-size: 12px;
+    font-weight: 500;
+}
+.hospital-entry-footer .hospital-entry-button:hover {
+    background: var(--color-gray-7, #f2f4f6);
+    color: var(--color-sub-1, #242333);
+}
+.hospital-entry-footer .hospital-entry-button:focus-visible {
+    background: var(--color-main-light, #eee7f8);
+    color: var(--color-main-1, #593494);
+}
+.hospital-entry-footer .hospital-entry-error {
+    margin: 0;
+    padding: 4px;
+    font-size: 12px;
+}
 @media (forced-colors: active) {
     .hospital-entry-button:focus-visible {
         outline: 2px solid Highlight;

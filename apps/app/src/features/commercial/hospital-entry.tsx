@@ -43,7 +43,7 @@ export function useWorkspaceNavigation() {
     };
 }
 
-export function HospitalEntry({compact = false, card = false}: {compact?: boolean; card?: boolean}) {
+export function HospitalEntry({compact = false, card = false, footer = false}: {compact?: boolean; card?: boolean; footer?: boolean}) {
     const context = useCommercialContext();
     const hospitals = activeHospitalScopes(context.data?.scopes);
     const select = useWorkspaceNavigation();
@@ -58,7 +58,7 @@ export function HospitalEntry({compact = false, card = false}: {compact?: boolea
     const label = ko ? '병원으로 들어가기' : 'Open hospital';
 
     return (
-        <div className={card ? 'hospital-entry-card' : 'hospital-entry-nav'}>
+        <div className={card ? 'hospital-entry-card' : footer ? 'hospital-entry-footer' : 'hospital-entry-nav'}>
             <button
                 type="button"
                 className="hospital-entry-button"

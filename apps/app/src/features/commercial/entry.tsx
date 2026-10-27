@@ -21,12 +21,13 @@ export function CommercialEntry({compact = false}: {compact?: boolean}) {
     const ko = i18n.language.startsWith('ko');
 
     return (
-        <>
-            <HospitalEntry compact={compact} />
+        <div className="flex flex-wrap items-center justify-center gap-x-1">
+            <HospitalEntry compact={compact} footer />
             {ownerScope ? (
                 <Link
                     to={scopePath(ownerScope, 'links')}
-                    className="mx-1 my-2 block rounded-xl bg-gray-7 p-3 text-sm font-medium text-sub-1"
+                    className="flex min-h-8 items-center rounded px-1 text-center text-xs font-medium text-gray-3 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none"
+                    aria-label={ko ? '병원 연결 요청' : 'Hospital connections'}
                     title={ko ? '병원 연결 요청 확인' : 'Review hospital connection requests'}
                 >
                     {compact ? (ko ? '연결' : 'Links') : ko ? '병원 연결 요청' : 'Hospital connections'}
@@ -35,13 +36,14 @@ export function CommercialEntry({compact = false}: {compact?: boolean}) {
             {context.data.configurationReady !== false ? (
                 <Link
                     to="/workspace"
-                    className="mx-1 my-2 block rounded-xl bg-gray-7 p-3 text-sm font-medium text-sub-1"
+                    className="flex min-h-8 items-center rounded px-1 text-center text-xs font-medium text-gray-3 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none"
+                    aria-label={ko ? '요금제·관리 공간' : 'Plans & workspaces'}
                     title={ko ? '요금제·관리 공간' : 'Plans & workspaces'}
                 >
-                    {compact ? '↗' : ko ? '요금제·관리 공간' : 'Plans & workspaces'}
+                    {compact ? (ko ? '관리' : 'Plans') : ko ? '요금제·관리 공간' : 'Plans & workspaces'}
                 </Link>
             ) : null}
-        </>
+        </div>
     );
 }
 export function WardUsageSummary() {
