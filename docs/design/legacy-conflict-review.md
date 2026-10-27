@@ -9,4 +9,6 @@
 - Show first five rows per rule with remaining rows in native details, retaining every row in accessible DOM. Keep expiry, double-submit guards, consent callbacks, settings and schedule state unchanged.
 - Use synthetic fixtures and the further-anonymized incident 889 display projection (no production person/rule/shift identifiers, token or expiry). Actual evidence has three D dates, five E dates, STAFF_COUNT_BY_SHIFT EXACT4, plus CORE_MAX_CONTINUOUS_WORK actual7/expected5 with only Nov 1 reported in both period fields. Server explanation6 is limited engine lookback evidence, not a baseline count; never label this as a 6-to-7 worsening. Full cross-month period remains a backend evidence limitation. Verify focused regressions, typecheck/lint and real component rendering locally; no remote builds or deployment.
 
-- Lower-bound metadata: optional ViolationDto.magnitudeIsLowerBound=true must render consecutive actual as at least/minimum, never as an exact run length. False/absent retains the exact-count display; reported dates remain unchanged.
+- Lower-bound metadata: optional ViolationDto.magnitudeIsLowerBound=true OR displayContext.runLengthIsLowerBound=true must render consecutive actual as at least/minimum, never as an exact run length. False/absent retains the exact-count display; reported dates remain unchanged.
+
+- User copy names the consent reason and unmet proposal conditions directly; avoid explaining missing DTO comparisons. Use confirmed dates for the observed context, without inventing a baseline change.

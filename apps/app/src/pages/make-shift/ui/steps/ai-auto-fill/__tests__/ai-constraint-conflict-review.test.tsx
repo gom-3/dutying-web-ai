@@ -272,8 +272,8 @@ it('separates the server conflict explanation from proposed validation without i
             copy={copy}
         />,
     );
-    expect(screen.getByRole('heading', {name: '자동완성이 멈춘 이유'})).toBeVisible();
+    expect(screen.getByRole('heading', {name: '확인이 필요한 이유'})).toBeVisible();
     expect(screen.getByRole('heading', {name: '제안 표에 남는 문제'})).toBeVisible();
     expect(screen.getByText('기존 조건에서 6일 연속이 필요해요.')).toBeVisible();
-    expect(screen.getByText(/현재 표와의 수치 비교는 제공되지 않았어요/)).toBeVisible();
+    expect(screen.getByText('제안한 근무표에도 아래 조건은 충족되지 않아요.')).toBeVisible();
 });

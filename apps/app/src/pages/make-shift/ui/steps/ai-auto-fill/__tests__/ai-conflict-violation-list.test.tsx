@@ -54,7 +54,7 @@ describe('legacy conflict evidence display', () => {
         for (const date of ['03', '05', '07', '15', '17', '27']) expect(screen.getByText(`2026-11-${date}`)).toBeVisible();
 
         expect(screen.getByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
-        expect(screen.getByText('보고된 날짜 · 2026-11-01')).toBeVisible();
+        expect(screen.getByText('확인된 날짜 · 2026-11-01')).toBeVisible();
     });
     it.each(['MIN', 'MAX', 'EXACT'])('supports STAFF_COUNT_BY_SHIFT %s without shortening custom shift codes', (operator) => {
         renderList([staffing('2026-11-01', 'LONG_DAY', 3, operator)]);
@@ -63,11 +63,11 @@ describe('legacy conflict evidence display', () => {
     });
     it('uses full context rather than excess cells and never fills gaps in reported dates', () => {
         renderList([{...consecutive, displayContext: {period: {dates: ['2026-10-26', '2026-10-28', '2026-11-01']}, affectedCells: []}}]);
-        expect(screen.getByText('보고된 날짜 · 2026-10-26, 2026-10-28, 2026-11-01')).toBeVisible();
+        expect(screen.getByText('확인된 날짜 · 2026-10-26, 2026-10-28, 2026-11-01')).toBeVisible();
     });
     it('compacts only contiguous full-context dates', () => {
         renderList([{...consecutive, displayContext: {period: {dates: ['2026-10-30', '2026-10-31', '2026-11-01']}, affectedCells: []}}]);
-        expect(screen.getByText('보고된 날짜 · 2026-10-30 – 2026-11-01')).toBeVisible();
+        expect(screen.getByText('확인된 날짜 · 2026-10-30 – 2026-11-01')).toBeVisible();
     });
     it('keeps unknown evidence explicit and preserves the fallback message', () => {
         renderList([{...staffing('2026-11-01', 'D'), period: undefined, messageArgs: {actual: 3, expected: 4}}]);
@@ -99,20 +99,39 @@ it('replays the anonymized production response without dropping dates or claimin
     expect(screen.getAllByRole('table')).toHaveLength(2);
     expect(screen.getAllByText('정확히 4명')).toHaveLength(8);
     expect(screen.getByText('간호사 9 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
-    expect(screen.getByText('보고된 날짜 · 2026-11-01')).toBeVisible();
+    expect(screen.getByText('확인된 날짜 · 2026-11-01')).toBeVisible();
     expect(screen.queryByText(/6.*→.*7/)).not.toBeInTheDocument();
     expect(screen.queryByText('간호사 1')).not.toBeInTheDocument();
 });
 
-it('preserves a reported lower bound instead of presenting it as an exact consecutive total', () => {
-    const review = {token: 'synthetic', expiresAt: '2099-01-01T00:00:00Z', violations: [{...consecutive, magnitudeIsLowerBound: true}]};
+it('preserves either lower-bound signal while keeping the observed run context and edit period distinct', () => {
+    const review = {token: 'synthetic', expiresAt: '2099-01-01T00:00:00Z', violations: [consecutive]};
     const {rerender} = render(<AiConflictViolationList review={review} />);
+    const fullPeriod = {dates: ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01']};
 
-    expect(screen.getByText('가상간호사 · 제안 최소 7일 연속 / 허용 최대 5일')).toBeVisible();
-    expect(screen.queryByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).not.toBeInTheDocument();
-    expect(screen.getByText('보고된 날짜 · 2026-11-01')).toBeVisible();
-    rerender(<AiConflictViolationList review={{...review, violations: [{...consecutive, magnitudeIsLowerBound: false}]}} />);
-    expect(screen.getByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
-    rerender(<AiConflictViolationList review={{...review, violations: [consecutive]}} />);
-    expect(screen.getByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
+    for (const [magnitudeIsLowerBound, runLengthIsLowerBound] of [
+        [true, undefined],
+        [undefined, true],
+        [false, true],
+        [true, false],
+        [true, true],
+        [false, false],
+        [undefined, undefined],
+    ] as const) {
+        const violation = {
+            ...consecutive,
+            magnitudeIsLowerBound,
+            displayContext: {period: fullPeriod, affectedCells: [], runLengthIsLowerBound},
+        };
+
+        rerender(<AiConflictViolationList review={{...review, violations: [violation]}} />);
+
+        const minimum = magnitudeIsLowerBound === true || runLengthIsLowerBound === true;
+
+        expect(screen.getByText(`가상간호사 · 제안 ${minimum ? '최소 ' : ''}7일 연속 / 허용 최대 5일`)).toBeVisible();
+        expect(screen.getByText('확인된 날짜 · 2026-10-26 – 2026-11-01')).toBeVisible();
+        expect(violation.period).toEqual({dates: ['2026-11-01']});
+
+        if (minimum) expect(screen.queryByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).not.toBeInTheDocument();
+    }
 });
