@@ -495,6 +495,8 @@ export type TScheduleViolationPeriodDto = {
 };
 
 export type TScheduleViolationDisplayContextDto = {
+    /** The observed consecutive run may extend beyond the reported context. */
+    runLengthIsLowerBound?: boolean;
     period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
 };
@@ -503,6 +505,8 @@ export type TScheduleViolationDto = {
     comparisonKey?: unknown[];
     ruleIdentity?: string;
     magnitude?: number;
+    /** The reported magnitude/actual count is a minimum, not an exact total. */
+    magnitudeIsLowerBound?: boolean;
     unit?: string;
     comparisonAvailable?: boolean;
     violationId: string;
