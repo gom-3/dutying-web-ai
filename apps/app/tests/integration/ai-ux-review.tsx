@@ -24,7 +24,14 @@ import '../../src/index.css';
 void i18n.changeLanguage('ko');
 const scene = new URLSearchParams(location.search).get('scene') ?? 'start';
 // A test-only origin/scene: no real account, server or report content is stored here.
-if (scene === 'report-recovery') useAuthStore.setState({accountId: 1000001, accessToken: null, accountMe: {accountId: 1000001, nurseId: null, wardId: 1, shiftTeamId: 1, email: '', name: '합성 계정', profileImgUrl: '', isManager: true, status: 'LINKED'}});
+if (scene === 'report-recovery' || scene.startsWith('background-')) {
+    const accountId = scene.startsWith('background-') ? 1000045 : 1000001;
+    useAuthStore.setState({
+        accountId,
+        accessToken: null,
+        accountMe: {accountId, nurseId: null, wardId: 1, shiftTeamId: 1, email: '', name: '합성 계정', profileImgUrl: '', isManager: true, status: 'LINKED'},
+    });
+}
 const syntheticReportKey = 'dutying.synthetic-report-receipts.v1';
 const syntheticReceipts = (): Record<string, string> => JSON.parse(sessionStorage.getItem(syntheticReportKey) ?? '{}');
 const codes = ['D', 'E', 'N', 'O'];
@@ -230,6 +237,28 @@ export function restoreReviewFixture() {
 }
 
 if (import.meta.env.MODE !== 'test') restoreReviewFixture();
+// Visual review only: render the production calendar/sidebar with synthetic job states.
+if (scene.startsWith('background-')) {
+    const phase = scene === 'background-queued' ? 'QUEUED' : scene === 'background-validating' ? 'VALIDATING' : 'COMPUTING';
+    detail.turns = [branch];
+    detail.operations = [{
+        operationId: 'synthetic-background-job',
+        sequence: 2,
+        operationType: 'GENERATE',
+        fillPolicy: 'EMPTY_ONLY',
+        sourceVersionId: source.versionId,
+        resultVersionId: null,
+        interpretationId: null,
+        baseRevision: 0,
+        executionStatus: 'RUNNING',
+        applyStatus: 'NOT_APPLIED',
+        failureReason: null,
+        result: null,
+        progress: {phase, elapsedMs: 45000},
+        createdAt,
+    }];
+}
+
 export function resetReviewFixture() {
     localStorage.removeItem(storageKey);
     nextExecutionFailure = null;
