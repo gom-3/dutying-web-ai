@@ -66,6 +66,7 @@ const mocks = vi.hoisted(() => ({
     applyConstraints: vi.fn(),
     getScheduleMonthRequests: vi.fn(),
     updateScheduleMonthRequest: vi.fn(),
+    draftRowOrder: [] as {shiftNurseId: number; displayOrder: number; priority?: number; divisionNum: number}[],
     draftFixed: false,
     draftShiftTypeId: 4,
 }));
@@ -163,7 +164,7 @@ vi.mock('@/features/shift-editor/model/schedule-authoring', () => ({
         year: 2026,
         month: 11,
         cells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: mocks.draftShiftTypeId, fixed: mocks.draftFixed}],
-        rowOrder: [],
+        rowOrder: mocks.draftRowOrder,
         carryOverCells: [],
     }),
 }));
@@ -362,6 +363,7 @@ beforeEach(() => {
     mocks.getScheduleMonthRequests.mockReset().mockResolvedValue({year: 2026, month: 11, requests: []});
     mocks.updateScheduleMonthRequest.mockReset();
     mocks.applyConstraints.mockReset().mockResolvedValue(true);
+    mocks.draftRowOrder = [];
     mocks.draftFixed = false;
     mocks.draftShiftTypeId = 4;
     sessionStorage.clear();
@@ -4474,6 +4476,203 @@ describe('intent-first sidebar integration', () => {
             conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
         };
     };
+
+    it('executes generation once when synced draft priorities are normalized without any schedule edit', async () => {
+        enable();
+        current = {
+            ...current,
+            operations: [],
+            draft: {
+                ...source,
+                rowOrder: [
+                    {shiftNurseId: 1, displayOrder: 1, priority: 1024, divisionNum: 1},
+                    {shiftNurseId: 2, displayOrder: 2, priority: 2048, divisionNum: 2},
+                ],
+            },
+        };
+        mocks.draftRowOrder = [
+            {shiftNurseId: 1, displayOrder: 1, priority: 16384, divisionNum: 1},
+            {shiftNurseId: 2, displayOrder: 2, priority: 6144, divisionNum: 2},
+        ];
+
+        const before = JSON.stringify(useShiftEditorStore.getState().doc);
+
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            operationType: 'GENERATE',
+            expectedRevision: 0,
+            authoringContractVersion: 'intent-first-v1',
+        });
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(JSON.stringify(useShiftEditorStore.getState().doc)).toBe(before);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(screen.queryByText(i18n.t('aiAdjust.localError.staleRequest'))).not.toBeInTheDocument();
+    });
+
+    it('still blocks a protected-cell edit during asynchronous generation input loading', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+        expect(await screen.findByRole('alert')).toHaveTextContent('표나 조건이 바뀌었어요.');
+    });
+
+    it('offers explicit fresh generation recovery once after local stale without reusing a prior token', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+
+        const retry = await screen.findByRole('button', {name: '현재 표로 다시 자동채우기'});
+
+        expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '표에서 직접 수정하기'})).toBeEnabled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        current = {...current, conversation: {...current.conversation, revision: 4}, draft: {...source, cells: [{...cell, fixed: true}]}};
+
+        let fresh!: (detail: TConversationDetail) => void;
+
+        mocks.detail.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    fresh = resolve;
+                }),
+        );
+        await userEvent.click(retry);
+        await waitFor(() => expect(fresh).toBeTypeOf('function'));
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        await userEvent.click(retry);
+        await act(async () => fresh(current));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({operationType: 'GENERATE', expectedRevision: 4, fillPolicy: 'EMPTY_ONLY'});
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('conflictReviewToken');
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('candidateDigest');
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('preserves unsent text and schedule while offering request editing and direct schedule editing', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const close = vi.fn();
+        const view = renderSidebar({onClose: close});
+
+        await userEvent.click(await screen.findByRole('button', {name: /수정 요청하기$|수정하고 싶은 부분이 있어요$/}));
+        await userEvent.type(screen.getByRole('textbox'), '기존에 입력한 수정 요청');
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        view.rerender(sidebarElement({generationRequest: 1, onClose: close}));
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+
+        const before = JSON.stringify(useShiftEditorStore.getState().doc);
+
+        await userEvent.click(await screen.findByRole('button', {name: '표에서 직접 수정하기'}));
+        expect(close).toHaveBeenCalledOnce();
+        expect(JSON.stringify(useShiftEditorStore.getState().doc)).toBe(before);
+        await userEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
+        expect(screen.getByRole('textbox')).toHaveValue('기존에 입력한 수정 요청');
+        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('returns an unsent adjustment to its normal request editor without offering generation', async () => {
+        enable();
+        installPlan();
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar();
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        await userEvent.click(await screen.findByRole('button', {name: '현재 표에서 조절하기'}));
+        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('does not replace an unsent rebuild with an empty-only generation retry', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1, generationFillPolicy: 'REBUILD_UNLOCKED'});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(await screen.findByRole('button', {name: '요청 수정하기'})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('keeps server rejection recovery separate from an unsent local generation', async () => {
+        enable();
+        current = {...current, operations: []};
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'});
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(await screen.findByRole('alert')).toHaveTextContent('근무표가 바뀌었어요.');
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '요청 수정하기'})).not.toBeInTheDocument();
+    });
 
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();

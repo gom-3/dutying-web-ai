@@ -16,6 +16,7 @@ import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
+import {conversationDraftSignature as signature} from '../../../model/conversation-draft-signature';
 import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
 import {
     conversationTurnText,
@@ -118,16 +119,6 @@ type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; r
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
-const signature = (version: Pick<TResultVersion, 'cells' | 'rowOrder' | 'carryOverCells'>) =>
-    JSON.stringify([
-        version.cells
-            .map((cell) => [cell.shiftNurseId, cell.date, cell.wardShiftTypeId ?? null, Boolean(cell.fixed)])
-            .sort((a, b) => `${a[0]}:${a[1]}`.localeCompare(`${b[0]}:${b[1]}`)),
-        version.rowOrder.map((row) => [row.shiftNurseId, row.displayOrder, row.priority, row.divisionNum]),
-        (version.carryOverCells ?? [])
-            .map((cell) => [cell.shiftNurseId, cell.date, cell.wardShiftTypeId ?? null])
-            .sort((a, b) => `${a[0]}:${a[1]}`.localeCompare(`${b[0]}:${b[1]}`)),
-    ]);
 const buttonClass =
     'min-h-11 rounded-lg bg-gray-7 px-3 py-2 text-sm hover:bg-main-light hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40';
 
@@ -694,11 +685,12 @@ export default function AiConversationSidebar({
         interpretationId?: string,
         selection?: {op: TConversationOperation; suggestion: TFailureSuggestion},
         conflict?: TConversationOperation,
+        refreshBeforeExecution = false,
     ) => {
         await run(async () => {
             if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) throw new Error(t('aiAdjust.allFixed'));
 
-            if (selection || conflict?.result?.candidate) await refresh();
+            if (selection || conflict?.result?.candidate || refreshBeforeExecution) await refresh();
 
             const current = await sync();
 
@@ -771,6 +763,14 @@ export default function AiConversationSidebar({
                       }
                     : {}),
             };
+            // Only an unsent plain empty-cell fill can restart as a new generation.
+            // Rebuild, interpreted requests, failure suggestions and consent keep their review path.
+            const canRetryGeneration =
+                operationType === 'GENERATE' &&
+                (fillPolicy === undefined || fillPolicy === 'EMPTY_ONLY') &&
+                !interpretationId &&
+                !selection &&
+                !conflict;
 
             if (request.authoringContractVersion === INTENT_FIRST_CONTRACT) {
                 const latest = detailRef.current;
@@ -786,12 +786,12 @@ export default function AiConversationSidebar({
                     useShiftEditorStore.getState().draftRevision !== uiRevision ||
                     signature({...draft, carryOverCells: draft.carryOverCells ?? []}) !== signature(current.draft)
                 )
-                    throw new AiConversationInputError('staleRequest');
+                    throw new AiConversationInputError('staleRequest', operationType, canRetryGeneration);
 
                 const selectedPlan = latest.turns.find((turn) => turn.interpretationId === interpretationId && turn.semanticPlan);
 
                 if (!conflict?.result?.candidate && selectedPlan && !isSemanticExecutionCurrent(latest, selectedPlan, false))
-                    throw new AiConversationInputError('staleRequest');
+                    throw new AiConversationInputError('staleRequest', operationType, canRetryGeneration);
 
                 if (conflict?.result?.candidate && !canSelectAuthoringCandidate(conflict.result, latest.conversation.currentVersionId))
                     throw new AiConversationInputError('expiredSuggestion');
@@ -1813,6 +1813,28 @@ export default function AiConversationSidebar({
         entryChoice === 'regenerate' ||
         (!entryChoice && canChooseNextAction) ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
+    const recoveryComposerFocus = useRef(false);
+
+    useEffect(() => {
+        if (!recoveryComposerFocus.current || composerHidden) return;
+
+        recoveryComposerFocus.current = false;
+        textarea.current?.focus();
+    }, [composerHidden, entryChoice, editingRequest, error]);
+
+    const reviseUnsentRequest = () => {
+        const current = detailRef.current;
+        const turn = current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
+        const preservedText = text;
+
+        if (turn) editRequest(turn);
+        else setEntryChoice('modify');
+
+        setText(preservedText || (current && turn ? requestTextForTurn(current, turn) : ''));
+        setDismissedFailureId(latestOperation?.operationId ?? null);
+        setError(null);
+        recoveryComposerFocus.current = true;
+    };
     const exampleNurses = doc.rows
         .map((row) => doc.workerMeta[row.workerId])
         .filter((nurse) => nurse?.nurseId !== undefined && nurse.name.trim());
@@ -2740,6 +2762,37 @@ export default function AiConversationSidebar({
                         )}
                         {error && (
                             <AiFailureMessage message={error.message}>
+                                {error.unsentOperation && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {error.canRetryGeneration && (
+                                            <button
+                                                type="button"
+                                                className={buttonClass}
+                                                disabled={conditionsDisabled || isAutofillBlocked}
+                                                onClick={() =>
+                                                    void execute('GENERATE', 'EMPTY_ONLY', undefined, undefined, undefined, true)
+                                                }
+                                            >
+                                                {t('aiConversationSidebar.retryCurrentSchedule')}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className={buttonClass}
+                                            disabled={conditionsDisabled}
+                                            onClick={reviseUnsentRequest}
+                                        >
+                                            {t(
+                                                error.unsentOperation === 'ADJUST'
+                                                    ? 'aiConversationSidebar.adjustCurrentSchedule'
+                                                    : 'aiConversationSidebar.reviseUnsentRequest',
+                                            )}
+                                        </button>
+                                        <button type="button" className={buttonClass} disabled={busy || running} onClick={onClose}>
+                                            {t('aiConversationSidebar.editScheduleDirectly')}
+                                        </button>
+                                    </div>
+                                )}
                                 {!error.blocked && error.checkOutcome !== false && (
                                     <button className={buttonClass} disabled={busy} onClick={() => void retryPending()}>
                                         {t('aiConversationSidebar.checkExecutionHistory')}
