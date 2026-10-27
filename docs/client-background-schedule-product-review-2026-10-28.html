@@ -5,50 +5,60 @@
 :root{color-scheme:light;--ink:#242b36;--muted:#586174;--line:#dce1e8;--purple:#6341db}*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:var(--ink);font:16px/1.7 system-ui,-apple-system,sans-serif}main{max-width:1240px;margin:auto;padding:48px 24px 80px}h1{font-size:34px;line-height:1.3;letter-spacing:-1px;margin:12px 0}h2{margin:40px 0 16px;font-size:23px}h3{font-size:18px;margin:0 0 10px}p{margin:10px 0}a{color:var(--purple);text-underline-offset:3px}.eyebrow{font-size:13px;font-weight:700;letter-spacing:1px;color:var(--muted)}.decision{background:#fff3ed;border-left:4px solid #ad4d17;padding:20px 24px;margin:24px 0}.muted,figcaption{color:var(--muted);font-size:14px}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;background:#fff}th,td{border:1px solid var(--line);padding:14px;vertical-align:top;text-align:left}th{background:#f0edf9;font-size:14px}td:first-child{font-weight:650;min-width:130px}figure{margin:0;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}figure img{display:block;width:100%;height:auto}figcaption{padding:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{padding:24px;background:white;border:1px solid var(--line);border-radius:12px}.tag{display:inline-block;background:#eee8ff;color:#4c329b;border-radius:5px;padding:2px 8px;font-size:12px;font-weight:650}.proposal{border:2px dashed #9d8bd0;background:#faf8ff}.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.flow span{padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:#fff}.flow b{color:var(--muted)}.spec{font-size:14px;color:var(--muted)}.check{display:block;padding:14px 0;border-bottom:1px solid var(--line)}input{width:20px;height:20px;vertical-align:middle;margin-right:10px;accent-color:var(--purple)}summary{cursor:pointer;font-weight:650;padding:12px 0}code{background:#eee;padding:2px 5px;overflow-wrap:anywhere}ol,ul{padding-left:24px}li{margin:6px 0}@media(max-width:850px){.grid{grid-template-columns:1fr}main{padding:28px 16px}h1{font-size:28px}table{min-width:850px}}@media print{main{padding:0}.grid{display:block}figure{break-inside:avoid;margin-bottom:20px}}
 </style></head>
 <body><main>
-<div class="eyebrow">PRODUCT REVIEW · 2026-10-28</div>
-<h1>자동완성 중, 사용자가 무엇을 보고<br>무엇을 할 수 있어야 하는가</h1>
-<p>검토 대상: <a href="https://github.com/gom-3/dutying-web-ai/pull/162">프론트 PR #162</a>와 연결된 장시간 계산 흐름. 대상자는 근무표를 만드는 병동 관리자다.</p>
-<div class="decision"><strong>현재 판정: 머지 보류</strong><p>백엔드가 계속 계산하는 것과 사용자가 화면을 닫고 다른 작업을 할 수 있는 것은 다르다. 현재 PR은 기존 중앙 로딩창을 유지한다. 오른쪽 패널을 닫으면 로딩창이 전체 화면으로 확대되어 다시 열기 버튼까지 가린다. 이전 검증 화면은 이 상위 페이지 연결을 빠뜨렸다.</p><p><strong>이 문서는 AS-IS 재현 / 현재 PR 재현 / TO-BE 설계안을 분리한다. TO-BE는 아직 구현되지 않았다.</strong></p></div>
-<h2>1. AS-IS / 현재 PR / TO-BE</h2>
-<div class="scroll"><table><thead><tr><th>사용자 관점</th><th>AS-IS — 수정 전 코드</th><th>현재 PR — 구현된 범위</th><th>TO-BE — 제안, 미구현</th></tr></thead><tbody>
-<tr><td>계산 시작</td><td>중앙 로딩창과 오른쪽 AI 패널을 표시. 근무표 편집은 잠김.</td><td>같은 중앙 로딩창 유지. 패널 안에 상태와 경과 시간, 취소 버튼 추가.</td><td>기존 중앙 카드·아이콘의 형태를 유지. 실제 상태와 경과 시간으로 안내.</td></tr>
-<tr><td>진행률 숫자</td><td>시간이 지나면 8%에서 약 99%까지 올라가는 추정 애니메이션. 실제 계산 진척률 아님.</td><td>그 추정 %가 그대로 남음. 패널의 실제 단계 표시와 기준이 다름.</td><td>실제 %를 알 수 없으므로 % 대신 대기 / 계산 / 결과 확인과 경과 시간을 표시.</td></tr>
-<tr><td>30초 초과</td><td>일부 계산 경로는 시간 제한으로 결과 없이 종료될 수 있음. 모든 요청이 정확히 30초에 실패하는 구조는 아님.</td><td>작업을 조회하며 계속 대기. 최대 계산 예산 4분. 로딩창이 계속 화면을 가림.</td><td>30초 자체를 오류로 처리하지 않음. 안내를 바꾸고 계속 대기하거나 창을 닫고 계산을 이어갈 수 있음.</td></tr>
-<tr><td>창 닫기</td><td>패널 X를 누르면 중앙 로딩창이 전체 화면을 덮음.</td><td>동일. “닫았다 다시 열기” 안내가 있어도 다시 열기 버튼에 접근하기 어려움.</td><td>“창을 닫고 계속 계산”은 로딩창과 패널을 숨김. 계산은 유지. 화면에 작업 상태와 다시 열기 진입점 유지.</td></tr>
-<tr><td>취소</td><td>실행 중 취소 버튼 없음.</td><td>패널의 “계산 요청 취소”로 결과 반영을 취소. 패널이 닫히면 버튼 접근 불가.</td><td>로딩창과 상태 상세에서 취소 가능. “창 닫기”와 의미를 분리. 취소 후 기존 표 유지, 늦게 도착한 결과 반영 금지.</td></tr>
-<tr><td>완료 / 실패</td><td>성공 시 기존 완료 연출과 결과 표시. 실패 시 기존 오류 안내.</td><td>기존 완료 연출 유지. 닫힌 상태의 사용자 동선은 미검증.</td><td>열린 상태: 기존 완료 연출·결과 표시. 닫힌 상태: 페이지 안에 “결과 준비됨 · 결과 보기”. 실패·4분 내 결과 없음도 기존 표 유지 및 명확한 안내.</td></tr>
-<tr><td>계산 중 표 수정</td><td>로딩 중 편집 잠금.</td><td>실제 페이지는 여전히 잠김. 별도 HTTP 테스트에서는 수동 수정 시 덮어쓰기 방지 확인.</td><td>창을 닫은 뒤 편집 허용. 표가 달라졌으면 계산 결과가 나와도 자동으로 덮어쓰지 않고 검토하도록 안내.</td></tr>
+<div class="eyebrow">PRODUCT REVIEW · IMPLEMENTED · 2026-10-28</div>
+<h1>기존 로딩창은 유지하고,<br>닫아도 같은 계산으로 돌아올 수 있게</h1>
+<p><a href="https://github.com/gom-3/dutying-web-ai/pull/162">프론트 PR #162</a> · 로컬 합성 병동 · 실제 AiAutofill 페이지와 Spring/FastAPI HTTP 연결 · 운영 미배포</p>
+<div class="decision"><strong>UI 구현·로컬 연결 검증 완료 / PR은 Draft 유지</strong><p>중앙 로딩창과 진행 사이드바를 동시에 띄우던 연결을 수정했다. 중앙 카드·아이콘·완료 연출은 유지한다. 닫으면 근무표 위 작업 표시로 바뀌고, 같은 작업의 진행 상황·취소·결과로 다시 접근한다. 사이드바의 계산 중 안내는 박스 대신 대화 안의 일반 문장으로 표시한다.</p><p><strong>남은 제한:</strong> 추가 재작성 한 건에서 Python·Spring 검증 불일치로 결과가 차단됐다. 서버 계산 계약 문제는 이번 UI 수정으로 해결하지 않았다. 작은 화면은 브라우저 크기 설정이 실제로 적용되지 않아 미검증이다. 개발계·운영 배포 완료를 뜻하지 않는다.</p></div>
+<h2>1. AS-IS / TO-BE — 지금 구현된 차이</h2>
+<div class="scroll"><table><thead><tr><th>사용자 관점</th><th>AS-IS / Before</th><th>TO-BE / After — 구현됨</th><th>이유 / Why</th></tr></thead><tbody>
+<tr><td>계산 시작</td><td>중앙 로딩창과 오른쪽 패널이 함께 보임.</td><td>기존 중앙 로딩창만 표시. 대화 보기를 누르면 로딩창을 숨기고 패널을 표시.</td><td>한 번에 하나의 진행 화면.</td></tr>
+<tr><td>기존 로딩 디자인</td><td>흰 카드·격자 아이콘·진행률 %.</td><td>카드·아이콘·완료 연출 유지. 백그라운드 작업은 추정 % 대신 서버의 실제 단계·경과 시간.</td><td>%를 실제 계산 진척률로 오해하지 않게 함. 구형 동기 로딩은 기존 동작 유지.</td></tr>
+<tr><td>30초 초과</td><td>계산 경로에 따라 결과 없이 종료될 수 있음.</td><td>오류로 바꾸지 않고 “시간이 조금 더 필요해 계산을 이어가고 있어요.” 표시.</td><td>30초가 지나도 같은 작업의 결과를 기다림. 계산 예산은 최대 4분.</td></tr>
+<tr><td>창 닫기</td><td>패널 X를 누르면 전체 화면 로딩이 남아 갇힘.</td><td>“창을 닫고 계속 계산”과 패널 X는 계산을 유지하며 가림막을 제거. 작업 표시가 남음.</td><td>닫기와 취소를 분리.</td></tr>
+<tr><td>다시 열기·취소</td><td>패널을 닫으면 취소·재열기 접근이 막힘.</td><td>작업 표시의 “진행 상황 보기”로 같은 대화 재열기. 작업 표시·로딩창·대화에서 같은 취소 요청 가능.</td><td>새 계산을 중복 요청하지 않음.</td></tr>
+<tr><td>사이드바 진행 안내</td><td>보라색 카드 안에 상태·안내문·시간을 나열.</td><td>“듀팅 AI” 아래에 실제 상태 문장을 갱신. 기존 점 애니메이션만 사용.</td><td>대화 흐름을 유지. 타이핑 흉내·허구의 계산 설명 없음.</td></tr>
+<tr><td>닫은 상태에서 완료</td><td>완료 후 돌아오는 경로가 불명확.</td><td>“자동채우기 결과가 준비됐어요 · 결과 확인”. 계속 기다렸다면 기존 완료 연출 후 결과 대화로 전환.</td><td>열린 상태와 닫힌 상태 모두 결과 접근 가능.</td></tr>
+<tr><td>계산 중 표 수정</td><td>계산 동안 표 편집 잠금.</td><td>창을 닫으면 기존 표를 보며 편집 가능. 표가 바뀌었다면 완료 결과가 자동으로 덮어쓰지 않음.</td><td>현재 편집을 보호하고 새 결과를 별도로 확인.</td></tr>
 </tbody></table></div>
-<h2>2. 기존 로딩 화면은 어디에 남아 있는가</h2>
-<p>아래는 합성 근무표에 실제 제품 컴포넌트를 띄운 로컬 재현이다. 개발계 전체 페이지·운영 캡처가 아니다. 중앙 로딩창과 패널의 동시 표시, 패널을 닫았을 때의 레이아웃 연결을 제품 코드와 같은 방식으로 포함했다.</p>
+<h2>2. 수정 전후 실제 페이지 화면</h2>
+<p>임시 네이티브 표를 사용하지 않았다. 제품의 <strong>AiAutofill 상위 컴포넌트·툴바·근무표·사이드바·로딩창</strong>을 그대로 마운트해 검증했다. 합성 관리자 로그인과 격리된 실제 Spring/MySQL/Redis/FastAPI를 연결했다. 전체 앱 내비게이션 셸·운영 URL 검증은 아니다.</p>
 <div class="grid">
-<figure><a href="assets/background-schedule/as-is-existing-loader.png"><img src="assets/background-schedule/as-is-existing-loader.png" alt="수정 전과 같은 로딩 구성: 중앙 추정 진행률과 패널의 계산 중 문구"></a><figcaption><strong>AS-IS UI 재현</strong><br>수정 전과 동일한 상태 카드 분기와 변경 없는 중앙 로딩 컴포넌트. 45초는 UI 상태 재현용 입력이며 수정 전 서버가 45초 계산을 보장한다는 증거가 아니다.</figcaption></figure>
-<figure><a href="assets/background-schedule/current-pr-with-existing-loader.png"><img src="assets/background-schedule/current-pr-with-existing-loader.png" alt="현재 PR: 기존 중앙 로딩창과 새 상태 및 취소 카드가 동시에 표시됨"></a><figcaption><strong>현재 PR UI 재현</strong><br>왼쪽 기존 로딩창은 그대로다. 오른쪽에 시간과 취소가 추가된다. 이전에 공유한 중앙 로딩창 없는 캡처는 이 구성을 빠뜨렸다.</figcaption></figure>
+<figure><a href="assets/background-schedule/before-real-page-overlap.png"><img src="assets/background-schedule/before-real-page-overlap.png" alt="수정 전 실제 페이지의 중앙 로딩창과 오른쪽 패널 동시 표시"></a><figcaption><strong>Before · 기존 중앙 로딩창 + 사이드바</strong><br>수정 전 커밋 75ca09b2의 실제 페이지. 비교 캡처는 기존 동기 경로이며, 비동기 박스 카드가 함께 보이던 이전 재현은 아래 별도 링크에 보존했다.</figcaption></figure>
+<figure><a href="assets/background-schedule/tobe-real-page-loader.png"><img src="assets/background-schedule/tobe-real-page-loader.png" alt="수정 후 실제 페이지에서 기존 카드와 아이콘을 유지한 37초 계산 안내와 닫기·대화 보기·취소 버튼"></a><figcaption><strong>After · 기존 카드에서 37초 경과 확인</strong><br>사이드바가 함께 표시되지 않는다. 서버 상태·경과 시간과 닫기·대화 보기·취소를 제공한다.</figcaption></figure>
 </div>
-<h3 style="margin-top:24px">실제로 재현한 문제: 패널 X 클릭 후</h3>
-<figure><a href="assets/background-schedule/current-pr-panel-closed-blocked.png"><img src="assets/background-schedule/current-pr-panel-closed-blocked.png" alt="AI 패널을 닫자 전체 화면에 남아 취소와 다시 열기를 가리는 기존 로딩창"></a><figcaption><strong>머지 차단 사유</strong> · X를 누르면 작업은 계속되지만 전체 화면 로딩만 남는다. 창을 닫고 다른 일을 하는 TO-BE와 일치하지 않는다.</figcaption></figure>
-<h2>3. TO-BE에서 검토할 사용자 흐름 <span class="tag">설계안 · 미구현</span></h2>
-<div class="flow"><span>자동채우기 실행</span><b>→</b><span>기존 중앙 카드에서 상태 확인</span><b>→</b><span>계속 기다리기 / 창 닫고 계산 유지 / 취소</span><b>→</b><span>완료 결과 확인</span></div>
-<div class="grid" style="margin-top:20px">
-<div class="card proposal"><span class="tag">로딩창 문구·행동 정의</span><h3 style="margin-top:16px">근무표를 채우고 있어요</h3><p>계산 중 · 45초 경과</p><p>시간이 조금 더 필요해 계산을 이어가고 있어요.<br>창을 닫아도 계산은 계속돼요.</p><p><strong>[창을 닫고 계속 계산]　[계산 취소]</strong></p><p class="spec">버튼은 문서상 설계 표기다. 여기서 실제 계산을 실행하거나 취소하지 않는다. 실제 진행률로 오해할 %는 표시하지 않는다. 기다리려면 창을 그대로 둔다.</p></div>
-<div class="card proposal"><span class="tag">창을 닫은 후 상태 정의</span><h3 style="margin-top:16px">AI 자동채우기 계산 중 · 45초</h3><p><strong>[진행 상황 보기]</strong></p><p>기존 근무표를 볼 수 있고, 편집할 수 있다. 진행 상황을 열면 같은 작업으로 돌아간다.</p><p>완료되면 <strong>“자동채우기 결과가 준비됐어요 · 결과 보기”</strong>로 바뀐다. 계산 중 표를 바꿨으면 새 결과가 현재 표를 자동으로 덮어쓰지 않는다.</p><p class="spec">이 상태 표시와 진입점도 아직 제품에 구현되지 않았다. 화면 밖 푸시 알림은 이번 범위에 포함하지 않는다.</p></div>
+<h2>3. 닫기 → 다시 열기 → 완료</h2>
+<div class="grid">
+<figure><a href="assets/background-schedule/tobe-real-page-background.png"><img src="assets/background-schedule/tobe-real-page-background.png" alt="중앙 창을 닫은 뒤 실제 근무표 위에 남은 진행 상황 보기와 취소"></a><figcaption><strong>창을 닫은 뒤</strong> · 가림막이 사라지고 작업 표시가 남는다. 근무표를 확인하거나 수정할 수 있다.</figcaption></figure>
+<figure><a href="assets/background-schedule/tobe-real-page-conversation.png"><img src="assets/background-schedule/tobe-real-page-conversation.png" alt="박스 없는 일반 대화 문장으로 계산 상태를 표시하는 사이드바"></a><figcaption><strong>진행 상황 다시 열기</strong> · 같은 작업을 대화에서 확인한다. 계산 상태를 감싼 보라색 박스를 제거했다. 이때 중앙 로딩창은 숨긴다.</figcaption></figure>
+<figure><a href="assets/background-schedule/tobe-real-page-result-ready.png"><img src="assets/background-schedule/tobe-real-page-result-ready.png" alt="창을 닫아둔 실제 페이지에 결과 준비됨과 결과 확인 표시"></a><figcaption><strong>닫아둔 상태에서 완료</strong> · “결과 준비됨” 표시에서 결과를 연다.</figcaption></figure>
+<figure><a href="assets/background-schedule/tobe-real-page-result-open.png"><img src="assets/background-schedule/tobe-real-page-result-open.png" alt="완료된 186칸 변경 결과를 실제 페이지에서 확인"></a><figcaption><strong>결과 확인</strong> · 51.10초 걸린 작업이 완료됐고, 186칸 반영 결과를 열어 확인했다.</figcaption></figure>
 </div>
-<h2>4. PO·PM 인수 기준</h2>
-<p>개발계에 TO-BE 구현이 반영된 후 아래 행동으로 확인한다. 체크는 이 문서를 읽는 사람의 임시 메모이며 자동 테스트 통과·승인을 뜻하지 않는다.</p>
-<div class="card">
-<label class="check"><input type="checkbox">실행 직후 기존 중앙 로딩 카드가 보이고, 대기 / 계산 / 결과 확인 상태와 시간이 이해된다.</label>
-<label class="check"><input type="checkbox">30초 넘게 걸리는 케이스에서 오류로 끝나지 않고 안내를 바꾸며, 거짓 진행률 %가 없다.</label>
-<label class="check"><input type="checkbox">“창을 닫고 계속 계산”을 누르면 가림막이 사라지고, 실행 중 표시와 진행 상황 보기 진입점이 남는다.</label>
-<label class="check"><input type="checkbox">패널 X도 계산 유지로 동작하며, 화면에 갇히지 않는다. 진행 상황을 다시 열어도 중복 실행되지 않는다.</label>
-<label class="check"><input type="checkbox">열어둔 채 완료되면 기존 완료 연출과 결과를 볼 수 있다. 닫아둔 채 완료되면 결과 보기로 접근할 수 있다.</label>
-<label class="check"><input type="checkbox">계산 중 기존 표를 수정한 뒤 완료해도 수정한 표가 자동으로 덮어써지지 않는다.</label>
-<label class="check"><input type="checkbox">취소는 창 닫기와 구분된다. 취소 후 기존 표가 유지되고, 늦은 결과가 반영되지 않는다.</label>
-<label class="check"><input type="checkbox">새로고침·재진입 시 같은 작업을 확인한다. 통신 끊김은 조회 문제로 안내하며 계산 실패로 단정하지 않는다.</label>
-<label class="check"><input type="checkbox">빠른 완료, 장시간 완료, 실행 중 취소, 결과 없음, 휴대폰 화면 모두에서 동선이 막히지 않는다.</label>
+<h2>4. 취소와 현재 편집 보호</h2>
+<div class="grid">
+<figure><a href="assets/background-schedule/tobe-real-page-cancelled.png"><img src="assets/background-schedule/tobe-real-page-cancelled.png" alt="작업 표시에서 취소 완료 안내와 기존 근무표 유지"></a><figcaption><strong>작업 표시에서 취소</strong> · 11.76초에 CANCELLED/NOT_APPLIED. 원격 계산 종료 후에도 기존 186칸의 DOM 값이 같음을 확인했다.</figcaption></figure>
+<figure><a href="assets/background-schedule/tobe-real-page-edit-protected.png"><img src="assets/background-schedule/tobe-real-page-edit-protected.png" alt="계산 중 수정한 근무표를 유지하고 자동 반영하지 않았다는 안내"></a><figcaption><strong>실제 1칸 변경안이 있어도 수동 편집 유지</strong> · 계산 중 두 번째 칸을 N으로 수정. 46.21초 후 NOT_APPLIED_SOURCE_CHANGED. 첫 번째 빈칸과 두 번째 N을 그대로 유지했다.</figcaption></figure>
 </div>
-<h2>5. 지금 검증된 것과 남은 것</h2>
-<p><strong>확인됨:</strong> 로컬 HTTP 연동에서 30초 초과 후 완료·재진입·취소·수동 편집 보호. 이번에 기존 중앙 로딩창 동시 표시 및 패널 닫기 후 전체 화면 가림 재현. 백엔드 계속 계산과 화면 동선은 별개로 평가해야 한다.</p>
-<p><strong>남음:</strong> 위 TO-BE의 로딩창 행동·계속 계산 진입점 구현, 상위 페이지를 포함한 회귀 테스트, 개발계 실제 페이지에서 PO·PM 인수 기준 확인. 현재 PR의 UI를 배포 가능한 상태로 승인한 것이 아니다.</p>
-<details><summary>개발자용 근거와 재현</summary><p>AS-IS 기준은 develop 공통 조상 <code>086eab2d1b6781b4bc6d44ebc9767d5b664574e8</code>. 현재 PR은 <code>cf317379</code>. 해당 변경에서 <code>ai-auto-fill/index.tsx</code>와 <code>ai-autofill-loading-overlay.tsx</code>는 수정하지 않았다.</p><ul><li><code>index.tsx</code>: handleConversationBusyChange → isAiGenerating → AiAutofillLoadingOverlay, sidebarOpen=isConversationOpen.</li><li><code>ai-conversation-sidebar.tsx</code>: executionBusy=executing||running → onBusyChange. X는 onClose만 호출하며 계산을 취소하지 않는다.</li><li><code>ai-autofill-loading-overlay.tsx</code>: sidebarOpen=false면 inset-0. %는 getSimulatedProgress(elapsedMs)로 계산된다.</li><li>로컬 리뷰 경로: <code>/tests/integration/ai-ux-review.html?scene=background-as-is</code> 및 <code>scene=background-current-pr</code>. 현재 PR 씬에서 패널 X를 클릭해 전체 화면 가림을 재현한다.</li></ul><p>리뷰 fixture는 실제 중앙 로딩 컴포넌트와 busy callback을 포함하지만 전체 제품 부모 컴포넌트를 마운트한 E2E는 아니다. 운영 데이터·운영 계정은 사용하지 않았다. AS-IS는 기존 렌더링 분기의 재구성이며 운영 배포 버전 동일성 검증이 아니다.</p></details>
-<p class="muted"><a href="client-background-schedule-execution-2026-10-28.html">HTTP 연결 검증 및 기존 증거</a> · <a href="background-browser-evidence-2026-10-28.json">합성 작업 실행 기록</a></p>
+<h2>5. PO·PM이 확인할 항목과 현재 증거</h2>
+<div class="scroll"><table><thead><tr><th>행동</th><th>기대 결과</th><th>로컬 확인 결과</th></tr></thead><tbody>
+<tr><td>자동채우기 실행</td><td>기존 중앙 카드가 보이고 진행 사이드바와 중복되지 않음.</td><td>실제 페이지 확인.</td></tr>
+<tr><td>30초 넘게 대기</td><td>작업 유지와 지연 안내. 추정 % 없음.</td><td>37초 경과 캡처, 51.10초 완료 확인.</td></tr>
+<tr><td>창 닫고 진행 상황 재열기</td><td>가림막 제거, 작업 표시 유지, 동일 작업 재열기.</td><td>실제 페이지 확인. 결과 생성 요청 중복 없음.</td></tr>
+<tr><td>열린 사이드바 X 클릭</td><td>전체 화면 로딩으로 되돌아가지 않고 작업 표시로 복귀.</td><td>실제 페이지 확인.</td></tr>
+<tr><td>닫은 상태에서 완료·결과 열기</td><td>결과 준비 안내와 결과 접근.</td><td>실제 페이지에서 186칸 결과 확인.</td></tr>
+<tr><td>중앙 창에서 계속 대기</td><td>완료 연출 후 결과 대화 열기.</td><td>실제 페이지에서 46.41초, 1칸 반영 확인.</td></tr>
+<tr><td>취소 후 늦은 결과 도착</td><td>기존 표 유지, 취소 상태 유지.</td><td>취소 직후 및 원격 계산 종료 후 확인.</td></tr>
+<tr><td>계산 중 표 변경</td><td>현재 표를 자동으로 덮어쓰지 않음.</td><td>실제 1칸 결과를 차단한 케이스 확인.</td></tr>
+<tr><td>검증이 거부한 결과</td><td>실패 안내, 기존 표 유지, 성공처럼 표현하지 않음.</td><td>추가 실패 케이스로 확인. 모순된 성공 안내를 수정했다. 서버 계약 불일치 자체는 미해결.</td></tr>
+<tr><td>새로고침·재진입</td><td>원본 비교 후 같은 요청 복구, 중복 실행 방지.</td><td>기존 재진입 회귀 테스트 유지. 이번 실제 페이지의 별도 새로고침 E2E는 미실시.</td></tr>
+<tr><td>375px 화면</td><td>로딩·취소·재열기 버튼 접근 가능.</td><td>미확인. 브라우저 설정을 요청했으나 실제 DOM 뷰포트가 1280×720로 유지됐다.</td></tr>
+</tbody></table></div>
+<h2>6. 추가 재작성에서 발견한 제한</h2>
+<p>계산 중 수정으로 기존 인력 부족이 생긴 표를 다시 작성한 추가 작업은 37.59초 후 <code>REJECTED</code>로 끝났다. Python·Spring의 위반 비교 결과 불일치(<code>PYTHON_SPRING_DELTA_MISMATCH</code>, <code>PYTHON_CONTRACT_UNVERIFIED</code>) 때문에 결과를 적용하지 않았다. 이번 변경에서 서버의 검증을 완화하거나 결과를 강제로 적용하지 않았다.</p>
+<p>이 실패를 성공 문구로 설명하던 프론트 안내도 수정했다. 지금은 “근무표를 확인하는 중 문제가 생겼어요. 기존 근무표는 그대로예요. 다시 시도해 주세요.”라고 안내한다. <strong>전체 스케줄 생성 품질 검증이나 운영 배포 승인까지 완료한 것은 아니다.</strong></p>
+<figure><a href="assets/background-schedule/tobe-real-page-validation-rejected.png"><img src="assets/background-schedule/tobe-real-page-validation-rejected.png" alt="검증 실패 결과를 성공으로 안내하지 않고 기존 표 유지와 재시도를 안내"></a><figcaption>검증 거부 결과의 실제 페이지 안내. 과거 성공 이력은 보존하고 마지막 실패 결과를 구분한다.</figcaption></figure>
+<h2>7. 검증 범위와 재현 근거</h2>
+<p>실제 페이지·진행 UI 관련 311개와 오류 안내 44개, 총 355개 테스트 통과. 새 진행 화면·작업 표시·부모 연결·기존 생성 및 조절·재진입·폴링 포함. 실패 안내 변경 후 기존 사이드바 186개도 다시 통과했다. 최종 타입 검사·ESLint·포맷·프로덕션 빌드도 통과했다. 격리된 Spring HTTP 호스트 테스트는 정상 종료했고, 임시 API·DB·Redis·개발 서버는 종료·정리했다. 커밋은 PR 본문에서 확인할 수 있다.</p>
+<p>35~45초 지연은 실제 CP-SAT 실행 <strong>전</strong>에 테스트용 미들웨어가 주었다. 오래 걸리는 응답의 화면 동선을 검증한 것이며 솔버 CPU 사용 시간이나 모든 병동의 생성 성공률을 뜻하지 않는다. 반복 QA를 위해 격리된 합성 병동의 Redis 횟수 카운터만 초기화했다. 운영 정책은 바꾸지 않았다.</p>
+<details><summary>개발자용 변경·재현</summary><p>제품 상위 페이지 <code>AiAutofill</code>을 Router/QueryClient provider와 함께 마운트하는 <code>tests/integration/autofill-page.html</code>을 추가했다. 합성 계정은 opt-in Spring HTTP fixture에서만 제공한다. 모의 캘린더/사이드바 조합을 실제 페이지 검증으로 취급하지 않는다.</p><p>sidebar의 실제 operation·취소 동작을 부모에 전달한다. 부모가 중앙 로딩/닫힌 작업 표시/열린 대화 중 하나를 보여준다. 사이드바는 숨겨도 마운트와 폴링을 유지한다. 취소는 같은 API 경로와 영속 상태 보호를 사용한다. 원본·고정·요청·행 순서 검증을 우회하지 않는다.</p><p>Flyway migration 없음. 서버 코드 변경 없음. 운영 데이터·유료 모델 호출·외부 제공자 배포 없음.</p></details>
+<p><a href="background-tobe-page-evidence-2026-10-28.json">실제 페이지 작업 상태·시간·검증 범위</a> · <a href="client-background-schedule-execution-2026-10-28.html">이전 HTTP 연결 검증</a> · <a href="assets/background-schedule/current-pr-with-existing-loader.png">수정 전 비동기 PR의 중앙 로딩 + 박스 상태 재현</a></p>
 </main></body></html>

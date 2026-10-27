@@ -1,0 +1,118 @@
+{
+  "scope": "Local production AiAutofill parent with isolated synthetic Spring/MySQL/Redis/FastAPI; no production data or paid LLM calls",
+  "beforeCommit": "75ca09b2",
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "operations": [
+    {
+      "applyStatus": "APPLIED",
+      "operationId": "fbf55b53-14f9-4756-a3d5-355663f8789c",
+      "failureReason": null,
+      "elapsedSeconds": 51.098395,
+      "executionStatus": "SUCCEEDED"
+    },
+    {
+      "applyStatus": "NOT_APPLIED",
+      "operationId": "ba23a550-e11d-4fa1-9de1-f89e5e08fbbe",
+      "failureReason": "USER_CANCELLED",
+      "elapsedSeconds": 11.764057,
+      "executionStatus": "CANCELLED"
+    },
+    {
+      "applyStatus": "NOT_APPLIED_NO_CHANGE",
+      "operationId": "01b02ecf-521e-4b67-b169-b2e66ab4b232",
+      "failureReason": null,
+      "elapsedSeconds": 46.350679,
+      "executionStatus": "SUCCEEDED"
+    },
+    {
+      "applyStatus": "APPLIED",
+      "operationId": "11cf95db-669d-4a11-a217-9ba02b7bc36b",
+      "failureReason": null,
+      "elapsedSeconds": 46.408419,
+      "executionStatus": "SUCCEEDED"
+    },
+    {
+      "applyStatus": "NOT_APPLIED_SOURCE_CHANGED",
+      "operationId": "c6a9e7ae-0299-4f8b-b3cb-2a1e2d0a05fc",
+      "failureReason": null,
+      "elapsedSeconds": 46.205174,
+      "executionStatus": "SUCCEEDED"
+    },
+    {
+      "applyStatus": "NOT_APPLIED",
+      "operationId": "a7483d6a-08d9-4808-bacb-620890f7931c",
+      "failureReason": "REJECTED",
+      "elapsedSeconds": 37.593206,
+      "executionStatus": "FAILED"
+    }
+  ],
+  "engineCalls": [
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239788,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239631,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239787,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": null,
+      "budget": null,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239800,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239924,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239870,
+      "delay": 35
+    }
+  ],
+  "checks": {
+    "closeAndReopenSameJob": true,
+    "completionWhileHiddenAndResultOpen": true,
+    "cancelThenLateResultIgnoredAnd186CellsUnchanged": true,
+    "centralCompletionOpensResult": true,
+    "manualEditProtectedWithRealOneCellPatch": true,
+    "smallViewportVerified": false,
+    "rejectedCandidateExplainedWithoutSuccessClaim": true
+  },
+  "notes": [
+    "Controlled 35–45 second delay occurs before actual CP-SAT. Elapsed time is not solver CPU time.",
+    "Browser viewport override did not change actual 1280x720 dimensions; no mobile verification claim.",
+    "Only isolated synthetic ward rate-limit counters were reset for repeated QA. Production limits unchanged.",
+    "Actual AiAutofill parent is mounted with router/query providers; the full app navigation shell is not mounted.",
+    "Additional rewritten source was withheld due to PYTHON_SPRING_DELTA_MISMATCH / PYTHON_CONTRACT_UNVERIFIED; server contract mismatch remains unresolved. UI failure copy was corrected and verified against the persisted result."
+  ],
+  "tests": {
+    "pageAndProgressSuite": 311,
+    "failureMessages": 44,
+    "sidebarRepeatedAfterFailureCopyFix": 186,
+    "distinctTotal": 355
+  }
+}
