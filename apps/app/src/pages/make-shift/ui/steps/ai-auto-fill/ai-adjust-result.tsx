@@ -1,10 +1,10 @@
 import {Undo2} from 'lucide-react';
-import {useRef, useState, type ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAdjustApplyResult} from '../../../model/ai-adjust-conversation';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import {AiConversationEntry} from './ai-conversation-entry';
-import {AiConversationResultDetails} from './ai-conversation-result-details';
+import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export type TAdjustResultActions = {
@@ -39,34 +39,21 @@ export function AiAdjustResult({
     canUndo,
     actions,
     attempt,
-    preview,
     onModify,
     onRegenerate,
     onUndo,
 }: TProps) {
     const {t} = useTypedTranslation();
-    const issues = useRef<HTMLDivElement>(null);
     const displayRef = useScheduleJourneyDisplay(result?.response?.observation);
-    const [changesExpanded, setChangesExpanded] = useState(false);
 
     if (!result?.applied)
         return (
-            <AiScheduleResultCard
-                title={t(result ? 'aiAdjust.reviewCandidate' : 'aiAdjust.result')}
-                attempt={attempt}
-                outcome="review"
-                preview={preview}
-            />
+            <AiScheduleResultCard title={t(result ? 'aiAdjust.reviewCandidate' : 'aiAdjust.result')} attempt={attempt} outcome="review" />
         );
 
     const {response, changes} = result;
     const blocking = response.blockingViolations ?? [];
     const hasProblems = blocking.length > 0 || !(response.approvable ?? response.validation?.summary.valid ?? true);
-    const unmet = response.requestRuleResults?.filter((entry) => entry.violationCount > 0) ?? [];
-    const unmetInstructions = response.unmetInstructions?.filter((message) => message.trim()) ?? [];
-    const notices = response.adjustmentNotices?.filter((notice) => notice.message.trim()) ?? [];
-    const hasUnmet = unmet.length > 0 || unmetInstructions.length > 0;
-    const hasSupplementalDetails = unmetInstructions.length > 0 || notices.length > 0;
     const title = changes.length
         ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady')
         : t('aiAutofillUi.conversationResult.noShiftsChangedThisTime');
@@ -79,28 +66,9 @@ export function AiAdjustResult({
                 outcome={hasProblems ? 'review' : 'success'}
                 outcomeLabel={t(hasProblems ? 'aiAdjust.snapshot.review' : 'aiAdjust.snapshot.success')}
                 changedCount={changes.length}
-                preview={preview}
                 actions={
                     active && (
                         <div className="grid gap-2">
-                            {hasProblems && (
-                                <button
-                                    type="button"
-                                    disabled={disabled}
-                                    onClick={() => {
-                                        if (issues.current) {
-                                            issues.current.querySelectorAll('details').forEach((detail) => {
-                                                detail.open = true;
-                                            });
-                                            issues.current.focus();
-                                            issues.current.scrollIntoView?.({block: 'nearest'});
-                                        }
-                                    }}
-                                    className="min-h-[44px] rounded-[10px] bg-white px-4 py-3 text-[13.5px] font-medium text-[#475467] hover:bg-main-light focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40"
-                                >
-                                    {t('aiAdjust.checkProblems')}
-                                </button>
-                            )}
                             {onRegenerate ? (
                                 <AiConversationEntry
                                     choice={null}
@@ -138,57 +106,13 @@ export function AiAdjustResult({
             >
                 <div className="flex min-w-0 flex-col gap-2">
                     {hasProblems && <p className="text-[13px]">{t('aiAdjust.notApprovable')}</p>}
-                    {!hasProblems && hasUnmet && <p className="text-[13px]">{t('aiAdjust.someUnmet')}</p>}
-                    {changes.length > 0 && (
-                        <details onToggle={(event) => setChangesExpanded(event.currentTarget.open)}>
-                            <summary className={`${textActionClass} cursor-pointer`}>
-                                {t(changesExpanded ? 'aiAdjust.collapseChanges' : 'aiAdjust.changeDetails')}
-                            </summary>
-                            <ul className="space-y-2 text-[13px]">
-                                {changes.map((change, index) => (
-                                    <li key={index} className="break-keep">
-                                        <p>
-                                            {change.name} · {change.date.slice(5).replace('-', '/')}
-                                        </p>
-                                        <p>
-                                            {change.before ?? '—'} → {change.after ?? '—'}
-                                        </p>
-                                    </li>
-                                ))}
-                            </ul>
-                        </details>
+                    {active && changes.length > 0 && response.observation && (
+                        <AiResultSatisfaction
+                            key={response.observation.serverEventId}
+                            observation={response.observation}
+                            disabled={disabled}
+                        />
                     )}
-                    <div
-                        ref={issues}
-                        tabIndex={-1}
-                        className="min-w-0 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none"
-                    >
-                        <AiConversationResultDetails result={response} />
-                        {hasSupplementalDetails && (
-                            <details>
-                                <summary className={`${textActionClass} cursor-pointer`}>{t('aiAdjust.resultDetails')}</summary>
-                                <div className="space-y-3 text-[13px]">
-                                    {unmetInstructions.length > 0 && (
-                                        <div>
-                                            <p className="font-medium">{t('aiAdjust.unmet')}</p>
-                                            <ul className="space-y-1">
-                                                {unmetInstructions.map((message, index) => (
-                                                    <li key={index}>{message}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {notices.length > 0 && (
-                                        <ul className="space-y-1">
-                                            {notices.map((notice, index) => (
-                                                <li key={index}>{notice.message}</li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                </div>
-                            </details>
-                        )}
-                    </div>
                 </div>
             </AiScheduleResultCard>
             {active && !hasProblems && actions && (

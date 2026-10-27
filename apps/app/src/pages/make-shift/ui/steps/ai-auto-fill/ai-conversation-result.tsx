@@ -1,27 +1,22 @@
-import type {MouseEventHandler, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
-import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
     operation,
     attempt,
-    feedbackDisabled,
     preview,
     children,
     actions,
-    onReport,
 }: {
     operation: TConversationOperation;
     attempt: number;
-    feedbackDisabled: boolean;
     preview?: ReactNode;
     children?: ReactNode;
     actions?: ReactNode;
-    onReport: MouseEventHandler<HTMLButtonElement>;
     copy: (ko: string, en: string) => string;
 }) {
     const {t} = useTypedTranslation();
@@ -58,9 +53,11 @@ export function AiConversationResult({
                     ? t('aiConversationSidebar.authoring.selectedReview')
                     : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                       ? t('aiConversationSidebar.sourceChangedNotApplied')
-                      : messageKey
-                        ? t(`aiConversationSidebar.authoring.${messageKey}`)
-                        : title
+                      : operation.operationType === 'GENERATE' && applied && succeeded
+                        ? title
+                        : messageKey
+                          ? t(`aiConversationSidebar.authoring.${messageKey}`)
+                          : title
             }
             attempt={attempt}
             outcome={
@@ -71,13 +68,15 @@ export function AiConversationResult({
                       : 'neutral'
             }
             outcomeLabel={
-                messageKey
-                    ? t(`aiConversationSidebar.authoring.${messageKey}`)
-                    : review
-                      ? t('aiAutofillUi.conversationResult.scheduleNeedsReview')
-                      : operation.operationType === 'GENERATE'
-                        ? t('aiAutofillUi.conversationResult.autofillSucceeded')
-                        : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
+                operation.operationType === 'GENERATE' && succeeded
+                    ? t('aiAutofillUi.conversationResult.autofillSucceeded')
+                    : messageKey
+                      ? t(`aiConversationSidebar.authoring.${messageKey}`)
+                      : review
+                        ? t('aiAutofillUi.conversationResult.scheduleNeedsReview')
+                        : operation.operationType === 'GENERATE'
+                          ? t('aiAutofillUi.conversationResult.autofillSucceeded')
+                          : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
             changedCount={changedCount}
             description={
@@ -92,13 +91,6 @@ export function AiConversationResult({
                       : scope
             }
             preview={preview}
-            headerAction={
-                <AiConversationFeedbackButton
-                    label={t('aiAutofillUi.conversationResult.sendFeedbackOnThisResult')}
-                    disabled={feedbackDisabled}
-                    onClick={onReport}
-                />
-            }
             actions={actions}
         >
             {showPartialCoverage && (

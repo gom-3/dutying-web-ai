@@ -1,7 +1,6 @@
 import {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
-import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
@@ -44,12 +43,10 @@ import {
     type TConversationDetail,
     type TConversationExecute,
     type TConversationOperation,
-    type TConversationPreference,
     type TConversationTurn,
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
 import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../model/schedule-journey';
-import {ScheduleReportAttempt, scheduleReportScope} from '../../../model/schedule-report-attempt';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
@@ -64,15 +61,11 @@ import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
-import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
-import {AiConversationFeedbackDialog} from './ai-conversation-feedback-dialog';
 import {AiConversationHeader} from './ai-conversation-header';
 import {AiConversationHistory} from './ai-conversation-history';
-import {AiConversationImage} from './ai-conversation-image';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
-import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionFailure} from './ai-execution-failure';
@@ -230,63 +223,15 @@ export default function AiConversationSidebar({
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
     const recordedFeedback = useRef<{notice: string | null; error: string | null}>({notice: null, error: null});
-    const feedbackNotice = useRef<string | null>(null);
     const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
-    const [requestToolsOpen, setRequestToolsOpen] = useState(false);
-    const [reportOperation, setReportOperation] = useState<string | null>(null);
-    const [reportNote, setReportNote] = useState('');
-    const [reportAttempt] = useState(() => new ScheduleReportAttempt());
-    const [reportRecovery, setReportRecovery] = useState<boolean>();
-    const [reportError, setReportError] = useState<string | null>(null);
-    const reportScopeFor = (conversationId: number, operationId: string) => {
-        const auth = useAuthStore.getState();
-        const admin = isWardAdminAccessToken(auth.accessToken);
-
-        return scheduleReportScope({
-            mode: admin ? 'admin' : 'account',
-            ownerId: admin ? getWardAdminAccountIdFromAccessToken(auth.accessToken) : auth.accountId,
-            permission: auth.accountMe?.isManager ?? null,
-            wardId,
-            teamId,
-            year,
-            month,
-            conversationId,
-            operationId,
-        });
-    };
-    const reportTrigger = useRef<HTMLButtonElement | null>(null);
-    const returnReportFocus = useRef(false);
-
-    useEffect(() => {
-        if (returnReportFocus.current && !reportOperation && !busy && open) {
-            returnReportFocus.current = false;
-            reportTrigger.current?.focus();
-        }
-    }, [reportOperation, open, busy]);
-
-    const closeReport = async (cancel = true) => {
-        const conversationId = detailRef.current?.conversation.conversationId;
-
-        if (cancel)
-            await reportAttempt.cancel(conversationId && reportOperation ? reportScopeFor(conversationId, reportOperation) : undefined);
-        else reportAttempt.complete();
-
-        returnReportFocus.current = true;
-        setReportOperation(null);
-        setReportError(null);
-    };
     const [change, setChange] = useState<TComposerContext['change']>(storedTranscript?.composer?.change ?? 'ADD');
-    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>(
-        storedTranscript?.composer?.conditionEdit ?? 'ANSWER',
-    );
-    const [conditionTargets, setConditionTargets] = useState<string[]>(storedTranscript?.composer?.conditionTargets ?? []);
+    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>('ANSWER');
+    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
     const [previousId, setPreviousId] = useState<string | undefined>(storedTranscript?.composer?.previousId);
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
     const sidebarOpen = useRef(open);
     const [pendingBranch, setPendingBranch] = useState<TConversationDetail | null>(null);
-    const [preferences, setPreferences] = useState<TConversationPreference[]>([]);
-    const [editingPreferenceId, setEditingPreferenceId] = useState<number>();
     const [rebuild, setRebuild] = useState(false);
     const [selectedSuggestion, setSelectedSuggestion] = useState<{op: TConversationOperation; suggestion: TFailureSuggestion}>();
     const mounted = useRef(true);
@@ -296,18 +241,6 @@ export default function AiConversationSidebar({
     const lastRebuild = useRef(0);
     const pendingKey = `dutying.conversation:${chatOwner?.replace('ward-admin:', 'admin:') ?? 'anonymous'}:${wardId}:${teamId}:${year}:${month}`;
     const copy = (korean: string, english: string) => (i18n.language.startsWith('ko') ? korean : english);
-    const preferenceSaveLabel =
-        editingPreferenceId === undefined ? t('aiConversationSidebar.saveRequest') : t('aiConversationSidebar.updateSavedRequest');
-    const openResultReport = (operationId: string, trigger: HTMLButtonElement) => {
-        reportAttempt.reset();
-        setNotice((currentNotice) => (currentNotice === feedbackNotice.current ? null : currentNotice));
-        setReportRecovery(undefined);
-        setReportError(null);
-        reportTrigger.current = trigger;
-        setReportNote('');
-        setReportOperation(operationId);
-        trackScheduleSignal('feedback_open');
-    };
     const install = (next: TConversationDetail) => {
         if (
             detailRef.current?.conversation.conversationId === next.conversation.conversationId &&
@@ -349,16 +282,11 @@ export default function AiConversationSidebar({
         }
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
-            reportAttempt.reset();
-            setReportOperation(null);
-            setReportNote('');
-            setReportError(null);
-            reportTrigger.current = null;
             setLocalEvents([]);
             setEditingRequest(null);
             setConditionEdit('ANSWER');
             setConditionTargets([]);
-            setRequestToolsOpen(false);
+
             onNewConversation?.();
         }
 
@@ -498,47 +426,6 @@ export default function AiConversationSidebar({
                 setExecuting(false);
             }
         }
-    };
-    const sendReport = () => {
-        if (!reportOperation || !reportNote.trim()) return;
-
-        const operationId = reportOperation;
-        const note = reportNote.trim();
-
-        void run(
-            async () => {
-                const current = detailRef.current;
-
-                if (!current) return;
-
-                setReportError(null);
-
-                try {
-                    const scope = reportScopeFor(current.conversation.conversationId, operationId);
-                    const key = await reportAttempt.keyFor(scope, note);
-
-                    if (!mounted.current) return;
-
-                    if (scope !== reportScopeFor(current.conversation.conversationId, operationId))
-                        throw new AiConversationInputError('staleRequest');
-
-                    setReportRecovery(reportAttempt.recoverable);
-                    await api.report(current.conversation.conversationId, operationId, note, key);
-
-                    if (!mounted.current) return;
-
-                    feedbackNotice.current = t('aiConversationSidebar.feedbackSent');
-                    setNotice(feedbackNotice.current);
-                    trackScheduleSignal('feedback_sent');
-                    await closeReport(false);
-                    setReportNote('');
-                } catch {
-                    if (mounted.current) setReportError(t('aiConversationSidebar.feedbackFailed'));
-                }
-            },
-            false,
-            'sending',
-        );
     };
     const restore = (version: TResultVersion) => {
         if (!mounted.current) return;
@@ -718,6 +605,11 @@ export default function AiConversationSidebar({
             if (saved) throw new AiConversationInputError('pendingExecution');
 
             const request: TConversationExecute = {
+                clientContext: {
+                    surfaceVersion: 'conversation-minimal-v1',
+                    entryChoice: operationType === 'GENERATE' ? 'regenerate' : 'modify',
+                    inputMode: 'request',
+                },
                 ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
                 monthlyRestRequirement: await loadMonthlyRestRequirement(wardId, teamId, shift, year, month),
                 expectedRevision: current.conversation.revision,
@@ -1024,7 +916,6 @@ export default function AiConversationSidebar({
             setText('');
         } else setText(original);
 
-        setRequestToolsOpen(false);
         textarea.current?.focus();
     };
     const prepareAndAdjust = async (turn: TConversationTurn) => {
@@ -1130,7 +1021,6 @@ export default function AiConversationSidebar({
                         const conversation = list[0] ?? (await api.create(year, month));
 
                         install(await api.detail(conversation.conversationId));
-                        setPreferences(await api.preferences());
 
                         return;
                     }
@@ -1208,6 +1098,12 @@ export default function AiConversationSidebar({
                     .interpret(current.conversation.conversationId, {
                         expectedRevision: current.conversation.revision,
                         text: interpretedText,
+                        clientContext: {
+                            surfaceVersion: 'conversation-minimal-v1',
+                            entryChoice: entryChoice ?? undefined,
+                            inputMode: editingRequest ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                            typedText: message,
+                        },
                         ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
                         language: i18n.language,
                         ...(state
@@ -1245,8 +1141,7 @@ export default function AiConversationSidebar({
                     });
 
                 setText('');
-                setEditingPreferenceId(undefined);
-                setRequestToolsOpen(false);
+
                 setEditingRequest(null);
                 setPreviousId(interpreted.interpretationId ?? undefined);
                 setChange('ADD');
@@ -1310,16 +1205,8 @@ export default function AiConversationSidebar({
         setError(null);
         recordedFeedback.current = {notice: null, error: null};
         setPendingBranch(null);
-        reportAttempt.reset();
-        setReportOperation(null);
-        setReportNote('');
-        setReportRecovery(undefined);
-        setReportError(null);
-        reportTrigger.current = null;
-        returnReportFocus.current = false;
+
         setSelectedSuggestion(undefined);
-        setEditingPreferenceId(undefined);
-        setRequestToolsOpen(false);
     };
     const branch = async (version: TResultVersion) =>
         run(async () => {
@@ -1379,8 +1266,13 @@ export default function AiConversationSidebar({
 
             install(next);
 
-            if (useShiftEditorStore.getState().draftRevision === uiRevision) restore(next.draft);
-            else setNotice(t('aiConversationSidebar.authoring.undoStale'));
+            if (useShiftEditorStore.getState().draftRevision === uiRevision) {
+                restore(next.draft);
+                void reportScheduleJourney(operation.result?.observation, {
+                    type: 'CLIENT_UNDONE',
+                    draftRevision: useShiftEditorStore.getState().draftRevision,
+                });
+            } else setNotice(t('aiConversationSidebar.authoring.undoStale'));
         });
     const newConversation = () =>
         run(async () => {
@@ -1470,10 +1362,6 @@ export default function AiConversationSidebar({
                     else sessionStorage.setItem(pendingKey, JSON.stringify({...pending, uiRevision}));
                 } else if (operation?.applyStatus === 'APPLIED') setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
             }
-
-            const savedPreferences = await api.preferences();
-
-            if (mounted.current) setPreferences(savedPreferences);
         });
     }, [open]);
     useEffect(() => {
@@ -1978,7 +1866,7 @@ export default function AiConversationSidebar({
                         }
                     />
                 )}
-                {operation.result?.authoringOutcome && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
+                {operation.applyStatus === 'APPLIED' && operation.result && operation.result.changedCells.length > 0 && (
                     <button
                         type="button"
                         className={buttonClass}
@@ -2180,6 +2068,7 @@ export default function AiConversationSidebar({
                 <div className="flex min-h-0 flex-1 flex-col px-[25px] pb-5">
                     <div className="mb-1 shrink-0">
                         <AiActiveConditions
+                            hideTrigger
                             ref={conditionsEditor}
                             wardId={wardId}
                             teamId={teamId}
@@ -2255,6 +2144,13 @@ export default function AiConversationSidebar({
                         {detail &&
                             [...conversationEvents({...detail, turns: activeTurns, operations: currentOperations}), ...visibleLocalEvents]
                                 .sort((a, b) => a.sequence - b.sequence)
+                                .filter(
+                                    (event) =>
+                                        event.kind !== 'turn' ||
+                                        event.turn.actor !== 'ASSISTANT' ||
+                                        !event.turn.interpretationId ||
+                                        !executedInterpretationIds.has(event.turn.interpretationId),
+                                )
                                 .map((event) =>
                                     event.kind === 'local' ? (
                                         event.id.startsWith('feedback:error:') ? (
@@ -2278,20 +2174,7 @@ export default function AiConversationSidebar({
                                             <AiConversationResult
                                                 operation={event.operation}
                                                 attempt={operationAttempt(detail, event.operation.operationId)}
-                                                feedbackDisabled={busy || running || preparing || reportOperation !== null}
                                                 copy={copy}
-                                                preview={
-                                                    event.operation.resultVersionId ? (
-                                                        <AiConversationImage
-                                                            key={event.operation.resultVersionId}
-                                                            cacheKey={`${wardId}:${teamId}`}
-                                                            versionId={event.operation.resultVersionId}
-                                                            loadVersion={api.version}
-                                                            onOpen={(trigger) => void view(event.operation, trigger)}
-                                                            disabled={busy}
-                                                        />
-                                                    ) : undefined
-                                                }
                                                 actions={
                                                     attachNextActions && event.operation.operationId === latestOperation?.operationId ? (
                                                         <AiConversationEntry
@@ -2304,9 +2187,9 @@ export default function AiConversationSidebar({
                                                         />
                                                     ) : undefined
                                                 }
-                                                onReport={(click) => openResultReport(event.operation.operationId, click.currentTarget)}
                                             >
-                                                {event.operation.operationType === 'GENERATE' &&
+                                                {['GENERATE', 'ADJUST'].includes(event.operation.operationType) &&
+                                                    !!event.operation.result?.changedCells.length &&
                                                     event.operation.operationId === latestOperation?.operationId &&
                                                     event.operation.result?.observation &&
                                                     event.operation.result.observation.serverEventId ===
@@ -2314,20 +2197,10 @@ export default function AiConversationSidebar({
                                                         <AiResultSatisfaction
                                                             key={event.operation.result.observation.serverEventId}
                                                             observation={event.operation.result.observation}
+                                                            available={open && !preparing}
                                                             disabled={busy || running || preparing}
                                                         />
                                                     )}
-                                                {event.operation.result && (
-                                                    <AiConversationResultDetails
-                                                        result={event.operation.result}
-                                                        clauseText={(id) =>
-                                                            detail.turns
-                                                                .find((turn) => turn.interpretationId === event.operation.interpretationId)
-                                                                ?.semanticPlan?.requestClauses?.find((clause) => clause.clauseId === id)
-                                                                ?.sourceSpan.quote ?? ''
-                                                        }
-                                                    />
-                                                )}
                                                 {renderAuthoringActions(event.operation)}
                                                 {event.operation.result?.conflictReview && (
                                                     <ConstraintConflictReview
@@ -2397,17 +2270,6 @@ export default function AiConversationSidebar({
                                                 attemptLabel={t('aiConversationSidebar.runAttempt', {
                                                     count: operationAttempt(detail, event.operation.operationId),
                                                 })}
-                                                headerAction={
-                                                    ['FAILED', 'SUCCEEDED'].includes(event.operation.executionStatus) ? (
-                                                        <AiConversationFeedbackButton
-                                                            label={t('aiConversationSidebar.sendResultFeedback')}
-                                                            disabled={busy || running || preparing || reportOperation !== null}
-                                                            onClick={(click) =>
-                                                                openResultReport(event.operation.operationId, click.currentTarget)
-                                                            }
-                                                        />
-                                                    ) : undefined
-                                                }
                                                 operationType={event.operation.operationType}
                                                 failure={operationFailure(event.operation)!}
                                                 active={
@@ -2474,27 +2336,6 @@ export default function AiConversationSidebar({
                                             >
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
-                                                )}
-                                                {event.operation.resultVersionId && (
-                                                    <AiConversationImage
-                                                        key={event.operation.resultVersionId}
-                                                        cacheKey={`${wardId}:${teamId}`}
-                                                        versionId={event.operation.resultVersionId}
-                                                        loadVersion={api.version}
-                                                        onOpen={(trigger) => void view(event.operation, trigger)}
-                                                        disabled={busy}
-                                                    />
-                                                )}
-                                                {event.operation.result && (
-                                                    <AiConversationResultDetails
-                                                        result={event.operation.result}
-                                                        clauseText={(id) =>
-                                                            detail.turns
-                                                                .find((turn) => turn.interpretationId === event.operation.interpretationId)
-                                                                ?.semanticPlan?.requestClauses?.find((clause) => clause.clauseId === id)
-                                                                ?.sourceSpan.quote ?? ''
-                                                        }
-                                                    />
                                                 )}
                                                 {renderAuthoringActions(event.operation)}
                                                 {event.operation.result?.conflictReview && (
@@ -2587,27 +2428,6 @@ export default function AiConversationSidebar({
                                                 )}
                                                 {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
                                                     <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
-                                                )}
-                                                {event.operation.resultVersionId && (
-                                                    <AiConversationImage
-                                                        key={event.operation.resultVersionId}
-                                                        cacheKey={`${wardId}:${teamId}`}
-                                                        versionId={event.operation.resultVersionId}
-                                                        loadVersion={api.version}
-                                                        onOpen={(trigger) => void view(event.operation, trigger)}
-                                                        disabled={busy}
-                                                    />
-                                                )}
-                                                {event.operation.result && (
-                                                    <AiConversationResultDetails
-                                                        result={event.operation.result}
-                                                        clauseText={(id) =>
-                                                            detail.turns
-                                                                .find((turn) => turn.interpretationId === event.operation.interpretationId)
-                                                                ?.semanticPlan?.requestClauses?.find((clause) => clause.clauseId === id)
-                                                                ?.sourceSpan.quote ?? ''
-                                                        }
-                                                    />
                                                 )}
                                                 {renderAuthoringActions(event.operation)}
                                                 {event.operation.result?.conflictReview && (
@@ -2755,7 +2575,7 @@ export default function AiConversationSidebar({
                                     ))}
                                 </section>
                             )}
-                        {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && !reportOperation && (
+                        {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
                             <AiConversationLoading
                                 className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"
                                 label={
@@ -2814,32 +2634,6 @@ export default function AiConversationSidebar({
                             </AiFailureMessage>
                         )}
                     </AiChatScroll>
-                    <AiConversationFeedbackDialog
-                        open={open && reportOperation !== null}
-                        target={
-                            detail && reportOperation
-                                ? t('aiConversationSidebar.reportTarget', {
-                                      operation:
-                                          detail.operations.find((op) => op.operationId === reportOperation)?.operationType === 'GENERATE'
-                                              ? t('aiConversationSidebar.autofill')
-                                              : t('aiConversationSidebar.adjustment'),
-                                      count: operationAttempt(detail, reportOperation),
-                                  })
-                                : ''
-                        }
-                        value={reportNote}
-                        disabled={busy}
-                        error={reportError}
-                        retryHint={reportError && reportRecovery === false ? t('aiConversationSidebar.feedbackRetryHint') : null}
-                        returnFocusTo={open ? reportTrigger.current : null}
-                        onChange={(value) => {
-                            reportAttempt.noteChanged(value);
-                            setReportNote(value);
-                            setReportError(null);
-                        }}
-                        onSubmit={sendReport}
-                        onClose={() => void run(closeReport)}
-                    />
                     {selectedSuggestion && (
                         <section className="rounded-xl bg-gray-7 p-3" aria-label={t('aiConversationSidebar.reviewSuggestion')}>
                             <p>{t('aiAdjust.chat.applyQuestion')}</p>
@@ -2896,108 +2690,10 @@ export default function AiConversationSidebar({
                             </button>
                         )}
                         <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
-                            {!!preferences.length && (
-                                <details>
-                                    <summary className="text-sm">{t('aiConversationSidebar.savedRequests')}</summary>
-                                    {preferences.map((p) => (
-                                        <div className="flex gap-2" key={p.id}>
-                                            <button
-                                                className="text-left text-sm underline"
-                                                disabled={busy || running}
-                                                onClick={() => {
-                                                    setText(p.value);
-                                                    setEditingPreferenceId(undefined);
-                                                    setRequestToolsOpen(false);
-                                                }}
-                                            >
-                                                {p.value}
-                                            </button>
-                                            <button
-                                                className="text-sm underline"
-                                                disabled={busy || running}
-                                                onClick={() => {
-                                                    setText(p.value);
-                                                    setEditingPreferenceId(p.id);
-                                                }}
-                                            >
-                                                {t('aiConversationSidebar.edit')}
-                                            </button>
-                                            <button
-                                                className="text-sm"
-                                                disabled={busy || running}
-                                                onClick={() =>
-                                                    void run(async () => {
-                                                        await api.deletePreference(p.id);
-
-                                                        if (editingPreferenceId === p.id) setEditingPreferenceId(undefined);
-
-                                                        setPreferences(await api.preferences());
-                                                    })
-                                                }
-                                            >
-                                                {t('aiConversationSidebar.delete')}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </details>
-                            )}
-                            {detail?.conversationState &&
-                                !(
-                                    detail.conversationState.conditions.length === 0 &&
-                                    active?.semanticPlan?.reasonCodes.includes('EMPTY_CONDITIONS')
-                                ) && (
-                                    <fieldset className="space-y-2 rounded border p-2 text-sm" disabled={busy || running}>
-                                        <legend>{t('aiConversationSidebar.currentConditions')}</legend>
-                                        {detail.conversationState.pendingQuestion && (
-                                            <p>{detail.conversationState.pendingQuestion.question}</p>
-                                        )}
-                                        {detail.conversationState.conditions.map((condition) => (
-                                            <label key={condition.conditionId} className="flex items-start gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={conditionTargets.includes(condition.conditionId)}
-                                                    onChange={(event) =>
-                                                        setConditionTargets((ids) =>
-                                                            event.target.checked
-                                                                ? [...ids, condition.conditionId]
-                                                                : ids.filter((id) => id !== condition.conditionId),
-                                                        )
-                                                    }
-                                                />
-                                                <span>{condition.text}</span>
-                                            </label>
-                                        ))}
-                                        <select
-                                            aria-label={t('aiConversationSidebar.conditionEditMode')}
-                                            value={conditionEdit}
-                                            onChange={(event) => setConditionEdit(event.target.value as typeof conditionEdit)}
-                                            className="w-full rounded border p-2"
-                                        >
-                                            <option value="ANSWER">
-                                                {detail.conversationState.pendingQuestion
-                                                    ? t('aiConversationSidebar.answerQuestion')
-                                                    : t('aiConversationSidebar.addCondition')}
-                                            </option>
-                                            {detail.conversationState.pendingQuestion && (
-                                                <option value="ADD">{t('aiConversationSidebar.addSeparateCondition')}</option>
-                                            )}
-                                            <option value="UPDATE">{t('aiConversationSidebar.updateSelectedConditions')}</option>
-                                            <option value="REMOVE">{t('aiConversationSidebar.removeSelectedConditions')}</option>
-                                            <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
-                                        </select>
-                                    </fieldset>
-                                )}
-                            {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
-                                <select
-                                    aria-label={t('aiConversationSidebar.revisionMode')}
-                                    value={change}
-                                    onChange={(event) => setChange(event.target.value as typeof change)}
-                                    className="w-full rounded border p-2 text-sm"
-                                >
-                                    <option value="REPLACE">{t('aiConversationSidebar.replacePreviousProposal')}</option>
-                                    <option value="ADD">{t('aiConversationSidebar.addToPreviousProposal')}</option>
-                                    <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
-                                </select>
+                            {detail?.conversationState?.pendingQuestion && (
+                                <p className="text-sm" role="status">
+                                    {detail.conversationState.pendingQuestion.question}
+                                </p>
                             )}
                             {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
                             <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
@@ -3047,40 +2743,6 @@ export default function AiConversationSidebar({
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex justify-end">
-                                {!editingRequest && !!text.trim() && (
-                                    <button
-                                        className="ml-auto min-h-11 px-2 text-[13px] text-[#6B7280] hover:text-main-1"
-                                        disabled={busy}
-                                        onClick={() => setRequestToolsOpen((value) => !value)}
-                                        aria-expanded={requestToolsOpen}
-                                    >
-                                        {preferenceSaveLabel}
-                                    </button>
-                                )}
-                            </div>
-                            {requestToolsOpen && !!text.trim() && (
-                                <div className="rounded-xl bg-[#F7F8FA] p-3">
-                                    <p className="mb-2 text-[13px] text-[#6B7280]">{t('aiConversationSidebar.saveRequestHint')}</p>
-                                    <button
-                                        className={buttonClass}
-                                        disabled={busy || !text.trim()}
-                                        onClick={() =>
-                                            void run(async () => {
-                                                if (editingPreferenceId === undefined)
-                                                    await api.savePreference(text.trim(), 'EXPLICIT_USER_CONFIRMATION');
-                                                else await api.replacePreference(editingPreferenceId, text.trim());
-
-                                                setEditingPreferenceId(undefined);
-                                                setRequestToolsOpen(false);
-                                                setPreferences(await api.preferences());
-                                            })
-                                        }
-                                    >
-                                        {preferenceSaveLabel}
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </footer>
                 </div>

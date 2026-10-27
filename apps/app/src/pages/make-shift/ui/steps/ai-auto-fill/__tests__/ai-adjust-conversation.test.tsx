@@ -760,15 +760,13 @@ describe('AI adjustment conversation', () => {
         await submit('김서현 쉬게 해줘');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         await screen.findByText('근무표를 조정했어요!');
-        expect(screen.getByText(/D → O/)).not.toBeVisible();
-        fireEvent.click(screen.getByText('aiAdjust.changeDetails'));
-        expect(screen.getByText(/D → O/)).toBeVisible();
+        expect(screen.queryByText(/D → O/)).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAdjust.changeDetails')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
-        expect(screen.getByText('필수 조건 위반')).toBeVisible();
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.checkProblems'}));
-        expect(screen.getByText('필수 조건 위반')).toBeVisible();
-        expect(screen.getByText('주말 요구 미달성')).toBeVisible();
-        expect(screen.getByText('월 요청 우선 적용')).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.checkProblems'})).not.toBeInTheDocument();
+        expect(screen.queryByText('필수 조건 위반')).not.toBeInTheDocument();
+        expect(screen.queryByText('주말 요구 미달성')).not.toBeInTheDocument();
+        expect(screen.queryByText('월 요청 우선 적용')).not.toBeInTheDocument();
 
         const undo = screen.getByRole('button', {name: 'aiAdjust.undo'});
 
@@ -823,14 +821,14 @@ describe('AI adjustment conversation', () => {
         expect(within(resultCard).getByLabelText('aiAdjust.snapshot.changedLabel {"count":1}')).toHaveTextContent(
             'aiAdjust.snapshot.changed {"count":1}',
         );
-        expect(within(resultCard).getByRole('button', {name: '근무표 살펴보기'})).toBeVisible();
+        expect(within(resultCard).queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
         expect(within(resultCard).getByRole('button', {name: 'aiAdjust.modifyMore'})).toBeEnabled();
         expect(within(resultCard).queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
         expect(within(screen.getByRole('region', {name: '확인한 조건이에요'})).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.validation')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.approvable')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.resultDetails')).not.toBeInTheDocument();
-        expect(screen.getByText(/D → O/)).not.toBeVisible();
+        expect(screen.queryByText(/D → O/)).not.toBeInTheDocument();
         expect(confirm).not.toHaveBeenCalled();
         rerender(<AiAdjustTextInput {...props} resultActions={{canConfirm: true, onConfirm: confirm}} />);
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.confirmSchedule'}));

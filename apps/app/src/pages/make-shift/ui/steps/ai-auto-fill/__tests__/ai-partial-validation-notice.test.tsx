@@ -60,8 +60,6 @@ function resultCard(result: TAutofillResponse, nestedCandidate = false) {
                 createdAt: '',
             }}
             attempt={1}
-            feedbackDisabled
-            onReport={vi.fn()}
             copy={(ko) => ko}
         >
             {nestedCandidate && candidateCard(result)}
