@@ -184,7 +184,7 @@ describe('Constraints dialog editor', () => {
             });
     });
 
-    it('edits migrated OFF and annual leave rules through the common editor with month and revision preserved', async () => {
+    it('does not expose migrated OFF and annual leave targets in the rule editor', async () => {
         const shifts = [
             {type: 'SET', wardShiftTypeIds: [4], label: 'OFF', classification: 'OFF'},
             {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5, label: '연차', classification: 'ANNUAL_LEAVE'},
@@ -254,40 +254,13 @@ describe('Constraints dialog editor', () => {
         renderEditor(<Constraints {...editorProps} editorRef={ref} onEditorStateChange={stateChanged} />);
         await ready(stateChanged);
         expect(api.getShiftConstraintRules).toHaveBeenCalledWith(1, 10, 2026, 6);
-        expect(screen.getAllByText('2026년 6월')).toHaveLength(2);
-
-        const offInput = screen.getAllByRole('spinbutton').find((input) => (input as HTMLInputElement).value === '9')!;
-
-        expect(offInput).toBeDefined();
-        expect(screen.getByRole('button', {name: 'OFF'})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '연차'})).toBeInTheDocument();
-        fireEvent.change(offInput, {target: {value: '8'}});
-        fireEvent.blur(offInput);
-        expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
+        expect(screen.queryByText('2026년 6월')).not.toBeInTheDocument();
+        expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'OFF'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '연차'})).not.toBeInTheDocument();
+        expect(latestState(stateChanged)).toMatchObject({dirty: false, ready: true});
         expect(await apply(ref)).toBe(true);
-        expect(api.updateShiftConstraintRules).toHaveBeenCalledWith(
-            1,
-            10,
-            expect.objectContaining({
-                year: 2026,
-                month: 6,
-                revision: 'original-r1',
-                rules: expect.arrayContaining([
-                    expect.objectContaining({
-                        shiftConstraintRuleId: 101,
-                        params: expect.objectContaining({
-                            count: 8,
-                            shift: {type: 'SET', wardShiftTypeIds: [4]},
-                            monthScope: {year: 2026, month: 6},
-                        }),
-                    }),
-                    expect.objectContaining({
-                        shiftConstraintRuleId: 102,
-                        params: expect.objectContaining({count: 2, shift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 5}}),
-                    }),
-                ]),
-            }),
-        );
+        expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
 
     it('loads an empty editor without writing recommended defaults or migrations', async () => {
