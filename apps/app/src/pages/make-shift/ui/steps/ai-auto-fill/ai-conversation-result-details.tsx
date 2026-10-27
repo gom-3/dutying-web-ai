@@ -3,6 +3,7 @@ import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/s
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {authoringOutcome} from '../../../model/intent-first-authoring';
+import {AiScheduleWarningList} from './ai-schedule-warning-list';
 
 export function AiConversationResultDetails({result, clauseText}: {result: TAutofillResponse; clauseText?: (clauseId: string) => string}) {
     const {t} = useTypedTranslation();
@@ -67,24 +68,7 @@ export function AiConversationResultDetails({result, clauseText}: {result: TAuto
             namedRules.length > 0 ||
             measuredGoals.length > 0 ||
             outcome.appliedConcessionIds.length > 0;
-        const issueList = (issues: TScheduleViolationDto[]) => (
-            <ul className="list-disc space-y-1 pl-4">
-                {issues.map((issue, index) => (
-                    <li key={`${issue.violationId}:${index}`}>
-                        {localizeScheduleValidationMessage(issue)}
-                        {issue.affectedCells?.length > 0 && (
-                            <span>
-                                {' '}
-                                ·{' '}
-                                {issue.affectedCells
-                                    .map((cell) => `${cell.nurseName ? `${cell.nurseName} ` : ''}${cell.date} ${cell.shiftCode ?? ''}`)
-                                    .join(', ')}
-                            </span>
-                        )}
-                    </li>
-                ))}
-            </ul>
-        );
+        const issueList = (issues: TScheduleViolationDto[]) => <AiScheduleWarningList violations={issues} />;
 
         if (!hasDetails && important.length === 0) return null;
 

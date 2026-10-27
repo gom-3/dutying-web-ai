@@ -1,5 +1,6 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        staffingShortage: '{{date}} {{shift}}: {{actual}}명 / 필요 {{required}}명',
         partialCoverage: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.',
         details: '변경 내용 더 보기',
         candidateUnavailable: '이 변경안을 확인할 수 없어 반영하지 않았어요. 최신 표로 다시 요청해 주세요.',
@@ -119,6 +120,7 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        staffingShortage: '{{date}} {{shift}}: {{actual}} staff / {{required}} required',
         partialCoverage: 'Some conditions could not be checked yet because there are blank cells.',
         details: 'More about these changes',
         candidateUnavailable: 'This proposal could not be verified and was not applied. Request again using the current schedule.',
@@ -238,6 +240,7 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        staffingShortage: '{{date}} {{shift}}：{{actual}}人／必要{{required}}人',
         partialCoverage: '空欄があるため、まだ確認できていない条件があります。',
         details: '変更内容を詳しく見る',
         candidateUnavailable: '変更案を確認できなかったため反映していません。最新の勤務表で再度ご依頼ください。',

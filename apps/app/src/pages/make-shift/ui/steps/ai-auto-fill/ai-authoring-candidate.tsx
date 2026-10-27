@@ -1,8 +1,8 @@
 import type {TAutofillResponse, TSnapshotCellDTO} from '@dutying/api/ward';
 import {useEffect, useState} from 'react';
-import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {authoringOutcome, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
+import {AiScheduleWarningList} from './ai-schedule-warning-list';
 
 const action =
     'min-h-11 rounded-lg px-4 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40';
@@ -84,22 +84,7 @@ export function AiAuthoringCandidate({
             {candidate.violations.length > 0 && (
                 <div>
                     <p className="font-medium">{t('aiConversationSidebar.authoring.warnings')}</p>
-                    <ul className="list-disc space-y-1 pl-4">
-                        {candidate.violations.map((issue, index) => (
-                            <li key={`${issue.violationId}:${index}`}>
-                                {localizeScheduleValidationMessage(issue)}
-                                {issue.affectedCells?.length > 0 && (
-                                    <span>
-                                        {' '}
-                                        ·{' '}
-                                        {issue.affectedCells
-                                            .map((cell) => `${nurseName(cell.shiftNurseId)} ${cell.date} ${cell.shiftCode ?? ''}`)
-                                            .join(', ')}
-                                    </span>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
+                    <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} />
                 </div>
             )}
             {!available && (
