@@ -6,6 +6,24 @@ export function isConversationOperationPending(operation: TConversationOperation
     return !conversationOperationFailure(operation) && ['RUNNING', 'RESULT_READY', 'UNKNOWN'].includes(operation.executionStatus);
 }
 
+export function conversationOperationStatusKey(operation: TConversationOperation, attempt = 1) {
+    return operation.executionStatus === 'CANCELLED'
+        ? 'cancelled'
+        : operation.progress?.phase === 'QUEUED'
+          ? 'queued'
+          : operation.progress?.phase === 'VALIDATING'
+            ? 'verifying'
+            : operation.executionStatus === 'UNKNOWN'
+              ? 'checkingTheResult'
+              : operation.executionStatus === 'RESULT_READY'
+                ? 'finishingYourSchedule'
+                : operation.operationType === 'ADJUST'
+                  ? 'adjustingYourSchedule'
+                  : attempt > 1
+                    ? 'refillingYourSchedule'
+                    : 'fillingYourSchedule';
+}
+
 export function AiConversationOperationStatus({
     operation,
     attempt,
@@ -15,26 +33,12 @@ export function AiConversationOperationStatus({
     copy: (ko: string, en: string) => string;
 }) {
     const {t} = useTypedTranslation();
-    const title =
-        operation.executionStatus === 'CANCELLED'
-            ? t('aiAutofillUi.conversationOperationStatus.cancelled')
-            : operation.progress?.phase === 'QUEUED'
-              ? t('aiAutofillUi.conversationOperationStatus.queued')
-              : operation.progress?.phase === 'VALIDATING'
-                ? t('aiAutofillUi.conversationOperationStatus.verifying')
-                : operation.executionStatus === 'UNKNOWN'
-                  ? t('aiAutofillUi.conversationOperationStatus.checkingTheResult')
-                  : operation.executionStatus === 'RESULT_READY'
-                    ? t('aiAutofillUi.conversationOperationStatus.finishingYourSchedule')
-                    : operation.operationType === 'ADJUST'
-                      ? t('aiAutofillUi.conversationOperationStatus.adjustingYourSchedule')
-                      : attempt > 1
-                        ? t('aiAutofillUi.conversationOperationStatus.refillingYourSchedule')
-                        : t('aiAutofillUi.conversationOperationStatus.fillingYourSchedule');
+    const title = t(`aiAutofillUi.conversationOperationStatus.${conversationOperationStatusKey(operation, attempt)}`);
     const active = operation.executionStatus === 'RUNNING' || operation.executionStatus === 'RESULT_READY';
 
     return (
         <div role="status" aria-label={title} aria-atomic="true" className="min-w-0">
+            <p className="mb-2 text-xs font-medium text-main-1">{t('aiAdjust.assistant')}</p>
             <div className="flex items-center justify-between gap-3">
                 <p className="min-w-0 text-[14.5px] leading-6 font-semibold break-keep text-[#333D4B]">
                     {title}{' '}

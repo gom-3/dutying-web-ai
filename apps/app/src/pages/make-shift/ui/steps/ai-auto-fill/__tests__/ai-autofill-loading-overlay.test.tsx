@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, cleanup, render, screen} from '@/shared/util/test-utils';
+import {act, cleanup, fireEvent, render, screen} from '@/shared/util/test-utils';
 import {AiAutofillLoadingOverlay} from '../ai-autofill-loading-overlay';
 
 beforeEach(() => vi.useFakeTimers());
@@ -93,5 +93,30 @@ describe('autofill loading overlay', () => {
         view.unmount();
         act(() => vi.advanceTimersByTime(1000));
         expect(onFinish).not.toHaveBeenCalled();
+    });
+    it('keeps the existing central card but offers distinct background, conversation and cancel actions without simulated progress', () => {
+        const onBackground = vi.fn();
+        const onCancel = vi.fn();
+        const onOpenConversation = vi.fn();
+
+        render(
+            <AiAutofillLoadingOverlay
+                startedAt={Date.now() - 45000}
+                onBackground={onBackground}
+                onCancel={onCancel}
+                onOpenConversation={onOpenConversation}
+            />,
+        );
+        expect(screen.getByRole('dialog')).toHaveAccessibleName('근무표를 채우고 있어요');
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', {name: '창을 닫고 계속 계산'}));
+        expect(onBackground).toHaveBeenCalledOnce();
+        expect(onCancel).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: '대화에서 진행 상황 보기'}));
+        expect(onOpenConversation).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
+        expect(onCancel).toHaveBeenCalledOnce();
+        fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+        expect(onBackground).toHaveBeenCalledTimes(2);
     });
 });

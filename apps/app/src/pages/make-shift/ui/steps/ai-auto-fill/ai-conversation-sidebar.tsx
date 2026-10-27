@@ -70,7 +70,7 @@ import {AiConversationHeader} from './ai-conversation-header';
 import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationImage} from './ai-conversation-image';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
-import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
+import {AiConversationOperationStatus} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
@@ -79,6 +79,12 @@ import {AiFailureMessage} from './ai-failure-message';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiSemanticReview} from './ai-semantic-review';
 import {JourneyObserved} from './journey-observed';
+
+export type TConversationExecution = {
+    operation: TConversationOperation;
+    cancel: (() => void) | null;
+    cancelling: boolean;
+};
 
 type TProps = {
     open: boolean;
@@ -105,6 +111,7 @@ type TProps = {
     onApplied: () => void;
     onGenerated?: () => void;
     onBusyChange?: (busy: boolean, succeeded?: boolean) => void;
+    onExecutionChange?: (execution: TConversationExecution | null) => void;
     resultActions?: TAdjustResultActions;
 };
 type TLocalEvent = {kind: 'local'; id: string; sequence: number; messages: TAutofillMessage[]};
@@ -147,8 +154,11 @@ export default function AiConversationSidebar({
     onApplied,
     onGenerated,
     onBusyChange,
+    onExecutionChange,
     resultActions,
 }: TProps) {
+    const cancelCurrentOperationRef = useRef<() => void>(() => {});
+    const requestCurrentCancellation = useCallback(() => cancelCurrentOperationRef.current(), []);
     const conditionsEditor = useRef<TActiveConditionsHandle>(null);
     const {t} = useTypedTranslation();
     const preparing = Boolean(preparation);
@@ -1573,6 +1583,31 @@ export default function AiConversationSidebar({
     const currentOperations = detail?.operations.filter((operation) => operation.sequence > segmentStart) ?? [];
     const latestOperation = currentOperations[currentOperations.length - 1];
     const executionSucceeded = !error && latestOperation?.executionStatus === 'SUCCEEDED' && !operationFailure(latestOperation);
+    const cancelOperation = (operationId: string) =>
+        void run(async () => {
+            const cancelled = await api.cancelOperation(operationId);
+
+            if (cancelled.executionStatus === 'CANCELLED' && readPendingExecution(sessionStorage, pendingKey)?.operationId === operationId)
+                sessionStorage.removeItem(pendingKey);
+
+            await refresh();
+        });
+
+    cancelCurrentOperationRef.current = () => {
+        if (latestOperation?.progress && latestOperation.executionStatus === 'RUNNING') cancelOperation(latestOperation.operationId);
+    };
+    useEffect(() => {
+        onExecutionChange?.(
+            latestOperation
+                ? {
+                      operation: latestOperation,
+                      cancel: latestOperation.progress && latestOperation.executionStatus === 'RUNNING' ? requestCurrentCancellation : null,
+                      cancelling: busy,
+                  }
+                : null,
+        );
+    }, [latestOperation, busy, onExecutionChange, requestCurrentCancellation]);
+
     const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh, true);
 
     useEffect(() => {
@@ -2548,11 +2583,7 @@ export default function AiConversationSidebar({
                                             <JourneyObserved
                                                 observation={event.operation.result?.observation}
                                                 inert={preparing}
-                                                className={
-                                                    isConversationOperationPending(event.operation)
-                                                        ? 'rounded-2xl bg-[#F7F5FF] p-4'
-                                                        : 'rounded-xl bg-[#F7F8FA] p-3'
-                                                }
+                                                className="py-2"
                                             >
                                                 <AiConversationOperationStatus
                                                     operation={event.operation}
@@ -2564,20 +2595,7 @@ export default function AiConversationSidebar({
                                                         type="button"
                                                         className={`${buttonClass} mt-3 min-h-11`}
                                                         disabled={busy}
-                                                        onClick={() =>
-                                                            void run(async () => {
-                                                                const cancelled = await api.cancelOperation(event.operation.operationId);
-
-                                                                if (
-                                                                    cancelled.executionStatus === 'CANCELLED' &&
-                                                                    readPendingExecution(sessionStorage, pendingKey)?.operationId ===
-                                                                        cancelled.operationId
-                                                                )
-                                                                    sessionStorage.removeItem(pendingKey);
-
-                                                                await refresh();
-                                                            })
-                                                        }
+                                                        onClick={() => cancelOperation(event.operation.operationId)}
                                                     >
                                                         {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
                                                     </button>
