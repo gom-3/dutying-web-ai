@@ -3,6 +3,7 @@ import {describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
 import {aiExecutionFailure} from '../ai-execution-failure';
 import {failureMessagePoints} from '../failure-message-points';
+import {response as authoringResponse, outcome as authoringOutcome} from './fixtures/intent-first';
 
 describe('execution failure reasons', () => {
     it.each([
@@ -471,4 +472,18 @@ it('retains only conflict display evidence and explains missing details', () => 
     expect(failure?.confirmationRequired).toBe(true);
     expect(failure?.conflictDetails).not.toHaveProperty('token');
     expect(JSON.stringify(failure)).not.toContain('secret-candidate-token');
+});
+
+it.each(['SATISFIED', 'IMPROVED'] as const)('does not claim an unapplied %s result changed the schedule', (requestState) => {
+    const failure = aiExecutionFailure(
+        authoringResponse({
+            operationType: 'GENERATE',
+            applicable: false,
+            changedCells: [],
+            authoringOutcome: authoringOutcome({draftState: 'NONE', requestState}),
+        }),
+    );
+
+    expect(failure?.message).toBe(i18n.t('aiAdjust.executionFailure.summary'));
+    expect(failure?.recovery).toBe('revise');
 });

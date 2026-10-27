@@ -208,3 +208,24 @@ it('retains conflict evidence and explicit recovery even without a consent card'
     expect(revise).toHaveBeenCalledOnce();
     expect(settings).toHaveBeenCalledOnce();
 });
+
+it.each(['review', 'revise'] as const)(
+    'lets a completed generation return to preparation for %s without legacy consent metadata',
+    (recovery) => {
+        const prepare = vi.fn();
+
+        render(
+            <AiExecutionFailure
+                active
+                operationType="GENERATE"
+                failure={{message: '조건 확인이 필요해요.', blocked: false, recovery}}
+                onRetry={prepare}
+                onRevise={vi.fn()}
+            />,
+        );
+        expect(prepare).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.executionFailure.retryConditions')}));
+        expect(prepare).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.proceed')})).not.toBeInTheDocument();
+    },
+);
