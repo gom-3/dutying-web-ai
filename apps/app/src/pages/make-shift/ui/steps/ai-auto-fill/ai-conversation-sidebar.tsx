@@ -2258,7 +2258,10 @@ export default function AiConversationSidebar({
                                 .map((event) =>
                                     event.kind === 'local' ? (
                                         event.id.startsWith('feedback:error:') ? (
-                                            <AiFailureMessage key={event.id} message={event.messages[0]?.text ?? ''} announce={false} />
+                                            <div key={event.id}>
+                                                <AiFailureMessage message={event.messages[0]?.text ?? ''} announce={false} />
+                                                <AiConversationTimestamp createdAt={event.messages[0]?.createdAt} />
+                                            </div>
                                         ) : (
                                             <AiAutofillMessages key={event.id} messages={event.messages} />
                                         )
@@ -2672,7 +2675,7 @@ export default function AiConversationSidebar({
                                     ),
                                 )}
                         {rebuild && (
-                            <AssistantMessage>
+                            <AssistantMessage showTime>
                                 <p>{t('aiAdjust.regenerateTitle')}</p>
                                 <p className="mt-2 text-sm text-[#475467]">{t('aiAdjust.regenerateDescription')}</p>
                                 <div className="mt-3 flex gap-2">
