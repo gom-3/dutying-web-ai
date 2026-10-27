@@ -109,7 +109,8 @@ export type TConversationOperation = {
     resultVersionId: string | null;
     interpretationId: string | null;
     baseRevision: number;
-    executionStatus: 'RUNNING' | 'RESULT_READY' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED';
+    executionStatus: 'RUNNING' | 'RESULT_READY' | 'UNKNOWN' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+    progress?: {phase: 'QUEUED' | 'COMPUTING' | 'VALIDATING'; elapsedMs: number} | null;
     applyStatus: string;
     failureReason: string | null;
     result: TAutofillResponse | null;
@@ -239,7 +240,21 @@ export function conversationApi(wardId: number, teamId: number) {
                 note,
                 ...(idempotencyKey === undefined ? {} : {idempotencyKey}),
             }),
-        execute: (id: number, request: TConversationExecute) => post<TConversationOperation>(`/conversations/${id}/operations`, request),
+        execute: async (id: number, request: TConversationExecute) =>
+            (
+                await client.post<TConversationOperation>(`${base}/conversations/${id}/operations`, request, {
+                    suppressErrorToast: true,
+                    timeout: request.authoringContractVersion === 'intent-first-v1' ? 17000 : 330000,
+                    headers: {Prefer: 'respond-async'},
+                })
+            ).data,
+        cancelOperation: async (id: string) =>
+            (
+                await client.delete<TConversationOperation>(`${base}/conversation-operations/${encodeURIComponent(id)}`, {
+                    suppressErrorToast: true,
+                    timeout: 15000,
+                })
+            ).data,
         operation: (id: string) => get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`),
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),
         branch: (id: number, versionId: string, expectedRevision: number) =>

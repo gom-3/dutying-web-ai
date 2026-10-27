@@ -4951,10 +4951,10 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('resumes a running request after remount and applies the completed receipt without another execution', async () => {
+    it.each([false, true])('resumes a running request after remount without another execution (negotiated=%s)', async (negotiated) => {
         enable();
 
-        const result = intentResponse();
+        const result = negotiated ? intentResponse() : {...successfulResult, operationType: 'ADJUST' as const};
         const pendingOperation = {
             ...operation,
             operationType: 'ADJUST' as const,
@@ -4970,7 +4970,7 @@ describe('intent-first sidebar integration', () => {
             JSON.stringify({
                 conversationId: 1,
                 request: {
-                    authoringContractVersion: 'intent-first-v1',
+                    ...(negotiated ? {authoringContractVersion: 'intent-first-v1'} : {}),
                     sourceVersionId: 'source:1',
                     expectedRevision: 0,
                     idempotencyKey: 'pending:1',

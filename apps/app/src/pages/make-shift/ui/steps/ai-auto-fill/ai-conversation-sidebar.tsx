@@ -453,8 +453,7 @@ export default function AiConversationSidebar({
                     ? next.operations.find((op) => op.operationId === pending.operationId && isExecutionFinished(op))
                     : undefined;
 
-            if (completed?.result?.authoringOutcome && pending)
-                await applyCompleted(completed, pending.uiRevision, pending.request.candidateDigest);
+            if (completed?.result && pending) await applyCompleted(completed, pending.uiRevision, pending.request.candidateDigest);
         }
     };
     const activeConditions = useAiActiveConditions({
@@ -1448,10 +1447,7 @@ export default function AiConversationSidebar({
 
             // A remount may have a different local revision counter. Rebind only after comparing
             // the actual current input with the immutable source, never by trusting a cached counter.
-            if (
-                pending?.conversationId === conversation.conversationId &&
-                pending.request.authoringContractVersion === INTENT_FIRST_CONTRACT
-            ) {
+            if (pending?.conversationId === conversation.conversationId) {
                 const operation = initial.operations.find((entry) => entry.operationId === pending.operationId);
                 const sourceVersionId = pending.request.sourceVersionId ?? operation?.sourceVersionId;
                 const uiRevision = useShiftEditorStore.getState().draftRevision;
@@ -1577,7 +1573,7 @@ export default function AiConversationSidebar({
     const currentOperations = detail?.operations.filter((operation) => operation.sequence > segmentStart) ?? [];
     const latestOperation = currentOperations[currentOperations.length - 1];
     const executionSucceeded = !error && latestOperation?.executionStatus === 'SUCCEEDED' && !operationFailure(latestOperation);
-    const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh);
+    const polling = useConversationPolling(Boolean(detail) && (running || busy), detail?.conversation.conversationId, refresh, true);
 
     useEffect(() => {
         for (const [kind, text] of [
@@ -2563,6 +2559,29 @@ export default function AiConversationSidebar({
                                                     attempt={operationAttempt(detail, event.operation.operationId)}
                                                     copy={copy}
                                                 />
+                                                {event.operation.progress && event.operation.executionStatus === 'RUNNING' && (
+                                                    <button
+                                                        type="button"
+                                                        className={`${buttonClass} mt-3 min-h-11`}
+                                                        disabled={busy}
+                                                        onClick={() =>
+                                                            void run(async () => {
+                                                                const cancelled = await api.cancelOperation(event.operation.operationId);
+
+                                                                if (
+                                                                    cancelled.executionStatus === 'CANCELLED' &&
+                                                                    readPendingExecution(sessionStorage, pendingKey)?.operationId ===
+                                                                        cancelled.operationId
+                                                                )
+                                                                    sessionStorage.removeItem(pendingKey);
+
+                                                                await refresh();
+                                                            })
+                                                        }
+                                                    >
+                                                        {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
+                                                    </button>
+                                                )}
                                                 {event.operation.executionStatus === 'UNKNOWN' && (
                                                     <div className="mt-3 space-y-2">
                                                         <p className="text-[13px] leading-6 text-[#475467]">

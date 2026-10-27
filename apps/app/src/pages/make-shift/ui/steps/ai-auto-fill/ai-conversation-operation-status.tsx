@@ -16,15 +16,21 @@ export function AiConversationOperationStatus({
 }) {
     const {t} = useTypedTranslation();
     const title =
-        operation.executionStatus === 'UNKNOWN'
-            ? t('aiAutofillUi.conversationOperationStatus.checkingTheResult')
-            : operation.executionStatus === 'RESULT_READY'
-              ? t('aiAutofillUi.conversationOperationStatus.finishingYourSchedule')
-              : operation.operationType === 'ADJUST'
-                ? t('aiAutofillUi.conversationOperationStatus.adjustingYourSchedule')
-                : attempt > 1
-                  ? t('aiAutofillUi.conversationOperationStatus.refillingYourSchedule')
-                  : t('aiAutofillUi.conversationOperationStatus.fillingYourSchedule');
+        operation.executionStatus === 'CANCELLED'
+            ? t('aiAutofillUi.conversationOperationStatus.cancelled')
+            : operation.progress?.phase === 'QUEUED'
+              ? t('aiAutofillUi.conversationOperationStatus.queued')
+              : operation.progress?.phase === 'VALIDATING'
+                ? t('aiAutofillUi.conversationOperationStatus.verifying')
+                : operation.executionStatus === 'UNKNOWN'
+                  ? t('aiAutofillUi.conversationOperationStatus.checkingTheResult')
+                  : operation.executionStatus === 'RESULT_READY'
+                    ? t('aiAutofillUi.conversationOperationStatus.finishingYourSchedule')
+                    : operation.operationType === 'ADJUST'
+                      ? t('aiAutofillUi.conversationOperationStatus.adjustingYourSchedule')
+                      : attempt > 1
+                        ? t('aiAutofillUi.conversationOperationStatus.refillingYourSchedule')
+                        : t('aiAutofillUi.conversationOperationStatus.fillingYourSchedule');
     const active = operation.executionStatus === 'RUNNING' || operation.executionStatus === 'RESULT_READY';
 
     return (
@@ -46,6 +52,17 @@ export function AiConversationOperationStatus({
                 <p className="mt-1 text-[13px] leading-5 break-keep text-[#667085]">
                     {t('aiAutofillUi.conversationOperationStatus.requestedAndFixedShiftsStayInPlace')}
                 </p>
+            )}
+            {active && operation.progress && (
+                <div className="mt-2 space-y-1 text-[13px] leading-5 text-[#667085]">
+                    <p aria-hidden="true">
+                        {t('aiAutofillUi.conversationOperationStatus.elapsed', {seconds: Math.floor(operation.progress.elapsedMs / 1000)})}
+                    </p>
+                    {operation.progress.phase === 'COMPUTING' && operation.progress.elapsedMs >= 30000 && (
+                        <p>{t('aiAutofillUi.conversationOperationStatus.continuing')}</p>
+                    )}
+                    <p>{t('aiAutofillUi.conversationOperationStatus.backgroundHint')}</p>
+                </div>
             )}
         </div>
     );

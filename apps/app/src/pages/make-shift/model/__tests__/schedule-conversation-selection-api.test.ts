@@ -62,6 +62,7 @@ describe('intent-first negotiated conversation wire', () => {
         expect(post).toHaveBeenLastCalledWith('/wards/5/shift-teams/7/schedule/conversations/9/operations', body, {
             suppressErrorToast: true,
             timeout: 17000,
+            headers: {Prefer: 'respond-async'},
         });
     });
 });

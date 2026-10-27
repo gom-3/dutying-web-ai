@@ -9,7 +9,7 @@ type TPendingExecution = {
 };
 
 export const isExecutionFinished = (operation: Pick<TConversationOperation, 'executionStatus'>) =>
-    operation.executionStatus === 'SUCCEEDED' || operation.executionStatus === 'FAILED';
+    operation.executionStatus === 'SUCCEEDED' || operation.executionStatus === 'FAILED' || operation.executionStatus === 'CANCELLED';
 
 /** Only a matching operation receipt may release a pending request; polling another result cannot. */
 export function readPendingExecution(storage: Storage, key: string): TPendingExecution | null {
