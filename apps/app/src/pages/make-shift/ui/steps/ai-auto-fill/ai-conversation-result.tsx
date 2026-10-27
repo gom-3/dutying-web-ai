@@ -82,8 +82,10 @@ export function AiConversationResult({
             description={
                 authoring
                     ? applied
-                        ? t('aiConversationSidebar.authoring.draft')
-                        : scope
+                        ? null
+                        : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
+                          ? scope
+                          : null
                     : review
                       ? t('aiAutofillUi.conversationResult.reviewTheHighlightedRulesAndAdjustShiftsWhereNeeded')
                       : scope

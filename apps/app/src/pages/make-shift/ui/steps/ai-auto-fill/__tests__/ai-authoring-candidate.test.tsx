@@ -4,6 +4,7 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {candidate, outcome, response} from '../../../../model/__tests__/fixtures/intent-first';
 import {AiAuthoringCandidate} from '../ai-authoring-candidate';
 import {AiConversationResult} from '../ai-conversation-result';
+import {AiConversationResultDetails} from '../ai-conversation-result-details';
 
 const props = () => ({
     result: response({
@@ -91,4 +92,76 @@ describe('reviewable authoring candidate', () => {
             expect(screen.queryByRole('img', {name: /adjustmentSucceeded|수정 완료|수정 성공/})).toBeNull();
         },
     );
+});
+
+describe('plain candidate copy', () => {
+    it.each([
+        {
+            locale: 'ko',
+            title: '이렇게 바꿔볼까요?',
+            prompt: '변경 내용을 보고 원하신 배치인지 확인해 주세요.',
+            applied: '선택한 배치를 반영했어요.',
+        },
+        {
+            locale: 'en',
+            title: 'How about these changes?',
+            prompt: 'Check the changes to see whether this is the arrangement you wanted.',
+            applied: 'Applied your selected changes.',
+        },
+        {
+            locale: 'ja',
+            title: 'このように変えてみませんか？',
+            prompt: '変更内容を見て、ご希望の配置になっているかご確認ください。',
+            applied: '選択した配置を反映しました。',
+        },
+    ])('uses a single natural prompt in $locale without a technical review claim', async ({locale, title, prompt, applied}) => {
+        await i18n.changeLanguage(locale);
+
+        try {
+            const input = props();
+            const operation = {
+                operationId: 'op:copy',
+                sequence: 1,
+                operationType: 'ADJUST' as const,
+                sourceVersionId: 'source:1',
+                resultVersionId: null,
+                interpretationId: null,
+                baseRevision: 0,
+                executionStatus: 'SUCCEEDED' as const,
+                applyStatus: 'NOT_APPLIED_REVIEW',
+                fillPolicy: null,
+                failureReason: null,
+                createdAt: '',
+                result: input.result,
+            };
+            const {rerender, container} = render(
+                <AiConversationResult operation={operation} attempt={1} feedbackDisabled onReport={vi.fn()} copy={(ko) => ko}>
+                    <AiConversationResultDetails result={input.result} />
+                    <AiAuthoringCandidate {...input} />
+                </AiConversationResult>,
+            );
+
+            expect(screen.getByText(title)).toBeVisible();
+            expect(screen.getAllByText(prompt)).toHaveLength(1);
+            expect(container).not.toHaveTextContent(/EXACT|REVIEW|정성|미검증|검사|unverified|qualitative|未検証|定性的/);
+            expect(container.querySelector('details')).toBeNull();
+            rerender(
+                <AiConversationResult
+                    operation={{
+                        ...operation,
+                        applyStatus: 'APPLIED',
+                        result: response({authoringOutcome: outcome({requestState: 'NEEDS_REVIEW'})}),
+                    }}
+                    attempt={1}
+                    feedbackDisabled
+                    onReport={vi.fn()}
+                    copy={(ko) => ko}
+                />,
+            );
+            expect(screen.getByText(applied)).toBeVisible();
+            expect(container.querySelector('svg[aria-label="success"]')).toBeNull();
+        } finally {
+            await i18n.changeLanguage('ko');
+        }
+    });
 });
