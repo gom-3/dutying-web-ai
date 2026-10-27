@@ -53,7 +53,7 @@ export function AiExecutionFailure({
     const secondaryClass = `${actionClass} bg-white text-[#475467] hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white`;
     const retryable = !failure.blocked && (!failure.recovery || failure.recovery === 'retry');
     const showSettings = failure.recovery === 'settings';
-    const reviewGeneration = operationType === 'GENERATE' && Boolean(failure.confirmationRequired) && !failure.blocked;
+    const reviewGeneration = operationType === 'GENERATE' && !failure.blocked && ['review', 'revise'].includes(failure.recovery ?? '');
     const showRetry = (retryable || reviewGeneration) && Boolean(onRetry);
     const showRevise =
         !failure.blocked &&

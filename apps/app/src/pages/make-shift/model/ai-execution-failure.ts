@@ -47,8 +47,12 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         )
             return null;
 
+        const messageKey = authoringMessageKey(response) ?? 'UNKNOWN';
+
         return {
-            message: i18n.t(`aiConversationSidebar.authoring.${authoringMessageKey(response) ?? 'UNKNOWN'}`),
+            message: ['SATISFIED', 'IMPROVED'].includes(messageKey)
+                ? i18n.t('aiAdjust.executionFailure.summary')
+                : i18n.t(`aiConversationSidebar.authoring.${messageKey}`),
             blocked: false,
             recovery: ['BUSY', 'UNKNOWN', 'ERROR'].includes(outcome.solveState) ? 'retry' : 'revise',
         };
