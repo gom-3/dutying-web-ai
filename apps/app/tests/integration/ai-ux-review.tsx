@@ -1,5 +1,5 @@
 /** Synthetic local draft; every entered request uses the native dev semantic preview. */
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import type {AxiosAdapter} from 'axios';
 import type {TAutofillResponse} from '@dutying/api/ward';
@@ -15,6 +15,7 @@ import type {
     TSemanticPlan,
 } from '../../src/pages/make-shift/model/schedule-conversation-api';
 import AiConversationSidebar from '../../src/pages/make-shift/ui/steps/ai-auto-fill/ai-conversation-sidebar';
+import {AiAutofillLoadingOverlay} from '../../src/pages/make-shift/ui/steps/ai-auto-fill/ai-autofill-loading-overlay';
 import {MakeShiftCalendar} from '../../src/pages/make-shift/ui/steps/shared/make-shift-calendar';
 import client from '../../src/shared/api/client';
 import i18n from '../../src/i18n';
@@ -254,7 +255,7 @@ if (scene.startsWith('background-')) {
         applyStatus: 'NOT_APPLIED',
         failureReason: null,
         result: null,
-        progress: {phase, elapsedMs: 45000},
+        progress: scene === 'background-as-is' ? null : {phase, elapsedMs: 45000},
         createdAt,
     }];
 }
@@ -492,6 +493,11 @@ client.defaults.adapter = adapter;
 
 export function Review() {
     const [open, setOpen] = useState(true);
+    // Match the production parent connection: operation busy also opens the existing overlay.
+    const [executionBusy, setExecutionBusy] = useState(false);
+    const [reviewStartedAt] = useState(() => Date.now() - 45000);
+    const reviewParentLoading = scene === 'background-as-is' || scene === 'background-current-pr';
+    const handleBusyChange = useCallback((busy: boolean) => setExecutionBusy(busy), []);
     const [reportCount, setReportCount] = useState(() => scene === 'report-recovery' ? Object.keys(syntheticReceipts()).length : 0);
     useEffect(() => {
         const update = () => setReportCount(Object.keys(syntheticReceipts()).length);
@@ -538,7 +544,11 @@ export function Review() {
                 generationRequest={0}
                 rebuildRequest={0}
                 onApplied={() => {}}
+                onBusyChange={reviewParentLoading ? handleBusyChange : undefined}
             />
+            {reviewParentLoading && executionBusy && (
+                <AiAutofillLoadingOverlay sidebarOpen={open} startedAt={reviewStartedAt} />
+            )}
         </main>
     );
 }

@@ -64,3 +64,10 @@ and prior-month cells against the source. Rank magnitudes (0..5 vs 1024..6144) m
 change during restore without changing seniority; they are not a source change.
 Actual row reordering remains a source change. Original and negotiated pending
 receipts both rebind only after this complete comparison.
+
+
+## PO/PM UI review correction (2026-10-28)
+
+Release remains blocked. The previous component fixture omitted the parent page busy callback and existing loading overlay. The production index still renders AiAutofillLoadingOverlay while executionBusy is true. Closing the panel expands that overlay across the whole page, preventing access to the reopen button. The simulated percentage is elapsed-time based, not solver progress. No production UI fix has been made for these findings.
+
+See client-background-schedule-product-review-2026-10-28.html for reconstructed AS-IS, current PR, proposed TO-BE, and acceptance criteria. The proposal preserves the initial loading presentation, defines explicit hide-versus-cancel behavior, and requires a reachable ongoing-task entry after hiding. It is a review specification, not implemented functionality or deployment evidence.
