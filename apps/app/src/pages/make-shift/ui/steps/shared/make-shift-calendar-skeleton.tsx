@@ -125,7 +125,7 @@ export function MakeShiftCalendarSkeleton({
                                             key={dayIndex}
                                             className="make-shift-calendar__day-cell flex min-w-0 items-center justify-center"
                                         >
-                                            <Skeleton className="size-[clamp(16px,1.45vw,26px)] rounded-[6px] bg-gray-6/80" />
+                                            <Skeleton className="aspect-square w-full max-w-[clamp(16px,1.45cqw,26px)] shrink-0 rounded-[6px] bg-gray-6/80" />
                                         </div>
                                     ))}
                                 </div>

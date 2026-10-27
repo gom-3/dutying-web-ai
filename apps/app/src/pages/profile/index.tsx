@@ -1,8 +1,8 @@
-﻿import type {TPreferredLanguage} from '@dutying/domain';
+import type {TPreferredLanguage} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
+import * as Dialog from '@radix-ui/react-dialog';
 import {useQuery} from '@tanstack/react-query';
-import {ChevronDown, Languages, UserRound} from 'lucide-react';
-import {type ChangeEvent, useEffect, useId, useRef, useState} from 'react';
+import {type ChangeEvent, useEffect, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {useTranslation} from 'react-i18next';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
@@ -11,8 +11,12 @@ import {wardQueryOptions} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import useAuthStore from '@/features/auth/model/store';
+import {useCommercialContext} from '@/features/commercial/api';
 import useProfileImage from '@/features/file';
-import {CameraIcon} from '@/shared/assets/svg';
+import {InfoTip} from '@/pages/workspace/info-tip';
+import {countWorkspaceRequests} from '@/pages/workspace/workspace-activity';
+import {WorkspacePersonalShell} from '@/pages/workspace/workspace-personal-shell';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -30,11 +34,9 @@ import {
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
-import Card from '@/shared/ui/Card';
-import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
-import {Button} from '@/shared/ui/primitives/button';
 import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, getProfilePhoneNum, isProfileFormDirty} from './model';
+import './profile.css';
 
 type TProfileField = 'name' | 'phoneNum';
 type TProfileErrors = Partial<Record<TProfileField, string>>;
@@ -44,10 +46,7 @@ type TProfileContentProps = {
     layout?: 'page' | 'modal';
 };
 
-const FIELD_CLASS =
-    'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
-const SELECT_FIELD_CLASS =
-    'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
+const FIELD_CLASS = 'profile-field-control';
 const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const requestName = normalizeNurseNameForRequest(value);
@@ -76,101 +75,6 @@ const validatePhoneNum = (
     return undefined;
 };
 
-type TLanguageSelectProps = {
-    id: string;
-    labelId: string;
-    value: TPreferredLanguage;
-    options: readonly TPreferredLanguage[];
-    getOptionLabel: (language: TPreferredLanguage) => string;
-    onChange: (language: TPreferredLanguage) => void;
-    className?: string;
-    buttonClassName?: string;
-};
-
-function LanguageSelect({id, labelId, value, options, getOptionLabel, onChange, className, buttonClassName}: TLanguageSelectProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const rootRef = useRef<HTMLDivElement | null>(null);
-    const selectedValueId = useId();
-    const selectedLabel = getOptionLabel(value);
-
-    useEffect(() => {
-        if (!isOpen) return;
-
-        const closeOnOutsideClick = (event: MouseEvent) => {
-            if (!rootRef.current?.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', closeOnOutsideClick);
-        document.addEventListener('keydown', closeOnEscape);
-
-        return () => {
-            document.removeEventListener('mousedown', closeOnOutsideClick);
-            document.removeEventListener('keydown', closeOnEscape);
-        };
-    }, [isOpen]);
-
-    return (
-        <div ref={rootRef} className={cn('relative', className)}>
-            <button
-                id={id}
-                type="button"
-                aria-haspopup="listbox"
-                aria-expanded={isOpen}
-                aria-labelledby={`${labelId} ${selectedValueId}`}
-                className={cn(
-                    SELECT_FIELD_CLASS,
-                    'flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-main-1',
-                    isOpen && 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]',
-                    buttonClassName,
-                )}
-                onClick={() => setIsOpen((prev) => !prev)}
-            >
-                <span id={selectedValueId} className="min-w-0 truncate">
-                    {selectedLabel}
-                </span>
-                <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-180')} />
-            </button>
-            {isOpen ? (
-                <div
-                    role="listbox"
-                    aria-labelledby={labelId}
-                    className="absolute top-full right-0 left-0 z-30 mt-1 animate-in overflow-hidden rounded-[12px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
-                >
-                    {options.map((language) => {
-                        const isSelected = language === value;
-
-                        return (
-                            <button
-                                key={language}
-                                type="button"
-                                role="option"
-                                aria-selected={isSelected}
-                                className={cn(
-                                    'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                                    isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
-                                )}
-                                onClick={() => {
-                                    onChange(language);
-                                    setIsOpen(false);
-                                }}
-                            >
-                                {getOptionLabel(language)}
-                            </button>
-                        );
-                    })}
-                </div>
-            ) : null}
-        </div>
-    );
-}
-
 export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
@@ -187,6 +91,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const [draftBirthDate, setDraftBirthDate] = useState('');
     const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const savingRef = useRef(false);
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
@@ -240,7 +146,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
     const hasUnsavedChanges = hasProfileChanges || isBirthDateDirty || isPreferenceDirty;
-    const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
+    const isSaveDisabled =
+        isProfileImageLoading || isSaving || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
             return validateName(value, {
@@ -336,44 +243,54 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         }
     };
     const save = async () => {
-        if (hasProfileChanges) {
-            let isProfileSaved = false;
+        if (savingRef.current || isSaveDisabled) return;
 
-            if (writeNurse) {
-                if (!validateForm()) return;
+        savingRef.current = true;
+        setIsSaving(true);
 
-                const phoneNum = normalizeContactPhoneForStorage(
-                    hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
-                );
+        try {
+            if (hasProfileChanges) {
+                let isProfileSaved = false;
 
-                isProfileSaved = await handleEditProfile(
-                    {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
-                    currentProfileImage,
-                );
-            } else {
-                const {isValid, name, phoneNum} = validateAccountForm();
+                if (writeNurse) {
+                    if (!validateForm()) return;
 
-                if (!isValid) return;
+                    const phoneNum = normalizeContactPhoneForStorage(
+                        hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
+                    );
 
-                isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+                    isProfileSaved = await handleEditProfile(
+                        {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
+                        currentProfileImage,
+                    );
+                } else {
+                    const {isValid, name, phoneNum} = validateAccountForm();
+
+                    if (!isValid) return;
+
+                    isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+                }
+
+                if (!isProfileSaved) return;
+
+                setHasEditedPhoneNum(false);
+                resetProfileImage();
             }
 
-            if (!isProfileSaved) return;
+            if (isBirthDateDirty) {
+                if (!isBirthDateValid) return;
 
-            setHasEditedPhoneNum(false);
-            resetProfileImage();
-        }
+                const isBirthDateSaved = await updateBirthDate(nextBirthDate);
 
-        if (isBirthDateDirty) {
-            if (!isBirthDateValid) return;
+                if (!isBirthDateSaved) return;
+            }
 
-            const isBirthDateSaved = await updateBirthDate(nextBirthDate);
-
-            if (!isBirthDateSaved) return;
-        }
-
-        if (isPreferenceDirty) {
-            await savePreferences();
+            if (isPreferenceDirty) {
+                await savePreferences();
+            }
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
         }
     };
 
@@ -486,35 +403,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                   confirmLabel: t('page.profile.confirm.logoutConfirm'),
                   tone: 'default' as const,
               };
-    const stateContainerClassName = cn(
-        'mx-auto flex w-full items-center justify-center px-8',
-        isModalLayout ? 'min-h-[360px] max-w-[560px] py-8' : 'h-full max-w-306',
-    );
-    const rootClassName = cn('mx-auto w-full', isModalLayout ? 'max-w-none px-6 pt-8 pb-5 sm:px-8' : 'max-w-[560px] px-4 py-8 md:px-0');
-    const headerClassName = cn('mx-auto flex items-start justify-between gap-4', isModalLayout ? 'max-w-none pr-10' : 'max-w-[480px]');
-    const titleClassName = cn(
-        'font-apple font-semibold text-sub-1',
-        isModalLayout ? 'text-[26px] leading-8 tracking-[-0.01em]' : 'text-[32px] tracking-[-0.02em]',
-    );
-    const title = t('page.profile.title');
-    const descriptionText = hasUnsavedChanges ? t('page.profile.unsavedDescription') : null;
-    const contentClassName = cn('mx-auto', isModalLayout ? 'mt-6 max-w-none space-y-6' : 'mt-6 max-w-[480px] space-y-4');
-    const profileSectionClassName = isModalLayout ? 'rounded-none border-0 bg-white p-0' : 'rounded-[24px] border-transparent p-6';
-    const basicInfoSectionClassName = isModalLayout
-        ? 'rounded-none border-0 border-t border-[#F2F4F6] bg-white px-0 pt-6 pb-0'
-        : 'rounded-[24px] border-transparent p-6';
-    const profileImageFrameClassName = cn('shrink-0 rounded-full', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
-    const profileImageButtonClassName = cn(
-        'rounded-full text-[#6B7684] hover:bg-[#E5E8EB] hover:text-[#333D4B]',
-        isModalLayout ? 'h-9 w-9 bg-[#F2F4F6]' : 'h-9 w-9 bg-gray-7',
-    );
-    const fieldContainerClassName = isModalLayout ? 'w-full' : 'max-w-[440px]';
-    const accountActionsClassName = cn('flex flex-wrap items-center gap-x-4 gap-y-2 px-1', isModalLayout ? 'justify-start' : 'justify-end');
-    const saveButtonClassName = cn(
-        'h-11 rounded-[10px] px-5 text-sm shadow-none',
-        isModalLayout ? 'w-full bg-[#3182F6] font-semibold hover:bg-[#1B64DA] sm:w-auto' : '',
-    );
-    const modalFieldClassName = isModalLayout ? 'h-12 rounded-[10px] bg-[#F9FAFB] px-4 text-[15px]' : '';
+    const copy = (ko: string, en: string) => (i18n.language.startsWith('ko') ? ko : en);
+    const stateContainerClassName = cn('profile-state', isModalLayout && 'profile-state--modal');
+    const rootClassName = cn('account-profile', isModalLayout && 'account-profile--modal');
+    const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
 
     if (isAccountBootstrapPending || isWardProfilePending) {
         return (
@@ -544,36 +436,24 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     }
 
     const accountActionButtons = (
-        <div className={accountActionsClassName}>
-            <button
-                type="button"
-                className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                onClick={() => setConfirmAction('logout')}
-            >
+        <div className="profile-account-actions">
+            <button type="button" className="profile-action profile-action--tonal" onClick={() => setConfirmAction('logout')}>
                 {t('page.profile.logout')}
             </button>
-            {!isModalLayout && accountMe.wardId ? (
-                <button
-                    type="button"
-                    className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                    onClick={quitWard}
-                >
+            {!isModalLayout && accountMe.wardId && accountMe.accessSource !== 'HOSPITAL' ? (
+                <button type="button" className="profile-action profile-action--tonal" onClick={quitWard}>
                     {t('page.profile.quitWard')}
                 </button>
             ) : null}
-            <button
-                type="button"
-                className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-red underline-offset-4 hover:underline"
-                onClick={() => setConfirmAction('deleteAccount')}
-            >
+            <button type="button" className="profile-action profile-action--danger" onClick={() => setConfirmAction('deleteAccount')}>
                 {t('page.profile.deleteAccount')}
             </button>
         </div>
     );
     const saveButton = (
-        <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className={saveButtonClassName}>
-            {isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
-        </Button>
+        <button type="submit" disabled={isSaveDisabled} className="profile-action profile-action--primary">
+            {isSaving ? t('page.profile.savingPreferences') : isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
+        </button>
     );
     const getLanguageLabel = (language: TPreferredLanguage) => {
         switch (language) {
@@ -594,70 +474,52 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
     return (
         <div className={rootClassName}>
-            <div className={headerClassName}>
-                <div>
-                    <h1 className={titleClassName}>{title}</h1>
-                    {descriptionText ? <p className="mt-1.5 font-apple text-sm text-gray-3">{descriptionText}</p> : null}
-                </div>
-            </div>
-
-            <div className={contentClassName}>
-                <Card className={profileSectionClassName}>
-                    {isModalLayout ? null : (
-                        <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.profile.profileSection')}</p>
-                    )}
-                    <div className={cn('flex items-center gap-4', isModalLayout ? '' : 'mt-4')}>
-                        <div className={profileImageFrameClassName}>
-                            <ProfileImage className="h-full w-full" name={displayName} profileImg={currentProfileImage} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <p className="font-apple text-[17px] leading-6 font-semibold text-[#191F28]">{displayName}</p>
-                            <p className="mt-0.5 truncate font-apple text-[13px] leading-5 text-[#8B95A1]">{accountMe.email}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className={profileImageButtonClassName}
-                                onClick={handleUploadImage}
-                                disabled={isProfileImageLoading}
-                                aria-label={t('page.profile.uploadPhoto')}
-                                title={t('page.profile.uploadPhoto')}
-                            >
-                                <CameraIcon className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        <input ref={imageInputRef} type="file" className="hidden" onChange={handleChangeImage} accept="image/*" />
+            {isModalLayout ? <h1 className="profile-modal-title">{t('page.profile.title')}</h1> : null}
+            <form
+                className="profile-form"
+                aria-label={t('page.profile.profileSection')}
+                aria-busy={isSaving}
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    void save();
+                }}
+            >
+                <section className="profile-identity" aria-label={t('page.profile.profileSection')}>
+                    <div className="profile-avatar">
+                        <ProfileImage className="h-full w-full" name={displayName} profileImg={currentProfileImage} />
                     </div>
-                </Card>
+                    <div className="profile-identity-copy">
+                        <p className="profile-display-name">{displayName}</p>
+                        <p className="profile-email">{accountMe.email}</p>
+                    </div>
+                    <button
+                        type="button"
+                        className="profile-action profile-action--tonal profile-photo-action"
+                        onClick={handleUploadImage}
+                        disabled={isProfileImageLoading}
+                    >
+                        {t('page.profile.uploadPhoto')}
+                    </button>
+                    <input ref={imageInputRef} type="file" className="hidden" onChange={handleChangeImage} accept="image/*" />
+                </section>
 
-                <Card className={basicInfoSectionClassName}>
-                    {isModalLayout ? null : (
-                        <>
-                            <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
-                                <UserRound aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
-                                <span>{t('page.profile.basicInfoTitle')}</span>
-                            </h2>
-                        </>
-                    )}
-                    <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
-                        <div className={fieldContainerClassName}>
-                            <label htmlFor="name" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                {t('page.profile.name')}
-                            </label>
+                <section className="profile-section" aria-labelledby="profile-basic-heading">
+                    <div className="profile-section-heading">
+                        <h2 id="profile-basic-heading">{t('page.profile.basicInfoTitle')}</h2>
+                        <InfoTip label={t('page.profile.basicInfoDescription')}>{t('page.profile.basicInfoDescription')}</InfoTip>
+                    </div>
+                    <div className="profile-fields">
+                        <div className="profile-field">
+                            <label htmlFor="name">{t('page.profile.name')}</label>
                             <input
                                 id="name"
-                                className={cn(
-                                    FIELD_CLASS,
-                                    modalFieldClassName,
-                                    fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
-                                )}
+                                autoComplete="name"
+                                className={FIELD_CLASS}
                                 maxLength={NURSE_NAME_MAX_LENGTH}
                                 placeholder={t('page.profile.namePlaceholder')}
                                 value={writeNurse?.name ?? draftName}
-                                onChange={(e) => {
-                                    const nextValue = sanitizeNurseNameInput(e.target.value);
+                                onChange={(event) => {
+                                    const nextValue = sanitizeNurseNameInput(event.target.value);
 
                                     if (writeNurse) {
                                         handleChange('name', nextValue);
@@ -667,37 +529,32 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
                                     if (fieldTouched.name) setFieldError('name', nextValue);
                                 }}
-                                onBlur={(e) => {
+                                onBlur={(event) => {
                                     setFieldTouched((prev) => ({...prev, name: true}));
-                                    setFieldError('name', e.target.value);
+                                    setFieldError('name', event.target.value);
                                 }}
                                 aria-invalid={Boolean(fieldErrors.name)}
                                 aria-describedby={fieldErrors.name ? 'profile-name-error' : undefined}
                             />
                             {fieldErrors.name ? (
-                                <p id="profile-name-error" className="mt-1 font-apple text-xs text-red">
+                                <p id="profile-name-error" className="profile-field-error">
                                     {fieldErrors.name}
                                 </p>
                             ) : null}
                         </div>
-                        <div className={fieldContainerClassName}>
-                            <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                {t('page.profile.phoneNum')}
-                            </label>
+                        <div className="profile-field">
+                            <label htmlFor="phoneNum">{t('page.profile.phoneNum')}</label>
                             <input
                                 id="phoneNum"
                                 type="tel"
+                                autoComplete="tel"
                                 inputMode="tel"
                                 maxLength={CONTACT_PHONE_MAX_LENGTH}
-                                className={cn(
-                                    FIELD_CLASS,
-                                    modalFieldClassName,
-                                    fieldErrors.phoneNum && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
-                                )}
+                                className={FIELD_CLASS}
                                 placeholder={t('page.profile.phoneNumPlaceholder')}
                                 value={phoneInputValue}
-                                onChange={(e) => {
-                                    const nextValue = sanitizeContactPhoneInput(e.target.value);
+                                onChange={(event) => {
+                                    const nextValue = sanitizeContactPhoneInput(event.target.value);
 
                                     if (writeNurse) {
                                         setHasEditedPhoneNum(true);
@@ -708,24 +565,22 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
                                     if (fieldTouched.phoneNum) setFieldError('phoneNum', nextValue);
                                 }}
-                                onBlur={(e) => {
+                                onBlur={(event) => {
                                     setFieldTouched((prev) => ({...prev, phoneNum: true}));
-                                    setFieldError('phoneNum', e.target.value);
+                                    setFieldError('phoneNum', event.target.value);
                                 }}
                                 aria-invalid={Boolean(fieldErrors.phoneNum)}
                                 aria-describedby={fieldErrors.phoneNum ? 'profile-phone-error' : undefined}
                             />
                             {fieldErrors.phoneNum ? (
-                                <p id="profile-phone-error" className="mt-1 font-apple text-xs text-red">
+                                <p id="profile-phone-error" className="profile-field-error">
                                     {fieldErrors.phoneNum}
                                 </p>
                             ) : null}
                         </div>
                         {!isWardAdmin ? (
-                            <div className={fieldContainerClassName}>
-                                <label htmlFor="birthDate" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                    {t('page.profile.birthDate')}
-                                </label>
+                            <div className="profile-field">
+                                <label htmlFor="birthDate">{t('page.profile.birthDate')}</label>
                                 <input
                                     id="birthDate"
                                     type="text"
@@ -733,80 +588,112 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                     autoComplete="bday"
                                     placeholder="YYYY-MM-DD"
                                     maxLength={10}
-                                    className={cn(
-                                        FIELD_CLASS,
-                                        modalFieldClassName,
-                                        !isBirthDateValid && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
-                                    )}
+                                    className={FIELD_CLASS}
                                     value={draftBirthDate}
                                     onChange={(event) => setDraftBirthDate(formatBirthDateInput(event.target.value))}
                                     aria-invalid={!isBirthDateValid}
                                     aria-describedby={!isBirthDateValid ? 'profile-birth-date-error' : undefined}
                                 />
                                 {!isBirthDateValid ? (
-                                    <p id="profile-birth-date-error" className="mt-1 font-apple text-xs text-red">
+                                    <p id="profile-birth-date-error" className="profile-field-error">
                                         {t('page.profile.validation.birthDateInvalid')}
                                     </p>
                                 ) : null}
                             </div>
                         ) : null}
                     </div>
-                </Card>
-                <Card className={basicInfoSectionClassName}>
-                    {isModalLayout ? null : (
-                        <>
-                            <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
-                                <Languages aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
-                                <span>{t('page.profile.preferencesTitle')}</span>
-                            </h2>
-                        </>
-                    )}
-                    <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
-                        <div className={fieldContainerClassName}>
-                            <label id="preferredLanguage-label" htmlFor="preferredLanguage" className="sr-only">
-                                {t('page.profile.languageLabel')}
-                            </label>
-                            <LanguageSelect
+                </section>
+
+                <section className="profile-section" aria-labelledby="profile-language-heading">
+                    <div className="profile-section-heading">
+                        <h2 id="profile-language-heading">{t('page.profile.preferencesTitle')}</h2>
+                        <InfoTip label={t('page.profile.preferencesDescription')}>{t('page.profile.preferencesDescription')}</InfoTip>
+                    </div>
+                    <div className="profile-fields">
+                        <div className="profile-field">
+                            <label htmlFor="preferredLanguage">{t('page.profile.languageLabel')}</label>
+                            <select
                                 id="preferredLanguage"
-                                labelId="preferredLanguage-label"
-                                className="w-full"
-                                buttonClassName={modalFieldClassName}
+                                className={FIELD_CLASS}
                                 value={draftPreferredLanguage}
-                                options={LANGUAGE_OPTIONS}
-                                getOptionLabel={getLanguageLabel}
-                                onChange={(language) =>
-                                    setDraftPreferredLanguage(normalizePreferredLanguage(language) ?? savedPreferredLanguage)
+                                onChange={(event) =>
+                                    setDraftPreferredLanguage(normalizePreferredLanguage(event.target.value) ?? savedPreferredLanguage)
                                 }
-                            />
+                            >
+                                {LANGUAGE_OPTIONS.map((language) => (
+                                    <option key={language} value={language}>
+                                        {getLanguageLabel(language)}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                     </div>
-                </Card>
-                {isModalLayout ? null : accountActionButtons}
-            </div>
+                </section>
 
-            {isModalLayout ? (
-                <div className="mt-6 flex flex-col gap-4 border-t border-[#F2F4F6] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                    {accountActionButtons}
+                <div className="profile-save-row">
+                    <p className="profile-save-status" role="status">
+                        {hasUnsavedChanges ? t('page.profile.unsavedDescription') : t('page.profile.savedDescription')}
+                    </p>
                     {saveButton}
                 </div>
-            ) : (
-                <div className="mx-auto mt-6 flex max-w-[480px] items-center justify-end">{saveButton}</div>
-            )}
-            <ConfirmActionDialog
-                open={confirmAction !== null}
-                title={confirmDialogContent.title}
-                description={confirmDialogContent.description}
-                confirmLabel={confirmDialogContent.confirmLabel}
-                tone={confirmDialogContent.tone}
-                onClose={closeConfirmDialog}
-                onConfirm={confirmActionDialog}
-            />
+            </form>
+
+            <section className="profile-section profile-account-section" aria-labelledby="profile-account-heading">
+                <div className="profile-section-heading">
+                    <h2 id="profile-account-heading">{copy('계정 관리', 'Account management')}</h2>
+                </div>
+                {accountActionButtons}
+            </section>
+
+            <Dialog.Root open={confirmAction !== null} onOpenChange={(nextOpen) => !nextOpen && closeConfirmDialog()}>
+                <Dialog.Portal container={portalContainer}>
+                    <Dialog.Overlay className="profile-dialog-overlay" />
+                    <Dialog.Content className="profile-dialog">
+                        <Dialog.Title>{confirmDialogContent.title}</Dialog.Title>
+                        <Dialog.Description>{confirmDialogContent.description}</Dialog.Description>
+                        <div className="profile-dialog-actions">
+                            <Dialog.Close asChild>
+                                <button type="button" className="profile-action profile-action--tonal">
+                                    {t('shared.confirmActionDialog.cancel')}
+                                </button>
+                            </Dialog.Close>
+                            <button
+                                type="button"
+                                className={cn(
+                                    'profile-action',
+                                    confirmDialogContent.tone === 'danger' ? 'profile-action--destructive' : 'profile-action--primary',
+                                )}
+                                onClick={confirmActionDialog}
+                            >
+                                {confirmDialogContent.confirmLabel}
+                            </button>
+                        </div>
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>
         </div>
     );
 }
 
 function ProfilePage() {
-    return <ProfileContent />;
+    const context = useCommercialContext();
+    const accountId = useAuthStore((state) => state.accountId);
+    const {
+        state: {accountMe, accessToken},
+    } = useAuth();
+
+    return (
+        <WorkspacePersonalShell
+            page="profile"
+            scopes={context.data?.enabled && !context.isError ? context.data.scopes : []}
+            accountId={accountId}
+            accountName={accountMe?.name ?? ''}
+            pendingCount={context.data?.enabled && !context.isError ? countWorkspaceRequests(context.data, accountId) : 0}
+            managementEnabled={isWardAdminAccessToken(accessToken)}
+        >
+            <ProfileContent />
+        </WorkspacePersonalShell>
+    );
 }
 
 export default ProfilePage;

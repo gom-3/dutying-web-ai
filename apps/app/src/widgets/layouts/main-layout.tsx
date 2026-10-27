@@ -5,6 +5,7 @@ import {Outlet, useLocation, useNavigate} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {WardLinkNotice} from '@/features/commercial/ward-link-notice';
 import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME} from '@/shared/constant/member-page-layout';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -260,6 +261,7 @@ export const MainLayout = () => {
             />
             <NavigationBar compactMode={shouldUseCompactNavigation} />
             <main className={cn('relative min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
+                <WardLinkNotice />
                 <Outlet />
                 {shouldShowNotificationBell && !isHomeRoute && !isPageAnchoredNotificationRoute ? (
                     <div

@@ -27,6 +27,8 @@ export type TAccount = {
     accountId: number;
     nurseId: number | null;
     wardId: number | null;
+    /** How the current administrator accesses this ward; omitted by older servers. */
+    accessSource?: 'MEMBERSHIP' | 'HOSPITAL' | null;
     shiftTeamId: number | null;
     email: string;
     name: string;

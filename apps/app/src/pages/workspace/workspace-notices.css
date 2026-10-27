@@ -1,0 +1,182 @@
+.workspace-notices-page {
+    --notices-accent: var(--workspace-primary, #202b3c);
+    --notices-ink: var(--workspace-ink, #202631);
+    --notices-muted: var(--workspace-muted, #566173);
+    color: var(--notices-ink);
+    min-width: 0;
+}
+.workspace-notices-page .workspace-section-heading {
+    align-items: center;
+    gap: 16px;
+}
+.workspace-notices-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 24px 0;
+}
+.workspace-notices-filters {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+.workspace-notices-page button:not(.hospital-info-tip),
+.workspace-notices-actions a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    gap: 8px;
+    padding: 10px 14px;
+    margin: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--workspace-secondary, #e5e8ed);
+    color: var(--workspace-secondary-ink, #263244);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+.workspace-notices-page button[aria-pressed='true'] {
+    color: #fff;
+    background: var(--workspace-primary, #202b3c);
+}
+.workspace-notices-filters button span {
+    font-size: 12px;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+.workspace-notices-unread-count {
+    color: var(--notices-muted);
+    font-size: 12px;
+}
+.workspace-notices-page button:not(.hospital-info-tip):hover,
+.workspace-notices-actions a:hover {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+}
+.workspace-notices-page button:not(.hospital-info-tip):focus-visible,
+.workspace-notices-actions a:focus-visible {
+    outline: none;
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-notices-page button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+.workspace-notices-list {
+    list-style: none;
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+}
+.workspace-notices-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 20px;
+    padding: 22px 24px;
+    background: var(--workspace-surface-token, #f6f7f9);
+    border-radius: 8px;
+    overflow-wrap: anywhere;
+}
+.workspace-notices-item-unread {
+    background: var(--workspace-control, #f1f3f5);
+}
+.workspace-notices-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    color: var(--notices-muted);
+    font-size: 12px;
+}
+.workspace-notices-state {
+    color: var(--workspace-muted, #566173);
+}
+.workspace-notices-item-unread .workspace-notices-state {
+    color: var(--workspace-primary, #202b3c);
+    font-weight: 650;
+}
+.workspace-notices-state::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    background: var(--workspace-muted, #566173);
+    border-radius: 50%;
+    vertical-align: middle;
+}
+.workspace-notices-item-unread .workspace-notices-state::before {
+    background: var(--workspace-primary, #202b3c);
+}
+.workspace-notices-item p {
+    margin: 8px 0 0;
+    font-size: 15px;
+    line-height: 1.75;
+}
+.workspace-notices-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+.workspace-notices-actions a {
+    background: transparent;
+    color: var(--workspace-primary, #202b3c);
+}
+.workspace-notices-item > .workspace-error,
+.workspace-notices-item > .workspace-feedback {
+    grid-column: 1 / -1;
+}
+.workspace-notices-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 36px 0;
+    margin: 0;
+    color: var(--notices-muted);
+    font-size: 14px;
+}
+.workspace-notices-empty strong {
+    color: var(--workspace-muted, #566173);
+    font-size: 15px;
+    font-weight: 500;
+}
+.workspace-notices-load-error {
+    padding: 16px 0;
+}
+@media (max-width: 640px) {
+    .workspace-notices-item {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+        padding: 20px 18px;
+    }
+    .workspace-notices-actions {
+        justify-content: flex-end;
+    }
+    .workspace-notices-toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .workspace-notices-page button:not(.hospital-info-tip),
+    .workspace-notices-actions a {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+}
+@media (forced-colors: active) {
+    .workspace-notices-page button:focus-visible,
+    .workspace-notices-actions a:focus-visible {
+        outline: 2px solid Highlight;
+    }
+}

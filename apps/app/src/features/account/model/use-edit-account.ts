@@ -147,7 +147,7 @@ const useEditAccount = () => {
         }
     };
     const quitWard = async () => {
-        if (!accountMe?.wardId) return;
+        if (!accountMe?.wardId || accountMe.accessSource === 'HOSPITAL') return;
 
         if (!confirm(t('feature.account.edit.quitWardConfirm'))) return;
 

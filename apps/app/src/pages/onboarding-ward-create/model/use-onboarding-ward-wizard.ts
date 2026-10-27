@@ -85,6 +85,22 @@ type TDraftSaveResult = {
     response?: TOnboardingWardDraftResponse;
 };
 
+export type TOnboardingWardWizardActions = Pick<
+    ReturnType<typeof useRegister>['actions'],
+    | 'createWard'
+    | 'createOnboardingWardDraft'
+    | 'getOnboardingWardDraft'
+    | 'saveOnboardingWardDraft'
+    | 'previewOnboardingScheduleInput'
+    | 'completeOnboardingWardDraft'
+>;
+
+type TOnboardingWardWizardOptions = {
+    actions?: TOnboardingWardWizardActions;
+    initialHospitalName?: string;
+    requireDraftRestore?: boolean;
+};
+
 const parseScheduleTemplateSafely = async (file: File, options?: TOnboardingWardParseOptions) => {
     if (!options?.targetYear || !options.targetMonth) {
         return [];
@@ -763,18 +779,17 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWard
     };
 };
 
-function useOnboardingWardWizard() {
+function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     const {t} = useTypedTranslation();
+    const register = useRegister();
     const {
-        actions: {
-            createWard,
-            createOnboardingWardDraft,
-            getOnboardingWardDraft,
-            saveOnboardingWardDraft,
-            previewOnboardingScheduleInput,
-            completeOnboardingWardDraft,
-        },
-    } = useRegister();
+        createWard,
+        createOnboardingWardDraft,
+        getOnboardingWardDraft,
+        saveOnboardingWardDraft,
+        previewOnboardingScheduleInput,
+        completeOnboardingWardDraft,
+    } = options.actions ?? register.actions;
     const onboardingDraftLabels = useMemo<TOnboardingDraftLabels>(
         () => ({
             teamName: (index) => t('feature.registerWard.shiftTeams.teamName', {index}),
@@ -802,7 +817,12 @@ function useOnboardingWardWizard() {
     const skipNextAutosaveRef = useRef(false);
     const shiftTypeStepEntryDraftRef = useRef<TOnboardingWardDraft | null>(null);
     const shouldResetStepOnRestoreRef = useRef(shouldResetStepFromHistoryState());
-    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
+    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => {
+        const initialDraft = createInitialDraft(onboardingDraftLabels);
+        const hospitalName = options.initialHospitalName?.trim();
+
+        return hospitalName && hospitalName.length <= 20 ? {...initialDraft, hospitalName} : initialDraft;
+    });
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
@@ -812,6 +832,7 @@ function useOnboardingWardWizard() {
     const [draftWardId, setDraftWardId] = useState<number | null>(null);
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
+    const [draftRestoreAttempt, setDraftRestoreAttempt] = useState(0);
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
     const [isStepTransitioning, setIsStepTransitioning] = useState(false);
     const stepTransitioningRef = useRef(false);
@@ -843,6 +864,8 @@ function useOnboardingWardWizard() {
         let isActive = true;
 
         const restoreDraft = async () => {
+            setDraftRestoreStatus('loading');
+
             try {
                 const serverDraft = await getOnboardingWardDraft();
 
@@ -895,7 +918,7 @@ function useOnboardingWardWizard() {
         return () => {
             isActive = false;
         };
-    }, [getOnboardingWardDraft]);
+    }, [draftRestoreAttempt, getOnboardingWardDraft]);
 
     useEffect(() => {
         if (!selectedTeamId && draft.teams[0]) {
@@ -922,6 +945,10 @@ function useOnboardingWardWizard() {
             isAutosave?: boolean;
             suppressNextAutosave?: boolean;
         } = {}) => {
+            if (options.requireDraftRestore && draftRestoreStatus !== 'ready') {
+                return Promise.resolve<TDraftSaveResult>({success: false});
+            }
+
             if (submissionStatus === 'success' || draftCreationStatus === 'creating') {
                 return Promise.resolve<TDraftSaveResult>({success: true});
             }
@@ -989,9 +1016,11 @@ function useOnboardingWardWizard() {
             createOnboardingWardDraft,
             draft,
             draftCreationStatus,
+            draftRestoreStatus,
             draftWardId,
             enqueueDraftSave,
             fallbackWardName,
+            options.requireDraftRestore,
             saveOnboardingWardDraft,
             selectedTeamId,
             sortMode,
@@ -1003,6 +1032,7 @@ function useOnboardingWardWizard() {
     useEffect(() => {
         if (
             draftRestoreStatus === 'loading' ||
+            (options.requireDraftRestore && draftRestoreStatus !== 'ready') ||
             submissionStatus === 'success' ||
             submissionStatus === 'submitting' ||
             isStepTransitioning
@@ -1025,7 +1055,7 @@ function useOnboardingWardWizard() {
         }, ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS);
 
         return () => window.clearTimeout(autosaveTimer);
-    }, [draft, draftRestoreStatus, draftWardId, isStepTransitioning, saveDraftSnapshot, submissionStatus]);
+    }, [draft, draftRestoreStatus, draftWardId, isStepTransitioning, options.requireDraftRestore, saveDraftSnapshot, submissionStatus]);
 
     const selectedTeamExists = draft.teams.some((team) => team.id === selectedTeamId);
     const activeTeamId = selectedTeamExists ? selectedTeamId : (draft.teams[0]?.id ?? '');
@@ -1645,7 +1675,7 @@ function useOnboardingWardWizard() {
         }
     };
     const complete = async () => {
-        if (submissionStatus === 'submitting') {
+        if (submissionStatus === 'submitting' || (options.requireDraftRestore && draftRestoreStatus !== 'ready')) {
             return;
         }
 
@@ -1748,6 +1778,8 @@ function useOnboardingWardWizard() {
         uploadError,
         uploadWarnings,
         draftCreationStatus,
+        draftRestoreStatus,
+        retryDraftRestore: () => setDraftRestoreAttempt((attempt) => attempt + 1),
         createdWard,
         complete,
         isStepTransitioning,

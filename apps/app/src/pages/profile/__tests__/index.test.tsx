@@ -1,13 +1,15 @@
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import i18n from 'i18next';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import '@/i18n';
+import {wardQueryKeys} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
 import ROUTE from '@/shared/constant/path';
 import {fireEvent, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
-import ProfilePage from '..';
+import {ProfileContent as ProfilePage} from '..';
 
 vi.mock('@/features/auth', () => ({
     default: vi.fn(),
@@ -173,9 +175,7 @@ describe('ProfilePage account actions', () => {
         await userEvent.clear(phoneInput);
         await userEvent.type(phoneInput, '+81 90-1234-5678');
 
-        const buttons = screen.getAllByRole('button');
-
-        await userEvent.click(buttons[buttons.length - 1]);
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
 
         await waitFor(() => {
             expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('Yamada', {}, '+81 90-1234-5678');
@@ -189,9 +189,7 @@ describe('ProfilePage account actions', () => {
             </MemoryRouter>,
         );
 
-        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {expanded: false}));
-        await userEvent.click(screen.getAllByRole('option')[1]);
+        await userEvent.selectOptions(screen.getByRole('combobox', {name: '화면 언어 / Language'}), 'ja');
         expect(screen.queryByRole('button', {name: '언어 설정 저장'})).not.toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
@@ -203,6 +201,97 @@ describe('ProfilePage account actions', () => {
             });
         });
         expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();
+    });
+
+    it('keeps unchanged settings disabled and labels every editable field', () => {
+        render(<ProfilePage />);
+
+        expect(screen.getByRole('button', {name: '변경사항 저장'})).toBeDisabled();
+        expect(screen.getByRole('textbox', {name: '이름'})).toHaveValue('홍길동');
+        expect(screen.getByRole('textbox', {name: '전화번호'})).toHaveValue('01012345678');
+        expect(screen.getByRole('combobox', {name: '화면 언어 / Language'})).toHaveValue('ko');
+        expect(screen.getByRole('status')).toHaveTextContent('최신 정보가 저장되어 있어요.');
+    });
+
+    it('shows field validation and does not submit an invalid phone number', async () => {
+        render(<ProfilePage />);
+
+        await userEvent.clear(screen.getByRole('textbox', {name: '전화번호'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        expect(screen.getByRole('textbox', {name: '전화번호'})).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('전화번호를 입력해 주세요.')).toBeVisible();
+        expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();
+    });
+
+    it('disables submission while a profile save is still in progress', async () => {
+        let finishSave: (result: boolean) => void = () => undefined;
+
+        mockHandleEditAccountBasic.mockReturnValue(
+            new Promise<boolean>((resolve) => {
+                finishSave = resolve;
+            }),
+        );
+        render(<ProfilePage />);
+        await userEvent.clear(screen.getByRole('textbox', {name: '이름'}));
+        await userEvent.type(screen.getByRole('textbox', {name: '이름'}), '김간호');
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        expect(screen.getByRole('button', {name: '저장 중...'})).toBeDisabled();
+        expect(mockHandleEditAccountBasic).toHaveBeenCalledTimes(1);
+        finishSave(true);
+        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 저장'})).toBeEnabled());
+    });
+
+    it('keeps the embedded profile editable without adding page navigation', async () => {
+        render(<ProfilePage layout="modal" />);
+
+        expect(screen.getByRole('heading', {level: 1, name: '마이페이지'})).toBeVisible();
+        expect(screen.queryByRole('button', {name: '병동 나가기'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+        await userEvent.selectOptions(screen.getByRole('combobox', {name: '화면 언어 / Language'}), 'en');
+        await userEvent.click(screen.getByRole('button', {name: '저장하기'}));
+        await waitFor(() => expect(mockUpdateAccountPreferences).toHaveBeenCalledWith({preferredLanguage: 'en', serviceRegion: 'EN'}));
+    });
+
+    it.each(['HOSPITAL', 'MEMBERSHIP', undefined] as const)(
+        'offers ward resignation only for a physical or legacy membership (source: %s)',
+        (accessSource) => {
+            const auth = mockedUseAuth();
+
+            mockedUseAuth.mockReturnValue({
+                ...auth,
+                state: {...auth.state, accountMe: {...auth.state.accountMe!, wardId: 11, accessSource}},
+            });
+
+            const client = new QueryClient({defaultOptions: {queries: {retry: false, staleTime: Infinity}}});
+
+            client.setQueryData(wardQueryKeys.id(11), {wardId: 11, shiftTeams: []});
+            render(
+                <QueryClientProvider client={client}>
+                    <ProfilePage />
+                </QueryClientProvider>,
+            );
+            expect(screen.getByRole('button', {name: '로그아웃'})).toBeInTheDocument();
+
+            if (accessSource === 'HOSPITAL') {
+                expect(screen.queryByRole('button', {name: '병동 나가기'})).not.toBeInTheDocument();
+            } else {
+                expect(screen.getByRole('button', {name: '병동 나가기'})).toBeInTheDocument();
+            }
+        },
+    );
+
+    it('cancels account deletion without calling the destructive endpoint', async () => {
+        render(<ProfilePage />);
+        await userEvent.click(screen.getByRole('button', {name: '회원 탈퇴'}));
+
+        const dialog = screen.getByRole('dialog', {name: '회원 탈퇴할까요?'});
+
+        await userEvent.click(within(dialog).getByRole('button', {name: '취소'}));
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(mockDeleteAccount).not.toHaveBeenCalled();
     });
 
     it('로그아웃 버튼을 누르면 확인 팝업을 먼저 띄운다', async () => {

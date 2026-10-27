@@ -1,25 +1,47 @@
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
+import useAuth from '@/features/auth';
 import useAuthStore from '@/features/auth/model/store';
 import {scopePath, useCommercialContext, useWardEntitlement, usageRemainingLabel} from './api';
+import {HospitalEntry} from './hospital-entry';
+import {getOwnedWardLinkScope} from './ward-links';
 
 export function CommercialEntry({compact = false}: {compact?: boolean}) {
     const context = useCommercialContext();
     const {i18n} = useTranslation();
+    const {
+        state: {accountMe},
+    } = useAuth();
+    const wardId = useAuthStore((state) => state.wardId);
+    const ownerScope = getOwnedWardLinkScope(context.data, accountMe, wardId);
 
-    if (!context.data?.enabled || context.data.configurationReady === false) return null;
+    if (!context.data?.enabled) return null;
 
     const ko = i18n.language.startsWith('ko');
 
     return (
-        <Link
-            to="/workspace"
-            className="mx-1 my-2 block rounded-xl bg-gray-7 p-3 text-sm font-medium text-sub-1"
-            title={ko ? '요금제·병원 관리' : 'Plans & workspaces'}
-        >
-            {compact ? '↗' : ko ? '요금제·병원 관리' : 'Plans & workspaces'}
-        </Link>
+        <>
+            <HospitalEntry compact={compact} />
+            {ownerScope ? (
+                <Link
+                    to={scopePath(ownerScope, 'links')}
+                    className="mx-1 my-2 block rounded-xl bg-gray-7 p-3 text-sm font-medium text-sub-1"
+                    title={ko ? '병원 연결 요청 확인' : 'Review hospital connection requests'}
+                >
+                    {compact ? (ko ? '연결' : 'Links') : ko ? '병원 연결 요청' : 'Hospital connections'}
+                </Link>
+            ) : null}
+            {context.data.configurationReady !== false ? (
+                <Link
+                    to="/workspace"
+                    className="mx-1 my-2 block rounded-xl bg-gray-7 p-3 text-sm font-medium text-sub-1"
+                    title={ko ? '요금제·관리 공간' : 'Plans & workspaces'}
+                >
+                    {compact ? '↗' : ko ? '요금제·관리 공간' : 'Plans & workspaces'}
+                </Link>
+            ) : null}
+        </>
     );
 }
 export function WardUsageSummary() {
