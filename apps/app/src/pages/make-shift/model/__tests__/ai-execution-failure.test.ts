@@ -447,3 +447,28 @@ describe('personal rest capacity evidence', () => {
         expect(aiExecutionFailure(response(10))?.conditionConflict).not.toBe(true);
     });
 });
+
+it('retains only conflict display evidence and explains missing details', () => {
+    const response: TAutofillResponse = {
+        operationType: 'GENERATE',
+        draftRevision: 1,
+        resultType: 'PATCH',
+        applicable: false,
+        validation: {
+            draftRevision: 1,
+            rulesHash: 'test',
+            summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+            violations: [],
+        },
+        changedCells: [],
+        unmetInstructions: [],
+        sameAsPrevious: true,
+        conflictReview: {token: 'secret-candidate-token', expiresAt: '2099-01-01T00:00:00Z', violations: []},
+    };
+    const failure = aiExecutionFailure(response);
+
+    expect(failure?.message).toBe(i18n.t('aiAdjust.executionFailure.conflictDetailsMissing'));
+    expect(failure?.confirmationRequired).toBe(true);
+    expect(failure?.conflictDetails).not.toHaveProperty('token');
+    expect(JSON.stringify(failure)).not.toContain('secret-candidate-token');
+});

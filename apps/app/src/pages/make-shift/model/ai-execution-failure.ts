@@ -236,6 +236,14 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         }
     }
 
+    const conflictDetails = response.conflictReview
+        ? {
+              explanation: response.conflictReview.explanation,
+              violations: response.conflictReview.violations,
+              ruleLabels: response.conflictReview.ruleLabels,
+          }
+        : undefined;
+
     if (explanations.length) {
         const review = Boolean(response.conflictReview);
 
@@ -248,14 +256,19 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             recovery: review ? 'review' : 'revise',
             ...(restConflicts.length ? {restConflicts} : {}),
             ...(availabilityConflict ? {settingsTarget: 'member' as const} : restConflicts.length ? {settingsTarget: 'rest' as const} : {}),
-            ...(review ? {confirmationRequired: true} : {conditionConflict: true}),
+            ...(review ? {confirmationRequired: true, conflictDetails} : {conditionConflict: true}),
             ...(response.observation ? {observation: response.observation} : {}),
         };
     }
 
     if (response.conflictReview)
         return {
-            message: i18n.t('aiAdjust.executionFailure.conflictMessage'),
+            message: i18n.t(
+                conflictDetails?.violations.length || conflictDetails?.explanation?.trim()
+                    ? 'aiAdjust.executionFailure.conflictMessage'
+                    : 'aiAdjust.executionFailure.conflictDetailsMissing',
+            ),
+            conflictDetails,
             blocked: false,
             recovery: 'review',
             confirmationRequired: true,

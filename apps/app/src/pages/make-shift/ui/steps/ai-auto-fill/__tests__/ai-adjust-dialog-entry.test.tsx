@@ -1,8 +1,11 @@
 import type {TScheduleAdjustInterpretRes} from '@dutying/api/ward';
-import {createRef} from 'react';
+import {createRef, useState} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
+import type {TAiConversationFailure} from '../../../../model/ai-conversation-failure';
 import AiAdjustDialog from '../ai-adjust-dialog';
+import type {TAdjustTextInputHandle} from '../ai-adjust-text-input';
+import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({useTypedTranslation: () => ({t: (key: string) => key})}));
 
@@ -68,4 +71,120 @@ describe('unified AI sidebar entry', () => {
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
     });
+});
+
+it('keeps legacy conflict evidence and opens request editing without offering confirmation', async () => {
+    const generate = vi.fn();
+    const apply = vi.fn();
+    const confirm = vi.fn();
+
+    function Recovery() {
+        const [failure, setFailure] = useState<TAiConversationFailure | null>({
+            message: '조건 충돌',
+            blocked: false,
+            recovery: 'review',
+            confirmationRequired: true,
+            conflictDetails: {
+                explanation: '야간 조건과 필요 인원이 맞지 않아요.',
+                violations: [
+                    {
+                        violationId: 'v1',
+                        ruleId: 9,
+                        templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                        severity: 'HARD',
+                        message: '합성 간호사 야간 횟수',
+                        messageArgs: {operator: 'MAX', expected: 2, actual: 4},
+                        affectedCells: [],
+                        fixable: true,
+                    },
+                ],
+            },
+        });
+
+        return (
+            <AiAdjustDialog
+                open
+                onClose={vi.fn()}
+                onGenerate={generate}
+                onRegenerate={generate}
+                onDismissFailure={() => setFailure(null)}
+                generationFailure={failure}
+                renderConflictReview={
+                    failure
+                        ? (onRevise, onEditSettings) => (
+                              <ConstraintConflictReview
+                                  review={{...failure.conflictDetails!, token: 'synthetic-token', expiresAt: '2099-01-01T00:00:00Z'}}
+                                  current
+                                  disabled={false}
+                                  onProceed={apply}
+                                  onRevise={onRevise}
+                                  onEditSettings={onEditSettings}
+                                  copy={(ko) => ko}
+                              />
+                          )
+                        : undefined
+                }
+                disabled={false}
+                textInputRef={createRef()}
+                onPickExample={vi.fn()}
+                interpret={vi.fn()}
+                onApply={apply}
+                goalNurses={[]}
+                requests={[]}
+                disablingRequestId={null}
+                onDisableRequest={vi.fn()}
+                resultActions={{canConfirm: true, onConfirm: confirm}}
+            />
+        );
+    }
+
+    render(<Recovery />);
+    expect(screen.getByText('야간 조건과 필요 인원이 맞지 않아요.')).toBeVisible();
+    expect(screen.queryByRole('button', {name: 'aiAdjust.chat.confirmSchedule'})).not.toBeInTheDocument();
+    expect(generate).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', {name: 'aiAutofillUi.conflictReview.revise'}));
+    expect(await screen.findByRole('textbox')).toHaveFocus();
+    await userEvent.type(screen.getByRole('textbox'), '야간은 4회로 맞춰 주세요');
+    expect(screen.getByRole('textbox')).toHaveValue('야간은 4회로 맞춰 주세요');
+    expect(screen.queryByRole('button', {name: 'aiAdjust.chat.confirmSchedule'})).not.toBeInTheDocument();
+    expect(apply).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+});
+
+it('switches legacy changes back to generation without sending or clearing the typed request', async () => {
+    const generate = vi.fn();
+    const interpret = vi.fn();
+    const apply = vi.fn();
+    const props = {
+        open: true,
+        onClose: vi.fn(),
+        onGenerate: generate,
+        onRegenerate: generate,
+        disabled: false,
+        textInputRef: createRef<TAdjustTextInputHandle>(),
+        onPickExample: vi.fn(),
+        interpret,
+        onApply: apply,
+        goalNurses: [],
+        requests: [],
+        disablingRequestId: null,
+        onDisableRequest: vi.fn(),
+    };
+    const view = render(<AiAdjustDialog {...props} />);
+
+    await userEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+    await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
+    await userEvent.click(screen.getByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'}));
+    expect(generate).toHaveBeenCalledOnce();
+
+    const flow = {id: 1, kind: 'generation' as const, status: 'preparing' as const, messages: []};
+
+    view.rerender(<AiAdjustDialog {...props} preparation={<p>자동채우기 준비</p>} autofillFlow={flow} />);
+    expect(screen.getByText('자동채우기 준비')).toBeVisible();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    view.rerender(<AiAdjustDialog {...props} autofillFlow={{...flow, status: 'completed'}} />);
+    await userEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.modify'}));
+    expect(screen.getByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+    expect(interpret).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
 });

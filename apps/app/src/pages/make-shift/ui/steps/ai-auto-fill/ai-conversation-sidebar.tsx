@@ -62,7 +62,12 @@ import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './a
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
-import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
+import {
+    AiConversationConfirmation,
+    AiConversationEntry,
+    AiConversationGenerationSwitch,
+    type TConversationEntryChoice,
+} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
 import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiConversationFeedbackDialog} from './ai-conversation-feedback-dialog';
@@ -292,6 +297,7 @@ export default function AiConversationSidebar({
     const mounted = useRef(true);
     const initialized = useRef(false);
     const syncTail = useRef<Promise<unknown>>(Promise.resolve());
+    const preserveGenerationComposer = useRef(false);
     const lastGeneration = useRef(0);
     const lastRebuild = useRef(0);
     const pendingKey = `dutying.conversation:${chatOwner?.replace('ward-admin:', 'admin:') ?? 'anonymous'}:${wardId}:${teamId}:${year}:${month}`;
@@ -1712,7 +1718,10 @@ export default function AiConversationSidebar({
         setEntryChoice(null);
         setRebuild(false);
         setPreviousId(undefined);
-        setText('');
+
+        if (!preserveGenerationComposer.current) setText('');
+
+        preserveGenerationComposer.current = false;
         setNotice(null);
         setPreview(null);
     }, [preparing, autofillFlow?.id]);
@@ -1920,6 +1929,8 @@ export default function AiConversationSidebar({
         if (!detail || busy || running || awaitingAdjustment || preparing || isAutofillBlocked) return;
 
         if (choice === 'modify' && !adjustEnabled) return;
+
+        if (choice === 'regenerate') preserveGenerationComposer.current = entryChoice === 'modify';
 
         setEntryChoice(choice);
         setLocalEvents((current) => [
@@ -2410,6 +2421,7 @@ export default function AiConversationSidebar({
                                                 }
                                                 operationType={event.operation.operationType}
                                                 failure={operationFailure(event.operation)!}
+                                                detailsInChildren={Boolean(event.operation.result?.conflictReview)}
                                                 active={
                                                     failureNeedsAction &&
                                                     event.operation === latestOperation &&
@@ -2710,7 +2722,8 @@ export default function AiConversationSidebar({
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {showNextActions &&
                             (attachNextActions ? (
-                                resultActions && (
+                                resultActions &&
+                                !failure && (
                                     <AiConversationConfirmation
                                         confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}}
                                     />
@@ -2722,7 +2735,9 @@ export default function AiConversationSidebar({
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
                                     confirmation={
-                                        resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                        !failure && resultActions
+                                            ? {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                            : undefined
                                     }
                                     onChoose={chooseNextAction}
                                 />
@@ -2896,6 +2911,12 @@ export default function AiConversationSidebar({
                             </button>
                         )}
                         <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
+                            {entryChoice === 'modify' && !editingRequest && (
+                                <AiConversationGenerationSwitch
+                                    disabled={busy || running || awaitingAdjustment || isAutofillBlocked}
+                                    onSwitch={() => chooseNextAction('regenerate')}
+                                />
+                            )}
                             {!!preferences.length && (
                                 <details>
                                     <summary className="text-sm">{t('aiConversationSidebar.savedRequests')}</summary>

@@ -155,3 +155,19 @@ export function AiConversationEntry({
         </div>
     );
 }
+
+export function AiConversationGenerationSwitch({disabled, onSwitch}: {disabled: boolean; onSwitch: () => void}) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={onSwitch}
+            className="flex min-h-11 items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
+        >
+            <RotateCw aria-hidden className="size-4 shrink-0" />
+            {t('aiAutofillUi.conversationEntry.switchToAutofill')}
+        </button>
+    );
+}

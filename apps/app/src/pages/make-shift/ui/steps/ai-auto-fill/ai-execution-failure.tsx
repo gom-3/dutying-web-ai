@@ -1,10 +1,12 @@
 import {Children, type ReactNode} from 'react';
+import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import {AiConflictEvidence} from './ai-conflict-evidence';
+import {AiConflictViolationList} from './ai-conflict-violation-list';
 import {AiFailureMessage} from './ai-failure-message';
 
 /** The failed result and the next decision belong after the preparation replies. */
@@ -23,6 +25,7 @@ export function AiExecutionFailure({
     attemptLabel,
     headerAction,
     children,
+    detailsInChildren = false,
 }: {
     failure: TAiConversationFailure;
     active?: boolean;
@@ -38,6 +41,7 @@ export function AiExecutionFailure({
     attemptLabel?: string;
     headerAction?: ReactNode;
     children?: ReactNode;
+    detailsInChildren?: boolean;
 }) {
     const {t} = useTypedTranslation();
     const displayRef = useScheduleJourneyDisplay(failure.observation);
@@ -49,14 +53,20 @@ export function AiExecutionFailure({
     const secondaryClass = `${actionClass} bg-white text-[#475467] hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white`;
     const retryable = !failure.blocked && (!failure.recovery || failure.recovery === 'retry');
     const showSettings = failure.recovery === 'settings';
-    const showRetry = retryable && Boolean(onRetry);
-    const showRevise = !failure.blocked && failure.recovery !== 'review' && !showSettings && Boolean(onRevise);
-    const showReview = Boolean(onReview) && (!retryable || !onRevise);
+    const reviewGeneration = operationType === 'GENERATE' && Boolean(failure.confirmationRequired) && !failure.blocked;
+    const showRetry = (retryable || reviewGeneration) && Boolean(onRetry);
+    const showRevise =
+        !failure.blocked &&
+        (failure.recovery !== 'review' || (Boolean(failure.confirmationRequired) && !detailsInChildren)) &&
+        !showSettings &&
+        Boolean(onRevise);
+    const showReview = !failure.confirmationRequired && Boolean(onReview) && (!retryable || !onRevise);
     const showConditionSettings =
-        !failure.blocked && failure.conditionConflict && (Boolean(onEditSettings) || Boolean(failure.settingsTarget));
+        !failure.blocked &&
+        (Boolean(failure.conditionConflict) || (Boolean(failure.confirmationRequired) && !detailsInChildren)) &&
+        (Boolean(onEditSettings) || Boolean(failure.settingsTarget));
     const content = Children.toArray(children);
-    const showActions =
-        active && !failure.confirmationRequired && (showSettings || showRetry || showRevise || showReview || showConditionSettings);
+    const showActions = active && (showSettings || showRetry || showRevise || showReview || showConditionSettings);
     const title =
         failure.confirmationRequired || failure.conditionConflict
             ? t('aiAdjust.executionFailure.conflictTitle')
@@ -76,6 +86,14 @@ export function AiExecutionFailure({
                 {!!failure.conflicts?.length && (
                     <AiConflictEvidence failure={failure} active={active} disabled={disabled} onInspect={onInspectSchedule} />
                 )}
+                {!detailsInChildren && failure.conflictDetails && (
+                    <div className="space-y-3 text-sm">
+                        {i18n.resolvedLanguage?.startsWith('ko') && failure.conflictDetails.explanation?.trim() && (
+                            <p className="whitespace-pre-wrap">{failure.conflictDetails.explanation}</p>
+                        )}
+                        <AiConflictViolationList review={failure.conflictDetails} />
+                    </div>
+                )}
                 {!!content.length && <div className="space-y-3">{content}</div>}
                 {showActions && (
                     <div className={`grid w-full gap-2 ${content.length ? 'mt-4' : ''}`}>
@@ -86,7 +104,7 @@ export function AiExecutionFailure({
                         )}
                         {showRetry && (
                             <button type="button" className={primaryClass} disabled={disabled} onClick={onRetry}>
-                                {t('aiAdjust.failure.retry')}
+                                {t(reviewGeneration ? 'aiAdjust.executionFailure.retryConditions' : 'aiAdjust.failure.retry')}
                             </button>
                         )}
                         {showRevise && (

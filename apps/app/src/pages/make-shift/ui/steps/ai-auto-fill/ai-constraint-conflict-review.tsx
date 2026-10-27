@@ -35,7 +35,8 @@ export function ConstraintConflictReview({
     const [failed, setFailed] = useState(false);
     const [now, setNow] = useState(Date.now);
     const expiry = Date.parse(review.expiresAt);
-    const available = current && Number.isFinite(expiry) && expiry > now;
+    const hasDetails = review.violations.length > 0;
+    const available = hasDetails && current && Number.isFinite(expiry) && expiry > now;
 
     useEffect(() => {
         if (!Number.isFinite(expiry) || expiry <= now) return;
@@ -46,7 +47,7 @@ export function ConstraintConflictReview({
     }, [expiry, now]);
 
     const proceed = async () => {
-        if (disabled || !current || inFlight.current) return;
+        if (disabled || !current || !hasDetails || inFlight.current) return;
 
         if (!Number.isFinite(expiry) || expiry <= Date.now()) {
             setNow(Date.now());
@@ -88,11 +89,17 @@ export function ConstraintConflictReview({
                     <p className="mt-2">{t('aiAutofillUi.conflictReview.reviseHint')}</p>
                 </div>
             )}
-            <h3 className="text-sm font-medium">{t('aiAutofillUi.conflictReview.changes')}</h3>
-            <p className="text-sm leading-relaxed">{t('aiAutofillUi.conflictReview.resultContext')}</p>
-            <AiConflictViolationList review={review} />
-            <p className="text-sm">{t('aiAutofillUi.conflictReview.applyNotice')}</p>
-            {!available && <p className="text-sm">{t('aiAutofillUi.conflictReview.expired')}</p>}
+            {hasDetails ? (
+                <>
+                    <h3 className="text-sm font-medium">{t('aiAutofillUi.conflictReview.changes')}</h3>
+                    <p className="text-sm leading-relaxed">{t('aiAutofillUi.conflictReview.resultContext')}</p>
+                    <AiConflictViolationList review={review} />
+                    <p className="text-sm">{t('aiAutofillUi.conflictReview.applyNotice')}</p>
+                </>
+            ) : (
+                <p className="text-sm">{t('aiAdjust.executionFailure.conflictDetailsMissing')}</p>
+            )}
+            {hasDetails && !available && <p className="text-sm">{t('aiAutofillUi.conflictReview.expired')}</p>}
             {failed && (
                 <p role="alert" className="text-sm">
                     {t('aiAutofillUi.conflictReview.applyFailed')}
