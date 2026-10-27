@@ -1661,7 +1661,9 @@ function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
 }
 
 function createRulesFromServer(serverRules: TShiftConstraintRule[]) {
-    return fromServerRules(serverRules).filter((rule) => !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(rule.templateCode));
+    return fromServerRules(serverRules).filter(
+        (rule) => !RETIRED_TWO_SHIFT_CONFIGURATION_CODES.has(rule.templateCode) && rule.params.source !== 'PERSONAL_MONTHLY_REST_POLICY',
+    );
 }
 
 function getSelectOptionParamValue(option: TSelectOption | undefined) {
@@ -5306,12 +5308,8 @@ function ConstraintsContent({
             ...mergedOptionMap,
             nurse: eligibleNurseOptions,
             duty: filteredDutyOptions,
-            quotaDuty: uniqueByValue([
-                ...filteredDutyOptions,
-                ...(mergedOptionMap.duty ?? []).filter(
-                    (option) => ['OFF', 'ANNUAL_LEAVE'].includes(option.classification ?? '') || option.raw?.type === 'SET',
-                ),
-            ]),
+            // Leave is entered through leave management and dated shift requests.
+            quotaDuty: filteredDutyOptions,
             dutyStrict: filteredDutyOptions.filter((option) => !isAllSelectOption(option)),
             date: (mergedOptionMap.date ?? []).filter(isOptionInCurrentMonth),
             dateScope: (mergedOptionMap.dateScope ?? []).filter(isOptionInCurrentMonth),
