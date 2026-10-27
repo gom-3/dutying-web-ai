@@ -188,7 +188,7 @@ describe('hospital management workspace', () => {
                 .getAllByRole('link')
                 .map((link) => link.textContent),
         ).toEqual(['병동 관리', '관리자 관리', '이용·계약']);
-        expect(screen.queryByRole('button', {name: '정확한 금액 확인'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).not.toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: '지원 시간'})).not.toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: '환불·정산 문의'})).not.toBeInTheDocument();
         expect(mocks.get.mock.calls.some(([path]) => path === '/plans' || String(path).endsWith('/support'))).toBe(false);
@@ -489,8 +489,8 @@ describe('ward billing policy readiness', () => {
         mount('/workspace/WARD/11/billing');
 
         expect(await screen.findByText('요금제 설정 중')).toBeInTheDocument();
-        expect(screen.getByText('요금제 설정이 완료되면 견적을 확인할 수 있습니다.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeDisabled();
+        expect(await screen.findByText('요금제 설정이 완료되면 견적을 확인할 수 있습니다.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -499,7 +499,7 @@ describe('ward billing policy readiness', () => {
         mount('/workspace/WARD/11/billing');
 
         expect(await screen.findByText('요금제 설정 중')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -511,7 +511,7 @@ describe('ward billing policy readiness', () => {
 
         await waitFor(() => expect(input).toHaveValue(80));
         expect(input).toHaveAttribute('min', '80');
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', {
                 purpose: 'SUBSCRIPTION',
@@ -536,14 +536,16 @@ describe('ward billing policy readiness', () => {
 
         const input = await screen.findByRole('spinbutton', {name: '변경 후 총 편성 인원'});
 
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
         await userEvent.clear(input);
         await userEvent.type(input, '120');
         resolveCatalog([{id: 'plus-policy', config: completePolicy('PLUS', {includedStaff: 80}), configured: true}]);
-        await waitFor(() => expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeEnabled());
+        await waitFor(() =>
+            expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeEnabled(),
+        );
         expect(input).toHaveValue(120);
         expect(input).toHaveAttribute('min', '80');
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 120})),
         );
@@ -563,11 +565,11 @@ describe('ward billing policy readiness', () => {
 
         const fullPacks = await screen.findByRole('spinbutton', {name: /전체 생성.*묶음/});
 
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeEnabled();
         expect(screen.queryByText('요금제 설정 중')).not.toBeInTheDocument();
         await userEvent.clear(fullPacks);
         await userEvent.type(fullPacks, '1');
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith(
                 '/billing-scopes/ward-scope/quotes',
@@ -593,7 +595,7 @@ describe('ward billing policy readiness', () => {
 
         expect(input).toHaveValue(50);
         expect(input).toHaveAttribute('min', '40');
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith(
                 '/billing-scopes/ward-scope/quotes',

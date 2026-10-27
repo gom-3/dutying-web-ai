@@ -179,9 +179,28 @@ afterEach(() => {
 });
 
 describe('Plus checkout before card registration', () => {
+    it('makes subscription entry clear and requests only a quote before email verification and consent', async () => {
+        mount();
+
+        const start = await screen.findByRole('button', {name: 'Plus 구독 시작'});
+
+        expect(screen.getByRole('list', {name: 'Plus 구독 절차'})).toBeInTheDocument();
+        expect(screen.getByText(/지금은 결제되지 않습니다/)).toBeInTheDocument();
+        expect(screen.queryByRole('combobox', {name: '이용할 상품'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '다음 주기 감원 예약'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: '환불·정산 문의'})).not.toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
+        await userEvent.click(start);
+        expect(await screen.findByRole('heading', {name: '검증용 병동 · 결제 전 확인'})).toHaveFocus();
+        expect(screen.getByRole('button', {name: '결제 금액 다시 확인'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '동의하고 정기결제 카드 등록'})).toBeDisabled();
+        expect(mocks.post.mock.calls.every(([path]) => path.endsWith('/quotes'))).toBe(true);
+        expect(mocks.open).not.toHaveBeenCalled();
+    });
+
     it('requires explicit agreement and email proof, then opens Toss using the approved server quote', async () => {
         mount();
-        await userEvent.click(await screen.findByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(await screen.findByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(await screen.findByText(/다음 자동결제일/)).toBeInTheDocument();
 
         const start = screen.getByRole('button', {name: '동의하고 정기결제 카드 등록'});
@@ -207,7 +226,7 @@ describe('Plus checkout before card registration', () => {
     it('keeps checkout intact when the server returns malformed quote JSON', async () => {
         mocks.post.mockResolvedValue({...quote, snapshot: '{invalid'});
         mount();
-        await userEvent.click(await screen.findByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(await screen.findByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(await screen.findByRole('alert')).toHaveTextContent('견적 정보를 확인하지 못했습니다');
         expect(screen.queryByRole('button', {name: '동의하고 정기결제 카드 등록'})).not.toBeInTheDocument();
         expect(mocks.open).not.toHaveBeenCalled();
@@ -216,8 +235,8 @@ describe('Plus checkout before card registration', () => {
     it('does not allow an expired quote to reach card registration', async () => {
         mocks.post.mockResolvedValue({...quote, expiresAt: '2000-01-01T00:00:00Z'});
         mount();
-        await userEvent.click(await screen.findByRole('button', {name: '정확한 금액 확인'}));
-        expect(await screen.findByRole('alert')).toHaveTextContent('견적이 만료되었습니다');
+        await userEvent.click(await screen.findByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('유효시간이 지났습니다');
         await userEvent.click(screen.getByRole('checkbox', {name: /금액·대상·기간/}));
         await userEvent.click(screen.getByRole('button', {name: '이메일 본인 확인 완료'}));
         expect(screen.getByRole('button', {name: '동의하고 정기결제 카드 등록'})).toBeDisabled();
@@ -227,7 +246,7 @@ describe('Plus checkout before card registration', () => {
     it('creates no payment registration when the SDK cannot load', async () => {
         mocks.load.mockRejectedValue(new Error('결제창을 불러오지 못했습니다.'));
         mount();
-        await userEvent.click(await screen.findByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(await screen.findByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         await userEvent.click(screen.getByRole('checkbox', {name: /금액·대상·기간/}));
         await userEvent.click(screen.getByRole('button', {name: '이메일 본인 확인 완료'}));
         await userEvent.click(screen.getByRole('button', {name: '동의하고 정기결제 카드 등록'}));
@@ -309,6 +328,18 @@ describe('card authorization callback and first charge', () => {
         expect(screen.queryByText('구독 이용 조건을 확인하지 못했습니다')).not.toBeInTheDocument();
     });
 
+    it('explains invalid card numbers without exposing raw callback details or charging', async () => {
+        mount(callback + '&code=INVALID_CARD_NUMBER&message=private-card-data');
+        expect(await screen.findByRole('alert')).toHaveTextContent('카드번호가 올바르지 않거나 지원하지 않는 카드');
+        expect(screen.getByRole('link', {name: '결제 결과 재조회·미결제 주문 취소'})).toHaveAttribute(
+            'href',
+            '/workspace/payment-return?orderId=order-fixture',
+        );
+        expect(screen.queryByText('private-card-data')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /첫 결제하고 구독 시작/})).not.toBeInTheDocument();
+        expect(mocks.post).not.toHaveBeenCalled();
+    });
+
     it('handles cancellation even when malicious callback parameters include authorization', async () => {
         mount(callback + '&code=PAY_PROCESS_CANCELED&message=must-not-display-private-data');
         expect(await screen.findByRole('alert')).toHaveTextContent('카드 등록을 취소했습니다');
@@ -380,7 +411,7 @@ describe('published subscription policy', () => {
         );
         mount();
         expect(await screen.findByText('요금제 설정이 완료되면 견적을 확인할 수 있습니다.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -396,7 +427,7 @@ describe('published subscription policy', () => {
 
         await waitFor(() => expect(input).toHaveValue(80));
         expect(input).toHaveAttribute('min', '80');
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 80}));
     });
 
@@ -425,7 +456,7 @@ describe('published subscription policy', () => {
         expect(input).toHaveValue(50);
         expect(input).toHaveAttribute('min', '40');
         expect(screen.getByText(/기본.*19,900/)).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 50}));
     });
 });
@@ -453,9 +484,9 @@ describe('published Plus offer when the full catalogue is unavailable', () => {
 
         await waitFor(() => expect(input).toHaveValue(80));
         expect(input).toHaveAttribute('min', '80');
-        expect(screen.getByText(/기본.*35,000/)).toBeInTheDocument();
-        expect(screen.getByText(/추가 1명.*1,200/)).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        expect(screen.getByText('₩35,000')).toBeInTheDocument();
+        expect(screen.getByText(/기본 인원 초과 시 1명당 월.*1,200/)).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 80}));
         expect(await screen.findByRole('button', {name: '동의하고 정기결제 카드 등록'})).toBeDisabled();
         expect(screen.getByRole('checkbox', {name: /금액·대상·기간/})).not.toBeChecked();
@@ -474,7 +505,7 @@ describe('published Plus offer when the full catalogue is unavailable', () => {
         mocks.offer.mockImplementation(actual.fetchPublicOffer);
         mount();
         expect(await screen.findByText('요금제를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '정확한 금액 확인'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
         expect(screen.queryByText(/기본.*35,000/)).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
         expect(mocks.open).not.toHaveBeenCalled();
@@ -485,8 +516,8 @@ describe('published Plus offer when the full catalogue is unavailable', () => {
         mocks.offer.mockResolvedValue({...publishedOffer, ready: false});
         mocks.post.mockResolvedValue(publishedQuote);
         mount();
-        await screen.findByText(/기본.*35,000/);
-        await userEvent.click(screen.getByRole('button', {name: '정확한 금액 확인'}));
+        await screen.findByText('₩35,000');
+        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
         expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 80}));
         await userEvent.click(await screen.findByRole('checkbox', {name: /금액·대상·기간/}));
         await userEvent.click(screen.getByRole('button', {name: '이메일 본인 확인 완료'}));

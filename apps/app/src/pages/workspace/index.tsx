@@ -43,6 +43,7 @@ import {HospitalMembersPanel} from './hospital-members';
 import {HospitalOverview} from './hospital-overview';
 import {HospitalWorkspaceShell} from './hospital-workspace-shell';
 import {InfoTip} from './info-tip';
+import {PlusCheckoutPlan, PlusCheckoutProgress} from './plus-checkout';
 import {Reauthenticate} from './reauthentication';
 import {WardLinksPanel} from './ward-links-panel';
 import {WorkspaceActivity, countWorkspaceRequests} from './workspace-activity';
@@ -468,6 +469,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const [partial, setPartial] = useState(0);
     const [setup, setSetup] = useState(50);
     const [quote, setQuote] = useState<Quote>();
+    const reviewHeading = useRef<HTMLHeadingElement>(null);
     const [consent, setConsent] = useState(false);
     const [trialLoss, setTrialLoss] = useState(false);
     const [billingProof, setBillingProof] = useState('');
@@ -493,6 +495,10 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
 
         return () => clearInterval(timer);
     }, [quote]);
+
+    useEffect(() => {
+        if (quote && cardSubscription) reviewHeading.current?.focus();
+    }, [quote, cardSubscription]);
 
     const review = async () => {
         if (subscriptionUnavailable) return;
@@ -599,7 +605,10 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                 )}
             >
                 <Section
-                    title={t('요금제와 추가 구매', 'Plan & add-ons')}
+                    title={
+                        cardSubscription ? t('Plus 구독 시작', 'Start your Plus subscription') : t('요금제와 추가 구매', 'Plan & add-ons')
+                    }
+                    className={cardSubscription ? 'plus-checkout' : ''}
                     help={
                         scope.type === 'HOSPITAL'
                             ? t(
@@ -609,7 +618,8 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             : undefined
                     }
                 >
-                    {scope.type === 'WARD' ? (
+                    {cardSubscription ? <PlusCheckoutProgress reviewing={!!quote} /> : null}
+                    {!cardSubscription && scope.type === 'WARD' ? (
                         <p>
                             {t(
                                 'Plus는 병동 하나, Hospital은 계약 병원의 여러 병동을 함께 관리합니다. 로그인 관리자 수와 편성 인원은 서로 다릅니다.',
@@ -617,26 +627,28 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             )}
                         </p>
                     ) : null}
-                    <div className="workspace-plan-summary">
-                        <strong>{scope.type === 'HOSPITAL' ? 'Hospital' : 'Plus'}</strong>
-                        {planPricing ? (
-                            <>
+                    {!cardSubscription ? (
+                        <div className="workspace-plan-summary">
+                            <strong>{scope.type === 'HOSPITAL' ? 'Hospital' : 'Plus'}</strong>
+                            {planPricing ? (
+                                <>
+                                    <span>
+                                        {t('기본', 'Base')} {money(planPricing.baseGross)} /{' '}
+                                        {t('월 · 기본 편성 인원', 'month · included staff')} {planPricing.includedStaff}
+                                    </span>
+                                    <span>
+                                        {t('추가 1명', 'Each extra staff')} {money(planPricing.extraStaffGross)} / {t('월', 'month')}
+                                    </span>
+                                </>
+                            ) : (
                                 <span>
-                                    {t('기본', 'Base')} {money(planPricing.baseGross)} /{' '}
-                                    {t('월 · 기본 편성 인원', 'month · included staff')} {planPricing.includedStaff}
+                                    {plans.isPending
+                                        ? t('요금제를 불러오는 중입니다.', 'Loading plans…')
+                                        : t('요금제 설정 중', 'Plan being configured')}
                                 </span>
-                                <span>
-                                    {t('추가 1명', 'Each extra staff')} {money(planPricing.extraStaffGross)} / {t('월', 'month')}
-                                </span>
-                            </>
-                        ) : (
-                            <span>
-                                {plans.isPending
-                                    ? t('요금제를 불러오는 중입니다.', 'Loading plans…')
-                                    : t('요금제 설정 중', 'Plan being configured')}
-                            </span>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    ) : null}
                     {subscriptionUnavailable && !plans.isPending ? (
                         <Notice>
                             {plans.isError
@@ -658,105 +670,139 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             )}
                         </Notice>
                     ) : null}
-                    <Notice>
-                        {scope.type === 'HOSPITAL'
-                            ? t('Hospital은 개별 계약·계좌이체로 진행합니다.', 'Hospital uses individual contracts and bank transfers.')
-                            : t(
-                                  '현재 카드 결제는 Plus 월 구독만 지원합니다. Hospital은 개별 계약·계좌이체로 진행하며, 추가 횟수·중도 증원은 고객센터에 문의해 주세요.',
-                                  'Card billing currently supports Plus monthly subscriptions. Contact support for Hospital contracts, add-ons or mid-cycle capacity changes.',
-                              )}
-                    </Notice>
-                    <form
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            void action.run(review);
-                        }}
-                        className="workspace-form-grid"
-                    >
-                        <Field label={t('이용할 상품', 'Product')}>
-                            <select
-                                value={purpose}
-                                onChange={(event) => {
-                                    setPurpose(event.target.value as QuoteRequest['purpose']);
-                                    setQuote(undefined);
-                                }}
+                    {!cardSubscription ? (
+                        <Notice>
+                            {scope.type === 'HOSPITAL'
+                                ? t('Hospital은 개별 계약·계좌이체로 진행합니다.', 'Hospital uses individual contracts and bank transfers.')
+                                : t(
+                                      '현재 카드 결제는 Plus 월 구독만 지원합니다. Hospital은 개별 계약·계좌이체로 진행하며, 추가 횟수·중도 증원은 고객센터에 문의해 주세요.',
+                                      'Card billing currently supports Plus monthly subscriptions. Contact support for Hospital contracts, add-ons or mid-cycle capacity changes.',
+                                  )}
+                        </Notice>
+                    ) : null}
+                    <div className={cardSubscription ? ['plus-checkout-start', quote ? 'is-reviewing' : ''].join(' ') : undefined}>
+                        {cardSubscription ? <PlusCheckoutPlan pricing={planPricing} scopeName={scope.name} /> : null}
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                void action.run(review);
+                            }}
+                            className={cardSubscription ? 'plus-checkout-form' : 'workspace-form-grid'}
+                        >
+                            {!cardSubscription ? (
+                                <Field label={t('이용할 상품', 'Product')}>
+                                    <select
+                                        value={purpose}
+                                        onChange={(event) => {
+                                            setPurpose(event.target.value as QuoteRequest['purpose']);
+                                            setQuote(undefined);
+                                        }}
+                                    >
+                                        {e.entitlementSource !== 'SUBSCRIPTION' ? (
+                                            <option value="SUBSCRIPTION">{t('유료 구독 시작', 'Start paid subscription')}</option>
+                                        ) : (
+                                            <>
+                                                <option value="USAGE_PACK">{t('AI 횟수 추가', 'Additional AI uses')}</option>
+                                                <option value="CAPACITY">{t('편성 인원 증설', 'Increase capacity')}</option>
+                                                {scope.type === 'HOSPITAL' ? (
+                                                    <option value="SETUP">{t('초기 도입 세팅', 'Initial setup')}</option>
+                                                ) : null}
+                                            </>
+                                        )}
+                                    </select>
+                                </Field>
+                            ) : null}
+                            {purpose === 'USAGE_PACK' ? (
+                                <>
+                                    <Field
+                                        label={`${t('전체 생성', 'Full generation')} ${e.policy.generatePackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.generatePackGross)}`}
+                                    >
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={full}
+                                            onChange={(event) => {
+                                                setFull(Number(event.target.value));
+                                                setQuote(undefined);
+                                            }}
+                                        />
+                                    </Field>
+                                    <Field
+                                        label={`${t('부분 조정', 'Partial adjustment')} ${e.policy.adjustPackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.adjustPackGross)}`}
+                                    >
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={partial}
+                                            onChange={(event) => {
+                                                setPartial(Number(event.target.value));
+                                                setQuote(undefined);
+                                            }}
+                                        />
+                                    </Field>
+                                </>
+                            ) : purpose === 'SETUP' ? (
+                                <Field label={t('세팅할 인원 S', 'Setup staff S')}>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={10000}
+                                        value={setup}
+                                        onChange={(event) => {
+                                            setSetup(Number(event.target.value));
+                                            setQuote(undefined);
+                                        }}
+                                    />
+                                </Field>
+                            ) : (
+                                <Field label={t('변경 후 총 편성 인원', 'Total staff after change')}>
+                                    <input
+                                        type="number"
+                                        min={minimumCapacity}
+                                        max={10000}
+                                        value={draftCapacity}
+                                        onChange={(event) => {
+                                            setCapacity(Number(event.target.value));
+                                            setQuote(undefined);
+                                        }}
+                                    />
+                                </Field>
+                            )}
+                            {cardSubscription ? (
+                                <p className="plus-checkout-caption">
+                                    {t(
+                                        '전체 편성 인원을 입력하세요. 기본 인원보다 적어도 기본료가 적용됩니다.',
+                                        'Enter your total scheduling staff. The base fee applies below the included capacity.',
+                                    )}
+                                </p>
+                            ) : null}
+                            <button
+                                className={cardSubscription ? 'plus-checkout-primary' : undefined}
+                                disabled={action.busy || subscriptionUnavailable}
                             >
-                                {e.entitlementSource !== 'SUBSCRIPTION' ? (
-                                    <option value="SUBSCRIPTION">{t('유료 구독 시작', 'Start paid subscription')}</option>
-                                ) : (
-                                    <>
-                                        <option value="USAGE_PACK">{t('AI 횟수 추가', 'Additional AI uses')}</option>
-                                        <option value="CAPACITY">{t('편성 인원 증설', 'Increase capacity')}</option>
-                                        {scope.type === 'HOSPITAL' ? (
-                                            <option value="SETUP">{t('초기 도입 세팅', 'Initial setup')}</option>
-                                        ) : null}
-                                    </>
-                                )}
-                            </select>
-                        </Field>
-                        {purpose === 'USAGE_PACK' ? (
-                            <>
-                                <Field
-                                    label={`${t('전체 생성', 'Full generation')} ${e.policy.generatePackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.generatePackGross)}`}
-                                >
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        value={full}
-                                        onChange={(event) => {
-                                            setFull(Number(event.target.value));
-                                            setQuote(undefined);
-                                        }}
-                                    />
-                                </Field>
-                                <Field
-                                    label={`${t('부분 조정', 'Partial adjustment')} ${e.policy.adjustPackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.adjustPackGross)}`}
-                                >
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        max={100}
-                                        value={partial}
-                                        onChange={(event) => {
-                                            setPartial(Number(event.target.value));
-                                            setQuote(undefined);
-                                        }}
-                                    />
-                                </Field>
-                            </>
-                        ) : purpose === 'SETUP' ? (
-                            <Field label={t('세팅할 인원 S', 'Setup staff S')}>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={10000}
-                                    value={setup}
-                                    onChange={(event) => {
-                                        setSetup(Number(event.target.value));
-                                        setQuote(undefined);
-                                    }}
-                                />
-                            </Field>
-                        ) : (
-                            <Field label={t('변경 후 총 편성 인원', 'Total staff after change')}>
-                                <input
-                                    type="number"
-                                    min={minimumCapacity}
-                                    max={10000}
-                                    value={draftCapacity}
-                                    onChange={(event) => {
-                                        setCapacity(Number(event.target.value));
-                                        setQuote(undefined);
-                                    }}
-                                />
-                            </Field>
-                        )}
-                        <button disabled={action.busy || subscriptionUnavailable}>{t('정확한 금액 확인', 'Review exact quote')}</button>
-                    </form>
+                                {action.busy
+                                    ? t('확인 중…', 'Checking…')
+                                    : cardSubscription
+                                      ? quote
+                                          ? t('결제 금액 다시 확인', 'Refresh payment amount')
+                                          : t('Plus 구독 시작', 'Start Plus subscription')
+                                      : t('정확한 금액 확인', 'Review exact quote')}
+                            </button>
+                            {cardSubscription ? (
+                                <p className="plus-checkout-caption">
+                                    {t(
+                                        '다음 단계에서 금액을 확인하고 카드를 등록합니다. 지금은 결제되지 않습니다.',
+                                        'Review the amount and register a card next. You will not be charged yet.',
+                                    )}
+                                </p>
+                            ) : null}
+                        </form>
+                    </div>
                     {quote && terms ? (
                         <div className="workspace-review" aria-live="polite">
-                            <h3>
+                            <h3 ref={reviewHeading} tabIndex={-1}>
                                 {scope.name} · {t('결제 전 확인', 'Review before paying')}
                             </h3>
                             <div className="workspace-stats">
@@ -769,28 +815,33 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                     <span>{t('변경 후 월 구독료', 'Monthly subscription after change')}</span>
                                 </div>
                             </div>
-                            <p>
-                                {t('공급가액', 'Net')} {money(terms.supplyAmount)} + VAT {money(terms.taxAmount)}
-                            </p>
-                            <p>
-                                {date(terms.periodStart)} ~ {date(terms.periodEnd)} (KST)
-                            </p>
-                            {cardSubscription ? (
-                                <p>
-                                    {t('다음 자동결제일', 'Next automatic payment')}: {date(terms.periodEnd)} (KST)
-                                </p>
-                            ) : null}
-                            <p>
-                                {t('이번 제공량: 전체', 'This purchase: full')} {terms.fullUnits} / {t('부분', 'partial')}{' '}
-                                {terms.partialUnits}
-                            </p>
-                            <p>
-                                {t('견적 만료', 'Quote expires')}: {date(quote.expiresAt)}
-                            </p>
+                            <dl className={cardSubscription ? 'plus-checkout-review-facts' : undefined}>
+                                <dt>{t('부가세 내역', 'Tax breakdown')}</dt>
+                                <dd>
+                                    {t('공급가액', 'Net')} {money(terms.supplyAmount)} + VAT {money(terms.taxAmount)}
+                                </dd>
+                                <dt>{t('이용기간', 'Service period')}</dt>
+                                <dd>
+                                    {date(terms.periodStart)} ~ {date(terms.periodEnd)} (KST)
+                                </dd>
+                                {cardSubscription ? (
+                                    <>
+                                        <dt>{t('다음 자동결제일', 'Next automatic payment')}</dt>
+                                        <dd>{date(terms.periodEnd)} (KST)</dd>
+                                    </>
+                                ) : null}
+                                <dt>{t('이번 제공량', 'Included uses')}</dt>
+                                <dd>
+                                    {t('전체 생성', 'Full generation')} {terms.fullUnits} / {t('부분 조정', 'Partial adjustment')}{' '}
+                                    {terms.partialUnits}
+                                </dd>
+                                <dt>{t('금액 확인 유효시간', 'Amount valid until')}</dt>
+                                <dd>{date(quote.expiresAt)}</dd>
+                            </dl>
                             {quoteExpired ? (
                                 <p className="workspace-error" role="alert">
                                     {t(
-                                        '견적이 만료되었습니다. 정확한 금액을 다시 확인해 주세요.',
+                                        '확인한 금액의 유효시간이 지났습니다. 위의 ‘결제 금액 다시 확인’을 눌러 주세요.',
                                         'This quote has expired. Request a new quote.',
                                     )}
                                 </p>
@@ -854,6 +905,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                         </label>
                                     ) : null}
                                     <button
+                                        className={cardSubscription ? 'plus-checkout-primary' : undefined}
                                         disabled={
                                             !consent ||
                                             !billingProof ||
@@ -868,7 +920,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                                     setNow(Date.now());
                                                     throw new Error(
                                                         t(
-                                                            '견적이 만료되었습니다. 정확한 금액을 다시 확인해 주세요.',
+                                                            '확인한 금액의 유효시간이 지났습니다. 위의 ‘결제 금액 다시 확인’을 눌러 주세요.',
                                                             'This quote has expired. Request a new quote.',
                                                         ),
                                                     );
@@ -907,6 +959,24 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                     >
                                         {t('동의하고 정기결제 카드 등록', 'Agree & register subscription card')}
                                     </button>
+                                    {cardSubscription ? (
+                                        <p className="plus-checkout-next" role="status">
+                                            {!billingProof
+                                                ? t(
+                                                      '이메일 본인 확인을 완료한 후 약관에 동의해 주세요.',
+                                                      'Verify your email, then agree to the terms.',
+                                                  )
+                                                : !consent
+                                                  ? t(
+                                                        '약관에 동의하면 카드 등록을 진행할 수 있습니다.',
+                                                        'Agree to the terms to register your card.',
+                                                    )
+                                                  : t(
+                                                        '카드 등록 후 다음 화면에서 첫 결제를 확정합니다.',
+                                                        'Confirm the first payment on the next screen after registering your card.',
+                                                    )}
+                                        </p>
+                                    ) : null}
                                 </>
                             ) : null}
                             {!cardReady && (
@@ -924,89 +994,111 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             )}
                         </div>
                     ) : null}
+                    {cardSubscription ? (
+                        <details className="plus-checkout-disclosure">
+                            <summary>{t('다른 상품·추가 구매 안내', 'Other plans & add-ons')}</summary>
+                            <p>
+                                {t(
+                                    'Hospital은 개별 계약·계좌이체로 진행합니다. 추가 AI 횟수와 중도 증원은 고객센터에 문의해 주세요.',
+                                    'Hospital uses individual contracts and bank transfers. Contact support for extra AI uses or mid-cycle capacity changes.',
+                                )}
+                            </p>
+                        </details>
+                    ) : null}
                     <ActionsFeedback action={action} />
                 </Section>
             </HospitalDisclosure>
             {data.data ? (
                 <>
-                    <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('구독 관리', 'Subscription management')}>
-                        <Section title={t('구독 관리', 'Subscription management')}>
-                            <p>
-                                {data.data.scope.cancelAtPeriodEnd
-                                    ? t('기간 말 해지 예약됨', 'Cancellation scheduled')
-                                    : t('현재 구독 기간', 'Current period')}
-                                : {date(data.data.scope.periodEnd)}
-                            </p>
-                            {data.data.scope.periodEnd ? (
-                                <button
-                                    className="secondary"
-                                    disabled={action.busy}
-                                    onClick={() =>
-                                        void action.run(() =>
-                                            commercialPost(`/billing-scopes/${scope.scopeId}/renewal`, {
-                                                expectedVersion: data.data!.scope.version,
-                                                cancel: !data.data!.scope.cancelAtPeriodEnd,
-                                            }),
-                                        )
-                                    }
-                                >
+                    {scope.type === 'HOSPITAL' || data.data.scope.periodEnd ? (
+                        <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('구독 관리', 'Subscription management')}>
+                            <Section title={t('구독 관리', 'Subscription management')}>
+                                <p>
                                     {data.data.scope.cancelAtPeriodEnd
-                                        ? t('해지 예약 취소', 'Undo cancellation')
-                                        : t('현재 기간 말에 해지', 'Cancel at period end')}
-                                </button>
-                            ) : null}
-                            <form
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    void action.run(() =>
-                                        commercialPost(`/billing-scopes/${scope.scopeId}/capacity-reservation`, {
-                                            capacity: quoteCapacity,
-                                            expectedVersion: data.data!.scope.version,
-                                        }),
-                                    );
-                                }}
-                            >
-                                <Field label={t('다음 갱신 때 줄일 총 인원', 'Lower capacity at next renewal')}>
-                                    <input
-                                        type="number"
-                                        min={minimumCapacity}
-                                        max={10000}
-                                        value={draftCapacity}
-                                        onChange={(event) => setCapacity(Number(event.target.value))}
-                                    />
-                                </Field>
-                                <button className="secondary" disabled={action.busy}>
-                                    {t('다음 주기 감원 예약', 'Schedule decrease')}
-                                </button>
-                            </form>
-                        </Section>
-                    </HospitalDisclosure>
+                                        ? t('기간 말 해지 예약됨', 'Cancellation scheduled')
+                                        : t('현재 구독 기간', 'Current period')}
+                                    : {date(data.data.scope.periodEnd)}
+                                </p>
+                                {data.data.scope.periodEnd ? (
+                                    <button
+                                        className="secondary"
+                                        disabled={action.busy}
+                                        onClick={() =>
+                                            void action.run(() =>
+                                                commercialPost(`/billing-scopes/${scope.scopeId}/renewal`, {
+                                                    expectedVersion: data.data!.scope.version,
+                                                    cancel: !data.data!.scope.cancelAtPeriodEnd,
+                                                }),
+                                            )
+                                        }
+                                    >
+                                        {data.data.scope.cancelAtPeriodEnd
+                                            ? t('해지 예약 취소', 'Undo cancellation')
+                                            : t('현재 기간 말에 해지', 'Cancel at period end')}
+                                    </button>
+                                ) : null}
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        void action.run(() =>
+                                            commercialPost(`/billing-scopes/${scope.scopeId}/capacity-reservation`, {
+                                                capacity: quoteCapacity,
+                                                expectedVersion: data.data!.scope.version,
+                                            }),
+                                        );
+                                    }}
+                                >
+                                    <Field label={t('다음 갱신 때 줄일 총 인원', 'Lower capacity at next renewal')}>
+                                        <input
+                                            type="number"
+                                            min={minimumCapacity}
+                                            max={10000}
+                                            value={draftCapacity}
+                                            onChange={(event) => setCapacity(Number(event.target.value))}
+                                        />
+                                    </Field>
+                                    <button className="secondary" disabled={action.busy}>
+                                        {t('다음 주기 감원 예약', 'Schedule decrease')}
+                                    </button>
+                                </form>
+                            </Section>
+                        </HospitalDisclosure>
+                    ) : null}
                     {scope.type === 'WARD' ? (
                         <Section title={t('청구·결제 내역', 'Invoices & payments')}>
-                            <div className="workspace-table-wrap">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>{t('기간', 'Period')}</th>
-                                            <th>{t('청구 금액', 'Invoiced')}</th>
-                                            <th>{t('수납', 'Collected')}</th>
-                                            <th>{t('환불', 'Refunded')}</th>
-                                            <th>{t('상태', 'Status')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.data.invoices.map((i) => (
-                                            <tr key={i.id}>
-                                                <td>{date(i.periodStart)}</td>
-                                                <td>{money(i.gross)}</td>
-                                                <td>{money(i.allocated)}</td>
-                                                <td>{money(i.refundedGross)}</td>
-                                                <td>{i.status}</td>
+                            {data.data.invoices.length === 0 ? (
+                                <p className="plus-checkout-caption">
+                                    {t(
+                                        '첫 결제 후 청구·결제 내역이 여기에 표시됩니다.',
+                                        'Your invoices and payments will appear here after the first payment.',
+                                    )}
+                                </p>
+                            ) : (
+                                <div className="workspace-table-wrap">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>{t('기간', 'Period')}</th>
+                                                <th>{t('청구 금액', 'Invoiced')}</th>
+                                                <th>{t('수납', 'Collected')}</th>
+                                                <th>{t('환불', 'Refunded')}</th>
+                                                <th>{t('상태', 'Status')}</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody>
+                                            {data.data.invoices.map((i) => (
+                                                <tr key={i.id}>
+                                                    <td>{date(i.periodStart)}</td>
+                                                    <td>{money(i.gross)}</td>
+                                                    <td>{money(i.allocated)}</td>
+                                                    <td>{money(i.refundedGross)}</td>
+                                                    <td>{i.status}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                             {data.data.orders.map((o) => (
                                 <p key={o.id}>
                                     <Link to={`/workspace/payment-return?orderId=${o.id}`}>
@@ -1016,16 +1108,18 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             ))}
                         </Section>
                     ) : null}
-                    <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('환불·정산 문의', 'Refund & billing support')}>
-                        <Section title={t('환불·정산 문의', 'Refund & billing support')}>
-                            <RequestForm scope={scope} kind="REFUND" invoices={data.data.invoices} />
-                            {data.data.requests.map((r) => (
-                                <p key={r.id}>
-                                    {r.kind} · {r.status} · {r.resolution ?? date(r.createdAt)}
-                                </p>
-                            ))}
-                        </Section>
-                    </HospitalDisclosure>
+                    {scope.type === 'HOSPITAL' || data.data.invoices.length > 0 || data.data.requests.length > 0 ? (
+                        <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('환불·정산 문의', 'Refund & billing support')}>
+                            <Section title={t('환불·정산 문의', 'Refund & billing support')}>
+                                <RequestForm scope={scope} kind="REFUND" invoices={data.data.invoices} />
+                                {data.data.requests.map((r) => (
+                                    <p key={r.id}>
+                                        {r.kind} · {r.status} · {r.resolution ?? date(r.createdAt)}
+                                    </p>
+                                ))}
+                            </Section>
+                        </HospitalDisclosure>
+                    ) : null}
                 </>
             ) : (
                 <ErrorView error={data.error} />
@@ -1854,10 +1948,15 @@ function BillingReturn() {
                               '카드 등록을 취소했습니다. 새 결제는 진행하지 않았습니다.',
                               'Card registration was canceled. No new payment was submitted.',
                           )
-                        : t(
-                              '카드 인증을 완료하지 못했습니다. 카드 정보를 확인하고 다시 시도해 주세요.',
-                              'Card authorization failed. Check your card details and try again.',
-                          )}
+                        : callbackError === 'INVALID_CARD_NUMBER'
+                          ? t(
+                                '카드번호가 올바르지 않거나 지원하지 않는 카드입니다. 아래에서 미결제 주문을 취소한 후 카드번호를 확인하고 다시 등록해 주세요.',
+                                'The card number is invalid or unsupported. Cancel the unpaid order below, then check the number and register again.',
+                            )
+                          : t(
+                                '카드 인증을 완료하지 못했습니다. 카드 정보를 확인하고 다시 시도해 주세요.',
+                                'Card authorization failed. Check your card details and try again.',
+                            )}
                 </p>
             )}
             {authorization &&

@@ -1,0 +1,257 @@
+.workspace-section.plus-checkout {
+    --plus-accent: #7047c6;
+    --plus-line: #e5e8ed;
+    --plus-muted: #566173;
+    padding: 32px;
+    border: 1px solid var(--plus-line);
+    border-radius: 20px;
+}
+.plus-checkout .workspace-section-heading h2 {
+    font-size: 24px;
+    letter-spacing: -0.6px;
+}
+.plus-checkout-steps {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px;
+}
+.plus-checkout-steps li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--plus-muted);
+}
+.plus-checkout-steps li > span {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--plus-line);
+    border-radius: 50%;
+    font-size: 12px;
+}
+.plus-checkout-steps li[aria-current] {
+    color: var(--plus-accent);
+    font-weight: 650;
+}
+.plus-checkout-steps li[aria-current] > span {
+    color: white;
+    background: var(--plus-accent);
+    border-color: var(--plus-accent);
+}
+.plus-checkout-start {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+.plus-checkout-plan {
+    min-width: 0;
+}
+.plus-checkout .plus-checkout-scope {
+    color: var(--plus-muted);
+    margin: 0 0 14px;
+}
+.plus-checkout-price {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.plus-checkout-price > strong {
+    font-size: 34px;
+    line-height: 1.3;
+    letter-spacing: -1px;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+}
+.plus-checkout-price > span {
+    font-size: 13px;
+    color: var(--plus-muted);
+}
+.plus-checkout-benefits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    padding: 20px 0;
+    margin: 20px 0 0;
+    border-top: 1px solid var(--plus-line);
+    list-style: none;
+}
+.plus-checkout-benefits li {
+    color: var(--plus-muted);
+    font-size: 14px;
+}
+.plus-checkout-benefits strong {
+    color: #202631;
+    font-weight: 650;
+}
+.plus-checkout .plus-checkout-caption {
+    color: var(--plus-muted);
+    font-size: 13px;
+    margin: 10px 0 0;
+}
+.plus-checkout-form {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    border-radius: 14px;
+    background: #f6f7f9;
+}
+.plus-checkout-form .workspace-field {
+    margin: 0 0 8px;
+}
+.plus-checkout-form .workspace-field input {
+    background: white;
+    border: 1px solid var(--plus-line);
+}
+.workspace-app .plus-checkout button.plus-checkout-primary {
+    width: 100%;
+    margin: 16px 0 0;
+    min-height: 48px;
+    background: var(--plus-accent);
+    color: white;
+}
+.workspace-app .plus-checkout button.plus-checkout-primary:hover:not(:disabled) {
+    background: #5935a3;
+}
+.plus-checkout .plus-checkout-disclosure {
+    margin: 24px 0 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--plus-line);
+    font-size: 13px;
+    color: var(--plus-muted);
+}
+.plus-checkout-disclosure summary {
+    min-height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.plus-checkout-disclosure summary::before {
+    content: '+';
+    font-size: 18px;
+}
+.plus-checkout-disclosure[open] summary::before {
+    content: '−';
+}
+.plus-checkout .workspace-review {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+.plus-checkout .workspace-review h3 {
+    font-size: 20px;
+    outline-offset: 6px;
+}
+.plus-checkout .workspace-review .workspace-stats {
+    padding: 24px;
+    background: #f6f7f9;
+    border-radius: 14px;
+}
+.plus-checkout-review-facts {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 10px 20px;
+    margin: 24px 0;
+}
+.plus-checkout-review-facts dt {
+    color: var(--plus-muted);
+    font-size: 14px;
+}
+.plus-checkout-review-facts dd {
+    margin: 0;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.plus-checkout .workspace-inbox-reauth {
+    margin: 24px 0;
+    padding: 20px;
+    border: 1px solid var(--plus-line);
+    border-radius: 14px;
+}
+.plus-checkout .workspace-check {
+    padding: 16px 0;
+    margin: 0;
+    font-size: 14px;
+}
+.plus-checkout .workspace-check input {
+    flex: 0 0 auto;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--plus-accent);
+}
+.plus-checkout .workspace-check a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.plus-checkout .plus-checkout-next {
+    margin-top: 12px;
+    color: var(--plus-muted);
+    font-size: 13px;
+}
+.plus-checkout :is(a, button, input, summary):focus-visible {
+    outline: 2px solid var(--plus-accent);
+    outline-offset: 3px;
+}
+@media (max-width: 760px) {
+    .workspace-section.plus-checkout {
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+    .plus-checkout-start {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+    .plus-checkout-steps {
+        gap: 10px 16px;
+        margin-bottom: 24px;
+    }
+    .plus-checkout-steps li {
+        font-size: 12px;
+    }
+    .plus-checkout-form {
+        padding: 20px;
+    }
+    .plus-checkout-review-facts {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .plus-checkout-review-facts dd {
+        margin-bottom: 12px;
+    }
+}
+
+.plus-checkout-start.is-reviewing {
+    grid-template-columns: 1fr;
+    margin-bottom: 28px;
+}
+.plus-checkout-start.is-reviewing .plus-checkout-plan {
+    display: none;
+}
+.plus-checkout-start.is-reviewing .plus-checkout-form {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr);
+    align-items: end;
+    gap: 16px;
+    padding: 16px 20px;
+}
+.plus-checkout-start.is-reviewing .plus-checkout-form .workspace-field {
+    margin: 0;
+}
+.plus-checkout-start.is-reviewing .plus-checkout-form .plus-checkout-caption {
+    display: none;
+}
+.plus-checkout-start.is-reviewing .plus-checkout-primary {
+    margin: 0;
+}
+@media (max-width: 480px) {
+    .plus-checkout-start.is-reviewing .plus-checkout-form {
+        grid-template-columns: 1fr;
+    }
+}
