@@ -503,6 +503,8 @@ export type TScheduleViolationDto = {
     comparisonKey?: unknown[];
     ruleIdentity?: string;
     magnitude?: number;
+    /** The reported magnitude/actual count is a minimum, not an exact total. */
+    magnitudeIsLowerBound?: boolean;
     unit?: string;
     comparisonAvailable?: boolean;
     violationId: string;

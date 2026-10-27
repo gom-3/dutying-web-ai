@@ -103,3 +103,16 @@ it('replays the anonymized production response without dropping dates or claimin
     expect(screen.queryByText(/6.*→.*7/)).not.toBeInTheDocument();
     expect(screen.queryByText('간호사 1')).not.toBeInTheDocument();
 });
+
+it('preserves a reported lower bound instead of presenting it as an exact consecutive total', () => {
+    const review = {token: 'synthetic', expiresAt: '2099-01-01T00:00:00Z', violations: [{...consecutive, magnitudeIsLowerBound: true}]};
+    const {rerender} = render(<AiConflictViolationList review={review} />);
+
+    expect(screen.getByText('가상간호사 · 제안 최소 7일 연속 / 허용 최대 5일')).toBeVisible();
+    expect(screen.queryByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).not.toBeInTheDocument();
+    expect(screen.getByText('보고된 날짜 · 2026-11-01')).toBeVisible();
+    rerender(<AiConflictViolationList review={{...review, violations: [{...consecutive, magnitudeIsLowerBound: false}]}} />);
+    expect(screen.getByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
+    rerender(<AiConflictViolationList review={{...review, violations: [consecutive]}} />);
+    expect(screen.getByText('가상간호사 · 제안 7일 연속 / 허용 최대 5일')).toBeVisible();
+});

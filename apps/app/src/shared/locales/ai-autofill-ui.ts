@@ -37,6 +37,7 @@ export const aiAutofillUiKo = {
         staffMaximum: '최대 {{count}}명',
         staffExact: '정확히 {{count}}명',
         consecutive: '{{subject}} · 제안 {{actual}}일 연속 / 허용 최대 {{expected}}일',
+        consecutiveLowerBound: '{{subject}} · 제안 최소 {{actual}}일 연속 / 허용 최대 {{expected}}일',
         moreIssues: '나머지 {{count}}건 보기',
         applyNotice:
             '제안대로 수정하면 위 내용을 이번 표에만 반영해요. 맞추지 못한 조건은 빨간색으로 표시하고, 병동의 원래 설정은 바꾸지 않아요.',
@@ -355,6 +356,7 @@ export const aiAutofillUiEn = {
         staffMaximum: 'at most {{count}} nurses',
         staffExact: 'exactly {{count}} nurses',
         consecutive: '{{subject}} · Proposed {{actual}} consecutive days / Maximum {{expected}} days',
+        consecutiveLowerBound: '{{subject}} · Proposed at least {{actual}} consecutive days / Maximum {{expected}} days',
         moreIssues: 'Show {{count}} more issues',
         applyNotice: 'Proceeding applies this result and marks unmet conditions in red. Your original settings stay the same.',
         expired: 'The input changed or this review expired. Review your request again.',
@@ -678,6 +680,7 @@ export const aiAutofillUiJa = {
         staffMaximum: '{{count}}名以下',
         staffExact: 'ちょうど{{count}}名',
         consecutive: '{{subject}} · 提案 {{actual}}日連続 / 上限 {{expected}}日',
+        consecutiveLowerBound: '{{subject}} · 提案 少なくとも{{actual}}日連続 / 上限 {{expected}}日',
         moreIssues: '残り{{count}}件を表示',
         applyNotice:
             'この提案を反映すると、今回の勤務表のみが変更されます。満たせなかった条件は赤色で表示されます。病棟の設定は変更されません。',
