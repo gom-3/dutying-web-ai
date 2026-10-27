@@ -61,7 +61,7 @@ describe('intent-first negotiated conversation wire', () => {
         await conversationApi(5, 7).execute(9, body);
         expect(post).toHaveBeenLastCalledWith('/wards/5/shift-teams/7/schedule/conversations/9/operations', body, {
             suppressErrorToast: true,
-            timeout: 17000,
+            timeout: 330000,
         });
     });
 });

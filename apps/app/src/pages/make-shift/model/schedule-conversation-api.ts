@@ -168,7 +168,11 @@ export function conversationApi(wardId: number, teamId: number) {
         (
             await client.post<T>(`${base}${path}`, data, {
                 suppressErrorToast: true,
-                timeout: (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1' ? 17000 : 330000,
+                timeout: path.endsWith('/operations')
+                    ? 330000
+                    : (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1'
+                      ? 17000
+                      : 330000,
             })
         ).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;
