@@ -4,9 +4,10 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAutofillCellSummary} from '../../../model/ai-autofill-state';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiInfoTip} from './ai-conversation-entry';
+import {AiConversationTimestamp} from './ai-conversation-timestamp';
 
 export type TAutofillPreparationStep = 'carryOver' | 'previous' | 'fixed';
-export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string};
+export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string; createdAt?: string};
 export type TAutofillFlow = {
     id: number;
     kind?: 'generation' | 'adjustment';
@@ -27,10 +28,13 @@ export function AiAutofillMessages({messages}: {messages: TAutofillMessage[]}) {
                 const Message = message.role === 'user' ? UserMessage : AssistantMessage;
 
                 return (
-                    <Message key={index}>
-                        <span className="whitespace-pre-line">{message.text}</span>
-                        {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
-                    </Message>
+                    <div key={index}>
+                        <Message>
+                            <span className="whitespace-pre-line">{message.text}</span>
+                            {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
+                        </Message>
+                        <AiConversationTimestamp createdAt={message.createdAt} align={message.role === 'user' ? 'right' : 'left'} />
+                    </div>
                 );
             })}
         </div>

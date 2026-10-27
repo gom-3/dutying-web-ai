@@ -74,6 +74,7 @@ import {AiConversationOperationStatus, isConversationOperationPending} from './a
 import {AiConversationResult} from './ai-conversation-result';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
+import {AiConversationTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
@@ -1603,7 +1604,7 @@ export default function AiConversationSidebar({
                             ...(detail ? conversationEvents(detail).map((event) => event.sequence) : []),
                             ...current.map((event) => event.sequence),
                         ) + 0.001,
-                    messages: [{role: 'assistant', text}],
+                    messages: [{role: 'assistant', text, createdAt: new Date().toISOString()}],
                 },
             ]);
         }
@@ -1930,8 +1931,10 @@ export default function AiConversationSidebar({
                     Math.max(0, ...conversationEvents(detail).map((event) => event.sequence), ...current.map((event) => event.sequence)) +
                     0.001,
                 messages: [
-                    {role: 'user', text: t(`aiAdjust.chat.${choice}`)},
-                    ...(choice === 'modify' ? [{role: 'assistant' as const, text: t('aiAdjust.chat.askChanges')}] : []),
+                    {role: 'user', text: t(`aiAdjust.chat.${choice}`), createdAt: new Date().toISOString()},
+                    ...(choice === 'modify'
+                        ? [{role: 'assistant' as const, text: t('aiAdjust.chat.askChanges'), createdAt: new Date().toISOString()}]
+                        : []),
                 ],
             },
         ]);
@@ -2262,6 +2265,10 @@ export default function AiConversationSidebar({
                                     ) : event.kind === 'turn' ? (
                                         <div key={event.id} inert={preparing}>
                                             {renderTurn(event.turn)}
+                                            <AiConversationTimestamp
+                                                createdAt={event.turn.createdAt}
+                                                align={event.turn.actor === 'USER' ? 'right' : 'left'}
+                                            />
                                         </div>
                                     ) : event.operation.executionStatus === 'SUCCEEDED' && !operationFailure(event.operation) ? (
                                         <JourneyObserved key={event.id} observation={event.operation.result?.observation} inert={preparing}>
@@ -2379,6 +2386,7 @@ export default function AiConversationSidebar({
                                                     />
                                                 )}
                                             </AiConversationResult>
+                                            <AiConversationTimestamp createdAt={event.operation.createdAt} />
                                         </JourneyObserved>
                                     ) : operationFailure(event.operation) ? (
                                         <div key={event.id} inert={preparing}>
@@ -2546,6 +2554,7 @@ export default function AiConversationSidebar({
                                                     />
                                                 )}
                                             </AiExecutionFailure>
+                                            <AiConversationTimestamp createdAt={event.operation.createdAt} />
                                         </div>
                                     ) : (
                                         <div key={event.id} className="space-y-3">
@@ -2658,6 +2667,7 @@ export default function AiConversationSidebar({
                                                     />
                                                 )}
                                             </JourneyObserved>
+                                            <AiConversationTimestamp createdAt={event.operation.createdAt} />
                                         </div>
                                     ),
                                 )}
