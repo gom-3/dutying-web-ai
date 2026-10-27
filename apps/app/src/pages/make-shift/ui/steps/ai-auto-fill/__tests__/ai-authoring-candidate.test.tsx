@@ -165,3 +165,66 @@ describe('plain candidate copy', () => {
         }
     });
 });
+
+describe('material consent title', () => {
+    it.each([
+        {locale: 'ko', title: '일부 조건을 지키지 못해요. 이대로 반영할까요?', impact: '11월 1일 휴무가 1명 줄어들어요.'},
+        {locale: 'ja', title: '一部の条件を満たせません。このまま反映しますか？', impact: '11月1日の休みが1人減ります。'},
+    ])('describes unmet conditions rather than editing settings in $locale', async ({locale, title, impact}) => {
+        await i18n.changeLanguage(locale);
+
+        try {
+            const input = props();
+
+            input.result.authoringOutcome = outcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'});
+            input.result.candidate = candidate({
+                selectionReason: 'MATERIAL_TRADEOFF',
+                violations: [
+                    {
+                        violationId: 'impact:1',
+                        ruleId: 1,
+                        templateCode: 'SYNTHETIC',
+                        severity: 'HARD',
+                        message: impact,
+                        affectedCells: [],
+                        fixable: true,
+                    },
+                ],
+            });
+            render(
+                <AiConversationResult
+                    operation={{
+                        operationId: 'op:material-copy',
+                        sequence: 1,
+                        operationType: 'ADJUST',
+                        fillPolicy: null,
+                        sourceVersionId: 'source:1',
+                        resultVersionId: null,
+                        interpretationId: null,
+                        baseRevision: 0,
+                        executionStatus: 'SUCCEEDED',
+                        applyStatus: 'NOT_APPLIED_REVIEW',
+                        failureReason: null,
+                        result: input.result,
+                        createdAt: '',
+                    }}
+                    attempt={1}
+                    feedbackDisabled
+                    onReport={vi.fn()}
+                    copy={(ko) => ko}
+                >
+                    <AiAuthoringCandidate {...input} />
+                </AiConversationResult>,
+            );
+            expect(screen.getByText(title)).toBeVisible();
+            expect(screen.getByText(impact)).toBeVisible();
+            expect(screen.getByRole('table')).toHaveTextContent('O');
+            expect(screen.getByRole('table')).toHaveTextContent('D');
+            expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).toBeEnabled();
+            expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).toBeEnabled();
+            expect(input.onApply).not.toHaveBeenCalled();
+        } finally {
+            await i18n.changeLanguage('ko');
+        }
+    });
+});
