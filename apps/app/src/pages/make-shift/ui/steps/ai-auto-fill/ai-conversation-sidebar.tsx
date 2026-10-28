@@ -2849,18 +2849,6 @@ export default function AiConversationSidebar({
                                     {detail.conversationState.pendingQuestion.question}
                                 </p>
                             )}
-                            {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
-                                <select
-                                    aria-label={t('aiConversationSidebar.revisionMode')}
-                                    value={change}
-                                    onChange={(event) => setChange(event.target.value as typeof change)}
-                                    className="w-full rounded border p-2 text-sm"
-                                >
-                                    <option value="REPLACE">{t('aiConversationSidebar.replacePreviousProposal')}</option>
-                                    <option value="ADD">{t('aiConversationSidebar.addToPreviousProposal')}</option>
-                                    <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
-                                </select>
-                            )}
                             {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
                             <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
                                 <label className="block text-sm">
