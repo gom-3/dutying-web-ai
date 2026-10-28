@@ -9,11 +9,7 @@ const money = (value: number) =>
 
 export function PlusCheckoutProgress({reviewing = false}: {reviewing?: boolean}) {
     const t = useCopy();
-    const steps = [
-        t('금액 확인', 'Review amount'),
-        t('이메일 인증·카드 등록', 'Verify email & register card'),
-        t('첫 결제·Plus 시작', 'First payment & activation'),
-    ];
+    const steps = [t('금액 확인', 'Review amount'), t('카드 등록', 'Register card'), t('첫 결제·Plus 시작', 'First payment & activation')];
 
     return (
         <ol className="plus-checkout-steps" aria-label={t('Plus 구독 절차', 'Plus subscription steps')}>
