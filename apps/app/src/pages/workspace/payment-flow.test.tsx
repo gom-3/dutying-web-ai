@@ -9,13 +9,25 @@ import {clearBillingReturnPayload} from '@/features/commercial/billing-return-pa
 import type * as SubscriptionInfo from '@/pages/subscription-info';
 import WorkspacePage from './index';
 
-const mocks = vi.hoisted(() => ({get: vi.fn(), post: vi.fn(), open: vi.fn(), load: vi.fn(), offer: vi.fn()}));
+const mocks = vi.hoisted(() => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    open: vi.fn(),
+    load: vi.fn(),
+    offer: vi.fn(),
+    cardRegistrationVersion: 2 as number | undefined,
+}));
 
 vi.mock('@/features/commercial/api', async (original) => ({
     ...(await original<typeof CommercialApi>()),
     commercialGet: mocks.get,
     commercialPost: mocks.post,
-    useCommercialContext: () => ({data: {enabled: true, scopes: [scope]}, refetch: vi.fn(), isPending: false, isError: false}),
+    useCommercialContext: () => ({
+        data: {enabled: true, cardRegistrationVersion: mocks.cardRegistrationVersion, scopes: [scope]},
+        refetch: vi.fn(),
+        isPending: false,
+        isError: false,
+    }),
 }));
 vi.mock('@/features/commercial/toss-sdk', () => ({loadToss: mocks.load, openTossBilling: mocks.open}));
 vi.mock('@/features/auth', () => ({
@@ -146,6 +158,7 @@ function mount(path = '/workspace/WARD/11/billing') {
 
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.cardRegistrationVersion = 2;
     mocks.offer.mockResolvedValue({ready: true, maxChargeGross: 1000000});
     mocks.load.mockResolvedValue(vi.fn());
     mocks.open.mockResolvedValue(undefined);
@@ -262,6 +275,31 @@ describe('Plus checkout before card registration', () => {
         ]);
         expect(mocks.open).not.toHaveBeenCalled();
         expect(screen.queryByRole('button', {name: '이메일 본인 확인 완료'})).not.toBeInTheDocument();
+    });
+
+    it.each([undefined, 1])('preserves legacy email verification and request for server version %s', async (version) => {
+        mocks.cardRegistrationVersion = version;
+        mount();
+        await userEvent.click(await screen.findByRole('button', {name: 'Plus 구독 시작'}));
+        expect(screen.getByRole('list', {name: 'Plus 구독 절차'})).toHaveTextContent('이메일 인증·카드 등록');
+        await userEvent.click(screen.getByRole('checkbox', {name: /금액·대상·기간/}));
+
+        const start = screen.getByRole('button', {name: '동의하고 정기결제 카드 등록'});
+
+        expect(start).toBeDisabled();
+        expect(mocks.open).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: '이메일 본인 확인 완료'}));
+        await userEvent.click(start);
+        await waitFor(() => expect(mocks.open).toHaveBeenCalledExactlyOnceWith(registration));
+        expect(mocks.post).toHaveBeenCalledWith(
+            '/billing-scopes/ward-scope/subscription-checkout',
+            {
+                checkout: {quoteId: quote.id, contentHash: quote.contentHash, termsVersion: terms.termsVersion, trialLossAccepted: false},
+                reauthenticationToken: 'proof-fixture',
+            },
+            expect.any(String),
+        );
+        expect(mocks.post.mock.calls.some(([path]) => path.startsWith('/v2/'))).toBe(false);
     });
 
     it('keeps checkout intact when the server returns malformed quote JSON', async () => {
@@ -402,6 +440,33 @@ describe('card authorization callback and first charge', () => {
 });
 
 describe('renewal card registration', () => {
+    it.each([undefined, 1])('preserves legacy card replacement verification for server version %s', async (version) => {
+        mocks.cardRegistrationVersion = version;
+
+        const original = mocks.get.getMockImplementation()!;
+
+        mocks.get.mockImplementation((path: string) =>
+            path.endsWith('/entitlements')
+                ? Promise.resolve({...entitlement, plan: 'PLUS', entitlementSource: 'SUBSCRIPTION'})
+                : original(path),
+        );
+        mocks.post.mockResolvedValue(registration);
+        mount();
+
+        const start = await screen.findByRole('button', {name: '카드 등록·변경'});
+
+        await userEvent.click(screen.getByRole('checkbox', {name: '현재 계약 조건의 매월 자동 갱신에 동의합니다.'}));
+        expect(start).toBeDisabled();
+        expect(mocks.post).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: '이메일 본인 확인 완료'}));
+        await userEvent.click(start);
+        await waitFor(() => expect(mocks.open).toHaveBeenCalledExactlyOnceWith(registration));
+        expect(mocks.post).toHaveBeenCalledExactlyOnceWith('/billing-scopes/ward-scope/payment-method', {
+            termsVersion: terms.termsVersion,
+            reauthenticationToken: 'proof-fixture',
+        });
+    });
+
     it('cannot start registration when current contract terms could not be loaded', async () => {
         const original = mocks.get.getMockImplementation()!;
 

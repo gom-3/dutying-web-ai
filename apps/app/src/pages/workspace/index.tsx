@@ -433,7 +433,7 @@ function HospitalCalculator({e}: {scope: Scope; e: Entitlement}) {
     );
 }
 
-function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
+function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e: Entitlement; cardRegistrationVersion?: number}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
@@ -472,6 +472,8 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const reviewHeading = useRef<HTMLHeadingElement>(null);
     const [consent, setConsent] = useState(false);
     const [trialLoss, setTrialLoss] = useState(false);
+    const [billingProof, setBillingProof] = useState('');
+    const emailVerificationRequired = !(cardRegistrationVersion >= 2);
     const [now, setNow] = useState(Date.now);
     const terms: QuoteTerms | undefined = quote ? parseQuoteTerms(quote.snapshot) : undefined;
     const quoteExpired = !!quote && !(quoteTimestamp(quote.expiresAt) > now);
@@ -593,7 +595,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                 </Section>
             ) : null}
             {scope.type === 'WARD' && e.plan === 'PLUS' && e.entitlementSource === 'SUBSCRIPTION' ? (
-                <PaymentMethodPanel scope={scope} />
+                <PaymentMethodPanel scope={scope} emailVerificationRequired={emailVerificationRequired} />
             ) : null}
             <HospitalDisclosure
                 active={scope.type === 'HOSPITAL'}
@@ -617,7 +619,9 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             : undefined
                     }
                 >
-                    {cardSubscription ? <PlusCheckoutProgress reviewing={!!quote} /> : null}
+                    {cardSubscription ? (
+                        <PlusCheckoutProgress reviewing={!!quote} emailVerificationRequired={emailVerificationRequired} />
+                    ) : null}
                     {!cardSubscription && scope.type === 'WARD' ? (
                         <p>
                             {t(
@@ -869,6 +873,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                             'After card registration, review and confirm the first charge on the next screen. Monthly renewals follow at each period end.',
                                         )}
                                     </p>
+                                    {emailVerificationRequired ? <Reauthenticate onVerified={setBillingProof} /> : null}
                                 </>
                             )}
                             {scope.type === 'WARD' ? (
@@ -906,6 +911,7 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                         className={cardSubscription ? 'plus-checkout-primary' : undefined}
                                         disabled={
                                             !consent ||
+                                            (emailVerificationRequired && !billingProof) ||
                                             !cardReady ||
                                             action.busy ||
                                             !e.checkoutEnabled ||
@@ -942,7 +948,13 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                                     clientKey: string;
                                                     customerKey: string;
                                                     returnUrl: string;
-                                                }>(`/v2/billing-scopes/${scope.scopeId}/subscription-checkout`, {checkout: payload}, key);
+                                                }>(
+                                                    `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/subscription-checkout`,
+                                                    emailVerificationRequired
+                                                        ? {checkout: payload, reauthenticationToken: billingProof}
+                                                        : {checkout: payload},
+                                                    key,
+                                                );
 
                                                 await openTossBilling(registration);
 
@@ -954,15 +966,20 @@ function BillingPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                     </button>
                                     {cardSubscription ? (
                                         <p className="plus-checkout-next" role="status">
-                                            {!consent
+                                            {emailVerificationRequired && !billingProof
                                                 ? t(
-                                                      '약관에 동의하면 카드 등록을 진행할 수 있습니다.',
-                                                      'Agree to the terms to register your card.',
+                                                      '이메일 본인 확인을 완료한 후 약관에 동의해 주세요.',
+                                                      'Verify your email, then agree to the terms.',
                                                   )
-                                                : t(
-                                                      '카드 등록 후 다음 화면에서 첫 결제를 확정합니다.',
-                                                      'Confirm the first payment on the next screen after registering your card.',
-                                                  )}
+                                                : !consent
+                                                  ? t(
+                                                        '약관에 동의하면 카드 등록을 진행할 수 있습니다.',
+                                                        'Agree to the terms to register your card.',
+                                                    )
+                                                  : t(
+                                                        '카드 등록 후 다음 화면에서 첫 결제를 확정합니다.',
+                                                        'Confirm the first payment on the next screen after registering your card.',
+                                                    )}
                                         </p>
                                     ) : null}
                                 </>
@@ -1750,11 +1767,12 @@ function SupportConsentPanel({scope}: {scope: Scope}) {
     );
 }
 
-function PaymentMethodPanel({scope}: {scope: Scope}) {
+function PaymentMethodPanel({scope, emailVerificationRequired}: {scope: Scope; emailVerificationRequired: boolean}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
     const [consent, setConsent] = useState(false);
+    const [proof, setProof] = useState('');
     const q = useQuery({
         queryKey: commercialQueryKey(accountId, scope.type, scope.ref, 'payment-method'),
         queryFn: () =>
@@ -1780,19 +1798,24 @@ function PaymentMethodPanel({scope}: {scope: Scope}) {
                     'Each renewal charges your contracted capacity and pricing. Enter card details on the payment provider’s screen. Ownership transfer stops renewal on the previous owner’s card.',
                 )}
             </Notice>
+            {emailVerificationRequired ? <Reauthenticate onVerified={setProof} /> : null}
             <label className="workspace-check">
                 <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
                 {t('현재 계약 조건의 매월 자동 갱신에 동의합니다.', 'I consent to monthly renewal under the current contract terms.')}
             </label>
             <button
-                disabled={!consent || action.busy || q.isPending || q.isError || !q.data?.termsVersion}
+                disabled={
+                    (emailVerificationRequired && !proof) || !consent || action.busy || q.isPending || q.isError || !q.data?.termsVersion
+                }
                 onClick={() =>
                     void action.run(async () => {
                         await loadToss();
 
                         const d = await commercialPost<{id: string; clientKey: string; customerKey: string; returnUrl: string}>(
-                            `/v2/billing-scopes/${scope.scopeId}/payment-method`,
-                            {termsVersion: q.data?.termsVersion},
+                            `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/payment-method`,
+                            emailVerificationRequired
+                                ? {termsVersion: q.data?.termsVersion, reauthenticationToken: proof}
+                                : {termsVersion: q.data?.termsVersion},
                         );
 
                         await openTossBilling(d);
@@ -2544,7 +2567,12 @@ export default function WorkspacePage() {
                                 <MembersPanel key={scope.scopeId} scope={scope} e={entitlement.data} />
                             )
                         ) : tab === 'billing' && (scope.type === 'WARD' || scope.role === 'OWNER') ? (
-                            <BillingPanel key={scope.scopeId} scope={scope} e={entitlement.data} />
+                            <BillingPanel
+                                key={scope.scopeId}
+                                scope={scope}
+                                e={entitlement.data}
+                                cardRegistrationVersion={context.data?.cardRegistrationVersion}
+                            />
                         ) : tab === 'overview' && scope.type === 'HOSPITAL' ? (
                             <HospitalOverview scope={scope} />
                         ) : tab === 'support' ? (
