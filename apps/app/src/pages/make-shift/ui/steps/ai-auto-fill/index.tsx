@@ -61,6 +61,7 @@ import {carryOverOptions} from '../../../model/ai-carry-over';
 import {aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {aiExecutionFailure, isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
+import {INTENT_FIRST_CONTRACT} from '../../../model/intent-first-authoring';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
 import {sortScheduleByTeamNurseOrder} from '../../../model/nurse-order-sync';
@@ -103,7 +104,6 @@ import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillFixedSelectionBar, AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiConversationSidebar from './ai-conversation-sidebar';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
@@ -372,6 +372,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const autofillAdjustEnabled = useShiftEditorStore((s) => s.autofillAdjustEnabled);
     const isAdjustEnabled = isAiAdjustEnabled(autofillAdjustEnabled);
     const conversationEnabled = useShiftEditorStore((s) => s.conversationEnabled);
+    const intentFirstAuthoringEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const [conversationGenerationRequest, setConversationGenerationRequest] = useState(0);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
@@ -408,11 +409,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [hasGenerationNotice, setHasGenerationNotice] = useState(false);
     const generationNoticeContext = useRef<string | null>(null);
     const [generationFailure, setGenerationFailure] = useState<TAiConversationFailure | null>(null);
-    const [pendingConflict, setPendingConflict] = useState<{
-        review: NonNullable<TAutofillResponse['conflictReview']>;
-        revision: number;
-        proceed: () => Promise<void>;
-    } | null>(null);
     const [generationReviewMessage, setGenerationReviewMessage] = useState<string | null>(null);
     const generationNoticeShownRef = useRef(false);
     const autofillSequence = useRef(0);
@@ -1421,7 +1417,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         readyContext = getAiFillReadyContext(),
         adjust?: TAutofillAdjustDto,
         prompt?: string,
-        action?: {doc: TDutyDoc; idempotencyKey: string; conflictReviewToken?: string},
+        action?: {doc: TDutyDoc; idempotencyKey: string},
     ) => {
         if (!readyContext) {
             setIsAiBlankPreviewVisible(false);
@@ -1440,7 +1436,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiRequestSeqRef.current = requestSeq;
         setLastAppliedObservation(undefined);
         setFeedbackObservation(undefined);
-        setPendingConflict(null);
         setIsAiGenerating(true);
         setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
@@ -1468,10 +1463,10 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 year: requestContext.year,
                 month: requestContext.month,
                 doc: requestDoc,
+                ...(intentFirstAuthoringEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
                 ...(action
                     ? {
                           idempotencyKey: action.idempotencyKey,
-                          ...(action.conflictReviewToken ? {conflictReviewToken: action.conflictReviewToken, conflictConfirmed: true} : {}),
                       }
                     : {}),
                 originalShift: readyContext.originalShift,
@@ -1505,25 +1500,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             }
 
             if (!result.ok) {
-                if (result.conflictReview) {
-                    const review = result.conflictReview;
-
-                    setPendingConflict({
-                        review,
-                        revision: stateBeforeRequest.draftRevision,
-                        proceed: async () => {
-                            if (useShiftEditorStore.getState().draftRevision !== stateBeforeRequest.draftRevision) return;
-
-                            setPendingConflict(null);
-                            await runAiFill(readyContext, adjust, prompt, {
-                                doc: requestDoc,
-                                idempotencyKey: crypto.randomUUID(),
-                                conflictReviewToken: review.token,
-                            });
-                        },
-                    });
-                }
-
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -2430,7 +2406,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         }
     };
     const handleAiFill = (requestText?: string) => {
-        legacyGenerationPrompt.current = requestText?.trim() ? {context: currentContextKey, text: requestText.trim()} : null;
+        const text = typeof requestText === 'string' ? requestText.trim() : '';
+
+        legacyGenerationPrompt.current = text ? {context: currentContextKey, text} : null;
         beginAutofillPreparation('generation');
     };
     const prepareAdjustment = (kind: 'generation' | 'adjustment' = 'adjustment') =>
@@ -2515,7 +2493,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         handleAiFill();
     };
     const handleRequestRegenerate = (requestText?: string) => {
-        if (requestText?.trim()) legacyGenerationPrompt.current = {context: currentContextKey, text: requestText.trim()};
+        const text = typeof requestText === 'string' ? requestText.trim() : '';
+
+        if (text) legacyGenerationPrompt.current = {context: currentContextKey, text};
 
         beginAutofillPreparation('generation');
     };
@@ -3132,27 +3112,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     snapshotShift={orderedShift}
                     generationObservation={lastAppliedObservation}
                     generationFailure={generationFailure}
-                    renderConflictReview={
-                        pendingConflict
-                            ? (onRevise, onEditSettings) => (
-                                  <ConstraintConflictReview
-                                      review={pendingConflict.review}
-                                      current={useShiftEditorStore.getState().draftRevision === pendingConflict.revision}
-                                      disabled={isAiGenerating || Boolean(preparationStep)}
-                                      copy={(ko, en) => (language.startsWith('ko') ? ko : en)}
-                                      onProceed={pendingConflict.proceed}
-                                      onEditSettings={() => {
-                                          setPendingConflict(null);
-                                          (onEditSettings ?? onOpenConstraints ?? (() => useCase.goToStep(2)))();
-                                      }}
-                                      onRevise={() => {
-                                          setPendingConflict(null);
-                                          onRevise();
-                                      }}
-                                  />
-                              )
-                            : undefined
-                    }
                     onDismissFailure={() => setGenerationFailure(null)}
                     disabled={isAiGenerating || isCarryingOver || disablingRequestId !== null || isAutofillBlocked}
                     conditionsDisabled={isAiGenerating || isCarryingOver || disablingRequestId !== null}
