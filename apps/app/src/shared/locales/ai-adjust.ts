@@ -35,6 +35,11 @@ export const aiAdjustKo = {
         close: '닫기',
     },
     executionFailure: {
+        nightRunBoundsEvidence: '{{name}}: 연속 야간 최소 {{minimum}}회 / 최대 {{maximum}}회',
+        incomingNightEvidence: '{{start}} ~ {{end}}: 전달에서 이어진 야간 {{actual}}회',
+        nightRunBoundsNext: '해당 간호사의 연속 야간 최소·최대 횟수와 전달 말 배정을 확인하고 수정해 주세요. 기존 표와 설정은 그대로예요.',
+        minimumNightEvidence: '{{name}}: 연속 야간 {{actual}}회 / 필요한 최소 {{expected}}회',
+
         propagatedCapacity:
             '{{date}}에 {{required}}명이 필요하지만, 고정 배정과 연속 근무 조건을 지키면 최대 {{available}}명만 배정할 수 있어요. 관련 배정을 확인하고 직접 수정해 주세요.',
         conflictDate: '{{date}} 조건 충돌',
@@ -491,6 +496,12 @@ export const aiAdjustEn = {
         close: 'Close',
     },
     executionFailure: {
+        nightRunBoundsEvidence: '{{name}}: consecutive nights minimum {{minimum}} / maximum {{maximum}}',
+        incomingNightEvidence: '{{start}} – {{end}}: {{actual}} night(s) carried from the previous month',
+        nightRunBoundsNext:
+            'Review this nurse’s minimum and maximum consecutive nights and assignments at the end of the previous month. The roster and settings are unchanged.',
+        minimumNightEvidence: '{{name}}: {{actual}} consecutive night(s) / required minimum {{expected}}',
+
         propagatedCapacity:
             '{{date}} needs {{required}} nurses, but fixed assignments and consecutive-work limits allow at most {{available}}. Review the linked assignments and edit the schedule.',
         conflictDate: '{{date}} constraint conflict',

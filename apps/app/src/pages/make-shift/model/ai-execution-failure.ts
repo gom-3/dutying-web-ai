@@ -146,6 +146,25 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
 
             if (
+                issue.type === 'NIGHT_RUN_BOUNDS_CONFLICT' &&
+                validCount(issue.minimum) &&
+                validCount(issue.maximum) &&
+                issue.minimum > issue.maximum
+            ) {
+                explanations.push(
+                    i18n.t('aiAdjust.executionFailure.nightRunBoundsEvidence', {name, minimum: issue.minimum, maximum: issue.maximum}),
+                );
+                if (validCount(issue.actual) && issue.actual > 0 && validDate(issue.startDate) && validDate(issue.endDate))
+                    explanations.push(
+                        i18n.t('aiAdjust.executionFailure.incomingNightEvidence', {
+                            start: issue.startDate,
+                            end: issue.endDate,
+                            actual: issue.actual,
+                        }),
+                    );
+            }
+
+            if (
                 issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT' &&
                 validCount(issue.expected) &&
                 validCount(issue.minimumAssignments) &&
@@ -295,6 +314,36 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         reason !== 'TIME_LIMIT_NO_SOLUTION'
     )
         return null;
+
+    if (reason === 'SPRING_HARD_VALIDATION' && hardInvalid) {
+        const knownNightViolations =
+            response.validation?.violations?.filter(
+                (v) =>
+                    v.severity === 'HARD' &&
+                    v.templateCode === 'CORE_MIN_CONTINUOUS_NIGHT' &&
+                    v.messageKey === 'schedule.validation.minContinuousNight' &&
+                    validCount(v.messageArgs?.actual) &&
+                    validCount(v.messageArgs?.expected) &&
+                    Number(v.messageArgs?.actual) < Number(v.messageArgs?.expected) &&
+                    validDate(v.period?.startDate) &&
+                    validDate(v.period?.endDate),
+            ) ?? [];
+        const details = knownNightViolations.map((v) => {
+            const name =
+                typeof v.messageArgs?.nurseName === 'string'
+                    ? v.messageArgs.nurseName.trim().slice(0, 80)
+                    : i18n.t('aiAdjust.executionFailure.affectedNurse');
+            return `${v.period!.startDate} ~ ${v.period!.endDate}: ${i18n.t('aiAdjust.executionFailure.minimumNightEvidence', {name, actual: v.messageArgs!.actual, expected: v.messageArgs!.expected})}`;
+        });
+        if (details.length)
+            return {
+                message: [...new Set(details)].slice(0, 5).join('\n') + '\n\n' + i18n.t('aiAdjust.executionFailure.nightRunBoundsNext'),
+                blocked: false,
+                recovery: 'review',
+                reviewFixed: true,
+                ...(response.observation ? {observation: response.observation} : {}),
+            };
+    }
 
     const staffingConflicts =
         status === 'INFEASIBLE'
