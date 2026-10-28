@@ -991,6 +991,8 @@ export type TAutofillResponse = {
                 blockingReasons?: string[];
             }>;
         } | null;
+        /** Safe public explanation; Spring hides internal solver metadata. */
+        conflictEvidence?: Record<string, unknown>[];
         solver?: {
             /** Original structured conflict retained when a verified proposal is offered. */
             conflictEvidence?: Record<string, unknown>[];

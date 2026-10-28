@@ -1985,7 +1985,17 @@ export default function AiConversationSidebar({
                         }
                         disabled={busy || running || preparing}
                         onApply={() =>
-                            void execute(operation.operationType, undefined, operation.interpretationId ?? undefined, undefined, operation)
+                            void execute(
+                                operation.operationType,
+                                operation.operationType === 'GENERATE'
+                                    ? operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                        ? 'REBUILD_UNLOCKED'
+                                        : 'EMPTY_ONLY'
+                                    : undefined,
+                                operation.interpretationId ?? undefined,
+                                undefined,
+                                operation,
+                            )
                         }
                     />
                 )}

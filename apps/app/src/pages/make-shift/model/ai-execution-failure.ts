@@ -33,7 +33,7 @@ function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
  */
 export function nightRunConflictMessages(response: TAutofillResponse): string[] {
     if (authoringOutcome(response)?.draftState !== 'CONSENT_REQUIRED') return [];
-    const evidence = response.engineResult?.solver?.conflictEvidence;
+    const evidence = response.engineResult?.conflictEvidence ?? response.engineResult?.solver?.conflictEvidence;
     if (!Array.isArray(evidence)) return [];
     return evidence.flatMap((issue) => {
         if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return [];
