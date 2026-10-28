@@ -5,6 +5,43 @@ import {authoringOutcome, canApplyAuthoringResult, authoringMessageKey} from './
 import {readScheduleConflicts} from './schedule-conflicts';
 import type {TConversationOperation} from './schedule-conversation-api';
 
+const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
+const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
+    if (
+        issue.type !== 'NIGHT_RUN_BOUNDS_CONFLICT' ||
+        !validCount(issue.minimum) ||
+        !validCount(issue.maximum) ||
+        issue.minimum <= issue.maximum
+    )
+        return null;
+    const name =
+        typeof issue.nurseName === 'string' && issue.nurseName.trim()
+            ? issue.nurseName.trim().slice(0, 80)
+            : i18n.t('aiAdjust.executionFailure.affectedNurse');
+    let message = i18n.t('aiAdjust.executionFailure.nightRunBoundsEvidence', {name, minimum: issue.minimum, maximum: issue.maximum});
+    if (validCount(issue.actual) && issue.actual > 0 && validDate(issue.startDate) && validDate(issue.endDate))
+        message +=
+            ' · ' +
+            i18n.t('aiAdjust.executionFailure.incomingNightEvidence', {start: issue.startDate, end: issue.endDate, actual: issue.actual});
+    return message;
+}
+
+/** Display original-input proof beside an already-authorized consent candidate.
+ * Never modifies candidate violations/delta, selection eligibility or the roster.
+ */
+export function nightRunConflictMessages(response: TAutofillResponse): string[] {
+    if (authoringOutcome(response)?.draftState !== 'CONSENT_REQUIRED') return [];
+    const evidence = response.engineResult?.solver?.conflictEvidence;
+    if (!Array.isArray(evidence)) return [];
+    return evidence.flatMap((issue) => {
+        if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return [];
+        const message = nightRunBoundsMessage(issue as Record<string, unknown>);
+        return message ? [message] : [];
+    });
+}
+
 export function conversationOperationFailure(operation: TConversationOperation): TAiConversationFailure | null {
     return (
         (operation.result ? aiExecutionFailure(operation.result) : null) ??
@@ -132,8 +169,6 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             difference: monthlyCapacity.excessAssignments,
         }),
     );
-    const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
-    const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
     const restConflicts: TPersonalRestConflict[] = [];
 
     let availabilityConflict = false;
@@ -144,6 +179,9 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 typeof issue.nurseName === 'string' && issue.nurseName.trim()
                     ? issue.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
+
+            const nightBounds = nightRunBoundsMessage(issue);
+            if (nightBounds) explanations.push(nightBounds);
 
             if (
                 issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT' &&
@@ -295,6 +333,36 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         reason !== 'TIME_LIMIT_NO_SOLUTION'
     )
         return null;
+
+    if (reason === 'SPRING_HARD_VALIDATION' && hardInvalid) {
+        const knownNightViolations =
+            response.validation?.violations?.filter(
+                (v) =>
+                    v.severity === 'HARD' &&
+                    v.templateCode === 'CORE_MIN_CONTINUOUS_NIGHT' &&
+                    v.messageKey === 'schedule.validation.minContinuousNight' &&
+                    validCount(v.messageArgs?.actual) &&
+                    validCount(v.messageArgs?.expected) &&
+                    Number(v.messageArgs?.actual) < Number(v.messageArgs?.expected) &&
+                    validDate(v.period?.startDate) &&
+                    validDate(v.period?.endDate),
+            ) ?? [];
+        const details = knownNightViolations.map((v) => {
+            const name =
+                typeof v.messageArgs?.nurseName === 'string'
+                    ? v.messageArgs.nurseName.trim().slice(0, 80)
+                    : i18n.t('aiAdjust.executionFailure.affectedNurse');
+            return `${v.period!.startDate} ~ ${v.period!.endDate}: ${i18n.t('aiAdjust.executionFailure.minimumNightEvidence', {name, actual: v.messageArgs!.actual, expected: v.messageArgs!.expected})}`;
+        });
+        if (details.length)
+            return {
+                message: [...new Set(details)].slice(0, 5).join('\n') + '\n\n' + i18n.t('aiAdjust.executionFailure.nightRunBoundsNext'),
+                blocked: false,
+                recovery: 'review',
+                reviewFixed: true,
+                ...(response.observation ? {observation: response.observation} : {}),
+            };
+    }
 
     const staffingConflicts =
         status === 'INFEASIBLE'
