@@ -87,3 +87,24 @@ explicit personal request. Moving it above staffing excess is proposed behavior,
 requires independent review, and must not be described as a fully approved
 production policy. The conditional exact-rest and symmetric-conflict handling
 are included in that review. Live deployment/UI evidence is still pending.
+
+## Negotiated-path diagnostic follow-up
+
+The actual `generate_schedule` intent-first path intentionally retains a
+CONSENT_REQUIRED candidate when existing operational-exception policy permits
+one. Do not turn the legacy preflight into a new blanket barrier or interpret
+contractVersion as consent. Share the original configuration proof through the
+existing solver.conflictEvidence envelope; preserve evaluated violationDelta,
+candidate violations, protection checks and approval tokens. Present that proof
+alongside the actual remaining violations in the existing candidate warning
+list. A requestState SATISFIED is not a claim that all original rules were met:
+the existing authoring message prioritizes CONSENT_REQUIRED over requestState.
+
+Follow-up validation: actual intent-first source215 (only contract/baseline IDs
+added) returns CONSENT_REQUIRED in 2.14s with 300 candidate cells, original proof
+minimum14/maximum3/incoming1 and 10-31–11-01; the actual candidate retains five
+minimum-night and eight staffing-excess violation records. All30 fixed cells and
+regular O10 remain, dedicated N15/O15; appliedConcessionIds is empty. This is a
+reviewable exception candidate, not a safe original-rule solution or applied
+roster. Shared-proof propagation passes 38 engine cases; the web existing
+candidate/failure/provider/conflict tests pass98 and application tsc passes.

@@ -5,6 +5,43 @@ import {authoringOutcome, canApplyAuthoringResult, authoringMessageKey} from './
 import {readScheduleConflicts} from './schedule-conflicts';
 import type {TConversationOperation} from './schedule-conversation-api';
 
+const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
+const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
+    if (
+        issue.type !== 'NIGHT_RUN_BOUNDS_CONFLICT' ||
+        !validCount(issue.minimum) ||
+        !validCount(issue.maximum) ||
+        issue.minimum <= issue.maximum
+    )
+        return null;
+    const name =
+        typeof issue.nurseName === 'string' && issue.nurseName.trim()
+            ? issue.nurseName.trim().slice(0, 80)
+            : i18n.t('aiAdjust.executionFailure.affectedNurse');
+    let message = i18n.t('aiAdjust.executionFailure.nightRunBoundsEvidence', {name, minimum: issue.minimum, maximum: issue.maximum});
+    if (validCount(issue.actual) && issue.actual > 0 && validDate(issue.startDate) && validDate(issue.endDate))
+        message +=
+            ' · ' +
+            i18n.t('aiAdjust.executionFailure.incomingNightEvidence', {start: issue.startDate, end: issue.endDate, actual: issue.actual});
+    return message;
+}
+
+/** Display original-input proof beside an already-authorized consent candidate.
+ * Never modifies candidate violations/delta, selection eligibility or the roster.
+ */
+export function nightRunConflictMessages(response: TAutofillResponse): string[] {
+    if (authoringOutcome(response)?.draftState !== 'CONSENT_REQUIRED') return [];
+    const evidence = response.engineResult?.solver?.conflictEvidence;
+    if (!Array.isArray(evidence)) return [];
+    return evidence.flatMap((issue) => {
+        if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return [];
+        const message = nightRunBoundsMessage(issue as Record<string, unknown>);
+        return message ? [message] : [];
+    });
+}
+
 export function conversationOperationFailure(operation: TConversationOperation): TAiConversationFailure | null {
     return (
         (operation.result ? aiExecutionFailure(operation.result) : null) ??
@@ -132,8 +169,6 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             difference: monthlyCapacity.excessAssignments,
         }),
     );
-    const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
-    const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
     const restConflicts: TPersonalRestConflict[] = [];
 
     let availabilityConflict = false;
@@ -145,24 +180,8 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                     ? issue.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
 
-            if (
-                issue.type === 'NIGHT_RUN_BOUNDS_CONFLICT' &&
-                validCount(issue.minimum) &&
-                validCount(issue.maximum) &&
-                issue.minimum > issue.maximum
-            ) {
-                explanations.push(
-                    i18n.t('aiAdjust.executionFailure.nightRunBoundsEvidence', {name, minimum: issue.minimum, maximum: issue.maximum}),
-                );
-                if (validCount(issue.actual) && issue.actual > 0 && validDate(issue.startDate) && validDate(issue.endDate))
-                    explanations.push(
-                        i18n.t('aiAdjust.executionFailure.incomingNightEvidence', {
-                            start: issue.startDate,
-                            end: issue.endDate,
-                            actual: issue.actual,
-                        }),
-                    );
-            }
+            const nightBounds = nightRunBoundsMessage(issue);
+            if (nightBounds) explanations.push(nightBounds);
 
             if (
                 issue.type === 'PERSONAL_MONTHLY_REST_CAPACITY_CONFLICT' &&
