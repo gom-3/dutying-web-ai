@@ -127,7 +127,7 @@ describe('local UI review', () => {
         await userEvent.click(chat().getByRole('button', {name: '초기화'}));
         expect(chat().queryByText(/^근무표를 채웠어요!$/)).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
-        await userEvent.click(await chat().findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
+        await userEvent.click(await chat().findByRole('button', {name: '원하는 변경을 적어 조절하기'}));
         expect(chat().getByText('어떤 점을 바꾸고 싶나요?')).toBeVisible();
         expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveFocus();
         expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
@@ -157,7 +157,7 @@ describe('local UI review', () => {
     it('interprets nurse 1 and an inclusive period without leaking other requests', async () => {
         render(<Review />);
         const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        await userEvent.click(await chat().findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
+        await userEvent.click(await chat().findByRole('button', {name: '원하는 변경을 적어 조절하기'}));
         const before = structuredClone(useShiftEditorStore.getState().doc);
 
         fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {target: {value: '간호사 1 5일까지 N 없게 해줘.'}});
@@ -184,7 +184,7 @@ describe('local UI review', () => {
     it('uses a specific model clarification and retains the original request when answered', async () => {
         render(<Review />);
         const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        await userEvent.click(await chat().findByRole('button', {name: '수정하고 싶은 부분이 있어요'}));
+        await userEvent.click(await chat().findByRole('button', {name: '원하는 변경을 적어 조절하기'}));
         const ambiguous = '간호사 1에 1~5일 근무를 없애줘.';
         const question = '간호사 1의 1~5일을 빈칸으로 지울까요, O 근무를 배정할까요?';
         const llm = vi.fn(async (_url: string, options: RequestInit) => {

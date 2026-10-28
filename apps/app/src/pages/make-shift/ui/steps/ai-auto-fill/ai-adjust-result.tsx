@@ -23,7 +23,7 @@ type TProps = {
     attempt?: number;
     preview?: ReactNode;
     onModify: () => void;
-    onRegenerate?: () => void;
+    onEditSchedule?: () => void;
     onUndo: () => void;
 };
 
@@ -41,7 +41,7 @@ export function AiAdjustResult({
     attempt,
     preview,
     onModify,
-    onRegenerate,
+    onEditSchedule,
     onUndo,
 }: TProps) {
     const {t} = useTypedTranslation();
@@ -101,14 +101,14 @@ export function AiAdjustResult({
                                     {t('aiAdjust.checkProblems')}
                                 </button>
                             )}
-                            {onRegenerate ? (
+                            {onEditSchedule ? (
                                 <AiConversationEntry
                                     choice={null}
                                     attached
                                     hideIntro
                                     disabled={disabled}
                                     modifyDisabled={modifyDisabled}
-                                    onChoose={(choice) => (choice === 'regenerate' ? onRegenerate() : onModify())}
+                                    onChoose={(choice) => (choice === 'edit' ? onEditSchedule() : onModify())}
                                 />
                             ) : (
                                 <button

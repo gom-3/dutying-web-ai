@@ -49,6 +49,27 @@ async function submit(text: string, answer = true) {
 }
 
 describe('AI adjustment conversation', () => {
+    it('continues a grounded legacy rewrite into preparation with its original prompt, without ADJUST', async () => {
+        const text = '그냥 다시 자동완성해줘';
+        const interpret = vi
+            .fn()
+            .mockResolvedValue({
+                items: [],
+                unmapped: [],
+                llmPrompt: text,
+                generationIntent: {start: 0, end: Array.from(text).length, quote: text},
+            });
+        const apply = vi.fn();
+        const regenerate = vi.fn();
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} onRegenerate={regenerate} />);
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await submit(text, false);
+        expect(interpret).toHaveBeenCalledExactlyOnceWith(text);
+        expect(regenerate).toHaveBeenCalledExactlyOnceWith(text);
+        expect(apply).not.toHaveBeenCalled();
+        expect(textbox()).toHaveValue(text);
+    });
+
     it('retires an earlier proposal after a saved condition is removed without applying it', async () => {
         const interpret = vi.fn().mockResolvedValue(interpreted);
         const apply = vi.fn();

@@ -205,7 +205,7 @@ export const aiAdjustKo = {
     chat: {
         welcome: '근무표를 어떻게 바꿀까요?',
         regenerate: '한 번 더 채워볼게요',
-        modify: '수정하고 싶은 부분이 있어요',
+        modify: '원하는 변경을 적어 조절하기',
         confirmSchedule: '근무표 확정',
         askChanges: '어떤 점을 바꾸고 싶나요?',
         regenerateHelp: '현재 조건으로 전체 근무표를 다시 만들어요.',
@@ -690,7 +690,7 @@ export const aiAdjustEn = {
     chat: {
         welcome: 'How would you like to change the schedule?',
         regenerate: 'Try filling it again',
-        modify: 'I have some changes in mind',
+        modify: 'Describe the changes to adjust',
         confirmSchedule: 'Confirm schedule',
         askChanges: 'What would you like to change?',
         regenerateHelp: 'Rebuild the whole schedule with the current conditions.',
