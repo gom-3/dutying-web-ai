@@ -51,14 +51,12 @@ async function submit(text: string, answer = true) {
 describe('AI adjustment conversation', () => {
     it('continues a grounded legacy rewrite into preparation with its original prompt, without ADJUST', async () => {
         const text = '그냥 다시 자동완성해줘';
-        const interpret = vi
-            .fn()
-            .mockResolvedValue({
-                items: [],
-                unmapped: [],
-                llmPrompt: text,
-                generationIntent: {start: 0, end: Array.from(text).length, quote: text},
-            });
+        const interpret = vi.fn().mockResolvedValue({
+            items: [],
+            unmapped: [],
+            llmPrompt: text,
+            generationIntent: {start: 0, end: Array.from(text).length, quote: text},
+        });
         const apply = vi.fn();
         const regenerate = vi.fn();
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} onRegenerate={regenerate} />);
@@ -345,7 +343,7 @@ describe('AI adjustment conversation', () => {
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={{...nextFlow, status: 'running'}} generationCompleted />);
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2);
         expect(screen.getByText('오프를 공평하게')).toBeVisible();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
         expect(props.interpret).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
     });

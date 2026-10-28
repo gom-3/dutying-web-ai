@@ -993,6 +993,7 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('keeps completion, preview and result actions in one assistant message', async () => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [{...operation, result: successfulResult}];
         renderSidebar();
 
@@ -1673,6 +1674,7 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('distinguishes autofill and adjustment attempt boundaries without calling a solver', async () => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [
             operation,
             {...operation, operationId: 'adjust:1', sequence: 2, operationType: 'ADJUST'},
@@ -1687,6 +1689,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it.each([true, false])('explains an applied unchanged adjustment without claiming optimality: %s', async (unchanged) => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [
             {
                 ...operation,
@@ -1944,7 +1947,7 @@ describe('persistent schedule sidebar', () => {
     it('keeps local preparation and selected replies before server results without persisting extra turns', async () => {
         current = {...current, operations: []};
         mocks.execute.mockImplementation(async () => {
-            current = {...current, operations: [operation]};
+            current = {...current, conversation: {...current.conversation, currentVersionId: 'result:1'}, operations: [operation]};
 
             return operation;
         });
@@ -3067,7 +3070,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(screen.getByRole('radio', {name: '권장'})).toBeChecked();
     });
-    it('revalidates explicit partial selection and waits for confirmation of the new plan', async () => {
+    it('keeps unsupported groups visible without condition checkboxes or execution', async () => {
         const groups = [
             {
                 conditionId: 'supported',
@@ -3109,53 +3112,20 @@ describe('persistent schedule sidebar', () => {
                 conditionGroups: groups,
             },
         };
-
         current = {
             ...current,
             turns: [proposal],
             conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
         };
-        mocks.selectConditions.mockImplementation(async () => {
-            const child = {
-                ...proposal,
-                eventId: 3,
-                sequence: 3,
-                interpretationId: 'partial:child',
-                semanticPlan: {
-                    ...proposal.semanticPlan!,
-                    planId: 'child',
-                    planHash: 'b'.repeat(64),
-                    state: 'PREVIEW_READY',
-                    confirmationAllowed: true,
-                    selectionAudit: {
-                        sourcePreviewId: 'preview',
-                        originalText: 'original',
-                        conditionGroups: groups,
-                        selectedConditionIds: ['supported'],
-                        excludedConditionIds: ['unsupported'],
-                    },
-                },
-            };
-
-            current = {
-                ...current,
-                turns: [proposal, child],
-                conversation: {...current.conversation, latestInterpretationId: child.interpretationId},
-            };
-
-            return child;
-        });
         renderSidebar();
 
-        const check = (await screen.findAllByRole('checkbox'))[0];
-
-        await userEvent.click(check);
-        await userEvent.click(screen.getByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/}));
-        await waitFor(() => expect(mocks.selectConditions).toHaveBeenCalledWith(1, 'parent', 0, 'a'.repeat(64), ['supported']));
-        expect(await screen.findByRole('button', {name: /이대로 수정하기|Adjust with these conditions/})).toBeInTheDocument();
+        expect(await screen.findByText('김 1일 D 배정')).toBeVisible();
+        expect(screen.getByText('김 입사일부터 N 금지')).toBeVisible();
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/})).not.toBeInTheDocument();
+        expect(mocks.selectConditions).not.toHaveBeenCalled();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
-        expect(screen.getByText('제외:')).toBeInTheDocument();
     });
     it('keeps unsupported semantic conditions visible and disables confirmation', async () => {
         const proposal = {

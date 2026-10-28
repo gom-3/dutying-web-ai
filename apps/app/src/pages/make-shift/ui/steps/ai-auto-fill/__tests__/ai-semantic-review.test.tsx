@@ -53,7 +53,6 @@ function renderReview(overrides: Partial<ComponentProps<typeof AiSemanticReview>
         onApply: vi.fn(),
         onEdit: vi.fn(),
         onRetry: vi.fn(),
-        onSelectConditions: vi.fn(),
         ...overrides,
     };
 
@@ -129,7 +128,6 @@ describe('fixed shift conflict recovery', () => {
         expect(props.onEdit).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 
     it('prevents editing while another action is busy', async () => {
@@ -142,7 +140,6 @@ describe('fixed shift conflict recovery', () => {
         expect(props.onEdit).not.toHaveBeenCalled();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 
     it('keeps historical conflicts readable without exposing actions', () => {
@@ -166,14 +163,15 @@ describe('fixed shift conflict recovery', () => {
         expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
     });
 
-    it('preserves selective revalidation for unsupported requests', async () => {
+    it('keeps unsupported requests in the conversation for natural-language correction', async () => {
         const user = userEvent.setup();
         const props = renderReview({plan: {...conflictPlan, state: 'UNSUPPORTED'}});
 
-        await user.click(screen.getByRole('checkbox'));
-        await user.click(screen.getByRole('button', {name: '선택한 조건만 다시 검증'}));
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
 
-        expect(props.onSelectConditions).toHaveBeenCalledWith(['request-1']);
+        expect(props.onEdit).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
     });
@@ -195,7 +193,6 @@ describe('request review actions', () => {
         expect(props.onApply).toHaveBeenCalledOnce();
         expect(props.onEdit).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -211,7 +208,6 @@ describe('request review actions', () => {
         await user.click(apply);
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 
     it('retains confirmed conditions even when the preview confirmation flag is false', async () => {
@@ -251,7 +247,6 @@ describe('request review actions', () => {
         expect(props.onRetry).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onEdit).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 
     it('does not execute or offer generic partial selection for expired conditions', async () => {
@@ -266,7 +261,6 @@ describe('request review actions', () => {
         expect(props.onEdit).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onRetry).not.toHaveBeenCalled();
-        expect(props.onSelectConditions).not.toHaveBeenCalled();
     });
 });
 

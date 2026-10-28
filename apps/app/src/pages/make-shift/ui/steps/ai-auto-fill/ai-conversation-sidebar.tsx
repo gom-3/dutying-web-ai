@@ -802,27 +802,6 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
-    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
-        await run(
-            async () => {
-                const current = detailRef.current;
-
-                if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
-                    throw new Error(t('aiAdjust.stale'));
-
-                await api.selectConditions(
-                    current.conversation.conversationId,
-                    turn.semanticPlan.planId,
-                    current.conversation.revision,
-                    turn.semanticPlan.planHash,
-                    ids,
-                );
-                await refresh();
-            },
-            false,
-            'reviewing',
-        );
-    };
     const changeModalities = async (turn: TConversationTurn, overrides: Record<string, 'HARD' | 'SOFT'>) => {
         // run() presents errors but deliberately consumes them. Track completion so the editor retains failed changes.
         let saved = false;
@@ -1971,7 +1950,6 @@ export default function AiConversationSidebar({
                             }
                             copy={copy}
                             onChangeModalities={(overrides) => changeModalities(turn, overrides)}
-                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
@@ -2867,7 +2845,9 @@ export default function AiConversationSidebar({
                                 </details>
                             )}
                             {detail?.conversationState?.pendingQuestion && (
-                                <p className="rounded border p-2 text-sm" role="status">{detail.conversationState.pendingQuestion.question}</p>
+                                <p className="rounded border p-2 text-sm" role="status">
+                                    {detail.conversationState.pendingQuestion.question}
+                                </p>
                             )}
                             {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
                                 <select

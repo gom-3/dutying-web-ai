@@ -33,18 +33,31 @@ export function AiConversationResult({
     const saved = operation.applyStatus === 'APPLIED';
     const applied = saved && appliedLocally;
     const visibleMessageKey = saved ? undefined : messageKey;
-    const succeeded = operation.executionStatus === 'SUCCEEDED' && applied && (!authoring || authoring.draftState === 'APPLICABLE');
+    const appliedStatusKey =
+        applied && authoring?.requestState === 'NEEDS_REVIEW'
+            ? 'selectedReview'
+            : applied && authoring?.requestState === 'PARTIAL'
+              ? 'PARTIAL'
+              : undefined;
+    const succeeded =
+        operation.executionStatus === 'SUCCEEDED' &&
+        applied &&
+        (!authoring ||
+            (authoring.draftState === 'APPLICABLE' &&
+                !['PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT'].includes(authoring.requestState)));
     const changedCount = operation.result?.changedCells.length;
     const showPartialCoverage = !applied && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
-    const title = review
-        ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
-        : !applied
-          ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
-          : operation.operationType === 'GENERATE'
-            ? t('aiAutofillUi.conversationResult.yourScheduleIsReady')
-            : changedCount === 0
-              ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
-              : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady');
+    const title = appliedStatusKey
+        ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
+        : review
+          ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
+          : !applied
+            ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
+            : operation.operationType === 'GENERATE'
+              ? t('aiAutofillUi.conversationResult.yourScheduleIsReady')
+              : changedCount === 0
+                ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
+                : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady');
     const scope = applied
         ? null
         : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
@@ -75,9 +88,11 @@ export function AiConversationResult({
                     ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
                     : !applied
                       ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
-                      : operation.operationType === 'GENERATE'
-                        ? t('aiAutofillUi.conversationResult.autofillSucceeded')
-                        : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
+                      : appliedStatusKey
+                        ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
+                        : operation.operationType === 'GENERATE'
+                          ? t('aiAutofillUi.conversationResult.autofillSucceeded')
+                          : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
             changedCount={changedCount}
             description={

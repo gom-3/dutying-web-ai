@@ -5,7 +5,7 @@ export const aiConversationSidebarKo = {
         details: '변경 내용 더 보기',
         candidateUnavailable: '이 변경안을 확인할 수 없어 반영하지 않았어요. 최신 표로 다시 요청해 주세요.',
         STRATEGY_ONLY: '검토할 방향만 준비했어요. 표는 그대로예요. 대상이나 조건을 더 알려 주세요.',
-        selectedReview: '선택한 배치를 반영했어요.',
+        selectedReview: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
         clause: {
             SATISFIED: '요청대로예요',
             ALREADY_SATISFIED: '이미 요청대로예요',
@@ -122,7 +122,7 @@ export const aiConversationSidebarEn = {
         details: 'More about these changes',
         candidateUnavailable: 'This proposal could not be verified and was not applied. Request again using the current schedule.',
         STRATEGY_ONLY: 'A direction for review is ready. Your schedule is unchanged. Add details about the target or conditions.',
-        selectedReview: 'Applied your selected changes.',
+        selectedReview: 'Applied the changes to the schedule. Review the result.',
         clause: {
             SATISFIED: 'Matches your request',
             ALREADY_SATISFIED: 'Already matches your request',
@@ -239,7 +239,7 @@ export const aiConversationSidebarJa = {
         details: '変更内容を詳しく見る',
         candidateUnavailable: '変更案を確認できなかったため反映していません。最新の勤務表で再度ご依頼ください。',
         STRATEGY_ONLY: '検討する方向性を用意しました。勤務表はそのままです。対象や条件を詳しくお知らせください。',
-        selectedReview: '選択した配置を反映しました。',
+        selectedReview: '変更を勤務表に反映しました。結果をご確認ください。',
         clause: {
             SATISFIED: 'ご依頼どおりです',
             ALREADY_SATISFIED: 'すでにご依頼どおりです',

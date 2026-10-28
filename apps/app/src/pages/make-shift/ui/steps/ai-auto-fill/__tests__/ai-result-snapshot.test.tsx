@@ -108,7 +108,7 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 describe('completed schedule snapshots', () => {
-    it('keeps the next choices with the result image while confirming the schedule remains a separate guarded action', async () => {
+    it('keeps editing and change requests with the result image while confirmation stays separate', async () => {
         const onRegenerate = vi.fn();
         const onConfirm = vi.fn();
         const view = render(
@@ -127,9 +127,9 @@ describe('completed schedule snapshots', () => {
         const confirm = screen.getByRole('button', {name: 'aiAdjust.chat.confirmSchedule'});
 
         expect(within(result).getByRole('button', {name: '근무표 살펴보기'})).toBeEnabled();
-        expect(within(result).getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeEnabled();
+        expect(within(result).getByRole('button', {name: '표 직접 수정하기'})).toBeEnabled();
         expect(within(result).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-        expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.regenerate'})).toHaveLength(1);
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.modify'})).toHaveLength(1);
         expect(result).not.toContainElement(confirm);
         fireEvent.click(confirm);
@@ -178,10 +178,11 @@ describe('completed schedule snapshots', () => {
         expect(onConfirm).not.toHaveBeenCalled();
         expect(onApply).not.toHaveBeenCalled();
     });
-    it('offers next choices only on the latest completed result and starts regeneration once from that result', async () => {
+    it('offers next choices only on the latest completed result and opens editing from that result', async () => {
         const onRegenerate = vi.fn();
+        const onReviewSchedule = vi.fn();
         const onConfirm = vi.fn();
-        const common = {onRegenerate, snapshotShift: initialShift(), resultActions: {canConfirm: true, onConfirm}};
+        const common = {onRegenerate, onReviewSchedule, snapshotShift: initialShift(), resultActions: {canConfirm: true, onConfirm}};
         const view = render(<AiAdjustTextInput {...props} {...common} generationCompleted />);
 
         await screen.findByRole('img', {name: '근무표 결과 이미지'});
@@ -193,7 +194,7 @@ describe('completed schedule snapshots', () => {
                 preparation={<p>고정 근무 확인</p>}
             />,
         );
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '표 직접 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
         view.rerender(
             <AiAdjustTextInput {...props} {...common} autofillFlow={{id: 2, status: 'running', messages: []}} generationCompleted />,
@@ -202,14 +203,15 @@ describe('completed schedule snapshots', () => {
 
         const results = screen.getAllByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(within(results[0]).queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
+        expect(within(results[0]).queryByRole('button', {name: '표 직접 수정하기'})).not.toBeInTheDocument();
         expect(within(results[0]).queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
         expect(within(results[1]).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-        fireEvent.click(within(results[1]).getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
-        expect(onRegenerate).toHaveBeenCalledOnce();
+        fireEvent.click(within(results[1]).getByRole('button', {name: '표 직접 수정하기'}));
+        expect(onReviewSchedule).toHaveBeenCalledOnce();
+        expect(onRegenerate).not.toHaveBeenCalled();
         expect(onConfirm).not.toHaveBeenCalled();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
+        expect(within(results[1]).getByRole('button', {name: '표 직접 수정하기'})).toBeEnabled();
+        expect(within(results[1]).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
         expect(screen.getAllByRole('img', {name: '근무표 결과 이미지'})).toHaveLength(2);
     });
     it('counts the first successful calculation as run one after preparation was canceled', async () => {
