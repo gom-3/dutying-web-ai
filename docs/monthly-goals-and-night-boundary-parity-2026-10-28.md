@@ -1,110 +1,48 @@
-# Monthly goals and minimum-night boundary parity
+# Observed night boundaries and authoritative scheduling inputs
 
-## Evidence and scope
+## Final contract
 
-The anonymized archived request reproduces a night-only row changing from N15/O15
-to O30 after exact monthly rest for regular workers was introduced. Exact rest
-leaves regular workers filling the entire daily soft staffing target. The current
-objective ranks staffing excess above every personal monthly target, so the
-night-only row's target disappears even though its allowed shifts remain correct.
-Legacy ratio columns are not current policy: Spring removed target ratio mapping
-in August (`NurseShiftType`, commit 7c82863b and the retired ratio specification).
-Do not resurrect the removed feature from old database values. Current allowed
-and preferred shifts plus staffing-derived monthly guidance are authoritative.
+* Explicit HARD rules, locks, exact monthly rest and availability remain protected.
+  Existing explicit SOFT staffing shortage/excess costs are symmetric, followed
+  by pending requests and inferred balance guidance. The proposed global policy
+  toggle and monthly-guidance promotion were removed. Equivalent global and
+  individual staffing encodings must have the same priorities and cost.
+* A minimum-night run has an exact observed count only if its start follows a
+  known non-night and its end is closed by a known non-night. Unknown earlier
+  history makes the observed suffix a lower bound; it cannot prove minimum-run
+  infeasibility. The solver can complete that unknown initial length, while
+  mutable new nights still respect the same HARD maximum. Protected historical
+  excess is not converted into a new blocking violation merely by losing data.
+* Python and Spring use the same minimum-night closing date and affected shift
+  scope. For known O on10/30, N on10/31–11/02, O on11/03, actual=3 and comparison
+  suffix is [[211],[2026-10-31,2026-11-03],[303,304]]. Continuation display cells
+  preserve the run without increasing its count or becoming an affected N.
+* Original configuration proof uses the existing solver.conflictEvidence field.
+  A permitted operational-exception candidate remains CONSENT_REQUIRED; original
+  proof appears beside its actual remaining violations in the existing warning
+  list. Outcome/delta, explicit concessions, cached tokens and approval rules
+  are not relaxed. SATISFIED requestState does not override the consent state.
+* Inferred monthly OFF guidance is compared with actual candidate counts in
+  unmetInstructions. It is not reported as achieved work or as a proven blocker.
 
-`fixed` is a saved monthly rest policy, not an unpersisted UI default. Preserve
-`exactForRegularWorkers`, individual hard exact rules, locks and allowed shifts.
-Do not infer a special monthly night minimum or relax exact to minimum.
+## Reused evidence and remaining limits
 
-An incoming last-month night followed by this month's OFF is another reproducible
-failure: the solver allows it, the engine validator skips the prior-month run,
-and Spring rejects its known closing OFF. A saved minimum 14 and maximum 3 are
-contradictory for that incoming run. The stored minimum's origin is absent; there
-is no evidence that it meant a monthly count.
+Archived182 still returns ACCEPTED with dedicated N0/O30 under the explicit
+SOFT EXACT staffing and regular exact O9. It is not fixed by changing objective
+weights. Its response now names actual O30 versus inferred O15; fixed30 cells,
+allowed shifts and exact rest remain protected. The automatic fixed-policy to
+exact-rest interpretation remains an unresolved product-contract question; this
+patch neither redefines it nor resurrects retired nurse ratio weights.
 
-## Change
+Archived215 has observed last-four-day N/O/O/N, so the final N starts after a
+known O: incoming actual1 is exact, min14/max3 is a proven conflict. Legacy
+returns INFEASIBLE/change0. The negotiated path may offer a consent candidate
+with the same original proof and actual remaining violations; it never
+constitutes an automatically applied original-rule solution. By contrast,
+[unknown,N] is not a definite incoming1 conflict; a protected historical N14
+completion closed by current OFF is allowed.
 
-* When hard monthly rest maxima are supplied, full-month generation protects
-  existing personal monthly guidance: soft staffing shortages first, monthly
-  guidance second, soft staffing excess third, then pending shift preferences
-  and other balance/soft-rule terms. Hard rules/accepted requests/locks remain
-  above every objective. Monthly guidance is inferred from available shifts,
-  staffing supply, existing rest/capacity ceilings and preferred-shift rules;
-  it is not an explicit personal quota and may be unmet when hard rules bind.
-  No maximum rest contract means the legacy objective remains unchanged.
-  Conflicting equally-SOFT staffing bounds over the same date/population/type
-  retain the legacy symmetric cost; shortage is not silently favoured over max.
-  ADJUST and two-shift priorities remain unchanged.
-* This can produce additional staff when regular workers' exact work total
-  already fills the daily soft target. Report shortages/excess and actual
-  monthly counts together; N15 alone is not a correctness criterion.
-* A minimum night run is judged when a known non-night/non-continuation cell
-  closes it. Carry the count from known prior context; continuation display
-  cells retain but do not increase it. An unfinished month-end run is open,
-  because next month is unknown. Use this predicate in hard/soft encoding and
-  final validation. Include the closing date in minimum-run violations.
-* Feed known Spring blocking violations through the existing failure conflict
-  contract, including actual/required values and dates. No additional UI card,
-  fallback, retry, state machine, or repair stage.
-
-## Validation and release
-
-Use synthetic ID/month/headcount variants, ordinary wards, explicit exact rest,
-saved availability/preferences, custom shift codes, locks, incoming/ending night runs and
-contradictory minimum/maximum rules. Assert schedule counts and final verdicts,
-not just payload flags. Replay the existing anonymized archived fixtures locally
-with no LLM calls. Coordinate deployment with the release chat after PR review;
-no production writes or parallel deployment. No schema migration.
-
-## Local results and limits
-
-* Existing six anonymized archives are reused, including the corrected 44 known
-  carry cells. No nurse/team/month-specific conditions exist in the patch.
-* Current-policy replay 182: N15/O15 on the restricted row; ten regular rows
-  remain at exact O9; all 30 locks remain, 11 rows have 30 entries, staffing
-  shortages are zero. Total work 225 versus daily soft target total 210: excess
-  D7/E2/N6, 15 assignments total, daily work 7–9. This is a visible tradeoff,
-  not a claim of exact daily staffing. No obsolete ratio fields are consumed.
-* The same request still has a rotating four-night run. There is no HARD
-  maximum-consecutive-night rule in archive182. This patch does not invent
-  that rule, and does not claim to solve that separate expectation.
-* Replay215: INFEASIBLE, no changed cells; minimum14/maximum3, incoming actual1,
-  2026-10-31–2026-11-01. No N15 criterion applies to contradictory input.
-* Engine: 280 passed, one pre-existing expected failure across boundary, monthly
-  rest, full-month balance, staffing single-owner and draft contract tests.
-  Spring: 202 passed. Web: 85 passed in existing failure/provider/conflict flows;
-  TypeScript application type-check passed with this worktree’s installed workspace dependencies.
-* Preserve the existing fixed month-start N guard when prior history is unknown;
-  a known incoming N does not receive that exemption. Known closed carry runs
-  include their current-month closing date in engine evidence.
-* Development deployment and live UI QA remain pending independent review.
-  The release owner should deploy Engine + Spring + Web once, then reuse the QA
-  ward with identical input/carry. Check the known conflict's actual dates and
-  counts in the existing failure flow; verify no changed cells were applied.
-
-Policy review note: monthly guidance is currently soft quality guidance, not an
-explicit personal request. Moving it above staffing excess is proposed behavior,
-requires independent review, and must not be described as a fully approved
-production policy. The conditional exact-rest and symmetric-conflict handling
-are included in that review. Live deployment/UI evidence is still pending.
-
-## Negotiated-path diagnostic follow-up
-
-The actual `generate_schedule` intent-first path intentionally retains a
-CONSENT_REQUIRED candidate when existing operational-exception policy permits
-one. Do not turn the legacy preflight into a new blanket barrier or interpret
-contractVersion as consent. Share the original configuration proof through the
-existing solver.conflictEvidence envelope; preserve evaluated violationDelta,
-candidate violations, protection checks and approval tokens. Present that proof
-alongside the actual remaining violations in the existing candidate warning
-list. A requestState SATISFIED is not a claim that all original rules were met:
-the existing authoring message prioritizes CONSENT_REQUIRED over requestState.
-
-Follow-up validation: actual intent-first source215 (only contract/baseline IDs
-added) returns CONSENT_REQUIRED in 2.14s with 300 candidate cells, original proof
-minimum14/maximum3/incoming1 and 10-31–11-01; the actual candidate retains five
-minimum-night and eight staffing-excess violation records. All30 fixed cells and
-regular O10 remain, dedicated N15/O15; appliedConcessionIds is empty. This is a
-reviewable exception candidate, not a safe original-rule solution or applied
-roster. Shared-proof propagation passes 38 engine cases; the web existing
-candidate/failure/provider/conflict tests pass98 and application tsc passes.
+Validation is focused on the existing counterexamples, minimum-night validator,
+comparison metadata and the necessary anonymized182/215 runs. No new setting,
+UI card, hospital-specific rule, source-data edits, LLM call, merge or deployment.
+All PRs remain draft pending parent review and coordinated live dev UI QA.
