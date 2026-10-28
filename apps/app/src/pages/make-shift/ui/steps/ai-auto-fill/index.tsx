@@ -1165,7 +1165,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             const latestDoc = useShiftEditorStore.getState().doc;
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
-                fixedCells: latestDoc.fixedCells,
+                fixedCells: {},
                 requestCells: latestDoc.requestCells,
                 lastCellsByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
                 lastCellLocksByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCellLocks ?? []])),

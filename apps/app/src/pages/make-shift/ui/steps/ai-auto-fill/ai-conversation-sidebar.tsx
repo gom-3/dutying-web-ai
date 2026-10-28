@@ -26,12 +26,7 @@ import {
     requestTextForTurn,
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
-import {
-    INTENT_FIRST_CONTRACT,
-    authoringOutcome,
-    canApplyAuthoringResult,
-    canSelectAuthoringCandidate,
-} from '../../../model/intent-first-authoring';
+import {INTENT_FIRST_CONTRACT, canApplyAuthoringResult, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
@@ -57,7 +52,6 @@ import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-cond
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
-import {AiAuthoringCandidate} from './ai-authoring-candidate';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
@@ -213,7 +207,6 @@ export default function AiConversationSidebar({
     const doc = useShiftEditorStore((s) => s.doc);
     const intentFirstEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const automaticAttempts = useRef(new Set<string>());
-    const [expiredCandidateTokens, setExpiredCandidateTokens] = useState<Set<string>>(() => new Set());
     const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
@@ -670,17 +663,11 @@ export default function AiConversationSidebar({
 
                     if (matchingRequest && knownOperationIds && !possibleReceipt) {
                         sessionStorage.removeItem(pendingKey);
-
-                        if (request.conflictReviewToken)
-                            setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
                     }
                 } catch {
                     /* An unavailable lookup leaves the original request available for reconciliation. */
                 }
             }
-
-            if ((e as {serverCode?: string}).serverCode === 'CANDIDATE_EXPIRED' && request.conflictReviewToken)
-                setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
 
             if (
                 [400, 403, 422, 429].includes((e as {code?: number}).code ?? 0) ||
@@ -2008,35 +1995,6 @@ export default function AiConversationSidebar({
 
         return (
             <>
-                {operation.result?.candidate && authoringOutcome(operation.result) && (
-                    <AiAuthoringCandidate
-                        result={operation.result}
-                        sourceVersionId={detail.conversation.currentVersionId}
-                        baseline={detail.draft.cells}
-                        nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                        current={
-                            intentFirstEnabled &&
-                            !expiredCandidateTokens.has(operation.result.candidate.token) &&
-                            !localDirty &&
-                            operation.baseRevision === detail.conversation.revision &&
-                            operation.operationId === latestOperation?.operationId
-                        }
-                        disabled={busy || running || preparing}
-                        onApply={() =>
-                            void execute(
-                                operation.operationType,
-                                operation.operationType === 'GENERATE'
-                                    ? operation.fillPolicy === 'REBUILD_UNLOCKED'
-                                        ? 'REBUILD_UNLOCKED'
-                                        : 'EMPTY_ONLY'
-                                    : undefined,
-                                operation.interpretationId ?? undefined,
-                                undefined,
-                                operation,
-                            )
-                        }
-                    />
-                )}
                 {operation.result?.authoringOutcome && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
                     <button
                         type="button"
@@ -2336,6 +2294,9 @@ export default function AiConversationSidebar({
                                         <JourneyObserved key={event.id} observation={event.operation.result?.observation} inert={preparing}>
                                             <AiConversationResult
                                                 operation={event.operation}
+                                                appliedLocally={
+                                                    !localDirty && detail.conversation.currentVersionId === event.operation.resultVersionId
+                                                }
                                                 attempt={operationAttempt(detail, event.operation.operationId)}
                                                 feedbackDisabled={busy || running || preparing || reportOperation !== null}
                                                 copy={copy}

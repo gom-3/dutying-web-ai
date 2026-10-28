@@ -4918,68 +4918,37 @@ describe('intent-first sidebar integration', () => {
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
-    it.each([
-        ['ADJUST', null],
-        ['GENERATE', 'EMPTY_ONLY'],
-        ['GENERATE', 'REBUILD_UNLOCKED'],
-    ] as const)('keeps the cached %s/%s candidate binding and applies once', async (operationType, fillPolicy) => {
-        enable();
-
-        const proposal = intentResponse({
-            changedCells: [],
-            applicable: false,
-            validationTarget: 'CANDIDATE',
-            candidate: intentCandidate(),
-            authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-        });
-
-        current.operations = [
-            {...operation, operationType, fillPolicy, result: proposal, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW'},
-        ];
-        mocks.execute.mockImplementationOnce(async () => {
-            const applied = {
-                ...operation,
-                operationType,
-                result: intentResponse({authoringOutcome: intentOutcome({candidateDigest: 'digest:1'})}),
-            };
-
-            current = {
-                ...current,
-                operations: [...current.operations, {...applied, operationId: 'op:2', sequence: 2}],
-                conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
-                draft: {...source, versionId: 'result:1', cells: proposal.candidate!.changedCells},
-            };
-
-            return applied;
-        });
-        renderSidebar();
-
-        const apply = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')});
-
-        expect(screen.getByRole('table')).toHaveTextContent('D');
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        await userEvent.dblClick(apply);
-        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
-        expect(mocks.execute).toHaveBeenCalledOnce();
-        expect(mocks.setScheduleValidationFromApi).toHaveBeenCalledOnce();
-        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
-            authoringContractVersion: 'intent-first-v1',
-            sourceOperationId: 'operation:1',
-            candidateDigest: 'digest:1',
-            sourceVersionId: 'source:1',
-            conflictReviewToken: 'synthetic-token',
-            conflictConfirmed: true,
-        });
-        if (fillPolicy)
-            expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'});
-        expect(mocks.interpret).not.toHaveBeenCalled();
-    });
-    it('preserves expired proposal history and the unsent composer across unmount/reentry', async () => {
+    it.each(['SATISFIED', 'PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED'] as const)(
+        'immediately applies the verified %s draft once without candidate controls',
+        async (requestState) => {
+            enable();
+            installPlan();
+            const result = intentResponse({authoringOutcome: intentOutcome({requestState})});
+            mocks.execute.mockImplementationOnce(async () => {
+                const applied = {...operation, operationType: 'ADJUST' as const, result};
+                current = {
+                    ...current,
+                    operations: [applied],
+                    conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
+                    draft: {...source, versionId: 'result:1', cells: result.changedCells},
+                };
+                return applied;
+            });
+            renderSidebar();
+            await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+            expect(mocks.execute).toHaveBeenCalledOnce();
+            expect(mocks.setScheduleValidationFromApi).toHaveBeenCalledOnce();
+            expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('conflictReviewToken');
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+            expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.expired'))).not.toBeInTheDocument();
+        },
+    );
+    it('keeps historical candidates read-only without stale or confirmation controls', async () => {
         enable();
         current.operations = [
             {
                 ...operation,
-                operationType: 'ADJUST',
                 resultVersionId: null,
                 applyStatus: 'NOT_APPLIED_REVIEW',
                 result: intentResponse({
@@ -4987,25 +4956,15 @@ describe('intent-first sidebar integration', () => {
                     applicable: false,
                     validationTarget: 'CANDIDATE',
                     candidate: intentCandidate({expiresAt: '2000-01-01T00:00:00Z'}),
-                    authoringOutcome: intentOutcome({
-                        draftState: 'PREVIEW_ONLY',
-                        requestState: 'NEEDS_REVIEW',
-                        candidateDigest: 'digest:1',
-                    }),
+                    authoringOutcome: intentOutcome({draftState: 'PREVIEW_ONLY', requestState: 'NEEDS_REVIEW'}),
                 }),
             },
         ];
-
-        const rendered = renderSidebar();
-
-        await screen.findByRole('table');
-        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
-        await userEvent.type(screen.getByRole('textbox'), '다음 요청 초안');
-        rendered.unmount();
         renderSidebar();
-        expect(await screen.findByRole('table')).toBeVisible();
-        expect(await screen.findByRole('textbox')).toHaveValue('다음 요청 초안');
-        expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).toBeDisabled();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+        expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.expired'))).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
@@ -5039,32 +4998,6 @@ describe('intent-first sidebar integration', () => {
         expect(current.operations).toHaveLength(1);
         expect(mocks.startSegment).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
-    });
-    it('clears a definitively expired candidate request without erasing its result history', async () => {
-        enable();
-        current.operations = [
-            {
-                ...operation,
-                operationType: 'ADJUST',
-                resultVersionId: null,
-                applyStatus: 'NOT_APPLIED_REVIEW',
-                result: intentResponse({
-                    changedCells: [],
-                    applicable: false,
-                    validationTarget: 'CANDIDATE',
-                    candidate: intentCandidate(),
-                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                }),
-            },
-        ];
-        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_EXPIRED'});
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await screen.findAllByText(i18n.t('aiConversationSidebar.authoring.expired'));
-        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
-        expect(current.operations).toHaveLength(1);
-        expect(screen.getByRole('table')).toBeVisible();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
     it('recovers a completed application after remount by comparing the source grid rather than a reset revision counter', async () => {
         enable();
@@ -5200,84 +5133,18 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('QA releases pending state after a definitive candidate revision conflict', async () => {
-        enable();
-        current.operations = [
-            {
-                ...operation,
-                operationType: 'ADJUST',
-                resultVersionId: null,
-                applyStatus: 'NOT_APPLIED_REVIEW',
-                result: intentResponse({
-                    changedCells: [],
-                    applicable: false,
-                    validationTarget: 'CANDIDATE',
-                    candidate: intentCandidate(),
-                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                }),
-            },
-        ];
-        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_REVISION_CONFLICT'});
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        await act(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 30));
-        });
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
-    });
-
     const preparedCandidate = () => {
         enable();
-
-        const turn = autoTurn();
-
-        turn.semanticPlan!.deadlineAt = '2000-01-01T00:00:00Z';
-        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
-        current = {
-            ...current,
-            turns: [turn],
-            conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
-            operations: [
-                {
-                    ...operation,
-                    operationType: 'ADJUST',
-                    interpretationId: turn.interpretationId,
-                    resultVersionId: null,
-                    applyStatus: 'NOT_APPLIED_REVIEW',
-                    result: intentResponse({
-                        applicable: false,
-                        changedCells: [],
-                        validationTarget: 'CANDIDATE',
-                        candidate: intentCandidate(),
-                        authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                    }),
-                },
-            ],
-        };
+        installPlan();
     };
 
-    it('selects a live cached candidate even after the original calculation window expires', async () => {
-        preparedCandidate();
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
-            conflictConfirmed: true,
-            candidateDigest: 'digest:1',
-            sourceOperationId: 'operation:1',
-        });
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-    });
     it.each(['CANDIDATE_STALE', 'PLAN_EXPIRED', 'SCHEDULE_STALE_DRAFT_REVISION', 'SCHEDULE_ADJUST_CONTEXT_CHANGED'])(
         'reconciles a definitive %s rejection and releases only the unaccepted request',
         async (serverCode) => {
             preparedCandidate();
             mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
             renderSidebar();
-            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
             await waitFor(() => expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull());
             expect(mocks.execute).toHaveBeenCalledOnce();
             expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -5289,7 +5156,6 @@ describe('intent-first sidebar integration', () => {
             preparedCandidate();
             mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
             renderSidebar();
-            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
             await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
             expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
             expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -5299,13 +5165,12 @@ describe('intent-first sidebar integration', () => {
         preparedCandidate();
         mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_STALE'});
         mocks.detail.mockImplementation(async () => {
-            if (mocks.detail.mock.calls.length === 3) throw new Error('unavailable');
+            if (mocks.detail.mock.calls.length === 2) throw new Error('unavailable');
 
             return current;
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
         expect(mocks.execute).toHaveBeenCalledOnce();
     });
@@ -5331,8 +5196,7 @@ describe('intent-first sidebar integration', () => {
             throw {code: 409, serverCode: 'CANDIDATE_STALE'};
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
         expect(mocks.execute).toHaveBeenCalledOnce();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
