@@ -32,6 +32,7 @@ type TProps = {
     year?: number;
     month?: number;
     onRegenerate: () => void;
+    onEditSchedule?: () => void;
     onGenerate?: () => void;
     onRecoverGeneration?: () => void;
     hasGeneratedSchedule?: boolean;
@@ -82,6 +83,7 @@ export default function AiAdjustDialog({
     year,
     month,
     onRegenerate,
+    onEditSchedule,
     onGenerate,
     onRecoverGeneration,
     hasGeneratedSchedule = false,
@@ -244,7 +246,7 @@ export default function AiAdjustDialog({
                         autofillFlow={autofillFlow}
                         historyKey={historyKey}
                         onNewConversation={onNewConversation}
-                        onReviewSchedule={onClose}
+                        onReviewSchedule={onEditSchedule ?? onClose}
                         settingsHref={teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : undefined}
                         onEditFailureSettings={hasConditionContext ? () => conditionEditor.current?.openConditions() : undefined}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
@@ -254,6 +256,7 @@ export default function AiAdjustDialog({
                         conditionsVersion={conditionsVersion}
                         modifyDisabled={modifyDisabled}
                         generationCompleted={generationCompleted}
+                        hasGeneratedSchedule={hasGeneratedSchedule}
                         generationCompletedMessage={generationCompletedMessage}
                         generationReviewRequired={generationReviewRequired}
                         snapshotShift={snapshotShift}

@@ -212,7 +212,7 @@ export const aiAdjustJa = {
     chat: {
         welcome: '勤務表をどのように変更しますか？',
         regenerate: '勤務表をもう一度作成してください',
-        modify: '変更したいところがあります',
+        modify: '変更内容を入力して調整する',
         confirmSchedule: '勤務表を確定',
         askChanges: 'どのように変更したいですか？',
         regenerateHelp: '現在の条件で勤務表全体を作り直します。',

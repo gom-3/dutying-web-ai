@@ -574,6 +574,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
+    const lastAiRulesHashRef = useRef<string | null>(null);
     // 마지막 근무 공란 경고를 거친 뒤에도, 조절에서 시작한 "고정 근무 확인" 단계를 잃지 않는다.
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
     const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
@@ -656,6 +657,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     }, []);
     const markLastAiGeneratedDoc = useCallback((doc: TDutyDoc | null) => {
         lastAiGeneratedDocRef.current = doc;
+        lastAiRulesHashRef.current = doc ? useShiftEditorStore.getState().rulesHash : null;
     }, []);
     const clearAiEffectDismissTimer = useCallback(() => {
         if (aiEffectDismissTimerRef.current === null) return;
@@ -1638,7 +1640,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             if (adjust || action) {
                 const nextDoc = mergeAdjustPatch(
-                    requestDoc,
+                    adjust ? requestDoc : stateBeforeRequest.doc,
                     result.response.changedCells,
                     new Map(readyContext.originalShift.wardShiftTypes.map((type) => [type.wardShiftTypeId, type.shortName])),
                 );
@@ -2128,6 +2130,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             aiFillDecisionCellKeysRef.current = new Set(
                 doc.rows.flatMap((row) => doc.columns.map((column) => `${row.workerId}|${column}`)),
             );
+            // Review only the user's filled edits as protected; unchanged AI output stays editable.
+            // The snapshot above lets cancellation undo these tentative pins.
+            const edited = getEditedFilledCellsSinceBaseline(doc, lastAiGeneratedDocRef.current);
+
+            if (edited.length) commands.setCellsFixed(edited, true);
         }
 
         setAiFillDecisionContext(context);
@@ -2461,7 +2468,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const handleOpenAutofill = () => {
         if (resumeAutofillPreparation()) return;
 
-        if (autofillFlow?.status === 'completed' || autofillFlow?.status === 'running') {
+        const currentDoc = useShiftEditorStore.getState().doc;
+        const baseline = lastAiGeneratedDocRef.current;
+        const changedSinceGeneration =
+            hasEditableDutyDocChanges(currentDoc, baseline) ||
+            (baseline !== null &&
+                (JSON.stringify(currentDoc.fixedCells) !== JSON.stringify(baseline.fixedCells) ||
+                    JSON.stringify(currentDoc.requestCells) !== JSON.stringify(baseline.requestCells))) ||
+            (lastAiRulesHashRef.current !== null && lastAiRulesHashRef.current !== rulesHash);
+
+        if (isAiGenerating || isAiLoadingOverlayFinishing || (autofillFlow?.status === 'completed' && !changedSinceGeneration)) {
             setIsSnapshotSidebarOpen(false);
             setIsAdjustDialogOpen(true);
 
@@ -2474,12 +2490,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             return;
         }
 
-        const currentDoc = useShiftEditorStore.getState().doc;
         const hasResultCells = currentDoc.rows.some((row) =>
             row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
         );
 
-        if (isAdjustAvailable && hasGeneratedSchedule && hasResultCells) {
+        if (hasGeneratedSchedule && hasResultCells && !changedSinceGeneration) {
             setIsSnapshotSidebarOpen(false);
             setIsAdjustDialogOpen(true);
 
@@ -2489,6 +2504,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         handleAiFill();
     };
     const handleRequestRegenerate = handleAiFill;
+    const handleEditSchedule = () => {
+        // A restored completed roster can lack the in-memory AI baseline. Capture it
+        // before editing rather than treating all existing AI assignments as manual.
+        if (!lastAiGeneratedDocRef.current) markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
+
+        setIsAiBlankPreviewVisible(false);
+        setIsAdjustDialogOpen(false);
+        requestAnimationFrame(focusEditor);
+    };
     const handleConfirmAiFillDecision = () => {
         if (isScheduleFullyProtected(useShiftEditorStore.getState().doc)) return;
 
@@ -3041,6 +3065,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     rebuildRequest={0}
                     generationFillPolicy="REBUILD_UNLOCKED"
                     onPrepareGeneration={handleAiFill}
+                    onEditSchedule={handleEditSchedule}
                     onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     onPrepareAdjustment={prepareAdjustment}
                     preparation={preparation}
@@ -3055,6 +3080,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         setHasAiGeneratedUnsavedChanges(true);
                         setHasCompletedAiFill(true);
                         rememberGeneratedSchedule();
+                        markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
                         setAiStatus('success');
                     }}
                 />
@@ -3076,6 +3102,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     spotlightSelector={preparationSpotlight}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onRegenerate={handleRequestRegenerate}
+                    onEditSchedule={handleEditSchedule}
                     onGenerate={handleAiFill}
                     onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     hasGeneratedSchedule={hasGeneratedSchedule}

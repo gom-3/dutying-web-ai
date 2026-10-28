@@ -10,67 +10,75 @@ import {ConstraintConflictReview} from '../ai-constraint-conflict-review';
 vi.mock('@/shared/hook/use-typed-translation', () => ({useTypedTranslation: () => ({t: (key: string) => key})}));
 
 describe('unified AI sidebar entry', () => {
-    it.each([false, true])('keeps generation explicit, generated=%s', async (hasGeneratedSchedule) => {
-        const user = userEvent.setup();
-        const onGenerate = vi.fn();
-        const onRegenerate = vi.fn();
-        const interpret = vi.fn(() => new Promise<TScheduleAdjustInterpretRes>(() => {}));
+    it.each([false, true])(
+        'opens editing for an existing schedule and generation only for initial fill, generated=%s',
+        async (hasGeneratedSchedule) => {
+            const user = userEvent.setup();
+            const onGenerate = vi.fn();
+            const onRegenerate = vi.fn();
+            const onClose = vi.fn();
+            const interpret = vi.fn(() => new Promise<TScheduleAdjustInterpretRes>(() => {}));
 
-        render(
-            <AiAdjustDialog
-                open
-                onClose={vi.fn()}
-                onGenerate={onGenerate}
-                onRegenerate={onRegenerate}
-                hasGeneratedSchedule={hasGeneratedSchedule}
-                disabled={false}
-                textInputRef={createRef()}
-                onPickExample={vi.fn()}
-                interpret={interpret}
-                onApply={vi.fn()}
-                goalNurses={[]}
-                requests={[]}
-                disablingRequestId={null}
-                onDisableRequest={vi.fn()}
-            />,
-        );
+            render(
+                <AiAdjustDialog
+                    open
+                    onClose={onClose}
+                    onGenerate={onGenerate}
+                    onRegenerate={onRegenerate}
+                    hasGeneratedSchedule={hasGeneratedSchedule}
+                    disabled={false}
+                    textInputRef={createRef()}
+                    onPickExample={vi.fn()}
+                    interpret={interpret}
+                    onApply={vi.fn()}
+                    goalNurses={[]}
+                    requests={[]}
+                    disablingRequestId={null}
+                    onDisableRequest={vi.fn()}
+                />,
+            );
 
-        const restart = screen.getByRole('button', {name: 'aiAdjust.chat.restart'});
+            const restart = screen.getByRole('button', {name: 'aiAdjust.chat.restart'});
 
-        expect(restart.closest('header')).not.toBeNull();
-        expect(restart.nextElementSibling).toBe(screen.getByRole('button', {name: 'aiAdjust.close'}));
-        expect(onGenerate).not.toHaveBeenCalled();
-        expect(onRegenerate).not.toHaveBeenCalled();
+            expect(restart.closest('header')).not.toBeNull();
+            expect(restart.nextElementSibling).toBe(screen.getByRole('button', {name: 'aiAdjust.close'}));
+            expect(onGenerate).not.toHaveBeenCalled();
+            expect(onRegenerate).not.toHaveBeenCalled();
 
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-        expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
+            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
 
-        const generate = screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'});
+            const generate = screen.getByRole('button', {
+                name: hasGeneratedSchedule ? 'aiAutofillUi.conversationEntry.editSchedule' : 'aiAdjust.chat.regenerate',
+            });
 
-        await user.click(generate);
-        expect(hasGeneratedSchedule ? onRegenerate : onGenerate).toHaveBeenCalledOnce();
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
-        expect(screen.getByRole('textbox')).toHaveFocus();
-        expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
-        expect(screen.getByText('aiAdjust.chat.askChanges')).toBeInTheDocument();
-        await user.type(screen.getByRole('textbox'), '오프 수를 11로 맞춰줘');
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
-        expect(interpret).toHaveBeenCalledOnce();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
-        expect(screen.getByRole('status')).toHaveTextContent('aiAdjust.reviewing');
-        expect(screen.getByRole('status').querySelectorAll('.ai-adjust-review-dot')).toHaveLength(3);
-        expect(screen.getByText('aiAdjust.reviewing')).toBeVisible();
-        expect(screen.queryByText(/aiAdjust.elapsed/)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.restart'})).toBeEnabled();
-        expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.restart'})).toHaveLength(1);
-        await user.click(restart);
-        expect(screen.queryByRole('status')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-    });
+            await user.click(generate);
+            expect(onGenerate).toHaveBeenCalledTimes(hasGeneratedSchedule ? 0 : 1);
+            expect(onRegenerate).not.toHaveBeenCalled();
+            expect(onClose).toHaveBeenCalledTimes(hasGeneratedSchedule ? 1 : 0);
+            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            if (!hasGeneratedSchedule) expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
+            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+            expect(screen.getByRole('textbox')).toHaveFocus();
+            expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
+            expect(screen.getByText('aiAdjust.chat.askChanges')).toBeInTheDocument();
+            await user.type(screen.getByRole('textbox'), '오프 수를 11로 맞춰줘');
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
+            expect(interpret).toHaveBeenCalledOnce();
+            expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
+            expect(screen.getByRole('status')).toHaveTextContent('aiAdjust.reviewing');
+            expect(screen.getByRole('status').querySelectorAll('.ai-adjust-review-dot')).toHaveLength(3);
+            expect(screen.getByText('aiAdjust.reviewing')).toBeVisible();
+            expect(screen.queryByText(/aiAdjust.elapsed/)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'aiAdjust.chat.restart'})).toBeEnabled();
+            expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.restart'})).toHaveLength(1);
+            await user.click(restart);
+            expect(screen.queryByRole('status')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        },
+    );
 });
 
 it('keeps legacy conflict evidence and opens request editing without offering confirmation', async () => {
@@ -151,7 +159,7 @@ it('keeps legacy conflict evidence and opens request editing without offering co
     expect(confirm).not.toHaveBeenCalled();
 });
 
-it('switches legacy changes back to generation without sending or clearing the typed request', async () => {
+it('keeps legacy prompt adjustments without offering a generation switch or clearing unsent text', async () => {
     const generate = vi.fn();
     const interpret = vi.fn();
     const apply = vi.fn();
@@ -171,20 +179,13 @@ it('switches legacy changes back to generation without sending or clearing the t
         onDisableRequest: vi.fn(),
     };
     const view = render(<AiAdjustDialog {...props} />);
-
     await userEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
     await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
-    await userEvent.click(screen.getByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'}));
-    expect(generate).toHaveBeenCalledOnce();
-
-    const flow = {id: 1, kind: 'generation' as const, status: 'preparing' as const, messages: []};
-
-    view.rerender(<AiAdjustDialog {...props} preparation={<p>자동채우기 준비</p>} autofillFlow={flow} />);
-    expect(screen.getByText('자동채우기 준비')).toBeVisible();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    view.rerender(<AiAdjustDialog {...props} autofillFlow={{...flow, status: 'completed'}} />);
-    await userEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.modify'}));
+    expect(screen.queryByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'})).not.toBeInTheDocument();
+    view.rerender(<AiAdjustDialog {...props} open={false} />);
+    view.rerender(<AiAdjustDialog {...props} />);
     expect(screen.getByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+    expect(generate).not.toHaveBeenCalled();
     expect(interpret).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();
 });

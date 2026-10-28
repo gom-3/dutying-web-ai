@@ -1,11 +1,11 @@
-import {ChevronRight, RotateCw, SlidersHorizontal} from 'lucide-react';
+import {ChevronRight, PencilLine, RotateCw, SlidersHorizontal} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 
-export type TConversationEntryChoice = 'regenerate' | 'modify';
+export type TConversationEntryChoice = 'edit' | 'regenerate' | 'modify';
 
 export function AiConversationConfirmation({confirmation}: {confirmation: TAdjustResultActions}) {
     const {t} = useTypedTranslation();
@@ -64,6 +64,7 @@ export function AiConversationEntry({
     disabled,
     modifyDisabled,
     generationCompleted = false,
+    hasSchedule = false,
     generationCompletedMessage,
     hideIntro = false,
     compact = false,
@@ -75,6 +76,7 @@ export function AiConversationEntry({
     disabled: boolean;
     modifyDisabled?: boolean;
     generationCompleted?: boolean;
+    hasSchedule?: boolean;
     generationCompletedMessage?: string;
     hideIntro?: boolean;
     compact?: boolean;
@@ -83,7 +85,8 @@ export function AiConversationEntry({
     onChoose: (choice: TConversationEntryChoice) => void;
 }) {
     const {t} = useTypedTranslation();
-    const choices: TConversationEntryChoice[] = compact ? ['modify', 'regenerate'] : ['regenerate', 'modify'];
+    const primary: TConversationEntryChoice = hasSchedule || attached || generationCompleted ? 'edit' : 'regenerate';
+    const choices: TConversationEntryChoice[] = compact ? ['modify', primary] : [primary, 'modify'];
     const compactLabels = {
         modify: t('aiAutofillUi.conversationEntry.requestChanges'),
         regenerate: t('aiAutofillUi.conversationEntry.refill'),
@@ -103,7 +106,7 @@ export function AiConversationEntry({
             {choice ? (
                 <>
                     <UserMessage key={choice} showTime>
-                        {t(`aiAdjust.chat.${choice}`)}
+                        {choice === 'edit' ? t('aiAutofillUi.conversationEntry.editSchedule') : t(`aiAdjust.chat.${choice}`)}
                     </UserMessage>
                     {choice === 'modify' && <AssistantMessage showTime>{t('aiAdjust.chat.askChanges')}</AssistantMessage>}
                 </>
@@ -138,13 +141,19 @@ export function AiConversationEntry({
                             onClick={() => onChoose(value)}
                             className={`group flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`}
                         >
-                            {value === 'regenerate' ? (
+                            {value === 'edit' ? (
+                                <PencilLine aria-hidden className="size-4 shrink-0" />
+                            ) : value === 'regenerate' ? (
                                 <RotateCw aria-hidden className="size-4 shrink-0" />
                             ) : (
                                 <SlidersHorizontal aria-hidden className="size-4 shrink-0" />
                             )}
                             <span className={compact ? 'min-w-0 break-keep' : 'min-w-0 flex-1 break-keep'}>
-                                {compact ? compactLabels[value] : t(`aiAdjust.chat.${value}`)}
+                                {value === 'edit'
+                                    ? t('aiAutofillUi.conversationEntry.editSchedule')
+                                    : compact
+                                      ? compactLabels[value]
+                                      : t(`aiAdjust.chat.${value}`)}
                             </span>
                             {!compact && <ChevronRight aria-hidden className="size-4 shrink-0" />}
                         </button>
@@ -153,21 +162,5 @@ export function AiConversationEntry({
                 </div>
             )}
         </div>
-    );
-}
-
-export function AiConversationGenerationSwitch({disabled, onSwitch}: {disabled: boolean; onSwitch: () => void}) {
-    const {t} = useTypedTranslation();
-
-    return (
-        <button
-            type="button"
-            disabled={disabled}
-            onClick={onSwitch}
-            className="flex min-h-11 items-center gap-2 rounded-[10px] px-3 py-2 text-[13px] font-medium text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-        >
-            <RotateCw aria-hidden className="size-4 shrink-0" />
-            {t('aiAutofillUi.conversationEntry.switchToAutofill')}
-        </button>
     );
 }

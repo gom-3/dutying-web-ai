@@ -32,12 +32,7 @@ import {AiAdjustResult, type TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustReviewConversation, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
-import {
-    AiConversationConfirmation,
-    AiConversationEntry,
-    AiConversationGenerationSwitch,
-    type TConversationEntryChoice,
-} from './ai-conversation-entry';
+import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {AiConversationLoading} from './ai-conversation-loading';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
@@ -83,6 +78,7 @@ type TProps = {
     requestList?: ReactNode;
     conversationActions?: ReactNode;
     generationCompleted?: boolean;
+    hasGeneratedSchedule?: boolean;
     generationCompletedMessage?: string;
     generationReviewRequired?: boolean;
     snapshotShift?: TShift;
@@ -184,6 +180,7 @@ export default function AiAdjustTextInput({
     requestList,
     conversationActions,
     generationCompleted = false,
+    hasGeneratedSchedule = false,
     generationCompletedMessage,
     generationReviewRequired = false,
     snapshotShift,
@@ -820,6 +817,13 @@ export default function AiAdjustTextInput({
         canShowNextEntry && onRegenerate && active?.status === 'messages' && active.snapshot && active.completion,
     );
     const chooseNextAction = (choice: TConversationEntryChoice) => {
+        if (choice === 'edit') {
+            setEntryChoice(null);
+            onReviewSchedule?.();
+
+            return;
+        }
+
         setEntryChoice(choice);
         setTurns((current) => [
             ...current,
@@ -1058,7 +1062,7 @@ export default function AiAdjustTextInput({
                                             setEditing(false);
                                             chooseNextAction('modify');
                                         }}
-                                        onRegenerate={onRegenerate ? () => chooseNextAction('regenerate') : undefined}
+                                        onEditSchedule={onReviewSchedule}
                                     />
                                 )}
                                 {turn.status === 'undone' && (
@@ -1126,6 +1130,7 @@ export default function AiAdjustTextInput({
                                 disabled={disabled || isBusy}
                                 modifyDisabled={modifyDisabled}
                                 hideIntro={flowCompleted || turns.length > 0}
+                                hasSchedule={hasGeneratedSchedule}
                                 generationCompleted={generationCompleted && !noticeDismissed}
                                 generationCompletedMessage={completedMessage}
                                 confirmation={confirmation}
@@ -1183,9 +1188,6 @@ export default function AiAdjustTextInput({
                 inert={composerHidden}
                 aria-hidden={composerHidden}
             >
-                {entryChoice === 'modify' && onRegenerate && !editing && (
-                    <AiConversationGenerationSwitch disabled={disabled || isBusy} onSwitch={() => chooseNextAction('regenerate')} />
-                )}
                 {!generationFailure && !hasRequestTurns && (!onRegenerate || entryChoice === 'modify') && (
                     <div className="ai-adjust-examples mb-4 flex shrink-0 flex-col gap-2">
                         <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>

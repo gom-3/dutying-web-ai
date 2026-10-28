@@ -62,12 +62,7 @@ import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './a
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
-import {
-    AiConversationConfirmation,
-    AiConversationEntry,
-    AiConversationGenerationSwitch,
-    type TConversationEntryChoice,
-} from './ai-conversation-entry';
+import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
 import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiConversationFeedbackDialog} from './ai-conversation-feedback-dialog';
@@ -95,6 +90,7 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    onEditSchedule?: () => void;
     onRecoverGeneration?: () => void;
     onPrepareAdjustment?: () => Promise<void>;
     generationFillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
@@ -137,6 +133,7 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    onEditSchedule,
     onRecoverGeneration,
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
@@ -592,6 +589,7 @@ export default function AiConversationSidebar({
                 if (version.versionId !== operation.resultVersionId) throw new AiConversationInputError('staleRequest');
 
                 restore(version);
+                if (operation.operationType === 'GENERATE') setEntryChoice(null);
 
                 if (operation.result?.authoringOutcome && operation.result.validationTarget === 'RESULT')
                     commands.setScheduleValidationFromApi({
@@ -1925,8 +1923,28 @@ export default function AiConversationSidebar({
             !error,
     );
     const attachNextActions = showNextActions && executionSucceeded;
+    const hasGeneratedAssignments = Boolean(
+        detail?.operations.some((operation) => operation.applyStatus === 'APPLIED' && !operationFailure(operation)) &&
+            doc.rows.some((row) =>
+                row.cells.some(
+                    (cell, column) =>
+                        cell != null &&
+                        !doc.fixedCells[`${row.workerId}|${doc.columns[column]}`] &&
+                        !doc.requestCells[`${row.workerId}|${doc.columns[column]}`],
+                ),
+            ),
+    );
     const chooseNextAction = (choice: TConversationEntryChoice) => {
-        if (!detail || busy || running || awaitingAdjustment || preparing || isAutofillBlocked) return;
+        if (!detail || busy || running || awaitingAdjustment || preparing) return;
+
+        if (choice === 'edit') {
+            setEntryChoice(null);
+            (onEditSchedule ?? onClose)();
+
+            return;
+        }
+
+        if (isAutofillBlocked) return;
 
         if (choice === 'modify' && !adjustEnabled) return;
 
@@ -2319,8 +2337,8 @@ export default function AiConversationSidebar({
                                                             choice={null}
                                                             hideIntro
                                                             attached
-                                                            disabled={busy || running || isAutofillBlocked}
-                                                            modifyDisabled={!adjustEnabled}
+                                                            disabled={busy || running}
+                                                            modifyDisabled={!adjustEnabled || isAutofillBlocked}
                                                             onChoose={chooseNextAction}
                                                         />
                                                     ) : undefined
@@ -2741,6 +2759,7 @@ export default function AiConversationSidebar({
                             ) : (
                                 <AiConversationEntry
                                     choice={null}
+                                    hasSchedule={hasGeneratedAssignments}
                                     hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
@@ -2921,12 +2940,6 @@ export default function AiConversationSidebar({
                             </button>
                         )}
                         <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
-                            {entryChoice === 'modify' && !editingRequest && (
-                                <AiConversationGenerationSwitch
-                                    disabled={busy || running || awaitingAdjustment || isAutofillBlocked}
-                                    onSwitch={() => chooseNextAction('regenerate')}
-                                />
-                            )}
                             {!!preferences.length && (
                                 <details>
                                     <summary className="text-sm">{t('aiConversationSidebar.savedRequests')}</summary>
