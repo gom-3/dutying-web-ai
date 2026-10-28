@@ -4854,7 +4854,11 @@ describe('intent-first sidebar integration', () => {
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
-    it('keeps candidate changes out of the roster and sends exact cached selection binding once', async () => {
+    it.each([
+        ['ADJUST', null],
+        ['GENERATE', 'EMPTY_ONLY'],
+        ['GENERATE', 'REBUILD_UNLOCKED'],
+    ] as const)('keeps the cached %s/%s candidate binding and applies once', async (operationType, fillPolicy) => {
         enable();
 
         const proposal = intentResponse({
@@ -4866,12 +4870,12 @@ describe('intent-first sidebar integration', () => {
         });
 
         current.operations = [
-            {...operation, operationType: 'ADJUST', result: proposal, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW'},
+            {...operation, operationType, fillPolicy, result: proposal, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW'},
         ];
         mocks.execute.mockImplementationOnce(async () => {
             const applied = {
                 ...operation,
-                operationType: 'ADJUST' as const,
+                operationType,
                 result: intentResponse({authoringOutcome: intentOutcome({candidateDigest: 'digest:1'})}),
             };
 
@@ -4902,6 +4906,8 @@ describe('intent-first sidebar integration', () => {
             conflictReviewToken: 'synthetic-token',
             conflictConfirmed: true,
         });
+        if (fillPolicy)
+            expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'});
         expect(mocks.interpret).not.toHaveBeenCalled();
     });
     it('preserves expired proposal history and the unsent composer across unmount/reentry', async () => {

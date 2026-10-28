@@ -1,9 +1,34 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
-import {aiExecutionFailure} from '../ai-execution-failure';
+import {aiExecutionFailure, nightRunConflictMessages} from '../ai-execution-failure';
 import {failureMessagePoints} from '../failure-message-points';
 import {response as authoringResponse, outcome as authoringOutcome} from './fixtures/intent-first';
+
+it('shows consent proof from the public response without requiring hidden solver metadata', () => {
+    const response = authoringResponse({
+        authoringOutcome: authoringOutcome({draftState: 'CONSENT_REQUIRED'}),
+        engineResult: {
+            status: 'CONSENT_REQUIRED',
+            conflictEvidence: [
+                {
+                    type: 'NIGHT_RUN_BOUNDS_CONFLICT',
+                    nurseName: 'A',
+                    minimum: 14,
+                    maximum: 3,
+                    actual: 1,
+                    startDate: '2026-10-31',
+                    endDate: '2026-11-01',
+                },
+            ],
+        },
+    });
+    const messages = nightRunConflictMessages(response);
+    expect(messages).toHaveLength(1);
+    for (const detail of ['A', '14', '3', '1', '2026-10-31', '2026-11-01']) expect(messages[0]).toContain(detail);
+    response.authoringOutcome!.draftState = 'APPLICABLE';
+    expect(nightRunConflictMessages(response)).toEqual([]);
+});
 
 describe('execution failure reasons', () => {
     it.each([

@@ -22,7 +22,6 @@ export function monthlyRestRequirement(
     const target = calculateRestTargetForPolicy(policy, year, month) + adjustmentDays;
 
     return {
-        ...(policy.targetMode === 'fixed' ? {exactForRegularWorkers: true} : {}),
         minimumDaysByShiftNurseId: Object.fromEntries(
             shift.divisionShiftNurses
                 .flat()
