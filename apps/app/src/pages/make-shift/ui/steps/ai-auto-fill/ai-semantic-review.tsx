@@ -149,7 +149,9 @@ export function AiSemanticReview({
               ? t('aiAutofillUi.semanticReview.previousRequest')
               : plan.state === 'CONFIRMED'
                 ? t('aiAutofillUi.semanticReview.yourConfirmedConditions')
-                : t('aiAutofillUi.semanticReview.shallWeAdjustItThisWay')
+                : plan.generationIntent
+                  ? t('aiAdjust.regenerateTitle')
+                  : t('aiAutofillUi.semanticReview.shallWeAdjustItThisWay')
         : conflict
           ? t('aiAutofillUi.semanticReview.yourRequestConflictsWithFixedShifts')
           : retry
@@ -189,17 +191,19 @@ export function AiSemanticReview({
                   ? t('aiAutofillUi.semanticReview.reviewRequestConditions')
                   : t('aiAutofillUi.semanticReview.moreDetailNeeded');
     const description =
-        ready || conflict
-            ? null
-            : retry
-              ? t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
-              : expired
-                ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
-                : plan.state === 'UNSUPPORTED'
-                  ? canSelect
-                      ? null
-                      : t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
-                  : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
+        ready && plan.generationIntent && !complete
+            ? t('aiAdjust.regenerateDescription')
+            : ready || conflict
+              ? null
+              : retry
+                ? t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
+                : expired
+                  ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
+                  : plan.state === 'UNSUPPORTED'
+                    ? canSelect
+                        ? null
+                        : t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
+                    : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
     const listLabel =
         conflict || !ready
             ? t('aiAutofillUi.semanticReview.requestToReview')
@@ -459,7 +463,7 @@ export function AiSemanticReview({
                                 }
                                 onClick={onApply}
                             >
-                                {t('aiAutofillUi.semanticReview.adjustWithTheseConditions')}
+                                {t(plan.generationIntent ? 'aiAdjust.autofill' : 'aiAutofillUi.semanticReview.adjustWithTheseConditions')}
                             </button>
                         )}
                         {retry && (

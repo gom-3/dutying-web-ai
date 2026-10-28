@@ -85,7 +85,7 @@ type TProps = {
     generationFailure?: TAiConversationFailure | null;
     renderConflictReview?: TConflictReviewRenderer;
     onDismissFailure?: () => void;
-    onRegenerate?: () => void;
+    onRegenerate?: (requestText?: string) => void;
     onRecoverGeneration?: () => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
@@ -585,6 +585,22 @@ export default function AiAdjustTextInput({
             const result = await interpret(requestText);
 
             if (!mounted.current || sequence.current !== id) return;
+
+            const rewrite = result.generationIntent;
+            if (
+                rewrite &&
+                onRegenerate &&
+                !result.items?.length &&
+                !result.unmapped?.length &&
+                result.llmPrompt?.trim() &&
+                Array.from(requestText).slice(rewrite.start, rewrite.end).join('') === rewrite.quote
+            ) {
+                updateTurn(id, {status: 'messages'});
+                setText(requestText);
+                onRegenerate(requestText);
+
+                return;
+            }
 
             updateTurn(id, {
                 status: 'confirm',

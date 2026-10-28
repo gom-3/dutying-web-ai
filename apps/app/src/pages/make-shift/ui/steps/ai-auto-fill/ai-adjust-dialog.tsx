@@ -31,9 +31,9 @@ type TProps = {
     teamId?: number;
     year?: number;
     month?: number;
-    onRegenerate: () => void;
+    onRegenerate: (requestText?: string) => void;
     onEditSchedule?: () => void;
-    onGenerate?: () => void;
+    onGenerate?: (requestText?: string) => void;
     onRecoverGeneration?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;

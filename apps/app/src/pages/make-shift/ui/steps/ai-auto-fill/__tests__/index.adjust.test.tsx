@@ -521,7 +521,7 @@ async function completeFirstFill(user: ReturnType<typeof userEvent.setup>) {
     await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
 }
 
-/** A completed schedule must be edited before starting another generation. */
+/** Exercise the direct-edit route before filling the changed draft. */
 async function prepareAnotherGeneration(user: ReturnType<typeof userEvent.setup>) {
     const edit = screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')});
     if (!edit) {
@@ -1653,6 +1653,45 @@ describe('AiAutofill adjust panel', () => {
             }
         },
     );
+
+    it('opens autofill after only conditions change without requiring a direct edit', async () => {
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        act(() => useShiftEditorStore.getState().setRulesHash('sha256:conditions-changed'));
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('region', {name: DECISION_TITLE});
+        expect(useShiftEditorStore.getState().doc.rows).toEqual(before.rows);
+        expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].rulesHash).toBe('sha256:conditions-changed');
+    });
+
+    it('keeps the original legacy rewrite prompt through fixed-cell preparation and generation', async () => {
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+        const text = '고정한 것만 남기고 다시 짜줘';
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [],
+            unmapped: [],
+            llmPrompt: text,
+            generationIntent: {start: 0, end: Array.from(text).length, quote: text},
+        });
+        await openModification(user);
+        await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), text);
+        await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
+        await screen.findByRole('region', {name: DECISION_TITLE});
+        expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+        expect(useShiftEditorStore.getState().doc.rows).toEqual(before.rows);
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({prompt: text});
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toBeUndefined();
+    });
 
     it('adjusts with the requested knob and preserves manually edited cells', async () => {
         const user = userEvent.setup();

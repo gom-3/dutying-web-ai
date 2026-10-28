@@ -90,9 +90,10 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    getProtectedCellKeys?: () => string[];
     onEditSchedule?: () => void;
     onRecoverGeneration?: () => void;
-    onPrepareAdjustment?: () => Promise<void>;
+    onPrepareAdjustment?: (kind?: 'generation' | 'adjustment') => Promise<void>;
     generationFillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     onClose: () => void;
     onOpenConstraints?: () => void;
@@ -133,6 +134,7 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    getProtectedCellKeys,
     onEditSchedule,
     onRecoverGeneration,
     onPrepareAdjustment,
@@ -400,7 +402,7 @@ export default function AiConversationSidebar({
     const dto = () => {
         const state = useShiftEditorStore.getState();
 
-        return buildAutofillDTO({
+        const draft = buildAutofillDTO({
             year,
             month,
             doc: state.doc,
@@ -408,6 +410,12 @@ export default function AiConversationSidebar({
             draftRevision: state.draftRevision,
             rulesHash: state.rulesHash ?? '',
         });
+        const protectedKeys = new Set(getProtectedCellKeys?.());
+
+        return {
+            ...draft,
+            cells: draft.cells.map((cell) => (protectedKeys.has(`${cell.shiftNurseId}:${cell.date}`) ? {...cell, fixed: true} : cell)),
+        };
     };
     const localDraft = dto();
     const localDirty =
@@ -906,7 +914,7 @@ export default function AiConversationSidebar({
             // Request review never opens schedule preparation. Ask about protected shifts
             // only after the user accepts the proposed conditions and is ready to calculate.
             if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) {
-                await onPrepareAdjustment();
+                await onPrepareAdjustment(plan.generationIntent ? 'generation' : 'adjustment');
             }
 
             if (!mounted.current || !sidebarOpen.current || detailRef.current?.conversation.conversationId !== conversationId) return;
@@ -948,7 +956,8 @@ export default function AiConversationSidebar({
                     current.conversation.conversationId !== conversationId ||
                     reviewed.semanticPlan.planHash !== plan.planHash ||
                     JSON.stringify(reviewed.semanticPlan.conditions) !== JSON.stringify(plan.conditions) ||
-                    JSON.stringify(reviewed.semanticPlan.selectionAudit) !== JSON.stringify(plan.selectionAudit)
+                    JSON.stringify(reviewed.semanticPlan.selectionAudit) !== JSON.stringify(plan.selectionAudit) ||
+                    JSON.stringify(reviewed.semanticPlan.generationIntent) !== JSON.stringify(plan.generationIntent)
                 )
                     throw new Error(t('aiAdjust.stale'));
 
@@ -998,7 +1007,11 @@ export default function AiConversationSidebar({
 
             if (confirmedId && mounted.current && sidebarOpen.current) {
                 reviewedPreparation.current = null;
-                await execute('ADJUST', undefined, confirmedId);
+                await execute(
+                    plan.generationIntent ? 'GENERATE' : 'ADJUST',
+                    plan.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
+                    confirmedId,
+                );
             }
         } catch (cause) {
             if (mounted.current && sidebarOpen.current) setError(aiConversationFailure(cause));
@@ -1050,7 +1063,8 @@ export default function AiConversationSidebar({
         setAwaitingAdjustment(true);
 
         try {
-            if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) await onPrepareAdjustment();
+            if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey())
+                await onPrepareAdjustment(confirmed.generationIntent ? 'generation' : 'adjustment');
 
             if (!mounted.current || detailRef.current?.conversation.conversationId !== conversationId) return;
 
@@ -1095,7 +1109,8 @@ export default function AiConversationSidebar({
 
                 if (
                     (refreshed.interpretation.llmPrompt ?? '') !== (confirmed.llmPrompt ?? '') ||
-                    (refreshed.interpretation.strength ?? 'NORMAL') !== (confirmed.strength ?? 'NORMAL')
+                    (refreshed.interpretation.strength ?? 'NORMAL') !== (confirmed.strength ?? 'NORMAL') ||
+                    JSON.stringify(refreshed.interpretation.generationIntent) !== JSON.stringify(confirmed.generationIntent)
                 ) {
                     reviewedPreparation.current = preparationKey();
                     setNotice(t('aiConversationSidebar.reviewUpdatedConditions'));
@@ -1108,7 +1123,11 @@ export default function AiConversationSidebar({
 
             if (interpretationId && mounted.current) {
                 reviewedPreparation.current = null;
-                await execute('ADJUST', undefined, interpretationId);
+                await execute(
+                    confirmed.generationIntent ? 'GENERATE' : 'ADJUST',
+                    confirmed.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
+                    interpretationId,
+                );
             }
         } catch (cause) {
             if (mounted.current) setError(aiConversationFailure(cause));
@@ -1674,6 +1693,7 @@ export default function AiConversationSidebar({
         if (
             !turn?.interpretationId ||
             !turn.semanticPlan?.autoExecutable ||
+            Boolean(turn.semanticPlan.generationIntent) ||
             !isSemanticExecutionCurrent(detail, turn, false) ||
             detail.operations.some((operation) => operation.interpretationId === turn.interpretationId) ||
             sessionStorage.getItem(pendingKey)

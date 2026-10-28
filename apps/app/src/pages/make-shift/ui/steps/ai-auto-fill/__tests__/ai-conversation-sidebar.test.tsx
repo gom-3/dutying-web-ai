@@ -4578,6 +4578,83 @@ describe('intent-first sidebar integration', () => {
         };
     };
 
+    it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
+        enable();
+        const turn = autoTurn();
+        turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
+        turn.semanticPlan!.deadlineAt = new Date(Date.now() - 30000).toISOString();
+        installPlan(turn);
+        const prepare = vi.fn().mockResolvedValue(undefined);
+        mocks.confirmPlan.mockImplementationOnce(async () => {
+            const confirmed = {
+                ...turn,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'rewrite:confirmed',
+                semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
+            };
+            return confirmed;
+        });
+        renderSidebar({onPrepareAdjustment: prepare});
+        expect(await screen.findByText('다시 자동채우기 할까요?')).toBeVisible();
+        expect(screen.getByText('고정한 근무는 유지하고, 나머지 근무는 바뀔 수 있어요.')).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        await userEvent.dblClick(screen.getByRole('button', {name: '자동채우기'}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(prepare).toHaveBeenCalledExactlyOnceWith('generation');
+        expect(mocks.confirmPlan).toHaveBeenCalledOnce();
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            rebuildConfirmed: true,
+            interpretationId: 'rewrite:confirmed',
+            planHash: 'plan-hash',
+            sourceVersionId: source.versionId,
+        });
+        expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+
+    it('keeps the table and rewrite request when preparation is cancelled', async () => {
+        enable();
+        const turn = autoTurn();
+        turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
+        installPlan(turn);
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        const prepare = vi.fn().mockRejectedValue(new Error('준비 취소'));
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '자동채우기'}));
+        await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
+        expect(await screen.findByRole('alert')).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
+        expect(screen.getByText('다시 자동채우기 할까요?')).toBeVisible();
+    });
+
+    it('syncs only manually protected cells before interpreting a current-table request', async () => {
+        enable();
+        current.operations = [];
+        const fixedBefore = {...useShiftEditorStore.getState().doc.fixedCells};
+        mocks.sync.mockImplementationOnce(async (_id, request) => {
+            current = {...current, draft: {...source, cells: request.cells}, conversation: {...current.conversation, revision: 1}};
+            return current;
+        });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'request:latest'});
+        renderSidebar({getProtectedCellKeys: () => ['1:2026-11-01']});
+        await userEvent.click(await screen.findByRole('button', {name: '원하는 변경을 적어 조절하기'}));
+        await userEvent.type(screen.getByRole('textbox'), '김 선생님 나이트를 줄여줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalledWith(1, expect.objectContaining({cells: [expect.objectContaining({fixed: true})]}));
+        expect(mocks.interpret).toHaveBeenCalledWith(1, expect.objectContaining({expectedRevision: 1, text: '김 선생님 나이트를 줄여줘'}));
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual(fixedBefore);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('executes generation once when synced draft priorities are normalized without any schedule edit', async () => {
         enable();
         current = {

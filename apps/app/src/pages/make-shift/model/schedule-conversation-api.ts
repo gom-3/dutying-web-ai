@@ -45,6 +45,7 @@ export type TSelectionAudit = {
     excludedConditionIds: string[];
 };
 export type TSemanticPlan = {
+    generationIntent?: {start: number; end: number; quote: string} | null;
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
     authoringContractVersion?: 'intent-first-v1';
@@ -284,13 +285,12 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
     );
 }
 
-/** The new contract has one execution window, including after explicit confirmation. */
+/** ADJUST shares its interaction window; reviewed GENERATE starts its existing compute budget after preparation. */
 export function hasCurrentIntentFirstExecutionWindow(plan: TSemanticPlan, now = Date.now()) {
     return (
         plan.authoringContractVersion === 'intent-first-v1' &&
         Boolean(plan.interactionId) &&
-        Boolean(plan.deadlineAt) &&
-        Date.parse(plan.deadlineAt!) > now &&
+        (Boolean(plan.generationIntent) || (Boolean(plan.deadlineAt) && Date.parse(plan.deadlineAt!) > now)) &&
         Boolean(plan.planExpiresAt) &&
         Date.parse(plan.planExpiresAt!) > now
     );
