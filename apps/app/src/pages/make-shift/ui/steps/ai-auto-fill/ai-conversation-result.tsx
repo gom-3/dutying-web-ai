@@ -8,6 +8,7 @@ import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
     operation,
+    appliedLocally = false,
     attempt,
     feedbackDisabled,
     preview,
@@ -16,6 +17,7 @@ export function AiConversationResult({
     onReport,
 }: {
     operation: TConversationOperation;
+    appliedLocally?: boolean;
     attempt: number;
     feedbackDisabled: boolean;
     preview?: ReactNode;
@@ -28,14 +30,12 @@ export function AiConversationResult({
     const authoring = operation.result ? authoringOutcome(operation.result) : undefined;
     const messageKey = operation.result ? authoringMessageKey(operation.result) : undefined;
     const review = operation.result && isGenerateReviewDraft(operation.result);
-    const applied = operation.applyStatus === 'APPLIED';
-    const succeeded =
-        operation.executionStatus === 'SUCCEEDED' &&
-        applied &&
-        !review &&
-        (!authoring || ['SATISFIED', 'IMPROVED'].includes(authoring.requestState));
+    const saved = operation.applyStatus === 'APPLIED';
+    const applied = saved && appliedLocally;
+    const visibleMessageKey = saved ? undefined : messageKey;
+    const succeeded = operation.executionStatus === 'SUCCEEDED' && applied && (!authoring || authoring.draftState === 'APPLICABLE');
     const changedCount = operation.result?.changedCells.length;
-    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
+    const showPartialCoverage = !applied && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = review
         ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
         : !applied
@@ -54,27 +54,27 @@ export function AiConversationResult({
     return (
         <AiScheduleResultCard
             title={
-                applied && authoring?.requestState === 'NEEDS_REVIEW'
-                    ? t('aiConversationSidebar.authoring.selectedReview')
+                applied
+                    ? title
                     : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                       ? t('aiConversationSidebar.sourceChangedNotApplied')
-                      : messageKey
-                        ? t(`aiConversationSidebar.authoring.${messageKey}`)
+                      : visibleMessageKey
+                        ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
                         : title
             }
             attempt={attempt}
             outcome={
-                review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState))
+                !applied && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
                     ? 'review'
                     : succeeded
                       ? 'success'
                       : 'neutral'
             }
             outcomeLabel={
-                messageKey
-                    ? t(`aiConversationSidebar.authoring.${messageKey}`)
-                    : review
-                      ? t('aiAutofillUi.conversationResult.scheduleNeedsReview')
+                !applied && visibleMessageKey
+                    ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
+                    : !applied
+                      ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
                       : operation.operationType === 'GENERATE'
                         ? t('aiAutofillUi.conversationResult.autofillSucceeded')
                         : t('aiAutofillUi.conversationResult.adjustmentSucceeded')

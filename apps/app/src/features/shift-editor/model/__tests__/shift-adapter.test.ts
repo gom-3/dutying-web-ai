@@ -571,3 +571,14 @@ describe('shift-adapter', () => {
         ]);
     });
 });
+
+it('restores the exact saved cells and fixed markers after later manual edits and AI pins', () => {
+    const shift = createShift();
+    const before = shiftToDoc(shift, 2026, 3);
+    before.rows[0]!.cells = ['D', 'O'];
+    before.fixedCells = {[`${before.rows[0]!.workerId}|2026-03-01`]: true};
+    const saved = {cells: docToSnapshotCellsDTO(before, shift), rowOrder: []};
+    const restored = snapshotDetailToDoc(saved, shift, 2026, 3, {fixedCells: {}, requestCells: before.requestCells});
+    expect(restored.rows.map((row) => row.cells)).toEqual(before.rows.map((row) => row.cells));
+    expect(restored.fixedCells).toEqual(before.fixedCells);
+});

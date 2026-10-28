@@ -28,7 +28,7 @@ describe('intent-first application boundaries', () => {
         expect(canApplyAuthoringResult(result)).toBe(false);
         expect(aiExecutionFailure(result)).not.toBeNull();
     });
-    it('blocks unsatisfied exact clauses even with an applicable label', () => {
+    it('applies verified drafts while retaining unsatisfied exact clauses as diagnostics', () => {
         const result = response({
             authoringOutcome: outcome({
                 requestState: 'PARTIAL',
@@ -36,7 +36,7 @@ describe('intent-first application boundaries', () => {
             }),
         });
 
-        expect(canApplyAuthoringResult(result)).toBe(false);
+        expect(canApplyAuthoringResult(result)).toBe(true);
     });
     it('allows selected qualitative drafts without claiming qualitative fulfillment', () => {
         const result = response({
@@ -113,7 +113,7 @@ describe('intent-first application boundaries', () => {
     });
 });
 
-it('allows an honest directional partial without relaxing an exact clause', () => {
+it('keeps exact and directional fulfillment separate from editable draft application', () => {
     const result = response({
         authoringOutcome: outcome({
             requestState: 'PARTIAL',
@@ -126,7 +126,7 @@ it('allows an honest directional partial without relaxing an exact clause', () =
 
     expect(canApplyAuthoringResult(result)).toBe(true);
     result.authoringOutcome!.clauses[0]!.status = 'UNSATISFIED';
-    expect(canApplyAuthoringResult(result)).toBe(false);
+    expect(canApplyAuthoringResult(result)).toBe(true);
 });
 
 it('applies exactly the selected digest and refuses a different cached candidate receipt', () => {
