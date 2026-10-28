@@ -43,8 +43,8 @@ export function Reauthenticate({
                 <strong>{t('이메일 본인 확인', 'Verify your email')}</strong>
                 <InfoTip label={t('본인 확인 안내', 'About email verification')}>
                     {t(
-                        '카드 등록이나 최고 관리자 인계와 같은 중요한 변경 전에 본인 이메일을 확인합니다. 인증은 10분 동안 유효합니다.',
-                        'Verify your email before important changes such as registering a card or accepting ownership. Verification lasts 10 minutes.',
+                        '최고 관리자 인계와 같은 중요한 변경 전에 본인 이메일을 확인합니다. 인증은 10분 동안 유효합니다.',
+                        'Verify your email before important changes such as accepting ownership. Verification lasts 10 minutes.',
                     )}
                 </InfoTip>
             </div>
