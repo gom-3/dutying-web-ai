@@ -1,0 +1,198 @@
+.hospital-workspace .hospital-ward-invite {
+    margin: 0 0 24px;
+    padding: 20px 24px;
+    background: #f6f7f9;
+    border-radius: 8px;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+.hospital-workspace .hospital-ward-invite-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.hospital-workspace .hospital-ward-invite-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    min-width: 0;
+}
+.hospital-workspace .hospital-ward-invite-ready {
+    flex-basis: 100%;
+    color: #267353;
+    font-size: 11px;
+    font-weight: 600;
+}
+.hospital-workspace .hospital-ward-invite .hospital-ward-invite-heading h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.6;
+    letter-spacing: -0.02em;
+}
+.hospital-workspace .hospital-ward-invite .hospital-ward-invite-heading > button {
+    min-height: 44px;
+    padding: 8px 10px;
+    margin: 0;
+    flex-shrink: 0;
+    color: var(--workspace-ink, #202631);
+    background: var(--workspace-secondary, #e5e8ed);
+    font-size: 12px;
+}
+.hospital-workspace .hospital-ward-invite .hospital-ward-invite-heading > button:hover {
+    background: var(--workspace-control, #f1f3f5);
+    color: var(--workspace-primary, #202b3c);
+}
+.hospital-workspace .hospital-ward-invite form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 640px;
+}
+.hospital-workspace .hospital-ward-invite-field {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+.hospital-workspace .hospital-ward-invite-field > span {
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+    font-weight: 600;
+}
+.hospital-workspace .hospital-ward-invite-field input {
+    width: 100%;
+    min-height: 44px;
+    padding: 11px 12px;
+    background: #fff;
+    color: var(--workspace-ink, #202631);
+    font: inherit;
+    font-size: 14px;
+    border-radius: 5px;
+}
+.hospital-workspace .hospital-ward-invite form > button {
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 16px;
+    font-size: 13px;
+    border-radius: 5px;
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+}
+.hospital-workspace .hospital-ward-invite form > button:hover {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+}
+.hospital-workspace .hospital-ward-invite-field input:focus-visible {
+    background: var(--workspace-secondary, #e5e8ed);
+    color: var(--workspace-ink, #202631);
+    outline: none;
+    text-decoration: none;
+}
+.hospital-workspace .hospital-ward-invite-field:focus-within > span {
+    color: var(--workspace-primary, #202b3c);
+    text-decoration: underline;
+}
+.hospital-workspace .hospital-ward-invite-success {
+    max-width: 640px;
+    padding: 12px 14px;
+    color: #285541;
+    background: #e5f3eb;
+    border-radius: 5px;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.hospital-workspace .hospital-ward-code {
+    margin-top: 12px;
+    max-width: 640px;
+}
+.hospital-workspace .hospital-ward-code summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    min-height: 44px;
+    width: fit-content;
+    padding: 10px 0;
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+    font-weight: 500;
+    list-style: none;
+}
+.hospital-workspace .hospital-ward-code summary::-webkit-details-marker {
+    display: none;
+}
+.hospital-workspace .hospital-ward-code summary::after {
+    content: '+';
+    font-size: 15px;
+    font-weight: 400;
+}
+.hospital-workspace .hospital-ward-code[open] summary::after {
+    content: '−';
+}
+.hospital-workspace .hospital-ward-code p {
+    margin: 8px 0 0;
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+    line-height: 1.6;
+}
+.hospital-workspace .hospital-ward-code-value {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+.hospital-workspace .hospital-ward-code-value code {
+    color: var(--workspace-ink, #202631);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    user-select: all;
+}
+.hospital-workspace .hospital-ward-code-value > button.secondary {
+    min-height: 44px;
+    padding: 8px 12px;
+    margin: 0;
+    background: var(--workspace-secondary, #e5e8ed);
+    color: var(--workspace-ink, #202631);
+    font-size: 12px;
+    border-radius: 5px;
+}
+.hospital-workspace .hospital-ward-code-value > button.secondary:hover {
+    background: var(--workspace-control, #f1f3f5);
+    color: var(--workspace-primary, #202b3c);
+}
+.hospital-workspace .hospital-ward-invite :is(button:not(.hospital-info-tip), summary):focus-visible {
+    color: #fff;
+    background: var(--workspace-primary-hover, #101827);
+    text-decoration: underline;
+    outline: none;
+}
+.hospital-workspace .hospital-ward-invite .hospital-ward-invite-heading > button:focus-visible,
+.hospital-workspace .hospital-ward-code-value > button.secondary:focus-visible {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+    text-decoration: underline;
+}
+@media (max-width: 640px) {
+    .hospital-workspace .hospital-ward-invite {
+        padding: 16px;
+    }
+    .hospital-workspace .hospital-ward-invite-heading {
+        gap: 8px;
+    }
+    .hospital-workspace .hospital-ward-invite form > button {
+        width: 100%;
+    }
+}
+@media (forced-colors: active) {
+    .hospital-workspace .hospital-ward-invite :is(button:not(.hospital-info-tip), summary, input):focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

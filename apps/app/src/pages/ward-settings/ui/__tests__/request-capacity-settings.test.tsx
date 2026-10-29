@@ -82,6 +82,24 @@ afterEach(() => {
 });
 
 describe('request capacity settings', () => {
+    it('explains the capacity switch before it is enabled and keeps team selection available', async () => {
+        api.getShiftTeams.mockResolvedValue([
+            {shiftTeamId: 11, name: '1팀'},
+            {shiftTeamId: 12, name: '2팀'},
+        ]);
+
+        const user = mount();
+        const toggle = await screen.findByRole('switch', {name: '인원 제한 사용'});
+
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
+        expect(toggle).toHaveAccessibleDescription(requestCapacityKo.toggleDescription);
+        expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('combobox', {name: '근무팀'}));
+        await user.click(screen.getByRole('option', {name: '2팀'}));
+        await waitFor(() => expect(api.getReqShiftCapacitySettings).toHaveBeenCalledWith(1, 12));
+        expect(screen.getByRole('switch', {name: '인원 제한 사용'})).toHaveAttribute('aria-checked', 'false');
+    });
+
     it.each(['shiftTypes', 'wardShiftTypes'])(
         'accepts the existing %s response envelope without breaking reception settings',
         async (key) => {
@@ -446,10 +464,13 @@ describe('request capacity settings', () => {
     });
     it('shows optional explanations only in the info tooltip on hover and tap', async () => {
         const user = mount();
+
+        await user.click(await screen.findByRole('switch', {name: '인원 제한 사용'}));
+
         const help = await screen.findByRole('button', {name: '신청 인원 제한 도움말'});
 
         expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-        expect(screen.queryByText('매일 같은 인원 적용')).not.toBeInTheDocument();
+        expect(screen.getByText('매일 같은 인원 적용')).toBeInTheDocument();
         await user.hover(help);
         expect(await screen.findByRole('tooltip')).toHaveTextContent('모든 날짜에 같은 정원');
         await user.unhover(help);

@@ -240,7 +240,7 @@ vi.mock('../ai-autofill-toolbar', () => ({
                     redo
                 </button>
             </div>
-            <button type="button" onClick={onAiFill}>
+            <button type="button" onClick={() => onAiFill()}>
                 auto fill
             </button>
             <button type="button" onClick={onRequestClearUnlockedCells}>
@@ -611,6 +611,26 @@ describe('AiAutofill blank preview', () => {
         expect(screen.getByTestId('cell-0')).toHaveTextContent('D');
         expect(screen.getByTestId('cell-1')).toHaveTextContent('E');
         expect(screen.getByTestId('cell-2')).toHaveTextContent('N');
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+    });
+
+    it('sends the negotiated authoring contract on the normal generation request without confirming a review candidate', async () => {
+        useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        mocks.requestAiSchedule.mockResolvedValue({
+            ok: false,
+            message: 'The input needs review',
+            conflictReview: {token: 'bound-review-token', expiresAt: '2099-01-01T00:00:00Z', violations: []},
+        });
+
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.fill'}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
+
+        expect(mocks.requestAiSchedule.mock.calls[0]?.[0]).toMatchObject({authoringContractVersion: 'intent-first-v1'});
+        expect(screen.queryByRole('button', {name: '제안대로 이번 표 수정'})).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
     });
 

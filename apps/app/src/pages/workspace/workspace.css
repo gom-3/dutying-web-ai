@@ -93,7 +93,7 @@
 .workspace-choice:hover {
     background: #eee8f8;
 }
-.workspace-app button,
+.workspace-app button:not(.hospital-info-tip):where(:not(.profile-action)),
 .workspace-button {
     display: inline-flex;
     align-items: center;
@@ -123,9 +123,14 @@
     opacity: 0.45;
     cursor: not-allowed;
 }
+.workspace-app .hospital-entry-button {
+    margin: 0;
+}
 .workspace-app :focus-visible {
-    outline: 3px solid #b399e1;
-    outline-offset: 3px;
+    outline: none;
+    background: #4c287d;
+    color: #fff;
+    text-decoration: underline;
 }
 .workspace-form-grid {
     display: grid;
@@ -223,6 +228,12 @@
     margin-top: 3px;
     accent-color: #8054cf;
 }
+.workspace-check:has(input:focus-visible) {
+    background: #4c287d;
+    color: #fff;
+    text-decoration: underline;
+    border-radius: 6px;
+}
 .workspace-plan-summary {
     display: flex;
     gap: 18px;
@@ -299,6 +310,122 @@
     gap: 4px;
     flex-wrap: wrap;
 }
+.workspace-hospital-choice {
+    flex-direction: column;
+    align-items: flex-start !important;
+    padding: 20px !important;
+}
+.workspace-hospital-choice span {
+    font-size: 14px;
+}
+.workspace-member-list {
+    margin-top: 24px;
+}
+.workspace-member-row {
+    padding: 0 16px;
+    margin-bottom: 8px;
+    background: #f6f7f9;
+    border-radius: 10px;
+}
+.workspace-member-row .workspace-row {
+    align-items: flex-start;
+}
+.workspace-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.workspace-member-add {
+    max-width: 680px;
+    padding-top: 28px;
+}
+.workspace-member-editor {
+    padding: 8px 0 20px;
+}
+.workspace-ward-choices {
+    border: 0;
+    padding: 0;
+    margin: 20px 0;
+    min-width: 0;
+}
+.workspace-ward-choices legend {
+    font-weight: 650;
+    font-size: 14px;
+}
+.workspace-ward-choices p {
+    color: #5c6777;
+    font-size: 14px;
+}
+.workspace-ward-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+.workspace-ward-options .workspace-check {
+    margin: 0;
+    min-height: 44px;
+    padding: 10px 0;
+}
+.workspace-details summary {
+    min-height: 44px;
+    cursor: pointer;
+    font-weight: 650;
+    font-size: 17px;
+}
+.workspace-details form {
+    max-width: 560px;
+}
+.workspace-member-secondary-title {
+    cursor: pointer;
+    padding: 16px 0;
+    min-height: 44px;
+    font-weight: 650;
+}
+.workspace-muted {
+    color: #657080;
+    font-size: 14px;
+}
+.workspace-link-management {
+    margin-top: 24px;
+}
+.workspace-hospital-summary {
+    padding: 20px 28px;
+}
+.workspace-summary-heading {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    justify-content: space-between;
+}
+.workspace-summary-heading h2 {
+    font-size: 17px;
+    margin: 0;
+}
+.workspace-summary-heading > span {
+    color: #657080;
+    font-size: 13px;
+}
+.workspace-hospital-summary .workspace-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 12px 0 0;
+    gap: 16px;
+}
+.workspace-hospital-summary .workspace-stats > div {
+    min-width: 0;
+}
+.workspace-hospital-summary .workspace-stats strong {
+    font-size: 26px;
+    line-height: 1.4;
+}
+.workspace-hospital-summary .workspace-stats span {
+    line-height: 1.45;
+}
+@media (forced-colors: active) {
+    .workspace-app :focus-visible {
+        outline: 2px solid Highlight;
+    }
+}
 @media (max-width: 640px) {
     .workspace-header {
         padding: 18px 20px;
@@ -331,7 +458,7 @@
     .workspace-review {
         padding: 18px;
     }
-    .workspace-app button {
+    .workspace-app button:not(.hospital-info-tip) {
         max-width: 100%;
         white-space: normal;
     }
@@ -342,4 +469,139 @@
     .workspace-tabs a {
         padding: 9px 12px;
     }
+    .workspace-hospital-wards {
+        overflow: visible;
+    }
+    .workspace-hospital-wards table,
+    .workspace-hospital-wards tbody {
+        display: block;
+    }
+    .workspace-hospital-wards thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+    .workspace-hospital-wards tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px 16px;
+        padding: 18px;
+        margin: 12px 0;
+        background: #f5f6f8;
+        border-radius: 10px;
+    }
+    .workspace-hospital-wards td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    .workspace-hospital-wards td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        color: #657080;
+        font-size: 12px;
+        font-weight: 400;
+    }
+    .workspace-hospital-wards .workspace-ward-name {
+        font-size: 17px;
+        font-weight: 650;
+    }
+    .workspace-hospital-wards .workspace-ward-staff {
+        text-align: right;
+        font-size: 17px;
+        font-weight: 650;
+    }
+    .workspace-hospital-wards .workspace-ward-status,
+    .workspace-hospital-wards .workspace-ward-action {
+        grid-column: 1 / -1;
+    }
+    .workspace-hospital-wards .workspace-ward-action button {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+.hospital-link-request-form {
+    max-width: 620px;
+}
+.hospital-link-request-form > p {
+    color: #606a79;
+}
+.workspace-app .hospital-link-request-form input:focus-visible {
+    background: #e6ddf2;
+    color: #24212b;
+    text-decoration: none;
+}
+.hospital-link-request-form .workspace-field:focus-within > span {
+    color: #593494;
+    text-decoration: underline;
+}
+.hospital-ward-start {
+    margin-bottom: 24px;
+}
+.hospital-ward-start > p {
+    color: #606a79;
+}
+.hospital-existing-ward {
+    margin-top: 10px;
+    max-width: 620px;
+}
+.hospital-existing-ward > summary {
+    padding: 10px 0;
+    min-height: 44px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #593494;
+}
+.hospital-existing-ward[open] {
+    padding-bottom: 12px;
+}
+.workspace-ward-action {
+    min-width: 170px;
+}
+@media (max-width: 640px) {
+    .hospital-ward-start > .workspace-button {
+        width: 100%;
+        margin-right: 0;
+    }
+    .workspace-hospital-wards .workspace-ward-action {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+    .workspace-hospital-wards .workspace-ward-action .workspace-button {
+        margin: 0;
+    }
+}
+.workspace-payment-summary {
+    display: grid;
+    gap: 18px;
+    margin: 24px 0;
+    padding: 24px;
+    background: #f3f5f8;
+    border-radius: 12px;
+}
+.workspace-payment-summary > div {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+.workspace-payment-summary dt {
+    color: #566174;
+    font-size: 13px;
+}
+.workspace-payment-summary dd {
+    margin: 0;
+    color: #17283f;
+    font-weight: 650;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
 }

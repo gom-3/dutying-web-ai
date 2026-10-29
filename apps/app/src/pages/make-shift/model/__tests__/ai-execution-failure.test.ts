@@ -1,8 +1,34 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
-import {aiExecutionFailure} from '../ai-execution-failure';
+import {aiExecutionFailure, nightRunConflictMessages} from '../ai-execution-failure';
 import {failureMessagePoints} from '../failure-message-points';
+import {response as authoringResponse, outcome as authoringOutcome} from './fixtures/intent-first';
+
+it('shows consent proof from the public response without requiring hidden solver metadata', () => {
+    const response = authoringResponse({
+        authoringOutcome: authoringOutcome({draftState: 'CONSENT_REQUIRED'}),
+        engineResult: {
+            status: 'CONSENT_REQUIRED',
+            conflictEvidence: [
+                {
+                    type: 'NIGHT_RUN_BOUNDS_CONFLICT',
+                    nurseName: 'A',
+                    minimum: 14,
+                    maximum: 3,
+                    actual: 1,
+                    startDate: '2026-10-31',
+                    endDate: '2026-11-01',
+                },
+            ],
+        },
+    });
+    const messages = nightRunConflictMessages(response);
+    expect(messages).toHaveLength(1);
+    for (const detail of ['A', '14', '3', '1', '2026-10-31', '2026-11-01']) expect(messages[0]).toContain(detail);
+    response.authoringOutcome!.draftState = 'APPLICABLE';
+    expect(nightRunConflictMessages(response)).toEqual([]);
+});
 
 describe('execution failure reasons', () => {
     it.each([
@@ -445,5 +471,130 @@ describe('personal rest capacity evidence', () => {
     });
     it('does not assert conflict when the targets fit', () => {
         expect(aiExecutionFailure(response(10))?.conditionConflict).not.toBe(true);
+    });
+});
+
+it('retains only conflict display evidence and explains missing details', () => {
+    const response: TAutofillResponse = {
+        operationType: 'GENERATE',
+        draftRevision: 1,
+        resultType: 'PATCH',
+        applicable: false,
+        validation: {
+            draftRevision: 1,
+            rulesHash: 'test',
+            summary: {valid: false, hardCount: 0, softCount: 0, totalCount: 0},
+            violations: [],
+        },
+        changedCells: [],
+        unmetInstructions: [],
+        sameAsPrevious: true,
+        conflictReview: {token: 'secret-candidate-token', expiresAt: '2099-01-01T00:00:00Z', violations: []},
+    };
+    const failure = aiExecutionFailure(response);
+
+    expect(failure?.message).toBe(i18n.t('aiAdjust.executionFailure.conflictDetailsMissing'));
+    expect(failure?.confirmationRequired).toBe(true);
+    expect(failure?.conflictDetails).not.toHaveProperty('token');
+    expect(JSON.stringify(failure)).not.toContain('secret-candidate-token');
+});
+
+it.each(['SATISFIED', 'IMPROVED'] as const)('does not claim an unapplied %s result changed the schedule', (requestState) => {
+    const failure = aiExecutionFailure(
+        authoringResponse({
+            operationType: 'GENERATE',
+            applicable: false,
+            changedCells: [],
+            authoringOutcome: authoringOutcome({draftState: 'NONE', requestState}),
+        }),
+    );
+
+    expect(failure?.message).toBe(i18n.t('aiAdjust.executionFailure.summary'));
+    expect(failure?.recovery).toBe('revise');
+});
+
+describe('known consecutive night evidence in the existing failure flow', () => {
+    function rejected(): TAutofillResponse {
+        return {
+            operationType: 'GENERATE',
+            draftRevision: 9,
+            resultType: 'PATCH',
+            changedCells: [],
+            applicable: false,
+            unmetInstructions: [],
+            sameAsPrevious: true,
+            validation: {
+                draftRevision: 9,
+                rulesHash: 'test',
+                summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                violations: [],
+            },
+            engineResult: {
+                status: 'INFEASIBLE',
+                violations: [
+                    {
+                        type: 'NIGHT_RUN_BOUNDS_CONFLICT',
+                        nurseName: '간호사 A',
+                        minimum: 14,
+                        maximum: 3,
+                        actual: 1,
+                        startDate: '2026-10-31',
+                        endDate: '2026-11-01',
+                    },
+                ],
+            },
+            failure: {reasonCode: 'NIGHT_RUN_BOUNDS_CONFLICT', message: 'traceback: must not render'},
+        };
+    }
+
+    it.each(['ko', 'en', 'ja'])('shows bounds, incoming actual count and dates in %s', (locale) => {
+        const original = i18n.language;
+        i18n.changeLanguage(locale);
+        try {
+            const failure = aiExecutionFailure(rejected());
+            expect(failure?.message).toContain('간호사 A');
+            for (const detail of ['14', '3', '1', '2026-10-31', '2026-11-01']) expect(failure?.message).toContain(detail);
+            expect(failure?.message).not.toMatch(/traceback|NIGHT_RUN_BOUNDS_CONFLICT/);
+            expect(failure?.recovery).toBe('revise');
+            expect(failure?.conditionConflict).toBe(true);
+        } finally {
+            i18n.changeLanguage(original);
+        }
+    });
+
+    it('does not infer an input conflict for a timeout or nonconflicting bounds', () => {
+        const response = rejected();
+        response.engineResult!.status = 'TIME_LIMIT';
+        expect(aiExecutionFailure(response)?.conditionConflict).not.toBe(true);
+        response.engineResult!.status = 'INFEASIBLE';
+        response.engineResult!.violations![0].minimum = 2;
+        expect(aiExecutionFailure(response)?.conditionConflict).not.toBe(true);
+    });
+
+    it('renders a known Spring minimum violation from typed data and keeps it distinct from proven infeasibility', () => {
+        const response = rejected();
+        response.engineResult = {status: 'ACCEPTED'};
+        response.failure!.reasonCode = 'SPRING_HARD_VALIDATION';
+        response.validation!.violations = [
+            {
+                violationId: 'synthetic',
+                ruleId: 55,
+                templateCode: 'CORE_MIN_CONTINUOUS_NIGHT',
+                severity: 'HARD',
+                message: 'traceback: must not render',
+                messageKey: 'schedule.validation.minContinuousNight',
+                messageArgs: {nurseName: '간호사 A', actual: 1, expected: 14},
+                period: {startDate: '2026-10-31', endDate: '2026-11-01'},
+                affectedCells: [],
+                fixable: true,
+            },
+        ];
+        const failure = aiExecutionFailure(response);
+        expect(failure?.message).toContain('2026-10-31');
+        expect(failure?.message).toContain('2026-11-01');
+        expect(failure?.message).toContain('14');
+        expect(failure?.message).not.toContain('traceback');
+        expect(failure?.recovery).toBe('review');
+        expect(failure?.conditionConflict).not.toBe(true);
     });
 });

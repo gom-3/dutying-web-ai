@@ -43,13 +43,12 @@ describe('concise staffing warnings', () => {
         expect(list).not.toHaveTextContent(/합성 간호사|간호사 1|필요한 근무에 배정된 인원이 없습니다/);
         expect(JSON.stringify(result)).toBe(before);
     });
-    it('uses the same concise renderer for applied result details', () => {
+    it('keeps applied result diagnostics in the table instead of duplicating them in result details', () => {
         const result = response();
 
         result.authoringOutcome!.violationDelta.new = source();
         render(<AiConversationResultDetails result={result} />);
-        expect(screen.getAllByRole('listitem')).toHaveLength(3);
-        expect(screen.getByText('10월 3일 D: 0명 / 필요 1명')).toBeVisible();
+        expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
     });
     it('keeps other warnings in their original message and nurse/date form', () => {
         const other = {

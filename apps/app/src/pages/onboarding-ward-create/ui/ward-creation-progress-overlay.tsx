@@ -44,9 +44,10 @@ const getCreationProgressMessageKey = (progress: number, isComplete: boolean): T
 
 type TWardCreationProgressOverlayProps = {
     isComplete: boolean;
+    completionMessage?: string;
 };
 
-function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayProps) {
+function WardCreationProgressOverlay({isComplete, completionMessage}: TWardCreationProgressOverlayProps) {
     const {t} = useTypedTranslation();
     const [progress, setProgress] = useState(() => (isComplete ? 100 : INITIAL_PROGRESS));
 
@@ -74,7 +75,7 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
     }, [isComplete]);
 
     const progressValue = Math.round(progress);
-    const message = t(getCreationProgressMessageKey(progressValue, isComplete));
+    const message = isComplete && completionMessage ? completionMessage : t(getCreationProgressMessageKey(progressValue, isComplete));
 
     return (
         <div
@@ -83,7 +84,7 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
             aria-labelledby="ward-creation-progress-title"
             className="fixed inset-0 z-[100002] flex items-center justify-center bg-[#17132E]/62 px-4 backdrop-blur-[3px]"
         >
-            <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center shadow-[0_22px_80px_rgba(45,32,92,0.24)]">
+            <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center">
                 <div className="mx-auto flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F3F4F6] text-main-1">
                     {isComplete ? (
                         <div className="scale-[1.72]">

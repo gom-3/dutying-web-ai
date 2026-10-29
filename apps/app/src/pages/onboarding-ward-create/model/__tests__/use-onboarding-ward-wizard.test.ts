@@ -129,6 +129,60 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draftCreationStatus).toBe('created');
     });
 
+    it('keeps hospital ward creation on the scoped actions and pre-fills the hospital name', async () => {
+        const scopedCreate = vi.fn().mockResolvedValue(draftWardResponse);
+        const scopedRestore = vi.fn().mockResolvedValue(null);
+        const actions = {
+            createWard: mockCreateWard,
+            createOnboardingWardDraft: scopedCreate,
+            getOnboardingWardDraft: scopedRestore,
+            saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
+            previewOnboardingScheduleInput: mockPreviewOnboardingScheduleInput,
+            completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
+        };
+        const {result} = renderHook(() => useOnboardingWardWizard({actions, initialHospitalName: '듀팅병원'}));
+
+        await waitFor(() => expect(scopedRestore).toHaveBeenCalledOnce());
+        act(() => result.current.updateWardIdentity({wardName: '중환자실'}));
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(scopedCreate).toHaveBeenCalledWith(expect.objectContaining({hospitalName: '듀팅병원', name: '중환자실'}));
+        expect(mockGetOnboardingWardDraft).not.toHaveBeenCalled();
+        expect(mockCreateOnboardingWardDraft).not.toHaveBeenCalled();
+    });
+
+    it('protects an existing hospital setup after restore failure until the user retries successfully', async () => {
+        const scopedRestore = vi.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValue(null);
+        const scopedCreate = vi.fn().mockResolvedValue(draftWardResponse);
+        const actions = {
+            createWard: mockCreateWard,
+            createOnboardingWardDraft: scopedCreate,
+            getOnboardingWardDraft: scopedRestore,
+            saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
+            previewOnboardingScheduleInput: mockPreviewOnboardingScheduleInput,
+            completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
+        };
+        const {result} = renderHook(() => useOnboardingWardWizard({actions, initialHospitalName: '듀팅병원', requireDraftRestore: true}));
+
+        await waitFor(() => expect(result.current.draftRestoreStatus).toBe('error'));
+        act(() => result.current.updateWardIdentity({wardName: '중환자실'}));
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        expect(scopedCreate).not.toHaveBeenCalled();
+        expect(result.current.draft.currentStep).toBe(1);
+
+        act(() => result.current.retryDraftRestore());
+        await waitFor(() => expect(result.current.draftRestoreStatus).toBe('ready'));
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        expect(scopedCreate).toHaveBeenCalledOnce();
+        expect(result.current.draft.currentStep).toBe(2);
+    });
+
     it('previews manual schedule input on the server, saves it, and reloads before moving to shift types', async () => {
         let savedDraftPayload: unknown = null;
 

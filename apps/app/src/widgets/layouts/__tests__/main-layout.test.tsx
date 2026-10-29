@@ -4,11 +4,12 @@ import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import type * as NavigationBarFoldStoreModule from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
-import {MainLayout} from '../main-layout';
+import {MainLayout, ProfileLayout} from '../main-layout';
 
 const mockUseQuery = vi.fn();
 const mockAuthState = vi.hoisted(() => ({
     accessToken: null as string | null,
+    wardId: 10 as number | null,
 }));
 
 vi.mock('@tanstack/react-query', async () => {
@@ -24,7 +25,7 @@ vi.mock('@/features/auth', () => ({
     default: () => ({
         state: {
             accessToken: mockAuthState.accessToken,
-            wardId: 10,
+            wardId: mockAuthState.wardId,
         },
     }),
 }));
@@ -94,12 +95,33 @@ describe('MainLayout', () => {
             },
         });
         mockAuthState.accessToken = null;
+        mockAuthState.wardId = 10;
         window.sessionStorage.clear();
         document.documentElement.style.removeProperty('--make-ai-snapshot-sidebar-offset');
         useNavigationBarFoldStore.getState().reset();
         setViewportWidth(1600);
     });
 
+    it.each([10, null])('keeps profile available with ward navigation only when a ward is selected (%s)', (wardId) => {
+        mockAuthState.wardId = wardId;
+        render(
+            <MemoryRouter initialEntries={[ROUTE.PROFILE]}>
+                <Routes>
+                    <Route element={<ProfileLayout />}>
+                        <Route path={ROUTE.PROFILE} element={<div>original profile content</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+        expect(screen.getByText('original profile content')).toBeVisible();
+
+        if (wardId === null) {
+            expect(screen.queryByTestId('navigation-bar')).not.toBeInTheDocument();
+            expect(screen.getByRole('link', {name: '홈'})).toHaveAttribute('href', '/workspace');
+        } else {
+            expect(screen.getByTestId('navigation-bar')).toBeVisible();
+        }
+    });
     it('opens the ward code guide immediately from onboarding-created navigation state', async () => {
         render(
             <MemoryRouter

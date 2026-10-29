@@ -82,6 +82,15 @@ describe('requestAiSchedule', () => {
         expect(result).toEqual({ok: true, response, validation: response.validation});
     });
 
+    it('does not apply a legacy response when the authoring contract was requested', async () => {
+        apiGenerate.mockResolvedValue({...response, applicable: true, engineResult: {status: 'ACCEPTED'}});
+
+        const result = await requestAiSchedule({...request, authoringContractVersion: 'intent-first-v1'});
+
+        expect(result).toMatchObject({ok: false, failure: {recovery: 'retry', blocked: false}});
+        expect(result).not.toHaveProperty('response');
+    });
+
     it('replaces arbitrary provider errors with a user-facing retry message', async () => {
         apiGenerate.mockRejectedValue(new Error('AI 생성 실패'));
 

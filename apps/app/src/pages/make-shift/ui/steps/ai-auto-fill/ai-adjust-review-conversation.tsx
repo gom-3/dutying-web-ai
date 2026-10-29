@@ -10,6 +10,7 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {canRetryInterpretation} from '../../../model/ai-interpret-issues';
 import {AiAdjustInterpretCard, type TAdjustCard} from './ai-adjust-interpret-card';
+import {AiConversationTimestamp} from './ai-conversation-timestamp';
 
 const choiceClass =
     'min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left leading-5 text-[13.5px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
@@ -18,12 +19,15 @@ export function AssistantMessage({
     children,
     tone = 'default',
     fullWidth = false,
+    showTime = false,
 }: {
     children: ReactNode;
     tone?: 'default' | 'error';
     fullWidth?: boolean;
+    showTime?: boolean;
 }) {
     const {t} = useTypedTranslation();
+    const [displayedAt] = useState(() => new Date().toISOString());
 
     return (
         <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''}`}>
@@ -36,14 +40,18 @@ export function AssistantMessage({
             >
                 {children}
             </div>
+            {showTime && <AiConversationTimestamp createdAt={displayedAt} />}
         </div>
     );
 }
 
-export function UserMessage({children}: {children: ReactNode}) {
+export function UserMessage({children, showTime = false}: {children: ReactNode; showTime?: boolean}) {
+    const [displayedAt] = useState(() => new Date().toISOString());
+
     return (
         <div className="ml-auto w-fit max-w-full min-w-0 rounded-2xl rounded-tr-sm bg-main-light px-4 py-3 text-[14.5px] leading-7 break-words text-[#5931B9]">
             {children}
+            {showTime && <AiConversationTimestamp createdAt={displayedAt} align="right" />}
         </div>
     );
 }

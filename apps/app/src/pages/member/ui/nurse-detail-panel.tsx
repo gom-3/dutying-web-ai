@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
-import {usePersonalRestText} from '@/features/personal-rest-policy';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
@@ -29,6 +28,7 @@ import {
     isRestShiftOption,
     type TNurseShiftTypeOption,
 } from '../model/nurse-shift-types';
+import {RestAllocationSettings} from './rest-allocation-settings';
 
 export type TNurseDetailDraftActions = {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean};
 
@@ -207,7 +207,6 @@ function NurseDetailPanel({
         actions: {saveNurseDetails, deleteNurse, setNurseDraftDirty, disconnectNurse},
     } = useEditShiftTeam();
     const {t} = useTypedTranslation();
-    const restText = usePersonalRestText();
     const [savedNurseBaseline, setSavedNurseBaseline] = useState<TNurse | null>(null);
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [nameError, setNameError] = useState<'required' | 'invalid' | null>(null);
@@ -985,42 +984,22 @@ function NurseDetailPanel({
                                     );
                                 })}
                         </div>
-                        <details className="mt-4 border-t border-gray-7 pt-3">
-                            <summary className="cursor-pointer py-2 font-semibold">{restText.legacyTitle}</summary>
-                            <p className="my-2 text-sm">{restText.legacyHint}</p>
-                            <ul className="space-y-2">
-                                {shiftTypeOptions.filter(isRestShiftOption).map((type) => (
-                                    <li key={type.apiShiftTypeId}>
-                                        <label className="flex min-h-11 items-center gap-3">
-                                            <input
-                                                type="checkbox"
-                                                checked={type.isPossible}
-                                                disabled={isBusy}
-                                                onChange={(event) => {
-                                                    const checked = event.target.checked;
-
-                                                    setWriteNurse((previous) =>
-                                                        previous
-                                                            ? {
-                                                                  ...previous,
-                                                                  nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
-                                                                      item.nurseShiftTypeId === type.apiShiftTypeId
-                                                                          ? {...item, isPossible: checked}
-                                                                          : item,
-                                                                  ),
-                                                              }
-                                                            : previous,
-                                                    );
-                                                }}
-                                            />
-                                            <span>
-                                                {type.name} · {type.isPossible ? restText.allowed : restText.blocked}
-                                            </span>
-                                        </label>
-                                    </li>
-                                ))}
-                            </ul>
-                        </details>
+                        <RestAllocationSettings
+                            options={shiftTypeOptions}
+                            disabled={isBusy}
+                            onChange={(apiShiftTypeId, isPossible) => {
+                                setWriteNurse((previous) =>
+                                    previous
+                                        ? {
+                                              ...previous,
+                                              nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
+                                                  item.nurseShiftTypeId === apiShiftTypeId ? {...item, isPossible} : item,
+                                              ),
+                                          }
+                                        : previous,
+                                );
+                            }}
+                        />
                         {ENABLE_MONTHLY_SHIFT_RATIO ? (
                             <div className="mt-3 border-t border-gray-7 pt-3">
                                 <div className="flex items-center justify-between gap-2">

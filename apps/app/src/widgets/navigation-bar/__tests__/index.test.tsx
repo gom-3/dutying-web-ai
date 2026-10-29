@@ -1,10 +1,20 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import useAuthStore from '@/features/auth/model/store';
+import type * as CommercialApi from '@/features/commercial/api';
 import type * as I18nModule from '@/i18n';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import NavigationBar from '..';
 import {useNavigationBarFoldStore} from '../navigation-bar-fold-store';
+
+const commercialMocks = vi.hoisted(() => ({data: undefined as CommercialApi.AccessContext | undefined}));
+
+vi.mock('@/features/commercial/api', async (original) => ({
+    ...(await original<typeof CommercialApi>()),
+    useCommercialContext: () => ({data: commercialMocks.data}),
+    useWardEntitlement: () => ({data: undefined}),
+}));
 
 const mockUseTotalPendingRequestCount = vi.fn(() => 0);
 
@@ -48,10 +58,44 @@ vi.mock('@/features/request-shift/model/use-total-pending-request-count', () => 
 
 describe('NavigationBar', () => {
     beforeEach(() => {
+        commercialMocks.data = undefined;
         mockUseTotalPendingRequestCount.mockReset();
         mockUseTotalPendingRequestCount.mockReturnValue(0);
         mockUseEditWard.mockClear();
         useNavigationBarFoldStore.getState().reset();
+    });
+
+    it.each([false, true])('keeps all commercial shortcuts beside the bottom Dutying link (collapsed: %s)', (collapsed) => {
+        const previousWardId = useAuthStore.getState().wardId;
+
+        useAuthStore.setState({wardId: 557});
+        commercialMocks.data = {
+            enabled: true,
+            scopes: [
+                {type: 'WARD', ref: '557', scopeId: 'ward-557', name: '병동', role: 'OWNER', status: 'ACTIVE'},
+                {type: 'HOSPITAL', ref: 'h1', scopeId: 'hospital-h1', name: '병원', role: 'OWNER', status: 'ACTIVE'},
+            ],
+        };
+        useNavigationBarFoldStore.getState().setFold(collapsed, 'user');
+        render(
+            <MemoryRouter>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        const footer = screen.getByTestId('navigation-footer');
+
+        expect(footer).toContainElement(screen.getByRole('link', {name: '듀팅'}));
+        expect(footer).toContainElement(screen.getByRole('button', {name: '병원으로 들어가기'}));
+
+        const connections = screen.getByRole('link', {name: '병원 연결 요청'});
+        const workspace = screen.getByRole('link', {name: '요금제·관리 공간'});
+
+        expect(footer).toContainElement(connections);
+        expect(footer).toContainElement(workspace);
+        expect(connections).toHaveAttribute('href', '/workspace/WARD/557/links');
+        expect(workspace).toHaveAttribute('href', '/workspace');
+        act(() => useAuthStore.setState({wardId: previousWardId}));
     });
 
     it('근무 설정을 펼쳐 하위 메뉴로 이동하고 선택 상태를 표시한다', async () => {

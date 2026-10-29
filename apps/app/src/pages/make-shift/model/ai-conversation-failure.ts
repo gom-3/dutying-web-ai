@@ -1,4 +1,4 @@
-import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
+import type {TAutofillResponse, TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
 export type TPersonalRestConflict = {
@@ -11,6 +11,8 @@ export type TPersonalRestConflict = {
 };
 
 export type TAiConversationFailure = {
+    /** Display evidence only; candidate tokens stay in the execution result. */
+    conflictDetails?: Pick<NonNullable<TAutofillResponse['conflictReview']>, 'explanation' | 'violations' | 'ruleLabels'>;
     restConflicts?: TPersonalRestConflict[];
     settingsTarget?: 'rest' | 'member';
     conflicts?: TScheduleConflict[];
@@ -25,6 +27,9 @@ export type TAiConversationFailure = {
     blocked: boolean;
     /** A local input issue does not need an execution-history lookup. */
     checkOutcome?: boolean;
+    /** Only a local guard before execute POST may offer a new action instead of receipt lookup. */
+    unsentOperation?: 'GENERATE' | 'ADJUST';
+    canRetryGeneration?: boolean;
     /** Present only for a completed execution that did not produce an applicable result. */
     recovery?: 'retry' | 'revise' | 'review' | 'settings';
 };
@@ -33,6 +38,8 @@ export type TAiConversationFailure = {
 export class AiConversationInputError extends Error {
     constructor(
         readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong' | 'expiredSuggestion' | 'draftChanged',
+        readonly unsentOperation?: 'GENERATE' | 'ADJUST',
+        readonly canRetryGeneration = false,
     ) {
         super(reason);
     }
@@ -63,6 +70,12 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
             message: i18n.t(`aiAdjust.localError.${error.reason}`),
             blocked: false,
             checkOutcome: error.reason === 'pendingExecution' || error.reason === 'loading',
+            ...(error.reason === 'staleRequest' && error.unsentOperation
+                ? {
+                      unsentOperation: error.unsentOperation,
+                      ...(error.unsentOperation === 'GENERATE' && error.canRetryGeneration ? {canRetryGeneration: true} : {}),
+                  }
+                : {}),
         };
 
     const source = error as {message?: string; serverCode?: string; code?: number} | null;

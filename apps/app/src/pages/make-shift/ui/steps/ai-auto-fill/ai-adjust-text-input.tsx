@@ -48,6 +48,8 @@ export type TAdjustApply = (
     llmPrompt?: string,
     actionKey?: string,
 ) => Promise<TAdjustApplyResult | void> | void;
+export type TConflictReviewRenderer = (onRevise: () => void, onEditSettings?: () => void) => ReactNode;
+
 type TProps = {
     disabled: boolean;
     modifyDisabled?: boolean;
@@ -76,12 +78,14 @@ type TProps = {
     requestList?: ReactNode;
     conversationActions?: ReactNode;
     generationCompleted?: boolean;
+    hasGeneratedSchedule?: boolean;
     generationCompletedMessage?: string;
     generationReviewRequired?: boolean;
     snapshotShift?: TShift;
     generationFailure?: TAiConversationFailure | null;
+    renderConflictReview?: TConflictReviewRenderer;
     onDismissFailure?: () => void;
-    onRegenerate?: () => void;
+    onRegenerate?: (requestText?: string) => void;
     onRecoverGeneration?: () => void;
     ref?: Ref<TAdjustTextInputHandle>;
 };
@@ -176,10 +180,12 @@ export default function AiAdjustTextInput({
     requestList,
     conversationActions,
     generationCompleted = false,
+    hasGeneratedSchedule = false,
     generationCompletedMessage,
     generationReviewRequired = false,
     snapshotShift,
     generationFailure,
+    renderConflictReview,
     onDismissFailure,
     onRegenerate,
     onRecoverGeneration,
@@ -256,8 +262,7 @@ export default function AiAdjustTextInput({
     const paused = autofillFlow?.status === 'paused';
     const completedMessage = generationCompletedMessage ?? t('aiAdjust.generationCompleted');
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
-    const composerHidden =
-        preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
+    const composerHidden = preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || entryChoice === 'regenerate';
 
     useEffect(() => {
         if (previousConditionsVersion.current === conditionsVersion) return;
@@ -423,7 +428,7 @@ export default function AiAdjustTextInput({
     }, [entryChoice, composerHidden]);
 
     const fill = (sentence: string) => {
-        if (disabled || busy.current) return;
+        if (disabled || modifyDisabled || busy.current) return;
 
         sequence.current += 1;
         setEntryChoice('modify');
@@ -471,7 +476,7 @@ export default function AiAdjustTextInput({
                 (issueCodes.includes('INVALID_VALUE') && /^\d+\s*(회|번|일|回|日)?$/.test(enteredText)));
         const requestText = shortClarification ? `${failedCard.requestText}\n추가 설명: ${enteredText}` : enteredText;
 
-        if (!requestText || disabled || busy.current) return;
+        if (!requestText || disabled || modifyDisabled || busy.current) return;
 
         if (requestText.length > MAX_TEXT_LENGTH) {
             setError(t('aiAdjust.issue.tooLong'));
@@ -579,6 +584,22 @@ export default function AiAdjustTextInput({
             const result = await interpret(requestText);
 
             if (!mounted.current || sequence.current !== id) return;
+
+            const rewrite = result.generationIntent;
+            if (
+                rewrite &&
+                onRegenerate &&
+                !result.items?.length &&
+                !result.unmapped?.length &&
+                result.llmPrompt?.trim() &&
+                Array.from(requestText).slice(rewrite.start, rewrite.end).join('') === rewrite.quote
+            ) {
+                updateTurn(id, {status: 'messages'});
+                setText(requestText);
+                onRegenerate(requestText);
+
+                return;
+            }
 
             updateTurn(id, {
                 status: 'confirm',
@@ -790,11 +811,34 @@ export default function AiAdjustTextInput({
 
     useImperativeHandle(ref, () => ({fill, restart: newConversation}));
 
+    const latestOutcome = [...turns]
+        .reverse()
+        .find((turn) => Boolean(turn.failure) || Boolean(turn.completion) || ['applied', 'applyFailed', 'error'].includes(turn.status));
+    const latestFailed = Boolean(
+        Boolean(generationFailure) ||
+            Boolean(latestOutcome?.failure) ||
+            Boolean(latestOutcome?.error) ||
+            latestOutcome?.status === 'applyFailed' ||
+            latestOutcome?.status === 'error',
+    );
+    const confirmation =
+        !latestFailed && resultActions ? {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy} : undefined;
+    const reviseGeneration = () => {
+        onDismissFailure?.();
+        chooseNextAction('modify');
+    };
     const canShowNextEntry = !preparation && !paused && !waitingForGeneration && !generationFailure && !entryChoice;
     const attachEntryToResult = Boolean(
         canShowNextEntry && onRegenerate && active?.status === 'messages' && active.snapshot && active.completion,
     );
     const chooseNextAction = (choice: TConversationEntryChoice) => {
+        if (choice === 'edit') {
+            setEntryChoice(null);
+            onReviewSchedule?.();
+
+            return;
+        }
+
         setEntryChoice(choice);
         setTurns((current) => [
             ...current,
@@ -974,6 +1018,7 @@ export default function AiAdjustTextInput({
                                         operationType="ADJUST"
                                         attemptLabel={attemptLabel(turn.attempt ?? 1)}
                                         failure={turn.failure}
+                                        detailsInChildren={Boolean(renderConflictReview) && turn.id === active?.id}
                                         settingsHref={settingsHref}
                                         onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id}
@@ -982,7 +1027,9 @@ export default function AiAdjustTextInput({
                                         onRevise={revise}
                                         onReview={onReviewSchedule}
                                         onInspectSchedule={onReviewSchedule}
-                                    />
+                                    >
+                                        {turn.id === active?.id && renderConflictReview?.(revise, settingsAction(turn.failure))}
+                                    </AiExecutionFailure>
                                 )}
                                 {(turn.status === 'interpreting' || (turn.status === 'applying' && !preparing && !paused)) && (
                                     <AssistantMessage>
@@ -1030,7 +1077,7 @@ export default function AiAdjustTextInput({
                                             setEditing(false);
                                             chooseNextAction('modify');
                                         }}
-                                        onRegenerate={onRegenerate ? () => chooseNextAction('regenerate') : undefined}
+                                        onEditSchedule={onReviewSchedule}
                                     />
                                 )}
                                 {turn.status === 'undone' && (
@@ -1049,11 +1096,13 @@ export default function AiAdjustTextInput({
                                                 .length,
                                         )}
                                         failure={turn.failure ?? {message: turn.error, blocked: false}}
+                                        detailsInChildren={Boolean(renderConflictReview) && turn.id === active?.id}
                                         settingsHref={settingsHref}
                                         onEditSettings={settingsAction(turn.failure)}
                                         active={turn.id === active?.id && Boolean(generationFailure)}
                                         disabled={disabled || isBusy}
                                         onRetry={onRegenerate}
+                                        onRevise={modifyDisabled ? undefined : reviseGeneration}
                                         onReview={turn.failure?.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
                                         reviewLabel={
                                             turn.failure?.reviewFixed && onRecoverGeneration
@@ -1061,7 +1110,9 @@ export default function AiAdjustTextInput({
                                                 : undefined
                                         }
                                         onInspectSchedule={onReviewSchedule}
-                                    />
+                                    >
+                                        {turn.id === active?.id && renderConflictReview?.(reviseGeneration, settingsAction(turn.failure))}
+                                    </AiExecutionFailure>
                                 )}
                                 {turn.error && turn.status !== 'messages' && turn.status !== 'error' && turn.status !== 'applyFailed' && (
                                     <AssistantMessage>
@@ -1080,11 +1131,9 @@ export default function AiAdjustTextInput({
                         {preparation}
                     </div>
                 )}
-                {attachEntryToResult && resultActions && (
+                {attachEntryToResult && confirmation && (
                     <div className="mt-3">
-                        <AiConversationConfirmation
-                            confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
-                        />
+                        <AiConversationConfirmation confirmation={confirmation} />
                     </div>
                 )}
                 {canShowNextEntry &&
@@ -1096,9 +1145,10 @@ export default function AiAdjustTextInput({
                                 disabled={disabled || isBusy}
                                 modifyDisabled={modifyDisabled}
                                 hideIntro={flowCompleted || turns.length > 0}
+                                hasSchedule={hasGeneratedSchedule}
                                 generationCompleted={generationCompleted && !noticeDismissed}
                                 generationCompletedMessage={completedMessage}
-                                confirmation={resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || isBusy}}
+                                confirmation={confirmation}
                                 onChoose={chooseNextAction}
                             />
                         </div>
@@ -1116,6 +1166,7 @@ export default function AiAdjustTextInput({
                         operationType="GENERATE"
                         attemptLabel={attemptLabel(1)}
                         failure={generationFailure}
+                        detailsInChildren={Boolean(renderConflictReview)}
                         settingsHref={settingsHref}
                         onEditSettings={settingsAction(generationFailure)}
                         reviewLabel={
@@ -1124,9 +1175,12 @@ export default function AiAdjustTextInput({
                         active
                         disabled={disabled || isBusy}
                         onRetry={onRegenerate}
+                        onRevise={modifyDisabled ? undefined : reviseGeneration}
                         onReview={generationFailure.reviewFixed && onRecoverGeneration ? onRecoverGeneration : onReviewSchedule}
                         onInspectSchedule={onReviewSchedule}
-                    />
+                    >
+                        {renderConflictReview?.(reviseGeneration, settingsAction(generationFailure))}
+                    </AiExecutionFailure>
                 )}
                 {!hideRestartButton &&
                     !preparation &&
@@ -1149,14 +1203,14 @@ export default function AiAdjustTextInput({
                 inert={composerHidden}
                 aria-hidden={composerHidden}
             >
-                {!generationFailure && !hasRequestTurns && (!onRegenerate || entryChoice === 'modify') && (
+                {!generationFailure && !hasRequestTurns && (
                     <div className="ai-adjust-examples mb-4 flex shrink-0 flex-col gap-2">
                         <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
                         {examples.map((sentence) => (
                             <button
                                 key={sentence}
                                 type="button"
-                                disabled={disabled || isBusy}
+                                disabled={disabled || modifyDisabled || isBusy}
                                 onClick={() => fill(sentence)}
                                 className="flex min-h-10 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 disabled:opacity-50"
                             >
@@ -1190,7 +1244,7 @@ export default function AiAdjustTextInput({
                                 }
                             }}
                             onPaste={(event) => event.stopPropagation()}
-                            disabled={disabled || isBusy}
+                            disabled={disabled || modifyDisabled || isBusy}
                             rows={2}
                             maxLength={MAX_TEXT_LENGTH}
                             aria-label={t('page.makeShift.aiRefill.adjust.textInput.label')}
@@ -1204,7 +1258,7 @@ export default function AiAdjustTextInput({
                             <button
                                 type="button"
                                 aria-label={t('aiAdjust.send')}
-                                disabled={disabled || isBusy || !text.trim()}
+                                disabled={disabled || modifyDisabled || isBusy || !text.trim()}
                                 onClick={() => void handleSubmit()}
                                 className="grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 focus-visible:bg-[#4620B8] focus-visible:outline-none disabled:bg-gray-3"
                             >

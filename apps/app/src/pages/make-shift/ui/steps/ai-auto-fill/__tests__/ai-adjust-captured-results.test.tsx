@@ -41,40 +41,36 @@ beforeEach(() => {
 });
 
 describe('captured legacy schedule results', () => {
-    it.each(['regenerate', 'modify'] as const)(
-        'offers the shared next choices after adjustment without another solve: %s',
-        async (choice) => {
-            const regenerate = vi.fn();
-            const apply = vi.fn().mockResolvedValue({
-                applied: true,
-                changes: [{name: '김 간호사', date: '2026-11-01', before: 'D', after: 'O'}],
-                response: {
-                    operationType: 'ADJUST',
-                    draftRevision: 1,
-                    resultType: 'PATCH',
-                    changedCells: [],
-                    unmetInstructions: [],
-                    sameAsPrevious: false,
-                },
-            });
+    it('keeps the applied result and opens a follow-up request without another solve', async () => {
+        const regenerate = vi.fn();
+        const apply = vi.fn().mockResolvedValue({
+            applied: true,
+            changes: [{name: '김 간호사', date: '2026-11-01', before: 'D', after: 'O'}],
+            response: {
+                operationType: 'ADJUST',
+                draftRevision: 1,
+                resultType: 'PATCH',
+                changedCells: [],
+                unmetInstructions: [],
+                sameAsPrevious: false,
+            },
+        });
 
-            render(<AiAdjustTextInput {...props} onApply={apply} onRegenerate={regenerate} />);
-            fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
-            fireEvent.change(screen.getByRole('textbox'), {target: {value: '김 간호사 1일 쉬게 해줘'}});
-            fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
-            fireEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.applyReply'}));
+        render(<AiAdjustTextInput {...props} onApply={apply} onRegenerate={regenerate} />);
+        fireEvent.click(screen.getByRole('textbox'));
+        fireEvent.change(screen.getByRole('textbox'), {target: {value: '김 간호사 1일 쉬게 해줘'}});
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
+        fireEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.applyReply'}));
 
-            const result = await screen.findByRole('region', {name: 'aiAdjust.snapshot.result'});
+        const result = await screen.findByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-            expect(within(result).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-            expect(within(result).getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeEnabled();
-            fireEvent.click(within(result).getByRole('button', {name: `aiAdjust.chat.${choice}`}));
-            expect(regenerate).toHaveBeenCalledTimes(choice === 'regenerate' ? 1 : 0);
-            expect(apply).toHaveBeenCalledOnce();
-
-            if (choice === 'modify') expect(screen.getByRole('textbox')).toHaveFocus();
-        },
-    );
+        expect(within(result).getByRole('button', {name: 'aiAdjust.modifyMore'})).toBeEnabled();
+        expect(within(result).queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
+        fireEvent.click(within(result).getByRole('button', {name: 'aiAdjust.modifyMore'}));
+        expect(regenerate).not.toHaveBeenCalled();
+        expect(apply).toHaveBeenCalledOnce();
+        expect(screen.getByRole('textbox')).toHaveFocus();
+    });
 
     it('passes immutable before and after data to the result preview from the execution boundary', async () => {
         const apply = vi.fn(async (): Promise<TAdjustApplyResult> => {

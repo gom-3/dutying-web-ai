@@ -1,10 +1,19 @@
+/* eslint-disable @typescript-eslint/naming-convention -- Preserve the existing exported commercial API type names. */
 import {useQuery} from '@tanstack/react-query';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useAuthStore from '@/features/auth/model/store';
 import {adminAxiosInstance} from '@/shared/api/client';
 
 export type ScopeType = 'WARD' | 'HOSPITAL';
-export type Scope = {type: ScopeType; ref: string; scopeId: string; name: string; role: 'OWNER' | 'EDITOR' | 'MANAGER'; status?: string};
+export type Scope = {
+    type: ScopeType;
+    ref: string;
+    scopeId: string;
+    name: string;
+    role: 'OWNER' | 'EDITOR' | 'MANAGER';
+    status?: string;
+    accessSource?: 'MEMBERSHIP' | 'HOSPITAL' | null;
+};
 export type Invitation = {
     type: ScopeType;
     name: string;
@@ -31,6 +40,8 @@ export type Transfer = {
 };
 export type AccessContext = {
     enabled: boolean;
+    /** Absent on older servers that require email verification before card registration. */
+    cardRegistrationVersion?: number;
     enforcementEnabled?: boolean;
     configurationReady?: boolean;
     restrictionStates?: Partial<
@@ -99,6 +110,8 @@ export type Policy = {
     setupExtra: number;
 };
 export type Entitlement = {
+    configurationReady?: boolean;
+    readinessCode?: string;
     restrictionStates?: AccessContext['restrictionStates'];
     billingHold?: boolean;
     scope: BillingScope;
@@ -169,6 +182,13 @@ export type Order = {
     appliedAt?: string;
     failureCode?: string;
     invoiceId: string;
+    subscriptionSummary?: {
+        scopeName: string;
+        periodStart: string;
+        periodEnd: string;
+        monthlyGross: number;
+        termsVersion: string;
+    } | null;
 };
 export type Invoice = {
     id: string;
@@ -200,9 +220,12 @@ export type Member = {
     email?: string;
     role: string;
     version?: number;
+    wardIds?: number[];
+    wards?: {wardId: number; name: string; canEdit: boolean}[];
 };
 export type Members = {
     members: Member[];
+    availableWards?: {wardId: number; name: string}[];
     invitations: {
         id?: string;
         invitationId?: number;
@@ -217,6 +240,14 @@ export type Members = {
     limit?: number;
 };
 export type WardLink = {
+    operationallyConnected?: boolean;
+    canManageStaff?: boolean;
+    canResumeSetup?: boolean;
+    wardCode?: string;
+    hospitalName?: string;
+    canDecline?: boolean;
+    wardConsentedBy?: number | null;
+    wardDetachConsent?: boolean;
     id: string;
     wardId: number;
     organizationId?: string;
@@ -262,6 +293,8 @@ const ROOT = '/admin/commercial';
 export const commercialGet = async <T>(path: string) => (await adminAxiosInstance.get<T>(ROOT + path, {suppressErrorToast: true})).data;
 export const commercialPost = async <T>(path: string, data: unknown = {}, key: string = crypto.randomUUID()) =>
     (await adminAxiosInstance.post<T>(ROOT + path, data, {headers: {'Idempotency-Key': key}, suppressErrorToast: true})).data;
+export const commercialPut = async <T>(path: string, data: unknown) =>
+    (await adminAxiosInstance.put<T>(ROOT + path, data, {suppressErrorToast: true})).data;
 export const legacyGet = async <T>(path: string) => (await adminAxiosInstance.get<T>(path, {suppressErrorToast: true})).data;
 export const legacyPost = async <T>(path: string, data: unknown) => (await adminAxiosInstance.post<T>(path, data)).data;
 export const commercialDelete = async (path: string) => {

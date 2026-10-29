@@ -38,7 +38,7 @@ describe('intent-first negotiated conversation wire', () => {
         expect(post).toHaveBeenLastCalledWith(
             '/wards/5/shift-teams/7/schedule/conversations/9/interpretations',
             {expectedRevision: 2, text: '3일 D로 바꿔줘', language: 'ko', authoringContractVersion: 'intent-first-v1'},
-            {suppressErrorToast: true, timeout: 17000},
+            {suppressErrorToast: true, timeout: 30000},
         );
     });
     it('sends exact cached candidate binding without creating a new interpretation or altering rule lifetime', async () => {
@@ -61,7 +61,7 @@ describe('intent-first negotiated conversation wire', () => {
         await conversationApi(5, 7).execute(9, body);
         expect(post).toHaveBeenLastCalledWith('/wards/5/shift-teams/7/schedule/conversations/9/operations', body, {
             suppressErrorToast: true,
-            timeout: 17000,
+            timeout: 330000,
         });
     });
 });

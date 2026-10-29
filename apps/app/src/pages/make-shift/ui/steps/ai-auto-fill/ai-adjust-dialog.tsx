@@ -10,7 +10,7 @@ import type {TAiConversationFailure} from '../../../model/ai-conversation-failur
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-conditions';
 import type {TAdjustResultActions} from './ai-adjust-result';
-import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle} from './ai-adjust-text-input';
+import AiAdjustTextInput, {type TAdjustApply, type TAdjustTextInputHandle, type TConflictReviewRenderer} from './ai-adjust-text-input';
 import type {TAutofillFlow} from './ai-autofill-preparation';
 import {AiConversationHeader} from './ai-conversation-header';
 import AiMonthRequestList from './ai-month-request-list';
@@ -31,8 +31,9 @@ type TProps = {
     teamId?: number;
     year?: number;
     month?: number;
-    onRegenerate: () => void;
-    onGenerate?: () => void;
+    onRegenerate: (requestText?: string) => void;
+    onEditSchedule?: () => void;
+    onGenerate?: (requestText?: string) => void;
     onRecoverGeneration?: () => void;
     hasGeneratedSchedule?: boolean;
     generationCompleted?: boolean;
@@ -41,6 +42,7 @@ type TProps = {
     snapshotShift?: TShift;
     generationObservation?: TScheduleObservation;
     generationFailure?: TAiConversationFailure | null;
+    renderConflictReview?: TConflictReviewRenderer;
     onDismissFailure?: () => void;
     disabled: boolean;
     conditionsDisabled?: boolean;
@@ -81,6 +83,7 @@ export default function AiAdjustDialog({
     year,
     month,
     onRegenerate,
+    onEditSchedule,
     onGenerate,
     onRecoverGeneration,
     hasGeneratedSchedule = false,
@@ -90,6 +93,7 @@ export default function AiAdjustDialog({
     snapshotShift,
     generationObservation,
     generationFailure,
+    renderConflictReview,
     onDismissFailure,
     disabled,
     conditionsDisabled = disabled,
@@ -242,7 +246,7 @@ export default function AiAdjustDialog({
                         autofillFlow={autofillFlow}
                         historyKey={historyKey}
                         onNewConversation={onNewConversation}
-                        onReviewSchedule={onClose}
+                        onReviewSchedule={onEditSchedule ?? onClose}
                         settingsHref={teamId != null ? `${ROUTE.MEMBER}?shiftTeamId=${teamId}` : undefined}
                         onEditFailureSettings={hasConditionContext ? () => conditionEditor.current?.openConditions() : undefined}
                         onRegenerate={hasGeneratedSchedule ? onRegenerate : onGenerate}
@@ -252,10 +256,12 @@ export default function AiAdjustDialog({
                         conditionsVersion={conditionsVersion}
                         modifyDisabled={modifyDisabled}
                         generationCompleted={generationCompleted}
+                        hasGeneratedSchedule={hasGeneratedSchedule}
                         generationCompletedMessage={generationCompletedMessage}
                         generationReviewRequired={generationReviewRequired}
                         snapshotShift={snapshotShift}
                         generationFailure={generationFailure}
+                        renderConflictReview={renderConflictReview}
                         onDismissFailure={onDismissFailure}
                         interpret={interpret}
                         onApply={onApply}

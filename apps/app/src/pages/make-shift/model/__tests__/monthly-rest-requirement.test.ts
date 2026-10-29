@@ -24,7 +24,7 @@ describe('monthly rest requirement', () => {
             countedWardShiftTypeIds: [4, 5],
         });
     });
-    it('uses the same fixed target, adjustment, carry and selected rest types as the rest check', () => {
+    it('uses fixed calculation as a minimum without inventing an exact upper bound', () => {
         expect(
             monthlyRestRequirement(
                 shift,
@@ -41,7 +41,7 @@ describe('monthly rest requirement', () => {
                 11,
                 1,
             ),
-        ).toEqual({exactForRegularWorkers: true, minimumDaysByShiftNurseId: {11: 9, 12: 10}, countedWardShiftTypeIds: [4]});
+        ).toEqual({minimumDaysByShiftNurseId: {11: 9, 12: 10}, countedWardShiftTypeIds: [4]});
     });
     it('omits disabled rest policy', () => {
         expect(monthlyRestRequirement(shift, {...DEFAULT_REST_LEAVE_POLICY, enabled: false}, 2026, 11, 0)).toBeUndefined();

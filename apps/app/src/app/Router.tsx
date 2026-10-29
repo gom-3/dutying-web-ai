@@ -41,6 +41,7 @@ const DutyingNoticeDetailPage = lazy(() => import('@/pages/dutying/notice-detail
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
 const AuthLayout = lazy(() => import('@/widgets/layouts/auth-layout').then((module) => ({default: module.AuthLayout})));
 const MainLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.MainLayout})));
+const ProfileLayout = lazy(() => import('@/widgets/layouts/main-layout').then((module) => ({default: module.ProfileLayout})));
 const NotAuthLayout = lazy(() => import('@/widgets/layouts/not-auth-layout').then((module) => ({default: module.NotAuthLayout})));
 
 export const Router = () => {
@@ -132,6 +133,9 @@ export const Router = () => {
                 {/* 인증되지 않은 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<AuthLayout />}>
                     <Route path="/workspace/*" element={<WorkspacePage />} />
+                    <Route element={<ProfileLayout />}>
+                        <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
+                    </Route>
                     <Route path={ROUTE.REGISTER} element={<RegisterPage />} />
                     <Route path={ROUTE.ENTER_WARD} element={<EnterWard />} />
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />
@@ -147,7 +151,6 @@ export const Router = () => {
                         <Route path={ROUTE.WARD_SETTINGS} element={<WardSettingsPage />} />
                         <Route path={ROUTE.WARD_ADMINS} element={<WardAdminsPage />} />
                         <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
-                        <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                         <Route path={ROUTE.DUTYING} element={<DutyingPage />} />
                         <Route path={ROUTE.DUTYING_NOTICES} element={<DutyingNoticesPage />} />
                         <Route path={ROUTE.DUTYING_NOTICE_DETAIL} element={<DutyingNoticeDetailPage />} />

@@ -1,0 +1,127 @@
+/* Page content only. The shared WorkspaceShell owns navigation, layout and base controls. */
+.workspace-personal {
+    color: var(--workspace-ink, #202631);
+    font-size: 15px;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+.workspace-personal .workspace-section {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin: 0 0 48px;
+}
+.workspace-personal .workspace-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.workspace-personal .workspace-heading-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.workspace-personal .workspace-section h2 {
+    font-size: 19px;
+    margin: 0;
+    letter-spacing: -0.4px;
+}
+.workspace-personal .workspace-section h3 {
+    font-size: 16px;
+}
+.workspace-personal .workspace-field-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.workspace-personal .workspace-field {
+    font-size: 14px;
+}
+.workspace-personal .workspace-field input,
+.workspace-personal .workspace-field select,
+.workspace-personal .workspace-field textarea {
+    background: var(--workspace-control, #f1f3f5);
+    color: var(--workspace-ink, #202631);
+    min-height: 48px;
+}
+.workspace-personal .workspace-field :is(input, select, textarea):focus-visible {
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+}
+.workspace-personal .hospital-info-tip__icon {
+    background: var(--workspace-muted, #566173);
+    color: #fff;
+}
+.workspace-personal .hospital-info-tip:focus-visible {
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+}
+.workspace-personal .hospital-info-tip:focus-visible .hospital-info-tip__icon {
+    background: #fff;
+    color: var(--workspace-primary, #202b3c);
+}
+.workspace-personal .workspace-notice {
+    font-size: 14px;
+    background: var(--workspace-surface-token, #f6f7f9);
+    color: var(--workspace-ink, #202631);
+}
+.workspace-personal .workspace-plans button.hospital-entry-button {
+    justify-content: space-between;
+    min-height: 68px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+    text-align: left;
+}
+.workspace-personal .workspace-plans .hospital-entry-button strong {
+    font-size: 16px;
+}
+.workspace-personal .workspace-plans .hospital-entry-description {
+    margin-top: 2px;
+    color: #fff;
+    font-size: 13px;
+}
+.workspace-personal .workspace-plans button.hospital-entry-button:hover {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+}
+.workspace-personal .workspace-plans button.hospital-entry-button:focus-visible {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-personal-state {
+    padding: 40px 28px;
+    background: var(--workspace-control, #f1f3f5);
+    border-radius: 12px;
+    color: var(--workspace-muted, #566173);
+}
+.workspace-personal-state p {
+    margin: 0 0 16px;
+}
+.workspace-personal-state p:last-child {
+    margin: 0;
+}
+@media (max-width: 760px) {
+    .workspace-personal .workspace-section {
+        margin-bottom: 36px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .workspace-personal * {
+        transition: none;
+        scroll-behavior: auto;
+    }
+}
+@media (forced-colors: active) {
+    .workspace-personal :is(a, button, input, select, textarea, summary):focus-visible {
+        outline: 2px solid Highlight;
+    }
+}

@@ -311,6 +311,8 @@ export default defineConfig(({mode}) => {
                     const renderer = await createServer({
                         configFile: false,
                         root: appRoot,
+                        // The build-only renderer must not replace a running dev server's prebundles.
+                        cacheDir: resolve(appRoot, 'node_modules/.vite-landing-ssr'),
                         envDir: workspaceRoot,
                         mode,
                         plugins: [react(), tsconfigPaths({projects: [resolve(appRoot, 'tsconfig.app.json')]})],
