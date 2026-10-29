@@ -69,6 +69,7 @@ import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
+import {conversationApi} from '../../../model/schedule-conversation-api';
 import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
 import {
     markCarryOverAnswered,
@@ -571,6 +572,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
+    const openingSavedConversation = useRef(false);
     const lastAiRulesHashRef = useRef<string | null>(null);
     // 마지막 근무 공란 경고를 거친 뒤에도, 조절에서 시작한 "고정 근무 확인" 단계를 잃지 않는다.
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
@@ -2454,7 +2456,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         return true;
     };
-    const handleOpenAutofill = () => {
+    const handleOpenAutofill = async () => {
         if (resumeAutofillPreparation()) return;
 
         const currentDoc = useShiftEditorStore.getState().doc;
@@ -2488,6 +2490,47 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             setIsAdjustDialogOpen(true);
 
             return;
+        }
+
+        // A saved AI result may have been created in another browser, so the
+        // local completion marker alone cannot decide whether this is a refill.
+        if (conversationEnabled && hasResultCells && wardId && currentShiftTeamId && orderedShift) {
+            if (openingSavedConversation.current) return;
+
+            openingSavedConversation.current = true;
+
+            try {
+                const api = conversationApi(wardId, currentShiftTeamId);
+                const [conversation] = await api.list(year, month);
+                const detail = conversation ? await api.detail(conversation.conversationId) : null;
+                const applied = [...(detail?.operations ?? [])]
+                    .reverse()
+                    .find((operation) => operation.executionStatus === 'SUCCEEDED' && operation.applyStatus === 'APPLIED' && operation.resultVersionId);
+
+                if (applied?.resultVersionId) {
+                    const version = await api.version(applied.resultVersionId);
+                    const scope = currentAiContextRef.current;
+
+                    if (scope.wardId !== wardId || scope.shiftTeamId !== currentShiftTeamId || scope.year !== year || scope.month !== month)
+                        return;
+
+                    markLastAiGeneratedDoc(
+                        snapshotDetailToDoc(version, orderedShift, year, month, {
+                            fixedCells: currentDoc.fixedCells,
+                            requestCells: currentDoc.requestCells,
+                        }),
+                    );
+                    rememberGeneratedSchedule();
+                    setIsSnapshotSidebarOpen(false);
+                    setIsAdjustDialogOpen(true);
+
+                    return;
+                }
+            } catch {
+                // If history is unavailable, retain the normal refill review.
+            } finally {
+                openingSavedConversation.current = false;
+            }
         }
 
         handleAiFill();

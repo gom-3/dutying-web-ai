@@ -46,6 +46,9 @@ const mocks = vi.hoisted(() => ({
     getScheduleCarryOverCandidates: vi.fn(),
     carryOverScheduleMonthRequests: vi.fn(),
     interpretScheduleAdjust: vi.fn(),
+    listConversations: vi.fn(),
+    detailConversation: vi.fn(),
+    versionConversation: vi.fn(),
     getScheduleGoalCandidate: vi.fn(),
     applyScheduleGoalCandidate: vi.fn(),
     undoScheduleGoalCandidate: vi.fn(),
@@ -60,6 +63,15 @@ const mocks = vi.hoisted(() => ({
         generationRequest: number;
     } | null,
     loadingProps: [] as Array<{startedAt: number | null; sidebarOpen?: boolean; isFinishing?: boolean; isAdjusting?: boolean}>,
+}));
+
+vi.mock('../../../../model/schedule-conversation-api', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../../../model/schedule-conversation-api')>()),
+    conversationApi: () => ({
+        list: mocks.listConversations,
+        detail: mocks.detailConversation,
+        version: mocks.versionConversation,
+    }),
 }));
 
 vi.mock('../../constraints', async () => {
@@ -639,6 +651,9 @@ describe('AiAutofill adjust panel', () => {
     beforeEach(() => {
         vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({matches: false}));
         mocks.requestAiSchedule.mockReset();
+        mocks.listConversations.mockReset().mockResolvedValue([]);
+        mocks.detailConversation.mockReset();
+        mocks.versionConversation.mockReset();
         mocks.collapseNavigationBar.mockReset();
         mocks.setStepNavigationBusy.mockReset();
         mocks.moveScheduleRow.mockReset();
@@ -661,6 +676,23 @@ describe('AiAutofill adjust panel', () => {
         vi.unstubAllGlobals();
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
         useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
+    });
+
+    it('opens a saved AI result in the conversation after reload without starting a refill', async () => {
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+        mocks.listConversations.mockResolvedValueOnce([{conversationId: 17}]);
+        mocks.detailConversation.mockResolvedValueOnce({
+            operations: [{executionStatus: 'SUCCEEDED', applyStatus: 'APPLIED', resultVersionId: 'result:17'}],
+        });
+        mocks.versionConversation.mockResolvedValueOnce({cells: [], rowOrder: []});
+
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        await waitFor(() => expect(mocks.conversationProps?.open).toBe(true));
+        expect(mocks.versionConversation).toHaveBeenCalledWith('result:17');
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
     });
 
     it.each([false, true])('times conversation execution and completes only successful results (success: %s)', async (succeeded) => {
@@ -744,7 +776,7 @@ describe('AiAutofill adjust panel', () => {
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
 
-        if (!empty) await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        if (!empty) await user.click(await screen.findByRole('button', {name: DECISION_CONFIRM}));
 
         const before = useShiftEditorStore.getState().doc;
 
