@@ -20,7 +20,6 @@ type TProps = {
     onEdit: () => void;
     onRetry: () => void;
     onChangeModalities?: (overrides: Record<string, 'HARD' | 'SOFT'>) => Promise<void>;
-    onSelectConditions?: (ids: string[]) => void;
 };
 
 const action =
@@ -82,11 +81,9 @@ export function AiSemanticReview({
     onApply,
     onEdit,
     onRetry,
-    onSelectConditions,
     onChangeModalities,
 }: TProps) {
     const {t} = useTypedTranslation();
-    const [selection, setSelection] = useState<{planId: string; ids: string[]}>({planId: plan.planId, ids: []});
     const [priorityEdits, setPriorityEdits] = useState<{hash: string; values: Record<string, 'HARD' | 'SOFT'>}>({
         hash: plan.planHash,
         values: {},
@@ -125,7 +122,6 @@ export function AiSemanticReview({
             </section>
         );
 
-    const selected = selection.planId === plan.planId ? selection.ids : [];
     const ready = plan.state === 'PREVIEW_READY' || plan.state === 'CONFIRMED';
     const reviewable = plan.conditions.every((condition) =>
         condition.action === 'CATALOG_RULE'
@@ -141,7 +137,6 @@ export function AiSemanticReview({
         !retry &&
         ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
         Boolean(plan.conditionGroups?.length);
-    const canSelect = showGroups && Boolean(plan.conditionGroups?.some((group) => group.selectable)) && Boolean(onSelectConditions);
     const title = ready
         ? complete
             ? t('aiAutofillUi.semanticReview.theCalculationForTheseConditionsIsComplete')
@@ -200,9 +195,7 @@ export function AiSemanticReview({
                 : expired
                   ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
                   : plan.state === 'UNSUPPORTED'
-                    ? canSelect
-                        ? null
-                        : t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
+                    ? t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
                     : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
     const listLabel =
         conflict || !ready
@@ -286,68 +279,23 @@ export function AiSemanticReview({
             )}
             {showGroups && (
                 <div className="space-y-2">
-                    {current && canSelect && (
-                        <p className="text-xs leading-5 text-[#667085]">
-                            {t('aiAutofillUi.semanticReview.chooseConditionsForThisRunUnselectedConditionsWillBeExcluded')}
-                        </p>
-                    )}
-                    <ul aria-label={t('aiAutofillUi.semanticReview.selectRequestConditions')} className="space-y-2">
-                        {plan.conditionGroups!.map((group) => {
-                            const checked = selected.includes(group.conditionId);
-                            const Choice = current && canSelect ? 'label' : 'div';
-                            const interactive = current && canSelect && group.selectable && !disabled && !stale;
-
-                            return (
-                                <li key={group.conditionId}>
-                                    <Choice
-                                        className={`group flex min-h-[44px] items-start gap-3 rounded-xl p-3 focus-within:bg-[#4620B8] focus-within:text-[#FFF1D6] ${interactive ? 'cursor-pointer' : 'cursor-default'} ${checked ? 'bg-[#EDE7FF]' : 'bg-white'}`}
-                                    >
-                                        {current && canSelect && (
-                                            <>
-                                                <input
-                                                    type="checkbox"
-                                                    className="peer sr-only"
-                                                    checked={checked}
-                                                    disabled={!group.selectable || !current || disabled || stale}
-                                                    onChange={(event) =>
-                                                        setSelection({
-                                                            planId: plan.planId,
-                                                            ids: event.target.checked
-                                                                ? [...selected, group.conditionId]
-                                                                : selected.filter((id) => id !== group.conditionId),
-                                                        })
-                                                    }
-                                                />
-                                                <span
-                                                    aria-hidden="true"
-                                                    className="mt-[1px] grid size-5 shrink-0 place-items-center rounded-md bg-[#E9ECF2] text-transparent peer-checked:bg-main-1 peer-checked:text-white peer-disabled:opacity-50"
-                                                >
-                                                    <svg viewBox="0 0 20 20" className="size-4" fill="currentColor">
-                                                        <path d="m5.5 9.5 3 3 6-6L16 8l-7.5 7.5L4 11z" />
-                                                    </svg>
-                                                </span>
-                                            </>
-                                        )}
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block text-[13px] leading-5 font-medium whitespace-pre-wrap text-[#333D4B] group-focus-within:text-[#FFF1D6]">
-                                                {group.sourceSpan.quote.trim()}
-                                            </span>
-                                            <span className="mt-1 block text-xs leading-5 text-[#667085] group-focus-within:text-[#FFF1D6]">
-                                                {group.selectable
-                                                    ? current && canSelect
-                                                        ? checked
-                                                            ? t('aiAutofillUi.semanticReview.selected')
-                                                            : t('aiAutofillUi.semanticReview.availableToSelect')
-                                                        : t('aiAutofillUi.semanticReview.supportedCondition')
-                                                    : group.status === 'UNSUPPORTED'
-                                                      ? t('aiAutofillUi.semanticReview.notSupportedYet')
-                                                      : t('aiAutofillUi.semanticReview.needsMoreDetail')}
-                                            </span>
-                                        </span>
-                                    </Choice>
-                                </li>
-                            );
-                        })}
+                    <ul aria-label={listLabel} className="space-y-2">
+                        {plan.conditionGroups!.map((group) => (
+                            <li key={group.conditionId} className="flex min-h-[44px] items-start gap-3 rounded-xl bg-white p-3">
+                                <span className="min-w-0 flex-1">
+                                    <span className="block text-[13px] leading-5 font-medium whitespace-pre-wrap text-[#333D4B]">
+                                        {group.sourceSpan.quote.trim()}
+                                    </span>
+                                    <span className="mt-1 block text-xs leading-5 text-[#667085]">
+                                        {group.status === 'UNSUPPORTED'
+                                            ? t('aiAutofillUi.semanticReview.notSupportedYet')
+                                            : group.status === 'UNRESOLVED'
+                                              ? t('aiAutofillUi.semanticReview.needsMoreDetail')
+                                              : t('aiAutofillUi.semanticReview.supportedCondition')}
+                                    </span>
+                                </span>
+                            </li>
+                        ))}
                     </ul>
                 </div>
             )}
@@ -471,19 +419,9 @@ export function AiSemanticReview({
                                 {t('aiAutofillUi.semanticReview.tryAgain')}
                             </button>
                         )}
-                        {canSelect && (
-                            <button
-                                type="button"
-                                className={primary}
-                                disabled={disabled || stale || selected.length === 0}
-                                onClick={() => onSelectConditions?.(selected)}
-                            >
-                                {t('aiAutofillUi.semanticReview.revalidateOnlySelectedConditions')}
-                            </button>
-                        )}
                         <button
                             type="button"
-                            className={ready || retry || canSelect || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
+                            className={ready || retry || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
                             disabled={disabled || savingPriority}
                             onClick={onEdit}
                         >

@@ -552,10 +552,7 @@ async function openAdjustDialog(user: ReturnType<typeof userEvent.setup>) {
 
 async function openModification(user: ReturnType<typeof userEvent.setup>) {
     await openAdjustDialog(user);
-
-    const modify = screen.queryByRole('button', {name: 'aiAdjust.chat.modify'});
-
-    if (modify) await user.click(modify);
+    expect(screen.getByRole('textbox')).toBeVisible();
 }
 
 /**
@@ -735,7 +732,7 @@ describe('AiAutofill adjust panel', () => {
         expect(document.documentElement).toHaveStyle({'--make-ai-adjust-sidebar-width': '407px'});
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(screen.queryByText(ADJUST_TITLE)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
     it.each([false, true])('opens fixed review after a failed conversation without retrying automatically (empty: %s)', async (empty) => {
@@ -907,16 +904,14 @@ describe('AiAutofill adjust panel', () => {
 
         expect(screen.queryByText(/개인별 월 OFF·연차 목표/)).not.toBeInTheDocument();
         await completeFirstFill(user);
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
         await user.type(screen.getByRole('textbox'), '김 간호사의 12일 휴무를 유지해줘');
-
-        const conversation = screen.getByRole('log').textContent;
 
         view.unmount();
         view = render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByRole('textbox')).toHaveValue('김 간호사의 12일 휴무를 유지해줘');
-        expect(screen.getByRole('log').textContent).toBe(conversation);
+        expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(screen.queryByText('aiAdjust.chat.welcome')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.preparation.restoredHistory')).not.toBeInTheDocument();
         expect(mocks.interpretScheduleAdjust).not.toHaveBeenCalled();
@@ -1134,8 +1129,8 @@ describe('AiAutofill adjust panel', () => {
             expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
             expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeEnabled();
 
-            if (adjustEnabled) expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-            else expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+            if (adjustEnabled) expect(screen.getByRole('textbox')).toBeEnabled();
+            else expect(screen.getByRole('textbox')).toBeDisabled();
 
             expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.continue'})).not.toBeInTheDocument();
             expect(document.documentElement.dataset.makeAiPreparing).toBe('false');
@@ -1163,7 +1158,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(screen.queryByRole('log')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeEnabled();
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
@@ -1184,7 +1179,7 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: CARD_APPLY}));
         await screen.findByRole('region', {name: DECISION_TITLE});
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
 
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveValue('');
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveFocus();
@@ -1218,7 +1213,7 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
         await act(async () => resolve({year: 2026, month: 7, requests: []}));
 
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeEnabled();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(screen.queryByRole('log')).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
@@ -1438,13 +1433,13 @@ describe('AiAutofill adjust panel', () => {
         await completeFirstFill(user);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
         view.unmount();
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
     });
@@ -1469,9 +1464,8 @@ describe('AiAutofill adjust panel', () => {
 
         const result = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(result).toContainElement(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(result).not.toContainElement(confirm);
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         await user.click(confirm);
         expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
         expect(await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.adjust.promote.title'})).toBeVisible();
@@ -1550,20 +1544,20 @@ describe('AiAutofill adjust panel', () => {
         // 이력 열람과 새 수정 실행의 권한을 구분한다.
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByText('aiAdjust.generationCompleted')).toBeVisible();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+        expect(screen.getByRole('textbox')).toBeDisabled();
         await prepareAnotherGeneration(user);
         await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+        expect(screen.getByRole('textbox')).toBeDisabled();
         expect(screen.queryByRole('button', {name: 'adjust shifts'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'regenerate schedule'})).not.toBeInTheDocument();
         view.unmount();
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findAllByText('aiAdjust.generationCompleted')).toHaveLength(2);
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+        expect(screen.getByRole('textbox')).toBeDisabled();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
     });
 
@@ -2408,7 +2402,7 @@ describe('AiAutofill adjust panel', () => {
         await completeFirstFill(user);
         await openAdjustDialog(user);
 
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
         await user.click(screen.getByRole('button', {name: CLUSTER_ON_EXAMPLE}));
 
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveValue(CLUSTER_ON_EXAMPLE);

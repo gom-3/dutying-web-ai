@@ -109,8 +109,6 @@ type TComposerContext = {
     editingEventId?: number;
     previousId?: string;
     change: 'REPLACE' | 'ADD' | 'RESET';
-    conditionEdit: 'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET';
-    conditionTargets: string[];
 };
 type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; recoveredFailures: string[]; composer?: TComposerContext};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
@@ -187,9 +185,6 @@ export default function AiConversationSidebar({
                     transcript.recoveredFailures.every((id) => typeof id === 'string') &&
                     (!transcript.composer ||
                         (['REPLACE', 'ADD', 'RESET'].includes(transcript.composer.change) &&
-                            ['ANSWER', 'ADD', 'UPDATE', 'REMOVE', 'RESET'].includes(transcript.composer.conditionEdit) &&
-                            Array.isArray(transcript.composer.conditionTargets) &&
-                            transcript.composer.conditionTargets.every((id) => typeof id === 'string') &&
                             (transcript.composer.previousId == null || typeof transcript.composer.previousId === 'string') &&
                             (transcript.composer.editingEventId == null || Number.isSafeInteger(transcript.composer.editingEventId)))),
             );
@@ -273,10 +268,6 @@ export default function AiConversationSidebar({
         setReportError(null);
     };
     const [change, setChange] = useState<TComposerContext['change']>(storedTranscript?.composer?.change ?? 'ADD');
-    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>(
-        storedTranscript?.composer?.conditionEdit ?? 'ANSWER',
-    );
-    const [conditionTargets, setConditionTargets] = useState<string[]>(storedTranscript?.composer?.conditionTargets ?? []);
     const [previousId, setPreviousId] = useState<string | undefined>(storedTranscript?.composer?.previousId);
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
@@ -319,8 +310,6 @@ export default function AiConversationSidebar({
             setEditingRequest(null);
             setPreviousId(undefined);
             setChange('ADD');
-            setConditionEdit('ANSWER');
-            setConditionTargets([]);
         }
 
         transcriptConversation.current = next.conversation.conversationId;
@@ -341,8 +330,6 @@ export default function AiConversationSidebar({
             } else {
                 setPreviousId(undefined);
                 setChange('ADD');
-                setConditionEdit('ANSWER');
-                setConditionTargets([]);
             }
         }
 
@@ -354,8 +341,6 @@ export default function AiConversationSidebar({
             reportTrigger.current = null;
             setLocalEvents([]);
             setEditingRequest(null);
-            setConditionEdit('ANSWER');
-            setConditionTargets([]);
             setRequestToolsOpen(false);
             onNewConversation?.();
         }
@@ -817,27 +802,6 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
-    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
-        await run(
-            async () => {
-                const current = detailRef.current;
-
-                if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
-                    throw new Error(t('aiAdjust.stale'));
-
-                await api.selectConditions(
-                    current.conversation.conversationId,
-                    turn.semanticPlan.planId,
-                    current.conversation.revision,
-                    turn.semanticPlan.planHash,
-                    ids,
-                );
-                await refresh();
-            },
-            false,
-            'reviewing',
-        );
-    };
     const changeModalities = async (turn: TConversationTurn, overrides: Record<string, 'HARD' | 'SOFT'>) => {
         // run() presents errors but deliberately consumes them. Track completion so the editor retains failed changes.
         let saved = false;
@@ -1020,13 +984,7 @@ export default function AiConversationSidebar({
         setPreviousId(turn.interpretationId ?? undefined);
         setChange('REPLACE');
 
-        if (current.conversationState) {
-            setConditionEdit('UPDATE');
-            setConditionTargets(
-                current.conversationState.conditions.length === 1 ? [current.conversationState.conditions[0].conditionId] : [],
-            );
-            setText('');
-        } else setText(original);
+        setText(current.conversationState ? '' : original);
 
         setRequestToolsOpen(false);
         textarea.current?.focus();
@@ -1223,20 +1181,8 @@ export default function AiConversationSidebar({
                         ...(state
                             ? {
                                   expectedStateVersion: state.version,
-                                  change:
-                                      conditionEdit === 'ANSWER'
-                                          ? state.pendingQuestion
-                                              ? ('UPDATE' as const)
-                                              : ('ADD' as const)
-                                          : conditionEdit,
-                                  targetConditionIds:
-                                      conditionEdit === 'RESET' ||
-                                      conditionEdit === 'ADD' ||
-                                      (conditionEdit === 'ANSWER' && !state.pendingQuestion)
-                                          ? []
-                                          : state.pendingQuestion && conditionEdit === 'ANSWER'
-                                            ? [state.pendingQuestion.conditionId]
-                                            : conditionTargets,
+                                  change: 'AUTO' as const,
+                                  targetConditionIds: [],
                               }
                             : previous && current.conversation.latestInterpretationId === previous
                               ? {
@@ -1260,8 +1206,6 @@ export default function AiConversationSidebar({
                 setEditingRequest(null);
                 setPreviousId(interpreted.interpretationId ?? undefined);
                 setChange('ADD');
-                setConditionEdit('ANSWER');
-                setConditionTargets([]);
                 setEntryChoice('modify');
                 await refresh();
             },
@@ -1310,8 +1254,6 @@ export default function AiConversationSidebar({
         setEntryChoice(null);
         setPreviousId(undefined);
         setChange('ADD');
-        setConditionEdit('ANSWER');
-        setConditionTargets([]);
         setText('');
         setEditingRequest(null);
         setRebuild(false);
@@ -1507,68 +1449,7 @@ export default function AiConversationSidebar({
             (op) => op.executionStatus === 'RUNNING' || op.executionStatus === 'RESULT_READY' || op.executionStatus === 'UNKNOWN',
         ) ?? false;
     const conditionsDisabled = busy || running || awaitingAdjustment || preparing || loading || !detail;
-    const removeCondition = async (conditionId: string) => {
-        if (conditionsDisabled || busyRef.current || awaitingAdjustmentRef.current) throw new AiConversationInputError('loading');
-
-        const reviewed = detailRef.current;
-        const stateVersion = reviewed?.conversationState?.version;
-
-        await run(
-            async () => {
-                reviewedPreparation.current = null;
-                setSelectedSuggestion(undefined);
-
-                const current = await sync();
-                const state = current.conversationState;
-
-                if (
-                    !state ||
-                    current.conversation.conversationId !== reviewed?.conversation.conversationId ||
-                    state.version !== stateVersion ||
-                    !state.conditions.some((condition) => condition.conditionId === conditionId)
-                )
-                    throw new AiConversationInputError('staleRequest');
-
-                try {
-                    const interpreted = await api.interpret(current.conversation.conversationId, {
-                        expectedRevision: current.conversation.revision,
-                        expectedStateVersion: state.version,
-                        change: 'REMOVE',
-                        targetConditionIds: [conditionId],
-                        text: t('aiConversationSidebar.removeConditionRequest'),
-                        language: i18n.language,
-                    });
-
-                    if (!mounted.current || detailRef.current?.conversation.conversationId !== current.conversation.conversationId) return;
-
-                    setPreviousId(interpreted.interpretationId ?? undefined);
-                    setConditionEdit('ANSWER');
-                    setConditionTargets([]);
-                    setEditingRequest(null);
-                    await refresh();
-
-                    if (detailRef.current?.conversationState?.conditions.some((condition) => condition.conditionId === conditionId))
-                        throw new AiConversationInputError('staleRequest');
-
-                    if (detailRef.current?.conversationState?.conditions.length === 0) setEntryChoice('modify');
-                } catch (cause) {
-                    // Interpretation reserves the next state version even when parsing fails.
-                    await refresh().catch(() => undefined);
-                    throw cause;
-                }
-            },
-            false,
-            'updating',
-            true,
-        );
-    };
     const aiConditions = [
-        ...(detail?.conversationState?.conditions.map((condition) => ({
-            id: `semantic:${condition.conditionId}`,
-            label: condition.text,
-            description: t('aiConversationSidebar.currentConversation'),
-            onRemove: () => removeCondition(condition.conditionId),
-        })) ?? []),
         ...activeConditions.requests
             .filter((request) => request.promotedRuleId == null)
             .map((request) => ({
@@ -1632,12 +1513,10 @@ export default function AiConversationSidebar({
                     editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
                     previousId,
                     change,
-                    conditionEdit,
-                    conditionTargets,
                 },
             }),
         );
-    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, conditionEdit, conditionTargets]);
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change]);
 
     useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
@@ -1791,7 +1670,7 @@ export default function AiConversationSidebar({
             conversationId: detail!.conversation.conversationId,
             events: localEvents,
             recoveredFailures: [...recoveredFailures.current],
-            composer: {editingEventId: editingRequest?.eventId, previousId, change, conditionEdit, conditionTargets},
+            composer: {editingEventId: editingRequest?.eventId, previousId, change},
         });
         onRecoverGeneration();
     }, [
@@ -1826,7 +1705,6 @@ export default function AiConversationSidebar({
         !detail ||
         failureNeedsAction ||
         entryChoice === 'regenerate' ||
-        (!entryChoice && canChooseNextAction) ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
     const recoveryComposerFocus = useRef(false);
 
@@ -2071,7 +1949,6 @@ export default function AiConversationSidebar({
                             }
                             copy={copy}
                             onChangeModalities={(overrides) => changeModalities(turn, overrides)}
-                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
@@ -2753,7 +2630,6 @@ export default function AiConversationSidebar({
                                 />
                             ))}
                         {!composerHidden &&
-                            entryChoice === 'modify' &&
                             !editingRequest &&
                             !activeTurns.length &&
                             !text.trim() &&
@@ -2966,63 +2842,10 @@ export default function AiConversationSidebar({
                                     ))}
                                 </details>
                             )}
-                            {detail?.conversationState &&
-                                !(
-                                    detail.conversationState.conditions.length === 0 &&
-                                    active?.semanticPlan?.reasonCodes.includes('EMPTY_CONDITIONS')
-                                ) && (
-                                    <fieldset className="space-y-2 rounded border p-2 text-sm" disabled={busy || running}>
-                                        <legend>{t('aiConversationSidebar.currentConditions')}</legend>
-                                        {detail.conversationState.pendingQuestion && (
-                                            <p>{detail.conversationState.pendingQuestion.question}</p>
-                                        )}
-                                        {detail.conversationState.conditions.map((condition) => (
-                                            <label key={condition.conditionId} className="flex items-start gap-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={conditionTargets.includes(condition.conditionId)}
-                                                    onChange={(event) =>
-                                                        setConditionTargets((ids) =>
-                                                            event.target.checked
-                                                                ? [...ids, condition.conditionId]
-                                                                : ids.filter((id) => id !== condition.conditionId),
-                                                        )
-                                                    }
-                                                />
-                                                <span>{condition.text}</span>
-                                            </label>
-                                        ))}
-                                        <select
-                                            aria-label={t('aiConversationSidebar.conditionEditMode')}
-                                            value={conditionEdit}
-                                            onChange={(event) => setConditionEdit(event.target.value as typeof conditionEdit)}
-                                            className="w-full rounded border p-2"
-                                        >
-                                            <option value="ANSWER">
-                                                {detail.conversationState.pendingQuestion
-                                                    ? t('aiConversationSidebar.answerQuestion')
-                                                    : t('aiConversationSidebar.addCondition')}
-                                            </option>
-                                            {detail.conversationState.pendingQuestion && (
-                                                <option value="ADD">{t('aiConversationSidebar.addSeparateCondition')}</option>
-                                            )}
-                                            <option value="UPDATE">{t('aiConversationSidebar.updateSelectedConditions')}</option>
-                                            <option value="REMOVE">{t('aiConversationSidebar.removeSelectedConditions')}</option>
-                                            <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
-                                        </select>
-                                    </fieldset>
-                                )}
-                            {previousId && !semanticExecutionEnabled && !active?.semanticPlan && (
-                                <select
-                                    aria-label={t('aiConversationSidebar.revisionMode')}
-                                    value={change}
-                                    onChange={(event) => setChange(event.target.value as typeof change)}
-                                    className="w-full rounded border p-2 text-sm"
-                                >
-                                    <option value="REPLACE">{t('aiConversationSidebar.replacePreviousProposal')}</option>
-                                    <option value="ADD">{t('aiConversationSidebar.addToPreviousProposal')}</option>
-                                    <option value="RESET">{t('aiConversationSidebar.startNewRequest')}</option>
-                                </select>
+                            {detail?.conversationState?.pendingQuestion && (
+                                <p className="rounded border p-2 text-sm" role="status">
+                                    {detail.conversationState.pendingQuestion.question}
+                                </p>
                             )}
                             {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
                             <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">

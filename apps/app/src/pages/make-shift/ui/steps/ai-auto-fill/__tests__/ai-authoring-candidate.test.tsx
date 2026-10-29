@@ -103,6 +103,7 @@ describe('reviewable authoring candidate', () => {
         (requestState) => {
             render(
                 <AiConversationResult
+                    appliedLocally={requestState === 'PARTIAL' || requestState === 'NEEDS_REVIEW'}
                     operation={{
                         operationId: 'op:1',
                         sequence: 1,
@@ -146,19 +147,19 @@ describe('plain candidate copy', () => {
             locale: 'ko',
             title: '이렇게 바꿔볼까요?',
             prompt: '변경 내용을 보고 원하신 배치인지 확인해 주세요.',
-            applied: '선택한 배치를 반영했어요.',
+            applied: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
         },
         {
             locale: 'en',
             title: 'How about these changes?',
             prompt: 'Check the changes to see whether this is the arrangement you wanted.',
-            applied: 'Applied your selected changes.',
+            applied: 'Applied the changes to the schedule. Review the result.',
         },
         {
             locale: 'ja',
             title: 'このように変えてみませんか？',
             prompt: '変更内容を見て、ご希望の配置になっているかご確認ください。',
-            applied: '選択した配置を反映しました。',
+            applied: '変更を勤務表に反映しました。結果をご確認ください。',
         },
     ])('uses a single natural prompt in $locale without a technical review claim', async ({locale, title, prompt, applied}) => {
         await i18n.changeLanguage(locale);
@@ -193,6 +194,7 @@ describe('plain candidate copy', () => {
             expect(container.querySelector('details')).toBeNull();
             rerender(
                 <AiConversationResult
+                    appliedLocally
                     operation={{
                         ...operation,
                         applyStatus: 'APPLIED',

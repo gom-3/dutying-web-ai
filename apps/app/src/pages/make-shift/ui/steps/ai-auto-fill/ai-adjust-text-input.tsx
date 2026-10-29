@@ -262,8 +262,7 @@ export default function AiAdjustTextInput({
     const paused = autofillFlow?.status === 'paused';
     const completedMessage = generationCompletedMessage ?? t('aiAdjust.generationCompleted');
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
-    const composerHidden =
-        preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
+    const composerHidden = preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || entryChoice === 'regenerate';
 
     useEffect(() => {
         if (previousConditionsVersion.current === conditionsVersion) return;
@@ -429,7 +428,7 @@ export default function AiAdjustTextInput({
     }, [entryChoice, composerHidden]);
 
     const fill = (sentence: string) => {
-        if (disabled || busy.current) return;
+        if (disabled || modifyDisabled || busy.current) return;
 
         sequence.current += 1;
         setEntryChoice('modify');
@@ -477,7 +476,7 @@ export default function AiAdjustTextInput({
                 (issueCodes.includes('INVALID_VALUE') && /^\d+\s*(회|번|일|回|日)?$/.test(enteredText)));
         const requestText = shortClarification ? `${failedCard.requestText}\n추가 설명: ${enteredText}` : enteredText;
 
-        if (!requestText || disabled || busy.current) return;
+        if (!requestText || disabled || modifyDisabled || busy.current) return;
 
         if (requestText.length > MAX_TEXT_LENGTH) {
             setError(t('aiAdjust.issue.tooLong'));
@@ -1204,14 +1203,14 @@ export default function AiAdjustTextInput({
                 inert={composerHidden}
                 aria-hidden={composerHidden}
             >
-                {!generationFailure && !hasRequestTurns && (!onRegenerate || entryChoice === 'modify') && (
+                {!generationFailure && !hasRequestTurns && (
                     <div className="ai-adjust-examples mb-4 flex shrink-0 flex-col gap-2">
                         <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
                         {examples.map((sentence) => (
                             <button
                                 key={sentence}
                                 type="button"
-                                disabled={disabled || isBusy}
+                                disabled={disabled || modifyDisabled || isBusy}
                                 onClick={() => fill(sentence)}
                                 className="flex min-h-10 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 disabled:opacity-50"
                             >
@@ -1245,7 +1244,7 @@ export default function AiAdjustTextInput({
                                 }
                             }}
                             onPaste={(event) => event.stopPropagation()}
-                            disabled={disabled || isBusy}
+                            disabled={disabled || modifyDisabled || isBusy}
                             rows={2}
                             maxLength={MAX_TEXT_LENGTH}
                             aria-label={t('page.makeShift.aiRefill.adjust.textInput.label')}
@@ -1259,7 +1258,7 @@ export default function AiAdjustTextInput({
                             <button
                                 type="button"
                                 aria-label={t('aiAdjust.send')}
-                                disabled={disabled || isBusy || !text.trim()}
+                                disabled={disabled || modifyDisabled || isBusy || !text.trim()}
                                 onClick={() => void handleSubmit()}
                                 className="grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 focus-visible:bg-[#4620B8] focus-visible:outline-none disabled:bg-gray-3"
                             >

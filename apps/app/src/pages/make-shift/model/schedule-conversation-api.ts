@@ -123,7 +123,7 @@ export type TConversationState = {
     expiresAt: string | null;
     executionPlanExpiresAt?: string | null;
     conditions: {conditionId: string; text: string; preview: {status: string}}[];
-    pendingQuestion: {conditionId: string; question: string} | null;
+    pendingQuestion: {conditionId: string; question: string; originalText?: string | null} | null;
 };
 export type TConversationDetail = {
     conversationState?: TConversationState | null;
@@ -199,7 +199,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 text: string;
                 language: string;
                 previousInterpretationId?: string;
-                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET';
+                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET' | 'AUTO';
                 expectedStateVersion?: number;
                 targetConditionIds?: string[];
                 removeLabels?: string[];
