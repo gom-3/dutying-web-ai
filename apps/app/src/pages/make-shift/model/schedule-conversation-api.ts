@@ -172,7 +172,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 timeout: path.endsWith('/operations')
                     ? 330000
                     : (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1'
-                      ? 17000
+                      ? 30000
                       : 330000,
             })
         ).data;
