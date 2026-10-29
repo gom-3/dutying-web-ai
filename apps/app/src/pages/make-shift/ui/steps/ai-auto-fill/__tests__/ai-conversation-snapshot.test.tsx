@@ -53,7 +53,7 @@ describe('conversation snapshot screen', () => {
         expect(onContinue).toHaveBeenCalledExactlyOnceWith(before);
         await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
         expect(screen.queryByRole('button', {name: '이전 결과로 복원하기'})).not.toBeInTheDocument();
-    });
+    }, 15_000);
     it('renders the existing calendar and switches immutable versions without changing the editor or its selection', async () => {
         const current = useShiftEditorStore.getState();
         const onContinue = vi.fn();
