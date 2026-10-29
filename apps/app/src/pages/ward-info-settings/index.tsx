@@ -131,7 +131,7 @@ function WardCalendarSettingsSection({
 function WardInfoSettingsPage() {
     const {t} = useTypedTranslation();
     const {
-        state: {accessToken, wardId},
+        state: {accessToken, wardId, accountMe},
     } = useAuth();
     const {quitWard} = useEditAccount();
     const queryClient = useQueryClient();
@@ -375,15 +375,17 @@ function WardInfoSettingsPage() {
                 <WardAdminsPage />
             </div>
 
-            <div className="mx-auto mt-4 flex max-w-[480px] items-center justify-end px-1">
-                <button
-                    type="button"
-                    className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                    onClick={() => void quitWard()}
-                >
-                    {t('page.wardInfoSettings.quitWard')}
-                </button>
-            </div>
+            {accountMe?.accessSource !== 'HOSPITAL' ? (
+                <div className="mx-auto mt-4 flex max-w-[480px] items-center justify-end px-1">
+                    <button
+                        type="button"
+                        className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
+                        onClick={() => void quitWard()}
+                    >
+                        {t('page.wardInfoSettings.quitWard')}
+                    </button>
+                </div>
+            ) : null}
 
             <div className="mx-auto mt-6 flex max-w-[480px] items-center justify-end">
                 <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className="h-11 rounded-[12px] px-5 text-sm">

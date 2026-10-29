@@ -1,9 +1,9 @@
 import {create} from 'zustand';
 import {devtools, persist, type PersistStorage, type StorageValue} from 'zustand/middleware';
 import {type TAccount} from '@/entities/account';
-import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
+import {registerAdminSessionRecovery, setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import {createStoreWriteHelpers} from '@/shared/util/create-store';
-import {isWardAdminAccessToken} from './admin-token';
+import {getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from './admin-token';
 
 interface IState {
     accountMe: TAccount | null;
@@ -151,5 +151,17 @@ const useAuthStore = create<IStore>()(
         ),
     ),
 );
+const adminPrincipalId = (token: string | null | undefined) =>
+    isWardAdminAccessToken(token) ? getWardAdminAccountIdFromAccessToken(token) : null;
+
+registerAdminSessionRecovery({
+    current: () => {
+        const {isAuth, accessToken} = useAuthStore.getState();
+
+        return {isAuth, accessToken, principalId: adminPrincipalId(accessToken)};
+    },
+    principalId: adminPrincipalId,
+    applyAccessToken: (accessToken) => useAuthStore.setState({accessToken}),
+});
 
 export default useAuthStore;

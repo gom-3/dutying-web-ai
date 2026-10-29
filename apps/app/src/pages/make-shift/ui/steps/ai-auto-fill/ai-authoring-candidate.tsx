@@ -1,6 +1,7 @@
 import type {TAutofillResponse, TSnapshotCellDTO} from '@dutying/api/ward';
 import {useEffect, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {nightRunConflictMessages} from '../../../model/ai-execution-failure';
 import {authoringOutcome, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
 import {AiScheduleWarningList} from './ai-schedule-warning-list';
 
@@ -42,6 +43,7 @@ export function AiAuthoringCandidate({
 
     if (!candidate) return null;
 
+    const conflictMessages = nightRunConflictMessages(result);
     const available = current && canSelectAuthoringCandidate(result, sourceVersionId, now);
     const expired = !current || !Number.isFinite(Date.parse(candidate.expiresAt)) || Date.parse(candidate.expiresAt) <= now;
     const before = new Map(baseline.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell]));
@@ -81,10 +83,10 @@ export function AiAuthoringCandidate({
                     </tbody>
                 </table>
             </div>
-            {candidate.violations.length > 0 && (
+            {(conflictMessages.length > 0 || candidate.violations.length > 0) && (
                 <div>
                     <p className="font-medium">{t('aiConversationSidebar.authoring.warnings')}</p>
-                    <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} />
+                    <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} messages={conflictMessages} />
                 </div>
             )}
             {!available && (

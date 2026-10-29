@@ -1,0 +1,307 @@
+.hospital-workspace {
+    --hospital-accent: var(--workspace-primary, #202b3c);
+    --hospital-accent-dark: var(--workspace-primary-hover, #101827);
+    --hospital-accent-soft: var(--workspace-secondary, #e5e8ed);
+    --hospital-ink: var(--workspace-ink, #202631);
+    --hospital-muted: var(--workspace-muted, #566173);
+    --hospital-surface: #fff;
+    --hospital-control: var(--workspace-control, #f1f3f5);
+    color: var(--hospital-ink);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+.hospital-workspace .workspace-section {
+    padding: 24px 0;
+    margin: 0 0 14px;
+    background: transparent;
+    border-radius: 0;
+    min-width: 0;
+}
+.workspace-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.workspace-heading-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+.workspace-section-heading h2 {
+    margin: 0;
+}
+.workspace-field-label {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.workspace-field-label label {
+    cursor: pointer;
+}
+.hospital-workspace .workspace-section h2 {
+    font-size: 18px;
+    line-height: 1.5;
+    font-weight: 680;
+    letter-spacing: -0.2px;
+    margin: 0;
+}
+.hospital-workspace .workspace-section h3 {
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+.hospital-workspace .workspace-field input:focus-visible,
+.hospital-workspace .workspace-field select:focus-visible,
+.hospital-workspace .workspace-field textarea:focus-visible {
+    color: var(--workspace-ink, #202631);
+    background: var(--workspace-secondary, #e5e8ed);
+    text-decoration: none;
+}
+.hospital-workspace .workspace-field:focus-within .workspace-field-label label {
+    color: var(--workspace-primary, #202b3c);
+    text-decoration: underline;
+}
+.hospital-workspace .workspace-field {
+    font-size: 13px;
+    gap: 7px;
+    font-weight: 550;
+    margin: 16px 0;
+    min-width: 0;
+}
+.hospital-workspace .workspace-field input,
+.hospital-workspace .workspace-field select,
+.hospital-workspace .workspace-field textarea {
+    min-height: 44px;
+    padding: 10px 13px;
+    background: var(--hospital-control);
+    border-radius: 8px;
+    font-size: 14px;
+}
+.hospital-workspace .workspace-field textarea {
+    min-height: 124px;
+}
+.hospital-workspace .workspace-field-label {
+    min-height: 24px;
+}
+.hospital-workspace .workspace-notice {
+    padding: 13px 16px;
+    border-radius: 8px;
+    background: var(--workspace-control, #f1f3f5);
+    color: var(--workspace-muted, #566173);
+    font-size: 13px;
+}
+.hospital-workspace .workspace-error {
+    border-radius: 8px;
+    padding: 13px 16px;
+    font-size: 13px;
+}
+.hospital-workspace .workspace-feedback {
+    padding: 12px 16px;
+    background: #edf6f0;
+    color: #30634a;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.hospital-workspace .workspace-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.hospital-workspace form > button + button {
+    margin-left: 8px;
+}
+.hospital-workspace .workspace-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 24px;
+    margin: 24px 0;
+}
+.hospital-workspace .workspace-stats > div {
+    min-width: 0;
+    gap: 6px;
+}
+.hospital-workspace .workspace-stats strong {
+    color: var(--workspace-ink, #202631);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.7px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+}
+.hospital-workspace .workspace-stats span {
+    color: var(--hospital-muted);
+    font-size: 12px;
+}
+.hospital-workspace .workspace-grid {
+    gap: 16px;
+    margin: 26px 0;
+}
+.hospital-workspace .workspace-usage {
+    padding: 22px 24px;
+    background: #f6f7f9;
+    border-radius: 10px;
+}
+.hospital-workspace .workspace-usage > strong {
+    color: var(--workspace-ink, #202631);
+    font-size: 25px;
+    font-weight: 700;
+}
+.hospital-workspace .workspace-usage ul {
+    font-size: 12px;
+    padding-left: 16px;
+}
+.hospital-workspace .workspace-review {
+    padding: 22px;
+    background: #f6f7f9;
+    border-radius: 10px;
+}
+.hospital-workspace .workspace-review p,
+.hospital-workspace .workspace-section > p {
+    font-size: 13px;
+    color: var(--workspace-muted, #566173);
+}
+.hospital-workspace .workspace-review .workspace-check {
+    color: var(--hospital-ink);
+}
+.hospital-workspace .workspace-check {
+    font-size: 13px;
+    gap: 9px;
+    line-height: 1.7;
+}
+.hospital-workspace .workspace-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--hospital-accent);
+}
+.hospital-workspace .workspace-table-wrap {
+    margin: 20px 0;
+}
+.hospital-workspace .workspace-table-wrap th {
+    background: #f6f7f9;
+    color: var(--hospital-muted);
+    font-size: 12px;
+    font-weight: 550;
+}
+.hospital-workspace .workspace-table-wrap th,
+.hospital-workspace .workspace-table-wrap td {
+    padding: 16px;
+}
+.hospital-workspace .workspace-table-wrap td {
+    color: var(--workspace-ink, #202631);
+    font-size: 13px;
+}
+.hospital-workspace .workspace-table-wrap tbody tr:nth-child(even) {
+    background: #f6f7f9;
+}
+.hospital-workspace .workspace-details {
+    margin-top: 20px;
+}
+.hospital-workspace .workspace-details > summary,
+.hospital-workspace .workspace-member-secondary-title {
+    min-height: 48px;
+    padding: 12px 0;
+    font-size: 14px;
+    color: var(--workspace-muted, #566173);
+    font-weight: 600;
+}
+.hospital-workspace .workspace-details[open] > summary,
+.hospital-workspace .workspace-member-secondary[open] > summary {
+    color: var(--workspace-ink, #202631);
+}
+.hospital-workspace .workspace-details form {
+    max-width: 640px;
+}
+.hospital-workspace .workspace-reauth {
+    margin: 18px 0;
+    padding: 18px 20px;
+    background: #f6f7f9;
+    border-radius: 10px;
+}
+.hospital-workspace .workspace-presets {
+    gap: 8px;
+    margin: 20px 0;
+}
+.hospital-workspace .workspace-row {
+    gap: 16px;
+    padding: 18px 0;
+}
+.hospital-workspace .workspace-plan-summary {
+    gap: 20px;
+}
+.hospital-workspace .workspace-plan-summary strong {
+    font-size: 22px;
+}
+.hospital-workspace .workspace-form-grid {
+    gap: 8px 24px;
+}
+.hospital-workspace .workspace-form-grid > button {
+    margin-bottom: 16px;
+}
+.hospital-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+@media (max-width: 760px) {
+    .hospital-workspace :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+        font-size: 16px;
+    }
+    .hospital-workspace .workspace-section {
+        padding: 22px 0;
+        margin-bottom: 8px;
+    }
+    .hospital-workspace .workspace-section-heading {
+        gap: 10px;
+        align-items: flex-start;
+    }
+    .hospital-workspace .workspace-section h2 {
+        font-size: 17px;
+    }
+    .hospital-workspace .workspace-stats {
+        gap: 20px 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .hospital-workspace .workspace-stats strong {
+        font-size: 23px;
+    }
+    .hospital-workspace .workspace-grid {
+        grid-template-columns: 1fr;
+    }
+    .hospital-workspace .workspace-usage {
+        padding: 20px;
+    }
+    .hospital-workspace .workspace-review {
+        padding: 18px 16px;
+    }
+    .hospital-workspace .workspace-row {
+        align-items: flex-start;
+    }
+    .hospital-workspace .workspace-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .hospital-workspace .workspace-table-wrap {
+        max-width: 100%;
+    }
+    .hospital-workspace .workspace-table-wrap:not(.workspace-hospital-wards) table {
+        min-width: 480px;
+    }
+    .hospital-workspace .workspace-section-heading .workspace-button {
+        white-space: normal;
+        flex-shrink: 0;
+    }
+}
+@media (forced-colors: active) {
+    .hospital-workspace :focus-visible:not(.hospital-info-tip) {
+        outline: 2px solid Highlight;
+    }
+}

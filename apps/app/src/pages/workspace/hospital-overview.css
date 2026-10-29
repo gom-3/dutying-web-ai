@@ -1,0 +1,506 @@
+.hospital-workspace .hospital-overview {
+    --hospital-overview-muted: var(--workspace-muted, #566173);
+    min-width: 0;
+    color: var(--workspace-ink, #202631);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+.hospital-workspace .hospital-overview-summary {
+    margin-bottom: 40px;
+}
+.hospital-workspace .hospital-overview-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+}
+.hospital-workspace .hospital-overview h2 {
+    margin: 0;
+    color: var(--workspace-ink, #202631);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: -0.035em;
+}
+.hospital-workspace .hospital-overview-role {
+    margin-left: auto;
+    color: var(--hospital-overview-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.hospital-workspace .hospital-overview-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    margin: 0;
+    padding: 22px 24px;
+    background: #f6f7f9;
+    border-radius: 8px;
+}
+.hospital-workspace .hospital-overview-metrics > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+.hospital-workspace .hospital-overview-metrics dt {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--workspace-muted, #566173);
+}
+.hospital-workspace .hospital-overview-metrics dd {
+    margin: 0;
+    color: var(--workspace-ink, #202631);
+    font-size: 26px;
+    font-weight: 650;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+.hospital-workspace .hospital-overview-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.hospital-workspace .hospital-overview-toolbar > .hospital-overview-heading {
+    min-height: 44px;
+}
+.hospital-workspace .hospital-overview-count {
+    color: var(--workspace-muted, #566173);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.hospital-workspace .hospital-overview-create-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.hospital-workspace .hospital-overview .workspace-button,
+.hospital-workspace .hospital-overview button:not(.hospital-info-tip),
+.hospital-workspace .hospital-overview summary {
+    min-height: 44px;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 600;
+    margin: 0;
+}
+.hospital-workspace .hospital-overview .hospital-overview-create {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+    text-decoration: none;
+}
+.hospital-workspace .hospital-overview .hospital-overview-create:hover,
+.hospital-workspace .hospital-overview .hospital-overview-open:hover {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+}
+.hospital-workspace .hospital-overview-create > span {
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1;
+}
+.hospital-workspace .hospital-overview-connect {
+    position: relative;
+}
+.hospital-workspace .hospital-overview-connect > summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--workspace-control, #f1f3f5);
+    border-radius: 6px;
+    color: var(--workspace-ink, #202631);
+    cursor: pointer;
+    list-style: none;
+}
+.hospital-workspace .hospital-overview-connect > summary::-webkit-details-marker {
+    display: none;
+}
+.hospital-workspace .hospital-overview-connect > summary:hover {
+    background: var(--workspace-secondary, #e5e8ed);
+    color: var(--workspace-primary, #202b3c);
+}
+.hospital-workspace .hospital-overview-connect > summary::after {
+    content: '+';
+    font-size: 16px;
+    font-weight: 400;
+}
+.hospital-workspace .hospital-overview-connect[open] > summary::after {
+    content: '−';
+}
+.hospital-workspace .hospital-overview-connect-form {
+    position: absolute;
+    z-index: 4;
+    top: calc(100% + 8px);
+    right: 0;
+    width: min(420px, calc(100vw - 48px));
+    padding: 20px;
+    background: var(--workspace-control, #f1f3f5);
+    border-radius: 8px;
+}
+.hospital-workspace .hospital-overview-field-heading {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.hospital-workspace .hospital-overview-connect-fields {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.hospital-workspace .hospital-overview .hospital-overview-connect-fields input {
+    flex: 1 1 120px;
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    background: #fff;
+    font-size: 14px;
+}
+.hospital-workspace .hospital-overview .hospital-overview-connect-fields button {
+    padding: 10px 12px;
+}
+.hospital-workspace .hospital-overview-table-wrap {
+    width: 100%;
+    min-width: 0;
+}
+.hospital-workspace .hospital-overview table {
+    width: 100%;
+    table-layout: fixed;
+    border-spacing: 0 4px;
+    border-collapse: separate;
+}
+.hospital-workspace .hospital-overview th {
+    padding: 10px 16px;
+    background: #f6f7f9;
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    vertical-align: middle;
+}
+.hospital-workspace .hospital-overview th:first-child {
+    width: 22%;
+    border-radius: 5px 0 0 5px;
+}
+.hospital-workspace .hospital-overview th:nth-child(2) {
+    width: 16%;
+}
+.hospital-workspace .hospital-overview th:nth-child(3) {
+    width: 27%;
+}
+.hospital-workspace .hospital-overview th:last-child {
+    width: 35%;
+    border-radius: 0 5px 5px 0;
+}
+.hospital-workspace .hospital-overview td {
+    padding: 18px 16px;
+    vertical-align: middle;
+    font-size: 14px;
+    background: #fff;
+}
+.hospital-workspace .hospital-overview tbody tr:hover td {
+    background: #f6f7f9;
+}
+.hospital-workspace .hospital-overview-ward-name {
+    font-weight: 600;
+}
+.hospital-workspace .hospital-overview-ward-staff {
+    font-variant-numeric: tabular-nums;
+}
+.hospital-workspace .hospital-overview-ward-status {
+    color: var(--workspace-muted, #566173);
+    line-height: 1.6;
+}
+.hospital-workspace .hospital-overview-status {
+    font-size: 13px;
+}
+.hospital-workspace .hospital-overview-status.is-confirmed {
+    color: #267353;
+}
+.hospital-workspace .hospital-overview-status-meta {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+}
+.hospital-workspace .hospital-overview-ward-actions > * + * {
+    margin-left: 6px;
+}
+.hospital-workspace .hospital-overview .hospital-overview-open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 12px;
+    color: #fff;
+    background: var(--workspace-primary, #202b3c);
+    border-radius: 5px;
+}
+.hospital-workspace .hospital-overview .hospital-overview-invite-action {
+    padding: 8px 10px;
+    color: var(--workspace-ink, #202631);
+    background: var(--workspace-secondary, #e5e8ed);
+}
+.hospital-workspace .hospital-overview .hospital-overview-invite-action:hover {
+    color: var(--workspace-primary, #202b3c);
+    background: var(--workspace-control, #f1f3f5);
+}
+.hospital-workspace .hospital-overview-unavailable {
+    color: var(--workspace-muted, #566173);
+    font-size: 13px;
+}
+.hospital-workspace .hospital-overview-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 240px;
+    padding: 32px 20px;
+    background: #f6f7f9;
+    text-align: center;
+    border-radius: 6px;
+}
+.hospital-workspace .hospital-overview-empty strong {
+    font-size: 15px;
+    font-weight: 600;
+}
+.hospital-workspace .hospital-overview-empty p {
+    margin: 0;
+    color: var(--workspace-muted, #566173);
+    font-size: 13px;
+    line-height: 1.7;
+}
+.hospital-workspace .hospital-overview-link-management {
+    margin-top: 32px;
+}
+.hospital-workspace .hospital-overview-link-management > summary {
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    gap: 12px;
+    color: var(--workspace-muted, #566173);
+    cursor: pointer;
+    list-style: none;
+}
+.hospital-workspace .hospital-overview-link-management > summary::-webkit-details-marker {
+    display: none;
+}
+.hospital-workspace .hospital-overview-link-management > summary::before {
+    content: '+';
+    font-size: 16px;
+    font-weight: 400;
+}
+.hospital-workspace .hospital-overview-link-management[open] > summary::before {
+    content: '−';
+}
+.hospital-workspace .hospital-overview-link-rows {
+    padding: 12px 16px;
+    background: #f6f7f9;
+    border-radius: 6px;
+}
+.hospital-workspace .hospital-overview-link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+}
+.hospital-workspace .hospital-overview-link-row > div:first-child {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.hospital-workspace .hospital-overview-link-row strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+.hospital-workspace .hospital-overview-link-row span {
+    color: var(--workspace-muted, #566173);
+    font-size: 12px;
+}
+.hospital-workspace .hospital-overview-link-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.hospital-workspace .hospital-overview .hospital-overview-detach {
+    color: #a34b45;
+    background: #f7eae8;
+}
+.hospital-workspace .hospital-overview .hospital-overview-detach:hover {
+    color: #8d302c;
+    background: #f4ddd9;
+}
+.hospital-workspace .hospital-overview :is(button:not(.hospital-info-tip), summary, a):focus-visible {
+    color: #fff;
+    background: var(--workspace-primary-hover, #101827);
+    text-decoration: underline;
+    outline: none;
+}
+.hospital-workspace .hospital-overview input:focus-visible {
+    color: var(--workspace-ink, #202631);
+    background: var(--workspace-secondary, #e5e8ed);
+    outline: none;
+}
+.hospital-workspace .hospital-overview-field-heading:has(+ .hospital-overview-connect-fields input:focus-visible) label {
+    color: var(--workspace-primary, #202b3c);
+    text-decoration: underline;
+}
+@media (max-width: 1050px) {
+    .hospital-workspace .hospital-overview .hospital-overview-ward-actions > * {
+        margin: 3px 6px 3px 0;
+    }
+}
+@media (max-width: 760px) {
+    .hospital-workspace .hospital-overview-summary {
+        margin-bottom: 28px;
+    }
+    .hospital-workspace .hospital-overview h2 {
+        font-size: 18px;
+    }
+    .hospital-workspace .hospital-overview-metrics {
+        gap: 16px;
+        padding: 20px 16px;
+        margin-top: 0;
+    }
+    .hospital-workspace .hospital-overview-metrics > div {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .hospital-workspace .hospital-overview-metrics dt {
+        font-size: 12px;
+    }
+    .hospital-workspace .hospital-overview-metrics dd {
+        font-size: 24px;
+    }
+    .hospital-workspace .hospital-overview-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .hospital-workspace .hospital-overview-create-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .hospital-workspace .hospital-overview-connect-form {
+        right: auto;
+        left: 0;
+    }
+    .hospital-workspace .hospital-overview table,
+    .hospital-workspace .hospital-overview tbody {
+        display: block;
+    }
+    .hospital-workspace .hospital-overview thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+    .hospital-workspace .hospital-overview tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 12px;
+        row-gap: 12px;
+        padding: 18px 0;
+    }
+    .hospital-workspace .hospital-overview td {
+        display: block;
+        padding: 0;
+        background: transparent;
+    }
+    .hospital-workspace .hospital-overview tbody tr:hover td {
+        background: transparent;
+    }
+    .hospital-workspace .hospital-overview-ward-name {
+        grid-column: 1;
+        font-size: 15px;
+        align-self: center;
+    }
+    .hospital-workspace .hospital-overview-ward-staff {
+        grid-column: 2;
+        align-self: center;
+    }
+    .hospital-workspace .hospital-overview-ward-staff::before {
+        content: attr(data-label) ' ';
+        color: var(--workspace-muted, #566173);
+        font-size: 11px;
+    }
+    .hospital-workspace .hospital-overview-ward-status,
+    .hospital-workspace .hospital-overview-ward-actions {
+        grid-column: 1 / -1;
+    }
+    .hospital-workspace .hospital-overview-ward-status::before {
+        content: attr(data-label) ' ';
+        margin-right: 8px;
+        color: var(--workspace-muted, #566173);
+        font-size: 12px;
+    }
+    .hospital-workspace .hospital-overview-ward-actions {
+        display: flex !important;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    .hospital-workspace .hospital-overview .hospital-overview-ward-actions > * {
+        margin: 0;
+    }
+    .hospital-workspace .hospital-overview-link-row {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .hospital-workspace .hospital-overview-role {
+        font-size: 11px;
+    }
+}
+@media (max-width: 360px) {
+    .hospital-workspace .hospital-overview-metrics {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .hospital-workspace .hospital-overview-metrics > div {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+@media (forced-colors: active) {
+    .hospital-workspace .hospital-overview :is(button:not(.hospital-info-tip), summary, a, input):focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}
+
+.hospital-workspace .hospital-overview-context-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}

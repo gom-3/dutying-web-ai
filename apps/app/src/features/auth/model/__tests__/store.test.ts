@@ -23,6 +23,7 @@ describe('useAuthStore', () => {
         vi.doMock('@/shared/api/client', () => ({
             setAccessToken,
             setAdminAccessToken,
+            registerAdminSessionRecovery: vi.fn(),
         }));
         localStorage.setItem(
             'useAuthStore',
@@ -66,6 +67,7 @@ describe('useAuthStore', () => {
         vi.doMock('@/shared/api/client', () => ({
             setAccessToken,
             setAdminAccessToken,
+            registerAdminSessionRecovery: vi.fn(),
         }));
         localStorage.setItem(
             'useAuthStore',

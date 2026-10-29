@@ -1,4 +1,4 @@
-﻿import type {TPreferredLanguage} from '@dutying/domain';
+import type {TPreferredLanguage} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown, Languages, UserRound} from 'lucide-react';
@@ -187,6 +187,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const [draftBirthDate, setDraftBirthDate] = useState('');
     const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const savingRef = useRef(false);
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
@@ -240,7 +242,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
     const hasUnsavedChanges = hasProfileChanges || isBirthDateDirty || isPreferenceDirty;
-    const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
+    const isSaveDisabled =
+        isProfileImageLoading || isSaving || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
             return validateName(value, {
@@ -336,44 +339,54 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         }
     };
     const save = async () => {
-        if (hasProfileChanges) {
-            let isProfileSaved = false;
+        if (savingRef.current || isSaveDisabled) return;
 
-            if (writeNurse) {
-                if (!validateForm()) return;
+        savingRef.current = true;
+        setIsSaving(true);
 
-                const phoneNum = normalizeContactPhoneForStorage(
-                    hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
-                );
+        try {
+            if (hasProfileChanges) {
+                let isProfileSaved = false;
 
-                isProfileSaved = await handleEditProfile(
-                    {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
-                    currentProfileImage,
-                );
-            } else {
-                const {isValid, name, phoneNum} = validateAccountForm();
+                if (writeNurse) {
+                    if (!validateForm()) return;
 
-                if (!isValid) return;
+                    const phoneNum = normalizeContactPhoneForStorage(
+                        hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
+                    );
 
-                isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+                    isProfileSaved = await handleEditProfile(
+                        {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
+                        currentProfileImage,
+                    );
+                } else {
+                    const {isValid, name, phoneNum} = validateAccountForm();
+
+                    if (!isValid) return;
+
+                    isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+                }
+
+                if (!isProfileSaved) return;
+
+                setHasEditedPhoneNum(false);
+                resetProfileImage();
             }
 
-            if (!isProfileSaved) return;
+            if (isBirthDateDirty) {
+                if (!isBirthDateValid) return;
 
-            setHasEditedPhoneNum(false);
-            resetProfileImage();
-        }
+                const isBirthDateSaved = await updateBirthDate(nextBirthDate);
 
-        if (isBirthDateDirty) {
-            if (!isBirthDateValid) return;
+                if (!isBirthDateSaved) return;
+            }
 
-            const isBirthDateSaved = await updateBirthDate(nextBirthDate);
-
-            if (!isBirthDateSaved) return;
-        }
-
-        if (isPreferenceDirty) {
-            await savePreferences();
+            if (isPreferenceDirty) {
+                await savePreferences();
+            }
+        } finally {
+            savingRef.current = false;
+            setIsSaving(false);
         }
     };
 
@@ -552,7 +565,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             >
                 {t('page.profile.logout')}
             </button>
-            {!isModalLayout && accountMe.wardId ? (
+            {!isModalLayout && accountMe.wardId && accountMe.accessSource !== 'HOSPITAL' ? (
                 <button
                     type="button"
                     className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
@@ -572,7 +585,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     );
     const saveButton = (
         <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className={saveButtonClassName}>
-            {isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
+            {isSaving ? t('page.profile.savingPreferences') : isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
         </Button>
     );
     const getLanguageLabel = (language: TPreferredLanguage) => {

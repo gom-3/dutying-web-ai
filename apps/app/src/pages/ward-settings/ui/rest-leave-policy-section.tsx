@@ -59,6 +59,7 @@ type TFeatureTogglePreview = {
     value: number;
     unit: string;
     summary?: string;
+    holidaySummary?: string | null;
 };
 
 const SETTINGS_PANEL_CLASS = 'rounded-[16px] bg-white px-5 py-5';
@@ -204,47 +205,49 @@ function FeatureToggle({
     enabled,
     title,
     preview,
+    previewNavigation,
     onCheckedChange,
 }: {
     enabled: boolean;
     title: string;
     preview: TFeatureTogglePreview;
+    previewNavigation: ReactNode;
     onCheckedChange: (checked: boolean) => void;
 }) {
     return (
         <div className={SETTINGS_PANEL_CLASS}>
-            <div className={SETTINGS_RAIL_GRID_CLASS}>
-                <div aria-hidden="true" />
-                <div className="min-w-0">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                        <div className="min-w-0">
-                            <p className="font-apple text-[17px] leading-[24px] font-semibold [word-break:keep-all] text-sub-1">{title}</p>
-                        </div>
-                        <Switch
-                            checked={enabled}
-                            onCheckedChange={onCheckedChange}
-                            aria-label={title}
-                            className="shrink-0 data-[state=checked]:bg-main-1"
-                        />
-                    </div>
-                    {enabled ? (
-                        <div className="mt-4 inline-flex max-w-full items-center gap-3 rounded-[14px] bg-[#F6F7F9] px-3.5 py-2.5">
-                            <div className="max-w-[220px] min-w-0">
-                                <p className="font-apple text-[12px] leading-[16px] font-semibold text-gray-3">{preview.label}</p>
-                                {preview.summary ? (
-                                    <p className="mt-1 font-apple text-[13px] leading-[19px] font-semibold [word-break:keep-all] text-sub-2">
-                                        {preview.summary}
-                                    </p>
-                                ) : null}
-                            </div>
-                            <p className="shrink-0 font-poppins text-[24px] leading-none font-semibold text-sub-1 tabular-nums">
-                                {preview.value}
-                                <span className="ml-0.5 font-apple text-[12px] font-semibold text-gray-3">{preview.unit}</span>
-                            </p>
-                        </div>
-                    ) : null}
-                </div>
+            <div className="flex min-h-9 items-center justify-between gap-4">
+                <p className="min-w-0 font-apple text-[17px] leading-6 font-semibold [word-break:keep-all] text-sub-1">{title}</p>
+                <Switch
+                    checked={enabled}
+                    onCheckedChange={onCheckedChange}
+                    aria-label={title}
+                    className="shrink-0 data-[state=checked]:bg-main-1"
+                />
             </div>
+            {enabled ? (
+                <div className="mt-4 rounded-[16px] bg-[#F7F5FC] px-6 py-5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                        <p className="font-apple text-[14px] leading-5 font-medium text-sub-2">{preview.label}</p>
+                        {previewNavigation}
+                    </div>
+                    <div
+                        role="status"
+                        aria-label={preview.label}
+                        aria-atomic="true"
+                        className="mt-3 flex flex-wrap items-center gap-x-7 gap-y-4"
+                    >
+                        <p className="flex shrink-0 items-baseline gap-1.5 font-poppins text-[48px] leading-[1.15] font-semibold tracking-[-0.04em] text-main-1 tabular-nums">
+                            {preview.value}
+                            <span className="font-apple text-[20px] font-medium tracking-normal">{preview.unit}</span>
+                        </p>
+                        <div className="grid min-w-0 gap-1.5 border-l border-[#DED7EF] pl-7 font-apple text-[13px] leading-5 [word-break:keep-all]">
+                            {preview.summary ? <p className="text-sub-2">{preview.summary}</p> : null}
+                            {preview.holidaySummary ? <p className="font-medium text-main-1">{preview.holidaySummary}</p> : null}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -305,7 +308,6 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                   'page.makeShift.workers.restPolicy.dayUnit',
               )}`
             : null;
-    const previewSummary = [targetSummary, holidaySummary].filter(Boolean).join(' · ');
 
     useEffect(() => {
         if (draftWardRef.current !== wardId || !dirtyRef.current) {
@@ -349,6 +351,7 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
 
         if (locationMissing) {
             toast.error(t('page.wardSettings.restLeavePolicy.holiday.required'));
+
             return;
         }
 
@@ -404,35 +407,45 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                         </button>
                     </div>
                 ) : null}
-                <div className="mb-4 flex items-center justify-end gap-3">
-                    <button
-                        type="button"
-                        aria-label={t('page.duty.prevMonth')}
-                        className="grid size-11 place-items-center rounded-xl hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1"
-                        onClick={() => movePreviewMonth(-1)}
-                    >
-                        <ChevronLeft className="size-5" aria-hidden="true" />
-                    </button>
-                    <span aria-live="polite" className="min-w-28 text-center font-semibold tabular-nums">
-                        {t('page.duty.monthHeader', {year, month})}
-                    </span>
-                    <button
-                        type="button"
-                        aria-label={t('page.duty.nextMonth')}
-                        className="grid size-11 place-items-center rounded-xl hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1"
-                        onClick={() => movePreviewMonth(1)}
-                    >
-                        <ChevronRight className="size-5" aria-hidden="true" />
-                    </button>
-                </div>
                 <FeatureToggle
                     enabled={draft.enabled}
                     title={t('page.wardSettings.restLeavePolicy.availability.title')}
+                    previewNavigation={
+                        <div
+                            role="group"
+                            aria-label={t('page.duty.monthHeader', {year, month})}
+                            className="inline-flex shrink-0 items-center rounded-[10px] bg-white/80 p-0.5 text-sub-2"
+                        >
+                            <button
+                                type="button"
+                                aria-label={t('page.duty.prevMonth')}
+                                className="grid size-9 place-items-center rounded-lg transition-colors hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                                onClick={() => movePreviewMonth(-1)}
+                            >
+                                <ChevronLeft className="size-4" aria-hidden="true" />
+                            </button>
+                            <span
+                                aria-live="polite"
+                                className="min-w-28 px-2 text-center font-apple text-[13px] font-semibold tabular-nums"
+                            >
+                                {t('page.duty.monthHeader', {year, month})}
+                            </span>
+                            <button
+                                type="button"
+                                aria-label={t('page.duty.nextMonth')}
+                                className="grid size-9 place-items-center rounded-lg transition-colors hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                                onClick={() => movePreviewMonth(1)}
+                            >
+                                <ChevronRight className="size-4" aria-hidden="true" />
+                            </button>
+                        </div>
+                    }
                     preview={{
                         label: t('page.wardSettings.restLeavePolicy.previewLabel', {month}),
                         value: previewTarget,
                         unit: t('page.wardSettings.restLeavePolicy.unit.day'),
-                        summary: previewSummary,
+                        summary: targetSummary,
+                        holidaySummary,
                     }}
                     onCheckedChange={(enabled) => patchDraft({enabled})}
                 />

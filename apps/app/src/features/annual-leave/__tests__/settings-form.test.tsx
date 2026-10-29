@@ -76,7 +76,7 @@ it('shows other leave by its existing name and classification with zero default,
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
 
     expect(screen.queryByRole('spinbutton', {name: '오전 반차 차감 일수'})).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('combobox', {name: '+ 근무유형 추가'}));
+    await userEvent.click(screen.getByRole('combobox', {name: '근무유형 추가'}));
     await userEvent.click(screen.getByRole('option', {name: /오전 반차/}));
 
     const field = screen.getByRole('spinbutton', {name: '오전 반차 차감 일수'});
@@ -107,6 +107,7 @@ it('keeps saved optional types visible and removes only their deduction rule', a
 it('starts with annual leave defaults and continues only after a successful save', async () => {
     const onDone = vi.fn();
     const save = vi.spyOn(WardAPI, 'updateAnnualLeaveSettings').mockResolvedValue(settings);
+
     render(
         <SettingsForm
             wardId={1}
@@ -119,5 +120,34 @@ it('starts with annual leave defaults and continues only after a successful save
     expect(screen.queryByText(i18n.t('annualLeave.settingsApplyHint'))).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', {name: '저장하고 잔여 연차 입력'}));
     await waitFor(() => expect(onDone).toHaveBeenCalledOnce());
-    expect(save.mock.calls[0][1]).toMatchObject({enabled: true, startedOn: annualLeaveDate()});
+    expect(save.mock.calls[0][1]).toMatchObject({
+        enabled: true,
+        startedOn: annualLeaveDate(),
+        unitRules: [{shiftTypeId: 1, days: 1, effectiveFrom: null}],
+    });
+});
+
+it('shows annual leave defaults when shift types finish loading after the form', async () => {
+    const initialSettings = {...settings, enabled: false, startedOn: null, unitRules: []};
+    const onDone = vi.fn();
+    const {rerender} = render(<SettingsForm wardId={1} settings={initialSettings} shiftTypes={[]} onDone={onDone} />);
+
+    rerender(<SettingsForm wardId={1} settings={initialSettings} shiftTypes={[types[0]]} onDone={onDone} />);
+
+    expect(screen.getByRole('spinbutton', {name: '연차 차감 일수'})).toHaveValue(1);
+    expect(screen.queryByRole('button', {name: '연차 삭제'})).not.toBeInTheDocument();
+});
+
+it('saves missing annual leave defaults without replacing an existing zero or scheduled rule', async () => {
+    const configured = {
+        ...settings,
+        unitRules: [{shiftTypeId: 2, days: 0, effectiveFrom: future}],
+    };
+    const save = vi.spyOn(WardAPI, 'updateAnnualLeaveSettings').mockResolvedValue(configured);
+
+    render(<SettingsForm wardId={1} settings={configured} shiftTypes={types} onDone={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', {name: '저장'}));
+    await waitFor(() => expect(save).toHaveBeenCalledOnce());
+
+    expect(save.mock.calls[0][1].unitRules).toEqual([...configured.unitRules, {shiftTypeId: 1, days: 1, effectiveFrom: null}]);
 });

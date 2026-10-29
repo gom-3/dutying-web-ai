@@ -42,6 +42,16 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
             return {ok: false, message: i18n.t('aiAdjust.unexpectedOperation')};
         }
 
+        if (request.authoringContractVersion && !authoringOutcome(response)) {
+            const failure: TAiConversationFailure = {
+                message: i18n.t('aiAdjust.executionFailure.validation'),
+                blocked: false,
+                recovery: 'retry',
+            };
+
+            return {ok: false, message: failure.message, failure};
+        }
+
         const failure = aiExecutionFailure(response);
 
         if (failure) return {ok: false, message: failure.message, failure, conflictReview: response.conflictReview};

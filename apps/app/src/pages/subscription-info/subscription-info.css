@@ -22,6 +22,11 @@
     font-weight: 800;
     color: #6438ba;
 }
+.subscription-info .subscription-logo {
+    display: block;
+    width: 100px;
+    height: auto;
+}
 .subscription-info nav {
     display: flex;
     flex-wrap: wrap;
@@ -52,14 +57,14 @@
     list-style: disc;
 }
 .subscription-info a {
-    color: #6438ba;
+    color: #293c69;
     text-decoration: underline;
     text-underline-offset: 4px;
 }
 .subscription-info .eyebrow {
     font-size: 13px;
     font-weight: 700;
-    color: #6438ba;
+    color: #4d5668;
 }
 .subscription-info .lead {
     font-size: 19px;
@@ -68,11 +73,33 @@
 .subscription-info section {
     margin: 32px 0;
     padding: 28px;
-    background: #f5f3fa;
+    background: #f5f6f8;
     border-radius: 16px;
 }
 .subscription-info .offer {
-    background: #eee8fa;
+    background: #f2f4f7;
+}
+.subscription-info .product-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: 32px;
+    align-items: start;
+}
+.subscription-info .product-image {
+    margin: 0;
+    min-width: 0;
+}
+.subscription-info .product-image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+.subscription-info figcaption {
+    margin-top: 8px;
+    color: #646773;
+    font-size: 12px;
+    line-height: 1.6;
 }
 .subscription-info input {
     background: #fff;
@@ -88,14 +115,27 @@
 .subscription-info .primary,
 .subscription-info button {
     display: inline-block;
-    background: #6438ba;
+    background: #1b2942;
     color: #fff;
     padding: 12px 20px;
     border-radius: 8px;
     text-decoration: none;
+    min-height: 44px;
+}
+.subscription-info :is(a, button, input):focus-visible {
+    background: #dfe9fc;
+    color: #12264c;
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    outline: none;
+}
+.subscription-info button:hover,
+.subscription-info .primary:hover {
+    background: #2b4165;
+    color: #fff;
 }
 .subscription-info footer {
-    background: #f5f3fa;
+    background: #f5f6f8;
     max-width: none;
     padding-inline: max(24px, calc((100vw - 976px) / 2));
 }
@@ -107,7 +147,18 @@
     color: #646773;
     margin-top: 40px;
 }
+.subscription-info :is(p, li, a, strong) {
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+}
 @media (max-width: 600px) {
+    .subscription-info .product-intro {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+    .subscription-info .product-image {
+        max-width: 300px;
+    }
     .subscription-info section {
         padding: 20px;
     }

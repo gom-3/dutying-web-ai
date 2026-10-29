@@ -1,0 +1,14 @@
+.workspace-activity {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+}
+.workspace-activity .workspace-inbox-page:empty {
+    display: none;
+}
+.workspace-activity .workspace-inbox-section:last-child {
+    margin-bottom: 12px;
+}
+.workspace-activity .workspace-inbox-group:first-of-type {
+    margin-top: 16px;
+}

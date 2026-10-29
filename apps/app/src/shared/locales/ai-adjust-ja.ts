@@ -39,6 +39,11 @@ export const aiAdjustJa = {
         close: '閉じる',
     },
     executionFailure: {
+        nightRunBoundsEvidence: '{{name}}：連続夜勤は最低{{minimum}}回／最大{{maximum}}回',
+        incomingNightEvidence: '{{start}} ～ {{end}}：前月から続く夜勤{{actual}}回',
+        nightRunBoundsNext: 'この看護師の連続夜勤の最低・最大回数と前月末の配置を確認して修正してください。表と設定は変更されていません。',
+        minimumNightEvidence: '{{name}}：連続夜勤{{actual}}回／最低{{expected}}回が必要です',
+
         propagatedCapacity:
             '{{date}}は{{required}}人必要ですが、固定配置と連続勤務の制限を守ると最大{{available}}人しか配置できません。関連する配置を確認し、勤務表を編集してください。',
         conflictDate: '{{date}}の条件の矛盾',
@@ -72,9 +77,11 @@ export const aiAdjustJa = {
             '休日を増やせるようにするか、該当する勤務の人数の上限を増やすか、選択が必要です。設定を直接変更するか、ご希望を教えてください。変更後の条件を再検証します。現在の勤務表はそのままです。',
         staffingConflictNext:
             '重なる日付の必要人数を一つに決める必要があります。特定の曜日を例外にするか、人数を統一するかを決め、リクエストまたは設定を変更してください。\n他の条件も満たす変更案はまだ確認できていません。勤務表と設定は変更されていません。',
+        retryConditions: '条件を確認して再作成',
+        conflictDetailsMissing:
+            '競合する条件の詳細を確認できませんでした。設定を確認するかリクエストを変更して、再作成してください。今回の結果はまだ反映していません。',
         conflictTitle: '同時に満たすことが難しい条件があります',
-        conflictMessage:
-            '以下の内容を確認し、進め方を選んでください。設定を直接変更するか、提案を今回の勤務表に反映するか、リクエストを変更できます。',
+        conflictMessage: '以下の条件を確認してください。設定を直接変更するか、リクエストを変更してから再作成できます。',
         restTargetConflict:
             'あらかじめ指定した勤務と、月の休み日数の目標が一致していません。\n{{details}}\n月の休み日数の目標または指定済みの勤務を見直してから、もう一度自動入力してください。現在の勤務表は変更されていません。',
         restTargetExcess: '{{name}}：指定済みの休み{{fixed}}日 / 月の休み日数の上限{{target}}日',
@@ -205,7 +212,7 @@ export const aiAdjustJa = {
     chat: {
         welcome: '勤務表をどのように変更しますか？',
         regenerate: '勤務表をもう一度作成してください',
-        modify: '変更したいところがあります',
+        modify: '変更内容を入力して調整する',
         confirmSchedule: '勤務表を確定',
         askChanges: 'どのように変更したいですか？',
         regenerateHelp: '現在の条件で勤務表全体を作り直します。',

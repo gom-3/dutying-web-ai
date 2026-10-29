@@ -1,0 +1,559 @@
+.workspace-shell.workspace-app {
+    --workspace-primary: #202b3c;
+    --workspace-primary-hover: #101827;
+    --workspace-ink: #202631;
+    --workspace-muted: #566173;
+    --workspace-control: #f1f3f5;
+    --workspace-secondary: #e5e8ed;
+    --workspace-secondary-ink: #263244;
+    --workspace-surface: #ffffff;
+    --workspace-section: #f6f7f9;
+    --hospital-accent: var(--workspace-primary);
+    --hospital-accent-dark: var(--workspace-primary-hover);
+    --hospital-accent-soft: var(--workspace-secondary);
+    --personal-accent: var(--workspace-primary);
+    display: grid;
+    grid-template-columns: 224px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    background: var(--workspace-surface);
+    color: var(--workspace-ink);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+}
+.workspace-shell__sidebar {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 20px 16px;
+    background: #f6f7f9;
+}
+.workspace-shell__brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 12px 18px;
+}
+.workspace-shell__brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+.workspace-shell__brand img {
+    width: 108px;
+    height: auto;
+}
+.workspace-shell__navigation {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100% - 62px);
+}
+.workspace-shell__context {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px 16px;
+}
+.workspace-shell__context strong {
+    font-size: 15px;
+    line-height: 1.5;
+}
+.workspace-shell__role,
+.workspace-shell__label {
+    color: var(--workspace-muted);
+    font-size: 12px;
+}
+.workspace-shell__context label {
+    display: grid;
+    gap: 6px;
+}
+.workspace-shell__context select {
+    width: 100%;
+    min-height: 44px;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 6px;
+    background: #e7eaee;
+    color: var(--workspace-ink);
+    font: inherit;
+    font-weight: 600;
+}
+.workspace-shell__group {
+    margin-bottom: 18px;
+}
+.workspace-shell__group > p {
+    margin: 8px 12px;
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 600;
+}
+.workspace-shell__group nav {
+    display: grid;
+    gap: 2px;
+}
+.workspace-shell__group nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: #434e60;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 550;
+    text-decoration: none;
+}
+.workspace-shell__group nav a svg {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    color: #657083;
+}
+.workspace-shell__group nav a:hover {
+    background: #e6e9ed;
+    color: #202b3c;
+}
+.workspace-shell__group nav a[aria-current='page'] {
+    background: var(--workspace-primary);
+    color: #fff;
+    font-weight: 700;
+}
+.workspace-shell__group nav a[aria-current='page'] svg {
+    color: #fff;
+}
+.workspace-shell__footer {
+    margin-top: auto;
+    padding-top: 32px;
+}
+.workspace-shell__contact {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: var(--workspace-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 6px;
+}
+.workspace-shell__contact svg {
+    width: 17px;
+    height: 17px;
+}
+.workspace-shell__contact:hover {
+    color: var(--workspace-ink);
+    background: var(--workspace-secondary);
+}
+.workspace-shell__return {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    color: var(--workspace-muted);
+}
+.workspace-shell__content {
+    min-width: 0;
+    width: 100%;
+    max-width: 1320px;
+    padding: 36px 40px 64px;
+    margin: 0 auto;
+}
+.workspace-shell__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 32px;
+}
+.workspace-shell__title {
+    min-width: 0;
+    flex: 1;
+}
+.workspace-shell__utilities {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+}
+.workspace-shell__notification {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--workspace-ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.workspace-shell__notification:hover,
+.workspace-shell__notification[aria-current='page'] {
+    background: var(--workspace-secondary);
+}
+.workspace-shell__notification > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.workspace-shell__count {
+    display: grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: var(--workspace-primary);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1;
+}
+.workspace-shell__account-panel {
+    position: relative;
+}
+.workspace-shell__avatar {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 7px;
+    background: #dce2e9;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700;
+}
+.workspace-shell__account-menu {
+    position: absolute;
+    z-index: 80;
+    top: calc(100% + 8px);
+    right: 0;
+    display: grid;
+    gap: 2px;
+    width: 224px;
+    max-width: calc(100vw - 40px);
+    padding: 8px;
+    background: #edf0f4;
+    border-radius: 8px;
+}
+.workspace-shell__account-menu > strong {
+    padding: 8px 12px 10px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+}
+.workspace-shell__account-menu > a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 5px;
+    color: var(--workspace-ink);
+    font-size: 13px;
+    font-weight: 550;
+    text-decoration: none;
+}
+.workspace-shell__account-menu > a svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+.workspace-shell__account-menu > a:hover {
+    background: #dce2e9;
+}
+.workspace-shell__account-menu > a[aria-current='page'] {
+    background: var(--workspace-primary);
+    color: #fff;
+}
+.workspace-shell__heading p {
+    margin: 0 0 7px;
+    color: var(--workspace-muted);
+    font-size: 12px;
+}
+.workspace-shell__heading h1 {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.35;
+    letter-spacing: -0.7px;
+    font-weight: 750;
+}
+.workspace-shell__body {
+    min-width: 0;
+}
+.workspace-shell.hospital-workspace .workspace-main {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+    margin: 0;
+}
+.workspace-shell .hospital-overview-ward-actions button + button {
+    margin-left: 8px;
+}
+.workspace-shell button:not(.hospital-info-tip):where(:not(.profile-action, [aria-pressed])),
+.workspace-shell .workspace-button {
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--workspace-primary);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+    cursor: pointer;
+    white-space: normal;
+    word-break: keep-all;
+}
+.workspace-shell button.secondary:not(.hospital-info-tip),
+.workspace-shell .workspace-button.secondary {
+    background: var(--workspace-secondary);
+    color: var(--workspace-secondary-ink);
+}
+.workspace-shell button:not(.hospital-info-tip):where(:not(.profile-action, [aria-pressed])):hover:not(:disabled),
+.workspace-shell .workspace-button:hover {
+    background: var(--workspace-primary-hover);
+    color: #fff;
+}
+.workspace-shell button.secondary:not(.hospital-info-tip):hover:not(:disabled),
+.workspace-shell .workspace-button.secondary:hover {
+    background: #d6dce4;
+    color: #182334;
+}
+.workspace-shell button.danger {
+    background: #fbe8e5;
+    color: #a52b24;
+}
+.workspace-shell.workspace-app button[aria-pressed] {
+    min-height: 44px;
+    background: var(--workspace-secondary);
+    color: var(--workspace-secondary-ink);
+}
+.workspace-shell.workspace-app button[aria-pressed='true'] {
+    background: var(--workspace-primary);
+    color: #fff;
+}
+.workspace-shell.workspace-app button[aria-pressed]:hover {
+    background: #cfd6df;
+    color: #202b3c;
+}
+.workspace-shell.workspace-app button[aria-pressed='true']:hover {
+    background: var(--workspace-primary-hover);
+    color: #fff;
+}
+.workspace-shell.workspace-app button[aria-pressed]:focus-visible {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell.workspace-app button.danger,
+.workspace-shell.workspace-app button.hospital-overview-detach {
+    background: #fbe8e5;
+    color: #a52b24;
+}
+.workspace-shell.workspace-app button.danger:hover:not(:disabled),
+.workspace-shell.workspace-app button.hospital-overview-detach:hover:not(:disabled) {
+    background: #f4d4d0;
+    color: #86231c;
+}
+.workspace-shell.workspace-app button.danger:focus-visible,
+.workspace-shell.workspace-app button.hospital-overview-detach:focus-visible {
+    background: #86231c;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell input[type='checkbox'],
+.workspace-shell input[type='radio'] {
+    accent-color: var(--workspace-primary);
+}
+.workspace-shell .workspace-check:has(input:focus-visible) {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell button.workspace-choice {
+    display: block;
+    background: var(--workspace-control);
+    color: var(--workspace-ink);
+    text-align: left;
+}
+.workspace-shell button.workspace-choice p {
+    color: var(--workspace-muted);
+}
+.workspace-shell button.workspace-choice:hover {
+    background: var(--workspace-secondary);
+    color: var(--workspace-ink);
+}
+.workspace-shell button.workspace-choice:focus-visible {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell button.workspace-choice:focus-visible p {
+    color: #fff;
+}
+.workspace-shell button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.workspace-shell :is(a, button, input, select, textarea, summary):focus-visible {
+    outline: none;
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+}
+.workspace-shell.workspace-app button:not(.hospital-info-tip):focus-visible,
+.workspace-shell.workspace-app button.secondary:not(.hospital-info-tip):focus-visible {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+}
+.workspace-shell .workspace-shell__group nav a:focus-visible {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell .workspace-shell__group nav a:focus-visible svg {
+    color: #fff;
+}
+.workspace-shell .hospital-info-tip:focus-visible {
+    background: #dde3eb;
+}
+.workspace-shell .hospital-info-tip:focus-visible .hospital-info-tip__icon {
+    background: #202b3c;
+}
+.workspace-shell button.workspace-shell__menu {
+    display: none;
+}
+.workspace-shell.workspace-app button.workspace-shell__account-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 7px 9px;
+    background: transparent;
+    color: var(--workspace-ink);
+    font-size: 13px;
+}
+.workspace-shell.workspace-app button.workspace-shell__account-trigger:hover,
+.workspace-shell.workspace-app button.workspace-shell__account-trigger[aria-expanded='true'] {
+    background: var(--workspace-secondary);
+    color: var(--workspace-ink);
+}
+.workspace-shell.workspace-app button.workspace-shell__account-trigger:focus-visible,
+.workspace-shell .workspace-shell__account-menu > a:focus-visible {
+    background: #344054;
+    color: #fff;
+    text-decoration: underline;
+}
+.workspace-shell__skip {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 1400;
+    transform: translateY(-180%);
+    padding: 12px 20px;
+    border-radius: 6px;
+}
+.workspace-shell__skip:focus-visible {
+    transform: none;
+}
+@media (max-width: 1050px) {
+    .workspace-shell__content {
+        padding: 30px 28px 56px;
+    }
+}
+@media (max-width: 760px) {
+    .workspace-shell.workspace-app {
+        display: block;
+    }
+    .workspace-shell__sidebar {
+        height: auto;
+        overflow: visible;
+        position: relative;
+        padding: 10px 20px;
+    }
+    .workspace-shell__brand-row {
+        padding: 0;
+    }
+    .workspace-shell button.workspace-shell__menu {
+        display: inline-flex;
+        padding: 8px 14px;
+    }
+    .workspace-shell__navigation {
+        display: none;
+        padding-top: 14px;
+        min-height: 0;
+    }
+    .workspace-shell__sidebar[data-menu-open='true'] .workspace-shell__navigation {
+        display: flex;
+    }
+    .workspace-shell__context {
+        padding: 8px 10px 14px;
+    }
+    .workspace-shell__group {
+        margin-bottom: 12px;
+    }
+    .workspace-shell__group nav {
+        grid-template-columns: 1fr;
+        gap: 4px;
+    }
+    .workspace-shell__group nav a {
+        min-height: 44px;
+        padding: 10px;
+        font-size: 13px;
+    }
+    .workspace-shell__footer {
+        padding-top: 8px;
+    }
+    .workspace-shell__content {
+        padding: 26px 20px 48px;
+    }
+    .workspace-shell__heading {
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+    .workspace-shell__utilities {
+        gap: 2px;
+    }
+    .workspace-shell__notification {
+        padding: 8px;
+    }
+    .workspace-shell__notification > span:not(.workspace-shell__count) {
+        display: none;
+    }
+    .workspace-shell__avatar {
+        display: none;
+    }
+    .workspace-shell__heading h1 {
+        font-size: 25px;
+    }
+    .workspace-shell :is(input:not([type='checkbox'], [type='radio']), select, textarea) {
+        font-size: 16px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .workspace-shell * {
+        transition: none;
+        scroll-behavior: auto;
+    }
+}
+@media (forced-colors: active) {
+    .workspace-shell :is(a, button, input, select, textarea, summary):focus-visible {
+        outline: 2px solid Highlight !important;
+    }
+    .workspace-shell__group nav a[aria-current='page'] {
+        text-decoration: underline;
+    }
+}

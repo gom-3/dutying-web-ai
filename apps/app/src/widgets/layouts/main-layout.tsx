@@ -1,10 +1,11 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {Outlet, useLocation, useNavigate} from 'react-router';
+import {Link, Outlet, useLocation, useNavigate} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {WardLinkNotice} from '@/features/commercial/ward-link-notice';
 import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME} from '@/shared/constant/member-page-layout';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -107,6 +108,28 @@ const shouldAutoFoldNavigation = (pathname: string, viewportWidth: number) =>
 const isRouteMatch = (pathname: string, route: string) => pathname === route || pathname.startsWith(`${route}/`);
 const getNotificationFrameConfig = (pathname: string) =>
     NOTIFICATION_FRAME_BY_ROUTE.find((config) => isRouteMatch(pathname, config.route)) ?? DEFAULT_NOTIFICATION_FRAME;
+
+// Ward accounts keep the original profile navigation; hospital-only accounts can still edit their profile.
+export const ProfileLayout = () => {
+    const {
+        state: {wardId},
+    } = useAuth();
+    const {t} = useTypedTranslation();
+
+    if (wardId != null) return <MainLayout />;
+
+    return (
+        <main className="min-h-dvh w-full bg-main-bg">
+            <Link
+                to="/workspace"
+                className="inline-flex min-h-11 items-center rounded px-4 text-sm text-gray-3 hover:bg-gray-7 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none"
+            >
+                {t('page.navigationBar.home')}
+            </Link>
+            <Outlet />
+        </main>
+    );
+};
 
 export const MainLayout = () => {
     const {t} = useTypedTranslation();
@@ -260,6 +283,7 @@ export const MainLayout = () => {
             />
             <NavigationBar compactMode={shouldUseCompactNavigation} />
             <main className={cn('relative min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
+                <WardLinkNotice />
                 <Outlet />
                 {shouldShowNotificationBell && !isHomeRoute && !isPageAnchoredNotificationRoute ? (
                     <div

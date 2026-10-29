@@ -1,0 +1,203 @@
+{
+  "source": {
+    "kind": "Anonymized projection of actual development workspace and synchronized version",
+    "workspaceSha256": "49e34f807ec87c3b7656307d7b5ae084362c394b609e1f8d31db267366bfd1ad",
+    "versionSha256": "ac83019f6de3900b1e7c6c245d5a23fc1c3ebb21d796d5daba0c52b5263656b5"
+  },
+  "workspaceRowOrder": [
+    {
+      "shiftNurseId": 1,
+      "displayOrder": 1,
+      "priority": 1024,
+      "divisionNum": 1
+    },
+    {
+      "shiftNurseId": 2,
+      "displayOrder": 2,
+      "priority": 2048,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 3,
+      "displayOrder": 3,
+      "priority": 3072,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 4,
+      "displayOrder": 4,
+      "priority": 4096,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 5,
+      "displayOrder": 5,
+      "priority": 5120,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 6,
+      "displayOrder": 6,
+      "priority": 16384,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 7,
+      "displayOrder": 7,
+      "priority": 6144,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 8,
+      "displayOrder": 8,
+      "priority": 7168,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 9,
+      "displayOrder": 9,
+      "priority": 8192,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 10,
+      "displayOrder": 10,
+      "priority": 9216,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 11,
+      "displayOrder": 11,
+      "priority": 10240,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 12,
+      "displayOrder": 12,
+      "priority": 11264,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 13,
+      "displayOrder": 13,
+      "priority": 12288,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 14,
+      "displayOrder": 14,
+      "priority": 13312,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 15,
+      "displayOrder": 15,
+      "priority": 14336,
+      "divisionNum": 5
+    },
+    {
+      "shiftNurseId": 16,
+      "displayOrder": 16,
+      "priority": 15360,
+      "divisionNum": 5
+    }
+  ],
+  "syncedRowOrder": [
+    {
+      "shiftNurseId": 1,
+      "displayOrder": 1,
+      "priority": 1024,
+      "divisionNum": 1
+    },
+    {
+      "shiftNurseId": 2,
+      "displayOrder": 2,
+      "priority": 2048,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 3,
+      "displayOrder": 3,
+      "priority": 3072,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 4,
+      "displayOrder": 4,
+      "priority": 4096,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 5,
+      "displayOrder": 5,
+      "priority": 5120,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 6,
+      "displayOrder": 6,
+      "priority": 6144,
+      "divisionNum": 2
+    },
+    {
+      "shiftNurseId": 7,
+      "displayOrder": 7,
+      "priority": 7168,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 8,
+      "displayOrder": 8,
+      "priority": 8192,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 9,
+      "displayOrder": 9,
+      "priority": 9216,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 10,
+      "displayOrder": 10,
+      "priority": 10240,
+      "divisionNum": 3
+    },
+    {
+      "shiftNurseId": 11,
+      "displayOrder": 11,
+      "priority": 11264,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 12,
+      "displayOrder": 12,
+      "priority": 12288,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 13,
+      "displayOrder": 13,
+      "priority": 13312,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 14,
+      "displayOrder": 14,
+      "priority": 14336,
+      "divisionNum": 4
+    },
+    {
+      "shiftNurseId": 15,
+      "displayOrder": 15,
+      "priority": 15360,
+      "divisionNum": 5
+    },
+    {
+      "shiftNurseId": 16,
+      "displayOrder": 16,
+      "priority": 16384,
+      "divisionNum": 5
+    }
+  ]
+}

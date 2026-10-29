@@ -66,6 +66,7 @@ const mocks = vi.hoisted(() => ({
     applyConstraints: vi.fn(),
     getScheduleMonthRequests: vi.fn(),
     updateScheduleMonthRequest: vi.fn(),
+    draftRowOrder: [] as {shiftNurseId: number; displayOrder: number; priority?: number; divisionNum: number}[],
     draftFixed: false,
     draftShiftTypeId: 4,
 }));
@@ -163,7 +164,7 @@ vi.mock('@/features/shift-editor/model/schedule-authoring', () => ({
         year: 2026,
         month: 11,
         cells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: mocks.draftShiftTypeId, fixed: mocks.draftFixed}],
-        rowOrder: [],
+        rowOrder: mocks.draftRowOrder,
         carryOverCells: [],
     }),
 }));
@@ -362,6 +363,7 @@ beforeEach(() => {
     mocks.getScheduleMonthRequests.mockReset().mockResolvedValue({year: 2026, month: 11, requests: []});
     mocks.updateScheduleMonthRequest.mockReset();
     mocks.applyConstraints.mockReset().mockResolvedValue(true);
+    mocks.draftRowOrder = [];
     mocks.draftFixed = false;
     mocks.draftShiftTypeId = 4;
     sessionStorage.clear();
@@ -404,6 +406,114 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('keeps prompt adjustment in the current schedule without a generation switch or losing unsent text', async () => {
+        const prepare = vi.fn();
+        const props = {onPrepareGeneration: prepare};
+        const view = renderSidebar(props);
+
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
+        expect(screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.switchToAutofill')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
+        view.rerender(sidebarElement({...props, open: false}));
+        view.rerender(sidebarElement(props));
+        expect(await screen.findByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+        expect(prepare).not.toHaveBeenCalled();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+    it('keeps conflict evidence and recovery after settings edits, without confirming or executing automatically', async () => {
+        const prepare = vi.fn();
+        const confirm = vi.fn();
+        const review = {
+            token: 'synthetic-review-token',
+            expiresAt: '2099-01-01T00:00:00Z',
+            explanation: '야간 필요 인원과 월 야간 횟수 조건이 맞지 않아요.',
+            violations: [
+                {
+                    violationId: 'v1',
+                    ruleId: 9,
+                    templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                    severity: 'HARD' as const,
+                    message: '합성 간호사 야간 횟수',
+                    messageArgs: {operator: 'MAX', expected: 2, actual: 4},
+                    affectedCells: [],
+                    fixable: true,
+                },
+            ],
+        };
+
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                applyStatus: 'NOT_APPLIED',
+                resultVersionId: null,
+                result: {
+                    ...successfulResult,
+                    applicable: false,
+                    changedCells: [],
+                    engineResult: {status: 'CONFLICT_REVIEW'},
+                    conflictReview: review,
+                },
+            },
+        ];
+
+        const props = {
+            onPrepareGeneration: prepare,
+            generationFillPolicy: 'REBUILD_UNLOCKED' as const,
+            resultActions: {canConfirm: true, onConfirm: confirm},
+        };
+        const sidebar = renderSidebar(props);
+
+        expect(await screen.findByText(review.explanation)).toBeVisible();
+        expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeVisible();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
+        await userEvent.click(await screen.findByRole('button', {name: '제약조건 수정'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(prepare).not.toHaveBeenCalled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.executionFailure.retryConditions')}));
+        expect(prepare).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(confirm).not.toHaveBeenCalled();
+        // The page finishes its existing preparation before requesting a fresh run.
+        mocks.sync.mockImplementation(async () => current);
+        sidebar.rerender(sidebarElement({...props, generationRequest: 1}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({operationType: 'GENERATE', fillPolicy: 'REBUILD_UNLOCKED'});
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('conflictReviewToken');
+    });
+
+    it('keeps confirmation hidden after a conflict is dismissed to change the request', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'FAILED',
+                applyStatus: 'NOT_APPLIED',
+                resultVersionId: null,
+                result: {
+                    ...successfulResult,
+                    applicable: false,
+                    changedCells: [],
+                    engineResult: {status: 'CONFLICT_REVIEW'},
+                    conflictReview: {token: 'synthetic', expiresAt: '2000-01-01T00:00:00Z', violations: []},
+                },
+            },
+        ];
+        renderSidebar({resultActions: {canConfirm: true, onConfirm: vi.fn()}});
+        expect(await screen.findAllByText(i18n.t('aiAdjust.executionFailure.conflictDetailsMissing'))).not.toHaveLength(0);
+        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.proceed')})).toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.revise')}));
+        expect(await screen.findByRole('textbox')).toHaveFocus();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+        await userEvent.type(screen.getByRole('textbox'), '야간은 최대 4회로 바꿔 주세요');
+        expect(screen.getByRole('textbox')).toHaveValue('야간은 최대 4회로 바꿔 주세요');
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('opens personal rest conflict settings in the same sidebar and refreshes the condition context without executing', async () => {
         const get = vi.spyOn(adminAxiosInstance, 'get');
         const put = vi.spyOn(adminAxiosInstance, 'put');
@@ -543,14 +653,14 @@ describe('persistent schedule sidebar', () => {
         const props = {autofillFlow: {id: 99, status: 'completed' as const, messages: []}};
         const first = renderSidebar(props);
 
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '12일 휴무를 유지해줘');
-        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
+        expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
         first.unmount();
         renderSidebar(props);
         expect(await screen.findByRole('textbox')).toHaveValue('12일 휴무를 유지해줘');
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
-        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
+        expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
         expect(screen.queryByText(i18n.t('aiAdjust.chat.welcome'))).not.toBeInTheDocument();
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -883,6 +993,7 @@ describe('persistent schedule sidebar', () => {
     });
 
     it('keeps completion, preview and result actions in one assistant message', async () => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [{...operation, result: successfulResult}];
         renderSidebar();
 
@@ -913,10 +1024,10 @@ describe('persistent schedule sidebar', () => {
         const confirm = screen.getByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')});
 
         expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
-        expect(within(result).getByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).toBeEnabled();
-        expect(within(result).getByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).toBeEnabled();
-        expect(screen.getAllByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).toHaveLength(1);
-        expect(screen.getAllByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).toHaveLength(1);
+        expect(within(result).getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeVisible();
+        expect(screen.getAllByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toHaveLength(1);
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
         expect(result).not.toContainElement(confirm);
         await userEvent.click(confirm);
         expect(onConfirm).toHaveBeenCalledOnce();
@@ -945,8 +1056,7 @@ describe('persistent schedule sidebar', () => {
         const reviewed = screen.getByRole('region', {name: '요청 조건 확인'});
 
         expect(within(reviewed).queryByRole('button')).not.toBeInTheDocument();
-        await userEvent.click(within(result).getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
-        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.getByRole('textbox')).toHaveValue('');
         expect(within(result).queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
@@ -956,31 +1066,27 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('offers next choices only on the latest saved result and consumes them when regeneration is chosen', async () => {
+    it('opens direct editing only from the latest result without regenerating, clearing or fixing the schedule', async () => {
+        const onEditSchedule = vi.fn();
         const onPrepareGeneration = vi.fn();
-        const onConfirm = vi.fn();
-
         current.operations = [
             {...operation, result: successfulResult},
             {...operation, operationId: 'generate:latest', sequence: 2, resultVersionId: 'result:latest', result: successfulResult},
         ];
-        renderSidebar({onPrepareGeneration, resultActions: {canConfirm: true, onConfirm}});
-
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        renderSidebar({onEditSchedule, onPrepareGeneration});
         const results = await screen.findAllByRole('region', {name: '근무표 결과'});
-
-        expect(results).toHaveLength(2);
-        expect(within(results[0]).queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
-        expect(within(results[0]).queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
-        expect(within(results[1]).getByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).toBeEnabled();
-        await userEvent.click(within(results[1]).getByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')}));
-        expect(onPrepareGeneration).toHaveBeenCalledOnce();
-        expect(onConfirm).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(
+            within(results[0]).queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}),
+        ).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
-        expect(screen.getAllByTestId('conversation-result-preview')).toHaveLength(2);
+        await userEvent.click(within(results[1]).getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}));
+        expect(onEditSchedule).toHaveBeenCalledOnce();
+        expect(onPrepareGeneration).not.toHaveBeenCalled();
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
     });
-
     it('shows historical rejected review drafts as failures', async () => {
         const docBefore = useShiftEditorStore.getState().doc;
 
@@ -1566,7 +1672,20 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
     });
 
+    it('does not report a saved and locally applied result as failed when its conversation refresh times out', async () => {
+        mocks.detail.mockResolvedValueOnce(current).mockRejectedValueOnce(new Error('Conversation lookup timed out'));
+        mocks.execute.mockResolvedValueOnce(operation);
+
+        renderSidebar({generationRequest: 1});
+
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.getByRole('textbox')).toBeEnabled());
+        expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
+    });
+
     it('distinguishes autofill and adjustment attempt boundaries without calling a solver', async () => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [
             operation,
             {...operation, operationId: 'adjust:1', sequence: 2, operationType: 'ADJUST'},
@@ -1581,6 +1700,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it.each([true, false])('explains an applied unchanged adjustment without claiming optimality: %s', async (unchanged) => {
+        current.conversation.currentVersionId = 'result:1';
         current.operations = [
             {
                 ...operation,
@@ -1779,8 +1899,6 @@ describe('persistent schedule sidebar', () => {
 
         const confirm = await screen.findByRole('button', {name: /^근무표 확정$|^Confirm schedule$/});
 
-        expect(confirm.parentElement?.lastElementChild).toBe(confirm);
-
         if (canConfirm) expect(confirm).toBeEnabled();
         else expect(confirm).toBeDisabled();
 
@@ -1815,7 +1933,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('group', {name: /근무표를 어떻게 바꿀까요|How would you like to change/})).not.toBeInTheDocument();
         expect(
             screen.queryByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
+                name: /^원하는 변경을 적어 조절하기$|^Describe the changes to adjust$/,
             }),
         ).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -1824,6 +1942,7 @@ describe('persistent schedule sidebar', () => {
     it('returns whole-schedule requests to preparation instead of running immediately', async () => {
         const prepare = vi.fn();
 
+        current.operations = [];
         renderSidebar({onPrepareGeneration: prepare});
         await userEvent.click(
             await screen.findByRole('button', {
@@ -1837,7 +1956,7 @@ describe('persistent schedule sidebar', () => {
     it('keeps local preparation and selected replies before server results without persisting extra turns', async () => {
         current = {...current, operations: []};
         mocks.execute.mockImplementation(async () => {
-            current = {...current, operations: [operation]};
+            current = {...current, conversation: {...current.conversation, currentVersionId: 'result:1'}, operations: [operation]};
 
             return operation;
         });
@@ -1891,30 +2010,9 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
 
-        await userEvent.click(
-            screen.getByRole('button', {
-                name: /^다시 채우기$|^Refill$|^한 번 더 채워볼게요$|^Try filling it again$|^같은 조건으로 다시 채울게요$|^Refill with the same conditions$/,
-            }),
-        );
-        expect(props.onPrepareGeneration).toHaveBeenCalledOnce();
-        view.rerender(
-            <AiConversationSidebar
-                {...props}
-                generationRequest={1}
-                autofillFlow={{id: 2, status: 'preparing', messages: [{role: 'assistant', text: '두 번째 고정 확인'}]}}
-                preparation={<p>준비 선택지</p>}
-            />,
-        );
-        expect(screen.getByText('이대로 자동채우기')).toBeVisible();
-        expect(screen.getByText('두 번째 고정 확인')).toBeVisible();
-        expect(
-            screen.getByText(
-                /^다시 채우기$|^Refill$|^한 번 더 채워볼게요$|^Try filling it again$|^같은 조건으로 다시 채울게요$|^Refill with the same conditions$/,
-            ),
-        ).toBeVisible();
-        expect(panel.textContent).toMatch(
-            /이대로 자동채우기[\s\S]*(근무표를 채웠어요.|Your schedule is ready)[\s\S]*(한 번 더 채워볼게요|Try filling it again|같은 조건으로 다시 채울게요|Refill with the same conditions)[\s\S]*두 번째 고정 확인/,
-        );
+        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
+        expect(props.onPrepareGeneration).not.toHaveBeenCalled();
         expect(mocks.execute).toHaveBeenCalledOnce();
     });
 
@@ -1983,11 +2081,7 @@ describe('persistent schedule sidebar', () => {
         const first = renderSidebar();
 
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
-        await userEvent.click(
-            screen.getByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-            }),
-        );
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '오프 균형을 맞춰줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
         expect(await screen.findByRole('alert')).toHaveTextContent(/권한|access/);
@@ -2037,11 +2131,7 @@ describe('persistent schedule sidebar', () => {
         });
         renderSidebar();
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
-        await userEvent.click(
-            screen.getByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-            }),
-        );
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
         await screen.findByText(i18n.t('aiAdjust.understood'));
@@ -2081,7 +2171,7 @@ describe('persistent schedule sidebar', () => {
             {id: 2, category: 'REQUEST_TEXT', value: '야간을 줄여줘', provenance: 'USER', confirmedAt: source.createdAt},
         ]);
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /^수정 요청하기$|^수정하고 싶은 부분이 있어요$/}));
+        await screen.findByRole('textbox');
         await userEvent.click(screen.getAllByRole('button', {name: /^수정$/})[0]!);
         await userEvent.click(screen.getByText('야간을 줄여줘'));
         await userEvent.click(screen.getByRole('button', {name: '자주 쓰는 요청으로 저장하기'}));
@@ -2172,7 +2262,7 @@ describe('persistent schedule sidebar', () => {
             {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
         ]);
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /^수정 요청하기$|^수정하고 싶은 부분이 있어요$/}));
+        await screen.findByRole('textbox');
         await userEvent.click(screen.getByRole('button', {name: /^수정$/}));
         await userEvent.type(screen.getByRole('textbox'), ' 이번 달만');
         await userEvent.click(screen.getByRole('button', {name: '저장한 요청 수정하기'}));
@@ -2185,17 +2275,14 @@ describe('persistent schedule sidebar', () => {
             {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
         ]);
         renderSidebar();
-        await userEvent.click(
-            await screen.findByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-            }),
-        );
+        await screen.findByRole('textbox');
         await userEvent.click(await screen.findByText('휴무 균형을 맞춰줘'));
         expect(screen.getByRole('textbox')).toHaveValue('휴무 균형을 맞춰줘');
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('requires an explicit confirmation before rebuilding unlocked assignments', async () => {
+        current.operations = [];
         renderSidebar();
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
         await userEvent.click(
@@ -2212,26 +2299,13 @@ describe('persistent schedule sidebar', () => {
             rebuildConfirmed: true,
         });
     });
-    it('shows two choices only for a fresh chat and starts the change conversation without executing', async () => {
+    it('shows the change composer immediately in a fresh chat without executing', async () => {
         renderSidebar();
 
-        const modify = await screen.findByRole('button', {
-            name: /수정 요청하기$|Request changes$|수정하고 싶은 부분이 있어요$|I have some changes in mind$/,
-        });
-
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-        expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
-        expect(screen.queryByRole('region', {name: /이렇게 요청해 보세요|Try a request/})).not.toBeInTheDocument();
-        expect(screen.queryByText(/현재 조건으로 전체|Rebuild the whole schedule with/)).not.toBeInTheDocument();
-        await userEvent.click(modify);
-        await screen.findByText(/어떤 점을 바꾸고 싶나요|What would you like to change/);
-        expect(
-            screen.queryByRole('button', {
-                name: /^다시 채우기$|^Refill$|^한 번 더 채워볼게요$|^Try filling it again$|^같은 조건으로 다시 채울게요$|^Refill with the same conditions$/,
-            }),
-        ).not.toBeInTheDocument();
-        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(await screen.findByRole('textbox')).toBeVisible();
         expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
+        expect(screen.queryByRole('button', {name: /수정 요청하기$|Request changes$/})).not.toBeInTheDocument();
+        expect(screen.queryByText(/현재 조건으로 전체|Rebuild the whole schedule with/)).not.toBeInTheDocument();
 
         const examples = screen.getByRole('region', {name: /이렇게 요청해 보세요|Try a request/});
 
@@ -2242,7 +2316,18 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('adjusts only after confirmation and carries the interpretation into the request', async () => {
+    it.each([0, 2])('adjusts only after confirmation using the current draft revision %s', async (revision) => {
+        if (revision) {
+            mocks.draftShiftTypeId = 3;
+            current = {
+                ...current,
+                draft: {...source, versionId: 'manual:latest', cells: [{...cell, wardShiftTypeId: 3, shiftCode: 'N'}]},
+                conversation: {...current.conversation, revision, currentVersionId: 'manual:latest'},
+            };
+            const doc = useShiftEditorStore.getState().doc;
+            useShiftEditorStore.getState().setDoc({...doc, rows: [{...doc.rows[0], cells: ['N']}]});
+        }
+        const latestCells = structuredClone(current.draft.cells);
         mocks.interpret.mockImplementation(async () => {
             const turn = {
                 eventId: 2,
@@ -2251,7 +2336,7 @@ describe('persistent schedule sidebar', () => {
                 type: 'INTERPRETATION',
                 text: null,
                 interpretationId: 'i:1',
-                baseRevision: 0,
+                baseRevision: revision,
                 contextHash: 'rules:1',
                 interpretation: {items: [], llmPrompt: '연속 근무를 줄여줘', strength: 'NORMAL' as const, unmapped: []},
                 createdAt: source.createdAt,
@@ -2291,11 +2376,7 @@ describe('persistent schedule sidebar', () => {
 
         renderSidebar({onPrepareAdjustment: prepare});
         await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
-        await userEvent.click(
-            screen.getByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-            }),
-        );
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
@@ -2312,8 +2393,11 @@ describe('persistent schedule sidebar', () => {
         await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
         expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
             operationType: 'ADJUST',
+            expectedRevision: revision,
             interpretationId: 'confirmed:1',
         });
+        expect(current.draft.cells).toEqual(latestCells);
+        expect(mocks.interpret.mock.calls[0]?.[1]).toMatchObject({expectedRevision: revision, text: '연속 근무를 줄여줘'});
         expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('fillPolicy');
         expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('rebuildConfirmed');
     });
@@ -2433,16 +2517,9 @@ describe('persistent schedule sidebar', () => {
 
         renderSidebar();
         await screen.findByText('이전 요청');
-        expect(
-            screen.queryByRole('button', {
-                name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-            }),
-        ).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
         await userEvent.click(screen.getByRole('button', {name: /초기화|Reset/}));
-        await screen.findByRole('button', {
-            name: /^수정 요청하기$|^Request changes$|^수정하고 싶은 부분이 있어요$|^I have some changes in mind$/,
-        });
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(await screen.findByRole('textbox')).toHaveValue('');
         expect(screen.queryByText(/8cb64676/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
         expect(mocks.startSegment).toHaveBeenCalledWith(1, 'source:1', 0);
@@ -2453,6 +2530,8 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('group', {name: i18n.t('aiAdjust.snapshot.nextAction')})).not.toBeInTheDocument();
         expect(current.turns.some((turn) => turn.text === '이전 요청')).toBe(true);
         expect(current.operations).toEqual([operation]);
+        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc).toEqual(draft);
         expect(mocks.branch).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -2544,7 +2623,7 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         expect(screen.queryByText(/이전 대화 기록/)).not.toBeInTheDocument();
         expect(screen.queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '이번에는 휴무를 고르게 배정해줘');
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
@@ -2577,14 +2656,14 @@ describe('persistent schedule sidebar', () => {
             expect(screen.queryByText('이전 준비 단계 안내')).not.toBeInTheDocument();
             expect(onNewConversation).toHaveBeenCalledOnce();
             view.rerender(sidebarElement({onNewConversation}));
-            await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+            await screen.findByRole('textbox');
             await userEvent.type(screen.getByRole('textbox'), '보내지 않은 요청');
-            expect(screen.getByText(i18n.t('aiAdjust.chat.askChanges'))).toBeVisible();
+            expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
             await userEvent.click(screen.getByRole('button', {name: '초기화'}));
             await screen.findByText(i18n.t('aiAdjust.chat.welcome'));
             expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
-            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-            await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+            expect(screen.getByRole('textbox')).toHaveValue('');
+            await screen.findByRole('textbox');
             expect(screen.getByRole('textbox')).toHaveValue('');
             expect(onNewConversation).toHaveBeenCalledTimes(2);
             expect(mocks.interpret).not.toHaveBeenCalled();
@@ -2613,7 +2692,7 @@ describe('persistent schedule sidebar', () => {
 
         renderSidebar({onNewConversation});
         await screen.findByText('지금까지의 요청');
-        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '작성 중인 요청');
         await userEvent.click(screen.getByRole('button', {name: '초기화'}));
         await screen.findByRole('alert');
@@ -2770,7 +2849,7 @@ describe('persistent schedule sidebar', () => {
                 ],
             } as TShift,
         });
-        await userEvent.click(await screen.findByRole('button', {name: /^수정 요청하기$|^수정하고 싶은 부분이 있어요$/}));
+        await screen.findByRole('textbox');
 
         const example = screen.getByRole('button', {name: '첫 행 간호사 1~5일 N12 근무 없게 해줘'});
         const input = screen.getByRole('textbox');
@@ -2798,7 +2877,7 @@ describe('persistent schedule sidebar', () => {
 
         expect(i18n.t('aiAdjust.title')).toMatch(/自動/);
         expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toBeVisible();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
 
         const request = '1日～5日は田中花子さんにD勤務を入れないでください';
         const input = screen.getByRole('textbox', {name: '変更したい内容'});
@@ -2964,7 +3043,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(screen.getByRole('radio', {name: '권장'})).toBeChecked();
     });
-    it('revalidates explicit partial selection and waits for confirmation of the new plan', async () => {
+    it('keeps unsupported groups visible without condition checkboxes or execution', async () => {
         const groups = [
             {
                 conditionId: 'supported',
@@ -3006,53 +3085,20 @@ describe('persistent schedule sidebar', () => {
                 conditionGroups: groups,
             },
         };
-
         current = {
             ...current,
             turns: [proposal],
             conversation: {...current.conversation, latestInterpretationId: proposal.interpretationId},
         };
-        mocks.selectConditions.mockImplementation(async () => {
-            const child = {
-                ...proposal,
-                eventId: 3,
-                sequence: 3,
-                interpretationId: 'partial:child',
-                semanticPlan: {
-                    ...proposal.semanticPlan!,
-                    planId: 'child',
-                    planHash: 'b'.repeat(64),
-                    state: 'PREVIEW_READY',
-                    confirmationAllowed: true,
-                    selectionAudit: {
-                        sourcePreviewId: 'preview',
-                        originalText: 'original',
-                        conditionGroups: groups,
-                        selectedConditionIds: ['supported'],
-                        excludedConditionIds: ['unsupported'],
-                    },
-                },
-            };
-
-            current = {
-                ...current,
-                turns: [proposal, child],
-                conversation: {...current.conversation, latestInterpretationId: child.interpretationId},
-            };
-
-            return child;
-        });
         renderSidebar();
 
-        const check = (await screen.findAllByRole('checkbox'))[0];
-
-        await userEvent.click(check);
-        await userEvent.click(screen.getByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/}));
-        await waitFor(() => expect(mocks.selectConditions).toHaveBeenCalledWith(1, 'parent', 0, 'a'.repeat(64), ['supported']));
-        expect(await screen.findByRole('button', {name: /이대로 수정하기|Adjust with these conditions/})).toBeInTheDocument();
+        expect(await screen.findByText('김 1일 D 배정')).toBeVisible();
+        expect(screen.getByText('김 입사일부터 N 금지')).toBeVisible();
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /선택한 조건만 다시 검증|Revalidate only selected conditions/})).not.toBeInTheDocument();
+        expect(mocks.selectConditions).not.toHaveBeenCalled();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
-        expect(screen.getByText('제외:')).toBeInTheDocument();
     });
     it('keeps unsupported semantic conditions visible and disables confirmation', async () => {
         const proposal = {
@@ -3213,8 +3259,8 @@ describe('persistent schedule sidebar', () => {
         mocks.interpret.mockResolvedValueOnce({interpretationId: 'fresh:1'});
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
-        expect(screen.getByRole('combobox', {name: '조건 수정 방식'})).toHaveValue('UPDATE');
-        expect(screen.getByRole('checkbox', {name: raw})).toBeChecked();
+        expect(screen.queryByRole('combobox', {name: '조건 수정 방식'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: raw})).not.toBeInTheDocument();
         await userEvent.type(screen.getByRole('textbox'), '이전에 수정하던 요청');
         await userEvent.click(screen.getByRole('button', {name: '초기화'}));
         await screen.findByText(i18n.t('aiAdjust.chat.welcome'));
@@ -3224,9 +3270,9 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByRole('button', {name: '요청 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(screen.queryByText(raw)).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
         expect(screen.getByRole('textbox')).toHaveValue('');
-        expect(screen.getByRole('combobox', {name: '조건 수정 방식'})).toHaveValue('ANSWER');
+        expect(screen.queryByRole('combobox', {name: '조건 수정 방식'})).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox', {name: raw})).not.toBeInTheDocument();
         await userEvent.type(screen.getByRole('textbox'), '새 요청으로 주말 휴무를 나눠줘');
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
@@ -3234,7 +3280,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             text: '새 요청으로 주말 휴무를 나눠줘',
             expectedStateVersion: 8,
-            change: 'ADD',
+            change: 'AUTO',
             targetConditionIds: [],
         });
         expect(mocks.interpret.mock.calls[0][1]).not.toHaveProperty('previousInterpretationId');
@@ -3295,8 +3341,7 @@ describe('persistent schedule sidebar', () => {
                 expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
                 expect(screen.getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
             } else if (executionStatus === 'SUCCEEDED') {
-                expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-                await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+                await screen.findByRole('textbox');
                 expect(screen.getByRole('textbox')).toBeVisible();
                 expect(screen.queryByRole('button', {name: '요청 수정하기'})).not.toBeInTheDocument();
             }
@@ -3505,7 +3550,7 @@ describe('persistent schedule sidebar', () => {
             return proposal;
         });
         renderSidebar({onPrepareAdjustment: prepare});
-        await userEvent.click(await screen.findByRole('button', {name: /^수정 요청하기$|^수정하고 싶은 부분이 있어요$/}));
+        await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '김 간호사 1~2일 N 금지');
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
@@ -3765,7 +3810,7 @@ describe('persistent schedule sidebar', () => {
         );
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('groups current AI requests and saved monthly requests separately from selected ward constraints', async () => {
+    it('keeps saved monthly requests separate from ward constraints without a manual conversation condition list', async () => {
         const semanticLabel = '김 간호사 1일 N 금지';
 
         current.conversationState = {
@@ -3793,14 +3838,14 @@ describe('persistent schedule sidebar', () => {
         });
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        expect(await screen.findByRole('heading', {name: /^AI 요청\s*2$/})).toBeVisible();
+        expect(await screen.findByRole('heading', {name: /^AI 요청\s*1$/})).toBeVisible();
 
         const aiGroup = screen.getByRole('region', {name: 'AI로 추가한 조건'});
 
-        expect(within(aiGroup).getByText(semanticLabel)).toBeVisible();
-        expect(within(aiGroup).getByText('현재 대화')).toBeVisible();
+        expect(within(aiGroup).queryByText(semanticLabel)).not.toBeInTheDocument();
+        expect(within(aiGroup).queryByText('현재 대화')).not.toBeInTheDocument();
         expect(within(aiGroup).getByText(monthlyCondition.displayLabel)).toBeVisible();
-        expect(within(aiGroup).getByText('이번 달에 저장됨')).toBeVisible();
+        expect(within(aiGroup).queryByText('이번 달에 저장됨')).not.toBeInTheDocument();
         expect(within(aiGroup).queryByText(wardCondition.displayText!)).not.toBeInTheDocument();
         expect(screen.getByRole('region', {name: '제약조건 탭의 조건'})).toBeVisible();
         expect(screen.getByRole('region', {name: '테스트 제약조건 편집기'})).toHaveAttribute('data-context', '1:2:2026-11');
@@ -3811,56 +3856,6 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.getScheduleMonthRequests).toHaveBeenCalledWith(1, 2, 2026, 11);
         expect(mocks.execute).not.toHaveBeenCalled();
-    });
-    it('removes only the chosen semantic condition with the reviewed state version and keeps the schedule unchanged', async () => {
-        const {proposal} = semanticRequest();
-        const removedLabel = '김 간호사 1일 N 금지';
-        const keptLabel = '김 간호사 12일 O 배정';
-
-        current.conversationState = {
-            version: 7,
-            sourceVersionId: source.versionId,
-            contextHash: current.contextHash,
-            expiresAt: null,
-            conditions: [
-                {conditionId: 'condition:remove', text: removedLabel, preview: {status: 'PREVIEW_READY'}},
-                {conditionId: 'condition:keep', text: keptLabel, preview: {status: 'PREVIEW_READY'}},
-            ],
-            pendingQuestion: null,
-        };
-        mocks.interpret.mockImplementationOnce(async () => {
-            current = {
-                ...current,
-                conversationState: {...current.conversationState!, version: 8, conditions: [current.conversationState!.conditions[1]]},
-            };
-
-            return proposal;
-        });
-
-        const initialDoc = useShiftEditorStore.getState().doc;
-
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: `${removedLabel} 삭제`}));
-        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
-        expect(mocks.interpret.mock.calls[0]).toEqual([
-            1,
-            expect.objectContaining({
-                expectedRevision: 0,
-                expectedStateVersion: 7,
-                change: 'REMOVE',
-                targetConditionIds: ['condition:remove'],
-                text: expect.stringMatching(/\S/),
-            }),
-        ]);
-        expect(await screen.findByRole('heading', {name: /^AI 요청\s*1$/})).toBeVisible();
-        expect(screen.queryByRole('button', {name: `${removedLabel} 삭제`})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: `${keptLabel} 삭제`})).toBeVisible();
-        expect(mocks.updateScheduleMonthRequest).not.toHaveBeenCalled();
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
     });
     it('retires the old preview after saving a monthly rest target without regenerating or changing cells', async () => {
         semanticRequest();
@@ -4019,10 +4014,9 @@ describe('persistent schedule sidebar', () => {
         const initialDoc = useShiftEditorStore.getState().doc;
 
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: `${label} 삭제`}));
-        expect(await screen.findByRole('heading', {name: /^AI 요청\s*0$/})).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: '조건 목록 닫기'}));
+        await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
+        await userEvent.type(await screen.findByRole('textbox'), '방금 요청 취소해');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.reviewChanges')}));
 
         const completion = await screen.findByRole('region', {name: '조건 삭제 완료'});
 
@@ -4036,8 +4030,8 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret).toHaveBeenCalledOnce();
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             expectedStateVersion: 7,
-            change: 'REMOVE',
-            targetConditionIds: ['condition:last'],
+            change: 'AUTO',
+            targetConditionIds: [],
         });
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -4148,7 +4142,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
-    it('sends only a new answer with the server state version and waiting condition ID', async () => {
+    it('sends a clarification answer with the server state version for automatic resolution', async () => {
         const {raw, proposal} = semanticRequest();
 
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
@@ -4170,13 +4164,13 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             text: 'O로 배정해줘.',
             expectedStateVersion: 7,
-            change: 'UPDATE',
-            targetConditionIds: ['condition:waiting'],
+            change: 'AUTO',
+            targetConditionIds: [],
         });
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('adds a separate condition while a question is waiting instead of treating it as an answer', async () => {
+    it('lets the server distinguish a separate request while a question is waiting', async () => {
         const {raw, proposal} = semanticRequest();
 
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
@@ -4191,19 +4185,19 @@ describe('persistent schedule sidebar', () => {
         };
         mocks.interpret.mockResolvedValue(proposal);
         renderSidebar();
-        await userEvent.selectOptions(await screen.findByRole('combobox', {name: '조건 수정 방식'}), 'ADD');
-        await userEvent.type(screen.getByRole('textbox'), '박 간호사 10일 N 금지');
+        expect(screen.queryByRole('combobox', {name: '조건 수정 방식'})).not.toBeInTheDocument();
+        await userEvent.type(await screen.findByRole('textbox'), '박 간호사 10일 N 금지');
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             text: '박 간호사 10일 N 금지',
             expectedStateVersion: 7,
-            change: 'ADD',
+            change: 'AUTO',
             targetConditionIds: [],
         });
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('uses explicitly selected condition IDs for removal and keeps the original clause visible', async () => {
+    it('sends a cancellation as natural text without browser selected condition IDs', async () => {
         const {raw, proposal} = semanticRequest();
 
         proposal.semanticPlan!.state = 'NEEDS_CLARIFICATION';
@@ -4219,18 +4213,15 @@ describe('persistent schedule sidebar', () => {
         mocks.interpret.mockResolvedValue(proposal);
         renderSidebar();
 
-        const mode = await screen.findByRole('combobox', {name: '조건 수정 방식'});
-
-        await userEvent.selectOptions(mode, 'REMOVE');
-        await userEvent.click(screen.getByRole('checkbox', {name: raw}));
-        await userEvent.type(screen.getByRole('textbox'), '삭제해줘');
+        expect(screen.queryByRole('combobox', {name: '조건 수정 방식'})).not.toBeInTheDocument();
+        await userEvent.type(await screen.findByRole('textbox'), '방금 요청 취소해');
         await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
         await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
-            text: '삭제해줘',
+            text: '방금 요청 취소해',
             expectedStateVersion: 3,
-            change: 'REMOVE',
-            targetConditionIds: ['condition:1'],
+            change: 'AUTO',
+            targetConditionIds: [],
         });
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -4267,7 +4258,7 @@ describe('persistent schedule sidebar', () => {
         };
         mocks.interpret.mockResolvedValue({...proposal, semanticPlan: {...proposal.semanticPlan!, state: 'PREVIEW_READY'}});
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
+        await screen.findByRole('textbox');
 
         const input = await screen.findByRole('textbox');
 
@@ -4475,6 +4466,280 @@ describe('intent-first sidebar integration', () => {
         };
     };
 
+    it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
+        enable();
+        const turn = autoTurn();
+        turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
+        turn.semanticPlan!.deadlineAt = new Date(Date.now() - 30000).toISOString();
+        installPlan(turn);
+        const prepare = vi.fn().mockResolvedValue(undefined);
+        mocks.confirmPlan.mockImplementationOnce(async () => {
+            const confirmed = {
+                ...turn,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'rewrite:confirmed',
+                semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
+            };
+            return confirmed;
+        });
+        renderSidebar({onPrepareAdjustment: prepare});
+        expect(await screen.findByText('다시 자동채우기 할까요?')).toBeVisible();
+        expect(screen.getByText('고정한 근무는 유지하고, 나머지 근무는 바뀔 수 있어요.')).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        await userEvent.dblClick(screen.getByRole('button', {name: '자동채우기'}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(prepare).toHaveBeenCalledExactlyOnceWith('generation');
+        expect(mocks.confirmPlan).toHaveBeenCalledOnce();
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            rebuildConfirmed: true,
+            interpretationId: 'rewrite:confirmed',
+            planHash: 'plan-hash',
+            sourceVersionId: source.versionId,
+        });
+        expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+
+    it('keeps the table and rewrite request when preparation is cancelled', async () => {
+        enable();
+        const turn = autoTurn();
+        turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
+        installPlan(turn);
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        const prepare = vi.fn().mockRejectedValue(new Error('준비 취소'));
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '자동채우기'}));
+        await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
+        expect(await screen.findByRole('alert')).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
+        expect(screen.getByText('다시 자동채우기 할까요?')).toBeVisible();
+    });
+
+    it('syncs only manually protected cells before interpreting a current-table request', async () => {
+        enable();
+        current.operations = [];
+        const fixedBefore = {...useShiftEditorStore.getState().doc.fixedCells};
+        mocks.sync.mockImplementationOnce(async (_id, request) => {
+            current = {...current, draft: {...source, cells: request.cells}, conversation: {...current.conversation, revision: 1}};
+            return current;
+        });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'request:latest'});
+        renderSidebar({getProtectedCellKeys: () => ['1:2026-11-01']});
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), '김 선생님 나이트를 줄여줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.sync).toHaveBeenCalledWith(1, expect.objectContaining({cells: [expect.objectContaining({fixed: true})]}));
+        expect(mocks.interpret).toHaveBeenCalledWith(1, expect.objectContaining({expectedRevision: 1, text: '김 선생님 나이트를 줄여줘'}));
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual(fixedBefore);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('executes generation once when synced draft priorities are normalized without any schedule edit', async () => {
+        enable();
+        current = {
+            ...current,
+            operations: [],
+            draft: {
+                ...source,
+                rowOrder: [
+                    {shiftNurseId: 1, displayOrder: 1, priority: 1024, divisionNum: 1},
+                    {shiftNurseId: 2, displayOrder: 2, priority: 2048, divisionNum: 2},
+                ],
+            },
+        };
+        mocks.draftRowOrder = [
+            {shiftNurseId: 1, displayOrder: 1, priority: 16384, divisionNum: 1},
+            {shiftNurseId: 2, displayOrder: 2, priority: 6144, divisionNum: 2},
+        ];
+
+        const before = JSON.stringify(useShiftEditorStore.getState().doc);
+
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
+            operationType: 'GENERATE',
+            expectedRevision: 0,
+            authoringContractVersion: 'intent-first-v1',
+        });
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(JSON.stringify(useShiftEditorStore.getState().doc)).toBe(before);
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(screen.queryByText(i18n.t('aiAdjust.localError.staleRequest'))).not.toBeInTheDocument();
+    });
+
+    it('still blocks a protected-cell edit during asynchronous generation input loading', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
+        expect(await screen.findByRole('alert')).toHaveTextContent('표나 조건이 바뀌었어요.');
+    });
+
+    it('offers explicit fresh generation recovery once after local stale without reusing a prior token', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+
+        const retry = await screen.findByRole('button', {name: '현재 표로 다시 자동채우기'});
+
+        expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '표에서 직접 수정하기'})).toBeEnabled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        current = {...current, conversation: {...current.conversation, revision: 4}, draft: {...source, cells: [{...cell, fixed: true}]}};
+
+        let fresh!: (detail: TConversationDetail) => void;
+
+        mocks.detail.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    fresh = resolve;
+                }),
+        );
+        await userEvent.click(retry);
+        await waitFor(() => expect(fresh).toBeTypeOf('function'));
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        await userEvent.click(retry);
+        await act(async () => fresh(current));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({operationType: 'GENERATE', expectedRevision: 4, fillPolicy: 'EMPTY_ONLY'});
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('conflictReviewToken');
+        expect(mocks.execute.mock.calls[0]![1]).not.toHaveProperty('candidateDigest');
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('preserves unsent text and schedule while offering request editing and direct schedule editing', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const close = vi.fn();
+        const view = renderSidebar({onClose: close});
+
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), '기존에 입력한 수정 요청');
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        view.rerender(sidebarElement({generationRequest: 1, onClose: close}));
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+
+        const before = JSON.stringify(useShiftEditorStore.getState().doc);
+
+        await userEvent.click(await screen.findByRole('button', {name: '표에서 직접 수정하기'}));
+        expect(close).toHaveBeenCalledOnce();
+        expect(JSON.stringify(useShiftEditorStore.getState().doc)).toBe(before);
+        await userEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
+        expect(screen.getByRole('textbox')).toHaveValue('기존에 입력한 수정 요청');
+        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('returns an unsent adjustment to its normal request editor without offering generation', async () => {
+        enable();
+        installPlan();
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar();
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        await userEvent.click(await screen.findByRole('button', {name: '현재 표에서 조절하기'}));
+        expect(screen.getByRole('textbox')).toHaveFocus();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('does not replace an unsent rebuild with an empty-only generation retry', async () => {
+        enable();
+        current = {...current, operations: []};
+
+        const {loadMonthlyRestRequirement} = await import('../../../../model/monthly-rest-requirement');
+
+        let complete!: () => void;
+
+        vi.mocked(loadMonthlyRestRequirement).mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    complete = () => resolve(undefined);
+                }),
+        );
+        renderSidebar({generationRequest: 1, generationFillPolicy: 'REBUILD_UNLOCKED'});
+        await waitFor(() => expect(complete).toBeTypeOf('function'));
+        mocks.draftFixed = true;
+        await act(async () => complete());
+        expect(await screen.findByRole('button', {name: '요청 수정하기'})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('keeps server rejection recovery separate from an unsent local generation', async () => {
+        enable();
+        current = {...current, operations: []};
+        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'});
+        renderSidebar({generationRequest: 1});
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(await screen.findByRole('alert')).toHaveTextContent('근무표가 바뀌었어요.');
+        expect(screen.queryByRole('button', {name: '현재 표로 다시 자동채우기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '요청 수정하기'})).not.toBeInTheDocument();
+    });
+
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();
         installPlan();
@@ -4541,62 +4806,37 @@ describe('intent-first sidebar integration', () => {
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
-    it('keeps candidate changes out of the roster and sends exact cached selection binding once', async () => {
-        enable();
-
-        const proposal = intentResponse({
-            changedCells: [],
-            applicable: false,
-            validationTarget: 'CANDIDATE',
-            candidate: intentCandidate(),
-            authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-        });
-
-        current.operations = [
-            {...operation, operationType: 'ADJUST', result: proposal, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW'},
-        ];
-        mocks.execute.mockImplementationOnce(async () => {
-            const applied = {
-                ...operation,
-                operationType: 'ADJUST' as const,
-                result: intentResponse({authoringOutcome: intentOutcome({candidateDigest: 'digest:1'})}),
-            };
-
-            current = {
-                ...current,
-                operations: [...current.operations, {...applied, operationId: 'op:2', sequence: 2}],
-                conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
-                draft: {...source, versionId: 'result:1', cells: proposal.candidate!.changedCells},
-            };
-
-            return applied;
-        });
-        renderSidebar();
-
-        const apply = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')});
-
-        expect(screen.getByRole('table')).toHaveTextContent('D');
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        await userEvent.dblClick(apply);
-        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
-        expect(mocks.execute).toHaveBeenCalledOnce();
-        expect(mocks.setScheduleValidationFromApi).toHaveBeenCalledOnce();
-        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
-            authoringContractVersion: 'intent-first-v1',
-            sourceOperationId: 'operation:1',
-            candidateDigest: 'digest:1',
-            sourceVersionId: 'source:1',
-            conflictReviewToken: 'synthetic-token',
-            conflictConfirmed: true,
-        });
-        expect(mocks.interpret).not.toHaveBeenCalled();
-    });
-    it('preserves expired proposal history and the unsent composer across unmount/reentry', async () => {
+    it.each(['SATISFIED', 'PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED'] as const)(
+        'immediately applies the verified %s draft once without candidate controls',
+        async (requestState) => {
+            enable();
+            installPlan();
+            const result = intentResponse({authoringOutcome: intentOutcome({requestState})});
+            mocks.execute.mockImplementationOnce(async () => {
+                const applied = {...operation, operationType: 'ADJUST' as const, result};
+                current = {
+                    ...current,
+                    operations: [applied],
+                    conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
+                    draft: {...source, versionId: 'result:1', cells: result.changedCells},
+                };
+                return applied;
+            });
+            renderSidebar();
+            await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+            expect(mocks.execute).toHaveBeenCalledOnce();
+            expect(mocks.setScheduleValidationFromApi).toHaveBeenCalledOnce();
+            expect(mocks.execute.mock.calls[0]?.[1]).not.toHaveProperty('conflictReviewToken');
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+            expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.expired'))).not.toBeInTheDocument();
+        },
+    );
+    it('keeps historical candidates read-only without stale or confirmation controls', async () => {
         enable();
         current.operations = [
             {
                 ...operation,
-                operationType: 'ADJUST',
                 resultVersionId: null,
                 applyStatus: 'NOT_APPLIED_REVIEW',
                 result: intentResponse({
@@ -4604,25 +4844,15 @@ describe('intent-first sidebar integration', () => {
                     applicable: false,
                     validationTarget: 'CANDIDATE',
                     candidate: intentCandidate({expiresAt: '2000-01-01T00:00:00Z'}),
-                    authoringOutcome: intentOutcome({
-                        draftState: 'PREVIEW_ONLY',
-                        requestState: 'NEEDS_REVIEW',
-                        candidateDigest: 'digest:1',
-                    }),
+                    authoringOutcome: intentOutcome({draftState: 'PREVIEW_ONLY', requestState: 'NEEDS_REVIEW'}),
                 }),
             },
         ];
-
-        const rendered = renderSidebar();
-
-        await screen.findByRole('table');
-        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.chat.modify')}));
-        await userEvent.type(screen.getByRole('textbox'), '다음 요청 초안');
-        rendered.unmount();
         renderSidebar();
-        expect(await screen.findByRole('table')).toBeVisible();
-        expect(await screen.findByRole('textbox')).toHaveValue('다음 요청 초안');
-        expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).toBeDisabled();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+        expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.expired'))).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
@@ -4656,32 +4886,6 @@ describe('intent-first sidebar integration', () => {
         expect(current.operations).toHaveLength(1);
         expect(mocks.startSegment).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
-    });
-    it('clears a definitively expired candidate request without erasing its result history', async () => {
-        enable();
-        current.operations = [
-            {
-                ...operation,
-                operationType: 'ADJUST',
-                resultVersionId: null,
-                applyStatus: 'NOT_APPLIED_REVIEW',
-                result: intentResponse({
-                    changedCells: [],
-                    applicable: false,
-                    validationTarget: 'CANDIDATE',
-                    candidate: intentCandidate(),
-                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                }),
-            },
-        ];
-        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_EXPIRED'});
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await screen.findAllByText(i18n.t('aiConversationSidebar.authoring.expired'));
-        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
-        expect(current.operations).toHaveLength(1);
-        expect(screen.getByRole('table')).toBeVisible();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
     it('recovers a completed application after remount by comparing the source grid rather than a reset revision counter', async () => {
         enable();
@@ -4817,84 +5021,18 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('QA releases pending state after a definitive candidate revision conflict', async () => {
-        enable();
-        current.operations = [
-            {
-                ...operation,
-                operationType: 'ADJUST',
-                resultVersionId: null,
-                applyStatus: 'NOT_APPLIED_REVIEW',
-                result: intentResponse({
-                    changedCells: [],
-                    applicable: false,
-                    validationTarget: 'CANDIDATE',
-                    candidate: intentCandidate(),
-                    authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                }),
-            },
-        ];
-        mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'SCHEDULE_REVISION_CONFLICT'});
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        await act(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 30));
-        });
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull();
-    });
-
     const preparedCandidate = () => {
         enable();
-
-        const turn = autoTurn();
-
-        turn.semanticPlan!.deadlineAt = '2000-01-01T00:00:00Z';
-        turn.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
-        current = {
-            ...current,
-            turns: [turn],
-            conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
-            operations: [
-                {
-                    ...operation,
-                    operationType: 'ADJUST',
-                    interpretationId: turn.interpretationId,
-                    resultVersionId: null,
-                    applyStatus: 'NOT_APPLIED_REVIEW',
-                    result: intentResponse({
-                        applicable: false,
-                        changedCells: [],
-                        validationTarget: 'CANDIDATE',
-                        candidate: intentCandidate(),
-                        authoringOutcome: intentOutcome({draftState: 'CONSENT_REQUIRED', candidateDigest: 'digest:1'}),
-                    }),
-                },
-            ],
-        };
+        installPlan();
     };
 
-    it('selects a live cached candidate even after the original calculation window expires', async () => {
-        preparedCandidate();
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        expect(mocks.execute.mock.calls[0]?.[1]).toMatchObject({
-            conflictConfirmed: true,
-            candidateDigest: 'digest:1',
-            sourceOperationId: 'operation:1',
-        });
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-    });
     it.each(['CANDIDATE_STALE', 'PLAN_EXPIRED', 'SCHEDULE_STALE_DRAFT_REVISION', 'SCHEDULE_ADJUST_CONTEXT_CHANGED'])(
         'reconciles a definitive %s rejection and releases only the unaccepted request',
         async (serverCode) => {
             preparedCandidate();
             mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
             renderSidebar();
-            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
             await waitFor(() => expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).toBeNull());
             expect(mocks.execute).toHaveBeenCalledOnce();
             expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -4906,7 +5044,6 @@ describe('intent-first sidebar integration', () => {
             preparedCandidate();
             mocks.execute.mockRejectedValueOnce({code: 409, serverCode});
             renderSidebar();
-            await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
             await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
             expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
             expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -4916,13 +5053,12 @@ describe('intent-first sidebar integration', () => {
         preparedCandidate();
         mocks.execute.mockRejectedValueOnce({code: 409, serverCode: 'CANDIDATE_STALE'});
         mocks.detail.mockImplementation(async () => {
-            if (mocks.detail.mock.calls.length === 3) throw new Error('unavailable');
+            if (mocks.detail.mock.calls.length === 2) throw new Error('unavailable');
 
             return current;
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
         expect(mocks.execute).toHaveBeenCalledOnce();
     });
@@ -4948,8 +5084,7 @@ describe('intent-first sidebar integration', () => {
             throw {code: 409, serverCode: 'CANDIDATE_STALE'};
         });
         renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
-        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
         expect(sessionStorage.getItem('dutying.conversation:account:4:1:2:2026:11')).not.toBeNull();
         expect(mocks.execute).toHaveBeenCalledOnce();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();

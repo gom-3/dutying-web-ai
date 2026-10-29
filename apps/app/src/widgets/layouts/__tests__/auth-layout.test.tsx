@@ -69,6 +69,22 @@ describe('AuthLayout', () => {
         vi.useRealTimers();
     });
 
+    it('lets an authenticated account open profile before joining a ward', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.PROFILE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.PROFILE} element={<div>personal profile</div>} />
+                        <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByText('personal profile')).toBeInTheDocument());
+        expect(screen.queryByText('register page')).not.toBeInTheDocument();
+    });
+
     it.each([
         ['ko', '간호사 근무표 만들기, AI로 1분 만에 | 듀팅'],
         ['en', 'AI Nurse Shift Schedule Maker in 1 Minute | Dutying'],

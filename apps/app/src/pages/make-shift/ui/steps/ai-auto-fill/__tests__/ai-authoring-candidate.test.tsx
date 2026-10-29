@@ -1,5 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
+import {authoringMessageKey} from '../../../../model/intent-first-authoring';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {candidate, outcome, response} from '../../../../model/__tests__/fixtures/intent-first';
 import {AiAuthoringCandidate} from '../ai-authoring-candidate';
@@ -34,6 +35,51 @@ describe('reviewable authoring candidate', () => {
         await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')}));
         expect(input.onApply).toHaveBeenCalledOnce();
     });
+    it('shows original night bounds and actual candidate violations without treating SATISFIED as applied', () => {
+        const input = props();
+        input.result.authoringOutcome = outcome({draftState: 'CONSENT_REQUIRED', requestState: 'SATISFIED', candidateDigest: 'digest:1'});
+        input.result.engineResult = {
+            status: 'CONSENT_REQUIRED',
+            solver: {
+                conflictEvidence: [
+                    {
+                        type: 'NIGHT_RUN_BOUNDS_CONFLICT',
+                        ruleIds: [51, 52],
+                        shiftNurseId: 1,
+                        nurseName: '합성 간호사 A',
+                        minimum: 14,
+                        maximum: 3,
+                        actual: 1,
+                        startDate: '2026-10-31',
+                        endDate: '2026-11-01',
+                    },
+                ],
+            },
+        };
+        input.result.candidate!.selectionReason = 'MATERIAL_TRADEOFF';
+        input.result.candidate!.violations = [
+            {
+                violationId: 'remaining',
+                ruleId: 51,
+                templateCode: 'CORE_MIN_CONTINUOUS_NIGHT',
+                severity: 'HARD',
+                message: '후보의 실제 연속 야간 3회 / 원래 최소 14회',
+                affectedCells: [],
+                fixable: false,
+            },
+        ];
+        expect(authoringMessageKey(input.result)).toBe('CONSENT_REQUIRED');
+        const before = structuredClone(input.result);
+        render(<AiAuthoringCandidate {...input} />);
+        expect(screen.getByRole('list')).toHaveTextContent('최소 14회 / 최대 3회');
+        expect(screen.getByRole('list')).toHaveTextContent('2026-10-31');
+        expect(screen.getByRole('list')).toHaveTextContent('2026-11-01');
+        expect(screen.getByRole('list')).toHaveTextContent('이어진 야간 1회');
+        expect(screen.getByRole('list')).toHaveTextContent('후보의 실제 연속 야간 3회');
+        expect(input.onApply).not.toHaveBeenCalled();
+        expect(input.result).toEqual(before);
+        expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.SATISFIED'))).toBeNull();
+    });
     it('retains an expired candidate diff but disables execution', () => {
         const input = props();
 
@@ -57,6 +103,7 @@ describe('reviewable authoring candidate', () => {
         (requestState) => {
             render(
                 <AiConversationResult
+                    appliedLocally={requestState === 'PARTIAL' || requestState === 'NEEDS_REVIEW'}
                     operation={{
                         operationId: 'op:1',
                         sequence: 1,
@@ -100,19 +147,19 @@ describe('plain candidate copy', () => {
             locale: 'ko',
             title: '이렇게 바꿔볼까요?',
             prompt: '변경 내용을 보고 원하신 배치인지 확인해 주세요.',
-            applied: '선택한 배치를 반영했어요.',
+            applied: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
         },
         {
             locale: 'en',
             title: 'How about these changes?',
             prompt: 'Check the changes to see whether this is the arrangement you wanted.',
-            applied: 'Applied your selected changes.',
+            applied: 'Applied the changes to the schedule. Review the result.',
         },
         {
             locale: 'ja',
             title: 'このように変えてみませんか？',
             prompt: '変更内容を見て、ご希望の配置になっているかご確認ください。',
-            applied: '選択した配置を反映しました。',
+            applied: '変更を勤務表に反映しました。結果をご確認ください。',
         },
     ])('uses a single natural prompt in $locale without a technical review claim', async ({locale, title, prompt, applied}) => {
         await i18n.changeLanguage(locale);
@@ -147,6 +194,7 @@ describe('plain candidate copy', () => {
             expect(container.querySelector('details')).toBeNull();
             rerender(
                 <AiConversationResult
+                    appliedLocally
                     operation={{
                         ...operation,
                         applyStatus: 'APPLIED',

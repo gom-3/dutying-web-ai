@@ -49,6 +49,17 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         isCounted: false,
         classification: 'OFF',
     },
+    {
+        name: 'Annual leave',
+        shortName: 'A',
+        startTime: '',
+        endTime: '',
+        color: '#BFA7F3',
+        isDefault: false,
+        isOff: true,
+        isCounted: false,
+        classification: 'ANNUAL_LEAVE',
+    },
 ];
 
 const DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME = {
@@ -61,9 +72,12 @@ const DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME = {
 export function createDefaultWardShiftTypes(t: TRegisterWardTranslator): TCreateWardDTO['wardShiftTypes'] {
     return DEFAULT_WARD_SHIFT_TYPES.map((shiftType) => ({
         ...shiftType,
-        name: t(
-            `feature.registerWard.defaultShiftType.${DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as 'D' | 'E' | 'N' | 'O']}`,
-        ),
+        name:
+            shiftType.classification === 'ANNUAL_LEAVE'
+                ? t('annualLeave.display.annualLeave')
+                : t(
+                      `feature.registerWard.defaultShiftType.${DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as 'D' | 'E' | 'N' | 'O']}`,
+                  ),
     }));
 }
 

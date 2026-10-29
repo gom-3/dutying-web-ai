@@ -11,13 +11,18 @@ export function scheduleChatOwner(accountId: number | null, accessToken: string 
 export function scheduleChatKey(owner: string | number | null, wardId: number | null, teamId: number | null, year: number, month: number) {
     if (owner == null || wardId == null || teamId == null) return null;
 
-    return `dutying:schedule-chat:v1:${owner}:${wardId}:${teamId}:${year}:${month}`;
+    return `dutying:schedule-chat:v2:${owner}:${wardId}:${teamId}:${year}:${month}`;
 }
 
 export function readScheduleChat<T>(key: string | null, validate: (value: unknown) => value is T): T | null {
     if (!key) return null;
 
     try {
+        // Retire obsolete pre-reset transcripts, preparation flows and scroll positions.
+        for (const storedKey of Object.keys(window.localStorage)) {
+            if (storedKey.startsWith('dutying:schedule-chat:v1:')) window.localStorage.removeItem(storedKey);
+        }
+
         const value: unknown = JSON.parse(window.localStorage.getItem(key) ?? 'null');
 
         return validate(value) ? value : null;

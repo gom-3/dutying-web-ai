@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing -- Empty environment values must keep using the public seller-information fallback. */
 // Public seller information only. Populate from the business registration certificate.
 export const SELLER = {
     name: '컴공로드맵',
     representative: import.meta.env.VITE_SELLER_REPRESENTATIVE || '이경화',
-    registrationNumber: import.meta.env.VITE_SELLER_REGISTRATION_NUMBER || '818-09-01330',
+    registrationNumber: import.meta.env.VITE_SELLER_REGISTRATION_NUMBER || '319-05-02789',
     address: import.meta.env.VITE_SELLER_ADDRESS || '(우: 34885) 대전광역시 중구 태평로 55 (삼부아파트4단지) 412동 82호',
     phone: import.meta.env.VITE_SELLER_PHONE || '010-7696-1007',
     email: import.meta.env.VITE_SELLER_EMAIL || 'official@dutying.ai',
