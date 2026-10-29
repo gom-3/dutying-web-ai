@@ -128,9 +128,9 @@ describe('completed schedule snapshots', () => {
 
         expect(within(result).getByRole('button', {name: '근무표 살펴보기'})).toBeEnabled();
         expect(within(result).getByRole('button', {name: '표 직접 수정하기'})).toBeEnabled();
-        expect(within(result).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.modify'})).toHaveLength(1);
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
         expect(result).not.toContainElement(confirm);
         fireEvent.click(confirm);
         expect(onConfirm).toHaveBeenCalledOnce();
@@ -148,7 +148,7 @@ describe('completed schedule snapshots', () => {
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.confirmSchedule'})).toBeDisabled();
         expect(onConfirm).toHaveBeenCalledOnce();
     });
-    it('opens the change composer from inside the result without regenerating or confirming', async () => {
+    it('keeps the change composer available beside the result without regenerating or confirming', async () => {
         const onRegenerate = vi.fn();
         const onConfirm = vi.fn();
         const onApply = vi.fn();
@@ -167,10 +167,9 @@ describe('completed schedule snapshots', () => {
 
         const result = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        fireEvent.click(within(result).getByRole('button', {name: 'aiAdjust.chat.modify'}));
-        await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus());
-        expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
-        expect(screen.getByText('aiAdjust.chat.askChanges')).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
+        expect(screen.queryByText('aiAdjust.chat.modify')).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAdjust.chat.askChanges')).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
         expect(within(result).getByRole('img', {name: '근무표 결과 이미지'})).toBeVisible();
@@ -205,13 +204,13 @@ describe('completed schedule snapshots', () => {
 
         expect(within(results[0]).queryByRole('button', {name: '표 직접 수정하기'})).not.toBeInTheDocument();
         expect(within(results[0]).queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
-        expect(within(results[1]).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeVisible();
         fireEvent.click(within(results[1]).getByRole('button', {name: '표 직접 수정하기'}));
         expect(onReviewSchedule).toHaveBeenCalledOnce();
         expect(onRegenerate).not.toHaveBeenCalled();
         expect(onConfirm).not.toHaveBeenCalled();
         expect(within(results[1]).getByRole('button', {name: '표 직접 수정하기'})).toBeEnabled();
-        expect(within(results[1]).getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('img', {name: '근무표 결과 이미지'})).toHaveLength(2);
     });
     it('counts the first successful calculation as run one after preparation was canceled', async () => {
@@ -255,7 +254,7 @@ describe('completed schedule snapshots', () => {
 
         await screen.findByRole('img', {name: '근무표 결과 이미지'});
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        fireEvent.click(screen.getByRole('textbox'));
         fireEvent.change(screen.getByRole('textbox'), {target: {value: '오프를 고르게 배정해줘'}});
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(screen.getAllByRole('img', {name: '근무표 결과 이미지'})).toHaveLength(1);

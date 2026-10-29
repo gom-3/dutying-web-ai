@@ -57,7 +57,7 @@ describe('captured legacy schedule results', () => {
         });
 
         render(<AiAdjustTextInput {...props} onApply={apply} onRegenerate={regenerate} />);
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        fireEvent.click(screen.getByRole('textbox'));
         fireEvent.change(screen.getByRole('textbox'), {target: {value: '김 간호사 1일 쉬게 해줘'}});
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
         fireEvent.click(await screen.findByRole('button', {name: 'aiAdjust.chat.applyReply'}));
