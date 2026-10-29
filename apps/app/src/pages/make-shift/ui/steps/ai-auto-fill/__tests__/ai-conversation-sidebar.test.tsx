@@ -1672,6 +1672,18 @@ describe('persistent schedule sidebar', () => {
         expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
     });
 
+    it('does not report a saved and locally applied result as failed when its conversation refresh times out', async () => {
+        mocks.detail.mockResolvedValueOnce(current).mockRejectedValueOnce(new Error('Conversation lookup timed out'));
+        mocks.execute.mockResolvedValueOnce(operation);
+
+        renderSidebar({generationRequest: 1});
+
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.getByRole('textbox')).toBeEnabled());
+        expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
+    });
+
     it('distinguishes autofill and adjustment attempt boundaries without calling a solver', async () => {
         current.conversation.currentVersionId = 'result:1';
         current.operations = [

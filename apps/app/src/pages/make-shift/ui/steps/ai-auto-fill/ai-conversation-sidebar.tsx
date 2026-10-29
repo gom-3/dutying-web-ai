@@ -556,6 +556,8 @@ export default function AiConversationSidebar({
 
         if (!mounted.current) return;
 
+        let appliedLocally = false;
+
         if (
             operation.executionStatus === 'SUCCEEDED' &&
             !operationFailure(operation) &&
@@ -575,6 +577,8 @@ export default function AiConversationSidebar({
                 if (version.versionId !== operation.resultVersionId) throw new AiConversationInputError('staleRequest');
 
                 restore(version);
+                appliedLocally = true;
+
                 if (operation.operationType === 'GENERATE') setEntryChoice(null);
 
                 if (operation.result?.authoringOutcome && operation.result.validationTarget === 'RESULT')
@@ -597,7 +601,13 @@ export default function AiConversationSidebar({
             setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
         }
 
-        await refresh();
+        try {
+            await refresh();
+        } catch (cause) {
+            // The result is already saved and visible in the editor. A delayed
+            // conversation lookup must not turn that success into a failure card.
+            if (!appliedLocally) throw cause;
+        }
     };
     const sendExecution = async (id: number, request: TConversationExecute) => {
         const beforeRequest = detailRef.current;
