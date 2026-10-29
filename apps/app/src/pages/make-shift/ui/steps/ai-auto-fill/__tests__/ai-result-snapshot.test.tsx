@@ -236,7 +236,7 @@ describe('completed schedule snapshots', () => {
 
         const result = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(result).toHaveTextContent('aiAdjust.generationCompleted (1회차)');
+        expect(result).toHaveTextContent('aiAdjust.generationCompleted');
         expect(result).not.toHaveTextContent('(2회차)');
         expect(screen.getAllByRole('button', {name: '근무표 살펴보기'})).toHaveLength(1);
     });
@@ -282,7 +282,7 @@ describe('completed schedule snapshots', () => {
                 shift={initialShift()}
                 before={before}
                 beforeShift={initialShift()}
-                title="근무표를 채웠어요!"
+                title="근무표를 채웠어요."
             />,
         );
         await screen.findByRole('img', {name: '근무표 결과 이미지'});

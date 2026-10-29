@@ -778,7 +778,7 @@ describe('AI adjustment conversation', () => {
         );
         await submit('김서현 쉬게 해줘');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        await screen.findByText('근무표를 조정했어요!');
+        await screen.findByText(/요청하신 내용으로 \d+칸 변경했어요\./);
         expect(screen.getByText(/D → O/)).not.toBeVisible();
         fireEvent.click(screen.getByText('aiAdjust.changeDetails'));
         expect(screen.getByText(/D → O/)).toBeVisible();
@@ -836,9 +836,9 @@ describe('AI adjustment conversation', () => {
 
         const resultCard = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(within(resultCard).getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(within(resultCard).getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
         expect(within(resultCard).getByRole('img', {name: 'aiAdjust.snapshot.success'})).toBeVisible();
-        expect(within(resultCard).getByText('aiAdjust.snapshot.attempt {"count":1}')).toBeVisible();
+        expect(within(resultCard).queryByText('aiAdjust.snapshot.attempt {"count":1}')).not.toBeInTheDocument();
         expect(within(resultCard).getByLabelText('aiAdjust.snapshot.changedLabel {"count":1}')).toHaveTextContent(
             'aiAdjust.snapshot.changed {"count":1}',
         );
@@ -859,7 +859,7 @@ describe('AI adjustment conversation', () => {
         expect(textbox()).toHaveValue('');
         expect(screen.getByText('aiAdjust.chat.askChanges')).toBeVisible();
         expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
-        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(screen.getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.modifyMore'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
         expect(interpret).toHaveBeenCalledTimes(1);
@@ -867,7 +867,7 @@ describe('AI adjustment conversation', () => {
         await submit('데이 연속 근무를 줄여줘', false);
         expect(interpret).toHaveBeenCalledTimes(2);
         expect(apply).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(screen.getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
     });
 
     it('does not send Enter while composing Korean input or leak editing keys', async () => {

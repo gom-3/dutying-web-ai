@@ -33,6 +33,27 @@ beforeEach(async () => {
 });
 
 describe('conversation snapshot screen', () => {
+    it('does not ask to apply the current result again, while keeping the earlier version restorable', async () => {
+        const onContinue = vi.fn();
+
+        render(
+            <AiConversationSnapshot
+                version={result}
+                before={before}
+                currentVersionId="result"
+                disabled={false}
+                onClose={vi.fn()}
+                onContinue={onContinue}
+            />,
+        );
+
+        expect(screen.queryByRole('button', {name: '이전 결과로 복원하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경 전 표로 복원하기'}));
+        expect(onContinue).toHaveBeenCalledExactlyOnceWith(before);
+        await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
+        expect(screen.queryByRole('button', {name: '이전 결과로 복원하기'})).not.toBeInTheDocument();
+    });
     it('renders the existing calendar and switches immutable versions without changing the editor or its selection', async () => {
         const current = useShiftEditorStore.getState();
         const onContinue = vi.fn();
@@ -44,7 +65,7 @@ describe('conversation snapshot screen', () => {
         const comparison = within(screen.getByRole('group', {name: '전후 비교'}));
         const beforeButton = comparison.getByRole('button', {name: '변경 전'});
         const afterButton = comparison.getByRole('button', {name: '변경 후'});
-        const continueButton = screen.getByRole('button', {name: '이 표로 이어서 작성하기'});
+        const continueButton = screen.getByRole('button', {name: '이전 결과로 복원하기'});
 
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         expect(screen.getByText('이 결과를 만든 시점의 근무표예요. 여기서는 수정할 수 없어요.')).toBeInTheDocument();
@@ -55,11 +76,11 @@ describe('conversation snapshot screen', () => {
         await user.click(beforeButton);
         expect(beforeButton).toHaveAttribute('aria-pressed', 'true');
         expect(afterButton).toHaveAttribute('aria-pressed', 'false');
-        expect(continueButton).toHaveAccessibleName('변경 전 표로 이어서 작성하기');
+        expect(continueButton).toHaveAccessibleName('변경 전 표로 복원하기');
         await user.click(continueButton);
         expect(onContinue).toHaveBeenLastCalledWith(before);
         await user.click(afterButton);
-        expect(continueButton).toHaveAccessibleName('이 표로 이어서 작성하기');
+        expect(continueButton).toHaveAccessibleName('이전 결과로 복원하기');
         await user.click(continueButton);
         expect(onContinue).toHaveBeenLastCalledWith(result);
         await user.click(screen.getByRole('region', {name: '근무표 전체 보기'}));
@@ -78,12 +99,12 @@ describe('conversation snapshot screen', () => {
         const comparison = within(screen.getByRole('group', {name: '전후 비교'}));
         const beforeButton = comparison.getByRole('button', {name: '변경 전'});
         const afterButton = comparison.getByRole('button', {name: '변경 후'});
-        const continueButton = screen.getByRole('button', {name: '이 표로 이어서 작성하기'});
+        const continueButton = screen.getByRole('button', {name: '이전 결과로 복원하기'});
 
         await user.click(beforeButton);
         await user.click(afterButton);
         expect(afterButton).toHaveAttribute('aria-pressed', 'true');
-        expect(continueButton).toHaveAccessibleName('이 표로 이어서 작성하기');
+        expect(continueButton).toHaveAccessibleName('이전 결과로 복원하기');
         await user.click(continueButton);
         expect(onContinue).toHaveBeenCalledExactlyOnceWith(result);
     });
@@ -91,7 +112,7 @@ describe('conversation snapshot screen', () => {
         render(<AiConversationSnapshot version={result} disabled={false} onClose={vi.fn()} onContinue={vi.fn()} />);
         expect(screen.queryByRole('group', {name: '보기 방식'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '변경 전'})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeEnabled();
     });
     it('loads the saved earlier schedule only when Before is selected, then reuses it', async () => {
         let resolveBefore!: (version: TResultVersion) => void;
@@ -106,13 +127,13 @@ describe('conversation snapshot screen', () => {
         await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
         expect(screen.getByRole('status')).toHaveTextContent('변경 전 근무표 불러오는 중');
         expect(document.querySelector('.make-shift-calendar')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeDisabled();
         expect(loadBefore).toHaveBeenCalledOnce();
         await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeEnabled();
         await act(async () => resolveBefore(before));
         await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
-        await userEvent.click(screen.getByRole('button', {name: '변경 전 표로 이어서 작성하기'}));
+        await userEvent.click(screen.getByRole('button', {name: '변경 전 표로 복원하기'}));
         expect(onContinue).toHaveBeenCalledExactlyOnceWith(before);
         expect(loadBefore).toHaveBeenCalledOnce();
     });
@@ -126,12 +147,12 @@ describe('conversation snapshot screen', () => {
         await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('변경 전 근무표를 불러오지 못했어요.');
         expect(document.querySelector('.make-shift-calendar')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeDisabled();
         await userEvent.click(screen.getByRole('button', {name: '변경 후'}));
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeEnabled();
         expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '변경 전'}));
-        expect(await screen.findByRole('button', {name: '변경 전 표로 이어서 작성하기'})).toBeEnabled();
+        expect(await screen.findByRole('button', {name: '변경 전 표로 복원하기'})).toBeEnabled();
         expect(loadBefore).toHaveBeenCalledTimes(2);
     });
     it('retries a failed earlier schedule without leaving the before and after view', async () => {
@@ -146,7 +167,7 @@ describe('conversation snapshot screen', () => {
         await userEvent.click(screen.getByRole('button', {name: '다시 불러오기'}));
         await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
         expect(screen.getByRole('button', {name: '변경 전'})).toHaveAttribute('aria-pressed', 'true');
-        expect(screen.getByRole('button', {name: '변경 전 표로 이어서 작성하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '변경 전 표로 복원하기'})).toBeEnabled();
         expect(loadBefore).toHaveBeenCalledTimes(2);
     });
     it('renders saved and removed nurses instead of the live editor roster', () => {
@@ -192,8 +213,8 @@ describe('conversation snapshot screen', () => {
         const onContinue = vi.fn();
 
         render(<AiConversationSnapshot version={result} disabled onClose={onClose} onContinue={onContinue} />);
-        expect(screen.getByRole('button', {name: '이 표로 이어서 작성하기'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '이 표로 이어서 작성하기'}));
+        expect(screen.getByRole('button', {name: '이전 결과로 복원하기'})).toBeDisabled();
+        await userEvent.click(screen.getByRole('button', {name: '이전 결과로 복원하기'}));
         expect(onContinue).not.toHaveBeenCalled();
         await userEvent.click(screen.getByRole('button', {name: '닫기'}));
         expect(onClose).toHaveBeenCalledOnce();

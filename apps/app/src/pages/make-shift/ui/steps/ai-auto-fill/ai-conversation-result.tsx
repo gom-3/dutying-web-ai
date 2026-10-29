@@ -12,6 +12,7 @@ export function AiConversationResult({
     attempt,
     feedbackDisabled,
     preview,
+    changeSummary,
     children,
     actions,
     onReport,
@@ -21,6 +22,7 @@ export function AiConversationResult({
     attempt: number;
     feedbackDisabled: boolean;
     preview?: ReactNode;
+    changeSummary?: ReactNode;
     children?: ReactNode;
     actions?: ReactNode;
     onReport: MouseEventHandler<HTMLButtonElement>;
@@ -39,26 +41,30 @@ export function AiConversationResult({
             : applied && authoring?.requestState === 'PARTIAL'
               ? 'PARTIAL'
               : undefined;
+    const changedCount = operation.result?.changedCells.length;
     const succeeded =
         operation.executionStatus === 'SUCCEEDED' &&
         applied &&
+        changedCount !== undefined &&
+        changedCount > 0 &&
         (!authoring ||
             (authoring.draftState === 'APPLICABLE' &&
                 !['PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT'].includes(authoring.requestState)));
-    const changedCount = operation.result?.changedCells.length;
     const showPartialCoverage = !applied && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = appliedStatusKey
         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
         : review
           ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
-          : !applied
+          : !saved || changedCount === undefined
             ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
             : operation.operationType === 'GENERATE'
-              ? t('aiAutofillUi.conversationResult.yourScheduleIsReady')
+              ? changedCount === 0
+                ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
+                : t('aiAutofillUi.conversationResult.yourScheduleIsReady')
               : changedCount === 0
                 ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
-                : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady');
-    const scope = applied
+                : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady', {count: changedCount});
+    const scope = saved
         ? null
         : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
           ? t('aiAutofillUi.conversationResult.yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing')
@@ -67,7 +73,7 @@ export function AiConversationResult({
     return (
         <AiScheduleResultCard
             title={
-                applied
+                saved && changedCount !== undefined
                     ? title
                     : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                       ? t('aiConversationSidebar.sourceChangedNotApplied')
@@ -75,7 +81,7 @@ export function AiConversationResult({
                         ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
                         : title
             }
-            attempt={attempt}
+            attempt={saved ? undefined : attempt}
             outcome={
                 !applied && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
                     ? 'review'
@@ -84,9 +90,9 @@ export function AiConversationResult({
                       : 'neutral'
             }
             outcomeLabel={
-                !applied && visibleMessageKey
+                !saved && visibleMessageKey
                     ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
-                    : !applied
+                    : !saved
                       ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
                       : appliedStatusKey
                         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
@@ -94,7 +100,8 @@ export function AiConversationResult({
                           ? t('aiAutofillUi.conversationResult.autofillSucceeded')
                           : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
-            changedCount={changedCount}
+            changedCount={applied ? changedCount : undefined}
+            changeSummary={applied ? changeSummary : undefined}
             description={
                 authoring
                     ? applied

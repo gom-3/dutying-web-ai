@@ -68,15 +68,15 @@ export function AiAdjustResult({
     const hasUnmet = unmet.length > 0 || unmetInstructions.length > 0;
     const hasSupplementalDetails = unmetInstructions.length > 0 || notices.length > 0;
     const title = changes.length
-        ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady')
+        ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady', {count: changes.length})
         : t('aiAutofillUi.conversationResult.noShiftsChangedThisTime');
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-3">
             <AiScheduleResultCard
                 title={title}
-                attempt={attempt}
-                outcome={hasProblems ? 'review' : 'success'}
+                attempt={undefined}
+                outcome={hasProblems ? 'review' : changes.length ? 'success' : 'neutral'}
                 outcomeLabel={t(hasProblems ? 'aiAdjust.snapshot.review' : 'aiAdjust.snapshot.success')}
                 changedCount={changes.length}
                 preview={preview}

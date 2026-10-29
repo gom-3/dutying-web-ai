@@ -66,6 +66,7 @@ import {AiConversationImage} from './ai-conversation-image';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
+import {AiConversationChanges} from './ai-conversation-changes';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -2186,6 +2187,21 @@ export default function AiConversationSidebar({
                                                 }
                                                 attempt={operationAttempt(detail, event.operation.operationId)}
                                                 feedbackDisabled={busy || running || preparing || reportOperation !== null}
+                                                changeSummary={
+                                                    event.operation.applyStatus === 'APPLIED' &&
+                                                    !localDirty &&
+                                                    detail.conversation.currentVersionId === event.operation.resultVersionId &&
+                                                    event.operation.result?.changedCells.length ? (
+                                                        <AiConversationChanges
+                                                            changedCells={event.operation.result.changedCells}
+                                                            sourceVersionId={event.operation.sourceVersionId}
+                                                            loadVersion={api.version}
+                                                            nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
+                                                            label={t('aiConversationSidebar.actualChanges')}
+                                                            locale={i18n.language}
+                                                        />
+                                                    ) : undefined
+                                                }
                                                 copy={copy}
                                                 preview={
                                                     event.operation.resultVersionId ? (
@@ -2777,6 +2793,7 @@ export default function AiConversationSidebar({
                             loadBefore={preview.sourceVersionId ? loadPreviewSource : undefined}
                             returnFocusTo={preview.returnFocusTo}
                             disabled={busy || running}
+                            currentVersionId={localDirty ? undefined : detail?.conversation.currentVersionId}
                             onClose={() => setPreview(null)}
                             onContinue={(version) => void branch(version)}
                         />

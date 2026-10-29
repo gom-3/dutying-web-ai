@@ -1945,7 +1945,7 @@ describe('AiAutofill adjust panel', () => {
             expect(retriedRequest.lockedCellKeys).toEqual(failedRequest.lockedCellKeys);
             expect(screen.getByRole('log').textContent).toContain(message);
             expect(screen.getByRole('log').textContent).toMatch(
-                /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*근무표를 조정했어요!/,
+                /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*요청하신 내용으로 \d+칸 변경했어요\./,
             );
         },
     );
