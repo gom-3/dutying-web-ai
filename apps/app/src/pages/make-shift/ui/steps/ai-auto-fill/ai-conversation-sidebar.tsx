@@ -55,6 +55,7 @@ import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-r
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
+import {AiConversationChanges} from './ai-conversation-changes';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
 import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
@@ -66,7 +67,6 @@ import {AiConversationImage} from './ai-conversation-image';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
-import {AiConversationChanges} from './ai-conversation-changes';
 import {AiConversationResultDetails} from './ai-conversation-result-details';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -99,6 +99,7 @@ type TProps = {
     shift: TShift;
     adjustEnabled: boolean;
     generationRequest: number;
+    generationText?: string;
     rebuildRequest: number;
     onApplied: () => void;
     onGenerated?: () => void;
@@ -141,6 +142,7 @@ export default function AiConversationSidebar({
     shift,
     adjustEnabled,
     generationRequest,
+    generationText = '',
     rebuildRequest,
     onApplied,
     onGenerated,
@@ -203,6 +205,8 @@ export default function AiConversationSidebar({
     const doc = useShiftEditorStore((s) => s.doc);
     const intentFirstEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const automaticAttempts = useRef(new Set<string>());
+    const initialGenerationPending = useRef(false);
+    const generationPlanIds = useRef(new Set<string>());
     const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
@@ -380,7 +384,6 @@ export default function AiConversationSidebar({
     };
     const dto = () => {
         const state = useShiftEditorStore.getState();
-
         const draft = buildAutofillDTO({
             year,
             month,
@@ -1141,7 +1144,7 @@ export default function AiConversationSidebar({
             false,
             'recovering',
         );
-    const interpret = async (request = text, reference = previousId) => {
+    const interpret = async (request = text, reference = previousId, initialGeneration = false) => {
         const message = request.trim();
 
         if (!message) return;
@@ -1211,6 +1214,8 @@ export default function AiConversationSidebar({
                         throw cause;
                     });
 
+                if (initialGeneration) initialGenerationPending.current = true;
+
                 setText('');
                 setEditingPreferenceId(undefined);
                 setRequestToolsOpen(false);
@@ -1255,6 +1260,7 @@ export default function AiConversationSidebar({
         return api.version(previewSourceId);
     }, [api, previewSourceId]);
     const resetSectionUi = () => {
+        initialGenerationPending.current = false;
         discardedPreparationId.current = autofillFlow?.id ?? null;
         reviewedPreparation.current = null;
         previewRequest.current += 1;
@@ -1568,7 +1574,9 @@ export default function AiConversationSidebar({
         );
 
         if (
+            initialGenerationPending.current ||
             !turn?.interpretationId ||
+            generationPlanIds.current.has(turn.interpretationId) ||
             !turn.semanticPlan?.autoExecutable ||
             Boolean(turn.semanticPlan.generationIntent) ||
             !isSemanticExecutionCurrent(detail, turn, false) ||
@@ -1589,8 +1597,36 @@ export default function AiConversationSidebar({
         if (!detail || busy || !open || preparing || generationRequest <= lastGeneration.current) return;
 
         lastGeneration.current = generationRequest;
-        void execute('GENERATE', generationFillPolicy);
-    }, [generationRequest, detail, busy, open, preparing, generationFillPolicy]);
+
+        if (generationText.trim()) void interpret(generationText.trim(), undefined, true);
+        else void execute('GENERATE', generationFillPolicy);
+    }, [generationRequest, generationText, detail, busy, open, preparing, generationFillPolicy]);
+
+    useEffect(() => {
+        if (!initialGenerationPending.current || !detail || busy || !open || preparing || localDirty) return;
+
+        const turn = detail.turns.find(
+            (entry) => entry.interpretationId === detail.conversation.latestInterpretationId && entry.semanticPlan,
+        );
+
+        if (turn?.semanticPlan?.generationIntent) {
+            initialGenerationPending.current = false;
+
+            return;
+        }
+
+        if (
+            !turn?.interpretationId ||
+            !turn.semanticPlan?.autoExecutable ||
+            !isSemanticExecutionCurrent(detail, turn, false) ||
+            detail.operations.some((operation) => operation.interpretationId === turn.interpretationId)
+        )
+            return;
+
+        generationPlanIds.current.add(turn.interpretationId);
+        initialGenerationPending.current = false;
+        void execute('GENERATE', generationFillPolicy, turn.interpretationId);
+    }, [detail, busy, open, preparing, localDirty, generationFillPolicy]);
 
     useEffect(() => {
         if (rebuildRequest <= lastRebuild.current) return;
@@ -2193,6 +2229,7 @@ export default function AiConversationSidebar({
                                                     detail.conversation.currentVersionId === event.operation.resultVersionId &&
                                                     event.operation.result?.changedCells.length ? (
                                                         <AiConversationChanges
+                                                            key={`${event.operation.operationId}:${event.operation.resultVersionId}`}
                                                             changedCells={event.operation.result.changedCells}
                                                             sourceVersionId={event.operation.sourceVersionId}
                                                             loadVersion={api.version}
@@ -2655,33 +2692,26 @@ export default function AiConversationSidebar({
                                     onChoose={chooseNextAction}
                                 />
                             ))}
-                        {!composerHidden &&
-                            !editingRequest &&
-                            !activeTurns.length &&
-                            !text.trim() &&
-                            !!requestExamples.length && (
-                                <section
-                                    aria-label={t('aiAdjust.examples')}
-                                    className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3"
-                                >
-                                    <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
-                                    {[...new Set(requestExamples)].map((sentence) => (
-                                        <button
-                                            key={sentence}
-                                            type="button"
-                                            disabled={busy || running || !adjustEnabled}
-                                            onClick={() => {
-                                                setText(sentence);
-                                                textarea.current?.focus();
-                                            }}
-                                            className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                        >
-                                            <span>{sentence}</span>
-                                            <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
-                                        </button>
-                                    ))}
-                                </section>
-                            )}
+                        {!composerHidden && !editingRequest && !activeTurns.length && !text.trim() && !!requestExamples.length && (
+                            <section aria-label={t('aiAdjust.examples')} className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3">
+                                <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
+                                {[...new Set(requestExamples)].map((sentence) => (
+                                    <button
+                                        key={sentence}
+                                        type="button"
+                                        disabled={busy || running || !adjustEnabled}
+                                        onClick={() => {
+                                            setText(sentence);
+                                            textarea.current?.focus();
+                                        }}
+                                        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                    >
+                                        <span>{sentence}</span>
+                                        <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
+                                    </button>
+                                ))}
+                            </section>
+                        )}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && !reportOperation && (
                             <AiConversationLoading
                                 className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"

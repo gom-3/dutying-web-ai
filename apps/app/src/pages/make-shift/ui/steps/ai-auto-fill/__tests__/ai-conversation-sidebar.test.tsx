@@ -1007,8 +1007,17 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByRole('img', {name: '자동채우기 성공'})).toBeVisible();
         expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
         expect(within(result).getByLabelText('변경된 근무 1칸')).toHaveTextContent(/^1칸 변경$/);
-        expect(await within(result).findByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('김 간호사 · 11월 1일');
+        const changes = await within(result).findByRole('region', {name: '실제 변경 내역'});
+        const toggle = within(changes).getByRole('button', {name: '변경 내역 1개 보기'});
+
+        expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        expect(changes).not.toHaveTextContent('김 간호사 · 11월 1일');
+        await userEvent.click(toggle);
+        expect(within(changes).getByRole('button', {name: '변경 내역 접기'})).toHaveAttribute('aria-expanded', 'true');
+        expect(await within(changes).findByText('김 간호사 · 11월 1일')).toBeVisible();
         expect(within(result).getByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('O → D');
+        await userEvent.click(within(changes).getByRole('button', {name: '변경 내역 접기'}));
+        expect(within(changes).getByRole('button', {name: '변경 내역 1개 보기'})).toHaveAttribute('aria-expanded', 'false');
         expect(within(result).queryByText('1칸이 달라졌어요.')).not.toBeInTheDocument();
         expect(within(result).queryByText(/만들 당시의 결과예요/)).not.toBeInTheDocument();
         expect(within(result).getAllByRole('button', {name: '근무표 살펴보기'})).toHaveLength(1);
@@ -4475,6 +4484,34 @@ describe('intent-first sidebar integration', () => {
             conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
         };
     };
+
+    it('interprets a first-generation request once and runs its plan as GENERATE', async () => {
+        enable();
+        const text = '이번 달은 김 간호사의 주말 근무를 줄여주세요.';
+        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN'};
+
+        current = {...current, operations: []};
+        mocks.interpret.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                turns: [turn],
+                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            };
+
+            return turn;
+        });
+        renderSidebar({generationRequest: 1, generationText: text, generationFillPolicy: 'REBUILD_UNLOCKED'});
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text, authoringContractVersion: 'intent-first-v1'});
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            rebuildConfirmed: true,
+            interpretationId: turn.interpretationId,
+            planHash: turn.semanticPlan!.planHash,
+        });
+    });
 
     it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
         enable();

@@ -158,6 +158,8 @@ export const aiAdjustJa = {
         },
     },
     preparation: {
+        initialRequestLabel: '今回の勤務表に反映する内容 · 任意',
+        initialRequestExample: '今月はキム看護師の週末勤務を減らしてください。',
         previous: '先月の勤務に空欄があります。\nこのまま進めますか？',
         previousHelp: '先月の勤務を入力すると、月初の\n連続勤務と休息も確認できます。',
         continue: 'このまま進む',
