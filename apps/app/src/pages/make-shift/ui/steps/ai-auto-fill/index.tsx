@@ -2455,9 +2455,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         return true;
     };
     const handleOpenAutofill = () => {
-        if (resumeAutofillPreparation()) return;
-
         const currentDoc = useShiftEditorStore.getState().doc;
+        const hasResultCells = currentDoc.rows.some((row) =>
+            row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
+        );
+        // A paused generation review from an older visit must not trap a filled
+        // roster in the refill flow when the user opens natural editing.
+        if (conversationEnabled && hasResultCells && autofillFlow?.status === 'paused' && autofillFlow.kind === 'generation' && !autofillFlow.recovery) {
+            resetAutofillConversation();
+        } else if (resumeAutofillPreparation()) return;
+
         const baseline = lastAiGeneratedDocRef.current;
         const changedSinceGeneration =
             hasEditableDutyDocChanges(currentDoc, baseline) ||
@@ -2478,10 +2485,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             return;
         }
-
-        const hasResultCells = currentDoc.rows.some((row) =>
-            row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
-        );
 
         if (hasGeneratedSchedule && hasResultCells && !changedSinceGeneration) {
             setIsSnapshotSidebarOpen(false);

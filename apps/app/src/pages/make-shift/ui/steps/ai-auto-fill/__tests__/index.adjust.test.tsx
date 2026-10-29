@@ -674,6 +674,22 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
     });
 
+    it('discards a paused refill review when opening a filled roster for natural editing', async () => {
+        useAuthStore.setState({accountId: 1001});
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:1001:1:10:2026:7',
+            JSON.stringify({id: 8, kind: 'generation', status: 'paused', resumeStep: 'previous', messages: []}),
+        );
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        expect(mocks.conversationProps?.open).toBe(true);
+        expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+    });
+
     it.each([false, true])('times conversation execution and completes only successful results (success: %s)', async (succeeded) => {
         seedEditor(makeEmptyDoc());
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
