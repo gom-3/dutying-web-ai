@@ -953,7 +953,8 @@ describe('WardSettingsPage', () => {
         try {
             render(<WardSettingsPage />);
 
-            expect(screen.getByText('주 2일 기준 · 실제 달력 8일 · 공휴일 포함 +2일')).toBeInTheDocument();
+            expect(screen.getByText('주 2일 기준 · 실제 달력 8일')).toBeInTheDocument();
+            expect(screen.getByText('공휴일 포함 +2일')).toBeInTheDocument();
         } finally {
             vi.useRealTimers();
         }
@@ -974,7 +975,8 @@ describe('WardSettingsPage', () => {
         try {
             render(<WardSettingsPage />);
 
-            expect(screen.getByText('週2日基準・暦上8日 · 祝日を含める +2日')).toBeInTheDocument();
+            expect(screen.getByText('週2日基準・暦上8日')).toBeInTheDocument();
+            expect(screen.getByText('祝日を含める +2日')).toBeInTheDocument();
         } finally {
             vi.useRealTimers();
         }

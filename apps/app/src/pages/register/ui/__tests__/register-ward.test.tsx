@@ -80,6 +80,13 @@ describe('RegisterWard', () => {
                 wardShiftTypes: expect.arrayContaining([
                     expect.objectContaining({shortName: 'D', isCounted: true}),
                     expect.objectContaining({shortName: 'O', isCounted: false}),
+                    expect.objectContaining({
+                        name: '연차',
+                        shortName: 'A',
+                        classification: 'ANNUAL_LEAVE',
+                        isOff: true,
+                        isCounted: false,
+                    }),
                 ]),
             }),
         );

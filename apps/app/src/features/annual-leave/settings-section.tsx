@@ -1,5 +1,5 @@
 import type {TAnnualLeaveInitialization, TAnnualLeaveSettings} from '@dutying/api/ward';
-import {Check, X} from 'lucide-react';
+import {Check, Plus, X} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import type {TShiftTeam, TWardShiftType} from '@/entities';
 import {WardAPI} from '@/shared/api';
@@ -43,6 +43,7 @@ export function SettingsForm({
     const today = annualLeaveDate();
     const start = settings.enabled ? (settings.startedOn ?? today) : today;
     const [values, setValues] = useState<Record<number, string>>({});
+    const [visibility, setVisibility] = useState<Record<number, boolean>>({});
     const [busy, setBusy] = useState(false);
     const requestId = useAnnualLeaveRequestId();
     const refresh = useRefreshAnnualLeave(wardId);
@@ -53,13 +54,24 @@ export function SettingsForm({
                 type.classification === 'ANNUAL_LEAVE' || settings.unitRules.some((rule) => rule.shiftTypeId === type.wardShiftTypeId),
         )
         .map((type) => type.wardShiftTypeId);
-    const [shownIds, setShownIds] = useState<number[]>(initialIds);
+    const shownIds = availableTypes
+        .filter((type) => visibility[type.wardShiftTypeId] ?? initialIds.includes(type.wardShiftTypeId))
+        .map((type) => type.wardShiftTypeId);
     const annualTypes = shownIds.flatMap((id) => availableTypes.filter((type) => type.wardShiftTypeId === id));
     const remainingTypes = availableTypes.filter((type) => !shownIds.includes(type.wardShiftTypeId));
     const removedIds = new Set(initialIds.filter((id) => !shownIds.includes(id)));
     const editedIds = new Set(annualTypes.filter((type) => values[type.wardShiftTypeId] !== undefined).map((type) => type.wardShiftTypeId));
+    const defaultRules = annualTypes
+        .filter(
+            (type) =>
+                type.classification === 'ANNUAL_LEAVE' &&
+                !editedIds.has(type.wardShiftTypeId) &&
+                !settings.unitRules.some((rule) => rule.shiftTypeId === type.wardShiftTypeId),
+        )
+        .map((type) => ({shiftTypeId: type.wardShiftTypeId, days: 1, effectiveFrom: null}));
     const valid = [...editedIds].every((id) => /^\d+(?:\.\d{1,3})?$/.test(values[id] ?? '') && Number(values[id]) <= 10);
     const changed =
+        defaultRules.length > 0 ||
         removedIds.size > 0 ||
         shownIds.some((id) => !initialIds.includes(id)) ||
         [...editedIds].some(
@@ -73,6 +85,7 @@ export function SettingsForm({
         );
     const rules = [
         ...settings.unitRules.filter((rule) => !editedIds.has(rule.shiftTypeId) && !removedIds.has(rule.shiftTypeId)),
+        ...defaultRules,
         ...[...editedIds].map((shiftTypeId) => ({shiftTypeId, days: Number(values[shiftTypeId]), effectiveFrom: null})),
     ];
     const save = async (event: FormEvent) => {
@@ -103,6 +116,14 @@ export function SettingsForm({
             ariaLabel={t('annualLeave.addLeaveType')}
             disabled={busy}
             portalled={false}
+            triggerContent={
+                <>
+                    <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
+                        <Plus className="h-[11px] w-[11px] text-white" aria-hidden="true" />
+                    </span>
+                    {t('annualLeave.addLeaveType')}
+                </>
+            }
             options={[
                 {value: '', label: t('annualLeave.addLeaveType')},
                 ...remainingTypes.map((type) => ({
@@ -115,7 +136,7 @@ export function SettingsForm({
 
                 const id = Number(value);
 
-                setShownIds((ids) => [...ids, id]);
+                setVisibility((previous) => ({...previous, [id]: true}));
                 setValues((previous) => ({
                     ...previous,
                     [id]: String(
@@ -127,7 +148,7 @@ export function SettingsForm({
                     ),
                 }));
             }}
-            className="min-h-11 bg-transparent text-sm text-sub-2 ring-0 transition-colors hover:bg-transparent hover:text-main-1 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:ring-0 motion-reduce:transition-none"
+            className="group min-h-11 gap-2 bg-transparent px-0 pr-0 font-apple text-[16px] leading-none font-medium text-gray-3 ring-0 transition-colors hover:bg-transparent hover:text-[#4E586C] focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-main-1 aria-disabled:opacity-40 motion-reduce:transition-none"
         />
     );
 
@@ -211,7 +232,7 @@ export function SettingsForm({
                                                 aria-label={`${type.name} ${t('annualLeave.remove')}`}
                                                 disabled={busy}
                                                 onClick={() => {
-                                                    setShownIds((ids) => ids.filter((id) => id !== type.wardShiftTypeId));
+                                                    setVisibility((previous) => ({...previous, [type.wardShiftTypeId]: false}));
                                                     setValues((previous) => {
                                                         const next = {...previous};
 
@@ -239,7 +260,7 @@ export function SettingsForm({
                         );
                     })}
                 </div>
-                {addTypeDropdown && <div className="mx-auto mt-3 w-52 max-w-full">{addTypeDropdown}</div>}
+                {addTypeDropdown && <div className="mx-auto mt-4 w-52 max-w-full">{addTypeDropdown}</div>}
             </section>
             {settings.startedOn && (
                 <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-gray-7 px-3 py-3">

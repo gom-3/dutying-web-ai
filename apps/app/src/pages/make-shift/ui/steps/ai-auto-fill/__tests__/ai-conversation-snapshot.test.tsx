@@ -173,7 +173,7 @@ describe('conversation snapshot screen', () => {
         };
 
         render(<AiConversationSnapshot version={historical} disabled={false} onClose={vi.fn()} onContinue={vi.fn()} />);
-        expect(screen.getByText('과거 이름')).toBeInTheDocument();
+        expect(screen.getByTitle('과거 이름')).toBeInTheDocument();
         expect(screen.getByTitle('삭제된 간호사')).toBeInTheDocument();
         expect(screen.queryByText('새로 추가된 간호사')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.workerId).toBe('99');

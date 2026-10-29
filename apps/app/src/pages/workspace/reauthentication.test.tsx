@@ -1,6 +1,6 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
-import {afterEach, beforeEach, describe, expect, it, type Mock, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {Reauthenticate} from './reauthentication';
 
 const mocks = vi.hoisted(() => ({post: vi.fn()}));
@@ -23,7 +23,7 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-async function mountVerification(onVerified: Mock<(token: string, expiresAt?: number) => void>) {
+async function mountVerification(onVerified: ReturnType<typeof vi.fn<(token: string, expiresAt?: number) => void>>) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
     clients.push(client);

@@ -69,6 +69,27 @@ const createNurseWithMonthlyShiftRatio = () =>
             },
         ],
     });
+const createRestAllocationFixture = () => {
+    const wardShiftTypes = [
+        createWardShiftType(),
+        createWardShiftType({wardShiftTypeId: 2, name: '일반 OFF', shortName: 'O', classification: 'OFF', isOff: true}),
+        createWardShiftType({wardShiftTypeId: 3, name: '연차', shortName: 'AL', classification: 'ANNUAL_LEAVE', isOff: true}),
+        createWardShiftType({wardShiftTypeId: 4, name: '보건휴가', shortName: 'H', classification: 'OTHER_LEAVE', isOff: true}),
+    ];
+    const nurse = createNurse({
+        nurseShiftTypes: wardShiftTypes.map((type) => ({
+            nurseShiftTypeId: type.wardShiftTypeId + 100,
+            wardShiftTypeId: type.wardShiftTypeId,
+            name: type.name,
+            shortName: type.shortName,
+            isPossible: type.classification !== 'ANNUAL_LEAVE',
+            isPreferred: false,
+            targetRatioWeight: type.classification === 'DAY' ? 21 : type.classification === 'OFF' ? 9 : 7,
+        })),
+    });
+
+    return {nurse, wardShiftTypes};
+};
 const renderPanel = (
     selectedNurse: TNurse,
     wardShiftTypes: TWardShiftType[] = [],
@@ -423,6 +444,107 @@ describe('NurseDetailPanel', () => {
         fireEvent.click(within(dialog).getByRole('button', {name: '저장 안 함'}));
 
         expect(onClose).toHaveBeenCalledOnce();
+    });
+
+    it('keeps rest allocation optional and saves only the edited rest permission with nurse details', async () => {
+        const {nurse, wardShiftTypes} = createRestAllocationFixture();
+        const {saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
+        const summary = screen.getByText('휴무 자동 배정').closest('summary')!;
+        const details = summary.closest('details')!;
+
+        expect(details).not.toHaveAttribute('open');
+        expect(screen.getByRole('button', {name: 'DDay'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+
+        fireEvent.click(summary);
+
+        const restSettings = within(details);
+        const off = restSettings.getByRole('switch', {name: '일반 OFF 자동 배정'});
+        const annual = restSettings.getByRole('switch', {name: '연차 자동 배정'});
+        const other = restSettings.getByRole('switch', {name: '보건휴가 자동 배정'});
+
+        expect(restSettings.getAllByRole('switch')).toHaveLength(3);
+        expect(off).toHaveAttribute('aria-checked', 'true');
+        expect(annual).toHaveAttribute('aria-checked', 'false');
+        expect(other).toHaveAttribute('aria-checked', 'true');
+        expect(restSettings.getAllByText('자동 배정 허용')).toHaveLength(2);
+        expect(restSettings.getByText('자동 배정 제한')).toBeInTheDocument();
+        expect(annual).toHaveAccessibleDescription(expect.stringContaining('신청한 날짜 외에 연차를 자동으로 배정할 때만 켜세요.'));
+
+        fireEvent.click(annual);
+
+        expect(annual).toHaveAttribute('aria-checked', 'true');
+        expect(off).toHaveAttribute('aria-checked', 'true');
+        expect(other).toHaveAttribute('aria-checked', 'true');
+        expect(saveNurseDetails).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => expect(saveNurseDetails).toHaveBeenCalledOnce());
+        expect(saveNurseDetails.mock.calls[0]).toEqual([
+            101,
+            {
+                nurse: undefined,
+                shiftTypes: [
+                    {
+                        nurseShiftTypeId: 103,
+                        change: {isPossible: true, targetRatioWeight: 7},
+                        shiftTypeMeta: {wardShiftTypeId: 3, name: '연차', shortName: 'AL', targetRatioWeight: 7},
+                    },
+                ],
+            },
+        ]);
+    });
+
+    it('restores rest permissions when the nurse detail draft is discarded', () => {
+        const {nurse, wardShiftTypes} = createRestAllocationFixture();
+        const {onClose, saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
+        const summary = screen.getByText('휴무 자동 배정').closest('summary')!;
+
+        fireEvent.click(summary);
+        fireEvent.click(screen.getByRole('switch', {name: '일반 OFF 자동 배정'}));
+        fireEvent.click(screen.getByRole('switch', {name: '연차 자동 배정'}));
+        fireEvent.click(screen.getByRole('switch', {name: '보건휴가 자동 배정'}));
+        fireEvent.click(screen.getByRole('button', {name: '근무자 패널 닫기'}));
+        fireEvent.click(within(screen.getByRole('dialog', {name: '저장하지 않고 나갈까요?'})).getByRole('button', {name: '저장 안 함'}));
+
+        expect(onClose).toHaveBeenCalledOnce();
+        expect(saveNurseDetails).not.toHaveBeenCalled();
+        fireEvent.click(summary);
+        fireEvent.click(summary);
+
+        expect(screen.getByRole('switch', {name: '일반 OFF 자동 배정'})).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('switch', {name: '연차 자동 배정'})).toHaveAttribute('aria-checked', 'false');
+        expect(screen.getByRole('switch', {name: '보건휴가 자동 배정'})).toHaveAttribute('aria-checked', 'true');
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+    });
+
+    it('prevents changing rest permissions while saving nurse details', async () => {
+        const {nurse, wardShiftTypes} = createRestAllocationFixture();
+        const {saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
+
+        let resolveSave: ((saved: boolean) => void) | undefined;
+
+        saveNurseDetails.mockReturnValue(
+            new Promise<boolean>((resolve) => {
+                resolveSave = resolve;
+            }),
+        );
+        fireEvent.click(screen.getByText('휴무 자동 배정').closest('summary')!);
+        fireEvent.click(screen.getByRole('switch', {name: '연차 자동 배정'}));
+        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+
+        const details = screen.getByText('휴무 자동 배정').closest('details')!;
+
+        within(details)
+            .getAllByRole('switch')
+            .forEach((control) => expect(control).toBeDisabled());
+        expect(saveNurseDetails).toHaveBeenCalledOnce();
+
+        resolveSave?.(true);
+
+        await waitFor(() => expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled());
+        expect(screen.getByRole('switch', {name: '연차 자동 배정'})).toBeEnabled();
     });
 
     // nurse-detail-panel.tsx 의 ENABLE_MONTHLY_SHIFT_RATIO 가 false 라 월간 근무 비율 UI 자체가
