@@ -845,6 +845,7 @@ export default function AiConversationSidebar({
         const conversationId = detailRef.current.conversation.conversationId;
         const contextHash = detailRef.current.contextHash;
         const plan = turn.semanticPlan;
+        const initialGeneration = initialGenerationPending.current && !plan.generationIntent;
         const preparationKey = () => {
             const draft = dto();
 
@@ -879,7 +880,7 @@ export default function AiConversationSidebar({
             // Request review never opens schedule preparation. Ask about protected shifts
             // only after the user accepts the proposed conditions and is ready to calculate.
             if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) {
-                await onPrepareAdjustment(plan.generationIntent ? 'generation' : 'adjustment');
+                await onPrepareAdjustment(plan.generationIntent || initialGeneration ? 'generation' : 'adjustment');
             }
 
             if (!mounted.current || !sidebarOpen.current || detailRef.current?.conversation.conversationId !== conversationId) return;
@@ -972,9 +973,15 @@ export default function AiConversationSidebar({
 
             if (confirmedId && mounted.current && sidebarOpen.current) {
                 reviewedPreparation.current = null;
+
+                if (initialGeneration) {
+                    initialGenerationPending.current = false;
+                    generationPlanIds.current.add(confirmedId);
+                }
+
                 await execute(
-                    plan.generationIntent ? 'GENERATE' : 'ADJUST',
-                    plan.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
+                    plan.generationIntent || initialGeneration ? 'GENERATE' : 'ADJUST',
+                    plan.generationIntent || initialGeneration ? 'REBUILD_UNLOCKED' : undefined,
                     confirmedId,
                 );
             }

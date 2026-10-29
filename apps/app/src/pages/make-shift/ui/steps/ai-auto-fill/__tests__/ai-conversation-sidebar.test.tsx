@@ -4513,6 +4513,53 @@ describe('intent-first sidebar integration', () => {
         });
     });
 
+    it('keeps a reviewed first request on GENERATE after semantic confirmation', async () => {
+        enable();
+        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN', semanticPlan: {...autoTurn().semanticPlan!, autoExecutable: false}};
+        const prepare = vi.fn().mockResolvedValue(undefined);
+
+        mocks.interpret.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                turns: [turn],
+                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            };
+
+            return turn;
+        });
+        mocks.confirmPlan.mockImplementationOnce(async () => {
+            const confirmed = {
+                ...turn,
+                eventId: 201,
+                sequence: 3,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'intent:confirmed',
+                semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
+            };
+
+            return confirmed;
+        });
+        renderSidebar({
+            generationRequest: 1,
+            generationText: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
+            generationFillPolicy: 'REBUILD_UNLOCKED',
+            onPrepareAdjustment: prepare,
+        });
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(prepare).toHaveBeenCalledExactlyOnceWith('generation');
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            interpretationId: 'intent:confirmed',
+        });
+    });
+
     it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
         enable();
         const turn = autoTurn();
