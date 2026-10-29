@@ -46,9 +46,6 @@ const mocks = vi.hoisted(() => ({
     getScheduleCarryOverCandidates: vi.fn(),
     carryOverScheduleMonthRequests: vi.fn(),
     interpretScheduleAdjust: vi.fn(),
-    listConversations: vi.fn(),
-    detailConversation: vi.fn(),
-    versionConversation: vi.fn(),
     getScheduleGoalCandidate: vi.fn(),
     applyScheduleGoalCandidate: vi.fn(),
     undoScheduleGoalCandidate: vi.fn(),
@@ -63,15 +60,6 @@ const mocks = vi.hoisted(() => ({
         generationRequest: number;
     } | null,
     loadingProps: [] as Array<{startedAt: number | null; sidebarOpen?: boolean; isFinishing?: boolean; isAdjusting?: boolean}>,
-}));
-
-vi.mock('../../../../model/schedule-conversation-api', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('../../../../model/schedule-conversation-api')>()),
-    conversationApi: () => ({
-        list: mocks.listConversations,
-        detail: mocks.detailConversation,
-        version: mocks.versionConversation,
-    }),
 }));
 
 vi.mock('../../constraints', async () => {
@@ -651,9 +639,6 @@ describe('AiAutofill adjust panel', () => {
     beforeEach(() => {
         vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({matches: false}));
         mocks.requestAiSchedule.mockReset();
-        mocks.listConversations.mockReset().mockResolvedValue([]);
-        mocks.detailConversation.mockReset();
-        mocks.versionConversation.mockReset();
         mocks.collapseNavigationBar.mockReset();
         mocks.setStepNavigationBusy.mockReset();
         mocks.moveScheduleRow.mockReset();
@@ -678,19 +663,13 @@ describe('AiAutofill adjust panel', () => {
         useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
     });
 
-    it('opens a saved AI result in the conversation after reload without starting a refill', async () => {
+    it('opens a saved filled roster in the conversation without starting a refill', async () => {
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
-        mocks.listConversations.mockResolvedValueOnce([{conversationId: 17}]);
-        mocks.detailConversation.mockResolvedValueOnce({
-            operations: [{executionStatus: 'SUCCEEDED', applyStatus: 'APPLIED', resultVersionId: 'result:17'}],
-        });
-        mocks.versionConversation.mockResolvedValueOnce({cells: [], rowOrder: []});
 
         render(<AiAutofill />);
         await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
 
         await waitFor(() => expect(mocks.conversationProps?.open).toBe(true));
-        expect(mocks.versionConversation).toHaveBeenCalledWith('result:17');
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
     });
@@ -767,16 +746,14 @@ describe('AiAutofill adjust panel', () => {
         expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it.each([false, true])('opens fixed review after a failed conversation without retrying automatically (empty: %s)', async (empty) => {
-        seedEditor(empty ? makeEmptyDoc() : makeDoc());
+    it('opens fixed review after a failed conversation without retrying automatically', async () => {
+        seedEditor(makeEmptyDoc());
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
 
         const user = userEvent.setup();
 
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-
-        if (!empty) await user.click(await screen.findByRole('button', {name: DECISION_CONFIRM}));
 
         const before = useShiftEditorStore.getState().doc;
 
@@ -788,7 +765,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(mocks.conversationProps?.generationRequest).toBe(1);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.fixAll'}) !== null).toBe(!empty);
+        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.fixAll'})).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.retryFill'}));
         expect(mocks.conversationProps?.generationRequest).toBe(2);
