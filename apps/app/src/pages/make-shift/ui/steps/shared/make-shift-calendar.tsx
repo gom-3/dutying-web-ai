@@ -35,6 +35,7 @@ import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days'
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import {CalendarNurseName} from './calendar-nurse-name';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
 type TViolationMap = Map<string, TViolation>;
@@ -276,25 +277,28 @@ const DIVISION_PADDING_Y = '0px';
  * ⚠️ 불변 규칙: 색상 shift-badge는 어떤 viewport에서도 **정사각형**이어야 한다.
  *   - `size-` 단축을 쓰는 경우(예: SHIFT_BADGE_SUMMARY_ROW, SHIFT_BADGE_SMALL_BASE)는 width=height가 한 클래스에 묶인다.
  *   - 일자 셀은 SHIFT_BADGE_CELL_WRAP(aspect-square) + 자식 !w/h-full 로 정사각형을 만든다.
- *     행·위반 표시와 같은 cqw 기준으로 줄이고, 실제 셀 안쪽 폭으로 한 번 더 제한한다.
+ *     기본 22~26px을 유지하되 실제 셀 안쪽 폭과 위반 표시의 세로 여백으로만 제한한다.
  *   - 부모가 `flex`인 경우 기본 shrink 때문에 배지가 찌그러질 수 있으므로 SMALL/라벨 계열에는 `shrink-0`을 둔다.
  *   - summary 텍스트 셀(SUMMARY_CELL_*)과 혼동하지 않도록 주의 — 그쪽은 폭만 좁힌 직사각형.
  *
  * 사용처 / 크기 분리:
- *   - SHIFT_BADGE_CELL_WRAP / SHIFT_BADGE_CELL_BADGE: division-card 일자 셀. 래퍼 한 변은 min(셀 폭, clamp 상한).
- *     글자만 키울 때는 CELL_BADGE의 text·leading-none만 조정(행 높이·래퍼 크기 불변).
+ *   - SHIFT_BADGE_CELL_WRAP / SHIFT_BADGE_CELL_BADGE: division-card 일자 셀.
+ *     안쪽 surface만 크기 컨테이너로 사용해 글자가 실제 배지에 맞춰지고 상태 핀은 달력 기준을 유지한다.
  *   - SHIFT_BADGE_SMALL_BASE: division-card 전달 근무 4칸 — LAST_COL 안에 들어가도록 size 상한 유지, 글자는 leading-none·큰 text.
  *   - SHIFT_BADGE_SUMMARY_ROW: daily-summary__label-badge(D/E/N pill) 전용.
  */
 /** footer daily-summary D/E/N pill — row-summary 숫자 셀(SUMMARY_CELL_*)과 동일 스케일, 행 안에서 중앙 정렬 */
 const SHIFT_BADGE_SUMMARY_ROW =
     'shrink-0 size-[clamp(16px,1.4cqw,22px)] text-[clamp(10px,0.82cqw,14px)] leading-none rounded-[clamp(3px,0.35cqw,6px)]';
-/** 일자 그리드 셀 래퍼: 한 변 = min(셀 안쪽 폭, cqw 기반 clamp 상한). */
+const SHIFT_BADGE_CELL_MAX_SIZE = 'clamp(22px,1.45vw,26px)';
+/** 위반 테두리·안쪽 그림자와 활성 배지의 1.04배 확대까지 들어갈 여백. */
+const SHIFT_BADGE_CELL_VIOLATION_MAX_SIZE = `min(${SHIFT_BADGE_CELL_MAX_SIZE}, calc(clamp(28px,2.4cqw,40px) - ${VIOLATION_INSET} - ${VIOLATION_INSET} - 6px))`;
+/** 일자 그리드 셀 래퍼: 한 변 = min(셀 안쪽 폭, 기존 화면 기준 크기, 필요한 세로 여백). */
 /** violation 오버레이(z-[5]~[8])보다 위 — 배지 배경색이 위반 하이라이트에 가리지 않도록 */
 const SHIFT_BADGE_CELL_WRAP =
-    'make-shift-calendar__shift-badge-wrap relative z-[20] flex aspect-square w-full max-w-[clamp(16px,1.45cqw,26px)] min-w-0 shrink-0 items-center justify-center';
+    'make-shift-calendar__shift-badge-wrap relative z-[20] flex aspect-square w-full min-w-0 shrink-0 items-center justify-center';
 const SHIFT_BADGE_CELL_BADGE =
-    'make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[.375rem] text-[clamp(9px,0.82cqw,18px)] leading-none';
+    'make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[.375rem] text-[min(clamp(12px,0.82vw,18px),70cqw)] leading-none';
 const SHIFT_BADGE_STATUS_PIN_BASE =
     'make-shift-calendar__cell-status-pin pointer-events-none absolute z-[32] flex items-center justify-center';
 const SHIFT_BADGE_STATUS_PIN_ICON = 'size-[clamp(8px,0.62cqw,11px)]';
@@ -2076,6 +2080,7 @@ export function MakeShiftCalendar({
                                                                         dragHandleProps={draggableProvided.dragHandleProps}
                                                                         rowNameClassName={rowNameClassName}
                                                                         nurseNameMaxChars={nurseNameMaxChars}
+                                                                        nameFocusable={!staticPreview && !fixedCellPreview}
                                                                         onCellClick={handleCellClick}
                                                                         onCellPointerDown={handleCellPointerDown}
                                                                         onCellPointerEnter={handleCellPointerEnter}
@@ -2239,6 +2244,7 @@ type TCalendarRowLeftProps = {
     dragHandleProps?: DraggableProvided['dragHandleProps'];
     rowNameClassName?: string;
     nurseNameMaxChars: number | null;
+    nameFocusable: boolean;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
     onCellPointerDown: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
     onCellPointerEnter: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
@@ -2293,6 +2299,7 @@ function CalendarRowLeft({
     dragHandleProps,
     rowNameClassName,
     nurseNameMaxChars,
+    nameFocusable,
     onCellClick,
     onCellPointerDown,
     onCellPointerEnter,
@@ -2441,7 +2448,7 @@ function CalendarRowLeft({
                     )}
                     title={nurseName}
                 >
-                    <span className="max-w-full min-w-0 truncate">{displayNurseName}</span>
+                    <CalendarNurseName name={nurseName} displayName={displayNurseName} focusable={nameFocusable} />
                 </div>
                 {!simplified && (
                     <>
@@ -2729,6 +2736,7 @@ function CalendarRowLeft({
                                 )}
                                 <span
                                     data-active-violation-shift-badge={activeCellViolation ? 'true' : undefined}
+                                    style={{maxWidth: showFaults ? SHIFT_BADGE_CELL_VIOLATION_MAX_SIZE : SHIFT_BADGE_CELL_MAX_SIZE}}
                                     className={cn(
                                         SHIFT_BADGE_CELL_WRAP,
                                         'transition-[filter,transform] duration-150 ease-out',
@@ -2736,12 +2744,14 @@ function CalendarRowLeft({
                                             'z-[56] -translate-y-[1px] scale-[1.04] drop-shadow-[0_6px_8px_rgba(15,23,42,0.18)]',
                                     )}
                                 >
-                                    <ShiftBadge
-                                        shiftType={shiftType}
-                                        isOnlyRequest={isDimmedRequestCell || (shiftType === null && reqType !== null)}
-                                        borderless={borderlessPreview}
-                                        className={SHIFT_BADGE_CELL_BADGE}
-                                    />
+                                    <span className="make-shift-calendar__shift-badge-surface @container flex size-full min-h-0 min-w-0">
+                                        <ShiftBadge
+                                            shiftType={shiftType}
+                                            isOnlyRequest={isDimmedRequestCell || (shiftType === null && reqType !== null)}
+                                            borderless={borderlessPreview}
+                                            className={SHIFT_BADGE_CELL_BADGE}
+                                        />
+                                    </span>
                                     {annualLeaveDays
                                         ?.filter((day) => day.date === columns[j])
                                         .map((day) => (

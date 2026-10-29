@@ -1,0 +1,59 @@
+.make-shift-calendar__nurse-name {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.make-shift-calendar__nurse-name-preview {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.make-shift-calendar__nurse-name-track {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: max-content;
+    min-width: 100%;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.make-shift-calendar__nurse-name[data-clipped='true']:is(:hover, :focus-visible) .make-shift-calendar__nurse-name-preview {
+    visibility: hidden;
+}
+
+.make-shift-calendar__nurse-name[data-clipped='true']:is(:hover, :focus-visible) .make-shift-calendar__nurse-name-track {
+    visibility: visible;
+}
+
+.make-shift-calendar__nurse-name[data-overflow='true']:is(:hover, :focus-visible) .make-shift-calendar__nurse-name-track {
+    animation: calendar-nurse-name-pan var(--nurse-name-duration) linear infinite alternate;
+}
+
+.make-shift-calendar__nurse-name:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid var(--color-main-1, #663dfa);
+    outline-offset: -2px;
+}
+
+@keyframes calendar-nurse-name-pan {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(var(--nurse-name-distance));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .make-shift-calendar__nurse-name[data-overflow='true']:is(:hover, :focus-visible) .make-shift-calendar__nurse-name-track {
+        animation: none;
+    }
+}
