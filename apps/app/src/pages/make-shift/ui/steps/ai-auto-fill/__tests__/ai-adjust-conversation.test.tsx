@@ -60,7 +60,7 @@ describe('AI adjustment conversation', () => {
         const apply = vi.fn();
         const regenerate = vi.fn();
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} onRegenerate={regenerate} />);
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        expect(textbox()).toBeVisible();
         await submit(text, false);
         expect(interpret).toHaveBeenCalledExactlyOnceWith(text);
         expect(regenerate).toHaveBeenCalledExactlyOnceWith(text);
@@ -322,7 +322,7 @@ describe('AI adjustment conversation', () => {
         const firstFlow = {id: 1, status: 'running' as const, messages: [{role: 'user' as const, text: '첫 자동채우기 선택'}]};
         const view = render(<AiAdjustTextInput {...props} autofillFlow={firstFlow} generationCompleted />);
 
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        expect(textbox()).toBeVisible();
         await submit('오프를 공평하게');
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeVisible();
 
@@ -331,14 +331,14 @@ describe('AI adjustment conversation', () => {
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={nextFlow} preparation={<p>준비 선택지</p>} />);
 
         expect(screen.getByText('첫 자동채우기 선택')).toBeVisible();
-        expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
+        expect(screen.queryByText('aiAdjust.chat.modify')).not.toBeInTheDocument();
         expect(screen.getByText('오프를 공평하게')).toBeVisible();
         expect(screen.getByText('다음 고정 확인')).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.changeAnswer'})).not.toBeInTheDocument();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.getByRole('log').textContent).toMatch(
-            /첫 자동채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*aiAdjust.chat.modify[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
+            /첫 자동채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
         );
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={{...nextFlow, status: 'running'}} generationCompleted />);
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2);

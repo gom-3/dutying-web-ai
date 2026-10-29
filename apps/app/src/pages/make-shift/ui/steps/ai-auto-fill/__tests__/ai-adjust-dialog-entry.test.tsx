@@ -45,8 +45,8 @@ describe('unified AI sidebar entry', () => {
             expect(onGenerate).not.toHaveBeenCalled();
             expect(onRegenerate).not.toHaveBeenCalled();
 
-            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-            expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'true');
+            expect(screen.getByRole('textbox')).toBeVisible();
+            expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
 
             const generate = screen.getByRole('button', {
                 name: hasGeneratedSchedule ? 'aiAutofillUi.conversationEntry.editSchedule' : 'aiAdjust.chat.regenerate',
@@ -56,14 +56,12 @@ describe('unified AI sidebar entry', () => {
             expect(onGenerate).toHaveBeenCalledTimes(hasGeneratedSchedule ? 0 : 1);
             expect(onRegenerate).not.toHaveBeenCalled();
             expect(onClose).toHaveBeenCalledTimes(hasGeneratedSchedule ? 1 : 0);
-            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            if (!hasGeneratedSchedule) expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
             if (!hasGeneratedSchedule) expect(screen.queryByRole('button', {name: 'aiAdjust.chat.modify'})).not.toBeInTheDocument();
             await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
-            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-            await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
-            expect(screen.getByRole('textbox')).toHaveFocus();
+            expect(screen.getByRole('textbox')).toBeVisible();
             expect(document.querySelector('.ai-adjust-chat-scroll')).toHaveAttribute('data-composer-hidden', 'false');
-            expect(screen.getByText('aiAdjust.chat.askChanges')).toBeInTheDocument();
+            expect(screen.queryByText('aiAdjust.chat.askChanges')).not.toBeInTheDocument();
             await user.type(screen.getByRole('textbox'), '오프 수를 11로 맞춰줘');
             await user.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
             expect(interpret).toHaveBeenCalledOnce();
@@ -76,7 +74,7 @@ describe('unified AI sidebar entry', () => {
             expect(screen.getAllByRole('button', {name: 'aiAdjust.chat.restart'})).toHaveLength(1);
             await user.click(restart);
             expect(screen.queryByRole('status')).not.toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+            expect(screen.getByRole('textbox')).toBeVisible();
         },
     );
 });
@@ -179,7 +177,7 @@ it('keeps legacy prompt adjustments without offering a generation switch or clea
         onDisableRequest: vi.fn(),
     };
     const view = render(<AiAdjustDialog {...props} />);
-    await userEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+    expect(screen.getByRole('textbox')).toBeVisible();
     await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
     expect(screen.queryByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'})).not.toBeInTheDocument();
     view.rerender(<AiAdjustDialog {...props} open={false} />);

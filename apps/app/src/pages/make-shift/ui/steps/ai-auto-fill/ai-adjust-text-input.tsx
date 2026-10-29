@@ -262,8 +262,7 @@ export default function AiAdjustTextInput({
     const paused = autofillFlow?.status === 'paused';
     const completedMessage = generationCompletedMessage ?? t('aiAdjust.generationCompleted');
     const isBusy = active?.status === 'interpreting' || active?.status === 'applying';
-    const composerHidden =
-        preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || Boolean(onRegenerate && entryChoice !== 'modify');
+    const composerHidden = preparing || active?.status === 'applyFailed' || Boolean(generationFailure) || entryChoice === 'regenerate';
 
     useEffect(() => {
         if (previousConditionsVersion.current === conditionsVersion) return;
@@ -1204,7 +1203,7 @@ export default function AiAdjustTextInput({
                 inert={composerHidden}
                 aria-hidden={composerHidden}
             >
-                {!generationFailure && !hasRequestTurns && (!onRegenerate || entryChoice === 'modify') && (
+                {!generationFailure && !hasRequestTurns && (
                     <div className="ai-adjust-examples mb-4 flex shrink-0 flex-col gap-2">
                         <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
                         {examples.map((sentence) => (

@@ -1705,7 +1705,6 @@ export default function AiConversationSidebar({
         !detail ||
         failureNeedsAction ||
         entryChoice === 'regenerate' ||
-        (!entryChoice && canChooseNextAction) ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
     const recoveryComposerFocus = useRef(false);
 
@@ -2631,7 +2630,6 @@ export default function AiConversationSidebar({
                                 />
                             ))}
                         {!composerHidden &&
-                            entryChoice === 'modify' &&
                             !editingRequest &&
                             !activeTurns.length &&
                             !text.trim() &&
