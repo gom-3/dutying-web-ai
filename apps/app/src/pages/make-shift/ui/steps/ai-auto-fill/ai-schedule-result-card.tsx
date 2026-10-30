@@ -11,6 +11,7 @@ export function AiScheduleResultCard({
     outcome = 'neutral',
     outcomeLabel,
     changedCount,
+    changeSummary,
     description,
     preview,
     headerAction,
@@ -22,6 +23,7 @@ export function AiScheduleResultCard({
     outcome?: 'success' | 'review' | 'neutral';
     outcomeLabel?: string;
     changedCount?: number;
+    changeSummary?: ReactNode;
     description?: ReactNode;
     preview?: ReactNode;
     headerAction?: ReactNode;
@@ -43,7 +45,9 @@ export function AiScheduleResultCard({
                         )}
                         <p className="text-base leading-6 font-semibold break-keep text-[#333D4B]">
                             <span>{title}</span>{' '}
-                            {attempt ? <span className="whitespace-nowrap">{t('aiAdjust.snapshot.attempt', {count: attempt})}</span> : null}
+                            {attempt && outcome !== 'success' ? (
+                                <span className="whitespace-nowrap">{t('aiAdjust.snapshot.attempt', {count: attempt})}</span>
+                            ) : null}
                         </p>
                     </div>
                     {headerAction}
@@ -60,6 +64,7 @@ export function AiScheduleResultCard({
                         <span>{t('aiAdjust.snapshot.changed', {count: changedCount})}</span>
                     </p>
                 )}
+                {changeSummary && <div className="mt-3">{changeSummary}</div>}
                 {children}
                 {actions && <div className="mt-3">{actions}</div>}
             </section>

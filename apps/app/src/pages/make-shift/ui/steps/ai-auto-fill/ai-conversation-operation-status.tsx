@@ -131,7 +131,11 @@ export function AiConversationOperationStatus({
             {events.length > 0 && (
                 <div
                     role="log"
-                    aria-label={t('aiAutofillUi.executionPresentation.progressConversation')}
+                    aria-label={t(
+                        operation.operationType === 'ADJUST'
+                            ? 'aiAutofillUi.executionPresentation.adjustmentProgressConversation'
+                            : 'aiAutofillUi.executionPresentation.progressConversation',
+                    )}
                     aria-live="polite"
                     aria-relevant="additions"
                     className="space-y-4"

@@ -92,8 +92,10 @@ export function RequestCapacityRule({
             className="min-w-0 rounded-xl bg-[#F5F6F9] px-4 py-3"
             aria-label={`${typeLabel} ${t('requestCapacity.title')}`}
         >
-            <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
-                <h4 className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-[#282B3B]">
+            <div
+                className={`grid min-w-0 items-center gap-x-3 gap-y-3 sm:flex sm:flex-wrap sm:gap-x-5 ${canRemove ? 'grid-cols-[minmax(0,1fr)_44px]' : 'grid-cols-1'}`}
+            >
+                <h4 className="col-span-full flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 text-[#282B3B]">
                     <span className="text-base font-bold break-all">{typeLabel}</span>
                     <span className="text-sm font-medium break-words text-[#626573]">{type?.name}</span>
                 </h4>
@@ -177,7 +179,7 @@ export function RequestCapacityRule({
                                 <div key={group.groupId} className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 py-1.5">
                                     <label
                                         htmlFor={`${id}-${group.groupId}`}
-                                        className="min-w-0 flex-1 text-sm font-medium break-words text-[#36394B]"
+                                        className="min-w-0 basis-full text-sm font-medium break-words text-[#36394B] sm:flex-1 sm:basis-0"
                                     >
                                         {group.name}
                                     </label>

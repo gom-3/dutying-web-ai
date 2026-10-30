@@ -4,9 +4,10 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAutofillCellSummary} from '../../../model/ai-autofill-state';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiInfoTip} from './ai-conversation-entry';
+import {AiConversationTimestamp} from './ai-conversation-timestamp';
 
 export type TAutofillPreparationStep = 'carryOver' | 'previous' | 'fixed';
-export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string};
+export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string; createdAt?: string};
 export type TAutofillFlow = {
     id: number;
     kind?: 'generation' | 'adjustment';
@@ -27,10 +28,13 @@ export function AiAutofillMessages({messages}: {messages: TAutofillMessage[]}) {
                 const Message = message.role === 'user' ? UserMessage : AssistantMessage;
 
                 return (
-                    <Message key={index}>
-                        <span className="whitespace-pre-line">{message.text}</span>
-                        {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
-                    </Message>
+                    <div key={index}>
+                        <Message>
+                            <span className="whitespace-pre-line">{message.text}</span>
+                            {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
+                        </Message>
+                        <AiConversationTimestamp createdAt={message.createdAt} align={message.role === 'user' ? 'right' : 'left'} />
+                    </div>
                 );
             })}
         </div>
@@ -52,6 +56,8 @@ export function AiAutofillPreparation({
     onUndoFixAll,
     onEditConditions,
     onEditSchedule,
+    requestText = '',
+    onRequestTextChange,
     summary,
     active = true,
 }: {
@@ -69,6 +75,8 @@ export function AiAutofillPreparation({
     onUndoFixAll?: () => void;
     onEditConditions?: () => void;
     onEditSchedule?: () => void;
+    requestText?: string;
+    onRequestTextChange?: (text: string) => void;
     summary?: TAutofillCellSummary;
     active?: boolean;
 }) {
@@ -94,6 +102,20 @@ export function AiAutofillPreparation({
             className="flex flex-col gap-5 outline-none"
         >
             {step === 'fixed' && summary && <AutofillSelectionSummary summary={summary} />}
+            {step === 'fixed' && onRequestTextChange && (
+                <label className="flex flex-col gap-2 text-[13px] font-medium text-[#344054]">
+                    {t('aiAdjust.preparation.initialRequestLabel')}
+                    <textarea
+                        value={requestText}
+                        onChange={(event) => onRequestTextChange(event.target.value)}
+                        maxLength={500}
+                        rows={2}
+                        disabled={disabled}
+                        placeholder={t('aiAdjust.preparation.initialRequestExample')}
+                        className="w-full resize-none rounded-xl border border-[#DCE2EB] bg-white px-3 py-2 text-sm leading-6 font-normal text-[#333D4B] placeholder:text-[#667085] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    />
+                </label>
+            )}
             {step === 'fixed' && onUndoFixAll && (
                 <button
                     type="button"

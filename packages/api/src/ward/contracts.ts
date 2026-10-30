@@ -774,6 +774,7 @@ export type TScheduleAdjustInterpretUnmapped = {
 
 /** "이렇게 이해했어요" 카드의 내용. 저장 전 상태다. */
 export type TScheduleAdjustInterpretRes = {
+    generationIntent?: {start: number; end: number; quote: string} | null;
     observation?: TScheduleObservation;
     items: TScheduleMonthRequestItem[];
     /** 규칙/축으로 구조화하지 못해 이번 ADJUST에서만 LLM이 처리할 사용자 원문의 잔여 문장. */
@@ -991,6 +992,8 @@ export type TAutofillResponse = {
                 blockingReasons?: string[];
             }>;
         } | null;
+        /** Safe public explanation; Spring hides internal solver metadata. */
+        conflictEvidence?: Record<string, unknown>[];
         solver?: {
             /** Original structured conflict retained when a verified proposal is offered. */
             conflictEvidence?: Record<string, unknown>[];

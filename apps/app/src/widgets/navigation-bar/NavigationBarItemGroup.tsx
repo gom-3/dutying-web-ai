@@ -7,6 +7,7 @@ import {notificationQueryOptions} from '@/entities/notification';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {CommercialEntry} from '@/features/commercial/entry';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
 import ROUTE, {type TRoute} from '@/shared/constant/path';
@@ -391,6 +392,7 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                 ))}
             </div>
             <div
+                data-testid="navigation-footer"
                 className={cn(
                     'mt-auto shrink-0',
                     collapsed || stableCollapsedLayout ? 'pt-4 [@media(max-height:720px)]:pt-2' : 'pt-5 [@media(max-height:760px)]:pt-3',
@@ -404,6 +406,7 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                             : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
                     )}
                 />
+                <CommercialEntry compact={collapsed} />
                 <Link
                     to={ROUTE.DUTYING}
                     className="mx-auto block w-fit rounded-[4px] px-1 py-1 text-center font-apple text-[12px] leading-4 font-medium text-gray-4 transition-colors hover:text-gray-3 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none [@media(max-height:720px)]:py-0.5"

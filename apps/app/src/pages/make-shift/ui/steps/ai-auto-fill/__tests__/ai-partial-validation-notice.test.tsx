@@ -41,7 +41,7 @@ function candidateCard(result: TAutofillResponse) {
     );
 }
 
-function resultCard(result: TAutofillResponse, nestedCandidate = false) {
+function resultCard(result: TAutofillResponse, nestedCandidate = false, appliedLocally = false) {
     return (
         <AiConversationResult
             operation={{
@@ -60,8 +60,7 @@ function resultCard(result: TAutofillResponse, nestedCandidate = false) {
                 createdAt: '',
             }}
             attempt={1}
-            feedbackDisabled
-            onReport={vi.fn()}
+            appliedLocally={appliedLocally}
             copy={(ko) => ko}
         >
             {nestedCandidate && candidateCard(result)}
@@ -71,22 +70,27 @@ function resultCard(result: TAutofillResponse, nestedCandidate = false) {
 
 describe('partial table validation notice', () => {
     it.each([
-        {locale: 'ko', copy: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.'},
-        {locale: 'ja', copy: '空欄があるため、まだ確認できていない条件があります。'},
-    ])('shows the public partial coverage on applied results in $locale without blocking application', async ({locale, copy}) => {
-        await i18n.changeLanguage(locale);
+        {locale: 'ko', copy: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.', appliedLocally: false},
+        {locale: 'ko', copy: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.', appliedLocally: true},
+        {locale: 'ja', copy: '空欄があるため、まだ確認できていない条件があります。', appliedLocally: false},
+        {locale: 'ja', copy: '空欄があるため、まだ確認できていない条件があります。', appliedLocally: true},
+    ])(
+        'shows the public partial coverage on applied results in $locale without blocking application',
+        async ({locale, copy, appliedLocally}) => {
+            await i18n.changeLanguage(locale);
 
-        try {
-            const result = partialResult();
+            try {
+                const result = partialResult();
 
-            expect(canApplyAuthoringResult(result, 'source:1')).toBe(true);
-            render(resultCard(result));
-            expect(screen.getByRole('status')).toHaveTextContent(copy);
-            expect(screen.queryByText(/전체.*완료|위반 0|すべて.*確認済み/)).toBeNull();
-        } finally {
-            await i18n.changeLanguage('ko');
-        }
-    });
+                expect(canApplyAuthoringResult(result, 'source:1')).toBe(true);
+                render(resultCard(result, false, appliedLocally));
+                expect(screen.getByRole('status')).toHaveTextContent(copy);
+                expect(screen.queryByText(/전체.*완료|위반 0|すべて.*確認済み/)).toBeNull();
+            } finally {
+                await i18n.changeLanguage('ko');
+            }
+        },
+    );
     it.each(['ko', 'ja'])('shows the public partial coverage on candidates in %s while preserving selection', async (locale) => {
         await i18n.changeLanguage(locale);
 

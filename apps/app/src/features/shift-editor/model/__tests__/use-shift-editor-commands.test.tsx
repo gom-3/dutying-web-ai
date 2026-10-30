@@ -21,6 +21,39 @@ function createDoc(): TDutyDoc {
 }
 
 describe('useShiftEditorCommands', () => {
+    it('restores a saved grid without clearing workspace flags or retaining undo entries for old row indexes', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const original = createDoc();
+
+        act(() => {
+            result.current.init(original);
+            result.current.setCells([{row: 0, col: 0}], 'E');
+
+            const store = useShiftEditorStore.getState();
+
+            store.setConversationEnabled(true);
+            store.setSemanticExecutionEnabled(true);
+            store.setIntentFirstAuthoringEnabled(true);
+            store.setRulesHash('rules:960');
+        });
+
+        const restored: TDutyDoc = {...original, rows: [...original.rows].reverse().map((row) => ({...row, lastCells: ['N', 'O']}))};
+
+        act(() => result.current.restoreSnapshotDoc(restored));
+
+        const store = useShiftEditorStore.getState();
+
+        expect(store.doc).toEqual(restored);
+        expect(store.conversationEnabled).toBe(true);
+        expect(store.semanticExecutionEnabled).toBe(true);
+        expect(store.intentFirstAuthoringEnabled).toBe(true);
+        expect(store.rulesHash).toBe('rules:960');
+        expect(store.history.past).toEqual([]);
+        expect(store.history.future).toEqual([]);
+        expect(result.current.getPersisted()?.doc).toEqual(restored);
+        act(() => result.current.undo());
+        expect(useShiftEditorStore.getState().doc).toEqual(restored);
+    });
     it('keeps newly confirmed previous cells protected from older undo and redo entries', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const doc = createDoc();

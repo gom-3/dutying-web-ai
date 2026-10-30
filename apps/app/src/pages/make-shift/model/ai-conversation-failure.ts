@@ -1,4 +1,4 @@
-import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
+import type {TAutofillResponse, TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
 export type TPersonalRestConflict = {
@@ -11,6 +11,8 @@ export type TPersonalRestConflict = {
 };
 
 export type TAiConversationFailure = {
+    /** Display evidence only; candidate tokens stay in the execution result. */
+    conflictDetails?: Pick<NonNullable<TAutofillResponse['conflictReview']>, 'explanation' | 'violations' | 'ruleLabels'>;
     restConflicts?: TPersonalRestConflict[];
     settingsTarget?: 'rest' | 'member';
     conflicts?: TScheduleConflict[];
@@ -35,7 +37,14 @@ export type TAiConversationFailure = {
 /** Trusted UI failures carry a fixed reason, never arbitrary server/exception text. */
 export class AiConversationInputError extends Error {
     constructor(
-        readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong' | 'expiredSuggestion' | 'draftChanged',
+        readonly reason:
+            | 'loading'
+            | 'pendingExecution'
+            | 'staleRequest'
+            | 'requestTooLong'
+            | 'expiredSuggestion'
+            | 'draftChanged'
+            | 'expiredPlan',
         readonly unsentOperation?: 'GENERATE' | 'ADJUST',
         readonly canRetryGeneration = false,
     ) {
@@ -68,7 +77,7 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
             message: i18n.t(`aiAdjust.localError.${error.reason}`),
             blocked: false,
             checkOutcome: error.reason === 'pendingExecution' || error.reason === 'loading',
-            ...(error.reason === 'staleRequest' && error.unsentOperation
+            ...(['staleRequest', 'expiredPlan'].includes(error.reason) && error.unsentOperation
                 ? {
                       unsentOperation: error.unsentOperation,
                       ...(error.unsentOperation === 'GENERATE' && error.canRetryGeneration ? {canRetryGeneration: true} : {}),
@@ -82,6 +91,9 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
 
     if (code === 'BACKGROUND_QUEUE_FULL')
         return {message: i18n.t('aiAdjust.executionFailure.busy'), blocked: false, checkOutcome: false, recovery: 'retry'};
+
+    if (code === 'SCHEDULE_INTERPRET_UNAVAILABLE')
+        return {message: i18n.t('aiAutofillUi.interpretUnavailable'), blocked: false, checkOutcome: false, recovery: 'revise'};
 
     if (code === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED') return {message: i18n.t('aiAdjust.failure.adjustAccess'), blocked: true};
 

@@ -107,6 +107,52 @@
     </head>
     <body>
         <main>
+            <section class="note" style="margin-bottom: 36px">
+                <p class="muted">2026-10-30 · 최신 develop 통합 변경</p>
+                <h1>진행 화면·용어를 현재 대화 기능과 통합</h1>
+                <p>
+                    로딩창과 작업 표시의 재열기 동작을 <strong>진행 상황 보기</strong>로 통일했다. 기존 표를 바꾸는 작업은
+                    <strong>근무표 수정</strong>, 보호되는 배치는 <strong>신청 근무 / 고정 근무</strong>로 표현한다. 첫 요청 입력·변경
+                    내역·대화 시각·저장 결과 복구는 현재 develop 기능을 유지한다.
+                </p>
+                <p>
+                    서버가 아직 작업 접수를 응답하지 않았어도 닫은 뒤 다시 열 수 있다. 서버가 취소 가능한 작업을 응답한 경우에만 취소 버튼을
+                    제공한다. 구 서버의 기존 대기 시간을 유지한다.
+                </p>
+                <p>
+                    <strong>범위:</strong> 이번 브라우저 점검은 합성 API를 쓰는 제품 컴포넌트 프리뷰다. 데스크톱 1280×720, 모바일
+                    375×812에서 진행 대화와 44px 취소 버튼을 확인했다. 아래 10월 28일 HTTP 검증 이력과 구분한다.
+                </p>
+                <div class="grid">
+                    <figure>
+                        <a href="assets/background-schedule/develop-conversation-desktop-2026-10-30.png"
+                            ><img
+                                src="assets/background-schedule/develop-conversation-desktop-2026-10-30.png"
+                                alt="최신 통합 컴포넌트의 진행 메시지·취소·대화 시각"
+                        /></a>
+                        <figcaption>데스크톱 · 별도 메시지와 최근 추가된 대화 시각 유지.</figcaption>
+                    </figure>
+                    <figure>
+                        <a href="assets/background-schedule/develop-conversation-mobile-2026-10-30.png"
+                            ><img
+                                src="assets/background-schedule/develop-conversation-mobile-2026-10-30.png"
+                                alt="375px에서 단어를 보존한 진행 안내와 취소 버튼"
+                                style="max-width: 375px; margin: auto"
+                        /></a>
+                        <figcaption>375px · 한글 단어 줄바꿈과 취소 버튼 접근 확인.</figcaption>
+                    </figure>
+                </div>
+                <p>
+                    <strong>최종 검증:</strong> 근무표 관련 95개 테스트 파일·1,249개 테스트, 타입 검사·빌드 통과. 기존 번들 크기 경고는 남아
+                    있다.
+                </p>
+                <p>
+                    <strong>백엔드 별도:</strong> Spring PR338과 Python PR158은 아직 열린 PR이다. 웹 develop 통합이 서버 배포·비동기 계약
+                    활성화 완료를 뜻하지 않는다. 이번 변경은 운영 배포가 아니다.
+                </p>
+            </section>
+            <h2>2026-10-28 검증 이력</h2>
+
             <p class="muted">PRODUCT REVIEW · 2026-10-28 · 두 번째 UI 수정 / 운영 미배포</p>
             <h1>기존 로딩창 복원, 진행 안내는 하나씩 쌓이는 대화로</h1>
             <p>

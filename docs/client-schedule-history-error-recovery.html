@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>저장된 오류에서 요청 다시 확인하기</title>
+<style>body{font:16px/1.8 system-ui,sans-serif;color:#253047;max-width:850px;margin:56px auto;padding:0 24px}h1{font-size:28px}h2{font-size:20px;margin-top:32px}strong{color:#5931b9}code{background:#f1f3f7;padding:2px 5px;border-radius:4px}</style>
+<h1>저장된 오류에서 요청 다시 확인하기</h1>
+<p>2026-10-30 · 근무팀 960의 과거 오류 기록에서 다음 동작을 찾을 수 없던 흐름을 보완합니다.</p>
+<h2>사용자가 할 수 있는 동작</h2>
+<p>저장된 오류 카드의 <strong>요청 다시 확인하기</strong>를 누르면 원래 요청이 입력창에 나타납니다. 현재 표를 기준으로 요청을 고치거나 그대로 다시 확인할 수 있습니다. 이 버튼만 눌러서는 계산하거나 확정하지 않습니다.</p>
+<ul><li>오류·대화·근무표와 기존 결과를 유지합니다.</li><li>입력 중인 문장이 있으면 그 문장을 우선 보존합니다.</li><li>미해결 오류와 요청 재검토 중에는 사이드바의 근무표 확정 후속 동작을 숨깁니다.</li><li>해당 요청의 계산이 이미 접수됐다면, 과거 오류를 새 계산의 진입점으로 제공하지 않습니다. 실행 중인 요청은 기존 결과 확인 흐름을 사용합니다.</li><li>오류 뒤에 새 요청을 보냈거나 대화를 초기화했다면 오래된 오류의 재확인 버튼은 제공하지 않습니다.</li></ul>
+<h2>FE 확인 흐름</h2>
+<ol><li>서버 실행 기록이 없는 요청과 로컬에 남은 오류가 있는 상태에서 화면에 다시 진입합니다.</li><li>최근 오류 카드의 요청 다시 확인하기 버튼과 원문 복원을 확인합니다.</li><li>복원만으로 해석·계산·확정 API를 호출하지 않는지 확인합니다.</li><li>입력창의 수정한 요청 확인을 누르면 최신 draft revision으로 재검토하고, 오래된 interpretationId로 막히지 않는지 확인합니다.</li><li>이미 실행이 접수된 요청·새 요청 이후의 오류·새 대화 구간에서는 복구 버튼이 중복으로 나타나지 않는지 확인합니다.</li></ol>
+<h2>데이터 및 검증</h2>
+<p>API·DB 변경과 Flyway migration은 없습니다. 관련 테스트 193개와 전체 로컬 테스트 3,082개가 통과했습니다(298개 파일, 기존 3개 건너뜀). 타입 검사·릴리스 검증·빌드도 통과했습니다.</p>
+</html>

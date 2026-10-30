@@ -1,11 +1,13 @@
-import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
+import {useState} from 'react';
 import {Link, useLocation} from 'react-router';
-import {RUNTIME_CONFIG} from '@/shared/config/runtime';
+import logoWordmarkPurple from '@/shared/assets/images/logo-wordmark-purple.png';
 import {SellerDetails, sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
+import {CHANNEL_TALK_URL} from '@/shared/lib/channel-talk';
 import './subscription-info.css';
 
-export type PublicOffer = {
+export type TPublicOffer = {
     plan: 'PLUS';
     currency: 'KRW';
     baseGross: number;
@@ -19,11 +21,14 @@ export type PublicOffer = {
     priceVersion: string;
     ready: boolean;
 };
-type UnavailableOffer = {ready: false; code: 'COMMERCIAL_NOT_ENABLED'};
+type TUnavailableOffer = {ready: false; code: 'COMMERCIAL_NOT_ENABLED' | 'POLICY_NOT_CONFIGURED'};
+
 const invalidOfferMessage = '요금 정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.';
-function isPublicOffer(value: Record<string, unknown>): value is PublicOffer {
+
+function isPublicOffer(value: Record<string, unknown>): value is TPublicOffer {
     const positive = ['baseGross', 'includedStaff', 'adminSeats', 'maxChargeGross'];
     const nonnegative = ['extraStaffGross', 'generate', 'adjust'];
+
     return (
         value.plan === 'PLUS' &&
         value.currency === 'KRW' &&
@@ -36,19 +41,29 @@ function isPublicOffer(value: Record<string, unknown>): value is PublicOffer {
         value.priceVersion.length > 0
     );
 }
-export const fetchPublicOffer = async (): Promise<PublicOffer | UnavailableOffer> => {
+
+export const fetchPublicOffer = async (): Promise<TPublicOffer | TUnavailableOffer> => {
     const response = await fetch(`${RUNTIME_CONFIG.serverUrl().replace(/\/$/, '')}/commercial/offer`, {credentials: 'omit'});
+
     if (!response.ok) throw new Error(invalidOfferMessage);
+
     const body: unknown = await response.json();
+
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error(invalidOfferMessage);
+
     const value = body as Record<string, unknown>;
-    if (value.code === 'COMMERCIAL_NOT_ENABLED' && value.ready === false) {
-        return {ready: false, code: 'COMMERCIAL_NOT_ENABLED'};
+
+    if ((value.code === 'COMMERCIAL_NOT_ENABLED' || value.code === 'POLICY_NOT_CONFIGURED') && value.ready === false) {
+        return {ready: false, code: value.code};
     }
+
     if (!isPublicOffer(value)) throw new Error(invalidOfferMessage);
+
     return value;
 };
+
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
+
 export function SubscriptionConditions() {
     return (
         <>
@@ -67,8 +82,8 @@ export function SubscriptionConditions() {
             </p>
             <h2>해지와 결제 실패</h2>
             <p>
-                로그인 후 ‘요금제·병원 관리 → 병동 선택 → 결제 → 구독 관리’에서 다음 결제를 해지할 수 있습니다. 해지 접수가 완료되면 다음
-                주기의 자동결제를 중단하고 이미 결제한 기간까지 이용할 수 있습니다. 해지는 환불 신청과 별개입니다.
+                로그인 후 ‘내 관리 공간 → 해당 병동의 구독·결제 관리 → 구독 관리’에서 다음 결제를 해지할 수 있습니다. 해지 접수가 완료되면
+                다음 주기의 자동결제를 중단하고 이미 결제한 기간까지 이용할 수 있습니다. 해지는 환불 신청과 별개입니다.
             </p>
             <p>
                 결제 실패나 확인 지연은 결제내역에서 안내합니다. 결제 확인 전에는 새 유료 이용기간을 부여하지 않습니다. 카드 등록만
@@ -98,8 +113,8 @@ export function RefundConditions() {
             </ul>
             <h2>신청 방법과 처리</h2>
             <p>
-                ‘요금제·병원 관리 → 병동 선택 → 결제 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 하단 고객센터로 연락해 주세요. 접수
-                시각을 환불 기준으로 기록합니다. 환불 확정 시 해당 유료 이용기간이 종료됩니다. 처리 지연 때문에 공제 기간이 늘어나지
+                ‘내 관리 공간 → 해당 병동의 구독·결제 관리 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 하단 고객센터로 연락해 주세요.
+                접수 시각을 환불 기준으로 기록합니다. 환불 확정 시 해당 유료 이용기간이 종료됩니다. 처리 지연 때문에 공제 기간이 늘어나지
                 않습니다.
             </p>
             <p>
@@ -122,22 +137,34 @@ export default function SubscriptionInfoPage() {
     const {pathname} = useLocation();
     const refund = pathname === '/refund';
     const terms = pathname === '/subscription-terms';
-    const offer = useQuery({queryKey: ['public-plus-offer'], queryFn: fetchPublicOffer, retry: false});
-    const [capacity, setCapacity] = useState(50);
-    const preparing = offer.data && 'code' in offer.data;
+    const offer = useQuery({
+        queryKey: ['public-plus-offer'],
+        queryFn: fetchPublicOffer,
+        retry: false,
+        enabled: !refund && !terms,
+        staleTime: 0,
+        refetchOnWindowFocus: 'always',
+    });
+    const [capacityInput, setCapacityInput] = useState<string>();
     const p = offer.data && 'plan' in offer.data ? offer.data : undefined;
-    const total = p ? p.baseGross + Math.max(0, capacity - p.includedStaff) * p.extraStaffGross : 0;
+    const preparing = !!offer.data && !p;
+    const capacity = capacityInput === undefined ? (p?.includedStaff ?? NaN) : capacityInput.trim() ? Number(capacityInput) : NaN;
+    const validCapacity = !!p && Number.isSafeInteger(capacity) && capacity >= p.includedStaff && capacity <= 10000;
+    const total = p && validCapacity ? p.baseGross + Math.max(0, capacity - p.includedStaff) * p.extraStaffGross : NaN;
     const canStart =
         p?.ready &&
         sellerReady &&
         p.termsVersion === SUBSCRIPTION_TERMS_VERSION &&
-        Number.isInteger(capacity) &&
-        capacity >= p.includedStaff &&
+        validCapacity &&
+        Number.isSafeInteger(total) &&
         total <= p.maxChargeGross;
+
     return (
         <div className="subscription-info">
             <header>
-                <Link to="/">dutying</Link>
+                <Link to="/" aria-label="듀팅 홈">
+                    <img className="subscription-logo" src={logoWordmarkPurple} alt="dutying" />
+                </Link>
                 <nav aria-label="상품 안내">
                     <Link to="/pricing">요금제</Link>
                     <Link to="/subscription-terms">정기결제 안내</Link>
@@ -147,13 +174,28 @@ export default function SubscriptionInfoPage() {
             </header>
             <main>
                 <p className="eyebrow">듀팅 · 국내 웹 서비스</p>
-                <h1>{refund ? '해지·환불정책' : terms ? 'Plus 정기결제 이용 안내' : '병동의 근무표를 함께 관리하세요.'}</h1>
+                <h1>{refund ? '해지·환불정책' : terms ? 'Plus 정기결제 이용 안내' : '듀팅 Plus 월 구독'}</h1>
                 {!refund && !terms && (
                     <>
-                        <p className="lead">
-                            수간호사와 병동 관리자를 위한 AI 근무표 편성 서비스입니다. 간호사 명단·근무 조건을 관리하고 전체 생성, 부분
-                            조정, 근무표 저장 기능을 이용합니다.
-                        </p>
+                        <div className="product-intro">
+                            <div>
+                                <p className="lead">
+                                    수간호사와 병동 관리자를 위한 AI 근무표 편성 서비스입니다. 간호사 명단·근무 조건을 관리하고 전체 생성,
+                                    부분 조정, 근무표 저장 기능을 이용합니다.
+                                </p>
+                                <p>1개 병동 · 결제당 1개월 이용 · 매월 카드 자동결제</p>
+                                <p>PC 웹에서 이용하는 상품으로, 설치나 앱 다운로드가 필요하지 않습니다.</p>
+                            </div>
+                            <figure className="product-image">
+                                <img
+                                    src="/img/login-slide-1.webp"
+                                    alt="듀팅의 AI 근무표 편성 서비스 소개 이미지"
+                                    width={2206}
+                                    height={2160}
+                                />
+                                <figcaption>서비스 소개 이미지 · 실제 판매 조건은 아래 요금 안내를 확인해 주세요.</figcaption>
+                            </figure>
+                        </div>
                         {offer.isPending ? (
                             <p role="status">요금 정보를 불러오고 있습니다.</p>
                         ) : preparing ? (
@@ -183,24 +225,27 @@ export default function SubscriptionInfoPage() {
                                         type="number"
                                         min={p.includedStaff}
                                         max={10000}
-                                        value={capacity}
-                                        onChange={(e) => setCapacity(Number(e.target.value))}
+                                        value={capacityInput ?? p.includedStaff}
+                                        aria-describedby="capacity-quote"
+                                        aria-invalid={!validCapacity}
+                                        onChange={(e) => setCapacityInput(e.target.value)}
                                     />
                                 </label>
-                                <p className="price">
-                                    예상 월 이용료{' '}
-                                    {Number.isInteger(capacity) && capacity >= p.includedStaff ? won(total) : '인원을 확인해 주세요'}
+                                <p className="price" id="capacity-quote" aria-live="polite">
+                                    예상 월 이용료 {validCapacity && Number.isSafeInteger(total) ? won(total) : '인원을 확인해 주세요'}
                                 </p>
                                 <p>카드 1회 결제 상한은 {won(p.maxChargeGross)}입니다. 실제 결제 전 최종 견적을 다시 확인합니다.</p>
                                 {canStart ? (
-                                    <Link className="primary" to="/workspace/plans">
+                                    <Link className="primary" to="/workspace">
                                         로그인하고 Plus 신청
                                     </Link>
                                 ) : (
                                     <p role="status">
-                                        {total > p.maxChargeGross
-                                            ? '카드 결제 상한을 초과합니다. 고객센터로 문의해 주세요.'
-                                            : '온라인 구독 신청을 준비하고 있습니다.'}
+                                        {!validCapacity
+                                            ? `${p.includedStaff.toLocaleString('ko-KR')}명 이상 10,000명 이하의 정수로 입력해 주세요.`
+                                            : total > p.maxChargeGross
+                                              ? '카드 결제 상한을 초과합니다. 고객센터로 문의해 주세요.'
+                                              : '온라인 구독 신청을 준비하고 있습니다.'}
                                     </p>
                                 )}
                             </section>
@@ -211,7 +256,9 @@ export default function SubscriptionInfoPage() {
                                 여러 병동의 통합 운영은 개별 상담·계약 및 계좌이체로 진행합니다. Plus 카드 정기결제와 별도로 견적과 도입
                                 범위를 확정합니다.
                             </p>
-                            <Link to="/workspace/adoption">병원 도입 문의</Link>
+                            <a href={CHANNEL_TALK_URL} target="_blank" rel="noreferrer">
+                                병원 도입 문의
+                            </a>
                         </section>
                     </>
                 )}

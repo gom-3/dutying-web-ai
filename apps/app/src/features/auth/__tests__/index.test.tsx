@@ -81,6 +81,7 @@ vi.mock('@/features/tutorial', () => ({
 }));
 
 vi.mock('@/shared/api/client', () => ({
+    registerAdminSessionRecovery: vi.fn(),
     setAccessToken: (...args: unknown[]) => setAccessTokenMock(...args),
     setAdminAccessToken: (...args: unknown[]) => setAdminAccessTokenMock(...args),
 }));

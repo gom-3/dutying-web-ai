@@ -1,0 +1,102 @@
+.hospital-info-tip {
+    display: inline-flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: -12px -8px;
+    padding: 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    vertical-align: middle;
+    cursor: help;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 120ms ease;
+}
+
+.hospital-info-tip__icon {
+    display: inline-flex;
+    flex: 0 0 16px;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--workspace-muted, #566173);
+    color: #fff;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-weight: 700;
+    font-style: normal;
+    line-height: 1;
+    transition: background-color 120ms ease;
+}
+
+.hospital-info-tip:hover,
+.hospital-info-tip[aria-expanded='true'] {
+    background: var(--workspace-control, #f1f3f5);
+}
+
+.hospital-info-tip:hover .hospital-info-tip__icon,
+.hospital-info-tip[aria-expanded='true'] .hospital-info-tip__icon {
+    background: var(--workspace-primary, #202b3c);
+}
+
+.hospital-info-tip:focus-visible {
+    outline: none;
+    background: var(--workspace-primary-hover, #101827);
+}
+
+.hospital-info-tip:focus-visible .hospital-info-tip__icon {
+    background: #fff;
+    color: var(--workspace-primary-hover, #101827);
+}
+
+.hospital-info-tip__content {
+    z-index: 1300;
+    max-width: min(280px, calc(100vw - 32px), var(--radix-tooltip-content-available-width));
+    max-height: var(--radix-tooltip-content-available-height);
+    padding: 12px 14px;
+    overflow-y: auto;
+    border-radius: 10px;
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.65;
+    text-align: left;
+    text-wrap: pretty;
+    white-space: pre-line;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hospital-info-tip,
+    .hospital-info-tip__icon,
+    .hospital-info-tip:focus-visible .hospital-info-tip__icon {
+        transition: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .hospital-info-tip:focus-visible {
+        outline: 2px solid Highlight;
+    }
+
+    .hospital-info-tip__icon {
+        background: ButtonText;
+        color: ButtonFace;
+        forced-color-adjust: none;
+    }
+
+    .hospital-info-tip__content {
+        background: CanvasText;
+        color: Canvas;
+        forced-color-adjust: none;
+    }
+}

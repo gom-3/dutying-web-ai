@@ -1,0 +1,210 @@
+.rest-allocation {
+    container: rest-allocation / inline-size;
+    margin-top: 1rem;
+    color: #303b50;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+}
+
+.rest-allocation__summary {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: #f4f3f8;
+    cursor: pointer;
+    list-style: none;
+    overflow-wrap: anywhere;
+}
+
+.rest-allocation__summary::-webkit-details-marker {
+    display: none;
+}
+
+.rest-allocation__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-weight: 600;
+}
+
+.rest-allocation__chevron {
+    flex: none;
+    width: 0.625rem;
+    height: 0.375rem;
+    background: currentColor;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.rest-allocation[open] .rest-allocation__chevron {
+    transform: rotate(180deg);
+}
+
+.rest-allocation__overview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.75rem;
+    margin-top: 0.25rem;
+    color: #59647a;
+    font-size: 0.75rem;
+}
+
+.rest-allocation__body {
+    padding-top: 0.75rem;
+}
+
+.rest-allocation__intro {
+    margin: 0 0.75rem 0.5rem;
+    color: #59647a;
+}
+
+.rest-allocation__options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+}
+
+.rest-allocation__option {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.rest-allocation__option:hover {
+    background: #f4f3f8;
+}
+
+.rest-allocation__option-copy {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+}
+
+.rest-allocation__name {
+    font-weight: 600;
+}
+
+.rest-allocation__hint {
+    color: #59647a;
+    font-size: 0.75rem;
+}
+
+.rest-allocation__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.rest-allocation__control {
+    display: grid;
+    justify-items: end;
+    flex: 0 0 6rem;
+    max-width: 45%;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: right;
+}
+
+.rest-allocation__track {
+    flex: none;
+    width: 2.5rem;
+    height: 1.5rem;
+    padding: 0.1875rem;
+    border-radius: 1rem;
+    background: #687389;
+}
+
+.rest-allocation__track::before {
+    content: '';
+    display: block;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    background: #fff;
+}
+
+.rest-allocation__input:checked + .rest-allocation__control .rest-allocation__track {
+    background: #663dfa;
+}
+
+.rest-allocation__input:checked + .rest-allocation__control .rest-allocation__track::before {
+    transform: translateX(1rem);
+}
+
+.rest-allocation__summary:focus-visible,
+.rest-allocation__option:has(.rest-allocation__input:focus-visible) {
+    outline: none;
+    background: #ede4ff;
+    color: #472081;
+}
+
+.rest-allocation__summary:focus-visible .rest-allocation__heading,
+.rest-allocation__option:has(.rest-allocation__input:focus-visible) .rest-allocation__name {
+    text-decoration: underline;
+    text-decoration-thickness: 0.125rem;
+    text-underline-offset: 0.25rem;
+}
+
+.rest-allocation__option[data-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.rest-allocation__note {
+    margin: 0.75rem 0.75rem 0;
+    color: #59647a;
+    font-size: 0.75rem;
+}
+
+.rest-allocation__save-hint {
+    margin-top: 0.25rem;
+    color: #303b50;
+    font-weight: 500;
+}
+
+@container rest-allocation (max-width: 16rem) {
+    .rest-allocation__option {
+        flex-wrap: wrap;
+    }
+
+    .rest-allocation__option-copy {
+        flex: 1 1 100%;
+    }
+
+    .rest-allocation__control {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        flex: 1 1 100%;
+        max-width: none;
+        gap: 0.375rem;
+        text-align: left;
+    }
+}
+
+@media (forced-colors: active) {
+    .rest-allocation__input {
+        position: static;
+        width: 1.5rem;
+        height: 1.5rem;
+        flex: none;
+        opacity: 1;
+    }
+
+    .rest-allocation__track {
+        display: none;
+    }
+
+    .rest-allocation__summary:focus-visible,
+    .rest-allocation__option:has(.rest-allocation__input:focus-visible) {
+        outline: 2px solid Highlight;
+    }
+}

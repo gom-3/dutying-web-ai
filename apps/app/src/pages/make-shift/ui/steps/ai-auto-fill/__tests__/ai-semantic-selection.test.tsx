@@ -46,56 +46,36 @@ const props = {
     onRetry: vi.fn(),
 };
 
-describe('explicit partial selection', () => {
+describe('clarification without condition selection', () => {
     it.each(['UNSUPPORTED', 'NEEDS_CLARIFICATION'])(
-        'starts empty and sends only explicitly checked supported IDs without executing: %s',
+        'shows interpreted groups but asks for a natural-language correction: %s',
         async (state) => {
-            const onSelectConditions = vi.fn();
+            const onEdit = vi.fn();
+            const onApply = vi.fn();
+            render(<AiSemanticReview {...props} plan={{...plan, state}} onEdit={onEdit} onApply={onApply} />);
 
-            render(<AiSemanticReview {...props} plan={{...plan, state}} onSelectConditions={onSelectConditions} />);
-
-            const action = screen.getByRole('button', {name: '선택한 조건만 다시 검증'});
-            const checks = screen.getAllByRole('checkbox');
-
-            expect(action).toBeDisabled();
-            expect(checks[0]).not.toBeChecked();
-            expect(checks[1]).toBeDisabled();
-            expect(onSelectConditions).not.toHaveBeenCalled();
-            await userEvent.click(checks[1]);
-            expect(checks[1]).not.toBeChecked();
-            expect(action).toBeDisabled();
-            await userEvent.click(checks[0]);
-            await userEvent.click(action);
-            expect(onSelectConditions).toHaveBeenCalledWith(['supported']);
-            expect(onSelectConditions).toHaveBeenCalledOnce();
-            expect(props.onApply).not.toHaveBeenCalled();
-            expect(props.onRetry).not.toHaveBeenCalled();
+            expect(screen.getByText('A 1일 D 배정')).toBeVisible();
+            expect(screen.getByText('B 입사일부터 N 금지')).toBeVisible();
+            expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
+            expect(onEdit).toHaveBeenCalledOnce();
+            expect(onApply).not.toHaveBeenCalled();
         },
     );
-    it('blocks stale selection and clears selection when a new plan arrives', async () => {
-        const onSelectConditions = vi.fn();
-        const {rerender} = render(<AiSemanticReview {...props} onSelectConditions={onSelectConditions} />);
-
-        await userEvent.click(screen.getAllByRole('checkbox')[0]);
-        rerender(<AiSemanticReview {...props} stale onSelectConditions={onSelectConditions} />);
-        expect(screen.getAllByRole('checkbox')[0]).toBeDisabled();
-        expect(screen.getByRole('button', {name: '선택한 조건만 다시 검증'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '선택한 조건만 다시 검증'}));
-        expect(onSelectConditions).not.toHaveBeenCalled();
-        rerender(<AiSemanticReview {...props} plan={{...plan, planId: 'new'}} onSelectConditions={onSelectConditions} />);
-        expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked();
-        expect(screen.getByRole('button', {name: '선택한 조건만 다시 검증'})).toBeDisabled();
+    it('keeps the group explanation read-only when a new plan arrives', () => {
+        const {rerender} = render(<AiSemanticReview {...props} />);
+        rerender(<AiSemanticReview {...props} plan={{...plan, planId: 'new'}} />);
+        expect(screen.getByText('A 1일 D 배정')).toBeVisible();
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
-    it('prevents selecting or revalidating conditions while another action is busy', async () => {
-        const onSelectConditions = vi.fn();
-        const {rerender} = render(<AiSemanticReview {...props} onSelectConditions={onSelectConditions} />);
-
-        await userEvent.click(screen.getAllByRole('checkbox')[0]);
-        rerender(<AiSemanticReview {...props} disabled onSelectConditions={onSelectConditions} />);
-        expect(screen.getAllByRole('checkbox')[0]).toBeDisabled();
-        expect(screen.getByRole('button', {name: '선택한 조건만 다시 검증'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '선택한 조건만 다시 검증'}));
-        expect(onSelectConditions).not.toHaveBeenCalled();
+    it('disables editing while another action is busy', async () => {
+        const onEdit = vi.fn();
+        render(<AiSemanticReview {...props} disabled onEdit={onEdit} />);
+        const edit = screen.getByRole('button', {name: '요청 수정하기'});
+        expect(edit).toBeDisabled();
+        await userEvent.click(edit);
+        expect(onEdit).not.toHaveBeenCalled();
     });
     it.each([true, false])('keeps applied and excluded source records without making another selection: current=%s', async (current) => {
         render(
@@ -127,7 +107,7 @@ describe('explicit partial selection', () => {
         if (!current) expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
     it('shows historical unsupported requests without interactive selection controls', () => {
-        render(<AiSemanticReview {...props} current={false} onSelectConditions={vi.fn()} />);
+        render(<AiSemanticReview {...props} current={false} />);
 
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();

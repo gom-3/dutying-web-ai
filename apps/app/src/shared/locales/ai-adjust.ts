@@ -35,6 +35,11 @@ export const aiAdjustKo = {
         close: '닫기',
     },
     executionFailure: {
+        nightRunBoundsEvidence: '{{name}}: 연속 야간 최소 {{minimum}}회 / 최대 {{maximum}}회',
+        incomingNightEvidence: '{{start}} ~ {{end}}: 전달에서 이어진 야간 {{actual}}회',
+        nightRunBoundsNext: '해당 간호사의 연속 야간 최소·최대 횟수와 전달 말 배정을 확인하고 수정해 주세요. 기존 표와 설정은 그대로예요.',
+        minimumNightEvidence: '{{name}}: 연속 야간 {{actual}}회 / 필요한 최소 {{expected}}회',
+
         propagatedCapacity:
             '{{date}}에 {{required}}명이 필요하지만, 고정 배정과 연속 근무 조건을 지키면 최대 {{available}}명만 배정할 수 있어요. 관련 배정을 확인하고 직접 수정해 주세요.',
         conflictDate: '{{date}} 조건 충돌',
@@ -83,9 +88,11 @@ export const aiAdjustKo = {
         offSettingsTitle: '휴무 설정을 확인해 주세요.',
         autofillTitle: '자동채우기를 마치지 못했어요.',
         adjustTitle: '근무표를 수정하지 못했어요.',
+        retryConditions: '조건 확인하고 다시 채우기',
+        conflictDetailsMissing:
+            '충돌한 조건의 상세 내용을 확인하지 못했어요. 설정을 확인하거나 요청을 바꾼 뒤 다시 채워 주세요. 아직 이번 결과는 반영하지 않았어요.',
         conflictTitle: '함께 맞추기 어려운 조건이 있어요',
-        conflictMessage:
-            '아래 내용을 확인하고 진행 방법을 골라 주세요. 직접 설정을 고치거나, 제안한 방식으로 이번 표를 수정하거나, 요청을 바꿀 수 있어요.',
+        conflictMessage: '아래 조건을 확인해 주세요. 설정을 직접 수정하거나 요청을 바꾼 뒤 다시 채울 수 있어요.',
         restTargetConflict:
             '미리 정한 근무와 월 휴무 목표가 맞지 않아요.\n{{details}}\n월 휴무 목표 또는 미리 정한 근무를 확인하고 수정한 뒤 다시 자동채우기 해 주세요. 기존 근무표는 그대로예요.',
         restTargetExcess: '{{name}}: 미리 정한 휴무 {{fixed}}일 / 월 휴무 목표 최대 {{target}}일',
@@ -144,6 +151,8 @@ export const aiAdjustKo = {
         },
     },
     preparation: {
+        initialRequestLabel: '이번 근무표에 반영할 내용 · 선택',
+        initialRequestExample: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
         previous: '전달 근무에 빈칸이 있어요.\n이대로 진행할까요?',
         previousHelp: '전달 근무를 입력하면 월초의\n연속 근무와 휴식도 함께 확인해요.',
         continue: '이대로 진행할게요',
@@ -198,7 +207,7 @@ export const aiAdjustKo = {
     chat: {
         welcome: '근무표를 어떻게 바꿀까요?',
         regenerate: '한 번 더 채워볼게요',
-        modify: '수정하고 싶은 부분이 있어요',
+        modify: '원하는 변경을 적어 조절하기',
         confirmSchedule: '근무표 확정',
         askChanges: '어떤 점을 바꾸고 싶나요?',
         regenerateHelp: '현재 조건으로 전체 근무표를 다시 만들어요.',
@@ -354,6 +363,7 @@ export const aiAdjustKo = {
         expiredSuggestion: '표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요. 최신 요청으로 다시 수정해 주세요.',
         loading: '이전 대화를 불러오고 있어요. 잠시만 기다려 주세요.',
         pendingExecution: '이전 요청의 결과를 먼저 확인해 주세요. 아래에서 결과를 다시 확인할 수 있어요.',
+        expiredPlan: '요청을 확인한 뒤 시간이 지나 실행 계획이 만료됐어요. 입력한 요청을 다시 확인해 주세요. 근무표는 그대로예요.',
         staleRequest: '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
         requestTooLong: '요청과 답변을 합쳐 500자 이내로 줄여 주세요.',
     },
@@ -489,6 +499,12 @@ export const aiAdjustEn = {
         close: 'Close',
     },
     executionFailure: {
+        nightRunBoundsEvidence: '{{name}}: consecutive nights minimum {{minimum}} / maximum {{maximum}}',
+        incomingNightEvidence: '{{start}} – {{end}}: {{actual}} night(s) carried from the previous month',
+        nightRunBoundsNext:
+            'Review this nurse’s minimum and maximum consecutive nights and assignments at the end of the previous month. The roster and settings are unchanged.',
+        minimumNightEvidence: '{{name}}: {{actual}} consecutive night(s) / required minimum {{expected}}',
+
         propagatedCapacity:
             '{{date}} needs {{required}} nurses, but fixed assignments and consecutive-work limits allow at most {{available}}. Review the linked assignments and edit the schedule.',
         conflictDate: '{{date}} constraint conflict',
@@ -538,8 +554,11 @@ export const aiAdjustEn = {
         offSettingsTitle: 'Check rest shift settings.',
         autofillTitle: 'Autofill could not be completed.',
         adjustTitle: 'The schedule could not be adjusted.',
+        retryConditions: 'Review conditions and refill',
+        conflictDetailsMissing:
+            'Conflict details are unavailable. Review your settings or change your request, then fill again. This result has not been applied.',
         conflictTitle: 'Some conditions cannot be met together',
-        conflictMessage: 'Choose how to continue: edit your settings, apply the proposed change to this schedule, or change your request.',
+        conflictMessage: 'Review the conditions below. You can edit your settings or change your request, then fill again.',
         restTargetConflict:
             'Fixed assignments conflict with the monthly days-off target.\n{{details}}\nReview and update the target or fixed assignments, then run autofill again. Your schedule has not changed.',
         restTargetExcess: '{{name}}: {{fixed}} fixed days off / monthly target maximum {{target}}',
@@ -618,6 +637,8 @@ export const aiAdjustEn = {
         },
     },
     preparation: {
+        initialRequestLabel: 'Request for this schedule · optional',
+        initialRequestExample: 'Please reduce Nurse Kim’s weekend shifts this month.',
         previous: 'Some shifts from last month are blank.\nContinue as they are?',
         previousHelp: 'Last month’s shifts help check consecutive work and rest at the start of this month.',
         continue: 'Continue as they are',
@@ -674,7 +695,7 @@ export const aiAdjustEn = {
     chat: {
         welcome: 'How would you like to change the schedule?',
         regenerate: 'Try filling it again',
-        modify: 'I have some changes in mind',
+        modify: 'Describe the changes to adjust',
         confirmSchedule: 'Confirm schedule',
         askChanges: 'What would you like to change?',
         regenerateHelp: 'Rebuild the whole schedule with the current conditions.',
@@ -849,6 +870,7 @@ export const aiAdjustEn = {
         expiredSuggestion: 'The schedule or conditions changed, or the suggestion expired. Submit a new request with the current schedule.',
         loading: 'Loading your conversation. Please wait.',
         pendingExecution: 'Check the previous request before starting another. Use Check result below.',
+        expiredPlan: 'The reviewed plan expired during preparation. Review your request again. Your schedule is unchanged.',
         staleRequest: 'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',
         requestTooLong: 'Keep the request and replies within 500 characters.',
     },

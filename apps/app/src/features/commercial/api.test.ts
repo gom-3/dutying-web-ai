@@ -4,6 +4,7 @@ import {CommercialAPI, getCommercialContext, isPlanEnforcementEnabled} from './a
 const {get, put} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn()}));
 
 vi.mock('@/shared/api/client', () => ({
+    registerAdminSessionRecovery: vi.fn(),
     adminAxiosInstance: {get, put},
 }));
 

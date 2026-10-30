@@ -294,6 +294,29 @@ describe('useEditAccount.quitWard', () => {
         confirmSpy.mockRestore();
     });
 
+    it('does not attempt membership resignation for inherited hospital access', async () => {
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const auth = mockUseAuth();
+
+        mockUseAuth.mockReturnValue({
+            ...auth,
+            state: {...auth.state, accountMe: {...auth.state.accountMe, accessSource: 'HOSPITAL'}},
+        });
+
+        const {result} = renderHook(() => useEditAccount(), {wrapper: createWrapper(new QueryClient())});
+
+        await act(async () => {
+            await result.current.quitWard();
+        });
+        expect(confirmSpy).not.toHaveBeenCalled();
+        expect(mockAdminQuitWard).not.toHaveBeenCalled();
+        expect(mockWardQuitWard).not.toHaveBeenCalled();
+        expect(mockEditAccountStatus).not.toHaveBeenCalled();
+        expect(mockNavigate).not.toHaveBeenCalled();
+        expect(mockSetLoading).not.toHaveBeenCalled();
+        confirmSpy.mockRestore();
+    });
+
     it('keeps the regular account quit flow unchanged', async () => {
         const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
         const queryClient = new QueryClient();

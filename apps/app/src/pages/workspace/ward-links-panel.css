@@ -1,0 +1,135 @@
+.ward-link-request {
+    padding: 24px 0;
+}
+.ward-link-request + .ward-link-request {
+    margin-top: 12px;
+}
+.ward-link-request-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+}
+.ward-link-request-heading h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.ward-link-state {
+    color: var(--workspace-primary, #202b3c);
+    background: var(--workspace-secondary, #e5e8ed);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 650;
+}
+.ward-link-subtle {
+    color: var(--workspace-muted, #566173);
+}
+.ward-link-sharing {
+    margin: 20px 0;
+    padding: 18px 20px;
+    background: #f6f7f9;
+    border-radius: 12px;
+}
+.ward-link-sharing > div {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 12px;
+    padding: 8px 0;
+}
+.ward-link-sharing dt {
+    font-weight: 650;
+}
+.ward-link-sharing dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+.ward-link-consent {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 0;
+    cursor: pointer;
+}
+.ward-link-consent input {
+    accent-color: var(--workspace-primary, #202b3c);
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin: 3px 0;
+}
+.ward-link-secondary-actions {
+    margin-top: 12px;
+}
+.ward-link-contract {
+    margin: 20px 0;
+    padding: 16px 20px;
+    background: #f6f7f9;
+    border-radius: 12px;
+}
+.ward-link-contract summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 650;
+    cursor: pointer;
+}
+.ward-link-contract summary::before {
+    content: '+';
+}
+.ward-link-contract[open] summary::before {
+    content: '−';
+}
+.ward-link-confirm {
+    padding: 18px 20px;
+    background: var(--workspace-control, #f1f3f5);
+    border-radius: 12px;
+}
+.ward-link-feedback {
+    color: #315d45;
+}
+.ward-link-empty {
+    padding: 24px 0;
+}
+.ward-links-panel :focus-visible {
+    outline: none;
+    background: var(--workspace-primary, #202b3c);
+    color: #fff;
+    text-decoration: underline;
+}
+.ward-links-panel input:focus-visible {
+    outline: none;
+    accent-color: var(--workspace-primary, #202b3c);
+    background: var(--workspace-secondary, #e5e8ed);
+}
+.ward-link-consent:has(input:focus-visible) {
+    background: var(--workspace-primary-hover, #101827);
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+@media (max-width: 600px) {
+    .ward-link-sharing > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+    .ward-link-sharing,
+    .ward-link-contract,
+    .ward-link-confirm {
+        padding: 14px;
+    }
+    .ward-link-request-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .ward-links-panel button {
+        width: 100%;
+    }
+}
+@media (forced-colors: active) {
+    .ward-links-panel :focus-visible {
+        outline: 2px solid Highlight;
+    }
+}

@@ -23,6 +23,15 @@ const operation: TConversationOperation = {
 };
 
 describe('ongoing autofill entry', () => {
+    it('keeps an unacknowledged request reachable without offering unsupported cancellation', () => {
+        const onOpen = vi.fn();
+        render(<AiExecutionDock execution={null} onOpen={onOpen} isAdjusting />);
+        expect(screen.getByRole('region', {name: '근무표 수정 작업'})).toBeVisible();
+        expect(screen.getByRole('status')).toHaveTextContent('계산 요청을 보내고 있어요');
+        fireEvent.click(screen.getByRole('button', {name: '진행 상황 보기'}));
+        expect(onOpen).toHaveBeenCalledOnce();
+        expect(screen.queryByRole('button', {name: '계산 요청 취소'})).not.toBeInTheDocument();
+    });
     it('reopens the same task independently of cancellation', () => {
         const onOpen = vi.fn();
         const cancel = vi.fn();
@@ -34,6 +43,23 @@ describe('ongoing autofill entry', () => {
         expect(cancel).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
         expect(cancel).toHaveBeenCalledOnce();
+    });
+    it.each(['SUCCEEDED', 'FAILED'] as const)('names an existing-schedule update consistently: %s', (executionStatus) => {
+        render(
+            <AiExecutionDock
+                execution={{
+                    operation: {...operation, operationType: 'ADJUST', executionStatus, progress: null},
+                    cancel: null,
+                    cancelling: false,
+                }}
+                onOpen={vi.fn()}
+            />,
+        );
+        expect(screen.getByRole('region', {name: '근무표 수정 작업'})).toBeVisible();
+        expect(screen.getByRole('status')).toHaveTextContent(
+            executionStatus === 'SUCCEEDED' ? '근무표 수정 결과가 준비됐어요' : '근무표를 수정하지 못했어요.',
+        );
+        expect(screen.getByRole('status')).not.toHaveTextContent('자동채우기');
     });
     it.each([
         ['SUCCEEDED', 'APPLIED', '자동채우기 결과가 준비됐어요'],

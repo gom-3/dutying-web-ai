@@ -45,6 +45,7 @@ export type TSelectionAudit = {
     excludedConditionIds: string[];
 };
 export type TSemanticPlan = {
+    generationIntent?: {start: number; end: number; quote: string} | null;
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
     authoringContractVersion?: 'intent-first-v1';
@@ -123,7 +124,7 @@ export type TConversationState = {
     expiresAt: string | null;
     executionPlanExpiresAt?: string | null;
     conditions: {conditionId: string; text: string; preview: {status: string}}[];
-    pendingQuestion: {conditionId: string; question: string} | null;
+    pendingQuestion: {conditionId: string; question: string; originalText?: string | null} | null;
 };
 export type TConversationDetail = {
     conversationState?: TConversationState | null;
@@ -141,7 +142,14 @@ export type TConversationPreference = {
     provenance: string;
     confirmedAt: string;
 };
+export type TConversationClientContext = {
+    surfaceVersion: 'conversation-minimal-v1';
+    entryChoice?: 'regenerate' | 'modify';
+    inputMode: 'request' | 'clarification' | 'revision';
+    typedText?: string;
+};
 export type TConversationExecute = {
+    clientContext?: TConversationClientContext;
     authoringContractVersion?: 'intent-first-v1';
     interactionId?: string;
     candidateDigest?: string;
@@ -169,7 +177,11 @@ export function conversationApi(wardId: number, teamId: number) {
         (
             await client.post<T>(`${base}${path}`, data, {
                 suppressErrorToast: true,
-                timeout: (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1' ? 17000 : 330000,
+                timeout: path.endsWith('/operations')
+                    ? 330000
+                    : (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1'
+                      ? 30000
+                      : 330000,
             })
         ).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;
@@ -190,12 +202,13 @@ export function conversationApi(wardId: number, teamId: number) {
         interpret: (
             id: number,
             request: {
+                clientContext?: TConversationClientContext;
                 authoringContractVersion?: 'intent-first-v1';
                 expectedRevision: number;
                 text: string;
                 language: string;
                 previousInterpretationId?: string;
-                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET';
+                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET' | 'AUTO';
                 expectedStateVersion?: number;
                 targetConditionIds?: string[];
                 removeLabels?: string[];
@@ -244,7 +257,8 @@ export function conversationApi(wardId: number, teamId: number) {
             (
                 await client.post<TConversationOperation>(`${base}/conversations/${id}/operations`, request, {
                     suppressErrorToast: true,
-                    timeout: request.authoringContractVersion === 'intent-first-v1' ? 17000 : 330000,
+                    // Servers without async support still need the current synchronous calculation window.
+                    timeout: 330000,
                     headers: {Prefer: 'respond-async'},
                 })
             ).data,
@@ -295,13 +309,12 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
     );
 }
 
-/** The new contract has one execution window, including after explicit confirmation. */
+/** ADJUST shares its interaction window; reviewed GENERATE starts its existing compute budget after preparation. */
 export function hasCurrentIntentFirstExecutionWindow(plan: TSemanticPlan, now = Date.now()) {
     return (
         plan.authoringContractVersion === 'intent-first-v1' &&
         Boolean(plan.interactionId) &&
-        Boolean(plan.deadlineAt) &&
-        Date.parse(plan.deadlineAt!) > now &&
+        (Boolean(plan.generationIntent) || (Boolean(plan.deadlineAt) && Date.parse(plan.deadlineAt!) > now)) &&
         Boolean(plan.planExpiresAt) &&
         Date.parse(plan.planExpiresAt!) > now
     );

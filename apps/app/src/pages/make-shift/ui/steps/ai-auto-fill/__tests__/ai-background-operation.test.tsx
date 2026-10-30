@@ -36,7 +36,7 @@ describe('append-only background conversation', () => {
         rerender(<AiConversationOperationStatus {...props} operation={operation('COMPUTING', 4000)} />);
         expect(messages()).toHaveLength(2);
         expect(screen.getByText('계산 순서를 기다리고 있어요')).toBeVisible();
-        expect(screen.getByText('근무표를 채우기 시작했어요. 신청·고정근무는 그대로 유지해요.')).toBeVisible();
+        expect(screen.getByText('근무표를 채우기 시작했어요. 신청 근무와 고정 근무는 그대로 유지해요.')).toBeVisible();
         rerender(<AiConversationOperationStatus {...props} operation={operation('COMPUTING', 20000)} />);
         expect(messages()).toHaveLength(2);
         rerender(<AiConversationOperationStatus {...props} operation={operation('COMPUTING', 35000)} />);

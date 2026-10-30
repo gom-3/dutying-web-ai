@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {wardQueryKeys} from '@/entities/ward';
 import i18n from '@/i18n';
-import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {act, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import WardInfoSettingsPage from '..';
 
 const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, mockToastError, mockQuitWard, mockUseQuery, mockAuthState} =
@@ -13,7 +13,11 @@ const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, 
         mockToastError: vi.fn(),
         mockQuitWard: vi.fn(),
         mockUseQuery: vi.fn(),
-        mockAuthState: {accessToken: null as string | null, wardId: 1},
+        mockAuthState: {
+            accessToken: null as string | null,
+            wardId: 1,
+            accountMe: {accessSource: undefined as 'MEMBERSHIP' | 'HOSPITAL' | null | undefined},
+        },
     }));
 
 vi.mock('@tanstack/react-query', async () => {
@@ -90,6 +94,7 @@ describe('WardInfoSettingsPage', () => {
         mockQuitWard.mockReset();
         mockUseQuery.mockReset();
         mockAuthState.accessToken = null;
+        mockAuthState.accountMe.accessSource = undefined;
         mockUseQuery.mockReturnValue({
             data: ward,
             isPending: false,
@@ -99,7 +104,9 @@ describe('WardInfoSettingsPage', () => {
     });
 
     afterEach(async () => {
-        await i18n.changeLanguage('ko');
+        await act(async () => {
+            await i18n.changeLanguage('ko');
+        });
     });
 
     it('anchors the notification bell to the same 480px frame as the save button', () => {
@@ -154,6 +161,21 @@ describe('WardInfoSettingsPage', () => {
         expect(quitWardButton.parentElement).toHaveClass('justify-end', 'px-1');
         expect(quitWardButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(saveButton).toBeDisabled();
+    });
+
+    it('does not offer ward resignation when access is inherited from the hospital', () => {
+        mockAuthState.accountMe.accessSource = 'HOSPITAL';
+        render(<WardInfoSettingsPage />);
+        expect(screen.getByRole('heading', {name: '병동 설정'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '병동 나가기'})).not.toBeInTheDocument();
+        expect(mockQuitWard).not.toHaveBeenCalled();
+    });
+
+    it('keeps resignation available for a physical ward membership', async () => {
+        mockAuthState.accountMe.accessSource = 'MEMBERSHIP';
+        render(<WardInfoSettingsPage />);
+        await userEvent.click(screen.getByRole('button', {name: '병동 나가기'}));
+        expect(mockQuitWard).toHaveBeenCalledExactlyOnceWith();
     });
 
     it('localizes ward code and additional feature labels in Japanese', async () => {

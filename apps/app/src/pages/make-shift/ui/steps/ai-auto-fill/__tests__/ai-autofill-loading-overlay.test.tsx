@@ -113,7 +113,7 @@ describe('autofill loading overlay', () => {
         fireEvent.click(screen.getByRole('button', {name: '닫고 계속 계산'}));
         expect(onBackground).toHaveBeenCalledOnce();
         expect(onCancel).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: '대화 보기'}));
+        fireEvent.click(screen.getByRole('button', {name: '진행 상황 보기'}));
         expect(onOpenConversation).toHaveBeenCalledOnce();
         fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
         expect(onCancel).toHaveBeenCalledOnce();

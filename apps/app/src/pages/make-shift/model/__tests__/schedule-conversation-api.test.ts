@@ -5,6 +5,7 @@ import {
     precedingCompletedOperation,
     requestTextForTurn,
     visibleConversationTurns,
+    unexecutedRequestForRecovery,
 } from '../conversation-presentation';
 import {
     conversationEvents,
@@ -311,4 +312,43 @@ it('checks the latest interpretation, source, revision, and context for negotiat
     expect(
         isSemanticExecutionCurrent({...detail, conversation: {...detail.conversation, latestInterpretationId: 'other'}}, confirmed, false),
     ).toBe(false);
+});
+
+describe('request recovery from a saved local error', () => {
+    const raw = {...turn, eventId: 8, sequence: 2, actor: 'USER', type: 'MESSAGE', interpretationId: null, text: '간호사 4의 E를 줄여줘'};
+    const proposal = {
+        ...turn,
+        eventId: 9,
+        sequence: 3,
+        interpretation: {items: []} as unknown as NonNullable<TConversationTurn['interpretation']>,
+    };
+    const history = {...detail, turns: [raw, proposal], operations: [operation]};
+
+    it('recovers an unsubmitted plan even when syncing the draft cleared the latest interpretation', () => {
+        expect(
+            unexecutedRequestForRecovery({...history, conversation: {...history.conversation, latestInterpretationId: null}}, 3.001),
+        ).toEqual(proposal);
+    });
+    it('uses the raw request when interpretation did not complete', () => {
+        expect(unexecutedRequestForRecovery({...history, turns: [raw]}, 2.001)).toEqual(raw);
+    });
+    it('does not reopen a stale error after a newer user request or reset', () => {
+        expect(
+            unexecutedRequestForRecovery({...history, turns: [raw, proposal, {...raw, eventId: 11, sequence: 5}]}, 3.001),
+        ).toBeUndefined();
+        expect(
+            unexecutedRequestForRecovery({...history, turns: [raw, proposal, {...turn, type: 'SEGMENT_START', sequence: 5}]}, 3.001),
+        ).toBeUndefined();
+    });
+    it('keeps an accepted calculation on its own recovery path', () => {
+        expect(
+            unexecutedRequestForRecovery(
+                {
+                    ...history,
+                    operations: [{...operation, sequence: 4, interpretationId: proposal.interpretationId, executionStatus: 'UNKNOWN'}],
+                },
+                4.001,
+            ),
+        ).toBeUndefined();
+    });
 });

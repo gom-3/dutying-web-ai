@@ -19,6 +19,7 @@ type TProps<TSource> = {
     disabled?: boolean;
     onClose: () => void;
     onContinue?: (source: TSource) => void;
+    isCurrent?: (source: TSource) => boolean;
 };
 
 /** One read-only viewer for captured local drafts and saved server versions. */
@@ -33,6 +34,7 @@ export function AiScheduleSnapshotViewer<TSource>({
     disabled = false,
     onClose,
     onContinue,
+    isCurrent,
 }: TProps<TSource>) {
     const {t} = useTypedTranslation();
     const [showBefore, setShowBefore] = useState(false);
@@ -193,7 +195,7 @@ export function AiScheduleSnapshotViewer<TSource>({
                             )}
                         </div>
                     </div>
-                    {onContinue && (
+                    {onContinue && !isCurrent?.(selected) && (
                         <footer className="flex shrink-0 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
                             <p aria-live="polite" className="text-[13px] leading-5 text-[#667085]">
                                 {canCompare

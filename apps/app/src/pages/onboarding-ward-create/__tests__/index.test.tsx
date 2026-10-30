@@ -1,8 +1,10 @@
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
+import type {ReactElement} from 'react';
+import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import type * as I18nResourcesModule from '@/shared/i18n/resources.generated';
-import {render, userEvent} from '@/shared/util/test-utils';
+import {render as renderWithQueryClient, userEvent} from '@/shared/util/test-utils';
 import OnboardingWardCreatePage from '../index';
 import {
     createInitialDraft,
@@ -22,11 +24,14 @@ const mockSaveOnboardingWardDraft = vi.fn();
 const mockPreviewOnboardingScheduleInput = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
+const mockGetAccountMe = vi.fn().mockResolvedValue(undefined);
 const mockParseOnboardingWardExcel = vi.fn();
 const mockSearchHospitals = vi.fn();
 
 let latestSavedDraftPayload: unknown = null;
 
+const render = (element: ReactElement) =>
+    renderWithQueryClient(<MemoryRouter initialEntries={['/onboarding/ward-create']}>{element}</MemoryRouter>);
 const TEST_HOSPITAL_NAME = '테스트 병원';
 const TEST_WARD_NAME = '테스트 병동';
 const getRelativeScheduleMonth = (offset: number) => {
@@ -94,6 +99,7 @@ vi.mock('@/features/register', () => ({
 
 vi.mock('@/features/auth', () => ({
     default: () => ({
+        actions: {handleGetAccountMe: mockGetAccountMe},
         state: {
             accountId: 42,
             accountMe: {

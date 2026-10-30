@@ -1,3 +1,8 @@
+import {captureBillingReturnPayload} from './features/commercial/billing-return-payload';
+
+// Scrub the single-use card authorization before loading the application or analytics.
+captureBillingReturnPayload();
+
 // Public landing HTML is already rendered. Product routes retain their SPA entry.
 const container = document.getElementById('root');
 const isLandingRoute = /^\/(?:en|ja|zh|th|vi)?\/?$/.test(window.location.pathname);

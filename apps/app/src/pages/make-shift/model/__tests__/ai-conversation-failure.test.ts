@@ -64,3 +64,11 @@ it('offers new-operation recovery only for a trusted local unsent stale guard', 
     expect(aiConversationFailure({code: 409, unsentOperation: 'GENERATE'})).not.toHaveProperty('unsentOperation');
     expect(aiConversationFailure(new AiConversationInputError('pendingExecution', 'GENERATE'))).not.toHaveProperty('unsentOperation');
 });
+
+it('distinguishes interpreter availability from invalid user input without showing raw server text', () => {
+    const result = aiConversationFailure({serverCode: 'SCHEDULE_INTERPRET_UNAVAILABLE', code: 503, message: 'private upstream response'});
+
+    expect(result.message).not.toContain('private');
+    expect(result.message).toBe(i18n.t('aiAutofillUi.interpretUnavailable'));
+    expect(result.checkOutcome).toBe(false);
+});

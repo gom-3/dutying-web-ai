@@ -10,14 +10,16 @@ type TProps = {
     disabled: boolean;
     onClose: () => void;
     onContinue: (version: TResultVersion) => void;
+    currentVersionId?: string | null;
 };
 
-export default function AiConversationSnapshot({version, ...props}: TProps) {
+export default function AiConversationSnapshot({version, currentVersionId, ...props}: TProps) {
     return (
         <AiScheduleSnapshotViewer
             key={version.versionId}
             {...props}
             after={version}
+            isCurrent={(selected) => selected.versionId === currentVersionId}
             toSnapshot={buildConversationSnapshot}
             year={version.year}
             month={version.month}
