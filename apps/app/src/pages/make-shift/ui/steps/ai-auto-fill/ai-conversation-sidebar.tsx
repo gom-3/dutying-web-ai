@@ -154,6 +154,7 @@ export default function AiConversationSidebar({
     const [awaitingAdjustment, setAwaitingAdjustment] = useState(false);
     const awaitingAdjustmentRef = useRef(false);
     const reviewedPreparation = useRef<string | null>(null);
+    const preparationReviewTurn = useRef<TConversationTurn | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
     const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
     const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
@@ -757,6 +758,9 @@ export default function AiConversationSidebar({
         const conversationId = detailRef.current.conversation.conversationId;
         const contextHash = detailRef.current.contextHash;
         const plan = turn.semanticPlan;
+
+        preparationReviewTurn.current = turn;
+
         const initialGeneration = initialGenerationPending.current && !plan.generationIntent;
         const preparationKey = () => {
             const draft = dto();
@@ -817,12 +821,26 @@ export default function AiConversationSidebar({
 
                 let reviewed = turn;
 
+                const unsentOperation = plan.generationIntent || initialGeneration ? 'GENERATE' : 'ADJUST';
+
+                // Refresh only rebinds a live plan; the server cannot renew an expired one.
+                if (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
+                    throw new AiConversationInputError('expiredPlan', unsentOperation);
+
                 if (
                     !isConversationConfirmationCurrent(synced, turn, false) ||
-                    plan.sourceVersionId !== synced.conversation.currentVersionId ||
-                    (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
+                    plan.sourceVersionId !== synced.conversation.currentVersionId
                 ) {
-                    reviewed = await api.refreshPlan(conversationId, plan.planId, synced.conversation.revision, plan.planHash);
+                    try {
+                        reviewed = await api.refreshPlan(conversationId, plan.planId, synced.conversation.revision, plan.planHash);
+                    } catch (cause) {
+                        // No calculation has been submitted. Rechecking execution history cannot recover a rejected plan.
+                        if ([400, 409, 422].includes((cause as {code?: number}).code ?? 0))
+                            throw new AiConversationInputError('staleRequest', unsentOperation);
+
+                        throw cause;
+                    }
+
                     await refresh();
                 }
 
@@ -885,6 +903,7 @@ export default function AiConversationSidebar({
 
             if (confirmedId && mounted.current && sidebarOpen.current) {
                 reviewedPreparation.current = null;
+                preparationReviewTurn.current = null;
 
                 if (initialGeneration) {
                     initialGenerationPending.current = false;
@@ -1183,6 +1202,7 @@ export default function AiConversationSidebar({
     }, [api, previewSourceId]);
     const resetSectionUi = () => {
         initialGenerationPending.current = false;
+        preparationReviewTurn.current = null;
         discardedPreparationId.current = autofillFlow?.id ?? null;
         reviewedPreparation.current = null;
         previewRequest.current += 1;
@@ -1713,8 +1733,12 @@ export default function AiConversationSidebar({
 
     const reviseUnsentRequest = () => {
         const current = detailRef.current;
-        const turn = current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
+        const turn =
+            preparationReviewTurn.current ??
+            current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
         const preservedText = text;
+
+        preparationReviewTurn.current = null;
 
         if (turn) editRequest(turn);
         else setEntryChoice('modify');

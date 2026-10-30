@@ -3044,6 +3044,57 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).toHaveBeenCalledOnce();
     });
 
+    it('returns an expired preparation plan to request review without refreshing or executing it', async () => {
+        const {proposal} = semanticRequest();
+
+        Object.assign(proposal.semanticPlan!, {
+            authoringContractVersion: 'intent-first-v1',
+            interactionId: 'interaction:expired-preparation',
+            deadlineAt: new Date(Date.now() + 60000).toISOString(),
+            planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+        });
+
+        const prepare = vi.fn(async () => {
+            proposal.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        });
+
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await screen.findByText(/요청을 확인한 뒤 시간이 지나 실행 계획이 만료됐어요/);
+        expect(mocks.refreshPlan).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.adjustCurrentSchedule')}));
+        expect(screen.getByRole('textbox')).toHaveValue('김 간호사 1~2일 N 금지. 12일 O 배정');
+    });
+    it.each([400, 409, 422])('returns a rejected preparation refresh (%s) to the original request without receipt lookup', async (code) => {
+        semanticRequest();
+
+        const prepare = vi.fn(async () => {
+            mocks.draftFixed = true;
+        });
+
+        mocks.sync.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                draft: {...source, versionId: 'source:prepared', cells: [{...cell, fixed: true}]},
+                conversation: {...current.conversation, revision: 1, currentVersionId: 'source:prepared', latestInterpretationId: null},
+            };
+
+            return current;
+        });
+        mocks.refreshPlan.mockRejectedValueOnce({code});
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await screen.findByText(/표나 조건이 바뀌었어요/);
+        expect(mocks.refreshPlan).toHaveBeenCalledOnce();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.adjustCurrentSchedule')}));
+        expect(screen.getByRole('textbox')).toHaveValue('김 간호사 1~2일 N 금지. 12일 O 배정');
+    });
     it.each(['PREVIEW_READY', 'LOCKED_CONFLICT'])(
         'revalidates the same conditions against newly protected shifts before execution: %s',
         async (state) => {
