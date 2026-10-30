@@ -49,6 +49,25 @@ async function submit(text: string, answer = true) {
 }
 
 describe('AI adjustment conversation', () => {
+    it('continues a grounded legacy rewrite into preparation with its original prompt, without ADJUST', async () => {
+        const text = '그냥 다시 자동완성해줘';
+        const interpret = vi.fn().mockResolvedValue({
+            items: [],
+            unmapped: [],
+            llmPrompt: text,
+            generationIntent: {start: 0, end: Array.from(text).length, quote: text},
+        });
+        const apply = vi.fn();
+        const regenerate = vi.fn();
+        render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} onRegenerate={regenerate} />);
+        expect(textbox()).toBeVisible();
+        await submit(text, false);
+        expect(interpret).toHaveBeenCalledExactlyOnceWith(text);
+        expect(regenerate).toHaveBeenCalledExactlyOnceWith(text);
+        expect(apply).not.toHaveBeenCalled();
+        expect(textbox()).toHaveValue(text);
+    });
+
     it('retires an earlier proposal after a saved condition is removed without applying it', async () => {
         const interpret = vi.fn().mockResolvedValue(interpreted);
         const apply = vi.fn();
@@ -303,7 +322,7 @@ describe('AI adjustment conversation', () => {
         const firstFlow = {id: 1, status: 'running' as const, messages: [{role: 'user' as const, text: '첫 자동채우기 선택'}]};
         const view = render(<AiAdjustTextInput {...props} autofillFlow={firstFlow} generationCompleted />);
 
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        expect(textbox()).toBeVisible();
         await submit('오프를 공평하게');
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeVisible();
 
@@ -312,19 +331,19 @@ describe('AI adjustment conversation', () => {
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={nextFlow} preparation={<p>준비 선택지</p>} />);
 
         expect(screen.getByText('첫 자동채우기 선택')).toBeVisible();
-        expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
+        expect(screen.queryByText('aiAdjust.chat.modify')).not.toBeInTheDocument();
         expect(screen.getByText('오프를 공평하게')).toBeVisible();
         expect(screen.getByText('다음 고정 확인')).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.changeAnswer'})).not.toBeInTheDocument();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.getByRole('log').textContent).toMatch(
-            /첫 자동채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*aiAdjust.chat.modify[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
+            /첫 자동채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
         );
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={{...nextFlow, status: 'running'}} generationCompleted />);
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2);
         expect(screen.getByText('오프를 공평하게')).toBeVisible();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeVisible();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.regenerate'})).not.toBeInTheDocument();
         expect(props.interpret).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
     });
@@ -759,9 +778,10 @@ describe('AI adjustment conversation', () => {
         );
         await submit('김서현 쉬게 해줘');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        await screen.findByText('근무표를 조정했어요!');
+        await screen.findByText(/요청하신 내용으로 \d+칸 변경했어요\./);
         expect(screen.queryByText(/D → O/)).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.changeDetails')).not.toBeInTheDocument();
+
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.checkProblems'})).not.toBeInTheDocument();
         expect(screen.queryByText('필수 조건 위반')).not.toBeInTheDocument();
@@ -815,9 +835,9 @@ describe('AI adjustment conversation', () => {
 
         const resultCard = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(within(resultCard).getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(within(resultCard).getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
         expect(within(resultCard).getByRole('img', {name: 'aiAdjust.snapshot.success'})).toBeVisible();
-        expect(within(resultCard).getByText('aiAdjust.snapshot.attempt {"count":1}')).toBeVisible();
+        expect(within(resultCard).queryByText('aiAdjust.snapshot.attempt {"count":1}')).not.toBeInTheDocument();
         expect(within(resultCard).getByLabelText('aiAdjust.snapshot.changedLabel {"count":1}')).toHaveTextContent(
             'aiAdjust.snapshot.changed {"count":1}',
         );
@@ -838,7 +858,7 @@ describe('AI adjustment conversation', () => {
         expect(textbox()).toHaveValue('');
         expect(screen.getByText('aiAdjust.chat.askChanges')).toBeVisible();
         expect(screen.getByText('aiAdjust.chat.modify')).toBeVisible();
-        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(screen.getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
         expect(screen.queryByRole('button', {name: 'aiAdjust.modifyMore'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.confirmSchedule'})).not.toBeInTheDocument();
         expect(interpret).toHaveBeenCalledTimes(1);
@@ -846,7 +866,7 @@ describe('AI adjustment conversation', () => {
         await submit('데이 연속 근무를 줄여줘', false);
         expect(interpret).toHaveBeenCalledTimes(2);
         expect(apply).toHaveBeenCalledTimes(1);
-        expect(screen.getByText('근무표를 조정했어요!')).toBeVisible();
+        expect(screen.getByText(/요청하신 내용으로 \d+칸 변경했어요\./)).toBeVisible();
     });
 
     it('does not send Enter while composing Korean input or leak editing keys', async () => {

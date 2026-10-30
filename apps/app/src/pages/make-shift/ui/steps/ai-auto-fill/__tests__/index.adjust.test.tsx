@@ -521,6 +521,28 @@ async function completeFirstFill(user: ReturnType<typeof userEvent.setup>) {
     await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
 }
 
+/** Exercise the direct-edit route before filling the changed draft. */
+async function prepareAnotherGeneration(user: ReturnType<typeof userEvent.setup>) {
+    const edit = screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')});
+    if (!edit) {
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+        return;
+    }
+    await user.click(edit);
+    act(() => {
+        const doc = useShiftEditorStore.getState().doc;
+        useShiftEditorStore.getState().setDoc({
+            ...doc,
+            rows: doc.rows.map((row) =>
+                row.workerId === '11'
+                    ? {...row, cells: row.cells.map((value, col) => (col === 3 ? (value === 'N' ? 'E' : 'N') : value))}
+                    : row,
+            ),
+        });
+    });
+    await user.click(screen.getByRole('button', {name: 'auto fill'}));
+}
+
 /** 생성과 별개인 조절 진입점으로, 닫은 사이드바도 다시 열 수 있다. */
 async function openAdjustDialog(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('button', {name: 'adjust shifts'}));
@@ -530,10 +552,7 @@ async function openAdjustDialog(user: ReturnType<typeof userEvent.setup>) {
 
 async function openModification(user: ReturnType<typeof userEvent.setup>) {
     await openAdjustDialog(user);
-
-    const modify = screen.queryByRole('button', {name: 'aiAdjust.chat.modify'});
-
-    if (modify) await user.click(modify);
+    expect(screen.getByRole('textbox')).toBeVisible();
 }
 
 /**
@@ -644,6 +663,33 @@ describe('AiAutofill adjust panel', () => {
         useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
     });
 
+    it('opens a saved filled roster in the conversation without starting a refill', async () => {
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        await waitFor(() => expect(mocks.conversationProps?.open).toBe(true));
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
+    });
+
+    it('discards a paused refill review when opening a filled roster for natural editing', async () => {
+        useAuthStore.setState({accountId: 1001});
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:1001:1:10:2026:7',
+            JSON.stringify({id: 8, kind: 'generation', status: 'paused', resumeStep: 'previous', messages: []}),
+        );
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
+
+        expect(mocks.conversationProps?.open).toBe(true);
+        expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+    });
+
     it.each([false, true])('times conversation execution and completes only successful results (success: %s)', async (succeeded) => {
         seedEditor(makeEmptyDoc());
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
@@ -713,19 +759,17 @@ describe('AiAutofill adjust panel', () => {
         expect(document.documentElement).toHaveStyle({'--make-ai-adjust-sidebar-width': '407px'});
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(screen.queryByText(ADJUST_TITLE)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeInTheDocument();
+        expect(screen.getByRole('textbox')).toBeInTheDocument();
     });
 
-    it.each([false, true])('opens fixed review after a failed conversation without retrying automatically (empty: %s)', async (empty) => {
-        seedEditor(empty ? makeEmptyDoc() : makeDoc());
+    it('opens fixed review after a failed conversation without retrying automatically', async () => {
+        seedEditor(makeEmptyDoc());
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
 
         const user = userEvent.setup();
 
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-
-        if (!empty) await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
 
         const before = useShiftEditorStore.getState().doc;
 
@@ -737,7 +781,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(mocks.conversationProps?.generationRequest).toBe(1);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.fixAll'}) !== null).toBe(!empty);
+        expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.fixAll'})).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.retryFill'}));
         expect(mocks.conversationProps?.generationRequest).toBe(2);
@@ -885,16 +929,14 @@ describe('AiAutofill adjust panel', () => {
 
         expect(screen.queryByText(/개인별 월 OFF·연차 목표/)).not.toBeInTheDocument();
         await completeFirstFill(user);
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
         await user.type(screen.getByRole('textbox'), '김 간호사의 12일 휴무를 유지해줘');
-
-        const conversation = screen.getByRole('log').textContent;
 
         view.unmount();
         view = render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByRole('textbox')).toHaveValue('김 간호사의 12일 휴무를 유지해줘');
-        expect(screen.getByRole('log').textContent).toBe(conversation);
+        expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         expect(screen.queryByText('aiAdjust.chat.welcome')).not.toBeInTheDocument();
         expect(screen.queryByText('aiAdjust.preparation.restoredHistory')).not.toBeInTheDocument();
         expect(mocks.interpretScheduleAdjust).not.toHaveBeenCalled();
@@ -1112,15 +1154,15 @@ describe('AiAutofill adjust panel', () => {
             expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
             expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeEnabled();
 
-            if (adjustEnabled) expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
-            else expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+            if (adjustEnabled) expect(screen.getByRole('textbox')).toBeEnabled();
+            else expect(screen.getByRole('textbox')).toBeDisabled();
 
             expect(screen.queryByRole('button', {name: 'aiAdjust.preparation.continue'})).not.toBeInTheDocument();
             expect(document.documentElement.dataset.makeAiPreparing).toBe('false');
             expect(useShiftEditorStore.getState().doc).toEqual(before);
             expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
 
-            await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+            await prepareAnotherGeneration(user);
             expect(await screen.findByRole('button', {name: 'aiAdjust.preparation.continue'})).toBeEnabled();
         },
     );
@@ -1141,7 +1183,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(screen.queryByRole('log')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeEnabled();
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
@@ -1162,7 +1204,7 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: CARD_APPLY}));
         await screen.findByRole('region', {name: DECISION_TITLE});
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
 
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveValue('');
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveFocus();
@@ -1196,7 +1238,7 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
         await act(async () => resolve({year: 2026, month: 7, requests: []}));
 
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeEnabled();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(screen.queryByRole('log')).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
@@ -1236,7 +1278,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeEnabled();
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+        await prepareAnotherGeneration(user);
         await user.click(await screen.findByRole('button', {name: DECISION_CONFIRM}));
         await act(async () => resolveOld(okResult(FIRST_FILL_CELLS, 'GENERATE')));
 
@@ -1416,13 +1458,13 @@ describe('AiAutofill adjust panel', () => {
         await completeFirstFill(user);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
         view.unmount();
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeVisible();
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
     });
@@ -1447,9 +1489,8 @@ describe('AiAutofill adjust panel', () => {
 
         const result = screen.getByRole('region', {name: 'aiAdjust.snapshot.result'});
 
-        expect(result).toContainElement(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        expect(screen.getByRole('textbox')).toBeVisible();
         expect(result).not.toContainElement(confirm);
-        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         await user.click(confirm);
         expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
         expect(await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.adjust.promote.title'})).toBeVisible();
@@ -1475,13 +1516,13 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
         await openAdjustDialog(user);
         expect(screen.getByText('aiAdjust.preparation.fill')).toBeVisible();
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+        await prepareAnotherGeneration(user);
         expect(screen.getAllByText('aiAdjust.preparation.fixed')).toHaveLength(2);
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(1);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.fill'}));
         await waitFor(() => expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2));
         expect(screen.getByRole('log').textContent).toMatch(
-            /aiAdjust.generationCompleted[\s\S]*aiAdjust.chat.regenerate[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.fill[\s\S]*aiAdjust.generationCompleted/,
+            /aiAdjust.generationCompleted[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.fill[\s\S]*aiAdjust.generationCompleted/,
         );
         expect(screen.getAllByText('aiAdjust.preparation.fill')).toHaveLength(2);
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
@@ -1528,20 +1569,20 @@ describe('AiAutofill adjust panel', () => {
         // 이력 열람과 새 수정 실행의 권한을 구분한다.
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findByText('aiAdjust.generationCompleted')).toBeVisible();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+        expect(screen.getByRole('textbox')).toBeDisabled();
+        await prepareAnotherGeneration(user);
         await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
 
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+        expect(screen.getByRole('textbox')).toBeDisabled();
         expect(screen.queryByRole('button', {name: 'adjust shifts'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'regenerate schedule'})).not.toBeInTheDocument();
         view.unmount();
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         expect(await screen.findAllByText('aiAdjust.generationCompleted')).toHaveLength(2);
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.modify'})).toBeDisabled();
+        expect(screen.getByRole('textbox')).toBeDisabled();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
     });
 
@@ -1590,6 +1631,85 @@ describe('AiAutofill adjust panel', () => {
             expect(screen.getByRole('alert')).toHaveTextContent('page.makeShift.aiRefill.adjust.failed');
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(beforeCells);
         }
+    });
+
+    it.each(['apply', 'cancel'] as const)(
+        'keeps direct edits for later autofill and protects only changed filled cells: %s',
+        async (action) => {
+            const user = userEvent.setup();
+            render(<AiAutofill />);
+            await completeFirstFill(user);
+            const original = structuredClone(useShiftEditorStore.getState().doc);
+            await user.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}));
+            expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
+            expect(useShiftEditorStore.getState().doc).toEqual(original);
+            expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+            act(() => {
+                const doc = useShiftEditorStore.getState().doc;
+                useShiftEditorStore
+                    .getState()
+                    .setDoc({...doc, rows: doc.rows.map((row) => (row.workerId === '11' ? {...row, cells: ['N', 'D', null, 'N']} : row))});
+            });
+            const edited = structuredClone(useShiftEditorStore.getState().doc);
+            await user.click(screen.getByRole('button', {name: 'auto fill'}));
+            await screen.findByRole('region', {name: DECISION_TITLE});
+            expect(rowCells('11')).toEqual(['N', 'D', null, 'N']);
+            expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({...original.fixedCells, '11|2026-07-04': true});
+            expect(useShiftEditorStore.getState().doc.requestCells).toEqual(original.requestCells);
+            expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+            if (action === 'cancel') {
+                await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
+                expect(useShiftEditorStore.getState().doc).toEqual(edited);
+                expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+            } else {
+                mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-03', 'D')], 'GENERATE'));
+                await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+                await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+                const payload = mocks.requestAiSchedule.mock.calls[1]?.[0];
+                expect(payload.doc.rows.find((row: {workerId: string}) => row.workerId === '11').cells).toEqual([null, null, null, 'N']);
+                expect(payload.doc.fixedCells).toEqual({...original.fixedCells, '11|2026-07-04': true});
+                expect(rowCells('11')).toEqual(['N', 'D', 'D', 'N']);
+            }
+        },
+    );
+
+    it('opens autofill after only conditions change without requiring a direct edit', async () => {
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        act(() => useShiftEditorStore.getState().setRulesHash('sha256:conditions-changed'));
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('region', {name: DECISION_TITLE});
+        expect(useShiftEditorStore.getState().doc.rows).toEqual(before.rows);
+        expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].rulesHash).toBe('sha256:conditions-changed');
+    });
+
+    it('keeps the original legacy rewrite prompt through fixed-cell preparation and generation', async () => {
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+        await completeFirstFill(user);
+        const text = '고정한 것만 남기고 다시 짜줘';
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        mocks.interpretScheduleAdjust.mockResolvedValue({
+            items: [],
+            unmapped: [],
+            llmPrompt: text,
+            generationIntent: {start: 0, end: Array.from(text).length, quote: text},
+        });
+        await openModification(user);
+        await user.type(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL}), text);
+        await user.click(screen.getByRole('button', {name: TEXT_SUBMIT}));
+        await screen.findByRole('region', {name: DECISION_TITLE});
+        expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+        expect(useShiftEditorStore.getState().doc.rows).toEqual(before.rows);
+        await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0]).toMatchObject({prompt: text});
+        expect(mocks.requestAiSchedule.mock.calls[1]?.[0].adjust).toBeUndefined();
     });
 
     it('adjusts with the requested knob and preserves manually edited cells', async () => {
@@ -1825,7 +1945,7 @@ describe('AiAutofill adjust panel', () => {
             expect(retriedRequest.lockedCellKeys).toEqual(failedRequest.lockedCellKeys);
             expect(screen.getByRole('log').textContent).toContain(message);
             expect(screen.getByRole('log').textContent).toMatch(
-                /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*근무표를 조정했어요!/,
+                /aiAdjust.failure.retry[\s\S]*aiAdjust.preparation.fixed[\s\S]*aiAdjust.preparation.next[\s\S]*요청하신 내용으로 \d+칸 변경했어요\./,
             );
         },
     );
@@ -1887,7 +2007,7 @@ describe('AiAutofill adjust panel', () => {
 
         await openAdjustDialog(user);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+        await prepareAnotherGeneration(user);
 
         await screen.findByRole('region', {name: DECISION_TITLE});
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
@@ -1896,7 +2016,7 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.requestAiSchedule.mock.calls[2]![0].adjust).toBeUndefined();
         expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
         await openAdjustDialog(user);
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeInTheDocument();
         // 요청은 서버 상태라 재생성해도 남는다. 바뀐 칸 수만 지난 조절의 것이라 지운다.
         expect(mocks.monthRequests.filter((request) => request.status === 'ACTIVE')).toHaveLength(1);
         expect(screen.queryByText(/aiRefill\.adjust\.applied/)).not.toBeInTheDocument();
@@ -2307,7 +2427,7 @@ describe('AiAutofill adjust panel', () => {
         await completeFirstFill(user);
         await openAdjustDialog(user);
 
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.modify'}));
+        await user.click(screen.getByRole('textbox'));
         await user.click(screen.getByRole('button', {name: CLUSTER_ON_EXAMPLE}));
 
         expect(screen.getByRole('textbox', {name: TEXT_INPUT_LABEL})).toHaveValue(CLUSTER_ON_EXAMPLE);
@@ -2567,7 +2687,7 @@ describe('AiAutofill adjust panel', () => {
             expect(screen.queryByRole('region', {name: DECISION_TITLE})).not.toBeInTheDocument();
             expect(screen.queryByRole('log')).not.toBeInTheDocument();
             expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
-            await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+            await prepareAnotherGeneration(user);
             expect(await screen.findByRole('region', {name: CARRY_OVER_TITLE})).toBeVisible();
         });
 

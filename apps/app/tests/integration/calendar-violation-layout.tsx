@@ -6,7 +6,13 @@ import {MakeShiftCalendar} from '@/pages/make-shift/ui/steps/shared/make-shift-c
 import '@/i18n';
 import '@/index.css';
 
-const dayCount = Number(new URLSearchParams(location.search).get('days') ?? 31);
+const params = new URLSearchParams(location.search);
+const dayCount = Number(params.get('days') ?? 31);
+const isRequest = params.get('mode') === 'request';
+const nameSamples = params.get('names') === 'long' ? ['남궁서연지희가온다솜하늘', 'Alexandra Elizabeth Montgomery-Wellington', '김민'] : [];
+const showFaults = !isRequest && params.get('faults') !== '0';
+const requestedCalendarWidth = Number(params.get('calendarWidth'));
+const calendarWidth = Number.isFinite(requestedCalendarWidth) && requestedCalendarWidth > 0 ? requestedCalendarWidth : undefined;
 const columns = Array.from({length: dayCount}, (_, index) => `2026-10-${String(index + 1).padStart(2, '0')}`);
 const types = [
     {shortName: 'D', name: 'Day', color: '#4CBFA8', classification: 'DAY'},
@@ -27,7 +33,7 @@ const workers = Array.from({length: 14}, (_, row) => ({
     shiftNurse: {
         shiftNurseId: row + 1,
         nurseId: row + 101,
-        name: `간호사 ${row + 1}`,
+        name: nameSamples[row] ?? `${isRequest ? '신규 간호사' : '간호사'} ${row + 1}`,
         carried: 0,
         divisionNum: 1,
         priority: row,
@@ -119,17 +125,23 @@ function Harness() {
                 >
                     AI 시트 {open ? '닫기' : '열기'}
                 </button>
-                <MakeShiftCalendar
-                    shift={shift}
-                    doc={doc}
-                    violationMap={violationMap}
-                    showFaults
-                    showCellStatusPins
-                    canReorderRows
-                    showDivisionHeaders
-                    showDivisionStatistics
-                    stickyHeader
-                />
+                <div data-testid="calendar-fixture" data-mode={isRequest ? 'request' : 'autofill'} style={{width: calendarWidth}}>
+                    <MakeShiftCalendar
+                        shift={shift}
+                        doc={doc}
+                        violationMap={violationMap}
+                        showFaults={showFaults}
+                        variant={isRequest ? 'simplified' : 'default'}
+                        nameColumnDensity={isRequest ? 'comfortable' : 'compact'}
+                        nurseNameMaxChars={isRequest ? null : undefined}
+                        rowGapClassName={isRequest ? 'gap-y-3' : undefined}
+                        showCellStatusPins
+                        canReorderRows
+                        showDivisionHeaders
+                        showDivisionStatistics={!isRequest}
+                        stickyHeader
+                    />
+                </div>
             </main>
             {open && (
                 <aside

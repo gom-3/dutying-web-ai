@@ -1,19 +1,14 @@
 import type {TAutofillResponse, TAuthoringOutcome} from '@dutying/api/ward';
 
+// Clause fulfillment is diagnostic; only the verified draft contract authorizes application.
 function clausesAllowApplication(outcome: TAuthoringOutcome) {
     return (
         Array.isArray(outcome.clauses) &&
-        outcome.clauses.every((clause) => {
-            if (!['EXACT', 'DIRECTIONAL', 'REVIEW'].includes(clause.kind)) return false;
-
-            if (clause.kind === 'EXACT') return ['SATISFIED', 'ALREADY_SATISFIED'].includes(clause.status);
-
-            if (clause.status === 'UNSATISFIED') return clause.kind === 'DIRECTIONAL' && outcome.requestState === 'PARTIAL';
-
-            if (clause.status === 'UNVERIFIED') return outcome.requestState === 'NEEDS_REVIEW';
-
-            return ['SATISFIED', 'ALREADY_SATISFIED', 'IMPROVED', 'UNCHANGED'].includes(clause.status);
-        })
+        outcome.clauses.every(
+            (clause) =>
+                ['EXACT', 'DIRECTIONAL', 'REVIEW'].includes(clause.kind) &&
+                ['SATISFIED', 'ALREADY_SATISFIED', 'IMPROVED', 'UNCHANGED', 'UNSATISFIED', 'UNVERIFIED'].includes(clause.status),
+        )
     );
 }
 
@@ -45,7 +40,9 @@ export function canApplyAuthoringResult(response: TAutofillResponse, sourceVersi
         response.validationTarget === 'RESULT' &&
         outcome.draftState === 'APPLICABLE' &&
         outcome.solveState === 'FEASIBLE' &&
-        ['SATISFIED', 'IMPROVED', 'PARTIAL', 'NEEDS_REVIEW'].includes(outcome.requestState) &&
+        ['SATISFIED', 'IMPROVED', 'PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT', 'ALREADY_SATISFIED'].includes(
+            outcome.requestState,
+        ) &&
         outcome.validation?.python === 'VERIFIED' &&
         outcome.validation?.spring === 'VERIFIED' &&
         outcome.validation?.protection === 'PASS' &&

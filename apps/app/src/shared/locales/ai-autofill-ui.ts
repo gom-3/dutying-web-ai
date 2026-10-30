@@ -102,8 +102,8 @@ export const aiAutofillUiKo = {
         youAreViewingTheScheduleBeforeChanges: '변경 전 근무표를 보고 있어요.',
         youAreViewingTheScheduleAfterChanges: '변경 후 근무표를 보고 있어요.',
         youCanContinueWorkingFromThisResult: '이 결과를 바탕으로 이어서 작성할 수 있어요.',
-        continueFromTheEarlierSchedule: '변경 전 표로 이어서 작성하기',
-        continueFromThisResult: '이 표로 이어서 작성하기',
+        continueFromTheEarlierSchedule: '변경 전 표로 복원하기',
+        continueFromThisResult: '이전 결과로 복원하기',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: '근무표가 준비됐어요',
@@ -195,10 +195,10 @@ export const aiAutofillUiKo = {
     },
     conversationResult: {
         yourScheduleDraftIsReady: '근무표 초안을 만들었어요!',
-        yourScheduleResultIsReady: '새 근무표를 준비했어요.',
-        yourScheduleIsReady: '근무표를 채웠어요!',
+        yourScheduleResultIsReady: '계산 결과를 확인해 주세요.',
+        yourScheduleIsReady: '근무표를 채웠어요.',
         noShiftsChangedThisTime: '이번에는 바뀐 근무가 없어요.',
-        yourAdjustedScheduleIsReady: '근무표를 조정했어요!',
+        yourAdjustedScheduleIsReady: '요청하신 내용으로 {{count}}칸 변경했어요.',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             '작성 중인 표가 바뀌어 자동으로 반영하지 않았어요. 결과를 확인하고 이어서 작성할 수 있어요.',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:
@@ -284,6 +284,8 @@ export const aiAutofillUiKo = {
         scheduleCondition: '제약조건',
     },
     conversationEntry: {
+        editSchedule: '표 직접 수정하기',
+        switchToAutofill: '자동채우기로 전환',
         requestChanges: '수정 요청하기',
         refill: '다시 채우기',
         continueCurrentSchedule: '현재 근무표에서 계속하기',
@@ -424,8 +426,8 @@ export const aiAutofillUiEn = {
         youAreViewingTheScheduleBeforeChanges: 'You are viewing the schedule before changes.',
         youAreViewingTheScheduleAfterChanges: 'You are viewing the schedule after changes.',
         youCanContinueWorkingFromThisResult: 'You can continue working from this result.',
-        continueFromTheEarlierSchedule: 'Continue from the earlier schedule',
-        continueFromThisResult: 'Continue from this result',
+        continueFromTheEarlierSchedule: 'Restore the earlier schedule',
+        continueFromThisResult: 'Restore this earlier result',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: 'Your schedule is ready',
@@ -523,7 +525,7 @@ export const aiAutofillUiEn = {
         yourScheduleResultIsReady: 'Your schedule result is ready.',
         yourScheduleIsReady: 'Your schedule is ready!',
         noShiftsChangedThisTime: 'No shifts changed this time.',
-        yourAdjustedScheduleIsReady: 'Your adjusted schedule is ready!',
+        yourAdjustedScheduleIsReady: 'Changed {{count}} shifts as requested.',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             'Your draft changed, so this result was not applied. Review it before continuing.',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:
@@ -610,6 +612,8 @@ export const aiAutofillUiEn = {
         scheduleCondition: 'Schedule condition',
     },
     conversationEntry: {
+        editSchedule: 'Edit the schedule directly',
+        switchToAutofill: 'Switch to autofill',
         requestChanges: 'Request changes',
         refill: 'Refill',
         continueCurrentSchedule: 'Continue with the current schedule',
@@ -751,8 +755,8 @@ export const aiAutofillUiJa = {
         youAreViewingTheScheduleBeforeChanges: '変更前の勤務表を表示しています。',
         youAreViewingTheScheduleAfterChanges: '変更後の勤務表を表示しています。',
         youCanContinueWorkingFromThisResult: 'この結果から引き続き作成できます。',
-        continueFromTheEarlierSchedule: '変更前の勤務表から続ける',
-        continueFromThisResult: 'この勤務表から続ける',
+        continueFromTheEarlierSchedule: '変更前の勤務表に復元する',
+        continueFromThisResult: '以前の結果に復元する',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: '勤務表ができました',
@@ -849,7 +853,7 @@ export const aiAutofillUiJa = {
         yourScheduleResultIsReady: '新しい勤務表ができました。',
         yourScheduleIsReady: '勤務表を作成しました！',
         noShiftsChangedThisTime: '今回は勤務の変更がありませんでした。',
-        yourAdjustedScheduleIsReady: '勤務表を調整しました！',
+        yourAdjustedScheduleIsReady: 'ご希望に合わせて{{count}}件の勤務を変更しました。',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             '編集中の勤務表が変更されたため、自動で反映しませんでした。結果を確認して引き続き作成できます。',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:
@@ -936,6 +940,8 @@ export const aiAutofillUiJa = {
         scheduleCondition: '制約条件',
     },
     conversationEntry: {
+        editSchedule: '勤務表を直接編集する',
+        switchToAutofill: '自動作成に切り替える',
         requestChanges: '修正をリクエスト',
         refill: '再作成',
         continueCurrentSchedule: '現在の勤務表から続ける',

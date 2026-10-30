@@ -23,7 +23,7 @@ type TProps = {
     attempt?: number;
     preview?: ReactNode;
     onModify: () => void;
-    onRegenerate?: () => void;
+    onEditSchedule?: () => void;
     onUndo: () => void;
 };
 
@@ -40,7 +40,7 @@ export function AiAdjustResult({
     actions,
     attempt,
     onModify,
-    onRegenerate,
+    onEditSchedule,
     onUndo,
 }: TProps) {
     const {t} = useTypedTranslation();
@@ -55,28 +55,28 @@ export function AiAdjustResult({
     const blocking = response.blockingViolations ?? [];
     const hasProblems = blocking.length > 0 || !(response.approvable ?? response.validation?.summary.valid ?? true);
     const title = changes.length
-        ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady')
+        ? t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady', {count: changes.length})
         : t('aiAutofillUi.conversationResult.noShiftsChangedThisTime');
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-3">
             <AiScheduleResultCard
                 title={title}
-                attempt={attempt}
-                outcome={hasProblems ? 'review' : 'success'}
+                attempt={undefined}
+                outcome={hasProblems ? 'review' : changes.length ? 'success' : 'neutral'}
                 outcomeLabel={t(hasProblems ? 'aiAdjust.snapshot.review' : 'aiAdjust.snapshot.success')}
                 changedCount={changes.length}
                 actions={
                     active && (
                         <div className="grid gap-2">
-                            {onRegenerate ? (
+                            {onEditSchedule ? (
                                 <AiConversationEntry
                                     choice={null}
                                     attached
                                     hideIntro
                                     disabled={disabled}
                                     modifyDisabled={modifyDisabled}
-                                    onChoose={(choice) => (choice === 'regenerate' ? onRegenerate() : onModify())}
+                                    onChoose={(choice) => (choice === 'edit' ? onEditSchedule() : onModify())}
                                 />
                             ) : (
                                 <button

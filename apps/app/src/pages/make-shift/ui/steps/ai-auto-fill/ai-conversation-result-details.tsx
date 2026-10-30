@@ -7,6 +7,9 @@ import {AiScheduleWarningList} from './ai-schedule-warning-list';
 
 export function AiConversationResultDetails({result, clauseText}: {result: TAutofillResponse; clauseText?: (clauseId: string) => string}) {
     const {t} = useTypedTranslation();
+
+    // Applied draft diagnostics live in the existing table, alongside editable shifts.
+    if (result.applicable && result.validationTarget === 'RESULT') return null;
     const hard = result.validation?.summary?.hardCount ?? 0;
     const soft = result.validation?.summary?.softCount ?? 0;
     const rules = result.requestRuleResults?.filter((rule) => rule.violationCount > 0) ?? [];

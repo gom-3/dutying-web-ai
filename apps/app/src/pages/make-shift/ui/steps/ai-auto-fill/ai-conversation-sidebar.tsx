@@ -25,12 +25,7 @@ import {
     requestTextForTurn,
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
-import {
-    INTENT_FIRST_CONTRACT,
-    authoringOutcome,
-    canApplyAuthoringResult,
-    canSelectAuthoringCandidate,
-} from '../../../model/intent-first-authoring';
+import {INTENT_FIRST_CONTRACT, canApplyAuthoringResult, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {
@@ -54,7 +49,6 @@ import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-cond
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
-import {AiAuthoringCandidate} from './ai-authoring-candidate';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
@@ -66,6 +60,7 @@ import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
+
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionFailure} from './ai-execution-failure';
@@ -83,8 +78,10 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    getProtectedCellKeys?: () => string[];
+    onEditSchedule?: () => void;
     onRecoverGeneration?: () => void;
-    onPrepareAdjustment?: () => Promise<void>;
+    onPrepareAdjustment?: (kind?: 'generation' | 'adjustment') => Promise<void>;
     generationFillPolicy?: 'EMPTY_ONLY' | 'REBUILD_UNLOCKED';
     onClose: () => void;
     onOpenConstraints?: () => void;
@@ -106,8 +103,6 @@ type TComposerContext = {
     editingEventId?: number;
     previousId?: string;
     change: 'REPLACE' | 'ADD' | 'RESET';
-    conditionEdit: 'ANSWER' | 'ADD' | 'UPDATE' | 'REMOVE' | 'RESET';
-    conditionTargets: string[];
 };
 type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; recoveredFailures: string[]; composer?: TComposerContext};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
@@ -125,6 +120,8 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    getProtectedCellKeys,
+    onEditSchedule,
     onRecoverGeneration,
     onPrepareAdjustment,
     generationFillPolicy = 'EMPTY_ONLY',
@@ -182,9 +179,6 @@ export default function AiConversationSidebar({
                     transcript.recoveredFailures.every((id) => typeof id === 'string') &&
                     (!transcript.composer ||
                         (['REPLACE', 'ADD', 'RESET'].includes(transcript.composer.change) &&
-                            ['ANSWER', 'ADD', 'UPDATE', 'REMOVE', 'RESET'].includes(transcript.composer.conditionEdit) &&
-                            Array.isArray(transcript.composer.conditionTargets) &&
-                            transcript.composer.conditionTargets.every((id) => typeof id === 'string') &&
                             (transcript.composer.previousId == null || typeof transcript.composer.previousId === 'string') &&
                             (transcript.composer.editingEventId == null || Number.isSafeInteger(transcript.composer.editingEventId)))),
             );
@@ -202,7 +196,6 @@ export default function AiConversationSidebar({
     const doc = useShiftEditorStore((s) => s.doc);
     const intentFirstEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const automaticAttempts = useRef(new Set<string>());
-    const [expiredCandidateTokens, setExpiredCandidateTokens] = useState<Set<string>>(() => new Set());
     const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
@@ -225,8 +218,7 @@ export default function AiConversationSidebar({
     const recordedFeedback = useRef<{notice: string | null; error: string | null}>({notice: null, error: null});
     const [editingRequest, setEditingRequest] = useState<TConversationTurn | null>(null);
     const [change, setChange] = useState<TComposerContext['change']>(storedTranscript?.composer?.change ?? 'ADD');
-    const [conditionEdit, setConditionEdit] = useState<TComposerContext['conditionEdit']>('ANSWER');
-    const [conditionTargets, setConditionTargets] = useState<string[]>([]);
+
     const [previousId, setPreviousId] = useState<string | undefined>(storedTranscript?.composer?.previousId);
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
@@ -237,6 +229,7 @@ export default function AiConversationSidebar({
     const mounted = useRef(true);
     const initialized = useRef(false);
     const syncTail = useRef<Promise<unknown>>(Promise.resolve());
+    const preserveGenerationComposer = useRef(false);
     const lastGeneration = useRef(0);
     const lastRebuild = useRef(0);
     const pendingKey = `dutying.conversation:${chatOwner?.replace('ward-admin:', 'admin:') ?? 'anonymous'}:${wardId}:${teamId}:${year}:${month}`;
@@ -254,8 +247,6 @@ export default function AiConversationSidebar({
             setEditingRequest(null);
             setPreviousId(undefined);
             setChange('ADD');
-            setConditionEdit('ANSWER');
-            setConditionTargets([]);
         }
 
         transcriptConversation.current = next.conversation.conversationId;
@@ -276,16 +267,12 @@ export default function AiConversationSidebar({
             } else {
                 setPreviousId(undefined);
                 setChange('ADD');
-                setConditionEdit('ANSWER');
-                setConditionTargets([]);
             }
         }
 
         if (detailRef.current && detailRef.current.conversation.conversationId !== next.conversation.conversationId) {
             setLocalEvents([]);
             setEditingRequest(null);
-            setConditionEdit('ANSWER');
-            setConditionTargets([]);
 
             onNewConversation?.();
         }
@@ -325,7 +312,7 @@ export default function AiConversationSidebar({
     const dto = () => {
         const state = useShiftEditorStore.getState();
 
-        return buildAutofillDTO({
+        const draft = buildAutofillDTO({
             year,
             month,
             doc: state.doc,
@@ -333,6 +320,12 @@ export default function AiConversationSidebar({
             draftRevision: state.draftRevision,
             rulesHash: state.rulesHash ?? '',
         });
+        const protectedKeys = new Set(getProtectedCellKeys?.());
+
+        return {
+            ...draft,
+            cells: draft.cells.map((cell) => (protectedKeys.has(`${cell.shiftNurseId}:${cell.date}`) ? {...cell, fixed: true} : cell)),
+        };
     };
     const localDraft = dto();
     const localDirty =
@@ -454,6 +447,8 @@ export default function AiConversationSidebar({
 
         if (!mounted.current) return;
 
+        let appliedLocally = false;
+
         if (
             operation.executionStatus === 'SUCCEEDED' &&
             !operationFailure(operation) &&
@@ -473,6 +468,9 @@ export default function AiConversationSidebar({
                 if (version.versionId !== operation.resultVersionId) throw new AiConversationInputError('staleRequest');
 
                 restore(version);
+                appliedLocally = true;
+
+                if (operation.operationType === 'GENERATE') setEntryChoice(null);
 
                 if (operation.result?.authoringOutcome && operation.result.validationTarget === 'RESULT')
                     commands.setScheduleValidationFromApi({
@@ -494,7 +492,13 @@ export default function AiConversationSidebar({
             setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
         }
 
-        await refresh();
+        try {
+            await refresh();
+        } catch (cause) {
+            // The result is already saved and visible in the editor. A delayed
+            // conversation lookup must not turn that success into a failure card.
+            if (!appliedLocally) throw cause;
+        }
     };
     const sendExecution = async (id: number, request: TConversationExecute) => {
         const beforeRequest = detailRef.current;
@@ -545,17 +549,11 @@ export default function AiConversationSidebar({
 
                     if (matchingRequest && knownOperationIds && !possibleReceipt) {
                         sessionStorage.removeItem(pendingKey);
-
-                        if (request.conflictReviewToken)
-                            setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
                     }
                 } catch {
                     /* An unavailable lookup leaves the original request available for reconciliation. */
                 }
             }
-
-            if ((e as {serverCode?: string}).serverCode === 'CANDIDATE_EXPIRED' && request.conflictReviewToken)
-                setExpiredCandidateTokens((previous) => new Set([...previous, request.conflictReviewToken!]));
 
             if (
                 [400, 403, 422, 429].includes((e as {code?: number}).code ?? 0) ||
@@ -710,27 +708,6 @@ export default function AiConversationSidebar({
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));
         }, true);
     };
-    const selectConditions = async (turn: TConversationTurn, ids: string[]) => {
-        await run(
-            async () => {
-                const current = detailRef.current;
-
-                if (!current || !turn.semanticPlan || !isConversationConfirmationCurrent(current, turn, localDirty))
-                    throw new Error(t('aiAdjust.stale'));
-
-                await api.selectConditions(
-                    current.conversation.conversationId,
-                    turn.semanticPlan.planId,
-                    current.conversation.revision,
-                    turn.semanticPlan.planHash,
-                    ids,
-                );
-                await refresh();
-            },
-            false,
-            'reviewing',
-        );
-    };
     const changeModalities = async (turn: TConversationTurn, overrides: Record<string, 'HARD' | 'SOFT'>) => {
         // run() presents errors but deliberately consumes them. Track completion so the editor retains failed changes.
         let saved = false;
@@ -794,7 +771,7 @@ export default function AiConversationSidebar({
             // Request review never opens schedule preparation. Ask about protected shifts
             // only after the user accepts the proposed conditions and is ready to calculate.
             if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) {
-                await onPrepareAdjustment();
+                await onPrepareAdjustment(plan.generationIntent ? 'generation' : 'adjustment');
             }
 
             if (!mounted.current || !sidebarOpen.current || detailRef.current?.conversation.conversationId !== conversationId) return;
@@ -836,7 +813,8 @@ export default function AiConversationSidebar({
                     current.conversation.conversationId !== conversationId ||
                     reviewed.semanticPlan.planHash !== plan.planHash ||
                     JSON.stringify(reviewed.semanticPlan.conditions) !== JSON.stringify(plan.conditions) ||
-                    JSON.stringify(reviewed.semanticPlan.selectionAudit) !== JSON.stringify(plan.selectionAudit)
+                    JSON.stringify(reviewed.semanticPlan.selectionAudit) !== JSON.stringify(plan.selectionAudit) ||
+                    JSON.stringify(reviewed.semanticPlan.generationIntent) !== JSON.stringify(plan.generationIntent)
                 )
                     throw new Error(t('aiAdjust.stale'));
 
@@ -886,7 +864,11 @@ export default function AiConversationSidebar({
 
             if (confirmedId && mounted.current && sidebarOpen.current) {
                 reviewedPreparation.current = null;
-                await execute('ADJUST', undefined, confirmedId);
+                await execute(
+                    plan.generationIntent ? 'GENERATE' : 'ADJUST',
+                    plan.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
+                    confirmedId,
+                );
             }
         } catch (cause) {
             if (mounted.current && sidebarOpen.current) setError(aiConversationFailure(cause));
@@ -908,13 +890,7 @@ export default function AiConversationSidebar({
         setPreviousId(turn.interpretationId ?? undefined);
         setChange('REPLACE');
 
-        if (current.conversationState) {
-            setConditionEdit('UPDATE');
-            setConditionTargets(
-                current.conversationState.conditions.length === 1 ? [current.conversationState.conditions[0].conditionId] : [],
-            );
-            setText('');
-        } else setText(original);
+        setText(current.conversationState ? '' : original);
 
         textarea.current?.focus();
     };
@@ -937,7 +913,8 @@ export default function AiConversationSidebar({
         setAwaitingAdjustment(true);
 
         try {
-            if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) await onPrepareAdjustment();
+            if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey())
+                await onPrepareAdjustment(confirmed.generationIntent ? 'generation' : 'adjustment');
 
             if (!mounted.current || detailRef.current?.conversation.conversationId !== conversationId) return;
 
@@ -982,7 +959,8 @@ export default function AiConversationSidebar({
 
                 if (
                     (refreshed.interpretation.llmPrompt ?? '') !== (confirmed.llmPrompt ?? '') ||
-                    (refreshed.interpretation.strength ?? 'NORMAL') !== (confirmed.strength ?? 'NORMAL')
+                    (refreshed.interpretation.strength ?? 'NORMAL') !== (confirmed.strength ?? 'NORMAL') ||
+                    JSON.stringify(refreshed.interpretation.generationIntent) !== JSON.stringify(confirmed.generationIntent)
                 ) {
                     reviewedPreparation.current = preparationKey();
                     setNotice(t('aiConversationSidebar.reviewUpdatedConditions'));
@@ -995,7 +973,11 @@ export default function AiConversationSidebar({
 
             if (interpretationId && mounted.current) {
                 reviewedPreparation.current = null;
-                await execute('ADJUST', undefined, interpretationId);
+                await execute(
+                    confirmed.generationIntent ? 'GENERATE' : 'ADJUST',
+                    confirmed.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
+                    interpretationId,
+                );
             }
         } catch (cause) {
             if (mounted.current) setError(aiConversationFailure(cause));
@@ -1109,20 +1091,8 @@ export default function AiConversationSidebar({
                         ...(state
                             ? {
                                   expectedStateVersion: state.version,
-                                  change:
-                                      conditionEdit === 'ANSWER'
-                                          ? state.pendingQuestion
-                                              ? ('UPDATE' as const)
-                                              : ('ADD' as const)
-                                          : conditionEdit,
-                                  targetConditionIds:
-                                      conditionEdit === 'RESET' ||
-                                      conditionEdit === 'ADD' ||
-                                      (conditionEdit === 'ANSWER' && !state.pendingQuestion)
-                                          ? []
-                                          : state.pendingQuestion && conditionEdit === 'ANSWER'
-                                            ? [state.pendingQuestion.conditionId]
-                                            : conditionTargets,
+                                  change: 'AUTO' as const,
+                                  targetConditionIds: [],
                               }
                             : previous && current.conversation.latestInterpretationId === previous
                               ? {
@@ -1145,8 +1115,6 @@ export default function AiConversationSidebar({
                 setEditingRequest(null);
                 setPreviousId(interpreted.interpretationId ?? undefined);
                 setChange('ADD');
-                setConditionEdit('ANSWER');
-                setConditionTargets([]);
                 setEntryChoice('modify');
                 await refresh();
             },
@@ -1195,8 +1163,6 @@ export default function AiConversationSidebar({
         setEntryChoice(null);
         setPreviousId(undefined);
         setChange('ADD');
-        setConditionEdit('ANSWER');
-        setConditionTargets([]);
         setText('');
         setEditingRequest(null);
         setRebuild(false);
@@ -1385,68 +1351,7 @@ export default function AiConversationSidebar({
             (op) => op.executionStatus === 'RUNNING' || op.executionStatus === 'RESULT_READY' || op.executionStatus === 'UNKNOWN',
         ) ?? false;
     const conditionsDisabled = busy || running || awaitingAdjustment || preparing || loading || !detail;
-    const removeCondition = async (conditionId: string) => {
-        if (conditionsDisabled || busyRef.current || awaitingAdjustmentRef.current) throw new AiConversationInputError('loading');
-
-        const reviewed = detailRef.current;
-        const stateVersion = reviewed?.conversationState?.version;
-
-        await run(
-            async () => {
-                reviewedPreparation.current = null;
-                setSelectedSuggestion(undefined);
-
-                const current = await sync();
-                const state = current.conversationState;
-
-                if (
-                    !state ||
-                    current.conversation.conversationId !== reviewed?.conversation.conversationId ||
-                    state.version !== stateVersion ||
-                    !state.conditions.some((condition) => condition.conditionId === conditionId)
-                )
-                    throw new AiConversationInputError('staleRequest');
-
-                try {
-                    const interpreted = await api.interpret(current.conversation.conversationId, {
-                        expectedRevision: current.conversation.revision,
-                        expectedStateVersion: state.version,
-                        change: 'REMOVE',
-                        targetConditionIds: [conditionId],
-                        text: t('aiConversationSidebar.removeConditionRequest'),
-                        language: i18n.language,
-                    });
-
-                    if (!mounted.current || detailRef.current?.conversation.conversationId !== current.conversation.conversationId) return;
-
-                    setPreviousId(interpreted.interpretationId ?? undefined);
-                    setConditionEdit('ANSWER');
-                    setConditionTargets([]);
-                    setEditingRequest(null);
-                    await refresh();
-
-                    if (detailRef.current?.conversationState?.conditions.some((condition) => condition.conditionId === conditionId))
-                        throw new AiConversationInputError('staleRequest');
-
-                    if (detailRef.current?.conversationState?.conditions.length === 0) setEntryChoice('modify');
-                } catch (cause) {
-                    // Interpretation reserves the next state version even when parsing fails.
-                    await refresh().catch(() => undefined);
-                    throw cause;
-                }
-            },
-            false,
-            'updating',
-            true,
-        );
-    };
     const aiConditions = [
-        ...(detail?.conversationState?.conditions.map((condition) => ({
-            id: `semantic:${condition.conditionId}`,
-            label: condition.text,
-            description: t('aiConversationSidebar.currentConversation'),
-            onRemove: () => removeCondition(condition.conditionId),
-        })) ?? []),
         ...activeConditions.requests
             .filter((request) => request.promotedRuleId == null)
             .map((request) => ({
@@ -1510,12 +1415,10 @@ export default function AiConversationSidebar({
                     editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
                     previousId,
                     change,
-                    conditionEdit,
-                    conditionTargets,
                 },
             }),
         );
-    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, conditionEdit, conditionTargets]);
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change]);
 
     useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
@@ -1558,6 +1461,7 @@ export default function AiConversationSidebar({
         if (
             !turn?.interpretationId ||
             !turn.semanticPlan?.autoExecutable ||
+            Boolean(turn.semanticPlan.generationIntent) ||
             !isSemanticExecutionCurrent(detail, turn, false) ||
             detail.operations.some((operation) => operation.interpretationId === turn.interpretationId) ||
             sessionStorage.getItem(pendingKey)
@@ -1600,7 +1504,10 @@ export default function AiConversationSidebar({
         setEntryChoice(null);
         setRebuild(false);
         setPreviousId(undefined);
-        setText('');
+
+        if (!preserveGenerationComposer.current) setText('');
+
+        preserveGenerationComposer.current = false;
         setNotice(null);
         setPreview(null);
     }, [preparing, autofillFlow?.id]);
@@ -1665,7 +1572,7 @@ export default function AiConversationSidebar({
             conversationId: detail!.conversation.conversationId,
             events: localEvents,
             recoveredFailures: [...recoveredFailures.current],
-            composer: {editingEventId: editingRequest?.eventId, previousId, change, conditionEdit, conditionTargets},
+            composer: {editingEventId: editingRequest?.eventId, previousId, change},
         });
         onRecoverGeneration();
     }, [
@@ -1700,7 +1607,6 @@ export default function AiConversationSidebar({
         !detail ||
         failureNeedsAction ||
         entryChoice === 'regenerate' ||
-        (!entryChoice && canChooseNextAction) ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
     const recoveryComposerFocus = useRef(false);
 
@@ -1804,10 +1710,32 @@ export default function AiConversationSidebar({
             !error,
     );
     const attachNextActions = showNextActions && executionSucceeded;
+    const hasGeneratedAssignments = Boolean(
+        detail?.operations.some((operation) => operation.applyStatus === 'APPLIED' && !operationFailure(operation)) &&
+            doc.rows.some((row) =>
+                row.cells.some(
+                    (cell, column) =>
+                        cell != null &&
+                        !doc.fixedCells[`${row.workerId}|${doc.columns[column]}`] &&
+                        !doc.requestCells[`${row.workerId}|${doc.columns[column]}`],
+                ),
+            ),
+    );
     const chooseNextAction = (choice: TConversationEntryChoice) => {
-        if (!detail || busy || running || awaitingAdjustment || preparing || isAutofillBlocked) return;
+        if (!detail || busy || running || awaitingAdjustment || preparing) return;
+
+        if (choice === 'edit') {
+            setEntryChoice(null);
+            (onEditSchedule ?? onClose)();
+
+            return;
+        }
+
+        if (isAutofillBlocked) return;
 
         if (choice === 'modify' && !adjustEnabled) return;
+
+        if (choice === 'regenerate') preserveGenerationComposer.current = entryChoice === 'modify';
 
         setEntryChoice(choice);
         setLocalEvents((current) => [
@@ -1847,26 +1775,7 @@ export default function AiConversationSidebar({
 
         return (
             <>
-                {operation.result?.candidate && authoringOutcome(operation.result) && (
-                    <AiAuthoringCandidate
-                        result={operation.result}
-                        sourceVersionId={detail.conversation.currentVersionId}
-                        baseline={detail.draft.cells}
-                        nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                        current={
-                            intentFirstEnabled &&
-                            !expiredCandidateTokens.has(operation.result.candidate.token) &&
-                            !localDirty &&
-                            operation.baseRevision === detail.conversation.revision &&
-                            operation.operationId === latestOperation?.operationId
-                        }
-                        disabled={busy || running || preparing}
-                        onApply={() =>
-                            void execute(operation.operationType, undefined, operation.interpretationId ?? undefined, undefined, operation)
-                        }
-                    />
-                )}
-                {operation.applyStatus === 'APPLIED' && operation.result && operation.result.changedCells.length > 0 && (
+                {operation.result && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
                     <button
                         type="button"
                         className={buttonClass}
@@ -1942,7 +1851,6 @@ export default function AiConversationSidebar({
                             }
                             copy={copy}
                             onChangeModalities={(overrides) => changeModalities(turn, overrides)}
-                            onSelectConditions={(ids) => void selectConditions(turn, ids)}
                             onApply={() => void confirmAndAdjust(turn)}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
@@ -2173,6 +2081,9 @@ export default function AiConversationSidebar({
                                         <JourneyObserved key={event.id} observation={event.operation.result?.observation} inert={preparing}>
                                             <AiConversationResult
                                                 operation={event.operation}
+                                                appliedLocally={
+                                                    !localDirty && detail.conversation.currentVersionId === event.operation.resultVersionId
+                                                }
                                                 attempt={operationAttempt(detail, event.operation.operationId)}
                                                 copy={copy}
                                                 actions={
@@ -2181,8 +2092,8 @@ export default function AiConversationSidebar({
                                                             choice={null}
                                                             hideIntro
                                                             attached
-                                                            disabled={busy || running || isAutofillBlocked}
-                                                            modifyDisabled={!adjustEnabled}
+                                                            disabled={busy || running}
+                                                            modifyDisabled={!adjustEnabled || isAutofillBlocked}
                                                             onChoose={chooseNextAction}
                                                         />
                                                     ) : undefined
@@ -2272,6 +2183,7 @@ export default function AiConversationSidebar({
                                                 })}
                                                 operationType={event.operation.operationType}
                                                 failure={operationFailure(event.operation)!}
+                                                detailsInChildren={Boolean(event.operation.result?.conflictReview)}
                                                 active={
                                                     failureNeedsAction &&
                                                     event.operation === latestOperation &&
@@ -2530,7 +2442,8 @@ export default function AiConversationSidebar({
                         {preparation && <div aria-live="polite">{preparation}</div>}
                         {showNextActions &&
                             (attachNextActions ? (
-                                resultActions && (
+                                resultActions &&
+                                !failure && (
                                     <AiConversationConfirmation
                                         confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}}
                                     />
@@ -2538,43 +2451,38 @@ export default function AiConversationSidebar({
                             ) : (
                                 <AiConversationEntry
                                     choice={null}
+                                    hasSchedule={hasGeneratedAssignments}
                                     hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
                                     disabled={busy || running || isAutofillBlocked}
                                     modifyDisabled={!adjustEnabled}
                                     confirmation={
-                                        resultActions && {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                        !failure && resultActions
+                                            ? {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
+                                            : undefined
                                     }
                                     onChoose={chooseNextAction}
                                 />
                             ))}
-                        {!composerHidden &&
-                            entryChoice === 'modify' &&
-                            !editingRequest &&
-                            !activeTurns.length &&
-                            !text.trim() &&
-                            !!requestExamples.length && (
-                                <section
-                                    aria-label={t('aiAdjust.examples')}
-                                    className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3"
-                                >
-                                    <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
-                                    {[...new Set(requestExamples)].map((sentence) => (
-                                        <button
-                                            key={sentence}
-                                            type="button"
-                                            disabled={busy || running || !adjustEnabled}
-                                            onClick={() => {
-                                                setText(sentence);
-                                                textarea.current?.focus();
-                                            }}
-                                            className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                        >
-                                            <span>{sentence}</span>
-                                            <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
-                                        </button>
-                                    ))}
-                                </section>
-                            )}
+                        {!composerHidden && !editingRequest && !activeTurns.length && !text.trim() && !!requestExamples.length && (
+                            <section aria-label={t('aiAdjust.examples')} className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3">
+                                <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
+                                {[...new Set(requestExamples)].map((sentence) => (
+                                    <button
+                                        key={sentence}
+                                        type="button"
+                                        disabled={busy || running || !adjustEnabled}
+                                        onClick={() => {
+                                            setText(sentence);
+                                            textarea.current?.focus();
+                                        }}
+                                        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                    >
+                                        <span>{sentence}</span>
+                                        <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
+                                    </button>
+                                ))}
+                            </section>
+                        )}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
                             <AiConversationLoading
                                 className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"
@@ -2660,6 +2568,7 @@ export default function AiConversationSidebar({
                             loadBefore={preview.sourceVersionId ? loadPreviewSource : undefined}
                             returnFocusTo={preview.returnFocusTo}
                             disabled={busy || running}
+                            currentVersionId={localDirty ? undefined : detail?.conversation.currentVersionId}
                             onClose={() => setPreview(null)}
                             onContinue={(version) => void branch(version)}
                         />

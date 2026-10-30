@@ -45,6 +45,7 @@ export type TSelectionAudit = {
     excludedConditionIds: string[];
 };
 export type TSemanticPlan = {
+    generationIntent?: {start: number; end: number; quote: string} | null;
     conditionGroups?: TConditionGroup[] | null;
     selectionAudit?: TSelectionAudit | null;
     authoringContractVersion?: 'intent-first-v1';
@@ -122,7 +123,7 @@ export type TConversationState = {
     expiresAt: string | null;
     executionPlanExpiresAt?: string | null;
     conditions: {conditionId: string; text: string; preview: {status: string}}[];
-    pendingQuestion: {conditionId: string; question: string} | null;
+    pendingQuestion: {conditionId: string; question: string; originalText?: string | null} | null;
 };
 export type TConversationDetail = {
     conversationState?: TConversationState | null;
@@ -178,7 +179,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 timeout: path.endsWith('/operations')
                     ? 330000
                     : (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1'
-                      ? 17000
+                      ? 30000
                       : 330000,
             })
         ).data;
@@ -206,7 +207,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 text: string;
                 language: string;
                 previousInterpretationId?: string;
-                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET';
+                change?: 'ADD' | 'UPDATE' | 'REPLACE' | 'REMOVE' | 'RESET' | 'AUTO';
                 expectedStateVersion?: number;
                 targetConditionIds?: string[];
                 removeLabels?: string[];
@@ -292,13 +293,12 @@ export function isConversationConfirmationCurrent(detail: TConversationDetail, t
     );
 }
 
-/** The new contract has one execution window, including after explicit confirmation. */
+/** ADJUST shares its interaction window; reviewed GENERATE starts its existing compute budget after preparation. */
 export function hasCurrentIntentFirstExecutionWindow(plan: TSemanticPlan, now = Date.now()) {
     return (
         plan.authoringContractVersion === 'intent-first-v1' &&
         Boolean(plan.interactionId) &&
-        Boolean(plan.deadlineAt) &&
-        Date.parse(plan.deadlineAt!) > now &&
+        (Boolean(plan.generationIntent) || (Boolean(plan.deadlineAt) && Date.parse(plan.deadlineAt!) > now)) &&
         Boolean(plan.planExpiresAt) &&
         Date.parse(plan.planExpiresAt!) > now
     );

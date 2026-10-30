@@ -22,7 +22,16 @@ const cases = [
     // Emulate a wide desktop calendar within a narrower parent/panel.
     {width: 2438, days: 31, calendarWidth: 840},
     {width: 1440, days: 31, calendarWidth: 640},
+    // Request shifts must retain the familiar 26px badge when their cells have enough room.
+    {width: 1920, days: 31, mode: 'request', calendarWidth: 1200, minimumBadgeSize: 25.5},
+    {width: 1280, days: 31, mode: 'request', minimumBadgeSize: 21.5},
+    {width: 1440, days: 28, mode: 'request', minimumBadgeSize: 21.5},
+    {width: 2438, days: 31, mode: 'request', calendarWidth: 840},
+    // Autofill before validation needs the same readable badge sizing as request shifts.
+    {width: 1920, days: 31, faults: false, calendarWidth: 1440, minimumBadgeSize: 25.5},
+    {width: 2438, days: 31, faults: false, calendarWidth: 840},
 ];
+let popoverChecks = 0;
 
 async function geometry() {
     return page.evaluate(() => {
@@ -33,12 +42,25 @@ async function geometry() {
         const cells = [...document.querySelectorAll('.make-shift-calendar__day-cell')];
         const badges = cells.map((cell) => {
             const badge = cell.querySelector('.make-shift-calendar__shift-badge-wrap');
+            const textBadge = badge.querySelector('.make-shift-calendar__shift-badge');
             const cellRect = rect(cell);
             const badgeRect = rect(badge);
             const css = getComputedStyle(cell);
+            const text = document.createRange();
+            text.selectNodeContents(textBadge);
+            const textRect = rect(text);
             return {
                 cell: cellRect,
                 badge: badgeRect,
+                fontSize: parseFloat(getComputedStyle(textBadge).fontSize),
+                text: textRect,
+                textOverflow: Math.max(
+                    0,
+                    badgeRect.left - textRect.left,
+                    textRect.right - badgeRect.right,
+                    badgeRect.top - textRect.top,
+                    textRect.bottom - badgeRect.bottom,
+                ),
                 availableWidth: cellRect.width - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight),
             };
         });
@@ -64,7 +86,13 @@ async function geometry() {
             cellCount: cells.length,
             maxBadgeOverflow: Math.max(...badges.map(({availableWidth, badge}) => badge.width - availableWidth)),
             maxAspectDifference: Math.max(...badges.map(({badge}) => Math.abs(badge.width - badge.height))),
-            minimumBorderClearance: Math.min(...violationBoxes.map((violation) => violation.minimumVerticalClearance)),
+            maxTextOverflow: Math.max(...badges.map(({textOverflow}) => textOverflow)),
+            minimumReadableFontRatio: badges.some(({badge}) => badge.width >= 18)
+                ? Math.min(...badges.filter(({badge}) => badge.width >= 18).map(({badge, fontSize}) => fontSize / badge.width))
+                : null,
+            maximumFontRatio: Math.max(...badges.map(({badge, fontSize}) => fontSize / badge.width)),
+            minimumBorderClearance:
+                violationBoxes.length > 0 ? Math.min(...violationBoxes.map((violation) => violation.minimumVerticalClearance)) : null,
             sample: badges[0],
             violationBoxes,
             contextCount: document.querySelectorAll('[data-violation-context="true"]').length,
@@ -76,35 +104,53 @@ async function geometry() {
 try {
     for (const testCase of cases) {
         await page.setViewport({width: testCase.width, height: 1000, deviceScaleFactor: 1});
-        await page.goto(`${origin}/tests/integration/calendar-violation-layout.html?days=${testCase.days}`, {waitUntil: 'networkidle0'});
+        const params = new URLSearchParams({days: String(testCase.days)});
+        if (testCase.mode) params.set('mode', testCase.mode);
+        if (testCase.calendarWidth) params.set('calendarWidth', String(testCase.calendarWidth));
+        if (testCase.faults === false) params.set('faults', '0');
+        const hasFaults = testCase.mode !== 'request' && testCase.faults !== false;
+        await page.goto(`${origin}/tests/integration/calendar-violation-layout.html?${params}`, {waitUntil: 'networkidle0'});
         await page.waitForSelector('.make-shift-calendar__shift-badge-wrap');
-        if (testCase.calendarWidth)
-            await page.$eval(
-                '.make-shift-calendar',
-                (element, width) => {
-                    element.style.width = `${width}px`;
-                },
-                testCase.calendarWidth,
-            );
         for (const open of [false, true]) {
             if (open) await page.click('[data-testid="toggle-sidebar"]');
             await delay(170);
             const current = await geometry();
             assert.equal(current.cellCount, testCase.days * 14);
-            assert(current.contextCount > 0, 'Context spans must be exercised');
+            assert.equal(current.contextCount > 0, hasFaults, 'Context spans must follow the validation setting');
+            assert.equal(current.violationBoxes.length > 0, hasFaults, 'Violation rails must follow the validation setting');
             assert(current.pinCount > 0, 'Fixed/request pins must be exercised');
             assert(
                 current.maxBadgeOverflow <= 0.2,
                 `Badge overflows actual available cell width: ${JSON.stringify({testCase, open, current})}`,
             );
             assert(current.maxAspectDifference <= 0.2, `Badge is not square: ${JSON.stringify({testCase, open, current})}`);
+            assert(current.maxTextOverflow <= 0.5, `Shift text escapes its badge: ${JSON.stringify({testCase, open, current})}`);
+            assert(current.maximumFontRatio <= 0.71, `Shift text is too large for its badge: ${JSON.stringify({testCase, open, current})}`);
             assert(
-                current.minimumBorderClearance >= 0,
-                `Badge hides top/bottom violation rail: ${JSON.stringify({testCase, open, current})}`,
+                current.minimumReadableFontRatio === null || current.minimumReadableFontRatio >= 0.48,
+                `Readable badges retain undersized text: ${JSON.stringify({testCase, open, current})}`,
             );
+            if (hasFaults)
+                assert(
+                    current.minimumBorderClearance >= 0,
+                    `Badge hides top/bottom violation rail: ${JSON.stringify({testCase, open, current})}`,
+                );
+            if (testCase.minimumBadgeSize)
+                assert(
+                    current.sample.badge.width >= Math.min(testCase.minimumBadgeSize, current.sample.availableWidth) - 0.2 &&
+                        current.sample.fontSize >= 11.5,
+                    `Spacious calendar unnecessarily shrinks badges: ${JSON.stringify({testCase, open, current})}`,
+                );
+            if (!hasFaults) {
+                const readableTarget = Math.min(26, Math.max(22, testCase.width * 0.0145));
+                assert(
+                    current.sample.badge.width >= Math.min(readableTarget, current.sample.availableWidth) - 0.2,
+                    `Calendar shrinks below its readable 22–26px target without a cell-width constraint: ${JSON.stringify({testCase, open, current})}`,
+                );
+            }
             results.push({...testCase, open, ...current});
 
-            if (open && testCase.width === 2438 && testCase.calendarWidth === 840) {
+            if (open && hasFaults && testCase.width === 2438 && testCase.calendarWidth === 840) {
                 await page.screenshot({path: `${output}/after-sidebar-open.png`, fullPage: true});
                 await (await page.$('.make-shift-calendar')).screenshot({path: `${output}/after-calendar.png`});
                 const baseline = await page.addStyleTag({
@@ -123,6 +169,7 @@ try {
                 await baseline.dispose();
             }
         }
+        if (!hasFaults) continue;
         await page.click('[data-shift-nurse-id="1"] [data-day-index="6"]');
         await page.waitForSelector('[role="dialog"] [data-violation-row="true"]');
         await page.hover('[role="dialog"] [data-violation-row="true"]');
@@ -134,6 +181,7 @@ try {
         }));
         assert(dialog.left >= 0 && dialog.right <= testCase.width, 'Violation popover must remain within the viewport');
         await page.keyboard.press('Escape');
+        popoverChecks += 1;
     }
     assert.deepEqual(errors, []);
     await writeFile(`${output}/geometry.json`, JSON.stringify(results, null, 2));
@@ -141,19 +189,37 @@ try {
         JSON.stringify(
             {
                 passed: cases.length * 2,
-                popoverChecks: cases.length,
+                popoverChecks,
                 output,
-                results: results.map(({width, days, calendarWidth, open, baseline, maxBadgeOverflow, minimumBorderClearance, sample}) => ({
-                    width,
-                    days,
-                    calendarWidth,
-                    open,
-                    baseline,
-                    badgeWidth: sample.badge.width,
-                    cellWidth: sample.cell.width,
-                    maxBadgeOverflow,
-                    minimumBorderClearance,
-                })),
+                results: results.map(
+                    ({
+                        width,
+                        days,
+                        mode,
+                        faults,
+                        calendarWidth,
+                        open,
+                        baseline,
+                        maxBadgeOverflow,
+                        maxTextOverflow,
+                        minimumBorderClearance,
+                        sample,
+                    }) => ({
+                        width,
+                        days,
+                        mode: mode ?? 'autofill',
+                        faults: mode !== 'request' && faults !== false,
+                        calendarWidth,
+                        open,
+                        baseline,
+                        badgeWidth: sample.badge.width,
+                        fontSize: sample.fontSize,
+                        cellWidth: sample.cell.width,
+                        maxBadgeOverflow,
+                        maxTextOverflow,
+                        minimumBorderClearance,
+                    }),
+                ),
             },
             null,
             2,

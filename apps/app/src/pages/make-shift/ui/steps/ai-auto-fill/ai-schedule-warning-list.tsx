@@ -7,8 +7,10 @@ import {scheduleWarningRows} from '../../../model/schedule-warning-presentation'
 export function AiScheduleWarningList({
     violations,
     nurseName,
+    messages = [],
 }: {
     violations: readonly TScheduleViolationDto[];
+    messages?: readonly string[];
     nurseName?: (id: number) => string;
 }) {
     const {t} = useTypedTranslation();
@@ -16,6 +18,9 @@ export function AiScheduleWarningList({
 
     return (
         <ul className="list-disc space-y-1 pl-4">
+            {messages.map((message, index) => (
+                <li key={`proof:${index}`}>{message}</li>
+            ))}
             {scheduleWarningRows(violations).map((row, index) => {
                 const issue = row.violations[0]!;
                 const staffing = row.staffing;

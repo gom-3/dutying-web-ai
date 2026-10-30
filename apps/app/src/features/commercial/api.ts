@@ -40,6 +40,8 @@ export type Transfer = {
 };
 export type AccessContext = {
     enabled: boolean;
+    /** Absent on older servers that require email verification before card registration. */
+    cardRegistrationVersion?: number;
     enforcementEnabled?: boolean;
     configurationReady?: boolean;
     restrictionStates?: Partial<

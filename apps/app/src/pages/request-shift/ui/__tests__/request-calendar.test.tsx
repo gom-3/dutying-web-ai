@@ -273,7 +273,7 @@ describe('RequestCalendar', () => {
         renderRequestCalendar();
 
         expect(screen.getByText('이름')).toBeInTheDocument();
-        expect(screen.getByText('Kim')).toBeInTheDocument();
+        expect(screen.getByTitle('Kim')).toBeInTheDocument();
         expect(screen.queryByText('연동')).not.toBeInTheDocument();
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
     });
@@ -309,7 +309,7 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-[clamp(12px,1.05vw,16px)]');
+        expect(screen.getByTitle('Kim')).toHaveClass('text-[clamp(12px,1.05vw,16px)]');
     });
 
     it('신청근무 행 이름은 글자 수로 미리 자르지 않고 넓어진 이름 열에 표시한다', () => {
@@ -317,7 +317,7 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        const nameCell = screen.getByText('박서연지희').closest<HTMLElement>('.make-shift-calendar__row-name');
+        const nameCell = screen.getByTitle('박서연지희');
 
         expect(nameCell).toBeInTheDocument();
         expect(screen.queryByText('박서연지…')).not.toBeInTheDocument();
@@ -380,7 +380,7 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-main-1');
+        expect(screen.getByTitle('Kim')).toHaveClass('text-main-1');
         expect(document.querySelector('[data-selection-layer="true"]')).toBeInTheDocument();
         expect(document.querySelector('[data-selection-column-layer="true"]')).toBeInTheDocument();
         expect(document.querySelector('[data-selection-division-column-layer="true"]')).toBeInTheDocument();

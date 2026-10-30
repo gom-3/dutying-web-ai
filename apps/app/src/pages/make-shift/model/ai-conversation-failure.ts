@@ -1,4 +1,4 @@
-import type {TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
+import type {TAutofillResponse, TScheduleConflict, TScheduleObservation} from '@dutying/api/ward';
 import i18n from '@/i18n';
 
 export type TPersonalRestConflict = {
@@ -11,6 +11,8 @@ export type TPersonalRestConflict = {
 };
 
 export type TAiConversationFailure = {
+    /** Display evidence only; candidate tokens stay in the execution result. */
+    conflictDetails?: Pick<NonNullable<TAutofillResponse['conflictReview']>, 'explanation' | 'violations' | 'ruleLabels'>;
     restConflicts?: TPersonalRestConflict[];
     settingsTarget?: 'rest' | 'member';
     conflicts?: TScheduleConflict[];
