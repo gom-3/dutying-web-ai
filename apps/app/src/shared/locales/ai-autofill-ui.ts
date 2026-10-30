@@ -1,5 +1,8 @@
 export const aiAutofillUiKo = {
+    interpretUnavailable: '요청 해석을 완료하지 못했어요. 잠시 후 다시 보내 주세요.',
     resultSatisfaction: {
+        addReason: '이유 남기기',
+        close: '닫기',
         feedbackSent: '의견을 보냈어요. 더 나은 근무표를 만드는 데 참고할게요.',
         title: '방금 만들어진 근무표, 마음에 드나요?',
         feedbackOnly: '의견만 보내며, 근무표는 바뀌지 않아요.',
@@ -320,7 +323,10 @@ export const aiAutofillUiKo = {
 } as const;
 
 export const aiAutofillUiEn = {
+    interpretUnavailable: 'The request interpreter is unavailable. Please try again shortly.',
     resultSatisfaction: {
+        addReason: 'Add a reason',
+        close: 'Close',
         feedbackSent: 'Feedback sent. We’ll use it to improve schedules.',
         title: 'How do you like the schedule we just made?',
         feedbackOnly: 'This sends feedback only. Your schedule stays unchanged.',
@@ -646,7 +652,10 @@ export const aiAutofillUiEn = {
 } as const;
 
 export const aiAutofillUiJa = {
+    interpretUnavailable: 'リクエストの解釈サーバーに接続できません。少し待ってから再送してください。',
     resultSatisfaction: {
+        addReason: '理由を添える',
+        close: '閉じる',
         feedbackSent: 'ご意見を送信しました。勤務表の改善に役立てます。',
         title: '作成した勤務表はいかがですか？',
         feedbackOnly: 'ご意見のみを送信します。勤務表は変更されません。',

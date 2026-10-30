@@ -82,6 +82,9 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
     const code = source?.serverCode;
     const message = typeof source?.message === 'string' && source.message.trim().length > 0 ? source.message : undefined;
 
+    if (code === 'SCHEDULE_INTERPRET_UNAVAILABLE')
+        return {message: i18n.t('aiAutofillUi.interpretUnavailable'), blocked: false, checkOutcome: false, recovery: 'revise'};
+
     if (code === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED') return {message: i18n.t('aiAdjust.failure.adjustAccess'), blocked: true};
 
     if (['AI_QUOTA_EXCEEDED', 'AI_QUOTA_EXHAUSTED'].includes(code ?? '')) return {message: i18n.t('aiAdjust.failure.quota'), blocked: true};

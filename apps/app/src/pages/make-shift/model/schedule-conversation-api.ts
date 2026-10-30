@@ -141,7 +141,14 @@ export type TConversationPreference = {
     provenance: string;
     confirmedAt: string;
 };
+export type TConversationClientContext = {
+    surfaceVersion: 'conversation-minimal-v1';
+    entryChoice?: 'regenerate' | 'modify';
+    inputMode: 'request' | 'clarification' | 'revision';
+    typedText?: string;
+};
 export type TConversationExecute = {
+    clientContext?: TConversationClientContext;
     authoringContractVersion?: 'intent-first-v1';
     interactionId?: string;
     candidateDigest?: string;
@@ -194,6 +201,7 @@ export function conversationApi(wardId: number, teamId: number) {
         interpret: (
             id: number,
             request: {
+                clientContext?: TConversationClientContext;
                 authoringContractVersion?: 'intent-first-v1';
                 expectedRevision: number;
                 text: string;

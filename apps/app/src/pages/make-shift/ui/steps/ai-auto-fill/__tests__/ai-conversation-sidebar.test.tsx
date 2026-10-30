@@ -12,9 +12,8 @@ vi.mock('../ai-conversation-image', () => ({
     ),
 }));
 import {webcrypto} from 'node:crypto';
-import type {TScheduleMonthRequestRes, TShiftConstraintRuleResponse} from '@dutying/api/ward';
 import type {ComponentProps, Ref} from 'react';
-import toast, {Toaster} from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift} from '@/entities/shift';
 import useAuthStore from '@/features/auth/model/store';
@@ -36,7 +35,6 @@ import type {
     TConversationTurn,
     TResultVersion,
 } from '../../../../model/schedule-conversation-api';
-import {REPORT_SESSION_PREFIX} from '../../../../model/schedule-report-attempt';
 import AiConversationSidebar from '../ai-conversation-sidebar';
 
 const mocks = vi.hoisted(() => ({
@@ -170,25 +168,6 @@ vi.mock('@/features/shift-editor/model/schedule-authoring', () => ({
 }));
 
 const cell = {shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: 4, shiftCode: 'O', fixed: false};
-const monthlyCondition: TScheduleMonthRequestRes = {
-    id: 41,
-    kind: 'RULE',
-    lifetime: 'MONTH',
-    status: 'ACTIVE',
-    origin: 'TEXT',
-    displayLabel: '김 간호사 야간은 연속 2일까지',
-    promotedRuleId: null,
-};
-const wardCondition: TShiftConstraintRuleResponse = {
-    shiftConstraintRuleId: 51,
-    templateCode: 'MIN_REST_HOURS',
-    category: 'WORK_REST',
-    severity: 'HARD',
-    sortOrder: 0,
-    params: {},
-    selected: true,
-    displayText: '근무 사이 휴식은 11시간 이상',
-};
 const source: TResultVersion = {
     versionId: 'source:1',
     parentVersionId: null,
@@ -646,6 +625,16 @@ describe('persistent schedule sidebar', () => {
         },
     );
 
+    it('keeps permanent condition and saved-request tools out of the conversation', async () => {
+        renderSidebar();
+        await screen.findByRole('region', {name: '근무표 결과'});
+        expect(screen.queryByRole('button', {name: '제약조건 수정'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('combobox', {name: '조건 수정 방식'})).not.toBeInTheDocument();
+        expect(screen.queryByText(i18n.t('aiConversationSidebar.savedRequests'))).not.toBeInTheDocument();
+        expect(screen.queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
+        expect(mocks.preferences).not.toHaveBeenCalled();
+    });
+
     it('restores the selected composer and unfinished text without adding another introduction or sending it', async () => {
         current.operations = [];
         current.turns = [];
@@ -659,8 +648,10 @@ describe('persistent schedule sidebar', () => {
         first.unmount();
         renderSidebar(props);
         expect(await screen.findByRole('textbox')).toHaveValue('12일 휴무를 유지해줘');
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
-        expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
+        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
         expect(screen.queryByText(i18n.t('aiAdjust.chat.welcome'))).not.toBeInTheDocument();
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -685,7 +676,7 @@ describe('persistent schedule sidebar', () => {
 
         expect(retry).toBeEnabled();
         await userEvent.click(retry);
-        expect(await screen.findByRole('button', {name: '근무표 살펴보기'})).toBeVisible();
+        expect(await screen.findByRole('region', {name: '근무표 결과'})).toBeVisible();
         expect(mocks.list).toHaveBeenCalledTimes(2);
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.queryByText('대화 불러오는 중')).not.toBeInTheDocument();
@@ -1005,7 +996,7 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByText('근무표를 채웠어요.').closest('p')).toHaveTextContent('근무표를 채웠어요.');
         expect(within(result).getByText('근무표를 채웠어요.').closest('p')).not.toHaveTextContent('회차');
         expect(within(result).getByRole('img', {name: '자동채우기 성공'})).toBeVisible();
-        expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
+        expect(within(result).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(result).getByLabelText('변경된 근무 1칸')).toHaveTextContent(/^1칸 변경$/);
         const changes = await within(result).findByRole('region', {name: '실제 변경 내역'});
         const disclosure = changes.querySelector('details')!;
@@ -1023,9 +1014,9 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('O → D');
         expect(within(result).queryByText('1칸이 달라졌어요.')).not.toBeInTheDocument();
         expect(within(result).queryByText(/만들 당시의 결과예요/)).not.toBeInTheDocument();
-        expect(within(result).getAllByRole('button', {name: '근무표 살펴보기'})).toHaveLength(1);
+        expect(within(result).queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: /근무표 확인|변경 비교/})).not.toBeInTheDocument();
-        expect(within(result).getByRole('button', {name: '이 결과에 의견 보내기'})).toBeVisible();
+        expect(within(result).queryByRole('button', {name: '이 결과에 의견 보내기'})).not.toBeInTheDocument();
         expect(screen.getAllByText('듀팅 AI')).toHaveLength(1);
         expect(screen.queryByText('바꾸고 싶은 부분이 있나요?')).not.toBeInTheDocument();
         expect(within(result).getByRole('group', {name: i18n.t('aiAdjust.snapshot.nextAction')})).toBeVisible();
@@ -1041,7 +1032,7 @@ describe('persistent schedule sidebar', () => {
         const result = await screen.findByRole('region', {name: '근무표 결과'});
         const confirm = screen.getByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')});
 
-        expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
+        expect(within(result).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(result).getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
         expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.getAllByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toHaveLength(1);
@@ -1071,15 +1062,15 @@ describe('persistent schedule sidebar', () => {
         renderSidebar();
 
         const result = await screen.findByRole('region', {name: '근무표 결과'});
-        const reviewed = screen.getByRole('region', {name: '요청 조건 확인'});
+        const reviewed = screen.queryByRole('region', {name: '요청 조건 확인'});
 
         expect(within(reviewed).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.getByRole('textbox')).toHaveValue('');
         expect(within(result).queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
-        expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
-        expect(within(reviewed).queryByRole('button')).not.toBeInTheDocument();
+        expect(within(result).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
+        expect(reviewed).not.toBeInTheDocument();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -1149,19 +1140,6 @@ describe('persistent schedule sidebar', () => {
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
-    it('does not claim local application when opening an earlier APPLIED result', async () => {
-        current.operations = [
-            {...operation, result: successfulResult},
-            {...operation, operationId: 'later:2', sequence: 2},
-        ];
-        renderSidebar();
-        await userEvent.click((await screen.findAllByRole('button', {name: /근무표 살펴보기|Explore schedule/}))[0]);
-        await screen.findByRole('dialog');
-        await userEvent.click(screen.getByRole('button', {name: '닫기'}));
-        expectNoLocalApplicationClaim();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
-    });
     it('does not describe historical semantic APPLIED as current browser application after a saved manual edit', async () => {
         current.conversation.currentVersionId = 'manual-latest';
         current.conversation.latestInterpretationId = 'confirmed:1';
@@ -1208,490 +1186,9 @@ describe('persistent schedule sidebar', () => {
         await screen.findByRole('region', {name: '근무표 결과'});
         expect(screen.queryByLabelText('변경된 근무 1칸')).not.toBeInTheDocument();
         expect(screen.queryByText('이 요청을 반영했어요.')).not.toBeInTheDocument();
-        expect(screen.getByText('이 요청으로 계산을 마쳤어요.')).toBeVisible();
+        expect(screen.queryByText('이 요청으로 계산을 마쳤어요.')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-    });
-    it('retains the previous receipt in history without claiming another report was sent', async () => {
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '첫 번째 합성 의견');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        expect(await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.')).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
-        expect(screen.getAllByText('의견을 보냈어요. 확인해서 개선할게요.')).toHaveLength(1);
-        expect(within(screen.getByRole('dialog')).queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
-        expect(screen.getByRole('textbox', {name: '의견'})).toHaveValue('');
-        expect(mocks.report).toHaveBeenCalledOnce();
-    });
-    it('opens feedback in a focused modal with a clear target and hides background actions', async () => {
-        renderSidebar();
-
-        const preview = await screen.findByRole('button', {name: '근무표 살펴보기'});
-
-        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
-
-        const dialog = screen.getByRole('dialog', {name: '결과에 의견 보내기'});
-        const note = within(dialog).getByRole('textbox', {name: '의견'});
-
-        expect(dialog).toHaveAttribute('aria-modal', 'true');
-        expect(within(dialog).getByText('자동채우기 1회차 결과')).toBeVisible();
-        expect(within(dialog).getByText('요청과 다른 점이나 개선할 점을 알려 주세요.')).toBeVisible();
-        expect(screen.queryByText(/의견 대상:/)).not.toBeInTheDocument();
-        expect(screen.queryByText(/새 신고|24시간|취소하면 이 신고/)).not.toBeInTheDocument();
-        expect(note).toHaveFocus();
-        expect(within(dialog).getByRole('button', {name: '의견 보내기'})).toBeDisabled();
-        expect(screen.queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
-        act(() => preview.focus());
-        await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
-
-        for (let i = 0; i < 6; i++) {
-            await userEvent.tab();
-            expect(dialog.contains(document.activeElement)).toBe(true);
-        }
-
-        expect(mocks.version).not.toHaveBeenCalled();
-        expect(mocks.report).not.toHaveBeenCalled();
-    });
-    it('reports the selected earlier result and returns keyboard focus after cancel', async () => {
-        current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
-        renderSidebar();
-
-        const buttons = await screen.findAllByRole('button', {name: '이 결과에 의견 보내기'});
-
-        await userEvent.click(buttons[0]);
-        expect(screen.getByText('자동채우기 1회차 결과')).toBeVisible();
-
-        const note = screen.getByRole('textbox', {name: '의견'});
-
-        expect(note).toHaveFocus();
-        await userEvent.type(note, '요청과 달라요');
-        await userEvent.click(screen.getByRole('button', {name: '취소'}));
-        await waitFor(() => expect(buttons[0]).toHaveFocus());
-        await userEvent.click(buttons[0]);
-        expect(screen.getByRole('textbox', {name: '의견'})).toHaveValue('');
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '조건을 다시 확인해 주세요');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() =>
-            expect(mocks.report).toHaveBeenCalledWith(1, operation.operationId, '조건을 다시 확인해 주세요', expect.any(String)),
-        );
-        expect(mocks.report).toHaveBeenCalledOnce();
-        await waitFor(() => expect(buttons[0]).toHaveFocus());
-    });
-    it.each(['cancel', 'close', 'escape', 'outside'] as const)(
-        'cancels feedback through %s and starts the next report with a new key',
-        async (dismissal) => {
-            mocks.report.mockRejectedValue(new Error('lost acknowledgement'));
-
-            const closeSidebar = vi.fn();
-
-            renderSidebar({onClose: closeSidebar});
-
-            const trigger = await screen.findByRole('button', {name: '이 결과에 의견 보내기'});
-
-            await userEvent.click(trigger);
-            await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '같은 의견');
-            await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-            await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
-
-            const firstKey = mocks.report.mock.calls[0][3];
-
-            if (dismissal === 'escape') await userEvent.keyboard('{Escape}');
-            else if (dismissal === 'outside') await userEvent.click(screen.getByTestId('ai-feedback-overlay'));
-            else await userEvent.click(screen.getByRole('button', {name: dismissal === 'close' ? '의견 작성 닫기' : '취소'}));
-
-            await waitFor(() => expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기'})).not.toBeInTheDocument());
-            await waitFor(() => expect(trigger).toHaveFocus());
-            expect(closeSidebar).not.toHaveBeenCalled();
-            expect(Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX))).toHaveLength(0);
-            await userEvent.click(trigger);
-            expect(screen.getByRole('textbox', {name: '의견'})).toHaveValue('');
-            await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '같은 의견');
-            await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-            await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(2));
-            expect(mocks.report.mock.calls[1][3]).not.toBe(firstKey);
-        },
-    );
-    it('hides the feedback modal with its sidebar and preserves the draft and recovery key when reopened', async () => {
-        mocks.report.mockRejectedValueOnce(new Error('lost acknowledgement'));
-
-        const sidebar = renderSidebar();
-
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '다시 열어 이어 쓸 의견');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
-
-        const firstKey = mocks.report.mock.calls[0][3];
-
-        sidebar.rerender(sidebarElement({open: false}));
-        expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기', hidden: true})).not.toBeInTheDocument();
-        expect(Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX))).toHaveLength(1);
-        sidebar.rerender(sidebarElement());
-
-        const dialog = await screen.findByRole('dialog', {name: '결과에 의견 보내기'});
-        const note = within(dialog).getByRole('textbox', {name: '의견'});
-
-        expect(note).toHaveValue('다시 열어 이어 쓸 의견');
-        expect(note).toHaveFocus();
-        await userEvent.click(within(dialog).getByRole('button', {name: '의견 보내기'}));
-        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
-        expect(mocks.report.mock.calls[1][3]).toBe(firstKey);
-    });
-    it('reuses a report key after a lost acknowledgement and creates a new key after success', async () => {
-        mocks.report.mockRejectedValueOnce(new Error('response lost')).mockResolvedValue({incidentId: 'accepted:1'});
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '조건이 달라요');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
-
-        const first = mocks.report.mock.calls[0];
-
-        expect(first.slice(0, 3)).toEqual([1, operation.operationId, '조건이 달라요']);
-        expect(first[3]).toMatch(/^[0-9a-f-]{36}$/i);
-        expect(screen.queryByText('의견을 보냈어요. 확인해서 개선할게요.')).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기'})).not.toBeInTheDocument());
-        expect(mocks.report.mock.calls[1]).toEqual(first);
-        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '조건이 달라요');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(3));
-        expect(mocks.report.mock.calls[2][3]).not.toBe(first[3]);
-    });
-    it('recovers a lost-acknowledgement report after remount and note re-entry without duplicating the synthetic receipt', async () => {
-        const accepted = new Map<string, string>();
-
-        let loseResponse = true;
-
-        mocks.report.mockImplementation(async (_conversation, _operation, _note, key: string) => {
-            if (!accepted.has(key)) accepted.set(key, `accepted:${accepted.size + 1}`);
-
-            if (loseResponse) {
-                loseResponse = false;
-                throw new Error('lost acknowledgement after storing');
-            }
-
-            return {incidentId: accepted.get(key)};
-        });
-
-        const first = renderSidebar();
-
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '새로고침 뒤 같은 신고');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '의견 보내기'})).toBeEnabled());
-
-        const key = mocks.report.mock.calls[0][3];
-        const receipts = () => Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX));
-
-        expect(receipts()).toHaveLength(1);
-        expect(sessionStorage.getItem(receipts()[0])).not.toContain('새로고침 뒤 같은 신고');
-        first.unmount();
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-
-        const note = screen.getByRole('textbox', {name: '의견'});
-
-        expect(note).toHaveValue('');
-        await userEvent.type(note, '새로고침 뒤 같은 신고');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
-        expect(mocks.report.mock.calls[1][3]).toBe(key);
-        expect(accepted.size).toBe(1);
-        expect(receipts()).toHaveLength(0);
-    });
-    it('keeps recovery metadata when an old request acknowledges success after the component unmounts', async () => {
-        let acknowledge!: (value: {incidentId: string}) => void;
-
-        mocks.report.mockImplementationOnce(
-            () =>
-                new Promise((resolve) => {
-                    acknowledge = resolve;
-                }),
-        );
-
-        const first = renderSidebar();
-
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '늦은 응답 신고');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(mocks.report).toHaveBeenCalledOnce());
-
-        const key = mocks.report.mock.calls[0][3];
-
-        first.unmount();
-        renderSidebar();
-        await act(async () => acknowledge({incidentId: 'accepted:1'}));
-        expect(Object.keys(sessionStorage).filter((name) => name.startsWith(REPORT_SESSION_PREFIX))).toHaveLength(1);
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '늦은 응답 신고');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
-        expect(mocks.report.mock.calls[1][3]).toBe(key);
-    });
-    it('keeps sending and same-mount retry working when session metadata cannot be saved', async () => {
-        const first = renderSidebar();
-
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        mocks.report.mockRejectedValueOnce(new Error('lost acknowledgement'));
-        vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-            throw new Error('storage blocked');
-        });
-
-        const note = screen.getByRole('textbox', {name: '의견'});
-
-        await userEvent.type(note, '입력을 유지해 주세요');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(note).toBeEnabled());
-        expect(note).toHaveValue('입력을 유지해 주세요');
-        expect(await screen.findByText('작성한 내용은 유지돼요. 이 창에서 다시 보내 주세요.')).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await screen.findByText('의견을 보냈어요. 확인해서 개선할게요.');
-        expect(mocks.report.mock.calls[1][3]).toBe(mocks.report.mock.calls[0][3]);
-        first.unmount();
-    });
-    it('changes the report key after editing the note or choosing another operation', async () => {
-        mocks.report.mockRejectedValue(new Error('response lost'));
-        current.operations = [operation, {...operation, operationId: 'later:2', sequence: 2}];
-        renderSidebar();
-
-        const reportButtons = await screen.findAllByRole('button', {name: '이 결과에 의견 보내기'});
-
-        await userEvent.click(reportButtons[0]);
-
-        const note = screen.getByRole('textbox', {name: '의견'});
-
-        await userEvent.type(note, '첫 의견');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(note).toBeEnabled());
-        await userEvent.clear(note);
-        await userEvent.type(note, '다른 의견');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(note).toBeEnabled());
-        await userEvent.click(screen.getByRole('button', {name: '취소'}));
-        await userEvent.click(reportButtons[1]);
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '다른 의견');
-        await userEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-        await waitFor(() => expect(mocks.report).toHaveBeenCalledTimes(3));
-        expect(new Set(mocks.report.mock.calls.map((call) => call[3])).size).toBe(3);
-        expect(mocks.report.mock.calls[2][1]).toBe('later:2');
-    });
-    it('clears an unfinished report when starting a new request section', async () => {
-        mocks.startSegment.mockImplementationOnce(startFreshSection);
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.type(screen.getByRole('textbox', {name: '의견'}), '이전 결과 의견');
-        await userEvent.click(screen.getByRole('button', {name: '취소'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기'})).not.toBeInTheDocument());
-        await userEvent.click(screen.getByRole('button', {name: '초기화'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기'})).not.toBeInTheDocument());
-        expect(screen.queryByRole('button', {name: '이 결과에 의견 보내기'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('textbox', {name: '의견'})).not.toBeInTheDocument();
-        expect(mocks.report).not.toHaveBeenCalled();
-    });
-    it('opens a comparison after cancelling feedback and keeps focus in the comparison', async () => {
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-        await userEvent.click(screen.getByRole('button', {name: '취소'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '결과에 의견 보내기'})).not.toBeInTheDocument());
-        await userEvent.click(screen.getByRole('button', {name: '근무표 살펴보기'}));
-
-        const dialog = await screen.findByRole('dialog');
-
-        await userEvent.click(within(dialog).getByRole('button', {name: '변경 전'}));
-
-        await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
-        expect(screen.queryByRole('textbox', {name: '의견', hidden: true})).not.toBeInTheDocument();
-    });
-    it('retains feedback on failure and prevents duplicate submissions while sending', async () => {
-        let reject!: (reason: Error) => void;
-
-        mocks.report.mockImplementationOnce(
-            () =>
-                new Promise((_resolve, fail) => {
-                    reject = fail;
-                }),
-        );
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '이 결과에 의견 보내기'}));
-
-        const note = screen.getByRole('textbox', {name: '의견'});
-
-        await userEvent.type(note, '검토해 주세요');
-
-        const send = screen.getByRole('button', {name: '의견 보내기'});
-
-        await userEvent.click(send);
-        expect(send).toBeDisabled();
-        expect(send).toHaveAttribute('aria-busy', 'true');
-        expect(screen.getByRole('button', {name: '취소'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '의견 작성 닫기'})).toBeDisabled();
-        await userEvent.keyboard('{Escape}');
-        expect(screen.getByRole('dialog', {name: '결과에 의견 보내기'})).toBeVisible();
-        await userEvent.click(screen.getByTestId('ai-feedback-overlay'));
-        expect(screen.getByRole('dialog', {name: '결과에 의견 보내기'})).toBeVisible();
-        await userEvent.click(send);
-        expect(mocks.report).toHaveBeenCalledOnce();
-        await act(async () => reject(new Error('offline')));
-        expect(note).toHaveValue('검토해 주세요');
-        expect(send).toBeEnabled();
-        expect(screen.getByRole('alert')).toHaveTextContent('의견을 보내지 못했어요. 다시 시도해 주세요.');
-        expect(screen.getByText('자동채우기 1회차 결과')).toBeVisible();
-    });
-    it.each(['APPLIED', 'NOT_APPLIED_SOURCE_CHANGED'])(
-        'explains calculated scope separately from current draft and confirmation: %s',
-        async (applyStatus) => {
-            current.operations = [
-                {
-                    ...operation,
-                    applyStatus,
-                    result: {
-                        operationType: 'GENERATE',
-                        applicable: true,
-                        draftRevision: 0,
-                        resultType: 'PATCH',
-                        changedCells: [cell],
-                        unmetInstructions: [],
-                        sameAsPrevious: false,
-                        validation: {
-                            draftRevision: 0,
-                            rulesHash: 'rules:1',
-                            summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
-                            violations: [],
-                        },
-                    },
-                },
-            ];
-            renderSidebar();
-
-            await screen.findByRole('region', {name: '근무표 결과'});
-            expect(screen.queryByLabelText('변경된 근무 1칸')).not.toBeInTheDocument();
-
-            const summary = screen.getByRole('region', {name: '근무표 결과'});
-
-            if (applyStatus === 'APPLIED') expectNoLocalApplicationClaim();
-            else expect(summary).toHaveTextContent('작성 중인 표가 바뀌어 자동으로 반영하지 않았어요.');
-
-            expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        },
-    );
-    it('does not show schedule generation progress when viewing a saved result', async () => {
-        const onBusyChange = vi.fn();
-
-        let resolveVersion!: (value: TResultVersion) => void;
-
-        mocks.version.mockImplementationOnce(
-            () =>
-                new Promise<TResultVersion>((resolve) => {
-                    resolveVersion = resolve;
-                }),
-        );
-        renderSidebar({onBusyChange});
-        await userEvent.click(await screen.findByRole('button', {name: /근무표 살펴보기|Explore schedule/}));
-        await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
-        expect(screen.getAllByText('근무표 불러오는 중')).toHaveLength(1);
-        expect(screen.queryByText('요청 확인 중')).not.toBeInTheDocument();
-        expect(screen.queryByText('근무표를 채우고 있어요')).not.toBeInTheDocument();
-        expect(onBusyChange.mock.calls.every(([value]) => value === false)).toBe(true);
-        await act(async () => resolveVersion(source));
-        expect(await screen.findByRole('dialog')).toBeVisible();
-        expect(screen.queryByText('근무표 불러오는 중')).not.toBeInTheDocument();
-    });
-
-    it('loads comparison inside the shared viewer and returns focus to its entry', async () => {
-        mocks.version.mockImplementation(async (id: string) => ({...source, versionId: id}));
-        renderSidebar();
-
-        const entry = await screen.findByRole('button', {name: '근무표 살펴보기'});
-
-        await userEvent.click(entry);
-
-        const dialog = await screen.findByRole('dialog');
-
-        expect(mocks.version).toHaveBeenCalledExactlyOnceWith('result:1');
-        expect(within(dialog).getByRole('button', {name: '변경 후'})).toHaveAttribute('aria-pressed', 'true');
-        expect(within(dialog).queryByRole('button', {name: '결과 근무표'})).not.toBeInTheDocument();
-        await userEvent.click(await within(dialog).findByRole('button', {name: '변경 전'}));
-        expect(mocks.version).toHaveBeenNthCalledWith(2, 'source:1');
-        expect(within(dialog).queryByRole('button', {name: '변경 전 표로 복원하기'})).not.toBeInTheDocument();
-        await userEvent.click(within(dialog).getByRole('button', {name: '변경 후'}));
-        expect(within(dialog).getByRole('button', {name: '이전 결과로 복원하기'})).toBeEnabled();
-        await userEvent.click(within(dialog).getByRole('button', {name: '닫기'}));
-        await waitFor(() => expect(entry).toHaveFocus());
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(mocks.branch).not.toHaveBeenCalled();
-    });
-
-    it('ignores a saved-result response after the sidebar closes', async () => {
-        let resolveVersion!: (value: TResultVersion) => void;
-
-        mocks.version.mockImplementationOnce(
-            () =>
-                new Promise<TResultVersion>((resolve) => {
-                    resolveVersion = resolve;
-                }),
-        );
-
-        const sidebar = renderSidebar();
-
-        await userEvent.click(await screen.findByRole('button', {name: '근무표 살펴보기'}));
-        await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
-        sidebar.rerender(sidebarElement({open: false}));
-        await act(async () => resolveVersion({...source, versionId: 'result:1'}));
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        sidebar.rerender(sidebarElement());
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('keeps the completed result usable when loading the comparison fails', async () => {
-        mocks.version.mockResolvedValueOnce({...source, versionId: 'result:1'}).mockRejectedValueOnce(new Error('offline'));
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '근무표 살펴보기'}));
-
-        const dialog = await screen.findByRole('dialog');
-
-        await userEvent.click(within(dialog).getByRole('button', {name: '변경 전'}));
-        expect(await within(dialog).findByRole('alert')).toHaveTextContent('변경 전 근무표를 불러오지 못했어요.');
-        expect(within(dialog).getByRole('region', {name: '근무표 전체 보기'})).toBeVisible();
-        expect(within(dialog).getByRole('button', {name: '이전 결과로 복원하기'})).toBeDisabled();
-        await userEvent.click(within(dialog).getByRole('button', {name: '변경 후'}));
-        expect(within(dialog).getByRole('button', {name: '이전 결과로 복원하기'})).toBeEnabled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-    });
-
-    it('waits for the completed operation revision before autosaving its restored result', async () => {
-        let finishRefresh!: (value: TConversationDetail) => void;
-
-        const refreshed = new Promise<TConversationDetail>((resolve) => {
-            finishRefresh = resolve;
-        });
-
-        mocks.detail.mockResolvedValueOnce(current).mockImplementation(() => refreshed);
-        mocks.execute.mockResolvedValueOnce(operation);
-        mocks.applyAdjustedDoc.mockImplementationOnce(() => {
-            mocks.draftFixed = true;
-            useShiftEditorStore.setState({draftRevision: useShiftEditorStore.getState().draftRevision + 1});
-        });
-        renderSidebar({generationRequest: 1});
-        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
-        await act(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-        });
-        expect(mocks.sync).not.toHaveBeenCalled();
-        await act(async () =>
-            finishRefresh({
-                ...current,
-                conversation: {...current.conversation, revision: 1},
-                draft: {...source, cells: [{...cell, fixed: true}]},
-            }),
-        );
-        await act(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-        });
-        expect(mocks.sync).not.toHaveBeenCalled();
-        expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
     });
 
     it('does not report a saved and locally applied result as failed when its conversation refresh times out', async () => {
@@ -2055,7 +1552,9 @@ describe('persistent schedule sidebar', () => {
         };
         const view = render(<AiConversationSidebar {...props} preparation={<p>Choose fixed shifts</p>} />);
 
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledOnce());
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         expect(mocks.execute).not.toHaveBeenCalled();
         view.rerender(<AiConversationSidebar {...props} />);
         await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
@@ -2102,7 +1601,9 @@ describe('persistent schedule sidebar', () => {
 
         const first = renderSidebar();
 
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '오프 균형을 맞춰줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
@@ -2114,7 +1615,9 @@ describe('persistent schedule sidebar', () => {
 
         first.unmount();
         renderSidebar();
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         expect(screen.getByRole('textbox')).toHaveValue('오프 균형을 맞춰줘');
         expect(await screen.findByRole('region', {name: i18n.t('aiAdjust.failure.title')})).toHaveTextContent(message);
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -2122,16 +1625,6 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('loads records without re-executing and previews a result without mutating the editor', async () => {
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: /근무표 살펴보기|Explore schedule/}));
-        await screen.findByRole('dialog');
-        expect(document.querySelector('.make-shift-calendar')).toBeInTheDocument();
-        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.create).not.toHaveBeenCalled();
-    });
     it('interprets a message without executing the solver before confirmation', async () => {
         mocks.interpret.mockImplementation(async () => {
             const turn = {
@@ -2152,7 +1645,9 @@ describe('persistent schedule sidebar', () => {
             return turn;
         });
         renderSidebar();
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
@@ -2184,129 +1679,14 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expectNoLocalApplicationClaim();
-        await userEvent.click(screen.getByRole('button', {name: '이 결과에 의견 보내기'}));
         expect(screen.getByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.')).toBeVisible();
-    });
-    it('selecting another saved request stops editing the previous saved request', async () => {
-        mocks.preferences.mockResolvedValue([
-            {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
-            {id: 2, category: 'REQUEST_TEXT', value: '야간을 줄여줘', provenance: 'USER', confirmedAt: source.createdAt},
-        ]);
-        renderSidebar();
-        await screen.findByRole('textbox');
-        await userEvent.click(screen.getAllByRole('button', {name: /^수정$/})[0]!);
-        await userEvent.click(screen.getByText('야간을 줄여줘'));
-        await userEvent.click(screen.getByRole('button', {name: '자주 쓰는 요청으로 저장하기'}));
-        await userEvent.click(screen.getAllByRole('button', {name: '자주 쓰는 요청으로 저장하기'})[1]!);
-        await waitFor(() => expect(mocks.savePreference).toHaveBeenCalledWith('야간을 줄여줘', 'EXPLICIT_USER_CONFIRMATION'));
-        expect(mocks.replacePreference).not.toHaveBeenCalled();
-    });
-    it.each(['expired', 'context', 'revision', 'current'] as const)(
-        'rechecks a selected suggestion before execution: %s',
-        async (change) => {
-            const suggestion = {
-                suggestionId: 'suggestion:1',
-                inputDigest: 'digest:1',
-                baseRevision: 0,
-                expiresAt: '2099-01-01T00:00:00Z',
-                verificationStatus: 'VERIFIED_FEASIBLE',
-                applyEnabled: true,
-                changes: [{kind: 'NUMERIC_GOAL', oldValue: 12, proposedValue: 11}],
-            };
-
-            current.conversation.latestInterpretationId = 'interpretation:1';
-            current.turns = [
-                {
-                    eventId: 1,
-                    sequence: 1,
-                    actor: 'ASSISTANT',
-                    type: 'INTERPRETATION',
-                    text: null,
-                    interpretationId: 'interpretation:1',
-                    baseRevision: 0,
-                    contextHash: current.contextHash,
-                    interpretation: null,
-                    createdAt: source.createdAt,
-                },
-            ];
-            current.operations = [
-                {
-                    ...operation,
-                    operationType: 'ADJUST',
-                    sequence: 2,
-                    executionStatus: 'FAILED',
-                    applyStatus: 'NOT_APPLIED',
-                    resultVersionId: null,
-                    interpretationId: 'interpretation:1',
-                    result: {
-                        operationType: 'ADJUST',
-                        applicable: false,
-                        draftRevision: 0,
-                        resultType: 'PATCH',
-                        changedCells: [],
-                        validation: {
-                            draftRevision: 0,
-                            rulesHash: 'rules:1',
-                            summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
-                            violations: [],
-                        },
-                        unmetInstructions: [],
-                        sameAsPrevious: false,
-                        engineResult: {status: 'REJECTED'},
-                        failure: {reasonCode: 'HARD_RULE_CONFLICT', message: '', suggestions: [suggestion]},
-                    },
-                },
-            ];
-            renderSidebar();
-            await userEvent.click(await screen.findByRole('button', {name: '변경 제안 보기'}));
-
-            if (change === 'expired') suggestion.expiresAt = '2000-01-01T00:00:00Z';
-
-            if (change === 'context') current = {...current, contextHash: 'rules:2'};
-
-            if (change === 'revision') current = {...current, conversation: {...current.conversation, revision: 1}};
-
-            await userEvent.click(screen.getByRole('button', {name: '이 변경으로 수정하기'}));
-
-            if (change === 'current') {
-                await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-                expect(mocks.execute.mock.calls[0]![1]).toMatchObject({failureSuggestionId: 'suggestion:1', suggestionConfirmed: true});
-            } else {
-                expect(await screen.findByText('표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요.')).toBeVisible();
-                expect(screen.getByText('최신 요청으로 다시 수정해 주세요.')).toBeVisible();
-                expect(mocks.execute).not.toHaveBeenCalled();
-                expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
-            }
-        },
-    );
-    it('explicitly updates a saved request with an update label', async () => {
-        mocks.preferences.mockResolvedValue([
-            {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
-        ]);
-        renderSidebar();
-        await screen.findByRole('textbox');
-        await userEvent.click(screen.getByRole('button', {name: /^수정$/}));
-        await userEvent.type(screen.getByRole('textbox'), ' 이번 달만');
-        await userEvent.click(screen.getByRole('button', {name: '저장한 요청 수정하기'}));
-        await userEvent.click(screen.getAllByRole('button', {name: '저장한 요청 수정하기'})[1]!);
-        await waitFor(() => expect(mocks.replacePreference).toHaveBeenCalledWith(1, '휴무 균형을 맞춰줘 이번 달만'));
-        expect(mocks.savePreference).not.toHaveBeenCalled();
-    });
-    it('saved request suggestions only fill the composer', async () => {
-        mocks.preferences.mockResolvedValue([
-            {id: 1, category: 'REQUEST_TEXT', value: '휴무 균형을 맞춰줘', provenance: 'USER', confirmedAt: source.createdAt},
-        ]);
-        renderSidebar();
-        await screen.findByRole('textbox');
-        await userEvent.click(await screen.findByText('휴무 균형을 맞춰줘'));
-        expect(screen.getByRole('textbox')).toHaveValue('휴무 균형을 맞춰줘');
-        expect(mocks.interpret).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('requires an explicit confirmation before rebuilding unlocked assignments', async () => {
         current.operations = [];
         renderSidebar();
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         await userEvent.click(
             screen.getByRole('button', {
                 name: /^다시 채우기$|^Refill$|^한 번 더 채워볼게요$|^Try filling it again$|^같은 조건으로 다시 채울게요$|^Refill with the same conditions$/,
@@ -2397,7 +1777,9 @@ describe('persistent schedule sidebar', () => {
         );
 
         renderSidebar({onPrepareAdjustment: prepare});
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalled());
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
@@ -2720,7 +2102,7 @@ describe('persistent schedule sidebar', () => {
         await screen.findByRole('alert');
         expect(screen.getByText('지금까지의 요청')).toBeVisible();
         expect(screen.getByRole('textbox')).toHaveValue('작성 중인 요청');
-        expect(screen.getByTestId('conversation-result-preview')).toBeVisible();
+        expect(screen.queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(onNewConversation).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc).toEqual(draft);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -3337,25 +2719,20 @@ describe('persistent schedule sidebar', () => {
         expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.getAllByRole('alert')).toHaveLength(1);
         expect(screen.queryByText(/^수정 2회차 · 실패/)).not.toBeInTheDocument();
-        expect(within(screen.getByRole('region', {name: '요청 조건 확인'})).queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
 
-        await userEvent.click(within(failure).getByRole('button', {name: '이 결과에 의견 보내기'}));
-        expect(screen.getByText('수정 2회차 결과')).toBeVisible();
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
     it.each(['RUNNING', 'RESULT_READY', 'UNKNOWN', 'SUCCEEDED', 'FAILED'] as const)(
-        'retains executed semantic conditions as read-only history: %s',
+        'keeps executed interpretation details in admin while retaining execution recovery: %s',
         async (executionStatus) => {
             executedSemanticRequest(executionStatus);
             renderSidebar();
 
-            const review = await screen.findByRole('region', {name: '요청 조건 확인'});
-
-            expect(within(review).getByText('전체 간호사')).toBeVisible();
-            expect(review).toHaveTextContent('11월 1~2일');
-            expect(review).toHaveTextContent('N 근무 제외');
-            expect(within(review).queryByRole('button')).not.toBeInTheDocument();
+            await waitFor(() => expect(screen.getByRole('complementary')).toHaveAttribute('data-loading', 'false'));
+            expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
 
             if (executionStatus === 'FAILED') {
@@ -3407,9 +2784,8 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const review = await screen.findByRole('region', {name: '요청 조건 확인'});
-
-        expect(within(review).queryByRole('button')).not.toBeInTheDocument();
+        await waitFor(() => expect(screen.getByRole('complementary')).toHaveAttribute('data-loading', 'false'));
+        expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: '다시 시도하기'})).toHaveLength(1);
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
@@ -3417,12 +2793,12 @@ describe('persistent schedule sidebar', () => {
         const failure = screen.getByRole('region', {name: '근무표를 수정하지 못했어요. (1회차)'});
 
         expect(within(failure).getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
-        expect(within(failure).getByTestId('conversation-result-preview')).toBeVisible();
-        expect(within(failure).getByText(i18n.t('aiAdjust.resultInfo.title'))).toBeVisible();
+        expect(within(failure).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
+        expect(within(failure).queryByText(i18n.t('aiAdjust.resultInfo.title'))).not.toBeInTheDocument();
         expect(within(failure).getByRole('button', {name: '변경 제안 보기'})).toBeVisible();
         expect(within(failure).getByRole('button', {name: '다시 시도하기'})).toBeEnabled();
         expect(within(failure).getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
-        expect(within(failure).getByRole('button', {name: '이 결과에 의견 보내기'})).toBeEnabled();
+        expect(within(failure).queryByRole('button', {name: '이 결과에 의견 보내기'})).not.toBeInTheDocument();
         expect(within(failure).getAllByRole('img')).toHaveLength(1);
         expect(within(within(failure).getByRole('alert')).queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByText(/^수정 1회차 · 실패/)).not.toBeInTheDocument();
@@ -3457,7 +2833,7 @@ describe('persistent schedule sidebar', () => {
             planHash: confirmed.semanticPlan!.planHash,
             sourceVersionId: source.versionId,
         });
-        expect(within(screen.getByRole('region', {name: '요청 조건 확인'})).queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
     });
 
@@ -3472,14 +2848,16 @@ describe('persistent schedule sidebar', () => {
         expect(input).toHaveValue(raw);
         expect(input).toHaveFocus();
         expect(screen.getByRole('button', {name: '수정한 요청 확인'})).toBeEnabled();
-        expect(within(screen.getByRole('region', {name: '요청 조건 확인'})).queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         first.unmount();
         renderSidebar();
-        await waitFor(() => expect(mocks.preferences).toHaveBeenCalledTimes(2));
+        await waitFor(() =>
+            expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
+        );
         expect(screen.getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue(raw);
         expect(screen.getByRole('button', {name: '수정한 요청 확인'})).toBeEnabled();
         expect(mocks.interpret).not.toHaveBeenCalled();
@@ -3510,7 +2888,7 @@ describe('persistent schedule sidebar', () => {
         await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
         await screen.findByRole('alert');
         await waitFor(() => expect(screen.getByRole('button', {name: '다시 시도하기'})).toBeEnabled());
-        expect(within(screen.getByRole('region', {name: '요청 조건 확인'})).queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
         expect(mocks.confirmPlan).toHaveBeenCalledOnce();

@@ -1,31 +1,26 @@
-import type {MouseEventHandler, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
-import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
     operation,
     appliedLocally = false,
     attempt,
-    feedbackDisabled,
     preview,
     changeSummary,
     children,
     actions,
-    onReport,
 }: {
     operation: TConversationOperation;
     appliedLocally?: boolean;
     attempt: number;
-    feedbackDisabled: boolean;
     preview?: ReactNode;
     changeSummary?: ReactNode;
     children?: ReactNode;
     actions?: ReactNode;
-    onReport: MouseEventHandler<HTMLButtonElement>;
     copy: (ko: string, en: string) => string;
 }) {
     const {t} = useTypedTranslation();
@@ -114,13 +109,6 @@ export function AiConversationResult({
                       : scope
             }
             preview={preview}
-            headerAction={
-                <AiConversationFeedbackButton
-                    label={t('aiAutofillUi.conversationResult.sendFeedbackOnThisResult')}
-                    disabled={feedbackDisabled}
-                    onClick={onReport}
-                />
-            }
             actions={actions}
         >
             {showPartialCoverage && (
