@@ -61,7 +61,9 @@ export function AiExecutionDock({
                 >
                     {t(pending ? 'aiAutofillUi.executionPresentation.viewProgress' : 'aiAutofillUi.executionPresentation.viewResult')}
                 </button>
-                {cancel && <AiExecutionCancelButton onCancel={cancel} disabled={cancelling} />}
+                {cancel && operation?.progress && operation.executionStatus === 'RUNNING' && (
+                    <AiExecutionCancelButton onCancel={cancel} disabled={cancelling} />
+                )}
             </div>
         </section>
     );

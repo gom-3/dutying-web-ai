@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
     sync: vi.fn(),
     interpret: vi.fn(),
     execute: vi.fn(),
+    cancelOperation: vi.fn(),
     version: vi.fn(),
     branch: vi.fn(),
     startSegment: vi.fn(),
@@ -745,6 +746,48 @@ describe('persistent schedule sidebar', () => {
         view.unmount();
         expect(onBusyChange).toHaveBeenLastCalledWith(false);
     });
+
+    it('cancels an acknowledged background operation and removes cancellation after the server confirms', async () => {
+        current.operations = [
+            {
+                ...operation,
+                executionStatus: 'RUNNING',
+                applyStatus: 'NOT_APPLIED',
+                resultVersionId: null,
+                progress: {phase: 'COMPUTING', elapsedMs: 45000},
+            },
+        ];
+        mocks.cancelOperation.mockImplementationOnce(async (operationId: string) => {
+            expect(operationId).toBe(operation.operationId);
+            const cancelled = {...current.operations[0], executionStatus: 'CANCELLED' as const, progress: null};
+            current = {...current, operations: [cancelled]};
+            return cancelled;
+        });
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: '계산 요청 취소'}));
+        await screen.findByText('계산 요청을 취소했어요. 기존 근무표는 그대로예요.');
+        expect(mocks.cancelOperation).toHaveBeenCalledExactlyOnceWith(operation.operationId);
+        expect(screen.queryByRole('button', {name: '계산 요청 취소'})).not.toBeInTheDocument();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it.each(['RUNNING', 'RESULT_READY', 'UNKNOWN', 'SUCCEEDED', 'FAILED', 'CANCELLED'] as const)(
+        'does not offer unsupported or terminal cancellation: %s',
+        async (executionStatus) => {
+            current.operations = [
+                {
+                    ...operation,
+                    executionStatus,
+                    resultVersionId: null,
+                    progress: executionStatus === 'RUNNING' ? null : {phase: 'COMPUTING', elapsedMs: 45000},
+                },
+            ];
+            renderSidebar();
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+            await waitFor(() => expect(screen.queryByText('대화 불러오는 중')).not.toBeInTheDocument());
+            expect(screen.queryByRole('button', {name: '계산 요청 취소'})).not.toBeInTheDocument();
+        },
+    );
 
     it.each([
         {status: 'RUNNING', title: '근무표를 채우기 시작했어요. 신청 근무와 고정 근무는 그대로 유지해요.', animated: true},

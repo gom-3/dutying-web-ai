@@ -2577,9 +2577,7 @@ export default function AiConversationSidebar({
                                                         inert={preparing}
                                                         className="min-w-0 text-[14.5px] leading-7 text-[#333D4B]"
                                                     >
-                                                        {['RUNNING', 'RESULT_READY', 'UNKNOWN'].includes(
-                                                            event.operation.executionStatus,
-                                                        ) && (
+                                                        {event.operation.progress && event.operation.executionStatus === 'RUNNING' && (
                                                             <AiExecutionCancelButton
                                                                 onCancel={() => cancelOperation(event.operation.operationId)}
                                                                 disabled={busy}
