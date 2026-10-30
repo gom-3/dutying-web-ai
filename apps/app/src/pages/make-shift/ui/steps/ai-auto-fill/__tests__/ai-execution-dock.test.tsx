@@ -44,6 +44,20 @@ describe('ongoing autofill entry', () => {
         fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
         expect(cancel).toHaveBeenCalledOnce();
     });
+    it('removes cancellation on completion even if an older cancel callback remains', () => {
+        const cancel = vi.fn();
+        const view = render(<AiExecutionDock execution={{operation, cancel, cancelling: false}} onOpen={vi.fn()} />);
+        expect(screen.getByRole('button', {name: '계산 요청 취소'})).toBeVisible();
+        view.rerender(
+            <AiExecutionDock
+                execution={{operation: {...operation, executionStatus: 'SUCCEEDED', applyStatus: 'APPLIED'}, cancel, cancelling: false}}
+                onOpen={vi.fn()}
+            />,
+        );
+        expect(screen.queryByRole('button', {name: '계산 요청 취소'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '결과 확인'})).toBeVisible();
+        expect(cancel).not.toHaveBeenCalled();
+    });
     it.each(['SUCCEEDED', 'FAILED'] as const)('names an existing-schedule update consistently: %s', (executionStatus) => {
         render(
             <AiExecutionDock
