@@ -659,6 +659,39 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
+    it('routes a standalone autofill command directly to the existing preparation without model work', async () => {
+        const onPrepareGeneration = vi.fn();
+        renderSidebar({onPrepareGeneration});
+        const input = await screen.findByRole('textbox');
+        await userEvent.type(input, '자동완성 해줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        expect(onPrepareGeneration).toHaveBeenCalledOnce();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('reports request review separately from generation and releases the lock on failure', async () => {
+        const onRequestBusyChange = vi.fn();
+        const onBusyChange = vi.fn();
+        let reject!: (reason: Error) => void;
+        mocks.interpret.mockImplementationOnce(
+            () =>
+                new Promise((_resolve, fail) => {
+                    reject = fail;
+                }),
+        );
+        const view = renderSidebar({onRequestBusyChange, onBusyChange});
+        await userEvent.type(await screen.findByRole('textbox'), '하루짜리 OFF를 줄여줘');
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.send')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(onRequestBusyChange).toHaveBeenLastCalledWith(true);
+        expect(onBusyChange).not.toHaveBeenCalledWith(true, expect.anything());
+        await act(async () => reject(new Error('offline')));
+        await waitFor(() => expect(onRequestBusyChange).toHaveBeenLastCalledWith(false));
+        view.unmount();
+        expect(onRequestBusyChange).toHaveBeenLastCalledWith(false);
+    });
+
     it('replaces the conversation loading state with a usable retry after initialization fails', async () => {
         let rejectList!: (reason: Error) => void;
 

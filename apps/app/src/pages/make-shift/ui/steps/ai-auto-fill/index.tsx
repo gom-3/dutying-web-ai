@@ -98,6 +98,7 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
+import {AiAdjustIntro} from './ai-adjust-intro';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
@@ -395,6 +396,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [isRequestBusy, setIsRequestBusy] = useState(false);
     const [aiExecution, setAiExecution] = useState<TConversationExecution | null>(null);
     const [isAiExecutionDismissed, setIsAiExecutionDismissed] = useState(false);
     const [isAiLoadingOverlayFinishing, setIsAiLoadingOverlayFinishing] = useState(false);
@@ -542,7 +544,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
-        editorInputDisabled: (isAiGenerating && !isAiExecutionDismissed) || isAiLoadingOverlayFinishing,
+        editorInputDisabled: isRequestBusy || (isAiGenerating && !isAiExecutionDismissed) || isAiLoadingOverlayFinishing,
     });
     const orderedShift = useMemo(
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
@@ -723,6 +725,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
     const isStepNavigationBusy =
+        isRequestBusy ||
         isWorking ||
         isCarryingOver ||
         isSavingSnapshot ||
@@ -885,7 +888,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         };
     }, [isSnapshotSidebarOpen]);
 
-    const isCalendarReadonly = isAiGenerating && !isAiExecutionDismissed;
+    const isCalendarReadonly = isRequestBusy || (isAiGenerating && !isAiExecutionDismissed);
     const visibleCalendarDoc = useMemo(
         () => (isAiBlankPreviewVisible && !isAiExecutionDismissed ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
         [hydratedDoc, isAiBlankPreviewVisible, isAiExecutionDismissed],
@@ -910,6 +913,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         [annualLeave.data?.days, annualLeave.overview.data?.days, adjustmentDays, hydratedDoc, language, month, orderedShift, policy, year],
     );
     const canConfirm =
+        !isRequestBusy &&
         !isWorking &&
         !isSavingSnapshot &&
         !isAiGenerating &&
@@ -2894,7 +2898,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             : t('page.makeShift.aiRefill.publishConfirm.noConnectedDescription');
     const scheduleActions = {
         canConfirm,
-        disabled: isAiGenerating || isWorking || disablingRequestId !== null,
+        disabled: isRequestBusy || isAiGenerating || isWorking || disablingRequestId !== null,
         onConfirm: () => {
             if (!canConfirm) return;
 
@@ -2908,8 +2912,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             <div
                 className="ai-autofill-root__main flex min-w-0 flex-1 flex-col gap-3 pt-3 outline-none"
                 ref={editorRef}
-                onKeyDown={preparationStep ? undefined : onKeyDown}
-                onPasteCapture={preparationStep ? undefined : onPasteCapture}
+                onKeyDown={preparationStep || isRequestBusy ? undefined : onKeyDown}
+                onPasteCapture={preparationStep || isRequestBusy ? undefined : onPasteCapture}
                 tabIndex={0}
             >
                 <AiPlanNotice hasResult={hasCompletedAiFill} />
@@ -2985,6 +2989,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             : undefined
                     }
                     isAiGenerating={isAiGenerating}
+                    requestBusy={isRequestBusy}
                     isPreparing={Boolean(preparationStep) && autofillFlow?.status !== 'paused'}
                     isAutofillBlocked={isAutofillBlocked}
                     aiStatus={aiStatus}
@@ -3157,6 +3162,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onGenerated={rememberGeneratedSchedule}
                     onBusyChange={handleConversationBusyChange}
+                    onRequestBusyChange={setIsRequestBusy}
                     onExecutionChange={setAiExecution}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
@@ -3200,6 +3206,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     modifyDisabled={!isAdjustEnabled}
                     textInputRef={adjustTextInputRef}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
+                    onRequestBusyChange={setIsRequestBusy}
                     interpret={interpretAdjustText}
                     onApply={handleApplyTextRequests}
                     goalNurses={currentTeamNurses.map((nurse) => ({
@@ -3227,6 +3234,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onDisableRequest={handleDisableMonthRequest}
                 />
             )}
+            <AiAdjustIntro
+                open={
+                    isConversationOpen &&
+                    isAdjustEnabled &&
+                    (hasGeneratedSchedule || hasFilledPreparationCells) &&
+                    !preparationStep &&
+                    !isAiGenerating
+                }
+                owner={chatOwner}
+            />
             <AiSnapshotSidebar
                 open={isSnapshotSidebarOpen}
                 onClose={() => setIsSnapshotSidebarOpen(false)}

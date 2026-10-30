@@ -1,4 +1,10 @@
 export const aiAutofillUiKo = {
+    adjustIntro: {
+        title: '대화로 근무표를 조절해 보세요',
+        description:
+            '자동완성한 근무표에서 바꾸고 싶은 내용을 적어 주세요. 예: “하루짜리 OFF를 줄여줘”.\n고정한 근무는 유지하고 나머지 근무를 조절해요. 요청 확인 중에는 표를 수정할 수 없어요.\n결과를 표에서 확인하고 필요하면 되돌린 뒤 저장·확정해 주세요.',
+        confirm: '확인했어요',
+    },
     interpretFailureTitle: '요청 해석을 마치지 못했어요.',
     interpretRejected:
         'AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요.\n이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.\n같은 요청으로 다시 시도해 주세요.',
@@ -356,6 +362,12 @@ export const aiAutofillUiKo = {
 } as const;
 
 export const aiAutofillUiEn = {
+    adjustIntro: {
+        title: 'Adjust your schedule in chat',
+        description:
+            'Describe what you want to change, such as “Reduce isolated days off.”\nFixed shifts stay in place. Editing is paused while your request is reviewed.\nReview the result, undo if needed, then save or confirm the schedule.',
+        confirm: 'Got it',
+    },
     interpretFailureTitle: 'Request interpretation could not finish.',
     interpretRejected:
         'An error occurred while checking the AI interpretation of your request.\nThis request did not start schedule generation or change the schedule.\nPlease try the same request again.',
@@ -718,6 +730,12 @@ export const aiAutofillUiEn = {
 } as const;
 
 export const aiAutofillUiJa = {
+    adjustIntro: {
+        title: '会話で勤務表を調整しましょう',
+        description:
+            '「単発の休みを減らして」など、変更したい内容を入力してください。\n固定した勤務は維持されます。リクエストの確認中は勤務表を編集できません。\n結果を確認し、必要なら元に戻してから保存・確定してください。',
+        confirm: '確認しました',
+    },
     interpretFailureTitle: 'リクエストの解釈を完了できませんでした。',
     interpretRejected:
         'AIによるリクエストの解釈結果を確認中にエラーが発生しました。\n今回のリクエストでは勤務表の自動作成や変更を行っていません。\n同じ内容でもう一度お試しください。',

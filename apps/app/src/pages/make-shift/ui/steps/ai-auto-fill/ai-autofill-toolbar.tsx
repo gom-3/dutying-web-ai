@@ -40,6 +40,7 @@ type TAiAutofillToolbarProps = {
     isAdjustEnabled?: boolean;
     hasGeneratedSchedule?: boolean;
     isAiGenerating: boolean;
+    requestBusy?: boolean;
     isPreparing?: boolean;
     isAutofillBlocked?: boolean;
     aiStatus: TAiAutofillStatus;
@@ -73,6 +74,7 @@ export function AiAutofillToolbar({
     onOpenSnapshotHistory,
     onAiFill,
     isAiGenerating,
+    requestBusy = false,
     isPreparing = false,
     isAutofillBlocked = false,
     scheduleValidationStatus,
@@ -129,7 +131,7 @@ export function AiAutofillToolbar({
                             id="make_ai_fix_selected_button"
                             className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--fix"
                             onClick={onFixSelection}
-                            disabled={!canFixSelection || isAiGenerating}
+                            disabled={requestBusy || !canFixSelection || isAiGenerating}
                             ariaLabel={t('page.makeShift.aiRefill.fixSelection')}
                             title={t('page.makeShift.aiRefill.fixSelection')}
                         >
@@ -138,7 +140,7 @@ export function AiAutofillToolbar({
                         <IconButton
                             className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--unfix"
                             onClick={onUnfixSelection}
-                            disabled={!canUnfixSelection || isAiGenerating}
+                            disabled={requestBusy || !canUnfixSelection || isAiGenerating}
                             ariaLabel={t('page.makeShift.aiRefill.unfixSelection')}
                             title={t('page.makeShift.aiRefill.unfixSelection')}
                         >
@@ -150,7 +152,7 @@ export function AiAutofillToolbar({
                         <IconButton
                             className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--clear-unlocked hover:text-[#D14343]"
                             onClick={onRequestClearUnlockedCells}
-                            disabled={!canClearUnlockedCells || isAiGenerating}
+                            disabled={requestBusy || !canClearUnlockedCells || isAiGenerating}
                             ariaLabel={t('page.makeShift.aiRefill.clearUnlockedCells')}
                             title={t('page.makeShift.aiRefill.clearUnlockedCells')}
                         >
@@ -196,7 +198,7 @@ export function AiAutofillToolbar({
                             <IconButton
                                 className="ai-autofill-toolbar__history-undo"
                                 onClick={onUndo}
-                                disabled={!canUndo}
+                                disabled={requestBusy || !canUndo}
                                 ariaLabel={t('page.makeShift.aiRefill.undo')}
                                 title={t('page.makeShift.aiRefill.undo')}
                             >
@@ -205,7 +207,7 @@ export function AiAutofillToolbar({
                             <IconButton
                                 className="ai-autofill-toolbar__history-redo"
                                 onClick={onRedo}
-                                disabled={!canRedo}
+                                disabled={requestBusy || !canRedo}
                                 ariaLabel={t('page.makeShift.aiRefill.redo')}
                                 title={t('page.makeShift.aiRefill.redo')}
                             >
@@ -220,7 +222,7 @@ export function AiAutofillToolbar({
                             <IconButton
                                 className="ai-autofill-toolbar__history-save"
                                 onClick={onSaveSnapshot}
-                                disabled={isSavingSnapshot}
+                                disabled={requestBusy || isSavingSnapshot}
                                 ariaBusy={isSavingSnapshot}
                                 ariaLabel={t(
                                     isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
@@ -234,6 +236,7 @@ export function AiAutofillToolbar({
                             </IconButton>
                             <IconButton
                                 className="ai-autofill-toolbar__history-snapshots"
+                                disabled={requestBusy}
                                 onClick={onOpenSnapshotHistory}
                                 ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
                                 title={t('page.makeShift.aiRefill.snapshotSidebar.title')}
@@ -249,7 +252,7 @@ export function AiAutofillToolbar({
                         id="make_ai_fill_button"
                         type="button"
                         onClick={onAiFill}
-                        disabled={isAiGenerating || isConfirming || isPreparing}
+                        disabled={requestBusy || isAiGenerating || isConfirming || isPreparing}
                         title={isAutofillBlocked ? t('aiAdjust.allFixed') : undefined}
                         aria-busy={isAiGenerating}
                         className={cn(

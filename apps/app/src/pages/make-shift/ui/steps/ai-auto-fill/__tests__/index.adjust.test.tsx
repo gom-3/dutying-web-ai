@@ -57,6 +57,7 @@ const mocks = vi.hoisted(() => ({
         onClose?: () => void;
         autofillFlow?: {messages: Array<{text: string}>};
         onBusyChange?: (busy: boolean, succeeded?: boolean) => void;
+        onRequestBusyChange?: (busy: boolean) => void;
         onExecutionChange?: (execution: TConversationExecution | null) => void;
         onRecoverGeneration?: () => void;
         generationRequest: number;
@@ -243,8 +244,8 @@ vi.mock('../../shared/use-duty-editor-step', async () => {
     const {useShiftEditorKeyBindings} = await vi.importActual<typeof ShiftEditorModule>('@/features/shift-editor');
 
     return {
-        useDutyEditorStep: () => {
-            const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings();
+        useDutyEditorStep: ({editorInputDisabled}: {editorInputDisabled: boolean}) => {
+            const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({disabled: editorInputDisabled});
 
             return {
                 dutyQuery: {data: mocks.shift, isLoading: false, isError: false, refetch: vi.fn()},
@@ -269,11 +270,13 @@ vi.mock('../../shared/make-shift-calendar', () => ({
     MakeShiftCalendar: ({
         onCellClick,
         interactivePreview,
+        readonly,
     }: {
         onCellClick?: (row: number, col: number) => void;
         interactivePreview?: boolean;
+        readonly?: boolean;
     }) => (
-        <div data-testid="calendar">
+        <div data-testid="calendar" data-readonly={String(Boolean(readonly))}>
             {interactivePreview && (
                 <button type="button" onClick={() => onCellClick?.(0, 0)}>
                     toggle first fixed shift
@@ -660,6 +663,7 @@ describe('AiAutofill adjust panel', () => {
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
         window.sessionStorage.clear();
         window.localStorage.clear();
+        for (const account of ['guest', 'account:1001', 'account:1002']) localStorage.setItem(`dutying.ai-adjust-intro:v1:${account}`, 'seen');
         useAuthStore.setState({accountId: null});
         installRequestStore();
         seedEditor();
@@ -671,6 +675,22 @@ describe('AiAutofill adjust panel', () => {
         vi.unstubAllGlobals();
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
         useShiftEditorStore.getState().setAutofillAdjustEnabled(false);
+    });
+
+    it('locks the calendar and step navigation while checking a request without starting generation', async () => {
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'auto fill'}));
+        await waitFor(() => expect(mocks.conversationProps?.open).toBe(true));
+        act(() => mocks.conversationProps?.onRequestBusyChange?.(true));
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, true);
+        expect(mocks.conversationProps?.open).toBe(true);
+        expect(mocks.conversationProps?.loading).toBe(false);
+        expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
+        act(() => mocks.conversationProps?.onRequestBusyChange?.(false));
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'false');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, false);
     });
 
     it('opens a saved filled roster in the conversation without starting a refill', async () => {

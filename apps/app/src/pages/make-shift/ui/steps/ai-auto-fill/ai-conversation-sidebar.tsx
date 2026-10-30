@@ -11,7 +11,7 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog, {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
-import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
+import {describeAdjustChanges, isPlainAutofillCommand} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
 import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
 import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
@@ -105,6 +105,7 @@ type TProps = {
     onApplied: () => void;
     onGenerated?: () => void;
     onBusyChange?: (busy: boolean, succeeded?: boolean) => void;
+    onRequestBusyChange?: (busy: boolean) => void;
     onExecutionChange?: (execution: TConversationExecution | null) => void;
     resultActions?: TAdjustResultActions;
 };
@@ -155,6 +156,7 @@ export default function AiConversationSidebar({
     onApplied,
     onGenerated,
     onBusyChange,
+    onRequestBusyChange,
     onExecutionChange,
 }: TProps) {
     const cancelCurrentOperationRef = useRef<() => void>(() => {});
@@ -1112,6 +1114,30 @@ export default function AiConversationSidebar({
 
         if (!message) return;
 
+        const currentDetail = detailRef.current;
+        const hasPendingInterpretation =
+            currentDetail?.conversation.latestInterpretationId &&
+            !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
+
+        if (
+            !initialGeneration &&
+            !isAutofillBlocked &&
+            !editingRequest &&
+            !currentDetail?.conversationState?.pendingQuestion &&
+            !hasPendingInterpretation &&
+            isPlainAutofillCommand(message) &&
+            currentDetail &&
+            !busy &&
+            !running &&
+            !awaitingAdjustment &&
+            !preparing
+        ) {
+            setText('');
+            chooseNextAction('regenerate');
+
+            return;
+        }
+
         const reviewedStateVersion = detailRef.current?.conversationState?.version;
 
         await run(
@@ -1657,6 +1683,12 @@ export default function AiConversationSidebar({
         lastRebuild.current = rebuildRequest;
         setRebuild(true);
     }, [rebuildRequest]);
+
+    useEffect(() => {
+        onRequestBusyChange?.(operationBusy && !executing);
+    }, [operationBusy, executing, onRequestBusyChange]);
+
+    useEffect(() => () => onRequestBusyChange?.(false), [onRequestBusyChange]);
 
     useEffect(() => {
         onBusyChange?.(executionBusy, executionSucceeded);
