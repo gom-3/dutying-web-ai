@@ -153,6 +153,7 @@ vi.mock('@/features/shift-editor', async (original) => ({
     ...(await original<typeof ShiftEditorModule>()),
     useShiftEditorCommands: () => ({
         applyAdjustedDoc: mocks.applyAdjustedDoc,
+        restoreSnapshotDoc: mocks.applyAdjustedDoc,
         clearScheduleValidationFromApi: mocks.clearScheduleValidationFromApi,
         setScheduleValidationFromApi: mocks.setScheduleValidationFromApi,
     }),
@@ -1132,12 +1133,14 @@ describe('persistent schedule sidebar', () => {
         const first = renderSidebar();
 
         await screen.findByRole('region', {name: '근무표 결과'});
-        expect(screen.queryByLabelText('변경된 근무 1칸')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('변경된 근무 1칸')).toBeVisible();
+        expect(screen.getByText(i18n.t('aiConversationSidebar.authoring.savedResult'))).toBeVisible();
         expectNoLocalApplicationClaim();
         first.unmount();
         renderSidebar();
         await screen.findByRole('region', {name: '근무표 결과'});
-        expect(screen.queryByLabelText('변경된 근무 1칸')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('변경된 근무 1칸')).toBeVisible();
+        expect(screen.getByText(i18n.t('aiConversationSidebar.authoring.savedResult'))).toBeVisible();
         expectNoLocalApplicationClaim();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
@@ -1186,7 +1189,8 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
         await screen.findByRole('region', {name: '근무표 결과'});
-        expect(screen.queryByLabelText('변경된 근무 1칸')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('변경된 근무 1칸')).toBeVisible();
+        expect(screen.getByText(i18n.t('aiConversationSidebar.authoring.savedResult'))).toBeVisible();
         expect(screen.queryByText('이 요청을 반영했어요.')).not.toBeInTheDocument();
         expect(screen.queryByText('이 요청으로 계산을 마쳤어요.')).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
@@ -1669,14 +1673,15 @@ describe('persistent schedule sidebar', () => {
         let finish!: (version: TResultVersion) => void;
 
         mocks.execute.mockResolvedValue({...operation, result: successfulResult});
-        mocks.version.mockImplementationOnce(
-            () =>
-                new Promise<TResultVersion>((resolve) => {
-                    finish = resolve;
-                }),
+        mocks.version.mockImplementation((id: string) =>
+            id === source.versionId
+                ? Promise.resolve(source)
+                : new Promise<TResultVersion>((resolve) => {
+                      finish = resolve;
+                  }),
         );
         renderSidebar({generationRequest: 1});
-        await waitFor(() => expect(mocks.version).toHaveBeenCalledOnce());
+        await waitFor(() => expect(mocks.version).toHaveBeenCalledWith('result:1'));
         act(() => {
             useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
         });
@@ -3039,6 +3044,57 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).toHaveBeenCalledOnce();
     });
 
+    it('returns an expired preparation plan to request review without refreshing or executing it', async () => {
+        const {proposal} = semanticRequest();
+
+        Object.assign(proposal.semanticPlan!, {
+            authoringContractVersion: 'intent-first-v1',
+            interactionId: 'interaction:expired-preparation',
+            deadlineAt: new Date(Date.now() + 60000).toISOString(),
+            planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+        });
+
+        const prepare = vi.fn(async () => {
+            proposal.semanticPlan!.planExpiresAt = '2000-01-01T00:00:00Z';
+        });
+
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await screen.findByText(/요청을 확인한 뒤 시간이 지나 실행 계획이 만료됐어요/);
+        expect(mocks.refreshPlan).not.toHaveBeenCalled();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.adjustCurrentSchedule')}));
+        expect(screen.getByRole('textbox')).toHaveValue('김 간호사 1~2일 N 금지. 12일 O 배정');
+    });
+    it.each([400, 409, 422])('returns a rejected preparation refresh (%s) to the original request without receipt lookup', async (code) => {
+        semanticRequest();
+
+        const prepare = vi.fn(async () => {
+            mocks.draftFixed = true;
+        });
+
+        mocks.sync.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                draft: {...source, versionId: 'source:prepared', cells: [{...cell, fixed: true}]},
+                conversation: {...current.conversation, revision: 1, currentVersionId: 'source:prepared', latestInterpretationId: null},
+            };
+
+            return current;
+        });
+        mocks.refreshPlan.mockRejectedValueOnce({code});
+        renderSidebar({onPrepareAdjustment: prepare});
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await screen.findByText(/표나 조건이 바뀌었어요/);
+        expect(mocks.refreshPlan).toHaveBeenCalledOnce();
+        expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(screen.queryByRole('button', {name: '결과 다시 확인하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.adjustCurrentSchedule')}));
+        expect(screen.getByRole('textbox')).toHaveValue('김 간호사 1~2일 N 금지. 12일 O 배정');
+    });
     it.each(['PREVIEW_READY', 'LOCKED_CONFLICT'])(
         'revalidates the same conditions against newly protected shifts before execution: %s',
         async (state) => {
@@ -4171,6 +4227,115 @@ describe('intent-first sidebar integration', () => {
         expect(current.operations).toHaveLength(1);
         expect(mocks.startSegment).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it.each([false, true])('reapplies an immutable result and restores the pre-reapply draft after remount (manual=%s)', async (manual) => {
+        enable();
+
+        const result = intentResponse();
+
+        current = {...current, operations: [{...operation, operationType: 'ADJUST', result}]};
+
+        const savedVersion = {...source, versionId: 'result:1', cells: result.changedCells};
+        const beforeVersion = manual ? {...source, versionId: 'manual:2', cells: [{...cell, wardShiftTypeId: 2, shiftCode: 'E'}]} : source;
+
+        if (manual) {
+            mocks.draftShiftTypeId = 2;
+            current = {
+                ...current,
+                conversation: {...current.conversation, currentVersionId: beforeVersion.versionId},
+                draft: beforeVersion,
+            };
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+        }
+
+        mocks.version.mockImplementation(async (id: string) => (id === beforeVersion.versionId ? beforeVersion : savedVersion));
+        const syncDraft = async (_id: number, request: {expectedRevision: number; cells: typeof source.cells}) => {
+            mocks.draftShiftTypeId = request.cells[0]?.wardShiftTypeId ?? 4;
+            current = {
+                ...current,
+                conversation: {
+                    ...current.conversation,
+                    revision: current.conversation.revision + 1,
+                    currentVersionId: `sync:${current.conversation.revision + 1}`,
+                },
+                draft: {...source, versionId: `sync:${current.conversation.revision + 1}`, ...request},
+            };
+
+            return current;
+        };
+
+        mocks.sync.mockImplementationOnce(syncDraft).mockImplementationOnce(syncDraft);
+        mocks.applyAdjustedDoc
+            .mockImplementationOnce((doc) => useShiftEditorStore.getState().setDoc(doc))
+            .mockImplementationOnce((doc) => useShiftEditorStore.getState().setDoc(doc));
+
+        const view = renderSidebar();
+        const reapply = i18n.t('aiConversationSidebar.authoring.reapply');
+
+        await userEvent.click(await screen.findByRole('button', {name: reapply}));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(dialog).toHaveTextContent(i18n.t('aiConversationSidebar.authoring.reapplyDescription'));
+        expect(mocks.sync).not.toHaveBeenCalled();
+        await userEvent.click(within(dialog).getByRole('button', {name: reapply}));
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
+        expect(mocks.sync.mock.calls[0]?.[1]).toMatchObject({
+            expectedRevision: 0,
+            cells: savedVersion.cells,
+            rowOrder: savedVersion.rowOrder,
+            carryOverCells: savedVersion.carryOverCells,
+        });
+        expect(await screen.findByText(i18n.t('aiConversationSidebar.authoring.currentResult'))).toBeVisible();
+        view.unmount();
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.undo')}));
+        await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledTimes(2));
+        expect(await screen.findByRole('button', {name: reapply})).toBeEnabled();
+        expect(current.operations).toHaveLength(1);
+        expect(mocks.sync.mock.calls[mocks.sync.mock.calls.length - 1]?.[1]).toMatchObject({cells: beforeVersion.cells});
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.startSegment).not.toHaveBeenCalled();
+        expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it('keeps the draft and transcript when reapplication is cancelled', async () => {
+        enable();
+        current = {...current, operations: [{...operation, operationType: 'ADJUST', result: intentResponse()}]};
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.reapply')}));
+        await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: i18n.t('shared.confirmActionDialog.cancel')}));
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(current.operations).toHaveLength(1);
+    });
+    it('does not overwrite a manual edit made while the saved result is loading', async () => {
+        enable();
+        current = {...current, operations: [{...operation, operationType: 'ADJUST', result: intentResponse()}]};
+
+        let resolve!: (value: TResultVersion) => void;
+
+        mocks.version.mockImplementation((id: string) =>
+            id === source.versionId
+                ? Promise.resolve(source)
+                : new Promise<TResultVersion>((done) => {
+                      resolve = done;
+                  }),
+        );
+        renderSidebar();
+
+        const reapply = i18n.t('aiConversationSidebar.authoring.reapply');
+
+        await userEvent.click(await screen.findByRole('button', {name: reapply}));
+        await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: reapply}));
+        await waitFor(() => expect(mocks.version).toHaveBeenCalledWith('result:1'));
+        await act(async () => {
+            useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
+            resolve({...source, versionId: 'result:1'});
+        });
+        await screen.findByText(/표가 바뀌어서 이전 결과로 전환하지 않았어요/);
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.rows[0].cells).toEqual(['E']);
     });
     it('recovers a completed application after remount by comparing the source grid rather than a reset revision counter', async () => {
         enable();

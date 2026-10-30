@@ -1144,13 +1144,23 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         }
     };
     const handleLoadSnapshot = async (snapshotId: number) => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || loadingSnapshotId != null) return;
+        if (
+            !isCurrentShiftTeamReady ||
+            !wardId ||
+            !currentShiftTeamId ||
+            !orderedShift ||
+            loadingSnapshotId != null ||
+            isAiGenerating ||
+            conversationBusyRef.current
+        )
+            return;
 
         setSnapshotLoadTarget(null);
         setLoadingSnapshotId(snapshotId);
 
         try {
             const requestContext = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+            const requestedRevision = useShiftEditorStore.getState().draftRevision;
             const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
             const latestContext = currentAiContextRef.current;
 
@@ -1163,6 +1173,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 return;
             }
 
+            if (conversationBusyRef.current || useShiftEditorStore.getState().draftRevision !== requestedRevision) {
+                toast.error(t('aiAdjust.localError.draftChanged'));
+
+                return;
+            }
+
             const latestDoc = useShiftEditorStore.getState().doc;
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
                 fixedCells: {},
@@ -1171,15 +1187,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 lastCellLocksByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCellLocks ?? []])),
             });
 
-            commands.init(nextDoc);
+            // init() resets workspace feature flags, which switches the sidebar transport.
+            commands.restoreSnapshotDoc(nextDoc);
             markEditableDocSaved(nextDoc);
             markLastAiGeneratedDoc(null);
             resetAiStatus();
-            setHasCompletedAiFill(false);
-            setLastAppliedObservation(undefined);
-            setFeedbackObservation(undefined);
-            setHasGeneratedSchedule(false);
-            writeAutofillCompletion(completionStorageKey, false);
+            // Loading a saved grid changes the editor, not the conversation's generation history.
 
             const stateAfterInit = useShiftEditorStore.getState();
 

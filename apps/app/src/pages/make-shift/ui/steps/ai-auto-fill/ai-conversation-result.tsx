@@ -31,21 +31,21 @@ export function AiConversationResult({
     const applied = saved && appliedLocally;
     const visibleMessageKey = saved ? undefined : messageKey;
     const appliedStatusKey =
-        applied && authoring?.requestState === 'NEEDS_REVIEW'
+        saved && authoring?.requestState === 'NEEDS_REVIEW'
             ? 'selectedReview'
-            : applied && authoring?.requestState === 'PARTIAL'
+            : saved && authoring?.requestState === 'PARTIAL'
               ? 'PARTIAL'
               : undefined;
     const changedCount = operation.result?.changedCells.length;
     const succeeded =
         operation.executionStatus === 'SUCCEEDED' &&
-        applied &&
+        saved &&
         changedCount !== undefined &&
         changedCount > 0 &&
         (!authoring ||
             (authoring.draftState === 'APPLICABLE' &&
                 !['PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT'].includes(authoring.requestState)));
-    const showPartialCoverage = !applied && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
+    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = appliedStatusKey
         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
         : review
@@ -78,7 +78,7 @@ export function AiConversationResult({
             }
             attempt={saved ? undefined : attempt}
             outcome={
-                !applied && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
+                !saved && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
                     ? 'review'
                     : succeeded
                       ? 'success'
@@ -95,8 +95,8 @@ export function AiConversationResult({
                           ? t('aiAutofillUi.conversationResult.autofillSucceeded')
                           : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
-            changedCount={applied ? changedCount : undefined}
-            changeSummary={applied ? changeSummary : undefined}
+            changedCount={saved ? changedCount : undefined}
+            changeSummary={saved ? changeSummary : undefined}
             description={
                 authoring
                     ? applied

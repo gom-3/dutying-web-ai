@@ -9,7 +9,7 @@ import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
+import ConfirmActionDialog, {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
 import {describeAdjustChanges} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
@@ -105,7 +105,13 @@ type TComposerContext = {
     previousId?: string;
     change: 'REPLACE' | 'ADD' | 'RESET';
 };
-type TLocalTranscript = {conversationId: number | null; events: TLocalEvent[]; recoveredFailures: string[]; composer?: TComposerContext};
+type TLocalTranscript = {
+    conversationId: number | null;
+    events: TLocalEvent[];
+    recoveredFailures: string[];
+    composer?: TComposerContext;
+    restoredResult?: {operationId: string; signature: string; sourceVersionId?: string};
+};
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
@@ -148,6 +154,7 @@ export default function AiConversationSidebar({
     const [awaitingAdjustment, setAwaitingAdjustment] = useState(false);
     const awaitingAdjustmentRef = useRef(false);
     const reviewedPreparation = useRef<string | null>(null);
+    const preparationReviewTurn = useRef<TConversationTurn | null>(null);
     const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
     const chatOwner = useAuthStore((state) => scheduleChatOwner(state.accountId, state.accessToken));
     const chatKey = scheduleChatKey(chatOwner, wardId, teamId, year, month);
@@ -226,6 +233,8 @@ export default function AiConversationSidebar({
     const [preview, setPreview] = useState<TPreview | null>(null);
     const previewRequest = useRef(0);
     const sidebarOpen = useRef(open);
+    const [restoredResult, setRestoredResult] = useState(storedTranscript?.restoredResult);
+    const [reapplyTarget, setReapplyTarget] = useState<TConversationOperation | null>(null);
     const [pendingBranch, setPendingBranch] = useState<TConversationDetail | null>(null);
     const [rebuild, setRebuild] = useState(false);
     const [selectedSuggestion, setSelectedSuggestion] = useState<{op: TConversationOperation; suggestion: TFailureSuggestion}>();
@@ -246,6 +255,7 @@ export default function AiConversationSidebar({
 
         if (transcriptConversation.current !== null && transcriptConversation.current !== next.conversation.conversationId) {
             setLocalEvents([]);
+            setRestoredResult(undefined);
             recoveredFailures.current.clear();
             setEditingRequest(null);
             setPreviousId(undefined);
@@ -332,6 +342,13 @@ export default function AiConversationSidebar({
     const localDirty =
         conditionsContextInvalid ||
         (detail ? signature({...localDraft, carryOverCells: localDraft.carryOverCells ?? []}) !== signature(detail.draft) : false);
+    const isResultApplied = (operation: TConversationOperation) =>
+        !localDirty &&
+        Boolean(
+            detail &&
+                (detail.conversation.currentVersionId === operation.resultVersionId ||
+                    (restoredResult?.operationId === operation.operationId && restoredResult.signature === signature(detail.draft))),
+        );
     const sync = async () => {
         const work = syncTail.current
             .catch(() => undefined)
@@ -421,7 +438,7 @@ export default function AiConversationSidebar({
             }
         }
     };
-    const restore = (version: TResultVersion) => {
+    const restore = (version: TResultVersion, fullSnapshot = false) => {
         if (!mounted.current) return;
 
         const current = useShiftEditorStore.getState().doc;
@@ -435,7 +452,10 @@ export default function AiConversationSidebar({
 
             if (carry.length) row.lastCells = carry.map((cell) => cell.shiftCode ?? null);
         });
-        commands.applyAdjustedDoc(next);
+
+        if (fullSnapshot) commands.restoreSnapshotDoc(next);
+        else commands.applyAdjustedDoc(next);
+
         commands.clearScheduleValidationFromApi();
         onApplied();
     };
@@ -738,6 +758,9 @@ export default function AiConversationSidebar({
         const conversationId = detailRef.current.conversation.conversationId;
         const contextHash = detailRef.current.contextHash;
         const plan = turn.semanticPlan;
+
+        preparationReviewTurn.current = turn;
+
         const initialGeneration = initialGenerationPending.current && !plan.generationIntent;
         const preparationKey = () => {
             const draft = dto();
@@ -798,12 +821,26 @@ export default function AiConversationSidebar({
 
                 let reviewed = turn;
 
+                const unsentOperation = plan.generationIntent || initialGeneration ? 'GENERATE' : 'ADJUST';
+
+                // Refresh only rebinds a live plan; the server cannot renew an expired one.
+                if (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
+                    throw new AiConversationInputError('expiredPlan', unsentOperation);
+
                 if (
                     !isConversationConfirmationCurrent(synced, turn, false) ||
-                    plan.sourceVersionId !== synced.conversation.currentVersionId ||
-                    (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
+                    plan.sourceVersionId !== synced.conversation.currentVersionId
                 ) {
-                    reviewed = await api.refreshPlan(conversationId, plan.planId, synced.conversation.revision, plan.planHash);
+                    try {
+                        reviewed = await api.refreshPlan(conversationId, plan.planId, synced.conversation.revision, plan.planHash);
+                    } catch (cause) {
+                        // No calculation has been submitted. Rechecking execution history cannot recover a rejected plan.
+                        if ([400, 409, 422].includes((cause as {code?: number}).code ?? 0))
+                            throw new AiConversationInputError('staleRequest', unsentOperation);
+
+                        throw cause;
+                    }
+
                     await refresh();
                 }
 
@@ -866,6 +903,7 @@ export default function AiConversationSidebar({
 
             if (confirmedId && mounted.current && sidebarOpen.current) {
                 reviewedPreparation.current = null;
+                preparationReviewTurn.current = null;
 
                 if (initialGeneration) {
                     initialGenerationPending.current = false;
@@ -1164,6 +1202,7 @@ export default function AiConversationSidebar({
     }, [api, previewSourceId]);
     const resetSectionUi = () => {
         initialGenerationPending.current = false;
+        preparationReviewTurn.current = null;
         discardedPreparationId.current = autofillFlow?.id ?? null;
         reviewedPreparation.current = null;
         previewRequest.current += 1;
@@ -1210,23 +1249,55 @@ export default function AiConversationSidebar({
             resetSectionUi();
             restore(nextDetail.draft);
         });
+    const reapplyOperation = (operation: TConversationOperation) =>
+        run(async () => {
+            if (!operation.resultVersionId || sessionStorage.getItem(pendingKey)) throw new AiConversationInputError('pendingExecution');
+
+            const uiRevision = useShiftEditorStore.getState().draftRevision;
+            const current = await sync(); // Preserve manual edits before replacing the draft.
+            const version = await api.version(operation.resultVersionId);
+
+            if (!mounted.current) return;
+
+            if (version.versionId !== operation.resultVersionId || useShiftEditorStore.getState().draftRevision !== uiRevision)
+                throw new AiConversationInputError('draftChanged');
+
+            const next = await api.sync(current.conversation.conversationId, {
+                expectedRevision: current.conversation.revision,
+                cells: version.cells,
+                rowOrder: version.rowOrder,
+                carryOverCells: version.carryOverCells,
+            });
+
+            install(next);
+
+            if (!mounted.current) return;
+
+            if (useShiftEditorStore.getState().draftRevision !== uiRevision) throw new AiConversationInputError('draftChanged');
+
+            setRestoredResult({
+                operationId: operation.operationId,
+                signature: signature(next.draft),
+                sourceVersionId: current.draft.versionId,
+            });
+            restore(next.draft, true);
+        });
     const undoOperation = (operation: TConversationOperation) =>
         run(async () => {
             const current = detailRef.current;
             const uiRevision = useShiftEditorStore.getState().draftRevision;
 
-            if (
-                !current ||
-                localDirty ||
-                current.conversation.currentVersionId !== operation.resultVersionId ||
-                sessionStorage.getItem(pendingKey)
-            ) {
+            if (!current || localDirty || !isResultApplied(operation) || sessionStorage.getItem(pendingKey)) {
                 setNotice(t('aiConversationSidebar.authoring.undoStale'));
 
                 return;
             }
 
-            const source = await api.version(operation.sourceVersionId);
+            const undoVersionId =
+                restoredResult?.operationId === operation.operationId && restoredResult.signature === signature(current.draft)
+                    ? (restoredResult.sourceVersionId ?? operation.sourceVersionId)
+                    : operation.sourceVersionId;
+            const source = await api.version(undoVersionId);
 
             if (useShiftEditorStore.getState().draftRevision !== uiRevision) {
                 setNotice(t('aiConversationSidebar.authoring.undoStale'));
@@ -1244,7 +1315,7 @@ export default function AiConversationSidebar({
             install(next);
 
             if (useShiftEditorStore.getState().draftRevision === uiRevision) {
-                restore(next.draft);
+                restore(next.draft, true);
                 void reportScheduleJourney(operation.result?.observation, {
                     type: 'CLIENT_UNDONE',
                     draftRevision: useShiftEditorStore.getState().draftRevision,
@@ -1421,6 +1492,7 @@ export default function AiConversationSidebar({
             !writeScheduleChat(transcriptKey, {
                 conversationId: detail?.conversation.conversationId ?? transcriptConversation.current,
                 events: localEvents,
+                restoredResult,
                 recoveredFailures: [...recoveredFailures.current],
                 composer: {
                     editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
@@ -1429,7 +1501,7 @@ export default function AiConversationSidebar({
                 },
             }),
         );
-    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change]);
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, restoredResult]);
 
     useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
@@ -1612,6 +1684,7 @@ export default function AiConversationSidebar({
         writeScheduleChat(transcriptKey, {
             conversationId: detail!.conversation.conversationId,
             events: localEvents,
+            restoredResult,
             recoveredFailures: [...recoveredFailures.current],
             composer: {editingEventId: editingRequest?.eventId, previousId, change},
         });
@@ -1660,8 +1733,12 @@ export default function AiConversationSidebar({
 
     const reviseUnsentRequest = () => {
         const current = detailRef.current;
-        const turn = current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
+        const turn =
+            preparationReviewTurn.current ??
+            current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
         const preservedText = text;
+
+        preparationReviewTurn.current = null;
 
         if (turn) editRequest(turn);
         else setEntryChoice('modify');
@@ -1816,16 +1893,33 @@ export default function AiConversationSidebar({
 
         return (
             <>
-                {operation.result && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
-                    <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={busy || running || localDirty || detail.conversation.currentVersionId !== operation.resultVersionId}
-                        onClick={() => void undoOperation(operation)}
-                    >
-                        {t('aiConversationSidebar.authoring.undo')}
+                {operation.result && operation.applyStatus === 'APPLIED' && operation.resultVersionId && (
+                    <p role="status" className="mt-3 text-[13px] text-[#667085]">
+                        {t(
+                            isResultApplied(operation)
+                                ? 'aiConversationSidebar.authoring.currentResult'
+                                : 'aiConversationSidebar.authoring.savedResult',
+                        )}
+                    </p>
+                )}
+                {operation.result && operation.applyStatus === 'APPLIED' && operation.resultVersionId && !isResultApplied(operation) && (
+                    <button type="button" className={buttonClass} disabled={busy || running} onClick={() => setReapplyTarget(operation)}>
+                        {t('aiConversationSidebar.authoring.reapply')}
                     </button>
                 )}
+                {operation.result &&
+                    operation.applyStatus === 'APPLIED' &&
+                    operation.result.changedCells.length > 0 &&
+                    isResultApplied(operation) && (
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={busy || running || !isResultApplied(operation)}
+                            onClick={() => void undoOperation(operation)}
+                        >
+                            {t('aiConversationSidebar.authoring.undo')}
+                        </button>
+                    )}
             </>
         );
     };
@@ -2122,14 +2216,10 @@ export default function AiConversationSidebar({
                                         <JourneyObserved key={event.id} observation={event.operation.result?.observation} inert={preparing}>
                                             <AiConversationResult
                                                 operation={event.operation}
-                                                appliedLocally={
-                                                    !localDirty && detail.conversation.currentVersionId === event.operation.resultVersionId
-                                                }
+                                                appliedLocally={isResultApplied(event.operation)}
                                                 attempt={operationAttempt(detail, event.operation.operationId)}
                                                 changeSummary={
                                                     event.operation.applyStatus === 'APPLIED' &&
-                                                    !localDirty &&
-                                                    detail.conversation.currentVersionId === event.operation.resultVersionId &&
                                                     event.operation.result?.changedCells.length ? (
                                                         <AiConversationChanges
                                                             key={`${event.operation.operationId}:${event.operation.resultVersionId}`}
@@ -2619,6 +2709,21 @@ export default function AiConversationSidebar({
                             </button>
                         </section>
                     )}
+                    <ConfirmActionDialog
+                        open={open && Boolean(reapplyTarget)}
+                        zIndex={1700}
+                        title={t('aiConversationSidebar.authoring.reapplyTitle')}
+                        description={t('aiConversationSidebar.authoring.reapplyDescription')}
+                        confirmLabel={t('aiConversationSidebar.authoring.reapply')}
+                        onClose={() => setReapplyTarget(null)}
+                        onConfirm={() => {
+                            const target = reapplyTarget;
+
+                            setReapplyTarget(null);
+
+                            if (target && !busy && !running) void reapplyOperation(target);
+                        }}
+                    />
                     {open && preview && (
                         <AiConversationSnapshot
                             version={preview.version}
