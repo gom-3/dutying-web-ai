@@ -1007,7 +1007,19 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByRole('img', {name: '자동채우기 성공'})).toBeVisible();
         expect(within(result).getByTestId('conversation-result-preview')).toBeVisible();
         expect(within(result).getByLabelText('변경된 근무 1칸')).toHaveTextContent(/^1칸 변경$/);
-        expect(await within(result).findByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('김 간호사 · 11월 1일');
+        const changes = await within(result).findByRole('region', {name: '실제 변경 내역'});
+        const disclosure = changes.querySelector('details')!;
+
+        expect(disclosure).not.toHaveAttribute('open');
+        await userEvent.click(disclosure.querySelector('summary')!);
+
+        const nurseDisclosure = disclosure.querySelector('details')!;
+
+        expect(nurseDisclosure).not.toHaveAttribute('open');
+        expect(nurseDisclosure.querySelector('summary')).toHaveTextContent('김 간호사');
+        await userEvent.click(nurseDisclosure.querySelector('summary')!);
+        expect(nurseDisclosure).toHaveAttribute('open');
+        expect(changes).toHaveTextContent('11월 1일');
         expect(within(result).getByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('O → D');
         expect(within(result).queryByText('1칸이 달라졌어요.')).not.toBeInTheDocument();
         expect(within(result).queryByText(/만들 당시의 결과예요/)).not.toBeInTheDocument();
