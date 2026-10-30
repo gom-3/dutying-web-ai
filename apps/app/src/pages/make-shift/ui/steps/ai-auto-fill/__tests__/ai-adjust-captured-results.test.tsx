@@ -72,7 +72,7 @@ describe('captured legacy schedule results', () => {
         expect(screen.getByRole('textbox')).toHaveFocus();
     });
 
-    it('passes immutable before and after data to the result preview from the execution boundary', async () => {
+    it('applies to the main roster without mounting a duplicate result preview', async () => {
         const apply = vi.fn(async (): Promise<TAdjustApplyResult> => {
             useShiftEditorStore.getState().setDoc({...structuredClone(original), rows: [{workerId: '1', cells: ['O']}]});
 
@@ -102,17 +102,9 @@ describe('captured legacy schedule results', () => {
         await screen.findByRole('button', {name: 'aiAdjust.chat.applyReply'});
         useShiftEditorStore.getState().setDoc({...structuredClone(original), rows: [{workerId: '1', cells: ['N']}]});
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        await screen.findByTestId('captured-result');
-
-        const snapshot = lastSnapshot();
-
-        expect(snapshot.before?.rows[0]?.cells).toEqual(['N']);
-        expect(snapshot.doc.rows[0]?.cells).toEqual(['O']);
-        act(() => {
-            useShiftEditorStore.getState().doc.rows[0]!.cells[0] = 'E';
-        });
-        expect(snapshot.before?.rows[0]?.cells).toEqual(['N']);
-        expect(snapshot.doc.rows[0]?.cells).toEqual(['O']);
+        await screen.findByRole('region', {name: 'aiAdjust.snapshot.result'});
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['O']);
+        expect(capture).not.toHaveBeenCalled();
         expect(apply).toHaveBeenCalledOnce();
     });
 

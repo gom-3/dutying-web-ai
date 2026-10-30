@@ -42,41 +42,45 @@ beforeEach(() => {
 });
 
 describe('local UI review', () => {
-    it('[GEN-FAIL-RETRY] retains a failed autofill in chat after retry succeeds and the page reloads', async () => {
-        const page = render(<Review />);
-        const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        const before = structuredClone(useShiftEditorStore.getState().doc);
-        failNextReviewExecution('TIME_LIMIT', 'TIME_LIMIT_NO_SOLUTION');
-        await userEvent.click(await chat().findByRole('button', {name: '한 번 더 채워볼게요'}));
-        await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
-        const failure = await chat().findByRole('alert');
-        expect(failure).toHaveTextContent('자동채우기를 마치지 못했어요.');
-        expect(failure).toHaveTextContent('정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
-        expect(within(failure).getByRole('img', {name: '자동채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
-        expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        expect(chat().queryByText(/근무표를 채웠어요./)).not.toBeInTheDocument();
-        expect(useShiftEditorStore.getState().doc).toEqual(before);
-        await userEvent.click(chat().getByRole('button', {name: '다시 시도하기'}));
-        const retryQuestion = chat().getByText('다시 자동채우기 할까요?');
-        expect(failure.compareDocumentPosition(retryQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-        expect(chat().queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
-        await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
-        expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
-        expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
-        expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요.');
-        expect(chat().getAllByRole('button', {name: '근무표 살펴보기'})).toHaveLength(1);
-        saveReviewFixture();
-        page.unmount();
-        expect(restoreReviewFixture()).toBe(true);
-        render(<Review />);
-        expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
-        expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
-        expect(chat().getByRole('alert')).toHaveTextContent('기존 근무표는 그대로예요.');
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    }, REVIEW_TIMEOUT_MS);
     it(
-        'restores an earlier autofill and its before/after tables after a page reload',
+        '[GEN-FAIL-RETRY] retains a failed autofill in chat after retry succeeds and the page reloads',
+        async () => {
+            const page = render(<Review />);
+            const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            const before = structuredClone(useShiftEditorStore.getState().doc);
+            failNextReviewExecution('TIME_LIMIT', 'TIME_LIMIT_NO_SOLUTION');
+            await userEvent.click(await chat().findByRole('button', {name: '한 번 더 채워볼게요'}));
+            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            const failure = await chat().findByRole('alert');
+            expect(failure).toHaveTextContent('자동채우기를 마치지 못했어요.');
+            expect(failure).toHaveTextContent('정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
+            expect(within(failure).getByRole('img', {name: '자동채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
+            expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            expect(chat().queryByText(/근무표를 채웠어요./)).not.toBeInTheDocument();
+            expect(useShiftEditorStore.getState().doc).toEqual(before);
+            await userEvent.click(chat().getByRole('button', {name: '다시 시도하기'}));
+            const retryQuestion = chat().getByText('다시 자동채우기 할까요?');
+            expect(failure.compareDocumentPosition(retryQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+            expect(chat().queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
+            expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
+            expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요.');
+            expect(chat().queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
+            saveReviewFixture();
+            page.unmount();
+            expect(restoreReviewFixture()).toBe(true);
+            render(<Review />);
+            expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
+            expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
+            expect(chat().getByRole('alert')).toHaveTextContent('기존 근무표는 그대로예요.');
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        },
+        REVIEW_TIMEOUT_MS,
+    );
+    it(
+        'restores the generated roster after reload without a duplicate preview',
         async () => {
             const page = render(<Review />);
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
@@ -94,142 +98,149 @@ describe('local UI review', () => {
             render(<Review />);
             expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
-            await userEvent.click(chat().getByRole('button', {name: '근무표 살펴보기'}));
-            const comparison = within(await screen.findByRole('dialog'));
-            await userEvent.click(comparison.getByRole('button', {name: '변경 전'}));
-            expect(comparison.getByRole('button', {name: '변경 전'})).toHaveAttribute('aria-pressed', 'true');
-            await userEvent.click(comparison.getByRole('button', {name: '변경 후'}));
-            expect(comparison.getByRole('button', {name: '변경 후'})).toHaveAttribute('aria-pressed', 'true');
-            await userEvent.click(comparison.getByRole('button', {name: '닫기'}));
+            expect(chat().queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
             expect(chat().getByText(/^근무표를 채웠어요.$/)).toBeVisible();
         },
         REVIEW_TIMEOUT_MS,
     );
-    it('keeps the schedule visible through regenerate, new chat, adjustment, close and reopen', async () => {
-        render(<Review />);
-        // Query the chat only: role/name scans across the 240 calendar cells dominate JSDOM time.
-        const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        expect(screen.queryByRole('navigation', {name: '검토 화면 선택'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', {name: '시작'})).not.toBeInTheDocument();
-        const regenerate = await chat().findByRole('button', {name: '한 번 더 채워볼게요'});
+    it(
+        'keeps the schedule visible through regenerate, new chat, adjustment, close and reopen',
+        async () => {
+            render(<Review />);
+            // Query the chat only: role/name scans across the 240 calendar cells dominate JSDOM time.
+            const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            expect(screen.queryByRole('navigation', {name: '검토 화면 선택'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('link', {name: '시작'})).not.toBeInTheDocument();
+            const regenerate = await chat().findByRole('button', {name: '한 번 더 채워볼게요'});
 
-        expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
-        expect(chat().queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
-        expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
-        expect(chat().queryByText(/대상·기간·조건을 모두 포함/)).not.toBeInTheDocument();
-        await userEvent.click(regenerate);
-        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
-        await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
-        expect(await chat().findByText(/근무표를 채웠어요./)).toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
-        const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
-        await userEvent.click(chat().getByRole('button', {name: '초기화'}));
-        expect(chat().queryByText(/^근무표를 채웠어요.$/)).not.toBeInTheDocument();
-        expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
-        expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
-        expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
-        const examples = chat().getByRole('region', {name: '이렇게 요청해 보세요'});
+            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
+            expect(chat().queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
+            expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
+            expect(chat().queryByText(/대상·기간·조건을 모두 포함/)).not.toBeInTheDocument();
+            await userEvent.click(regenerate);
+            expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
+            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            expect(await chat().findByText(/근무표를 채웠어요./)).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
+            const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
+            await userEvent.click(chat().getByRole('button', {name: '초기화'}));
+            expect(chat().queryByText(/^근무표를 채웠어요.$/)).not.toBeInTheDocument();
+            expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
+            expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
+            expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
+            const examples = chat().getByRole('region', {name: '이렇게 요청해 보세요'});
 
-        expect(within(examples).getAllByRole('button')).toHaveLength(3);
-        await userEvent.click(within(examples).getByRole('button', {name: '간호사 1 1~5일 N 근무 없게 해줘'}));
-        expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue('간호사 1 1~5일 N 근무 없게 해줘');
-        expect(chat().queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
-        await userEvent.clear(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}));
-        fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {
-            target: {value: '신규 간호사 2는 11월 1~5일 N 근무 없이 배정하고, 간호사 3은 12일 O로 배정해줘.'},
-        });
-        await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
-        await userEvent.click((await chat().findAllByRole('button', {name: '이대로 수정하기'})).at(-1)!);
-        expect((await chat().findAllByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).at(-1)).toBeInTheDocument();
-        expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeEnabled();
-        await userEvent.click(chat().getByRole('button', {name: 'AI 자동채우기 닫기'}));
-        expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
-        expect(screen.queryByRole('complementary', {name: 'AI 자동채우기'})).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: 'AI 자동채우기'}));
-        expect(screen.getByRole('complementary', {name: 'AI 자동채우기'})).toBeVisible();
-        expect(chat().queryByText(/^근무표를 채웠어요.$/)).not.toBeInTheDocument();
-        expect(chat().getByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).toBeVisible();
-        expect(chat().getAllByRole('button', {name: '근무표 살펴보기'})).toHaveLength(1);
-    }, REVIEW_TIMEOUT_MS);
-    it('interprets nurse 1 and an inclusive period without leaking other requests', async () => {
-        render(<Review />);
-        const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
-        const before = structuredClone(useShiftEditorStore.getState().doc);
+            expect(within(examples).getAllByRole('button')).toHaveLength(3);
+            await userEvent.click(within(examples).getByRole('button', {name: '간호사 1 1~5일 N 근무 없게 해줘'}));
+            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue('간호사 1 1~5일 N 근무 없게 해줘');
+            expect(chat().queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
+            await userEvent.clear(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}));
+            fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {
+                target: {value: '신규 간호사 2는 11월 1~5일 N 근무 없이 배정하고, 간호사 3은 12일 O로 배정해줘.'},
+            });
+            await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
+            await userEvent.click((await chat().findAllByRole('button', {name: '이대로 수정하기'})).at(-1)!);
+            expect((await chat().findAllByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).at(-1)).toBeInTheDocument();
+            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeEnabled();
+            await userEvent.click(chat().getByRole('button', {name: 'AI 자동채우기 닫기'}));
+            expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
+            expect(screen.queryByRole('complementary', {name: 'AI 자동채우기'})).not.toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', {name: 'AI 자동채우기'}));
+            expect(screen.getByRole('complementary', {name: 'AI 자동채우기'})).toBeVisible();
+            expect(chat().queryByText(/^근무표를 채웠어요.$/)).not.toBeInTheDocument();
+            expect(chat().getByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).toBeVisible();
+            expect(chat().queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
+        },
+        REVIEW_TIMEOUT_MS,
+    );
+    it(
+        'interprets nurse 1 and an inclusive period without leaking other requests',
+        async () => {
+            render(<Review />);
+            const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
+            const before = structuredClone(useShiftEditorStore.getState().doc);
 
-        fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {target: {value: '간호사 1 5일까지 N 없게 해줘.'}});
-        await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
-        const review = (await chat().findAllByRole('region', {name: '요청 조건 확인'})).at(-1)!;
+            fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {target: {value: '간호사 1 5일까지 N 없게 해줘.'}});
+            await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
+            const review = (await chat().findAllByRole('region', {name: '요청 조건 확인'})).at(-1)!;
 
-        expect(within(review).getByText('간호사 1님')).toBeVisible();
-        expect(within(review).getByText(/11월 1~5일/)).toBeVisible();
-        expect(within(review).queryByText('신규 간호사 2')).not.toBeInTheDocument();
-        expect(within(review).queryByText('간호사 3')).not.toBeInTheDocument();
-        expect(within(review).getAllByRole('listitem')).toHaveLength(1);
-        await userEvent.click(within(review).getByRole('button', {name: '이대로 수정하기'}));
-        expect((await chat().findAllByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).at(-1)).toBeVisible();
-        const after = useShiftEditorStore.getState().doc;
+            expect(within(review).getByText('간호사 1님')).toBeVisible();
+            expect(within(review).getByText(/11월 1~5일/)).toBeVisible();
+            expect(within(review).queryByText('신규 간호사 2')).not.toBeInTheDocument();
+            expect(within(review).queryByText('간호사 3')).not.toBeInTheDocument();
+            expect(within(review).getAllByRole('listitem')).toHaveLength(1);
+            await userEvent.click(within(review).getByRole('button', {name: '이대로 수정하기'}));
+            expect((await chat().findAllByText(/^요청하신 내용으로 \d+칸 변경했어요\.$/)).at(-1)).toBeVisible();
+            const after = useShiftEditorStore.getState().doc;
 
-        expect(before.rows[0].cells.slice(0, 5)).toContain('N');
-        expect(after.rows[0].cells.slice(0, 5)).not.toContain('N');
-        expect(after.rows[0].cells.slice(5)).toEqual(before.rows[0].cells.slice(5));
-        expect(after.rows.slice(1).map((row) => ({workerId: row.workerId, cells: row.cells}))).toEqual(
-            before.rows.slice(1).map((row) => ({workerId: row.workerId, cells: row.cells})),
-        );
-        expect(after.rows.every((row) => (row.lastCells ?? []).every((cell) => cell === null))).toBe(true);
-    }, REVIEW_TIMEOUT_MS);
-    it('uses a specific model clarification and retains the original request when answered', async () => {
-        render(<Review />);
-        const chat = () => within(screen.getByLabelText('AI 자동채우기'));
-        expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
-        const ambiguous = '간호사 1에 1~5일 근무를 없애줘.';
-        const question = '간호사 1의 1~5일을 빈칸으로 지울까요, O 근무를 배정할까요?';
-        const llm = vi.fn(async (_url: string, options: RequestInit) => {
-            const request = JSON.parse(options.body as string);
-            const answered = request.text.includes('추가 답변:');
-            return new Response(
-                JSON.stringify({
-                    status: answered ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION',
-                    summary: answered ? '요청 조건을 확인했어요.' : question,
-                    resolvedIntents: answered
-                        ? [
-                              {
-                                  intentId: 'live-intent',
-                                  action: 'ASSIGN',
-                                  nurseIds: [1],
-                                  dates: ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'],
-                                  shiftCodes: ['O'],
-                                  quantifier: 'EACH',
-                                  modality: 'HARD',
-                                  operator: null,
-                                  count: null,
-                                  sourceSpan: {quote: request.text},
-                              },
-                          ]
-                        : [],
-                    verificationReport: {
-                        reasonCodes: [],
-                        groundingStatus: 'CHECKED',
-                        coverageStatus: 'CHECKED',
-                        compileEquivalenceStatus: 'VERIFIED',
-                    },
-                }),
-                {status: 200, headers: {'Content-Type': 'application/json'}},
+            expect(before.rows[0].cells.slice(0, 5)).toContain('N');
+            expect(after.rows[0].cells.slice(0, 5)).not.toContain('N');
+            expect(after.rows[0].cells.slice(5)).toEqual(before.rows[0].cells.slice(5));
+            expect(after.rows.slice(1).map((row) => ({workerId: row.workerId, cells: row.cells}))).toEqual(
+                before.rows.slice(1).map((row) => ({workerId: row.workerId, cells: row.cells})),
             );
-        });
-        vi.stubGlobal('fetch', llm);
-        fireEvent.change(chat().getByRole('textbox'), {target: {value: ambiguous}});
-        await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
-        expect(await chat().findByText(question)).toBeVisible();
-        expect(llm).toHaveBeenCalledOnce();
-        expect(chat().queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
-        fireEvent.change(chat().getByRole('textbox'), {target: {value: 'O로 배정해줘.'}});
-        await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
-        expect(await chat().findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
-        expect(llm).toHaveBeenCalledTimes(2);
-        expect(JSON.parse(llm.mock.calls[1][1].body as string).text).toBe(`${ambiguous}\n추가 답변: O로 배정해줘.`);
-        expect(chat().getByText('O로 배정해줘.')).toBeVisible();
-        expect(chat().queryByText(`${ambiguous}\n추가 답변: O로 배정해줘.`)).not.toBeInTheDocument();
-    }, REVIEW_TIMEOUT_MS);
+            expect(after.rows.every((row) => (row.lastCells ?? []).every((cell) => cell === null))).toBe(true);
+        },
+        REVIEW_TIMEOUT_MS,
+    );
+    it(
+        'uses a specific model clarification and retains the original request when answered',
+        async () => {
+            render(<Review />);
+            const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
+            const ambiguous = '간호사 1에 1~5일 근무를 없애줘.';
+            const question = '간호사 1의 1~5일을 빈칸으로 지울까요, O 근무를 배정할까요?';
+            const llm = vi.fn(async (_url: string, options: RequestInit) => {
+                const request = JSON.parse(options.body as string);
+                const answered = request.text.includes('추가 답변:');
+                return new Response(
+                    JSON.stringify({
+                        status: answered ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION',
+                        summary: answered ? '요청 조건을 확인했어요.' : question,
+                        resolvedIntents: answered
+                            ? [
+                                  {
+                                      intentId: 'live-intent',
+                                      action: 'ASSIGN',
+                                      nurseIds: [1],
+                                      dates: ['2026-11-01', '2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05'],
+                                      shiftCodes: ['O'],
+                                      quantifier: 'EACH',
+                                      modality: 'HARD',
+                                      operator: null,
+                                      count: null,
+                                      sourceSpan: {quote: request.text},
+                                  },
+                              ]
+                            : [],
+                        verificationReport: {
+                            reasonCodes: [],
+                            groundingStatus: 'CHECKED',
+                            coverageStatus: 'CHECKED',
+                            compileEquivalenceStatus: 'VERIFIED',
+                        },
+                    }),
+                    {status: 200, headers: {'Content-Type': 'application/json'}},
+                );
+            });
+            vi.stubGlobal('fetch', llm);
+            fireEvent.change(chat().getByRole('textbox'), {target: {value: ambiguous}});
+            await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
+            expect(await chat().findByText(question)).toBeVisible();
+            expect(llm).toHaveBeenCalledOnce();
+            expect(chat().queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
+            fireEvent.change(chat().getByRole('textbox'), {target: {value: 'O로 배정해줘.'}});
+            await userEvent.click(chat().getByRole('button', {name: '요청 보내기'}));
+            expect(await chat().findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+            expect(llm).toHaveBeenCalledTimes(2);
+            expect(JSON.parse(llm.mock.calls[1][1].body as string).text).toBe(`${ambiguous}\n추가 답변: O로 배정해줘.`);
+            expect(chat().getByText('O로 배정해줘.')).toBeVisible();
+            expect(chat().queryByText(`${ambiguous}\n추가 답변: O로 배정해줘.`)).not.toBeInTheDocument();
+        },
+        REVIEW_TIMEOUT_MS,
+    );
 });

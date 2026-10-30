@@ -1816,7 +1816,7 @@ export default function AiConversationSidebar({
 
         return (
             <>
-                {operation.result?.authoringOutcome && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
+                {operation.result && operation.applyStatus === 'APPLIED' && operation.result.changedCells.length > 0 && (
                     <button
                         type="button"
                         className={buttonClass}
