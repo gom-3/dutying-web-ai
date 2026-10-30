@@ -27,7 +27,8 @@ export function AiConversationResult({
     const authoring = operation.result ? authoringOutcome(operation.result) : undefined;
     const messageKey = operation.result ? authoringMessageKey(operation.result) : undefined;
     const review = operation.result && isGenerateReviewDraft(operation.result);
-    const saved = operation.applyStatus === 'APPLIED';
+    const saved = operation.applyStatus === 'APPLIED' || appliedLocally;
+    const savedForLater = operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && !appliedLocally && Boolean(operation.resultVersionId);
     const applied = saved && appliedLocally;
     const visibleMessageKey = saved ? undefined : messageKey;
     const appliedStatusKey =
@@ -62,7 +63,7 @@ export function AiConversationResult({
     const scope = saved
         ? null
         : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
-          ? t('aiAutofillUi.conversationResult.yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing')
+          ? t('aiConversationSidebar.draftChangedResultSaved')
           : t('aiAutofillUi.conversationResult.thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing');
 
     return (
@@ -76,7 +77,7 @@ export function AiConversationResult({
                         ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
                         : title
             }
-            attempt={saved ? undefined : attempt}
+            attempt={saved || savedForLater ? undefined : attempt}
             outcome={
                 !saved && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
                     ? 'review'
@@ -96,7 +97,7 @@ export function AiConversationResult({
                           : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
             changedCount={saved ? changedCount : undefined}
-            changeSummary={saved ? changeSummary : undefined}
+            changeSummary={saved || savedForLater ? changeSummary : undefined}
             description={
                 authoring
                     ? applied

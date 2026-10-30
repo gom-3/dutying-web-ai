@@ -759,8 +759,11 @@ describe('persistent schedule sidebar', () => {
         ];
         mocks.cancelOperation.mockImplementationOnce(async (operationId: string) => {
             expect(operationId).toBe(operation.operationId);
+
             const cancelled = {...current.operations[0], executionStatus: 'CANCELLED' as const, progress: null};
+
             current = {...current, operations: [cancelled]};
+
             return cancelled;
         });
         renderSidebar();
@@ -1042,6 +1045,7 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByRole('img', {name: '자동채우기 성공'})).toBeVisible();
         expect(within(result).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(result).getByLabelText('변경된 근무 1칸')).toHaveTextContent(/^1칸 변경$/);
+
         const changes = await within(result).findByRole('region', {name: '실제 변경 내역'});
         const disclosure = changes.querySelector('details')!;
 
@@ -1068,7 +1072,7 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).getByRole('group', {name: i18n.t('aiAdjust.snapshot.nextAction')})).toBeVisible();
     });
 
-    it('keeps the next choices inside the saved success result and confirms the schedule outside that result', async () => {
+    it('keeps next choices in the saved result without a duplicate schedule confirmation', async () => {
         const onConfirm = vi.fn();
         const onPrepareGeneration = vi.fn();
 
@@ -1076,16 +1080,15 @@ describe('persistent schedule sidebar', () => {
         renderSidebar({resultActions: {canConfirm: true, onConfirm}, onPrepareGeneration});
 
         const result = await screen.findByRole('region', {name: '근무표 결과'});
-        const confirm = screen.getByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')});
+
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
 
         expect(within(result).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(result).getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
         expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.getAllByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toHaveLength(1);
         expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
-        expect(result).not.toContainElement(confirm);
-        await userEvent.click(confirm);
-        expect(onConfirm).toHaveBeenCalledOnce();
+        expect(onConfirm).not.toHaveBeenCalled();
         expect(onPrepareGeneration).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
@@ -1124,13 +1127,18 @@ describe('persistent schedule sidebar', () => {
     it('opens direct editing only from the latest result without regenerating, clearing or fixing the schedule', async () => {
         const onEditSchedule = vi.fn();
         const onPrepareGeneration = vi.fn();
+
         current.operations = [
             {...operation, result: successfulResult},
             {...operation, operationId: 'generate:latest', sequence: 2, resultVersionId: 'result:latest', result: successfulResult},
         ];
+
         const before = structuredClone(useShiftEditorStore.getState().doc);
+
         renderSidebar({onEditSchedule, onPrepareGeneration});
+
         const results = await screen.findAllByRole('region', {name: '근무표 결과'});
+
         expect(
             within(results[0]).queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}),
         ).not.toBeInTheDocument();
@@ -1464,20 +1472,16 @@ describe('persistent schedule sidebar', () => {
         },
     );
 
-    it.each([false, true])('uses schedule confirmation eligibility even when every shift is fixed: %s', async (canConfirm) => {
+    it.each([false, true])('does not offer duplicate confirmation even when every shift is fixed: %s', async (canConfirm) => {
         const onConfirm = vi.fn();
         const doc = useShiftEditorStore.getState().doc;
 
         useShiftEditorStore.getState().setDoc({...doc, fixedCells: {'1|2026-11-01': true}});
         renderSidebar({resultActions: {canConfirm, onConfirm}});
 
-        const confirm = await screen.findByRole('button', {name: /^근무표 확정$|^Confirm schedule$/});
-
-        if (canConfirm) expect(confirm).toBeEnabled();
-        else expect(confirm).toBeDisabled();
-
-        await userEvent.click(confirm);
-        expect(onConfirm).toHaveBeenCalledTimes(canConfirm ? 1 : 0);
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+        expect(screen.queryByRole('button', {name: /^근무표 확정$|^Confirm schedule$/})).not.toBeInTheDocument();
+        expect(onConfirm).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
@@ -1731,11 +1735,11 @@ describe('persistent schedule sidebar', () => {
         await act(async () => {
             finish({...source, versionId: 'result:1', cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]});
         });
-        await screen.findByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.');
+        await screen.findByText('계산 중 표가 수정됐어요. 결과는 이력에 저장했어요. 원하면 이 결과로 돌아갈 수 있어요.');
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['E']);
         expectNoLocalApplicationClaim();
-        expect(screen.getByText('작성 중인 표가 바뀌어서 결과를 반영하지 않았어요. 결과를 비교해 주세요.')).toBeVisible();
+        expect(screen.getByText('계산 중 표가 수정됐어요. 결과는 이력에 저장했어요. 원하면 이 결과로 돌아갈 수 있어요.')).toBeVisible();
     });
     it('requires an explicit confirmation before rebuilding unlocked assignments', async () => {
         current.operations = [];
@@ -1782,10 +1786,14 @@ describe('persistent schedule sidebar', () => {
                 draft: {...source, versionId: 'manual:latest', cells: [{...cell, wardShiftTypeId: 3, shiftCode: 'N'}]},
                 conversation: {...current.conversation, revision, currentVersionId: 'manual:latest'},
             };
+
             const doc = useShiftEditorStore.getState().doc;
+
             useShiftEditorStore.getState().setDoc({...doc, rows: [{...doc.rows[0], cells: ['N']}]});
         }
+
         const latestCells = structuredClone(current.draft.cells);
+
         mocks.interpret.mockImplementation(async () => {
             const turn = {
                 eventId: 2,
@@ -2176,7 +2184,7 @@ describe('persistent schedule sidebar', () => {
     it('retains manual edits during a saved-result transition and resumes with the current server revision', async () => {
         mocks.startSegment.mockImplementation(async () => {
             useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
-            mocks.draftFixed = true;
+            mocks.draftShiftTypeId = 2;
             current = {
                 ...current,
                 conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
@@ -2191,6 +2199,7 @@ describe('persistent schedule sidebar', () => {
 
             return current;
         });
+
         const older = {...current, conversation: {...current.conversation, conversationId: 9}};
 
         mocks.list.mockResolvedValue([current.conversation, older.conversation]);
@@ -2218,7 +2227,7 @@ describe('persistent schedule sidebar', () => {
     it('keeps newer manual edits when they occur while resuming a saved result', async () => {
         mocks.startSegment.mockImplementation(async () => {
             useShiftEditorStore.getState().setDoc({...useShiftEditorStore.getState().doc, rows: [{workerId: '1', cells: ['E']}]});
-            mocks.draftFixed = true;
+            mocks.draftShiftTypeId = 2;
             current = {
                 ...current,
                 conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
@@ -2234,6 +2243,7 @@ describe('persistent schedule sidebar', () => {
 
             return current;
         });
+
         const older = {...current, conversation: {...current.conversation, conversationId: 9}};
 
         mocks.list.mockResolvedValue([current.conversation, older.conversation]);
@@ -2555,6 +2565,7 @@ describe('persistent schedule sidebar', () => {
                 conditionGroups: groups,
             },
         };
+
         current = {
             ...current,
             turns: [proposal],
@@ -3856,6 +3867,7 @@ describe('intent-first sidebar integration', () => {
 
     it('interprets a first-generation request once and runs its plan as GENERATE', async () => {
         enable();
+
         const text = '이번 달은 김 간호사의 주말 근무를 줄여주세요.';
         const turn = {...autoTurn(), type: 'SEMANTIC_PLAN'};
 
@@ -3884,6 +3896,7 @@ describe('intent-first sidebar integration', () => {
 
     it('keeps a reviewed first request on GENERATE after semantic confirmation', async () => {
         enable();
+
         const turn = {...autoTurn(), type: 'SEMANTIC_PLAN', semanticPlan: {...autoTurn().semanticPlan!, autoExecutable: false}};
         const prepare = vi.fn().mockResolvedValue(undefined);
 
@@ -3905,6 +3918,7 @@ describe('intent-first sidebar integration', () => {
                 interpretationId: 'intent:confirmed',
                 semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
             };
+
             current = {
                 ...current,
                 turns: [...current.turns, confirmed],
@@ -3931,11 +3945,15 @@ describe('intent-first sidebar integration', () => {
 
     it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
         enable();
+
         const turn = autoTurn();
+
         turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
         turn.semanticPlan!.deadlineAt = new Date(Date.now() - 30000).toISOString();
         installPlan(turn);
+
         const prepare = vi.fn().mockResolvedValue(undefined);
+
         mocks.confirmPlan.mockImplementationOnce(async () => {
             const confirmed = {
                 ...turn,
@@ -3943,11 +3961,13 @@ describe('intent-first sidebar integration', () => {
                 interpretationId: 'rewrite:confirmed',
                 semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
             };
+
             current = {
                 ...current,
                 turns: [...current.turns, confirmed],
                 conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
             };
+
             return confirmed;
         });
         renderSidebar({onPrepareAdjustment: prepare});
@@ -3971,11 +3991,15 @@ describe('intent-first sidebar integration', () => {
 
     it('keeps the table and rewrite request when preparation is cancelled', async () => {
         enable();
+
         const turn = autoTurn();
+
         turn.semanticPlan!.generationIntent = {start: 0, end: 19, quote: '고정한 것만 남기고 다시 짜줘'};
         installPlan(turn);
+
         const before = structuredClone(useShiftEditorStore.getState().doc);
         const prepare = vi.fn().mockRejectedValue(new Error('준비 취소'));
+
         renderSidebar({onPrepareAdjustment: prepare});
         await userEvent.click(await screen.findByRole('button', {name: '자동채우기'}));
         await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
@@ -3989,12 +4013,16 @@ describe('intent-first sidebar integration', () => {
     it('syncs only manually protected cells before interpreting a current-table request', async () => {
         enable();
         current.operations = [];
+
         const fixedBefore = {...useShiftEditorStore.getState().doc.fixedCells};
+
         mocks.sync.mockImplementationOnce(async (_id, request) => {
             current = {...current, draft: {...source, cells: request.cells}, conversation: {...current.conversation, revision: 1}};
+
             return current;
         });
         mocks.interpret.mockResolvedValueOnce({interpretationId: 'request:latest'});
+        mocks.sync.mockResolvedValue(current);
         renderSidebar({getProtectedCellKeys: () => ['1:2026-11-01']});
         await screen.findByRole('textbox');
         await userEvent.type(screen.getByRole('textbox'), '김 선생님 나이트를 줄여줘');
@@ -4274,15 +4302,19 @@ describe('intent-first sidebar integration', () => {
         async (requestState) => {
             enable();
             installPlan();
+
             const result = intentResponse({authoringOutcome: intentOutcome({requestState})});
+
             mocks.execute.mockImplementationOnce(async () => {
                 const applied = {...operation, operationType: 'ADJUST' as const, result};
+
                 current = {
                     ...current,
                     operations: [applied],
                     conversation: {...current.conversation, revision: 1, currentVersionId: 'result:1'},
                     draft: {...source, versionId: 'result:1', cells: result.changedCells},
                 };
+
                 return applied;
             });
             renderSidebar();
@@ -4352,12 +4384,17 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.startSegment).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
     });
-    it.each([false, true])('reapplies an immutable result and restores the pre-reapply draft after remount (manual=%s)', async (manual) => {
+    it.each([
+        [false, 'APPLIED'],
+        [true, 'APPLIED'],
+        [false, 'NOT_APPLIED_SOURCE_CHANGED'],
+        [true, 'NOT_APPLIED_SOURCE_CHANGED'],
+    ] as const)('restores a saved result and undoes after remount (manual=%s, status=%s)', async (manual, applyStatus) => {
         enable();
 
         const result = intentResponse();
 
-        current = {...current, operations: [{...operation, operationType: 'ADJUST', result}]};
+        current = {...current, operations: [{...operation, operationType: 'ADJUST', result, applyStatus}]};
 
         const savedVersion = {...source, versionId: 'result:1', cells: result.changedCells};
         const beforeVersion = manual ? {...source, versionId: 'manual:2', cells: [{...cell, wardShiftTypeId: 2, shiftCode: 'E'}]} : source;
@@ -4373,6 +4410,7 @@ describe('intent-first sidebar integration', () => {
         }
 
         mocks.version.mockImplementation(async (id: string) => (id === beforeVersion.versionId ? beforeVersion : savedVersion));
+
         const syncDraft = async (_id: number, request: {expectedRevision: number; cells: typeof source.cells}) => {
             mocks.draftShiftTypeId = request.cells[0]?.wardShiftTypeId ?? 4;
             current = {
@@ -4394,15 +4432,18 @@ describe('intent-first sidebar integration', () => {
             .mockImplementationOnce((doc) => useShiftEditorStore.getState().setDoc(doc));
 
         const view = renderSidebar();
-        const reapply = i18n.t('aiConversationSidebar.authoring.reapply');
+        const reapply = i18n.t(
+            applyStatus === 'APPLIED' ? 'aiConversationSidebar.authoring.reapply' : 'aiConversationSidebar.authoring.restore',
+        );
 
         await userEvent.click(await screen.findByRole('button', {name: reapply}));
+        expect(screen.queryByText('현재 표가 바뀌어 반영하지 않았어요.')).not.toBeInTheDocument();
 
         const dialog = screen.getByRole('dialog');
 
         expect(dialog).toHaveTextContent(i18n.t('aiConversationSidebar.authoring.reapplyDescription'));
         expect(mocks.sync).not.toHaveBeenCalled();
-        await userEvent.click(within(dialog).getByRole('button', {name: reapply}));
+        await userEvent.click(within(dialog).getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.reapply')}));
         await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledOnce());
         expect(mocks.sync.mock.calls[0]?.[1]).toMatchObject({
             expectedRevision: 0,
@@ -4415,12 +4456,31 @@ describe('intent-first sidebar integration', () => {
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.undo')}));
         await waitFor(() => expect(mocks.applyAdjustedDoc).toHaveBeenCalledTimes(2));
-        expect(await screen.findByRole('button', {name: reapply})).toBeEnabled();
+        expect(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.reapply')})).toBeEnabled();
         expect(current.operations).toHaveLength(1);
         expect(mocks.sync.mock.calls[mocks.sync.mock.calls.length - 1]?.[1]).toMatchObject({cells: beforeVersion.cells});
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.startSegment).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
+    });
+    it('keeps newly fixed assignments when an older saved result would overwrite them', async () => {
+        enable();
+        current = {...current, operations: [{...operation, operationType: 'ADJUST', result: intentResponse()}]};
+
+        const doc = useShiftEditorStore.getState().doc;
+
+        useShiftEditorStore.getState().setDoc({...doc, fixedCells: {'1|2026-11-01': true}});
+        mocks.version.mockResolvedValue({...source, versionId: 'result:1', cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]});
+        mocks.sync.mockResolvedValue(current);
+        renderSidebar({getProtectedCellKeys: () => ['1:2026-11-01']});
+
+        const reapply = i18n.t('aiConversationSidebar.authoring.reapply');
+
+        await userEvent.click(await screen.findByRole('button', {name: reapply}));
+        await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: reapply}));
+        expect(await screen.findByText(i18n.t('aiConversationSidebar.authoring.protectedRestore'))).toBeVisible();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.fixedCells['1|2026-11-01']).toBe(true);
     });
     it('keeps the draft and transcript when reapplication is cancelled', async () => {
         enable();

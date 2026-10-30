@@ -3158,7 +3158,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onGenerated={rememberGeneratedSchedule}
                     onBusyChange={handleConversationBusyChange}
                     onExecutionChange={setAiExecution}
-                    resultActions={scheduleActions}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
                         setHasCompletedAiFill(true);
