@@ -64,6 +64,7 @@ import {AiConversationOperationStatus} from './ai-conversation-operation-status'
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
+import {AiExecutionCancelButton} from './ai-execution-cancel-button';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
@@ -2579,14 +2580,10 @@ export default function AiConversationSidebar({
                                                         {['RUNNING', 'RESULT_READY', 'UNKNOWN'].includes(
                                                             event.operation.executionStatus,
                                                         ) && (
-                                                            <button
-                                                                type="button"
-                                                                className="min-h-11 rounded-lg px-3 text-[13px] text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                                            <AiExecutionCancelButton
+                                                                onCancel={() => cancelOperation(event.operation.operationId)}
                                                                 disabled={busy}
-                                                                onClick={() => cancelOperation(event.operation.operationId)}
-                                                            >
-                                                                {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
-                                                            </button>
+                                                            />
                                                         )}
                                                         {event.operation.executionStatus === 'UNKNOWN' && (
                                                             <div className="mt-3 space-y-2">

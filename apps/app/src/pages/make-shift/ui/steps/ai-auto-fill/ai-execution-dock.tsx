@@ -1,6 +1,7 @@
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {conversationOperationStatusKey} from './ai-conversation-operation-status';
 import type {TConversationExecution} from './ai-conversation-sidebar';
+import {AiExecutionCancelButton} from './ai-execution-cancel-button';
 
 /** A reachable entry to the same operation, including its terminal result, after hiding the loader. */
 export function AiExecutionDock({
@@ -60,16 +61,7 @@ export function AiExecutionDock({
                 >
                     {t(pending ? 'aiAutofillUi.executionPresentation.viewProgress' : 'aiAutofillUi.executionPresentation.viewResult')}
                 </button>
-                {cancel && (
-                    <button
-                        type="button"
-                        onClick={cancel}
-                        disabled={cancelling}
-                        className="min-h-11 rounded-lg px-3 text-sm text-gray-3 hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
-                    >
-                        {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
-                    </button>
-                )}
+                {cancel && <AiExecutionCancelButton onCancel={cancel} disabled={cancelling} />}
             </div>
         </section>
     );

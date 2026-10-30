@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
+import {AiExecutionCancelButton} from './ai-execution-cancel-button';
 
 const INITIAL_PROGRESS = 8;
 const FAST_PROGRESS_TARGET = 90;
@@ -228,16 +229,7 @@ export function AiAutofillLoadingOverlay({
                                 {t('aiAutofillUi.executionPresentation.openConversation')}
                             </button>
                         )}
-                        {onCancel && (
-                            <button
-                                type="button"
-                                onClick={onCancel}
-                                disabled={cancelling}
-                                className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
-                            >
-                                {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
-                            </button>
-                        )}
+                        {onCancel && <AiExecutionCancelButton onCancel={onCancel} disabled={cancelling} />}
                     </div>
                 )}
             </div>
