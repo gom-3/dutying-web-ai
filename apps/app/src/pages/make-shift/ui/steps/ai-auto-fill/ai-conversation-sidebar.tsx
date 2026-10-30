@@ -23,6 +23,7 @@ import {
     operationAttempt,
     precedingCompletedOperation,
     requestTextForTurn,
+    unexecutedRequestForRecovery,
 } from '../../../model/conversation-presentation';
 import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../../../model/conversation-suggestion';
 import {INTENT_FIRST_CONTRACT, canApplyAuthoringResult, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
@@ -1656,6 +1657,22 @@ export default function AiConversationSidebar({
             dismissedFailureId !== latestOperation.operationId &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
+    const latestStoredError = visibleLocalEvents
+        .filter((event) => event.id.startsWith('feedback:error:'))
+        .sort((a, b) => b.sequence - a.sequence)[0];
+    const storedErrorRequest = detail && latestStoredError ? unexecutedRequestForRecovery(detail, latestStoredError.sequence) : undefined;
+    const historicalRecovery =
+        !error &&
+        !editingRequest &&
+        !preparing &&
+        !busy &&
+        !awaitingAdjustment &&
+        !running &&
+        !sessionStorage.getItem(pendingKey) &&
+        storedErrorRequest &&
+        latestStoredError
+            ? {eventId: latestStoredError.id, turn: storedErrorRequest}
+            : null;
     const failure = latestOperation ? operationFailure(latestOperation) : null;
     const canReviewFixedAfterFailure = Boolean(latestOperation?.operationType === 'GENERATE' && failure?.reviewFixed);
 
@@ -1731,22 +1748,35 @@ export default function AiConversationSidebar({
         textarea.current?.focus();
     }, [composerHidden, entryChoice, editingRequest, error]);
 
-    const reviseUnsentRequest = () => {
+    const reviewRequest = (turn: TConversationTurn) => {
         const current = detailRef.current;
-        const turn =
-            preparationReviewTurn.current ??
-            current?.turns.find((entry) => entry.interpretationId === current.conversation.latestInterpretationId);
-        const preservedText = text;
 
-        preparationReviewTurn.current = null;
+        if (!current || busy || running || preparing || sessionStorage.getItem(pendingKey)) return;
 
-        if (turn) editRequest(turn);
-        else setEntryChoice('modify');
-
-        setText(preservedText || (current && turn ? requestTextForTurn(current, turn) : ''));
+        initialGenerationPending.current = false;
+        reviewedPreparation.current = null;
+        setEditingRequest(turn);
+        setEntryChoice('modify');
+        setPreviousId(undefined);
+        setChange('REPLACE');
+        setText(text || (turn.actor === 'USER' ? (turn.text ?? '') : requestTextForTurn(current, turn)));
         setDismissedFailureId(latestOperation?.operationId ?? null);
         setError(null);
         recoveryComposerFocus.current = true;
+    };
+    const reviseUnsentRequest = () => {
+        const current = detailRef.current;
+        const turn =
+            preparationReviewTurn.current ?? (current ? unexecutedRequestForRecovery(current, Number.POSITIVE_INFINITY) : undefined);
+
+        preparationReviewTurn.current = null;
+
+        if (turn) reviewRequest(turn);
+        else {
+            setEntryChoice('modify');
+            setError(null);
+            recoveryComposerFocus.current = true;
+        }
     };
     const exampleNurses = doc.rows
         .map((row) => doc.workerMeta[row.workerId])
@@ -1818,6 +1848,8 @@ export default function AiConversationSidebar({
     const showNextActions = Boolean(
         detail &&
             canChooseNextAction &&
+            !historicalRecovery &&
+            !editingRequest &&
             !failureNeedsAction &&
             (autofillFlow?.id === discardedPreparationId.current || autofillFlow?.status !== 'paused') &&
             !preparing &&
@@ -2198,7 +2230,23 @@ export default function AiConversationSidebar({
                                     event.kind === 'local' ? (
                                         event.id.startsWith('feedback:error:') ? (
                                             <div key={event.id}>
-                                                <AiFailureMessage message={event.messages[0]?.text ?? ''} announce={false} />
+                                                <AiFailureMessage message={event.messages[0]?.text ?? ''} announce={false}>
+                                                    {historicalRecovery?.eventId === event.id && (
+                                                        <div className="space-y-2">
+                                                            <p className="text-[13px] leading-6 text-[#475467]">
+                                                                {t('aiConversationSidebar.reviewSavedRequestHint')}
+                                                            </p>
+                                                            <button
+                                                                type="button"
+                                                                className={buttonClass}
+                                                                disabled={!adjustEnabled}
+                                                                onClick={() => reviewRequest(historicalRecovery.turn)}
+                                                            >
+                                                                {t('aiConversationSidebar.reviewSavedRequest')}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </AiFailureMessage>
                                                 <AiConversationTimestamp createdAt={event.messages[0]?.createdAt} />
                                             </div>
                                         ) : (

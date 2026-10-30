@@ -3044,6 +3044,87 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).toHaveBeenCalledOnce();
     });
 
+    const storeHistoricalError = (sequence = 2.001) => {
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:4:1:2:2026:11:server-transcript',
+            JSON.stringify({
+                conversationId: 1,
+                events: [
+                    {
+                        kind: 'local',
+                        id: 'feedback:error:old',
+                        sequence,
+                        messages: [
+                            {role: 'assistant', text: '요청을 처리하지 못했어요. 다시 시도해 주세요.', createdAt: '2026-10-30T02:03:00Z'},
+                        ],
+                    },
+                ],
+                recoveredFailures: [],
+            }),
+        );
+    };
+
+    it('restores a persisted error request after remount and submits review against the latest draft without calculating', async () => {
+        const {raw, proposal} = semanticRequest();
+
+        current.conversation.latestInterpretationId = null;
+        storeHistoricalError();
+
+        const onConfirm = vi.fn();
+        const props = {resultActions: {canConfirm: true, onConfirm}};
+        const first = renderSidebar(props);
+        const recoveryLabel = i18n.t('aiConversationSidebar.reviewSavedRequest');
+
+        await screen.findByRole('button', {name: recoveryLabel});
+        first.unmount();
+        renderSidebar(props);
+        await userEvent.click(await screen.findByRole('button', {name: recoveryLabel}));
+        expect(screen.getByRole('textbox')).toHaveValue(raw);
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(onConfirm).not.toHaveBeenCalled();
+        mocks.interpret.mockResolvedValueOnce(proposal);
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.reviewChanges')}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0]?.[1]).toMatchObject({text: raw, expectedRevision: 0});
+        expect(mocks.interpret.mock.calls[0]?.[1].previousInterpretationId).toBeUndefined();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(current.turns.map((turn) => turn.eventId)).toEqual([1, 2]);
+    });
+    it('does not offer schedule confirmation below an unresolved saved error', async () => {
+        semanticRequest();
+        current.conversation.latestInterpretationId = null;
+        storeHistoricalError();
+        renderSidebar({resultActions: {canConfirm: true, onConfirm: vi.fn()}});
+        await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.reviewSavedRequest')});
+        expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.confirmSchedule')})).not.toBeInTheDocument();
+    });
+    it.each(['SUCCEEDED', 'FAILED', 'RUNNING', 'UNKNOWN'] as const)(
+        'does not recover a saved error as a new request after an accepted %s calculation',
+        async (executionStatus) => {
+            const {proposal} = semanticRequest();
+
+            storeHistoricalError(4);
+            current.operations = [{...operation, sequence: 3, interpretationId: proposal.interpretationId, executionStatus}];
+            renderSidebar();
+            await waitFor(() => expect(mocks.detail).toHaveBeenCalled());
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.reviewSavedRequest')})).not.toBeInTheDocument();
+            expect(mocks.execute).not.toHaveBeenCalled();
+        },
+    );
+    it('preserves typed input while opening a historical error for request review', async () => {
+        semanticRequest();
+        storeHistoricalError();
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:4:1:2:2026:11:composer',
+            JSON.stringify({text: '입력 중인 추가 요청', entryChoice: null}),
+        );
+        renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.reviewSavedRequest')}));
+        expect(screen.getByRole('textbox')).toHaveValue('입력 중인 추가 요청');
+    });
     it('returns an expired preparation plan to request review without refreshing or executing it', async () => {
         const {proposal} = semanticRequest();
 

@@ -126,3 +126,31 @@ export function conversationTurnText(detail: TConversationDetail, turn: TConvers
 
     return turn.text.slice(split + marker.length);
 }
+
+/** Only an unsubmitted request in the same segment may be recovered from a local error. */
+export function unexecutedRequestForRecovery(detail: TConversationDetail, failureSequence: number): TConversationTurn | undefined {
+    const segmentStart = Math.max(0, ...detail.turns.filter((turn) => turn.type === 'SEGMENT_START').map((turn) => turn.sequence));
+
+    if (failureSequence <= segmentStart || detail.turns.some((turn) => turn.actor === 'USER' && turn.sequence > failureSequence)) return;
+
+    const request = [...detail.turns]
+        .filter(
+            (turn) =>
+                turn.sequence > segmentStart &&
+                turn.sequence <= failureSequence &&
+                ((turn.actor === 'USER' && Boolean(turn.text)) || Boolean(turn.semanticPlan ?? turn.interpretation)),
+        )
+        .sort((a, b) => b.sequence - a.sequence)[0];
+
+    if (
+        !request ||
+        detail.operations.some(
+            (operation) =>
+                operation.sequence > request.sequence ||
+                (request.interpretationId != null && operation.interpretationId === request.interpretationId),
+        )
+    )
+        return;
+
+    return request;
+}
