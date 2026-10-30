@@ -374,6 +374,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const conversationEnabled = useShiftEditorStore((s) => s.conversationEnabled);
     const intentFirstAuthoringEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const [conversationGenerationRequest, setConversationGenerationRequest] = useState(0);
+    const [initialRequestText, setInitialRequestText] = useState('');
+    const [conversationGenerationText, setConversationGenerationText] = useState('');
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const divisionLabelByNum = useMemo(
@@ -795,6 +797,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         conversationSequence.current += 1;
         cancelPendingAdjustmentPreparation();
         setConversationGenerationRequest(0);
+        setInitialRequestText('');
+        setConversationGenerationText('');
         setIsReviewingCarryOver(false);
         setCarryOverSelection(null);
         setCarryOverError(null);
@@ -2107,6 +2111,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             aiFillDecisionCellKeysRef.current = new Set(
                 doc.rows.flatMap((row) => doc.columns.map((column) => `${row.workerId}|${column}`)),
             );
+
             // Review only the user's filled edits as protected; unchanged AI output stays editable.
             // The snapshot above lets cancellation undo these tentative pins.
             const edited = getEditedFilledCellsSinceBaseline(doc, lastAiGeneratedDocRef.current);
@@ -2156,6 +2161,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         // Invalidate asynchronous work before returning to the entry choices. Keep the
         // current schedule and saved requests; only unconfirmed preparation is undone.
         legacyGenerationPrompt.current = null;
+        setInitialRequestText('');
         conversationSequence.current += 1;
         autofillSequence.current += 1;
         autofillContext.current = null;
@@ -2217,7 +2223,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             pendingAdjustmentPreparation.current = null;
             pending.resolve();
         } else if (conversationEnabled) {
+            setConversationGenerationText(initialRequestText.trim());
             setConversationGenerationRequest((count) => count + 1);
+            setInitialRequestText('');
         } else {
             // Keep the visible draft intact until a new result succeeds.
             void runAiFill(
@@ -2402,13 +2410,14 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         } else if (getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null) {
             showPreviousPreparation();
         } else {
-            showFixedPreparation();
+            showFixedPreparation(!conversationEnabled);
         }
     };
     const handleAiFill = (requestText?: string) => {
         const text = typeof requestText === 'string' ? requestText.trim() : '';
 
         legacyGenerationPrompt.current = text ? {context: currentContextKey, text} : null;
+        setInitialRequestText(text);
         beginAutofillPreparation('generation');
     };
     const prepareAdjustment = (kind: 'generation' | 'adjustment' = 'adjustment') =>
@@ -2459,9 +2468,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         const hasResultCells = currentDoc.rows.some((row) =>
             row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
         );
+
         // A paused generation review from an older visit must not trap a filled
         // roster in the refill flow when the user opens natural editing.
-        if (conversationEnabled && hasResultCells && autofillFlow?.status === 'paused' && autofillFlow.kind === 'generation' && !autofillFlow.recovery) {
+        if (
+            conversationEnabled &&
+            hasResultCells &&
+            autofillFlow?.status === 'paused' &&
+            autofillFlow.kind === 'generation' &&
+            !autofillFlow.recovery
+        ) {
             resetAutofillConversation();
         } else if (resumeAutofillPreparation()) return;
 
@@ -2820,6 +2836,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 onUndoFixAll={
                     bulkFixEntry && history.past[history.past.length - 1] === bulkFixEntry ? handleUndoFixAllAiFillDecisionCells : undefined
                 }
+                requestText={initialRequestText}
+                onRequestTextChange={conversationEnabled && intentFirstAuthoringEnabled ? setInitialRequestText : undefined}
                 onCancel={preparationStep === 'previous' ? handleCancelLastShiftBlankWarning : closePreparation}
                 onConfirm={preparationStep === 'previous' ? handleConfirmLastShiftBlankWarning : handleConfirmAiFillDecision}
             />
@@ -3071,6 +3089,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     shift={orderedShift}
                     adjustEnabled={isAdjustEnabled}
                     generationRequest={conversationGenerationRequest}
+                    generationText={conversationGenerationText}
                     rebuildRequest={0}
                     generationFillPolicy="REBUILD_UNLOCKED"
                     getProtectedCellKeys={() => {

@@ -151,6 +151,8 @@ export const aiAdjustKo = {
         },
     },
     preparation: {
+        initialRequestLabel: '이번 근무표에 반영할 내용 · 선택',
+        initialRequestExample: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
         previous: '전달 근무에 빈칸이 있어요.\n이대로 진행할까요?',
         previousHelp: '전달 근무를 입력하면 월초의\n연속 근무와 휴식도 함께 확인해요.',
         continue: '이대로 진행할게요',
@@ -634,6 +636,8 @@ export const aiAdjustEn = {
         },
     },
     preparation: {
+        initialRequestLabel: 'Request for this schedule · optional',
+        initialRequestExample: 'Please reduce Nurse Kim’s weekend shifts this month.',
         previous: 'Some shifts from last month are blank.\nContinue as they are?',
         previousHelp: 'Last month’s shifts help check consecutive work and rest at the start of this month.',
         continue: 'Continue as they are',

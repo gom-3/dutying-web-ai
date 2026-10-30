@@ -1012,6 +1012,8 @@ describe('persistent schedule sidebar', () => {
         expect(nurseDisclosure).toHaveAttribute('open');
         expect(changes).toHaveTextContent('11월 1일');
         expect(within(result).getByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('O → D');
+        await userEvent.click(within(changes).getByRole('button', {name: '변경 내역 접기'}));
+        expect(within(changes).getByRole('button', {name: '변경 내역 1개 보기'})).toHaveAttribute('aria-expanded', 'false');
         expect(within(result).queryByText('1칸이 달라졌어요.')).not.toBeInTheDocument();
         expect(within(result).queryByText(/만들 당시의 결과예요/)).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
@@ -3865,6 +3867,81 @@ describe('intent-first sidebar integration', () => {
             conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
         };
     };
+
+    it('interprets a first-generation request once and runs its plan as GENERATE', async () => {
+        enable();
+        const text = '이번 달은 김 간호사의 주말 근무를 줄여주세요.';
+        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN'};
+
+        current = {...current, operations: []};
+        mocks.interpret.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                turns: [turn],
+                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            };
+
+            return turn;
+        });
+        renderSidebar({generationRequest: 1, generationText: text, generationFillPolicy: 'REBUILD_UNLOCKED'});
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text, authoringContractVersion: 'intent-first-v1'});
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            rebuildConfirmed: true,
+            interpretationId: turn.interpretationId,
+            planHash: turn.semanticPlan!.planHash,
+        });
+    });
+
+    it('keeps a reviewed first request on GENERATE after semantic confirmation', async () => {
+        enable();
+        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN', semanticPlan: {...autoTurn().semanticPlan!, autoExecutable: false}};
+        const prepare = vi.fn().mockResolvedValue(undefined);
+
+        mocks.interpret.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                turns: [turn],
+                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
+            };
+
+            return turn;
+        });
+        mocks.confirmPlan.mockImplementationOnce(async () => {
+            const confirmed = {
+                ...turn,
+                eventId: 201,
+                sequence: 3,
+                type: 'SEMANTIC_PLAN_CONFIRMED',
+                interpretationId: 'intent:confirmed',
+                semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
+            };
+            current = {
+                ...current,
+                turns: [...current.turns, confirmed],
+                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
+            };
+
+            return confirmed;
+        });
+        renderSidebar({
+            generationRequest: 1,
+            generationText: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
+            generationFillPolicy: 'REBUILD_UNLOCKED',
+            onPrepareAdjustment: prepare,
+        });
+        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(prepare).toHaveBeenCalledExactlyOnceWith('generation');
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            operationType: 'GENERATE',
+            fillPolicy: 'REBUILD_UNLOCKED',
+            interpretationId: 'intent:confirmed',
+        });
+    });
 
     it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
         enable();

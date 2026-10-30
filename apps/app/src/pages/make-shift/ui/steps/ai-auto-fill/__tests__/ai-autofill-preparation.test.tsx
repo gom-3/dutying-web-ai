@@ -8,6 +8,25 @@ afterEach(async () => {
 });
 
 describe('autofill recovery choices', () => {
+    it('accepts an optional first-generation request without changing the choices', async () => {
+        const onRequestTextChange = vi.fn();
+
+        render(
+            <AiAutofillPreparation
+                step="fixed"
+                fixableCount={1}
+                requestText=""
+                onRequestTextChange={onRequestTextChange}
+                onConfirm={vi.fn()}
+                onCancel={vi.fn()}
+                onFixAll={vi.fn()}
+            />,
+        );
+        await userEvent.type(screen.getByRole('textbox', {name: '이번 근무표에 반영할 내용 · 선택'}), '주말 근무 줄여줘');
+        expect(onRequestTextChange).toHaveBeenCalled();
+        expect(screen.getByRole('button', {name: '이대로 자동채우기'})).toBeVisible();
+        expect(screen.getByRole('button', {name: '입력한 근무 모두 고정하기'})).toBeVisible();
+    });
     it.each([
         ['ko', '다시 자동채우기', '입력한 근무 모두 고정하기', '근무 조건 확인하기'],
         ['en', 'Try autofill again', 'Fix all entered shifts', 'Review shift conditions'],
