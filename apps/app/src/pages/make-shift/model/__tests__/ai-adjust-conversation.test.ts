@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {TDutyDoc} from '@/features/shift-editor';
-import {describeAdjustChanges, mergeAdjustPatch, prepareAdjustDoc} from '../ai-adjust-conversation';
+import {describeAdjustChanges, isPlainAutofillCommand, mergeAdjustPatch, prepareAdjustDoc} from '../ai-adjust-conversation';
 
 const doc: TDutyDoc = {
     columns: ['2026-10-01', '2026-10-02'],
@@ -51,4 +51,16 @@ describe('staged adjustment cells', () => {
             {name: '김서현', date: '2026-10-02', before: 'N', after: 'D'},
         ]);
     });
+});
+
+describe('standalone autofill commands', () => {
+    it.each(['자동완성 해줘', '다시 자동채우기 해주세요.', '자동완성', ' 자동 채우기 해 줘! '])('recognizes %s', (text) => {
+        expect(isPlainAutofillCommand(text)).toBe(true);
+    });
+    it.each(['자동완성 하지마', '자동완성 해줘. OFF는 10개', '김간호사 야간 줄이고 자동완성 해줘', '아니요', '다시', ''])(
+        'keeps interpretation for %s',
+        (text) => {
+            expect(isPlainAutofillCommand(text)).toBe(false);
+        },
+    );
 });
