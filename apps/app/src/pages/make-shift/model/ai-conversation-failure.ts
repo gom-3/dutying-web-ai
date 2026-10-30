@@ -19,6 +19,7 @@ export type TAiConversationFailure = {
     sourceRevision?: number;
     sourceRulesHash?: string;
     observation?: TScheduleObservation;
+    title?: string;
     message: string;
     confirmationRequired?: boolean;
     conditionConflict?: boolean;
@@ -92,8 +93,16 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
     if (code === 'BACKGROUND_QUEUE_FULL')
         return {message: i18n.t('aiAdjust.executionFailure.busy'), blocked: false, checkOutcome: false, recovery: 'retry'};
 
-    if (code === 'SCHEDULE_INTERPRET_UNAVAILABLE')
-        return {message: i18n.t('aiAutofillUi.interpretUnavailable'), blocked: false, checkOutcome: false, recovery: 'revise'};
+    if (code === 'SCHEDULE_INTERPRET_UNAVAILABLE' || code === 'SCHEDULE_INTERPRET_REJECTED')
+        return {
+            title: i18n.t('aiAutofillUi.interpretFailureTitle'),
+            message: i18n.t(
+                code === 'SCHEDULE_INTERPRET_REJECTED' ? 'aiAutofillUi.interpretRejected' : 'aiAutofillUi.interpretUnavailable',
+            ),
+            blocked: false,
+            checkOutcome: false,
+            recovery: 'retry',
+        };
 
     if (code === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED') return {message: i18n.t('aiAdjust.failure.adjustAccess'), blocked: true};
 

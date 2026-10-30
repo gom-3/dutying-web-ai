@@ -1,5 +1,8 @@
 export const aiAutofillUiKo = {
-    interpretUnavailable: '요청 해석을 완료하지 못했어요. 잠시 후 다시 보내 주세요.',
+    interpretFailureTitle: '요청 해석을 마치지 못했어요.',
+    interpretRejected:
+        'AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요.\n이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.\n같은 요청으로 다시 시도해 주세요.',
+    interpretUnavailable: '요청 해석 중 오류가 발생해 이번 요청을 실행하지 못했어요.\n같은 요청으로 다시 시도해 주세요.',
     resultSatisfaction: {
         addReason: '이유 남기기',
         close: '닫기',
@@ -353,7 +356,10 @@ export const aiAutofillUiKo = {
 } as const;
 
 export const aiAutofillUiEn = {
-    interpretUnavailable: 'The request interpreter is unavailable. Please try again shortly.',
+    interpretFailureTitle: 'Request interpretation could not finish.',
+    interpretRejected:
+        'An error occurred while checking the AI interpretation of your request.\nThis request did not start schedule generation or change the schedule.\nPlease try the same request again.',
+    interpretUnavailable: 'An error during request interpretation prevented this request from running.\nPlease try the same request again.',
     resultSatisfaction: {
         addReason: 'Add a reason',
         close: 'Close',
@@ -712,7 +718,11 @@ export const aiAutofillUiEn = {
 } as const;
 
 export const aiAutofillUiJa = {
-    interpretUnavailable: 'リクエストの解釈サーバーに接続できません。少し待ってから再送してください。',
+    interpretFailureTitle: 'リクエストの解釈を完了できませんでした。',
+    interpretRejected:
+        'AIによるリクエストの解釈結果を確認中にエラーが発生しました。\n今回のリクエストでは勤務表の自動作成や変更を行っていません。\n同じ内容でもう一度お試しください。',
+    interpretUnavailable:
+        'リクエストの解釈中にエラーが発生し、今回のリクエストを実行できませんでした。\n同じ内容でもう一度お試しください。',
     resultSatisfaction: {
         addReason: '理由を添える',
         close: '閉じる',

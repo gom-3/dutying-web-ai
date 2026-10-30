@@ -72,3 +72,13 @@ it('distinguishes interpreter availability from invalid user input without showi
     expect(result.message).toBe(i18n.t('aiAutofillUi.interpretUnavailable'));
     expect(result.checkOutcome).toBe(false);
 });
+
+it.each(['ko', 'en', 'ja'])('distinguishes rejected interpretation and offers the same-request retry (%s)', async (language) => {
+    await i18n.changeLanguage(language);
+    const result = aiConversationFailure({serverCode: 'SCHEDULE_INTERPRET_REJECTED', code: 502, message: 'private model validation body'});
+    expect(result.title).toBe(i18n.t('aiAutofillUi.interpretFailureTitle'));
+    expect(result.message).toBe(i18n.t('aiAutofillUi.interpretRejected'));
+    expect(result.message).not.toMatch(/private|잠시 후|unavailable|接続できません/);
+    expect(result.recovery).toBe('retry');
+    expect(result.checkOutcome).toBe(false);
+});

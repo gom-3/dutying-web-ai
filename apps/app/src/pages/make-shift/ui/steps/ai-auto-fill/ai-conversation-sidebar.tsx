@@ -2763,7 +2763,7 @@ export default function AiConversationSidebar({
                             />
                         )}
                         {error && (
-                            <AiFailureMessage message={error.message}>
+                            <AiFailureMessage message={error.message} title={error.title}>
                                 {error.unsentOperation && (
                                     <div className="flex flex-wrap gap-2">
                                         {error.canRetryGeneration && (
