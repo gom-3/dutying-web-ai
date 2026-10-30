@@ -55,7 +55,7 @@ import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {AiConversationChanges} from './ai-conversation-changes';
 import {ConversationConfirmation} from './ai-conversation-confirmation';
-import {AiConversationConfirmation, AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
+import {AiConversationEntry, type TConversationEntryChoice} from './ai-conversation-entry';
 import {ConversationEvidence, ConversationSuggestionChanges, type TFailureSuggestion} from './ai-conversation-evidence';
 import {AiConversationHeader} from './ai-conversation-header';
 import {AiConversationHistory} from './ai-conversation-history';
@@ -156,7 +156,6 @@ export default function AiConversationSidebar({
     onGenerated,
     onBusyChange,
     onExecutionChange,
-    resultActions,
 }: TProps) {
     const cancelCurrentOperationRef = useRef<() => void>(() => {});
     const requestCurrentCancellation = useCallback(() => cancelCurrentOperationRef.current(), []);
@@ -354,6 +353,23 @@ export default function AiConversationSidebar({
     const localDirty =
         conditionsContextInvalid ||
         (detail ? signature({...localDraft, carryOverCells: localDraft.carryOverCells ?? []}) !== signature(detail.draft) : false);
+    const hasSavedResult = (operation: TConversationOperation) =>
+        operation.executionStatus === 'SUCCEEDED' &&
+        !operationFailure(operation) &&
+        Boolean(operation.resultVersionId) &&
+        ['APPLIED', 'NOT_APPLIED_SOURCE_CHANGED'].includes(operation.applyStatus) &&
+        Boolean(operation.result && canApplyAuthoringResult(operation.result, operation.sourceVersionId));
+    const canRestoreVersion = (version: TResultVersion) => {
+        const cells = new Map(version.cells.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell.wardShiftTypeId ?? null]));
+
+        if (dto().cells.some((cell) => cell.fixed && cells.get(`${cell.shiftNurseId}:${cell.date}`) !== (cell.wardShiftTypeId ?? null))) {
+            setNotice(t('aiConversationSidebar.authoring.protectedRestore'));
+
+            return false;
+        }
+
+        return true;
+    };
     const isResultApplied = (operation: TConversationOperation) =>
         !localDirty &&
         Boolean(
@@ -453,7 +469,7 @@ export default function AiConversationSidebar({
         if (!mounted.current) return;
 
         const current = useShiftEditorStore.getState().doc;
-        const next = snapshotDetailToDoc(version, shift, year, month, {fixedCells: {}, requestCells: current.requestCells});
+        const next = snapshotDetailToDoc(version, shift, year, month, {fixedCells: current.fixedCells, requestCells: current.requestCells});
 
         // Previous-month cells are part of the immutable input, too.
         next.rows.forEach((row) => {
@@ -1239,6 +1255,8 @@ export default function AiConversationSidebar({
         run(async () => {
             if (sessionStorage.getItem(pendingKey)) throw new AiConversationInputError('pendingExecution');
 
+            if (!canRestoreVersion(version)) return;
+
             const current = await sync(); // Preserve every unsaved manual edit before branching.
             const uiRevision = useShiftEditorStore.getState().draftRevision;
             const nextDetail = await api.startSegment(
@@ -1272,6 +1290,8 @@ export default function AiConversationSidebar({
 
             if (version.versionId !== operation.resultVersionId || useShiftEditorStore.getState().draftRevision !== uiRevision)
                 throw new AiConversationInputError('draftChanged');
+
+            if (!canRestoreVersion(version)) return;
 
             const next = await api.sync(current.conversation.conversationId, {
                 expectedRevision: current.conversation.revision,
@@ -1315,6 +1335,8 @@ export default function AiConversationSidebar({
 
                 return;
             }
+
+            if (!canRestoreVersion(source)) return;
 
             const next = await api.sync(current.conversation.conversationId, {
                 expectedRevision: current.conversation.revision,
@@ -1953,11 +1975,11 @@ export default function AiConversationSidebar({
     };
     const openConflictSettings = (_operation: TConversationOperation) => conditionsEditor.current?.openConditions();
     const renderAuthoringActions = (operation: TConversationOperation) => {
-        if (!detail) return null;
+        if (!detail || !hasSavedResult(operation)) return null;
 
         return (
             <>
-                {operation.result && operation.applyStatus === 'APPLIED' && operation.resultVersionId && (
+                {hasSavedResult(operation) && (
                     <p role="status" className="mt-3 text-[13px] text-[#667085]">
                         {t(
                             isResultApplied(operation)
@@ -1966,13 +1988,17 @@ export default function AiConversationSidebar({
                         )}
                     </p>
                 )}
-                {operation.result && operation.applyStatus === 'APPLIED' && operation.resultVersionId && !isResultApplied(operation) && (
+                {hasSavedResult(operation) && !isResultApplied(operation) && (
                     <button type="button" className={buttonClass} disabled={busy || running} onClick={() => setReapplyTarget(operation)}>
-                        {t('aiConversationSidebar.authoring.reapply')}
+                        {t(
+                            operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && restoredResult?.operationId !== operation.operationId
+                                ? 'aiConversationSidebar.authoring.restore'
+                                : 'aiConversationSidebar.authoring.reapply',
+                        )}
                     </button>
                 )}
                 {operation.result &&
-                    operation.applyStatus === 'APPLIED' &&
+                    hasSavedResult(operation) &&
                     operation.result.changedCells.length > 0 &&
                     isResultApplied(operation) && (
                         <button
@@ -2311,7 +2337,7 @@ export default function AiConversationSidebar({
                                                         appliedLocally={isResultApplied(event.operation)}
                                                         attempt={operationAttempt(detail, event.operation.operationId)}
                                                         changeSummary={
-                                                            event.operation.applyStatus === 'APPLIED' &&
+                                                            hasSavedResult(event.operation) &&
                                                             event.operation.result?.changedCells.length ? (
                                                                 <AiConversationChanges
                                                                     key={`${event.operation.operationId}:${event.operation.resultVersionId}`}
@@ -2319,7 +2345,12 @@ export default function AiConversationSidebar({
                                                                     sourceVersionId={event.operation.sourceVersionId}
                                                                     loadVersion={api.version}
                                                                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                                                                    label={t('aiConversationSidebar.actualChanges')}
+                                                                    label={t(
+                                                                        event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' &&
+                                                                            !isResultApplied(event.operation)
+                                                                            ? 'aiConversationSidebar.savedChanges'
+                                                                            : 'aiConversationSidebar.actualChanges',
+                                                                    )}
                                                                     locale={i18n.language}
                                                                 />
                                                             ) : undefined
@@ -2701,29 +2732,16 @@ export default function AiConversationSidebar({
                             </p>
                         )}
                         {preparation && <div aria-live="polite">{preparation}</div>}
-                        {showNextActions &&
-                            (attachNextActions ? (
-                                resultActions &&
-                                !failure && (
-                                    <AiConversationConfirmation
-                                        confirmation={{...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}}
-                                    />
-                                )
-                            ) : (
-                                <AiConversationEntry
-                                    choice={null}
-                                    hasSchedule={hasGeneratedAssignments}
-                                    hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
-                                    disabled={busy || running || isAutofillBlocked}
-                                    modifyDisabled={!adjustEnabled}
-                                    confirmation={
-                                        !failure && resultActions
-                                            ? {...resultActions, disabled: Boolean(resultActions.disabled) || busy || running}
-                                            : undefined
-                                    }
-                                    onChoose={chooseNextAction}
-                                />
-                            ))}
+                        {showNextActions && !attachNextActions && (
+                            <AiConversationEntry
+                                choice={null}
+                                hasSchedule={hasGeneratedAssignments}
+                                hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
+                                disabled={busy || running || isAutofillBlocked}
+                                modifyDisabled={!adjustEnabled}
+                                onChoose={chooseNextAction}
+                            />
+                        )}
                         {!composerHidden && !editingRequest && !activeTurns.length && !text.trim() && !!requestExamples.length && (
                             <section aria-label={t('aiAdjust.examples')} className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3">
                                 <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
@@ -2857,6 +2875,8 @@ export default function AiConversationSidebar({
                                 onClick={() =>
                                     void run(async () => {
                                         const uiRevision = useShiftEditorStore.getState().draftRevision;
+
+                                        if (!canRestoreVersion(pendingBranch.draft)) return;
 
                                         await sync();
 
