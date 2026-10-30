@@ -45,7 +45,7 @@ export function AiConversationResult({
         (!authoring ||
             (authoring.draftState === 'APPLICABLE' &&
                 !['PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT'].includes(authoring.requestState)));
-    const showPartialCoverage = !saved && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
+    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = appliedStatusKey
         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
         : review
