@@ -61,7 +61,6 @@ import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus, isConversationOperationPending} from './ai-conversation-operation-status';
 import {AiConversationResult} from './ai-conversation-result';
-import {AiConversationChanges} from './ai-conversation-changes';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionFailure} from './ai-execution-failure';
@@ -2521,33 +2520,26 @@ export default function AiConversationSidebar({
                                     onChoose={chooseNextAction}
                                 />
                             ))}
-                        {!composerHidden &&
-                            !editingRequest &&
-                            !activeTurns.length &&
-                            !text.trim() &&
-                            !!requestExamples.length && (
-                                <section
-                                    aria-label={t('aiAdjust.examples')}
-                                    className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3"
-                                >
-                                    <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
-                                    {[...new Set(requestExamples)].map((sentence) => (
-                                        <button
-                                            key={sentence}
-                                            type="button"
-                                            disabled={busy || running || !adjustEnabled}
-                                            onClick={() => {
-                                                setText(sentence);
-                                                textarea.current?.focus();
-                                            }}
-                                            className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                        >
-                                            <span>{sentence}</span>
-                                            <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
-                                        </button>
-                                    ))}
-                                </section>
-                            )}
+                        {!composerHidden && !editingRequest && !activeTurns.length && !text.trim() && !!requestExamples.length && (
+                            <section aria-label={t('aiAdjust.examples')} className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3">
+                                <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
+                                {[...new Set(requestExamples)].map((sentence) => (
+                                    <button
+                                        key={sentence}
+                                        type="button"
+                                        disabled={busy || running || !adjustEnabled}
+                                        onClick={() => {
+                                            setText(sentence);
+                                            textarea.current?.focus();
+                                        }}
+                                        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                    >
+                                        <span>{sentence}</span>
+                                        <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
+                                    </button>
+                                ))}
+                            </section>
+                        )}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
                             <AiConversationLoading
                                 className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"

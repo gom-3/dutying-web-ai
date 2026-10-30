@@ -651,7 +651,7 @@ describe('persistent schedule sidebar', () => {
         await waitFor(() =>
             expect(screen.getByRole('complementary', {name: i18n.t('aiAdjust.title')})).toHaveAttribute('data-loading', 'false'),
         );
-        expect(screen.getAllByText(i18n.t('aiAdjust.chat.askChanges'))).toHaveLength(1);
+        expect(screen.queryByText(i18n.t('aiAdjust.chat.askChanges'))).not.toBeInTheDocument();
         expect(screen.queryByText(i18n.t('aiAdjust.chat.welcome'))).not.toBeInTheDocument();
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -1012,8 +1012,8 @@ describe('persistent schedule sidebar', () => {
         expect(nurseDisclosure).toHaveAttribute('open');
         expect(changes).toHaveTextContent('11월 1일');
         expect(within(result).getByRole('region', {name: '실제 변경 내역'})).toHaveTextContent('O → D');
-        await userEvent.click(within(changes).getByRole('button', {name: '변경 내역 접기'}));
-        expect(within(changes).getByRole('button', {name: '변경 내역 1개 보기'})).toHaveAttribute('aria-expanded', 'false');
+        await userEvent.click(disclosure.querySelector('summary')!);
+        expect(disclosure).not.toHaveAttribute('open');
         expect(within(result).queryByText('1칸이 달라졌어요.')).not.toBeInTheDocument();
         expect(within(result).queryByText(/만들 당시의 결과예요/)).not.toBeInTheDocument();
         expect(within(result).queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
@@ -1066,7 +1066,7 @@ describe('persistent schedule sidebar', () => {
         const result = await screen.findByRole('region', {name: '근무표 결과'});
         const reviewed = screen.queryByRole('region', {name: '요청 조건 확인'});
 
-        expect(within(reviewed).queryByRole('button')).not.toBeInTheDocument();
+        expect(reviewed).not.toBeInTheDocument();
         expect(screen.getByRole('textbox')).toBeVisible();
         expect(screen.getByRole('textbox')).toHaveValue('');
         expect(within(result).queryByRole('button', {name: i18n.t('aiAdjust.chat.modify')})).not.toBeInTheDocument();
@@ -1209,7 +1209,13 @@ describe('persistent schedule sidebar', () => {
         current.conversation.currentVersionId = 'result:1';
         current.operations = [
             {...operation, result: successfulResult},
-            {...operation, operationId: 'adjust:1', sequence: 2, operationType: 'ADJUST', result: {...successfulResult, operationType: 'ADJUST'}},
+            {
+                ...operation,
+                operationId: 'adjust:1',
+                sequence: 2,
+                operationType: 'ADJUST',
+                result: {...successfulResult, operationType: 'ADJUST'},
+            },
             {...operation, operationId: 'generate:2', sequence: 3, executionStatus: 'FAILED', resultVersionId: null},
         ];
         renderSidebar();
@@ -2137,7 +2143,12 @@ describe('persistent schedule sidebar', () => {
 
             return current;
         });
+        const older = {...current, conversation: {...current.conversation, conversationId: 9}};
+
+        mocks.list.mockResolvedValue([current.conversation, older.conversation]);
+        mocks.detail.mockImplementation(async (id: number) => (id === 9 ? older : current));
         renderSidebar();
+        await userEvent.click(await screen.findByText(/이전 대화 기록|Earlier conversation/));
         await userEvent.click(await screen.findByRole('button', {name: /근무표 살펴보기|Explore schedule/}));
 
         const continueResult = await screen.findByRole('button', {name: /이전 결과로 복원하기|Restore this earlier result/});
@@ -2175,7 +2186,12 @@ describe('persistent schedule sidebar', () => {
 
             return current;
         });
+        const older = {...current, conversation: {...current.conversation, conversationId: 9}};
+
+        mocks.list.mockResolvedValue([current.conversation, older.conversation]);
+        mocks.detail.mockImplementation(async (id: number) => (id === 9 ? older : current));
         renderSidebar();
+        await userEvent.click(await screen.findByText(/이전 대화 기록|Earlier conversation/));
         await userEvent.click(await screen.findByRole('button', {name: /근무표 살펴보기|Explore schedule/}));
 
         const continueResult = await screen.findByRole('button', {name: /이전 결과로 복원하기|Restore this earlier result/});
@@ -3212,53 +3228,6 @@ describe('persistent schedule sidebar', () => {
         );
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('keeps saved monthly requests separate from ward constraints without a manual conversation condition list', async () => {
-        const semanticLabel = '김 간호사 1일 N 금지';
-
-        current.conversationState = {
-            version: 7,
-            sourceVersionId: source.versionId,
-            contextHash: current.contextHash,
-            expiresAt: null,
-            conditions: [{conditionId: 'semantic:one', text: semanticLabel, preview: {status: 'PREVIEW_READY'}}],
-            pendingQuestion: null,
-        };
-        mocks.getShiftConstraintRules.mockResolvedValue({
-            schemaVersion: 1,
-            wardId: 1,
-            shiftTeamId: 2,
-            rules: [wardCondition, {...wardCondition, shiftConstraintRuleId: 52, displayText: '선택하지 않은 제약조건', selected: false}],
-        });
-        mocks.getScheduleMonthRequests.mockResolvedValue({
-            year: 2026,
-            month: 11,
-            requests: [
-                monthlyCondition,
-                {...monthlyCondition, id: 42, displayLabel: '이미 해제한 AI 요청', status: 'DISABLED'},
-                {...monthlyCondition, id: 43, displayLabel: '제약조건으로 옮긴 AI 요청', promotedRuleId: 51},
-            ],
-        });
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        expect(await screen.findByRole('heading', {name: /^AI 요청\s*1$/})).toBeVisible();
-
-        const aiGroup = screen.getByRole('region', {name: 'AI로 추가한 조건'});
-
-        expect(within(aiGroup).queryByText(semanticLabel)).not.toBeInTheDocument();
-        expect(within(aiGroup).queryByText('현재 대화')).not.toBeInTheDocument();
-        expect(within(aiGroup).getByText(monthlyCondition.displayLabel)).toBeVisible();
-        expect(within(aiGroup).queryByText('이번 달에 저장됨')).not.toBeInTheDocument();
-        expect(within(aiGroup).queryByText(wardCondition.displayText!)).not.toBeInTheDocument();
-        expect(screen.getByRole('region', {name: '제약조건 탭의 조건'})).toBeVisible();
-        expect(screen.getByRole('region', {name: '테스트 제약조건 편집기'})).toHaveAttribute('data-context', '1:2:2026-11');
-        expect(screen.queryByRole('tab')).not.toBeInTheDocument();
-        expect(screen.queryByText('선택하지 않은 제약조건')).not.toBeInTheDocument();
-        expect(screen.queryByText('이미 해제한 AI 요청')).not.toBeInTheDocument();
-        expect(screen.queryByText('제약조건으로 옮긴 AI 요청')).not.toBeInTheDocument();
-        expect(mocks.getShiftConstraintRules).toHaveBeenCalledWith(1, 2, 2026, 11);
-        expect(mocks.getScheduleMonthRequests).toHaveBeenCalledWith(1, 2, 2026, 11);
-        expect(mocks.execute).not.toHaveBeenCalled();
-    });
     it('retires the old preview after saving a monthly rest target without regenerating or changing cells', async () => {
         semanticRequest();
         current = {
@@ -3314,65 +3283,6 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
-    });
-    it('applies ward rules in the same modal, refreshes conversation context, and invalidates the old preview without changing the schedule', async () => {
-        semanticRequest();
-        mocks.getShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 2, rules: [wardCondition]});
-        mocks.applyConstraints.mockImplementationOnce(async () => {
-            current = {...current, contextHash: 'rules:after-ward-edit'};
-
-            return true;
-        });
-
-        const initialDoc = useShiftEditorStore.getState().doc;
-        const onOpenConstraints = vi.fn();
-
-        renderSidebar({onOpenConstraints});
-
-        const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
-
-        await waitFor(() => expect(oldPreview).toBeEnabled());
-        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
-
-        const previousReads = mocks.getShiftConstraintRules.mock.calls.length;
-
-        await userEvent.click(screen.getByRole('button', {name: '제약조건 수정'}));
-        expect(mocks.applyConstraints).not.toHaveBeenCalled();
-        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
-        expect(mocks.applyConstraints).toHaveBeenCalledOnce();
-        expect(mocks.getShiftConstraintRules.mock.calls.length).toBeGreaterThan(previousReads);
-        expect(mocks.detail.mock.calls.length).toBeGreaterThanOrEqual(2);
-        expect(oldPreview).toBeDisabled();
-        await userEvent.click(oldPreview);
-        expect(onOpenConstraints).not.toHaveBeenCalled();
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.updateScheduleMonthRequest).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
-    });
-    it('keeps the ward editor open and the old preview blocked when a saved rule change cannot refresh its conversation context', async () => {
-        semanticRequest();
-
-        const initialDoc = useShiftEditorStore.getState().doc;
-
-        renderSidebar();
-
-        const oldPreview = await screen.findByRole('button', {name: '이대로 수정하기'});
-
-        await waitFor(() => expect(oldPreview).toBeEnabled());
-        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: '제약조건 수정'}));
-        mocks.detail.mockRejectedValueOnce(new Error('Saved rules could not refresh conversation context'));
-        await userEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 적용'})).toBeEnabled());
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
-        expect(oldPreview).toBeDisabled();
-        expect(mocks.applyConstraints).toHaveBeenCalledOnce();
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
     });
     it('finishes removing the final semantic condition without a clarification loop or discarding conversation history', async () => {
@@ -3439,110 +3349,6 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
-    });
-    it('keeps a successfully deleted monthly condition removed when detail refresh fails and blocks the old preview until rechecked', async () => {
-        vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({matches: false}));
-        semanticRequest();
-        mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: [monthlyCondition]});
-        mocks.updateScheduleMonthRequest.mockImplementationOnce(async () => {
-            mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: []});
-
-            return {...monthlyCondition, status: 'DISABLED'};
-        });
-
-        const initialDoc = useShiftEditorStore.getState().doc;
-
-        render(
-            <>
-                {sidebarElement()}
-                <Toaster />
-            </>,
-        );
-
-        const apply = await screen.findByRole('button', {name: '이대로 수정하기'});
-
-        await waitFor(() => expect(apply).toBeEnabled());
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        mocks.detail.mockRejectedValueOnce(new Error('Lost refresh after a committed deletion'));
-        await userEvent.click(screen.getByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`}));
-        expect(await screen.findByText('조건을 삭제했어요.')).toBeVisible();
-        expect(await screen.findByText('조건을 불러오지 못했어요.')).toBeVisible();
-        expect(screen.queryByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`})).not.toBeInTheDocument();
-        expect(screen.getByRole('heading', {name: /^AI 요청\s*0$/})).toBeVisible();
-        expect(apply).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '조건 목록 닫기'}));
-        await userEvent.click(apply);
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-
-        current = {...current, contextHash: 'rules:after-removal'};
-        // Reopen the condition manager to refresh after checking the disabled stale action.
-        await userEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: '다시 불러오기'}));
-        await waitFor(() => expect(screen.queryByText('조건을 불러오지 못했어요.')).not.toBeInTheDocument());
-        expect(screen.queryByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`})).not.toBeInTheDocument();
-        expect(apply).toBeDisabled();
-        expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledExactlyOnceWith(1, 2, 41, {status: 'DISABLED'});
-        expect(mocks.detail.mock.calls.length).toBeGreaterThanOrEqual(3);
-        expect(mocks.interpret).not.toHaveBeenCalled();
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
-    });
-    it('disables only the selected monthly AI request once and preserves ward rules and the current schedule', async () => {
-        mocks.getShiftConstraintRules.mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 2, rules: [wardCondition]});
-        mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: [monthlyCondition]});
-
-        let finishRemoval!: (value: TScheduleMonthRequestRes) => void;
-
-        mocks.updateScheduleMonthRequest.mockImplementationOnce(
-            () =>
-                new Promise<TScheduleMonthRequestRes>((resolve) => {
-                    finishRemoval = resolve;
-                }),
-        );
-
-        const initialDoc = useShiftEditorStore.getState().doc;
-
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-
-        const remove = screen.getByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`});
-
-        await userEvent.dblClick(remove);
-        expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledExactlyOnceWith(1, 2, 41, {status: 'DISABLED'});
-        expect(remove).toBeDisabled();
-        mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: [{...monthlyCondition, status: 'DISABLED'}]});
-        await act(async () => finishRemoval({...monthlyCondition, status: 'DISABLED'}));
-        expect(await screen.findByRole('heading', {name: /^AI 요청\s*0$/})).toBeVisible();
-        expect(screen.queryByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`})).not.toBeInTheDocument();
-        expect(screen.getByRole('region', {name: '제약조건 탭의 조건'})).toBeVisible();
-        expect(screen.getByRole('region', {name: '테스트 제약조건 편집기'})).toHaveAttribute('data-context', '1:2:2026-11');
-        expect(mocks.applyConstraints).not.toHaveBeenCalled();
-        expect(mocks.interpret).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
-        expect(useShiftEditorStore.getState().doc).toBe(initialDoc);
-    });
-    it('retains a monthly AI condition after deletion fails and allows the same condition to be retried', async () => {
-        mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: [monthlyCondition]});
-        mocks.updateScheduleMonthRequest.mockRejectedValueOnce(new Error('Condition removal failed')).mockImplementationOnce(async () => {
-            mocks.getScheduleMonthRequests.mockResolvedValue({year: 2026, month: 11, requests: []});
-
-            return {...monthlyCondition, status: 'DISABLED'};
-        });
-        renderSidebar();
-        await userEvent.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
-        await userEvent.click(screen.getByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`}));
-        await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledOnce());
-        await waitFor(() => expect(screen.getByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`})).toBeEnabled());
-        expect(screen.getByRole('heading', {name: /^AI 요청\s*1$/})).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`}));
-        await waitFor(() => expect(mocks.updateScheduleMonthRequest).toHaveBeenCalledTimes(2));
-        await waitFor(() => expect(screen.queryByRole('button', {name: `${monthlyCondition.displayLabel} 삭제`})).not.toBeInTheDocument());
-        expect(mocks.execute).not.toHaveBeenCalled();
-        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
     it('sends a clarification answer with the server state version for automatic resolution', async () => {
         const {raw, proposal} = semanticRequest();

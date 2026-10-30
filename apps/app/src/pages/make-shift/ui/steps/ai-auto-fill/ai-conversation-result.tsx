@@ -54,8 +54,8 @@ export function AiConversationResult({
             ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
             : operation.operationType === 'GENERATE'
               ? changedCount === 0
-                ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
-                : t('aiAutofillUi.conversationResult.yourScheduleIsReady')
+                  ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
+                  : t('aiAutofillUi.conversationResult.yourScheduleIsReady')
               : changedCount === 0
                 ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
                 : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady', {count: changedCount});
