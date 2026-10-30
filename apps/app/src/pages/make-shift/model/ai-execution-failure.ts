@@ -16,15 +16,19 @@ function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
         issue.minimum <= issue.maximum
     )
         return null;
+
     const name =
         typeof issue.nurseName === 'string' && issue.nurseName.trim()
             ? issue.nurseName.trim().slice(0, 80)
             : i18n.t('aiAdjust.executionFailure.affectedNurse');
+
     let message = i18n.t('aiAdjust.executionFailure.nightRunBoundsEvidence', {name, minimum: issue.minimum, maximum: issue.maximum});
+
     if (validCount(issue.actual) && issue.actual > 0 && validDate(issue.startDate) && validDate(issue.endDate))
         message +=
             ' · ' +
             i18n.t('aiAdjust.executionFailure.incomingNightEvidence', {start: issue.startDate, end: issue.endDate, actual: issue.actual});
+
     return message;
 }
 
@@ -33,11 +37,16 @@ function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
  */
 export function nightRunConflictMessages(response: TAutofillResponse): string[] {
     if (authoringOutcome(response)?.draftState !== 'CONSENT_REQUIRED') return [];
+
     const evidence = response.engineResult?.conflictEvidence ?? response.engineResult?.solver?.conflictEvidence;
+
     if (!Array.isArray(evidence)) return [];
+
     return evidence.flatMap((issue) => {
         if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return [];
+
         const message = nightRunBoundsMessage(issue as Record<string, unknown>);
+
         return message ? [message] : [];
     });
 }
@@ -71,6 +80,15 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     const outcome = authoringOutcome(response);
 
     if (outcome) {
+        // A solver candidate is not a successful result when verification withheld the draft.
+        if (
+            outcome.solveState === 'FEASIBLE' &&
+            outcome.draftState === 'NONE' &&
+            response.engineResult?.status === 'REJECTED' &&
+            ['SATISFIED', 'IMPROVED', 'PARTIAL'].includes(outcome.requestState)
+        )
+            return {message: i18n.t('aiAdjust.executionFailure.validation'), blocked: false, recovery: 'retry'};
+
         if (
             canApplyAuthoringResult(response) ||
             (response.changedCells.length === 0 &&
@@ -179,8 +197,8 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 typeof issue.nurseName === 'string' && issue.nurseName.trim()
                     ? issue.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
-
             const nightBounds = nightRunBoundsMessage(issue);
+
             if (nightBounds) explanations.push(nightBounds);
 
             if (
@@ -352,8 +370,10 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
                 typeof v.messageArgs?.nurseName === 'string'
                     ? v.messageArgs.nurseName.trim().slice(0, 80)
                     : i18n.t('aiAdjust.executionFailure.affectedNurse');
+
             return `${v.period!.startDate} ~ ${v.period!.endDate}: ${i18n.t('aiAdjust.executionFailure.minimumNightEvidence', {name, actual: v.messageArgs!.actual, expected: v.messageArgs!.expected})}`;
         });
+
         if (details.length)
             return {
                 message: [...new Set(details)].slice(0, 5).join('\n') + '\n\n' + i18n.t('aiAdjust.executionFailure.nightRunBoundsNext'),

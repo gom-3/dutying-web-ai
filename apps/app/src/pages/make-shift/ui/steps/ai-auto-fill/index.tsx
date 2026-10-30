@@ -104,7 +104,8 @@ import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillFixedSelectionBar, AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
-import AiConversationSidebar from './ai-conversation-sidebar';
+import AiConversationSidebar, {type TConversationExecution} from './ai-conversation-sidebar';
+import {AiExecutionDock} from './ai-execution-dock';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
@@ -394,6 +395,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [aiExecution, setAiExecution] = useState<TConversationExecution | null>(null);
+    const [isAiExecutionDismissed, setIsAiExecutionDismissed] = useState(false);
     const [isAiLoadingOverlayFinishing, setIsAiLoadingOverlayFinishing] = useState(false);
     const [aiStartedAt, setAiStartedAt] = useState<number | null>(null);
     const conversationBusyRef = useRef(false);
@@ -539,7 +542,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
-        editorInputDisabled: isAiGenerating || isAiLoadingOverlayFinishing,
+        editorInputDisabled: (isAiGenerating && !isAiExecutionDismissed) || isAiLoadingOverlayFinishing,
     });
     const orderedShift = useMemo(
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
@@ -679,6 +682,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const handleAiLoadingOverlayFinish = useCallback(() => {
         setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
+        setIsAdjustDialogOpen(true);
     }, []);
     const handleConversationBusyChange = useCallback((busy: boolean, succeeded = false) => {
         if (conversationBusyRef.current === busy) return;
@@ -689,13 +693,32 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         if (busy) {
             setAiStartedAt(Date.now());
             setIsAiLoadingOverlayFinishing(false);
-            setIsAdjustDialogOpen(true);
+            setIsAiExecutionDismissed(false);
+            setIsAdjustDialogOpen(false);
         } else {
             setIsAiLoadingOverlayFinishing(succeeded);
 
             if (!succeeded) setAiStartedAt(null);
         }
     }, []);
+
+    useEffect(() => {
+        // A background result must not leave an invisible completion overlay locking the editor.
+        if (isAiLoadingOverlayFinishing && (isAiExecutionDismissed || isAdjustDialogOpen)) {
+            setIsAiLoadingOverlayFinishing(false);
+            setAiStartedAt(null);
+        }
+    }, [isAiLoadingOverlayFinishing, isAiExecutionDismissed, isAdjustDialogOpen]);
+
+    useEffect(() => {
+        if (
+            !isAiGenerating &&
+            !isAiExecutionDismissed &&
+            aiExecution &&
+            ['FAILED', 'CANCELLED'].includes(aiExecution.operation.executionStatus)
+        )
+            setIsAdjustDialogOpen(true);
+    }, [isAiGenerating, isAiExecutionDismissed, aiExecution]);
 
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
@@ -821,6 +844,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
         setIsAiGenerating(false);
+        setAiExecution(null);
+        setIsAiExecutionDismissed(false);
         setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
         setIsAiBlankPreviewVisible(false);
@@ -860,10 +885,10 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         };
     }, [isSnapshotSidebarOpen]);
 
-    const isCalendarReadonly = isAiGenerating;
+    const isCalendarReadonly = isAiGenerating && !isAiExecutionDismissed;
     const visibleCalendarDoc = useMemo(
-        () => (isAiBlankPreviewVisible ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
-        [hydratedDoc, isAiBlankPreviewVisible],
+        () => (isAiBlankPreviewVisible && !isAiExecutionDismissed ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
+        [hydratedDoc, isAiBlankPreviewVisible, isAiExecutionDismissed],
     );
     const annualLeave = useAnnualLeaveSchedule(wardId, currentShiftTeamId, year, month, orderedShift, editorDoc);
     const display = useScheduleDisplay(wardId);
@@ -2888,6 +2913,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 tabIndex={0}
             >
                 <AiPlanNotice hasResult={hasCompletedAiFill} />
+                {conversationEnabled && isAiExecutionDismissed && !isConversationOpen && (aiExecution !== null || isAiGenerating) && (
+                    <AiExecutionDock execution={aiExecution} isAdjusting={isAdjusting} onOpen={() => setIsAdjustDialogOpen(true)} />
+                )}
                 {chatSaveFailed && (
                     <p role="status" className="text-sm text-[#667085]">
                         {t('aiAdjust.preparation.historyUnavailable')}
@@ -3093,7 +3121,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     key={`conversation:${chatOwner}:${wardId}:${currentShiftTeamId}:${year}:${month}`}
                     open={isConversationOpen}
                     loading={isAiGenerating || isAiLoadingOverlayFinishing}
-                    onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
+                    onClose={
+                        preparationStep
+                            ? closePreparation
+                            : () => {
+                                  if (isAiGenerating) setIsAiExecutionDismissed(true);
+
+                                  setIsAdjustDialogOpen(false);
+                              }
+                    }
                     onOpenConstraints={onOpenConstraints ?? (() => useCase.goToStep(2))}
                     wardId={wardId}
                     teamId={currentShiftTeamId}
@@ -3121,6 +3157,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onGenerated={rememberGeneratedSchedule}
                     onBusyChange={handleConversationBusyChange}
+                    onExecutionChange={setAiExecution}
                     resultActions={scheduleActions}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
@@ -3286,13 +3323,26 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
-            {isAiGenerating || isAiLoadingOverlayFinishing ? (
+            {(isAiGenerating || isAiLoadingOverlayFinishing) &&
+            (!conversationEnabled || (!isAiExecutionDismissed && !isConversationOpen)) ? (
                 <AiAutofillLoadingOverlay
                     sidebarOpen={isConversationOpen}
                     isAdjusting={isAdjusting}
                     isFinishing={isAiLoadingOverlayFinishing}
                     startedAt={aiStartedAt}
                     onFinish={handleAiLoadingOverlayFinish}
+                    operation={aiExecution?.operation}
+                    onBackground={conversationEnabled ? () => setIsAiExecutionDismissed(true) : undefined}
+                    onOpenConversation={
+                        conversationEnabled
+                            ? () => {
+                                  setIsAiExecutionDismissed(true);
+                                  setIsAdjustDialogOpen(true);
+                              }
+                            : undefined
+                    }
+                    onCancel={aiExecution?.cancel}
+                    cancelling={aiExecution?.cancelling}
                 />
             ) : null}
         </div>

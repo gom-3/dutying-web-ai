@@ -747,7 +747,7 @@ describe('persistent schedule sidebar', () => {
     });
 
     it.each([
-        {status: 'RUNNING', title: '근무표를 다시 채우고 있어요', animated: true},
+        {status: 'RUNNING', title: '근무표를 채우기 시작했어요. 신청 근무와 고정 근무는 그대로 유지해요.', animated: true},
         {status: 'RESULT_READY', title: '근무표를 마무리하고 있어요', animated: true},
         {status: 'UNKNOWN', title: '결과를 확인하고 있어요', animated: false},
     ] as const)('presents a quiet, readable pending status: $status', async ({status, title, animated}) => {
@@ -764,22 +764,22 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const statusMessage = await screen.findByRole('status', {name: title});
+        const statusMessage = await screen.findByRole('log', {name: '자동채우기 진행 대화'});
 
-        expect(statusMessage).toHaveTextContent('(2회차)');
+        expect(statusMessage).toHaveTextContent(title);
         expect(statusMessage).not.toHaveTextContent(/2026|11월|번째/);
         expect(statusMessage).not.toHaveTextContent(/실행 중|대상:|오전|오후/);
         expect(statusMessage.querySelectorAll('.ai-adjust-review-dot')).toHaveLength(animated ? 3 : 0);
         expect(screen.queryByText(/^자동채우기 2회차 ·/)).not.toBeInTheDocument();
 
-        if (status === 'RUNNING') expect(statusMessage).toHaveTextContent('신청·고정근무는 그대로 유지해요.');
+        if (status === 'RUNNING') expect(statusMessage).toHaveTextContent('신청 근무와 고정 근무는 그대로 유지해요.');
 
         if (status === 'UNKNOWN') expect(screen.getByRole('button', {name: '결과 다시 확인하기'})).toBeVisible();
 
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('describes an adjustment using its own attempt count', async () => {
+    it('adds a separate assistant message describing an adjustment', async () => {
         current.operations = [
             operation,
             {
@@ -793,7 +793,7 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        expect(await screen.findByRole('status', {name: '요청에 맞게 조정하고 있어요'})).toHaveTextContent('(1회차)');
+        expect(await screen.findByRole('log', {name: '근무표 수정 진행 대화'})).toHaveTextContent('요청에 맞게 근무표 수정을 시작했어요.');
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
@@ -823,7 +823,7 @@ describe('persistent schedule sidebar', () => {
     it('can recheck an unknown result without starting a new calculation', async () => {
         current.operations = [{...operation, executionStatus: 'UNKNOWN', resultVersionId: null}];
         renderSidebar();
-        await screen.findByRole('status', {name: '결과를 확인하고 있어요'});
+        await screen.findByRole('log', {name: '자동채우기 진행 대화'});
         mocks.detail.mockClear();
         await userEvent.click(screen.getByRole('button', {name: '결과 다시 확인하기'}));
 
@@ -977,10 +977,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const statusMessage = await screen.findByRole('status', {name: 'Refilling your schedule'});
+        const statusMessage = await screen.findByRole('log', {name: 'Autofill progress conversation'});
 
         expect(statusMessage).toHaveTextContent('Requested and fixed shifts stay in place.');
-        expect(statusMessage).toHaveTextContent('(Run 2)');
+        expect(statusMessage).toHaveTextContent('I have started filling your schedule.');
         expect(statusMessage).not.toHaveTextContent('2026-11');
     });
 
@@ -4487,10 +4487,10 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('resumes a running request after remount and applies the completed receipt without another execution', async () => {
+    it.each([false, true])('resumes a running request after remount without another execution (negotiated=%s)', async (negotiated) => {
         enable();
 
-        const result = intentResponse();
+        const result = negotiated ? intentResponse() : {...successfulResult, operationType: 'ADJUST' as const};
         const pendingOperation = {
             ...operation,
             operationType: 'ADJUST' as const,
@@ -4506,7 +4506,7 @@ describe('intent-first sidebar integration', () => {
             JSON.stringify({
                 conversationId: 1,
                 request: {
-                    authoringContractVersion: 'intent-first-v1',
+                    ...(negotiated ? {authoringContractVersion: 'intent-first-v1'} : {}),
                     sourceVersionId: 'source:1',
                     expectedRevision: 0,
                     idempotencyKey: 'pending:1',

@@ -6,6 +6,14 @@ describe.each(['ko', 'en'])('user-facing AI errors (%s)', (language) => {
     beforeEach(async () => {
         await i18n.changeLanguage(language);
     });
+    it('explains a full background queue as retryable load rather than invalid settings', () => {
+        expect(aiConversationFailure({serverCode: 'BACKGROUND_QUEUE_FULL'})).toEqual({
+            message: i18n.t('aiAdjust.executionFailure.busy'),
+            blocked: false,
+            checkOutcome: false,
+            recovery: 'retry',
+        });
+    });
     it.each([
         {message: 'java.lang.IllegalStateException: SOLVER_RESULT_FAILED_FINAL_GATE', code: 500},
         {message: 'revision mismatch expectedRevision=4', code: 409},

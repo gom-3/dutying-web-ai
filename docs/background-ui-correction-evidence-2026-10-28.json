@@ -1,0 +1,61 @@
+{
+    "date": "2026-10-28",
+    "scope": "real AiAutofill parent mounted with isolated synthetic Spring/MySQL/Redis/FastAPI, desktop 1280x720",
+    "tests": {
+        "parent_loading": 114,
+        "sidebar_progress": 190,
+        "editor_hydration": 19,
+        "total": 323
+    },
+    "domComputed": {
+        "loadingTitle": "Pretendard Variable,24px",
+        "loadingDescription": "Pretendard Variable,15px",
+        "progressConversation": "Pretendard Variable,14.5px,28px line-height"
+    },
+    "operations": [
+        {
+            "id": "ef00e37c-8748-473d-9fae-1563447fec29",
+            "execution": "SUCCEEDED",
+            "apply": "APPLIED",
+            "elapsedSeconds": 46.4882,
+            "changedCells": 186,
+            "injectedDelaySeconds": 45,
+            "observedMessages": ["COMPUTING", "LONG_RUNNING"],
+            "closedCompletionResultOpened": true
+        },
+        {
+            "id": "f24e4cb9-bb51-4fcd-b079-135e6358d685",
+            "execution": "FAILED",
+            "apply": "NOT_APPLIED",
+            "failure": "SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED",
+            "elapsedSeconds": 0.1341
+        },
+        {
+            "id": "04f20bbe-f5f3-40cf-b872-496c8e8d0c86",
+            "execution": "CANCELLED",
+            "apply": "NOT_APPLIED",
+            "elapsedSeconds": 8.9991,
+            "calendarUnchangedImmediatelyAndAfterLateResponse": true,
+            "progressHistoryRestoredAfterReload": true
+        }
+    ],
+    "limitations": [
+        "no mobile viewport verification",
+        "existing Python/Spring contract mismatch remains; PR Draft",
+        "not deployed; no live LLM calls"
+    ],
+    "screenshots": [
+        "ui-restored-loader.png",
+        "ui-conversation-start.png",
+        "ui-conversation-appended.png",
+        "ui-background-dock.png",
+        "ui-result-retained-history.png",
+        "ui-cancelled-conversation.png"
+    ],
+    "checks": {
+        "typescriptAndProductionBuild": "passed",
+        "eslintChangedProductionCode": "passed",
+        "diffCheck": "passed",
+        "existingBundleSizeWarning": true
+    }
+}

@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 
 const INITIAL_PROGRESS = 8;
 const FAST_PROGRESS_TARGET = 90;
@@ -32,6 +33,11 @@ function getSimulatedProgress(elapsedMs: number) {
 
 type TAiAutofillLoadingOverlayProps = {
     sidebarOpen?: boolean;
+    operation?: TConversationOperation;
+    onBackground?: () => void;
+    onOpenConversation?: () => void;
+    onCancel?: (() => void) | null;
+    cancelling?: boolean;
     isFinishing?: boolean;
     onFinish?: () => void;
     startedAt: number | null;
@@ -41,12 +47,23 @@ type TAiAutofillLoadingOverlayProps = {
 
 export function AiAutofillLoadingOverlay({
     sidebarOpen = false,
+    onBackground,
+    onOpenConversation,
+    onCancel,
+    cancelling = false,
     isFinishing = false,
     onFinish,
     startedAt,
     isAdjusting = false,
 }: TAiAutofillLoadingOverlayProps) {
     const {t} = useTypedTranslation();
+    const backgroundMode = Boolean(onBackground);
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (backgroundMode) dialogRef.current?.focus();
+    }, [backgroundMode]);
+
     const [mountedAt] = useState(Date.now);
     const progressStartedAt = startedAt ?? mountedAt;
     const [progress, setProgress] = useState(() => getSimulatedProgress(getElapsedMs(progressStartedAt)));
@@ -122,11 +139,35 @@ export function AiAutofillLoadingOverlay({
 
     return createPortal(
         <div
+            ref={dialogRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal={!sidebarOpen}
             aria-labelledby="ai-autofill-loading-title"
             data-ai-autofill-loading="true"
             className={`fixed z-[1401] flex flex-col items-center overflow-y-auto bg-[#121726]/55 p-4 ${sidebarOpen ? 'inset-x-0 top-0 bottom-[50dvh] md:right-[var(--make-ai-adjust-sidebar-width,407px)] md:bottom-0' : 'inset-0'}`}
+            onKeyDown={(event) => {
+                if (backgroundMode && event.key === 'Tab') {
+                    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+                    const first = buttons[0];
+                    const last = buttons[buttons.length - 1];
+
+                    if (
+                        first &&
+                        (event.target === event.currentTarget ||
+                            (!event.shiftKey && event.target === last) ||
+                            (event.shiftKey && event.target === first))
+                    ) {
+                        event.preventDefault();
+                        (event.shiftKey ? last : first)?.focus();
+                    }
+                }
+
+                if (event.key === 'Escape' && onBackground && !isFinishing) {
+                    event.stopPropagation();
+                    onBackground();
+                }
+            }}
         >
             <div className="my-auto w-full max-w-[420px] shrink-0 rounded-[20px] bg-white px-5 py-5 text-center sm:px-7 sm:py-8">
                 <div aria-hidden="true" className="mx-auto grid size-[60px] grid-cols-3 gap-1 p-3">
@@ -164,10 +205,41 @@ export function AiAutofillLoadingOverlay({
                     >
                         <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
                     </div>
-                    <div className="mt-3 flex justify-end font-apple text-[13px] font-semibold">
+                    <div className="mt-3 flex justify-end gap-2 font-apple text-[13px] font-semibold">
+                        <span className="font-normal text-gray-3">{progressLabel}</span>
                         <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
                     </div>
                 </div>
+                {onBackground && !isFinishing && (
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 border-t border-gray-6 pt-1 font-apple text-[13px] leading-5 sm:text-sm">
+                        <button
+                            type="button"
+                            onClick={onBackground}
+                            className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1"
+                        >
+                            {t('aiAutofillUi.executionPresentation.continueInBackground')}
+                        </button>
+                        {onOpenConversation && (
+                            <button
+                                type="button"
+                                onClick={onOpenConversation}
+                                className="min-h-11 rounded-lg px-2 text-main-1 hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1"
+                            >
+                                {t('aiAutofillUi.executionPresentation.openConversation')}
+                            </button>
+                        )}
+                        {onCancel && (
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                disabled={cancelling}
+                                className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
+                            >
+                                {t('aiAutofillUi.conversationOperationStatus.cancelBackground')}
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
         </div>,
         portalContainer,

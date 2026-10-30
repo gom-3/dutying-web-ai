@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>PO·PM 검토 — 로딩창 복원·진행 대화 누적</title>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: #f7f8fa;
+                color: #242b36;
+                font:
+                    16px/1.7 system-ui,
+                    -apple-system,
+                    sans-serif;
+            }
+            main {
+                max-width: 1240px;
+                margin: auto;
+                padding: 42px 24px 72px;
+            }
+            h1 {
+                font-size: 32px;
+                line-height: 1.35;
+            }
+            h2 {
+                margin-top: 36px;
+                font-size: 23px;
+            }
+            p {
+                margin: 12px 0;
+            }
+            a {
+                color: #6341db;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: #fff;
+            }
+            td,
+            th {
+                padding: 14px;
+                border: 1px solid #dce1e8;
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                background: #f0edf9;
+            }
+            .grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            figure {
+                margin: 0;
+                border: 1px solid #dce1e8;
+                border-radius: 12px;
+                overflow: hidden;
+                background: #fff;
+            }
+            img {
+                display: block;
+                width: 100%;
+                height: auto;
+            }
+            figcaption {
+                padding: 15px;
+                font-size: 14px;
+                color: #586174;
+            }
+            .note {
+                padding: 20px 24px;
+                border-left: 4px solid #6341db;
+                background: white;
+            }
+            .muted {
+                color: #586174;
+                font-size: 14px;
+            }
+            code {
+                overflow-wrap: anywhere;
+                font-size: 13px;
+            }
+            li {
+                margin: 7px 0;
+            }
+            .scroll {
+                overflow: auto;
+            }
+            @media (max-width: 800px) {
+                .grid {
+                    grid-template-columns: 1fr;
+                }
+                main {
+                    padding: 24px 16px;
+                }
+                table {
+                    min-width: 700px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <section class="note" style="margin-bottom: 36px">
+                <p class="muted">2026-10-30 · 최신 develop 통합 변경</p>
+                <h1>진행 화면·용어를 현재 대화 기능과 통합</h1>
+                <p>
+                    로딩창과 작업 표시의 재열기 동작을 <strong>진행 상황 보기</strong>로 통일했다. 기존 표를 바꾸는 작업은
+                    <strong>근무표 수정</strong>, 보호되는 배치는 <strong>신청 근무 / 고정 근무</strong>로 표현한다. 첫 요청 입력·변경
+                    내역·대화 시각·저장 결과 복구는 현재 develop 기능을 유지한다.
+                </p>
+                <p>
+                    서버가 아직 작업 접수를 응답하지 않았어도 닫은 뒤 다시 열 수 있다. 서버가 취소 가능한 작업을 응답한 경우에만 취소 버튼을
+                    제공한다. 구 서버의 기존 대기 시간을 유지한다.
+                </p>
+                <p>
+                    <strong>범위:</strong> 이번 브라우저 점검은 합성 API를 쓰는 제품 컴포넌트 프리뷰다. 데스크톱 1280×720, 모바일
+                    375×812에서 진행 대화와 44px 취소 버튼을 확인했다. 아래 10월 28일 HTTP 검증 이력과 구분한다.
+                </p>
+                <div class="grid">
+                    <figure>
+                        <a href="assets/background-schedule/develop-conversation-desktop-2026-10-30.png"
+                            ><img
+                                src="assets/background-schedule/develop-conversation-desktop-2026-10-30.png"
+                                alt="최신 통합 컴포넌트의 진행 메시지·취소·대화 시각"
+                        /></a>
+                        <figcaption>데스크톱 · 별도 메시지와 최근 추가된 대화 시각 유지.</figcaption>
+                    </figure>
+                    <figure>
+                        <a href="assets/background-schedule/develop-conversation-mobile-2026-10-30.png"
+                            ><img
+                                src="assets/background-schedule/develop-conversation-mobile-2026-10-30.png"
+                                alt="375px에서 단어를 보존한 진행 안내와 취소 버튼"
+                                style="max-width: 375px; margin: auto"
+                        /></a>
+                        <figcaption>375px · 한글 단어 줄바꿈과 취소 버튼 접근 확인.</figcaption>
+                    </figure>
+                </div>
+                <p>
+                    <strong>최종 검증:</strong> 근무표 관련 95개 테스트 파일·1,249개 테스트, 타입 검사·빌드 통과. 기존 번들 크기 경고는 남아
+                    있다.
+                </p>
+                <p>
+                    <strong>백엔드 별도:</strong> Spring PR338과 Python PR158은 아직 열린 PR이다. 웹 develop 통합이 서버 배포·비동기 계약
+                    활성화 완료를 뜻하지 않는다. 이번 변경은 운영 배포가 아니다.
+                </p>
+            </section>
+            <h2>2026-10-28 검증 이력</h2>
+
+            <p class="muted">PRODUCT REVIEW · 2026-10-28 · 두 번째 UI 수정 / 운영 미배포</p>
+            <h1>기존 로딩창 복원, 진행 안내는 하나씩 쌓이는 대화로</h1>
+            <p>
+                <a href="https://github.com/gom-3/dutying-web-ai/pull/162">프론트 PR #162 · Draft</a> · 실제 AiAutofill 부모 페이지 + 격리된
+                Spring/MySQL/Redis/FastAPI 연결
+            </p>
+            <div class="note">
+                <strong>이전 구현과 설명을 정정했다.</strong>
+                <p>
+                    진행 막대·퍼센트를 없애고 큰 버튼과 안내문을 넣은 화면은 기존 로딩창 유지가 아니었다. 사이드바도 한 문장을 교체했으며,
+                    별도 메시지를 하나씩 추가하지 않았다. 이번 수정은 원래 로딩 구조를 복원하고, 확인된 단계마다 이전 메시지를 보존하며 새
+                    메시지를 추가한다.
+                </p>
+            </div>
+            <h2>1. 무엇을 고쳤나</h2>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Before</th>
+                            <th>After</th>
+                            <th>Why</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>진행 막대·% 대신 설명 문단과 큰 보라색 버튼.</td>
+                            <td>
+                                기존 흰 카드·격자 아이콘·제목·설명·진행 막대·%·완료 연출 복원. 하단에 작은 ‘닫고 계속 계산 / 대화 보기 /
+                                계산 요청 취소’만 추가.
+                            </td>
+                            <td>기존 화면에서 최소 변경. %는 ‘예상 진행률’로 표시하고 실제 완료 전에는 100%가 되지 않음.</td>
+                        </tr>
+                        <tr>
+                            <td>추가된 안내문의 글꼴·크기가 달라짐.</td>
+                            <td>
+                                로딩 제목 24px·설명 15px, 기존 font-apple 스타일 유지. 대화 본문은 동일한 제품 글꼴의 14.5px·줄 간격 28px.
+                            </td>
+                            <td>브라우저 계산 스타일로 기존 크기와 실제 Pretendard 폰트 적용 확인.</td>
+                        </tr>
+                        <tr>
+                            <td>하나의 진행 문구를 교체.</td>
+                            <td>
+                                ‘채우기 시작’ → 30초 후 ‘계산을 이어가는 중’ → 관측한 검증 단계 → 결과를 각각 별도 AI 메시지로 추가. 상자
+                                배경 없음.
+                            </td>
+                            <td>앞선 설명을 읽으면서 진행을 따라갈 수 있음. 관측하지 못한 단계는 꾸며내지 않음.</td>
+                        </tr>
+                        <tr>
+                            <td>새 브라우저에서 editor init이 서버 기능 설정을 초기화해 이전 동기 경로로 진입 가능.</td>
+                            <td>에디터 초기화 완료 후 서버의 기능 설정을 적용. 서버가 끈 기능은 계속 꺼짐.</td>
+                            <td>처음 연 페이지에서도 백그라운드 경로 사용. true/false 회귀 테스트 추가.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <h2>2. 로딩창 수정 전후</h2>
+            <p>
+                아래는 실제 제품 부모 페이지를 마운트한 로컬 합성 병동 화면이다. 전체 앱 내비게이션 셸이나 운영 URL 검증은 아니다. 이미지를
+                누르면 원본 크기로 볼 수 있다.
+            </p>
+            <div class="grid">
+                <figure>
+                    <a href="assets/background-schedule/tobe-real-page-loader.png"
+                        ><img src="assets/background-schedule/tobe-real-page-loader.png" alt="Before · 이전에 잘못 바꾼 로딩창"
+                    /></a>
+                    <figcaption>
+                        <strong>Before · 이전에 잘못 바꾼 로딩창</strong><br />진행 막대·퍼센트를 없애고 문단과 큰 버튼을 추가했던 화면.
+                        이번에 교체했다.
+                    </figcaption>
+                </figure>
+                <figure>
+                    <a href="assets/background-schedule/ui-restored-loader.png"
+                        ><img src="assets/background-schedule/ui-restored-loader.png" alt="After · 기존 진행 막대·% 복원"
+                    /></a>
+                    <figcaption>
+                        <strong>After · 기존 진행 막대·% 복원</strong><br />제목·설명·아이콘·진행 구조는 원래대로. 하단에 작은 동작 버튼만
+                        추가했다. 중앙 로딩과 사이드바는 동시에 표시되지 않는다.
+                    </figcaption>
+                </figure>
+            </div>
+            <details>
+                <summary>원래 로딩창 기준 화면 보기</summary>
+                <figure>
+                    <a href="assets/background-schedule/before-real-page-overlap.png"
+                        ><img src="assets/background-schedule/before-real-page-overlap.png" alt="원래 로딩창 · 75ca09b2의 동기 경로"
+                    /></a>
+                    <figcaption>
+                        <strong>원래 로딩창 · 75ca09b2의 동기 경로</strong><br />원래 진행 막대와 % 구조의 기준. 이 화면에는 이전 중복 표시
+                        문제도 남아 있다.
+                    </figcaption>
+                </figure>
+            </details>
+            <h2>3. 대화는 한 번에 하나씩 추가</h2>
+            <div class="grid">
+                <figure>
+                    <a href="assets/background-schedule/ui-conversation-start.png"
+                        ><img src="assets/background-schedule/ui-conversation-start.png" alt="실행 초기 · 첫 메시지"
+                    /></a>
+                    <figcaption>
+                        <strong>실행 초기 · 첫 메시지</strong><br />서버에서 계산 중 상태를 확인한 뒤 ‘근무표를 채우기 시작했어요’를
+                        표시한다.
+                    </figcaption>
+                </figure>
+                <figure>
+                    <a href="assets/background-schedule/ui-conversation-appended.png"
+                        ><img src="assets/background-schedule/ui-conversation-appended.png" alt="30초 이후 · 두 번째 메시지 추가"
+                    /></a>
+                    <figcaption>
+                        <strong>30초 이후 · 두 번째 메시지 추가</strong><br />첫 메시지를 지우지 않고 ‘시간이 조금 더 필요해 계산을 이어가고
+                        있어요’를 새 AI 메시지로 추가한다.
+                    </figcaption>
+                </figure>
+            </div>
+            <h2>4. 닫기·결과·취소의 실제 동작</h2>
+            <div class="grid">
+                <figure>
+                    <a href="assets/background-schedule/ui-background-dock.png"
+                        ><img src="assets/background-schedule/ui-background-dock.png" alt="닫아둔 상태 · 같은 작업 40초 경과"
+                    /></a>
+                    <figcaption>
+                        <strong>닫아둔 상태 · 같은 작업 40초 경과</strong><br />근무표 위 작업 표시에서 진행 상황 보기·취소에 접근한다. 중앙
+                        가림막은 없다.
+                    </figcaption>
+                </figure>
+                <figure>
+                    <a href="assets/background-schedule/ui-result-retained-history.png"
+                        ><img src="assets/background-schedule/ui-result-retained-history.png" alt="결과 확인 · 앞선 메시지도 유지"
+                    /></a>
+                    <figcaption>
+                        <strong>결과 확인 · 앞선 메시지도 유지</strong><br />45초 지연 뒤 실제 계산 완료. 46.49초 SUCCEEDED/APPLIED, 186칸
+                        변경 결과를 같은 대화에서 확인했다.
+                    </figcaption>
+                </figure>
+                <figure>
+                    <a href="assets/background-schedule/ui-cancelled-conversation.png"
+                        ><img src="assets/background-schedule/ui-cancelled-conversation.png" alt="취소 · 별도 메시지로 추가"
+                    /></a>
+                    <figcaption>
+                        <strong>취소 · 별도 메시지로 추가</strong><br />시작 메시지 뒤 취소 메시지를 추가한다. 9.00초 CANCELLED/NOT_APPLIED.
+                        늦은 응답 뒤에도 기존 근무표 DOM 값이 동일했다.
+                    </figcaption>
+                </figure>
+            </div>
+            <h2>5. 검증과 제한</h2>
+            <ul>
+                <li>
+                    이번 최종 회귀 테스트 323개 통과: 부모 페이지·생성/조절·로딩 114개, 사이드바·진행 대화 190개, 에디터 초기화 19개. 메시지
+                    중복·역순 응답·다른 작업 분리·완료 후 보존·재마운트·취소 포함.
+                </li>
+                <li>최종 TypeScript·ESLint·프로덕션 빌드 통과. 기존 번들 크기 경고는 남아 있다.</li>
+                <li>
+                    실제 페이지에서 닫기 → 동일 작업 재열기 → 취소, 닫은 상태에서 완료 → 결과 확인, 새로고침 후 진행·취소 메시지 보존을
+                    확인했다.
+                </li>
+                <li>
+                    45초 지연은 실제 계산 전에 테스트 미들웨어가 주었다. 이 화면 동선 검증은 솔버 CPU 속도나 모든 병동의 생성 성공률을
+                    뜻하지 않는다. 외부 모델 호출과 운영 데이터 사용은 없다.
+                </li>
+                <li>
+                    반복 QA 중 합성 병동의 사용량 제한이 정상 차단된 사례도 있었다. 이후 일회용 로컬 Redis의 해당 횟수 카운터만 초기화해
+                    취소 경로를 검증했다. 운영 정책 변경 없음.
+                </li>
+                <li>
+                    작은 화면은 이번 브라우저 검증 범위에 포함하지 않았다. 이전 QA에서 발견한 Python·Spring 검증 계약 불일치는 별도 미해결
+                    사항이며 PR은 Draft 유지한다. 배포·병합하지 않았다.
+                </li>
+            </ul>
+            <p>
+                <a href="background-ui-correction-evidence-2026-10-28.json">이번 검증 근거</a> ·
+                <a href="background-tobe-page-evidence-2026-10-28.json">이전 결과·수동 편집 보호 검증</a>
+            </p>
+        </main>
+    </body>
+</html>
