@@ -120,4 +120,15 @@ describe('autofill loading overlay', () => {
         fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
         expect(onBackground).toHaveBeenCalledTimes(2);
     });
+
+    it('allows keyboard navigation from the loader to the progress sidebar', () => {
+        render(<AiAutofillLoadingOverlay startedAt={Date.now()} sidebarOpen onBackground={vi.fn()} onCancel={vi.fn()} />);
+
+        expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'false');
+
+        const cancel = screen.getByRole('button', {name: '계산 요청 취소'});
+
+        cancel.focus();
+        expect(fireEvent.keyDown(cancel, {key: 'Tab'})).toBe(true);
+    });
 });

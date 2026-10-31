@@ -12,7 +12,7 @@ import useAuthStore from '@/features/auth/model/store';
 import type * as ShiftEditorModule from '@/features/shift-editor';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor';
 import i18n from '@/i18n';
-import {act, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
+import {act, fireEvent, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import type {TConversationExecution} from '../ai-conversation-sidebar';
 import {AiAutofill} from '../index';
 
@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     goToStep: vi.fn(),
     month: 7,
     previousBlank: false,
+    autoFinishOverlay: true,
     shift: {
         days: [],
         wardShiftTypes: ['D', 'E', 'N', 'O'].map((shortName, index) => ({wardShiftTypeId: index + 1, shortName})),
@@ -62,7 +63,13 @@ const mocks = vi.hoisted(() => ({
         onRecoverGeneration?: () => void;
         generationRequest: number;
     } | null,
-    loadingProps: [] as Array<{startedAt: number | null; sidebarOpen?: boolean; isFinishing?: boolean; isAdjusting?: boolean}>,
+    loadingProps: [] as Array<{
+        startedAt: number | null;
+        sidebarOpen?: boolean;
+        isFinishing?: boolean;
+        isAdjusting?: boolean;
+        onFinish?: () => void;
+    }>,
 }));
 
 vi.mock('../../constraints', async () => {
@@ -332,16 +339,20 @@ vi.mock('../ai-autofill-loading-overlay', () => ({
         isFinishing: boolean;
         onFinish: () => void;
         onBackground?: () => void;
+        onOpenConversation?: () => void;
     }) => {
         const {isFinishing, onFinish} = props;
 
         mocks.loadingProps.push(props);
         useEffect(() => {
-            if (isFinishing) onFinish();
+            if (isFinishing && mocks.autoFinishOverlay) onFinish();
         }, [isFinishing, onFinish]);
 
         return (
-            <div data-testid="ai-loading-overlay">{props.onBackground && <button onClick={props.onBackground}>hide loader</button>}</div>
+            <div data-testid="ai-loading-overlay">
+                {props.onBackground && <button onClick={props.onBackground}>hide loader</button>}
+                {props.onOpenConversation && <button onClick={props.onOpenConversation}>open progress</button>}
+            </div>
         );
     },
 }));
@@ -537,13 +548,17 @@ async function completeFirstFill(user: ReturnType<typeof userEvent.setup>) {
 /** Exercise the direct-edit route before filling the changed draft. */
 async function prepareAnotherGeneration(user: ReturnType<typeof userEvent.setup>) {
     const edit = screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')});
+
     if (!edit) {
         await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.regenerate'}));
+
         return;
     }
+
     await user.click(edit);
     act(() => {
         const doc = useShiftEditorStore.getState().doc;
+
         useShiftEditorStore.getState().setDoc({
             ...doc,
             rows: doc.rows.map((row) =>
@@ -658,12 +673,16 @@ describe('AiAutofill adjust panel', () => {
         mocks.goToStep.mockReset();
         mocks.month = 7;
         mocks.previousBlank = false;
+        mocks.autoFinishOverlay = true;
         mocks.conversationProps = null;
         mocks.loadingProps = [];
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'true');
         window.sessionStorage.clear();
         window.localStorage.clear();
-        for (const account of ['guest', 'account:1001', 'account:1002']) localStorage.setItem(`dutying.ai-adjust-intro:v1:${account}`, 'seen');
+
+        for (const account of ['guest', 'account:1001', 'account:1002'])
+            localStorage.setItem(`dutying.ai-adjust-intro:v1:${account}`, 'seen');
+
         useAuthStore.setState({accountId: null});
         installRequestStore();
         seedEditor();
@@ -743,7 +762,34 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
-    it('keeps hidden conversation work reachable through reopen, close, cancellation and a terminal result without a second execution', async () => {
+    it('releases visible progress and editing after the completion animation beside the sidebar', async () => {
+        seedEditor(makeEmptyDoc());
+        mocks.autoFinishOverlay = false;
+        act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        act(() => mocks.conversationProps?.onBusyChange?.(true));
+        await user.click(screen.getByRole('button', {name: 'open progress'}));
+        act(() => mocks.conversationProps?.onBusyChange?.(false, true));
+        expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.isFinishing).toBe(true);
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, true);
+
+        act(() => mocks.loadingProps[mocks.loadingProps.length - 1]?.onFinish?.());
+        expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        expect(mocks.conversationProps?.open).toBe(true);
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'false');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, false);
+        act(() => mocks.conversationProps?.onBusyChange?.(false, true));
+        expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'false');
+    });
+
+    it('keeps the loader beside progress and restores it when reopening hidden work without a second execution', async () => {
         seedEditor(makeEmptyDoc());
         act(() => useShiftEditorStore.getState().setConversationEnabled(true));
 
@@ -773,16 +819,28 @@ describe('AiAutofill adjust panel', () => {
             mocks.conversationProps?.onBusyChange?.(true);
         });
         expect(mocks.conversationProps?.open).toBe(false);
+        await user.click(screen.getByRole('button', {name: 'open progress'}));
+        expect(mocks.conversationProps?.open).toBe(true);
+        expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(true);
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
         await user.click(screen.getByRole('button', {name: 'hide loader'}));
         expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, true);
         await user.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.executionPresentation.viewProgress')}));
         expect(mocks.conversationProps?.open).toBe(true);
-        expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(true);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
         expect(mocks.conversationProps?.open).toBe(false);
-        expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(false);
+        await user.click(screen.getByRole('button', {name: 'hide loader'}));
         await user.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationOperationStatus.cancelBackground')}));
         expect(cancel).toHaveBeenCalledOnce();
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
         act(() => {
             mocks.conversationProps?.onExecutionChange?.({
                 operation: {...operation, executionStatus: 'CANCELLED', progress: null},
@@ -794,8 +852,68 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.executionPresentation.viewResult')}));
         expect(mocks.conversationProps?.open).toBe(true);
         expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+        expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'false');
+        expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, false);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
+
+    it.each(['SUCCEEDED', 'FAILED', 'CANCELLED'] as const)(
+        'blocks keyboard and paste while hidden, then releases editing after %s even when viewing history',
+        async (executionStatus) => {
+            seedEditor(makeEmptyDoc());
+            act(() => useShiftEditorStore.getState().setConversationEnabled(true));
+
+            const user = userEvent.setup();
+            const view = render(<AiAutofill />);
+
+            await user.click(screen.getByRole('button', {name: 'auto fill'}));
+            act(() => mocks.conversationProps?.onBusyChange?.(true));
+            await user.click(screen.getByRole('button', {name: 'hide loader'}));
+            act(() => useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}}));
+
+            const editor = view.container.querySelector('.ai-autofill-root__main')!;
+            const paste = () => fireEvent.paste(editor, {clipboardData: {getData: () => 'N'}});
+
+            fireEvent.keyDown(editor, {key: 'd'});
+            paste();
+            expect(rowCells('10')?.[0]).toBeNull();
+            expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'true');
+
+            act(() => {
+                mocks.conversationProps?.onBusyChange?.(false, executionStatus === 'SUCCEEDED');
+                mocks.conversationProps?.onExecutionChange?.({
+                    operation: {
+                        operationId: 'completed-job',
+                        sequence: 1,
+                        operationType: 'GENERATE',
+                        fillPolicy: 'EMPTY_ONLY',
+                        sourceVersionId: 'v1',
+                        resultVersionId: null,
+                        interpretationId: null,
+                        baseRevision: 0,
+                        executionStatus,
+                        applyStatus: 'NOT_APPLIED',
+                        failureReason: null,
+                        result: null,
+                        createdAt: '',
+                        progress: null,
+                    },
+                    cancel: null,
+                    cancelling: false,
+                });
+            });
+            await user.click(screen.getByRole('button', {name: i18n.t('aiAutofillUi.executionPresentation.viewResult')}));
+            expect(mocks.conversationProps?.open).toBe(true);
+            expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
+            expect(screen.getByTestId('calendar')).toHaveAttribute('data-readonly', 'false');
+            expect(mocks.setStepNavigationBusy).toHaveBeenLastCalledWith(5, false);
+            fireEvent.keyDown(editor, {key: 'd'});
+            expect(rowCells('10')?.[0]).toBe('D');
+            act(() => useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}}));
+            paste();
+            await waitFor(() => expect(rowCells('10')?.[0]).toBe('N'));
+        },
+    );
 
     it('keeps the sheet open during generation when adjustment is disabled', async () => {
         vi.stubEnv('VITE_AI_ADJUST_ENABLED', 'false');
@@ -1721,26 +1839,33 @@ describe('AiAutofill adjust panel', () => {
         'keeps direct edits for later autofill and protects only changed filled cells: %s',
         async (action) => {
             const user = userEvent.setup();
+
             render(<AiAutofill />);
             await completeFirstFill(user);
+
             const original = structuredClone(useShiftEditorStore.getState().doc);
+
             await user.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}));
             expect(screen.queryByRole('dialog', {name: ADJUST_DIALOG_TITLE})).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc).toEqual(original);
             expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
             act(() => {
                 const doc = useShiftEditorStore.getState().doc;
+
                 useShiftEditorStore
                     .getState()
                     .setDoc({...doc, rows: doc.rows.map((row) => (row.workerId === '11' ? {...row, cells: ['N', 'D', null, 'N']} : row))});
             });
+
             const edited = structuredClone(useShiftEditorStore.getState().doc);
+
             await user.click(screen.getByRole('button', {name: 'auto fill'}));
             await screen.findByRole('region', {name: DECISION_TITLE});
             expect(rowCells('11')).toEqual(['N', 'D', null, 'N']);
             expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({...original.fixedCells, '11|2026-07-04': true});
             expect(useShiftEditorStore.getState().doc.requestCells).toEqual(original.requestCells);
             expect(mocks.requestAiSchedule).toHaveBeenCalledOnce();
+
             if (action === 'cancel') {
                 await user.click(screen.getByRole('button', {name: 'aiAdjust.chat.restart'}));
                 expect(useShiftEditorStore.getState().doc).toEqual(edited);
@@ -1749,7 +1874,9 @@ describe('AiAutofill adjust panel', () => {
                 mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-03', 'D')], 'GENERATE'));
                 await user.click(screen.getByRole('button', {name: DECISION_CONFIRM}));
                 await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+
                 const payload = mocks.requestAiSchedule.mock.calls[1]?.[0];
+
                 expect(payload.doc.rows.find((row: {workerId: string}) => row.workerId === '11').cells).toEqual([null, null, null, 'N']);
                 expect(payload.doc.fixedCells).toEqual({...original.fixedCells, '11|2026-07-04': true});
                 expect(rowCells('11')).toEqual(['N', 'D', 'D', 'N']);
@@ -1759,9 +1886,12 @@ describe('AiAutofill adjust panel', () => {
 
     it('opens autofill after only conditions change without requiring a direct edit', async () => {
         const user = userEvent.setup();
+
         render(<AiAutofill />);
         await completeFirstFill(user);
+
         const before = structuredClone(useShiftEditorStore.getState().doc);
+
         act(() => useShiftEditorStore.getState().setRulesHash('sha256:conditions-changed'));
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         await screen.findByRole('region', {name: DECISION_TITLE});
@@ -1774,10 +1904,13 @@ describe('AiAutofill adjust panel', () => {
 
     it('keeps the original legacy rewrite prompt through fixed-cell preparation and generation', async () => {
         const user = userEvent.setup();
+
         render(<AiAutofill />);
         await completeFirstFill(user);
+
         const text = '고정한 것만 남기고 다시 짜줘';
         const before = structuredClone(useShiftEditorStore.getState().doc);
+
         mocks.interpretScheduleAdjust.mockResolvedValue({
             items: [],
             unmapped: [],

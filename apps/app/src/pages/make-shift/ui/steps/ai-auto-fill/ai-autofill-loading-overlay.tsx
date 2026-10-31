@@ -148,7 +148,7 @@ export function AiAutofillLoadingOverlay({
             data-ai-autofill-loading="true"
             className={`fixed z-[1401] flex flex-col items-center overflow-y-auto bg-[#121726]/55 p-4 ${sidebarOpen ? 'inset-x-0 top-0 bottom-[50dvh] md:right-[var(--make-ai-adjust-sidebar-width,407px)] md:bottom-0' : 'inset-0'}`}
             onKeyDown={(event) => {
-                if (backgroundMode && event.key === 'Tab') {
+                if (backgroundMode && !sidebarOpen && event.key === 'Tab') {
                     const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
                     const first = buttons[0];
                     const last = buttons[buttons.length - 1];
