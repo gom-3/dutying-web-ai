@@ -56,6 +56,8 @@ export function AiAutofillPreparation({
     onUndoFixAll,
     onEditConditions,
     onEditSchedule,
+    requestText = '',
+    onRequestTextChange,
     summary,
     active = true,
 }: {
@@ -73,6 +75,8 @@ export function AiAutofillPreparation({
     onUndoFixAll?: () => void;
     onEditConditions?: () => void;
     onEditSchedule?: () => void;
+    requestText?: string;
+    onRequestTextChange?: (text: string) => void;
     summary?: TAutofillCellSummary;
     active?: boolean;
 }) {
@@ -98,6 +102,20 @@ export function AiAutofillPreparation({
             className="flex flex-col gap-5 outline-none"
         >
             {step === 'fixed' && summary && <AutofillSelectionSummary summary={summary} />}
+            {step === 'fixed' && onRequestTextChange && (
+                <label className="flex flex-col gap-2 text-[13px] font-medium text-[#344054]">
+                    {t('aiAdjust.preparation.initialRequestLabel')}
+                    <textarea
+                        value={requestText}
+                        onChange={(event) => onRequestTextChange(event.target.value)}
+                        maxLength={500}
+                        rows={2}
+                        disabled={disabled}
+                        placeholder={t('aiAdjust.preparation.initialRequestExample')}
+                        className="w-full resize-none rounded-xl border border-[#DCE2EB] bg-white px-3 py-2 text-sm leading-6 font-normal text-[#333D4B] placeholder:text-[#667085] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
+                    />
+                </label>
+            )}
             {step === 'fixed' && onUndoFixAll && (
                 <button
                     type="button"

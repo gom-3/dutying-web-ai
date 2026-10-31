@@ -1,5 +1,5 @@
 /** Synthetic local draft; every entered request uses the native dev semantic preview. */
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import type {AxiosAdapter} from 'axios';
 import type {TAutofillResponse} from '@dutying/api/ward';
@@ -15,6 +15,7 @@ import type {
     TSemanticPlan,
 } from '../../src/pages/make-shift/model/schedule-conversation-api';
 import AiConversationSidebar from '../../src/pages/make-shift/ui/steps/ai-auto-fill/ai-conversation-sidebar';
+import {AiAutofillLoadingOverlay} from '../../src/pages/make-shift/ui/steps/ai-auto-fill/ai-autofill-loading-overlay';
 import {MakeShiftCalendar} from '../../src/pages/make-shift/ui/steps/shared/make-shift-calendar';
 import client from '../../src/shared/api/client';
 import i18n from '../../src/i18n';
@@ -24,7 +25,14 @@ import '../../src/index.css';
 void i18n.changeLanguage('ko');
 const scene = new URLSearchParams(location.search).get('scene') ?? 'start';
 // A test-only origin/scene: no real account, server or report content is stored here.
-if (scene === 'report-recovery') useAuthStore.setState({accountId: 1000001, accessToken: null, accountMe: {accountId: 1000001, nurseId: null, wardId: 1, shiftTeamId: 1, email: '', name: '합성 계정', profileImgUrl: '', isManager: true, status: 'LINKED'}});
+if (scene === 'report-recovery' || scene.startsWith('background-')) {
+    const accountId = scene.startsWith('background-') ? 1000045 : 1000001;
+    useAuthStore.setState({
+        accountId,
+        accessToken: null,
+        accountMe: {accountId, nurseId: null, wardId: 1, shiftTeamId: 1, email: '', name: '합성 계정', profileImgUrl: '', isManager: true, status: 'LINKED'},
+    });
+}
 const syntheticReportKey = 'dutying.synthetic-report-receipts.v1';
 const syntheticReceipts = (): Record<string, string> => JSON.parse(sessionStorage.getItem(syntheticReportKey) ?? '{}');
 const codes = ['D', 'E', 'N', 'O'];
@@ -230,6 +238,28 @@ export function restoreReviewFixture() {
 }
 
 if (import.meta.env.MODE !== 'test') restoreReviewFixture();
+// Visual review only: render the production calendar/sidebar with synthetic job states.
+if (scene.startsWith('background-')) {
+    const phase = scene === 'background-queued' ? 'QUEUED' : scene === 'background-validating' ? 'VALIDATING' : 'COMPUTING';
+    detail.turns = [branch];
+    detail.operations = [{
+        operationId: 'synthetic-background-job',
+        sequence: 2,
+        operationType: 'GENERATE',
+        fillPolicy: 'EMPTY_ONLY',
+        sourceVersionId: source.versionId,
+        resultVersionId: null,
+        interpretationId: null,
+        baseRevision: 0,
+        executionStatus: 'RUNNING',
+        applyStatus: 'NOT_APPLIED',
+        failureReason: null,
+        result: null,
+        progress: scene === 'background-as-is' ? null : {phase, elapsedMs: 45000},
+        createdAt,
+    }];
+}
+
 export function resetReviewFixture() {
     localStorage.removeItem(storageKey);
     nextExecutionFailure = null;
@@ -463,6 +493,11 @@ client.defaults.adapter = adapter;
 
 export function Review() {
     const [open, setOpen] = useState(true);
+    // Match the production parent connection: operation busy also opens the existing overlay.
+    const [executionBusy, setExecutionBusy] = useState(false);
+    const [reviewStartedAt] = useState(() => Date.now() - 45000);
+    const reviewParentLoading = scene === 'background-as-is' || scene === 'background-current-pr';
+    const handleBusyChange = useCallback((busy: boolean) => setExecutionBusy(busy), []);
     const [reportCount, setReportCount] = useState(() => scene === 'report-recovery' ? Object.keys(syntheticReceipts()).length : 0);
     useEffect(() => {
         const update = () => setReportCount(Object.keys(syntheticReceipts()).length);
@@ -509,7 +544,11 @@ export function Review() {
                 generationRequest={0}
                 rebuildRequest={0}
                 onApplied={() => {}}
+                onBusyChange={reviewParentLoading ? handleBusyChange : undefined}
             />
+            {reviewParentLoading && executionBusy && (
+                <AiAutofillLoadingOverlay sidebarOpen={open} startedAt={reviewStartedAt} />
+            )}
         </main>
     );
 }

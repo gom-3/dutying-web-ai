@@ -126,8 +126,6 @@ describe('reviewable authoring candidate', () => {
                         }),
                     }}
                     attempt={1}
-                    feedbackDisabled={false}
-                    onReport={vi.fn()}
                     copy={(ko) => ko}
                 />,
             );
@@ -182,7 +180,7 @@ describe('plain candidate copy', () => {
                 result: input.result,
             };
             const {rerender, container} = render(
-                <AiConversationResult operation={operation} attempt={1} feedbackDisabled onReport={vi.fn()} copy={(ko) => ko}>
+                <AiConversationResult operation={operation} attempt={1} copy={(ko) => ko}>
                     <AiConversationResultDetails result={input.result} />
                     <AiAuthoringCandidate {...input} />
                 </AiConversationResult>,
@@ -201,8 +199,6 @@ describe('plain candidate copy', () => {
                         result: response({authoringOutcome: outcome({requestState: 'NEEDS_REVIEW'})}),
                     }}
                     attempt={1}
-                    feedbackDisabled
-                    onReport={vi.fn()}
                     copy={(ko) => ko}
                 />,
             );
@@ -257,8 +253,6 @@ describe('material consent title', () => {
                         createdAt: '',
                     }}
                     attempt={1}
-                    feedbackDisabled
-                    onReport={vi.fn()}
                     copy={(ko) => ko}
                 >
                     <AiAuthoringCandidate {...input} />

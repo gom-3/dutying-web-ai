@@ -1,5 +1,17 @@
 export const aiAutofillUiKo = {
+    adjustIntro: {
+        title: '대화로 근무표를 조절해 보세요',
+        description:
+            '자동완성한 근무표에서 바꾸고 싶은 내용을 적어 주세요. 예: “하루짜리 OFF를 줄여줘”.\n고정한 근무는 유지하고 나머지 근무를 조절해요. 요청 확인 중에는 표를 수정할 수 없어요.\n결과를 표에서 확인하고 필요하면 되돌린 뒤 저장·확정해 주세요.',
+        confirm: '확인했어요',
+    },
+    interpretFailureTitle: '요청 해석을 마치지 못했어요.',
+    interpretRejected:
+        'AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요.\n이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.\n같은 요청으로 다시 시도해 주세요.',
+    interpretUnavailable: '요청 해석 중 오류가 발생해 이번 요청을 실행하지 못했어요.\n같은 요청으로 다시 시도해 주세요.',
     resultSatisfaction: {
+        addReason: '이유 남기기',
+        close: '닫기',
         feedbackSent: '의견을 보냈어요. 더 나은 근무표를 만드는 데 참고할게요.',
         title: '방금 만들어진 근무표, 마음에 드나요?',
         feedbackOnly: '의견만 보내며, 근무표는 바뀌지 않아요.',
@@ -67,11 +79,18 @@ export const aiAutofillUiKo = {
     conversationOperationStatus: {
         checkingTheResult: '결과를 확인하고 있어요',
         finishingYourSchedule: '근무표를 마무리하고 있어요',
-        adjustingYourSchedule: '요청에 맞게 조정하고 있어요',
+        adjustingYourSchedule: '요청에 맞게 근무표를 수정하고 있어요',
         refillingYourSchedule: '근무표를 다시 채우고 있어요',
         fillingYourSchedule: '근무표를 채우고 있어요',
         attemptLabel: '({{attempt}}회차)',
-        requestedAndFixedShiftsStayInPlace: '신청·고정근무는 그대로 유지해요.',
+        requestedAndFixedShiftsStayInPlace: '신청 근무와 고정 근무는 그대로 유지해요.',
+        queued: '계산 순서를 기다리고 있어요',
+        verifying: '완성된 근무표의 조건을 확인하고 있어요',
+        continuing: '시간이 조금 더 필요해 계산을 이어가고 있어요.',
+        backgroundHint: '화면을 닫았다가 다시 열어도 결과를 확인할 수 있어요.',
+        elapsed: '{{seconds}}초 경과',
+        cancelBackground: '계산 요청 취소',
+        cancelled: '계산 요청을 취소했어요. 기존 근무표는 그대로예요.',
     },
     conversationImage: {
         scheduleResultImage: '근무표 결과 이미지',
@@ -99,8 +118,31 @@ export const aiAutofillUiKo = {
         youAreViewingTheScheduleBeforeChanges: '변경 전 근무표를 보고 있어요.',
         youAreViewingTheScheduleAfterChanges: '변경 후 근무표를 보고 있어요.',
         youCanContinueWorkingFromThisResult: '이 결과를 바탕으로 이어서 작성할 수 있어요.',
-        continueFromTheEarlierSchedule: '변경 전 표로 이어서 작성하기',
-        continueFromThisResult: '이 표로 이어서 작성하기',
+        continueFromTheEarlierSchedule: '변경 전 표로 복원하기',
+        continueFromThisResult: '이전 결과로 복원하기',
+    },
+    executionPresentation: {
+        startedGenerating: '근무표를 채우기 시작했어요. 신청 근무와 고정 근무는 그대로 유지해요.',
+        startedAdjusting: '요청에 맞게 근무표 수정을 시작했어요.',
+        keepsCalculatingWhenClosed: '창을 닫아도 계산은 계속돼요.',
+        progressConversation: '자동채우기 진행 대화',
+        adjustmentTaskLabel: '근무표 수정 작업',
+        adjustmentProgressConversation: '근무표 수정 진행 대화',
+        adjustmentResultReady: '근무표 수정 결과가 준비됐어요',
+        adjustmentFailed: '근무표를 수정하지 못했어요. 결과를 확인해 주세요.',
+        queued: '대기 중',
+        computing: '계산 중',
+        validating: '결과 확인 중',
+
+        submitting: '계산 요청을 보내고 있어요',
+        continueInBackground: '닫고 계속 계산',
+        openConversation: '진행 상황 보기',
+        taskLabel: '자동채우기 작업',
+        viewProgress: '진행 상황 보기',
+        viewResult: '결과 확인',
+        resultReady: '자동채우기 결과가 준비됐어요',
+        sourceChanged: '계산이 끝났어요. 수정한 근무표는 유지했어요.',
+        failed: '자동채우기를 마치지 못했어요. 결과를 확인해 주세요.',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: '근무표가 준비됐어요',
@@ -109,7 +151,7 @@ export const aiAutofillUiKo = {
         complete: '완료',
         estimatedProgress: '예상 진행률',
         yourResultWillAppearShortly: '결과를 곧 보여드릴게요.',
-        requestedAndFixedShiftsStayInPlace: '신청·고정 근무를 유지하며 계산해요.',
+        requestedAndFixedShiftsStayInPlace: '신청 근무와 고정 근무를 유지하며 계산해요.',
     },
     conversationHistory: {
         earlierConversation: '이전 대화 기록',
@@ -192,10 +234,10 @@ export const aiAutofillUiKo = {
     },
     conversationResult: {
         yourScheduleDraftIsReady: '근무표 초안을 만들었어요!',
-        yourScheduleResultIsReady: '새 근무표를 준비했어요.',
-        yourScheduleIsReady: '근무표를 채웠어요!',
+        yourScheduleResultIsReady: '계산 결과를 확인해 주세요.',
+        yourScheduleIsReady: '근무표를 채웠어요.',
         noShiftsChangedThisTime: '이번에는 바뀐 근무가 없어요.',
-        yourAdjustedScheduleIsReady: '근무표를 조정했어요!',
+        yourAdjustedScheduleIsReady: '요청하신 내용으로 {{count}}칸 변경했어요.',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             '작성 중인 표가 바뀌어 자동으로 반영하지 않았어요. 결과를 확인하고 이어서 작성할 수 있어요.',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:
@@ -320,7 +362,19 @@ export const aiAutofillUiKo = {
 } as const;
 
 export const aiAutofillUiEn = {
+    adjustIntro: {
+        title: 'Adjust your schedule in chat',
+        description:
+            'Describe what you want to change, such as “Reduce isolated days off.”\nFixed shifts stay in place. Editing is paused while your request is reviewed.\nReview the result, undo if needed, then save or confirm the schedule.',
+        confirm: 'Got it',
+    },
+    interpretFailureTitle: 'Request interpretation could not finish.',
+    interpretRejected:
+        'An error occurred while checking the AI interpretation of your request.\nThis request did not start schedule generation or change the schedule.\nPlease try the same request again.',
+    interpretUnavailable: 'An error during request interpretation prevented this request from running.\nPlease try the same request again.',
     resultSatisfaction: {
+        addReason: 'Add a reason',
+        close: 'Close',
         feedbackSent: 'Feedback sent. We’ll use it to improve schedules.',
         title: 'How do you like the schedule we just made?',
         feedbackOnly: 'This sends feedback only. Your schedule stays unchanged.',
@@ -392,6 +446,13 @@ export const aiAutofillUiEn = {
         fillingYourSchedule: 'Filling your schedule',
         attemptLabel: '(Run {{attempt}})',
         requestedAndFixedShiftsStayInPlace: 'Requested and fixed shifts stay in place.',
+        queued: 'Waiting for your turn to calculate',
+        verifying: 'Checking the completed schedule against your conditions',
+        continuing: 'This needs a little longer. Calculation is continuing.',
+        backgroundHint: 'You can close this view and return to check the result.',
+        elapsed: '{{seconds}} seconds elapsed',
+        cancelBackground: 'Cancel calculation request',
+        cancelled: 'Calculation request cancelled. Your schedule is unchanged.',
     },
     conversationImage: {
         scheduleResultImage: 'Schedule result image',
@@ -420,8 +481,31 @@ export const aiAutofillUiEn = {
         youAreViewingTheScheduleBeforeChanges: 'You are viewing the schedule before changes.',
         youAreViewingTheScheduleAfterChanges: 'You are viewing the schedule after changes.',
         youCanContinueWorkingFromThisResult: 'You can continue working from this result.',
-        continueFromTheEarlierSchedule: 'Continue from the earlier schedule',
-        continueFromThisResult: 'Continue from this result',
+        continueFromTheEarlierSchedule: 'Restore the earlier schedule',
+        continueFromThisResult: 'Restore this earlier result',
+    },
+    executionPresentation: {
+        startedGenerating: 'I have started filling your schedule. Requested and fixed shifts stay in place.',
+        startedAdjusting: 'I have started updating your schedule to your request.',
+        keepsCalculatingWhenClosed: 'Calculation continues even if you close this view.',
+        progressConversation: 'Autofill progress conversation',
+        adjustmentTaskLabel: 'Schedule update task',
+        adjustmentProgressConversation: 'Schedule update progress conversation',
+        adjustmentResultReady: 'Your schedule update is ready',
+        adjustmentFailed: 'The schedule update could not be completed. Check the result.',
+        queued: 'Queued',
+        computing: 'Calculating',
+        validating: 'Checking the result',
+
+        submitting: 'Submitting your calculation request',
+        continueInBackground: 'Close and continue',
+        openConversation: 'View progress',
+        taskLabel: 'Autofill task',
+        viewProgress: 'View progress',
+        viewResult: 'Check result',
+        resultReady: 'Your autofill result is ready',
+        sourceChanged: 'Calculation finished. Your edits were preserved.',
+        failed: 'Autofill could not finish. Check the result.',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: 'Your schedule is ready',
@@ -519,7 +603,7 @@ export const aiAutofillUiEn = {
         yourScheduleResultIsReady: 'Your schedule result is ready.',
         yourScheduleIsReady: 'Your schedule is ready!',
         noShiftsChangedThisTime: 'No shifts changed this time.',
-        yourAdjustedScheduleIsReady: 'Your adjusted schedule is ready!',
+        yourAdjustedScheduleIsReady: 'Changed {{count}} shifts as requested.',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             'Your draft changed, so this result was not applied. Review it before continuing.',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:
@@ -646,7 +730,20 @@ export const aiAutofillUiEn = {
 } as const;
 
 export const aiAutofillUiJa = {
+    adjustIntro: {
+        title: '会話で勤務表を調整しましょう',
+        description:
+            '「単発の休みを減らして」など、変更したい内容を入力してください。\n固定した勤務は維持されます。リクエストの確認中は勤務表を編集できません。\n結果を確認し、必要なら元に戻してから保存・確定してください。',
+        confirm: '確認しました',
+    },
+    interpretFailureTitle: 'リクエストの解釈を完了できませんでした。',
+    interpretRejected:
+        'AIによるリクエストの解釈結果を確認中にエラーが発生しました。\n今回のリクエストでは勤務表の自動作成や変更を行っていません。\n同じ内容でもう一度お試しください。',
+    interpretUnavailable:
+        'リクエストの解釈中にエラーが発生し、今回のリクエストを実行できませんでした。\n同じ内容でもう一度お試しください。',
     resultSatisfaction: {
+        addReason: '理由を添える',
+        close: '閉じる',
         feedbackSent: 'ご意見を送信しました。勤務表の改善に役立てます。',
         title: '作成した勤務表はいかがですか？',
         feedbackOnly: 'ご意見のみを送信します。勤務表は変更されません。',
@@ -719,6 +816,13 @@ export const aiAutofillUiJa = {
         fillingYourSchedule: '勤務表を作成しています',
         attemptLabel: '（{{attempt}}回目）',
         requestedAndFixedShiftsStayInPlace: '申請済み・固定の勤務はそのまま維持します。',
+        queued: '計算の順番を待っています',
+        verifying: '完成した勤務表の条件を確認しています',
+        continuing: 'もう少し時間が必要なため、計算を続けています。',
+        backgroundHint: '画面を閉じて再び開いても結果を確認できます。',
+        elapsed: '{{seconds}}秒経過',
+        cancelBackground: '計算リクエストを取り消す',
+        cancelled: '計算リクエストを取り消しました。勤務表はそのままです。',
     },
     conversationImage: {
         scheduleResultImage: '勤務表の結果画像',
@@ -746,8 +850,31 @@ export const aiAutofillUiJa = {
         youAreViewingTheScheduleBeforeChanges: '変更前の勤務表を表示しています。',
         youAreViewingTheScheduleAfterChanges: '変更後の勤務表を表示しています。',
         youCanContinueWorkingFromThisResult: 'この結果から引き続き作成できます。',
-        continueFromTheEarlierSchedule: '変更前の勤務表から続ける',
-        continueFromThisResult: 'この勤務表から続ける',
+        continueFromTheEarlierSchedule: '変更前の勤務表に復元する',
+        continueFromThisResult: '以前の結果に復元する',
+    },
+    executionPresentation: {
+        startedGenerating: '勤務表の作成を始めました。申請済み・固定の勤務は維持します。',
+        startedAdjusting: 'リクエストに合わせた勤務表の調整を始めました。',
+        keepsCalculatingWhenClosed: '閉じても計算は続きます。',
+        progressConversation: '自動作成の進捗会話',
+        adjustmentTaskLabel: '勤務表の修正タスク',
+        adjustmentProgressConversation: '勤務表修正の進捗会話',
+        adjustmentResultReady: '勤務表の修正結果ができました',
+        adjustmentFailed: '勤務表を修正できませんでした。結果を確認してください。',
+        queued: '待機中',
+        computing: '計算中',
+        validating: '結果を確認中',
+
+        submitting: '計算を依頼しています',
+        continueInBackground: '閉じて計算を続行',
+        openConversation: '進捗を確認',
+        taskLabel: '自動作成タスク',
+        viewProgress: '進捗を確認',
+        viewResult: '結果を確認',
+        resultReady: '自動作成の結果ができました',
+        sourceChanged: '計算が完了しました。編集内容は維持されています。',
+        failed: '自動作成を完了できませんでした。結果を確認してください。',
     },
     autofillLoadingOverlay: {
         yourScheduleIsReady: '勤務表ができました',
@@ -844,7 +971,7 @@ export const aiAutofillUiJa = {
         yourScheduleResultIsReady: '新しい勤務表ができました。',
         yourScheduleIsReady: '勤務表を作成しました！',
         noShiftsChangedThisTime: '今回は勤務の変更がありませんでした。',
-        yourAdjustedScheduleIsReady: '勤務表を調整しました！',
+        yourAdjustedScheduleIsReady: 'ご希望に合わせて{{count}}件の勤務を変更しました。',
         yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing:
             '編集中の勤務表が変更されたため、自動で反映しませんでした。結果を確認して引き続き作成できます。',
         thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing:

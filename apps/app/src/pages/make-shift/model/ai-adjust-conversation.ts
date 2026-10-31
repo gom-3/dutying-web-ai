@@ -69,3 +69,8 @@ export function isIncompleteRevision(text: string): boolean {
         text.trim(),
     );
 }
+
+/** Only standalone generation commands; extra conditions and negation require interpretation. */
+export function isPlainAutofillCommand(text: string): boolean {
+    return /^(?:다시\s*)?(?:자동완성|자동채우기|자동\s*채우기)\s*(?:해\s*줘|해주세요|해\s*주세요|해줘요)?[.!。]?$/u.test(text.trim());
+}

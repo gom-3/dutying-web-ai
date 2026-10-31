@@ -9,6 +9,7 @@ import {AiConversationLoading} from './ai-conversation-loading';
 export type TAiActiveCondition = {id: string; label: string; description?: string; onRemove: () => Promise<void> | void};
 export type TActiveConditionsHandle = {openConditions: () => void};
 type TProps = {
+    hideTrigger?: boolean;
     ref?: Ref<TActiveConditionsHandle>;
     wardId: number;
     teamId: number;
@@ -31,6 +32,7 @@ const emptyEditorState: TConstraintsEditorState = {dirty: false, saving: false, 
 /** The step-two editor manages ward rules; AI requests keep their own deletion path. */
 export function AiActiveConditions({
     ref,
+    hideTrigger = false,
     wardId,
     teamId,
     year,
@@ -211,32 +213,41 @@ export function AiActiveConditions({
             }}
         >
             <section className="ai-active-conditions min-w-0" data-preserve-duty-selection="true">
-                <Dialog.Trigger asChild>
-                    <button
-                        ref={trigger}
-                        type="button"
-                        aria-describedby={`${id}-count`}
-                        aria-haspopup="dialog"
-                        aria-expanded={open && available}
-                        aria-controls={`${id}-list`}
-                        disabled={!available}
-                        className="group flex min-h-[52px] w-full items-center gap-3 rounded-[12px] bg-[#F0EBFF] px-4 py-4 text-left text-[#5931B9] transition-colors hover:bg-[#E6DEFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none"
-                    >
-                        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[20px] shrink-0 max-[280px]:hidden" fill="currentColor">
-                            <path d="M2 4h16v2H2zm0 5h16v2H2zm0 5h16v2H2z" />
-                            <path d="M5 2h3v6H5zm7 5h3v6h-3zm-6 5h3v6H6z" />
-                        </svg>
-                        <span className="min-w-0 flex-1 text-[14px] leading-[22px] font-semibold [overflow-wrap:anywhere] break-keep">
-                            {t('aiAutofillUi.activeConditions.viewActiveConstraints')}
-                        </span>
-                        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px] shrink-0" fill="currentColor">
-                            <path d="m7 3 7 7-7 7-1.4-1.4L11.2 10 5.6 4.4z" />
-                        </svg>
-                    </button>
-                </Dialog.Trigger>
-                <span id={`${id}-count`} className="sr-only">
-                    {summary}
-                </span>
+                {!hideTrigger && (
+                    <Dialog.Trigger asChild>
+                        <button
+                            ref={trigger}
+                            type="button"
+                            aria-describedby={`${id}-count`}
+                            aria-haspopup="dialog"
+                            aria-expanded={open && available}
+                            aria-controls={`${id}-list`}
+                            disabled={!available}
+                            className="group flex min-h-[52px] w-full items-center gap-3 rounded-[12px] bg-[#F0EBFF] px-4 py-4 text-left text-[#5931B9] transition-colors hover:bg-[#E6DEFF] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40 motion-reduce:transition-none"
+                        >
+                            <svg
+                                aria-hidden="true"
+                                viewBox="0 0 20 20"
+                                className="size-[20px] shrink-0 max-[280px]:hidden"
+                                fill="currentColor"
+                            >
+                                <path d="M2 4h16v2H2zm0 5h16v2H2zm0 5h16v2H2z" />
+                                <path d="M5 2h3v6H5zm7 5h3v6h-3zm-6 5h3v6H6z" />
+                            </svg>
+                            <span className="min-w-0 flex-1 text-[14px] leading-[22px] font-semibold [overflow-wrap:anywhere] break-keep">
+                                {t('aiAutofillUi.activeConditions.viewActiveConstraints')}
+                            </span>
+                            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px] shrink-0" fill="currentColor">
+                                <path d="m7 3 7 7-7 7-1.4-1.4L11.2 10 5.6 4.4z" />
+                            </svg>
+                        </button>
+                    </Dialog.Trigger>
+                )}
+                {!hideTrigger && (
+                    <span id={`${id}-count`} className="sr-only">
+                        {summary}
+                    </span>
+                )}
                 <div role="separator" className="mt-5 mb-3 h-px w-full bg-[#E5E8EB]" />
             </section>
             <Dialog.Portal>

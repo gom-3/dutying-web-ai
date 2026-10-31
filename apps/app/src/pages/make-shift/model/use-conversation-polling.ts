@@ -1,7 +1,12 @@
 import {useEffect, useRef, useState} from 'react';
 
 /** One request at a time; a failed/paused lookup must never look like completed calculation. */
-export function useConversationPolling(enabled: boolean, conversationId: number | undefined, refresh: () => Promise<void>) {
+export function useConversationPolling(
+    enabled: boolean,
+    conversationId: number | undefined,
+    refresh: () => Promise<void>,
+    continuous = false,
+) {
     const refreshRef = useRef(refresh);
     const inFlight = useRef<Promise<void> | null>(null);
     const [issue, setIssue] = useState<'connection' | 'timeout' | null>(null);
@@ -36,7 +41,7 @@ export function useConversationPolling(enabled: boolean, conversationId: number 
 
             if (!active) return;
 
-            if (++count >= 100) {
+            if (++count >= 100 && !continuous) {
                 setIssue('timeout');
 
                 return;
@@ -51,7 +56,7 @@ export function useConversationPolling(enabled: boolean, conversationId: number 
             active = false;
             clearTimeout(timer);
         };
-    }, [enabled, conversationId, attempt]);
+    }, [enabled, conversationId, attempt, continuous]);
 
     return {issue, retry: () => setAttempt((value) => value + 1)};
 }

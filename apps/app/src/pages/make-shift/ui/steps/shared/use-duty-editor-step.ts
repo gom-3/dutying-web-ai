@@ -348,7 +348,8 @@ export function useDutyEditorStep({
 
     // 조절 칩 노출 여부는 서버 판정이다. 응답에 없으면(구 서버) 꺼진 것으로 본다.
     useEffect(() => {
-        if (workspaceQuery.data === undefined) return;
+        // Editor init resets feature settings; apply the server decision after hydration finishes.
+        if (workspaceQuery.data === undefined || isHydratingEditor) return;
 
         setAutofillAdjustEnabled(workspaceQuery.data.autofillAdjustEnabled === true);
         useShiftEditorStore.getState().setConversationEnabled(workspaceQuery.data.conversationEnabled === true);
@@ -359,7 +360,7 @@ export function useDutyEditorStep({
                 workspaceQuery.data.intentFirstAuthoringEnabled === true &&
                     workspaceQuery.data.authoringContractVersions?.includes('intent-first-v1') === true,
             );
-    }, [workspaceQuery.data, setAutofillAdjustEnabled]);
+    }, [workspaceQuery.data, setAutofillAdjustEnabled, isHydratingEditor]);
 
     useEffect(() => {
         if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isWaitingForEditorSources || hasEditorSourceError) return;

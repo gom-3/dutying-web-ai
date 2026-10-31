@@ -5,6 +5,16 @@ import {useConversationPolling} from '../use-conversation-polling';
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 describe('conversation outcome polling', () => {
+    it('keeps checking a background job beyond five minutes without executing again', async () => {
+        const refresh = vi.fn().mockResolvedValue(undefined);
+        const {result, unmount} = renderHook(() => useConversationPolling(true, 1, refresh, true));
+        await act(() => vi.advanceTimersByTimeAsync(330000));
+        expect(refresh).toHaveBeenCalledTimes(110);
+        expect(result.current.issue).toBeNull();
+        unmount();
+        await act(() => vi.advanceTimersByTimeAsync(30000));
+        expect(refresh).toHaveBeenCalledTimes(110);
+    });
     it('shows connection failure and clears it when the same lookup recovers', async () => {
         const refresh = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
         const {result} = renderHook(() => useConversationPolling(true, 1, refresh));

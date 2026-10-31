@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
 import {sendScheduleResultFeedback} from '../../../../model/schedule-result-feedback';
@@ -11,89 +11,71 @@ beforeEach(async () => {
     vi.resetAllMocks();
     await i18n.changeLanguage('ko');
 });
-it('allows skipping without submitting or changing a schedule', () => {
+it('stays small and optional; a click immediately records the rating', async () => {
     render(<AiResultSatisfaction observation={observation} />);
-    fireEvent.click(screen.getByRole('button', {name: '나중에'}));
     expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(sendScheduleResultFeedback).not.toHaveBeenCalled();
-});
-it('preserves feedback and idempotency key on retry, then acknowledges receipt', async () => {
-    vi.mocked(sendScheduleResultFeedback).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce();
-
-    const hotkey = vi.fn();
-
-    render(
-        <div onKeyDown={hotkey}>
-            <AiResultSatisfaction observation={observation} />
-        </div>,
+    fireEvent.click(screen.getByRole('button', {name: '마음에 들어요'}));
+    await waitFor(() => expect(screen.getByRole('button', {name: '마음에 들어요'})).toHaveAttribute('aria-pressed', 'true'));
+    expect(sendScheduleResultFeedback).toHaveBeenCalledWith(
+        observation,
+        expect.objectContaining({satisfaction: 'LIKED', feedbackNote: ''}),
     );
-    fireEvent.click(screen.getByRole('button', {name: '아쉬워요'}));
-
-    const input = screen.getByRole('textbox');
-
-    fireEvent.change(input, {target: {value: ' 야간이 몰려 있어요 '}});
-    fireEvent.keyDown(input, {key: 'Delete'});
-    expect(hotkey).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-    await screen.findByRole('alert');
-    expect(input).toHaveValue(' 야간이 몰려 있어요 ');
-    fireEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
-    await screen.findByRole('status');
-
-    const calls = vi.mocked(sendScheduleResultFeedback).mock.calls;
-
-    expect(calls).toHaveLength(2);
-    expect(calls[0]).toEqual(calls[1]);
-    expect(calls[0]).toEqual([observation, expect.objectContaining({satisfaction: 'NEEDS_WORK', feedbackNote: '야간이 몰려 있어요'})]);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
-it('allows rating without a reason and prevents duplicate in-flight submission', async () => {
+it('opens reasons only on request; cancelling retains the already saved rating', async () => {
+    render(<AiResultSatisfaction observation={observation} />);
+    fireEvent.click(screen.getByRole('button', {name: '아쉬워요'}));
+    fireEvent.click(await screen.findByRole('button', {name: '이유 남기기'}));
+    expect(screen.getByRole('dialog')).toBeVisible();
+    fireEvent.change(screen.getByRole('textbox'), {target: {value: ' 야간이 몰려 있어요 '}});
+    fireEvent.click(screen.getAllByRole('button', {name: '닫기'})[0]);
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(sendScheduleResultFeedback).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', {name: '아쉬워요'})).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', {name: '이유 남기기'}));
+    expect(screen.getByRole('textbox')).toHaveValue(' 야간이 몰려 있어요 ');
+    fireEvent.click(screen.getByRole('button', {name: '의견 보내기'}));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(sendScheduleResultFeedback).toHaveBeenLastCalledWith(
+        observation,
+        expect.objectContaining({satisfaction: 'NEEDS_WORK', feedbackNote: '야간이 몰려 있어요'}),
+    );
+});
+it('retries the exact failed event and prevents duplicate in-flight clicks', async () => {
+    vi.mocked(sendScheduleResultFeedback).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce();
+    render(<AiResultSatisfaction observation={observation} />);
+    fireEvent.click(screen.getByRole('button', {name: '아쉬워요'}));
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByRole('button', {name: '아쉬워요'}));
+    await screen.findByRole('status');
+    expect(vi.mocked(sendScheduleResultFeedback).mock.calls[0]).toEqual(vi.mocked(sendScheduleResultFeedback).mock.calls[1]);
+});
+it('locks while sending and resets when a different applied result is mounted', async () => {
     let done!: () => void;
 
-    vi.mocked(sendScheduleResultFeedback).mockImplementation(
+    vi.mocked(sendScheduleResultFeedback).mockImplementationOnce(
         () =>
             new Promise<void>((resolve) => {
                 done = resolve;
             }),
     );
-    render(<AiResultSatisfaction observation={observation} />);
-    fireEvent.click(screen.getByRole('button', {name: '마음에 들어요'}));
 
-    const send = screen.getByRole('button', {name: '의견 보내기'});
+    const {rerender} = render(<AiResultSatisfaction key="a" observation={observation} />);
+    const button = screen.getByRole('button', {name: '마음에 들어요'});
 
-    fireEvent.click(send);
-    fireEvent.click(send);
+    fireEvent.click(button);
+    fireEvent.click(button);
     expect(sendScheduleResultFeedback).toHaveBeenCalledOnce();
-    expect(sendScheduleResultFeedback).toHaveBeenCalledWith(
-        observation,
-        expect.objectContaining({feedbackNote: '', satisfaction: 'LIKED'}),
-    );
-    done();
-    await waitFor(() => expect(screen.getByRole('status')).toBeVisible());
+    await act(async () => done());
+    rerender(<AiResultSatisfaction key="b" observation={{...observation, serverEventId: 'next'}} />);
+    expect(screen.getByRole('button', {name: '마음에 들어요'})).toHaveAttribute('aria-pressed', 'false');
 });
-it('uses English and resets for a different result', async () => {
+it('uses translated labels and stable API values', async () => {
     await i18n.changeLanguage('en');
-
-    const {rerender} = render(<AiResultSatisfaction key="one" observation={observation} />);
-
-    fireEvent.click(screen.getByRole('button', {name: 'Not now'}));
-    rerender(<AiResultSatisfaction key="two" observation={{...observation, serverEventId: 'next'}} />);
-    expect(screen.getByRole('heading', {name: 'How do you like the schedule we just made?'})).toBeVisible();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-});
-
-it('shows Japanese feedback choices and preserves the satisfaction API value', async () => {
-    await i18n.changeLanguage('ja');
-    vi.mocked(sendScheduleResultFeedback).mockResolvedValueOnce();
     render(<AiResultSatisfaction observation={observation} />);
-    expect(screen.getByRole('heading', {name: '作成した勤務表はいかがですか？'})).toBeVisible();
-    expect(screen.getByRole('group', {name: '勤務表の満足度'})).toBeVisible();
-    expect(sendScheduleResultFeedback).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', {name: '改善してほしいです'}));
-    fireEvent.change(screen.getByRole('textbox'), {target: {value: '夜勤が連続しています'}});
-    fireEvent.click(screen.getByRole('button', {name: '意見を送信'}));
-    expect(await screen.findByRole('status')).toHaveTextContent('ご意見を送信しました。勤務表の改善に役立てます。');
-    expect(sendScheduleResultFeedback).toHaveBeenCalledWith(
-        observation,
-        expect.objectContaining({satisfaction: 'NEEDS_WORK', feedbackNote: '夜勤が連続しています'}),
-    );
+    fireEvent.click(screen.getByRole('button', {name: 'Needs improvement'}));
+    await screen.findByRole('status');
+    expect(sendScheduleResultFeedback).toHaveBeenCalledWith(observation, expect.objectContaining({satisfaction: 'NEEDS_WORK'}));
 });

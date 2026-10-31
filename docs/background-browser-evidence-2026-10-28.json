@@ -1,0 +1,163 @@
+{
+  "environment": "loopback-only disposable MySQL / Redis / Spring / FastAPI / Vite, synthetic authenticated ward",
+  "liveModelCalls": false,
+  "controlledEngineResponseDelay": true,
+  "operations": [
+    {
+      "id": 1,
+      "status": "SUCCEEDED",
+      "draftState": null,
+      "applyStatus": "APPLIED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 42.830211,
+      "pythonValidation": null,
+      "springValidation": null
+    },
+    {
+      "id": 2,
+      "status": "SUCCEEDED",
+      "draftState": null,
+      "applyStatus": "APPLIED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 46.636883,
+      "pythonValidation": null,
+      "springValidation": null
+    },
+    {
+      "id": 3,
+      "status": "FAILED",
+      "draftState": null,
+      "applyStatus": "NOT_APPLIED",
+      "changedCells": null,
+      "failureReason": "SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED",
+      "durationSeconds": 0.080119,
+      "pythonValidation": null,
+      "springValidation": null
+    },
+    {
+      "id": 4,
+      "status": "SUCCEEDED",
+      "draftState": null,
+      "applyStatus": "APPLIED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 46.58503,
+      "pythonValidation": null,
+      "springValidation": null
+    },
+    {
+      "id": 5,
+      "status": "CANCELLED",
+      "draftState": null,
+      "applyStatus": "NOT_APPLIED",
+      "changedCells": null,
+      "failureReason": "USER_CANCELLED",
+      "durationSeconds": 11.90659,
+      "pythonValidation": null,
+      "springValidation": null
+    },
+    {
+      "id": 6,
+      "status": "SUCCEEDED",
+      "draftState": "APPLICABLE",
+      "applyStatus": "APPLIED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 1.203458,
+      "pythonValidation": "VERIFIED",
+      "springValidation": "VERIFIED"
+    },
+    {
+      "id": 7,
+      "status": "SUCCEEDED",
+      "draftState": "APPLICABLE",
+      "applyStatus": "NOT_APPLIED_SOURCE_CHANGED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 46.271743,
+      "pythonValidation": "VERIFIED",
+      "springValidation": "VERIFIED"
+    },
+    {
+      "id": 8,
+      "status": "SUCCEEDED",
+      "draftState": "APPLICABLE",
+      "applyStatus": "APPLIED",
+      "changedCells": 185,
+      "failureReason": null,
+      "durationSeconds": 41.117002,
+      "pythonValidation": "VERIFIED",
+      "springValidation": "VERIFIED"
+    },
+    {
+      "id": 9,
+      "status": "SUCCEEDED",
+      "draftState": "APPLICABLE",
+      "applyStatus": "APPLIED",
+      "changedCells": 186,
+      "failureReason": null,
+      "durationSeconds": 46.21125,
+      "pythonValidation": "VERIFIED",
+      "springValidation": "VERIFIED"
+    }
+  ],
+  "engineCalls": [
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239837,
+      "delay": 40
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239927,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239952,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239941,
+      "delay": 35
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239948,
+      "delay": 0
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239940,
+      "delay": 45
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239907,
+      "delay": 40
+    },
+    {
+      "path": "/schedule/generate",
+      "mode": "BACKGROUND",
+      "budget": 239950,
+      "delay": 45
+    }
+  ],
+  "notes": [
+    "Delays 35–45 seconds are controlled latency before real CP-SAT; not evidence of solver CPU duration.",
+    "Cancelled running calls retain capacity until remote completion and cannot apply results.",
+    "QA-only isolated rate counters were reset between scenarios; production rate enforcement was unchanged.",
+    "Operation 2 exposed a rank-renumbering false mismatch; fixed and rerun successfully (operation 4).",
+    "Operation 3 confirms original rate limiting remains enforced."
+  ]
+}

@@ -328,6 +328,20 @@ export function useShiftEditorCommands() {
             setLegacyDisplayViolations([]);
             persistDoc(nextDoc, nextHistory, {validationSnapshot: null});
         },
+        restoreSnapshotDoc: (doc: TDutyDoc) => {
+            // Restore the whole saved grid, including row order and previous-month cells.
+            // Cell undo entries refer to old row indexes and cannot cross this boundary.
+            const {history} = getState();
+            const nextHistory: THistoryState = {...history, past: [], future: []};
+            const nextDoc = pruneEmptyFixedCells(doc);
+
+            setDoc(nextDoc);
+            setSelection(null);
+            setHistory(nextHistory);
+            setScheduleValidationSnapshot(null);
+            setLegacyDisplayViolations([]);
+            persistDocImmediate(nextDoc, nextHistory, {validationSnapshot: null});
+        },
         getPersisted: (): TPersisted | null => persistence.load(),
         hydrate: (persisted: TPersisted) => {
             const {history: currentHistory} = getState();

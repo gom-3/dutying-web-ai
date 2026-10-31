@@ -12,7 +12,9 @@ function Harness() {
     const [scope, setScope] = useState<{wardId: number; teamId: number; year: number; month: number}>();
     const [status, setStatus] = useState('합성 계정으로 로그인 중');
     const [generation, setGeneration] = useState(0);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
     const doc = useShiftEditorStore((s) => s.doc);
+    const intentFirst = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     useEffect(() => {
         void (async () => {
             const setup = (await client.get('/__conversation-test/setup')).data;
@@ -27,6 +29,7 @@ function Harness() {
                 .setDoc(snapshotDetailToDoc(workspace, data, setup.year, setup.month, {fixedCells: {}, requestCells: {}}));
             useShiftEditorStore.getState().setRulesHash(workspace.rulesHash);
             useShiftEditorStore.getState().setAutofillAdjustEnabled(true);
+            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(Boolean(workspace.intentFirstAuthoringEnabled));
             setScope(setup);
             setShift(data);
             setStatus('실제 Spring·FastAPI 연결됨');
@@ -37,6 +40,27 @@ function Harness() {
             <h1>합성 근무표 통합 검증</h1>
             <p role="status">{status}</p>
             <button onClick={() => setGeneration((n) => n + 1)}>현재 표 자동완성</button>
+            <button onClick={() => setSidebarOpen(true)}>AI 화면 다시 열기</button>
+            <button
+                onClick={() => {
+                    const current = useShiftEditorStore.getState().doc;
+                    useShiftEditorStore.getState().setDoc({
+                        ...current,
+                        rows: current.rows.map((row) => ({...row, cells: row.cells.map(() => null)})),
+                        fixedCells: {},
+                    });
+                }}
+            >
+                합성 표 비우기
+            </button>
+            <label>
+                <input
+                    type="checkbox"
+                    checked={intentFirst}
+                    onChange={(event) => useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(event.target.checked)}
+                />
+                새 작성 계약 검증
+            </label>
             <button
                 onClick={() => {
                     const current = useShiftEditorStore.getState().doc;
@@ -53,29 +77,28 @@ function Harness() {
                 마지막 하루만 조절 가능하게
             </button>
             <p>각 셀에서 근무를 직접 바꿀 수 있습니다. 실데이터는 사용하지 않습니다.</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>간호사</th>
-                        {doc.columns.map((d) => (
-                            <th key={d}>{d.slice(-2)}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {doc.rows.map((row, ri) => (
-                        <tr key={row.workerId}>
-                            <th>{doc.workerMeta[row.workerId]?.name}</th>
-                            {row.cells.map((value, ci) => (
-                                <td key={ci}>
-                                    <select
-                                        aria-label={`${doc.workerMeta[row.workerId]?.name} ${doc.columns[ci]}`}
-                                        value={value ?? ''}
-                                        onChange={(e) => {
-                                            const current = useShiftEditorStore.getState().doc;
-                                            useShiftEditorStore
-                                                .getState()
-                                                .setDoc({
+            <div style={{overflowX: 'auto'}}>
+                <table style={{minWidth: 1500, whiteSpace: 'nowrap'}}>
+                    <thead>
+                        <tr>
+                            <th>간호사</th>
+                            {doc.columns.map((d) => (
+                                <th key={d}>{d.slice(-2)}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {doc.rows.map((row, ri) => (
+                            <tr key={row.workerId}>
+                                <th>{doc.workerMeta[row.workerId]?.name}</th>
+                                {row.cells.map((value, ci) => (
+                                    <td key={ci}>
+                                        <select
+                                            aria-label={`${doc.workerMeta[row.workerId]?.name} ${doc.columns[ci]}`}
+                                            value={value ?? ''}
+                                            onChange={(e) => {
+                                                const current = useShiftEditorStore.getState().doc;
+                                                useShiftEditorStore.getState().setDoc({
                                                     ...current,
                                                     rows: current.rows.map((r, index) =>
                                                         index === ri
@@ -88,25 +111,26 @@ function Harness() {
                                                             : r,
                                                     ),
                                                 });
-                                        }}
-                                    >
-                                        <option value="">빈칸</option>
-                                        {shift?.wardShiftTypes.map((t) => (
-                                            <option key={t.wardShiftTypeId} value={t.shortName}>
-                                                {t.shortName}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                                            }}
+                                        >
+                                            <option value="">빈칸</option>
+                                            {shift?.wardShiftTypes.map((t) => (
+                                                <option key={t.wardShiftTypeId} value={t.shortName}>
+                                                    {t.shortName}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
             {shift && scope && (
                 <AiConversationSidebar
-                    open
-                    onClose={() => {}}
+                    open={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
                     {...scope}
                     shift={shift}
                     adjustEnabled

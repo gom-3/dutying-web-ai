@@ -6,6 +6,14 @@ describe.each(['ko', 'en'])('user-facing AI errors (%s)', (language) => {
     beforeEach(async () => {
         await i18n.changeLanguage(language);
     });
+    it('explains a full background queue as retryable load rather than invalid settings', () => {
+        expect(aiConversationFailure({serverCode: 'BACKGROUND_QUEUE_FULL'})).toEqual({
+            message: i18n.t('aiAdjust.executionFailure.busy'),
+            blocked: false,
+            checkOutcome: false,
+            recovery: 'retry',
+        });
+    });
     it.each([
         {message: 'java.lang.IllegalStateException: SOLVER_RESULT_FAILED_FINAL_GATE', code: 500},
         {message: 'revision mismatch expectedRevision=4', code: 409},
@@ -55,4 +63,22 @@ it('offers new-operation recovery only for a trusted local unsent stale guard', 
     expect(aiConversationFailure(new AiConversationInputError('staleRequest', 'ADJUST'))).toMatchObject({unsentOperation: 'ADJUST'});
     expect(aiConversationFailure({code: 409, unsentOperation: 'GENERATE'})).not.toHaveProperty('unsentOperation');
     expect(aiConversationFailure(new AiConversationInputError('pendingExecution', 'GENERATE'))).not.toHaveProperty('unsentOperation');
+});
+
+it('distinguishes interpreter availability from invalid user input without showing raw server text', () => {
+    const result = aiConversationFailure({serverCode: 'SCHEDULE_INTERPRET_UNAVAILABLE', code: 503, message: 'private upstream response'});
+
+    expect(result.message).not.toContain('private');
+    expect(result.message).toBe(i18n.t('aiAutofillUi.interpretUnavailable'));
+    expect(result.checkOutcome).toBe(false);
+});
+
+it.each(['ko', 'en', 'ja'])('distinguishes rejected interpretation and offers the same-request retry (%s)', async (language) => {
+    await i18n.changeLanguage(language);
+    const result = aiConversationFailure({serverCode: 'SCHEDULE_INTERPRET_REJECTED', code: 502, message: 'private model validation body'});
+    expect(result.title).toBe(i18n.t('aiAutofillUi.interpretFailureTitle'));
+    expect(result.message).toBe(i18n.t('aiAutofillUi.interpretRejected'));
+    expect(result.message).not.toMatch(/private|잠시 후|unavailable|接続できません/);
+    expect(result.recovery).toBe('retry');
+    expect(result.checkOutcome).toBe(false);
 });

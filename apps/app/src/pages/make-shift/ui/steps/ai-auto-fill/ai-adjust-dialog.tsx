@@ -26,6 +26,7 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onClose: () => void;
+    onRequestBusyChange?: (busy: boolean) => void;
     onOpenConstraints?: () => void;
     wardId?: number;
     teamId?: number;
@@ -78,6 +79,7 @@ export default function AiAdjustDialog({
     spotlightSelector,
     spotlightInteractive,
     onClose,
+    onRequestBusyChange,
     wardId,
     teamId,
     year,
@@ -143,6 +145,12 @@ export default function AiAdjustDialog({
     );
 
     const preparing = Boolean(preparation);
+
+    useEffect(() => {
+        onRequestBusyChange?.(inputBusy);
+    }, [inputBusy, onRequestBusyChange]);
+
+    useEffect(() => () => onRequestBusyChange?.(false), [onRequestBusyChange]);
 
     useEffect(() => {
         // Execution can create saved AI requests while this sheet stays open.
