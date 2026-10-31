@@ -696,7 +696,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             setAiStartedAt(Date.now());
             setIsAiLoadingOverlayFinishing(false);
             setIsAiExecutionDismissed(false);
-            setIsAdjustDialogOpen(false);
+            setIsAdjustDialogOpen(true);
         } else {
             setIsAiLoadingOverlayFinishing(succeeded);
 
@@ -3348,13 +3348,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onFinish={handleAiLoadingOverlayFinish}
                     operation={aiExecution?.operation}
                     onBackground={conversationEnabled ? () => setIsAiExecutionDismissed(true) : undefined}
-                    onOpenConversation={
-                        conversationEnabled && !isConversationOpen
-                            ? () => {
-                                  setIsAdjustDialogOpen(true);
-                              }
-                            : undefined
-                    }
                     onCancel={aiExecution?.cancel}
                     cancelling={aiExecution?.cancelling}
                 />

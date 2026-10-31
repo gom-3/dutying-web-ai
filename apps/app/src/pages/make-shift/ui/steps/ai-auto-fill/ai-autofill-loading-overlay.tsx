@@ -36,7 +36,6 @@ type TAiAutofillLoadingOverlayProps = {
     sidebarOpen?: boolean;
     operation?: TConversationOperation;
     onBackground?: () => void;
-    onOpenConversation?: () => void;
     onCancel?: (() => void) | null;
     cancelling?: boolean;
     isFinishing?: boolean;
@@ -49,7 +48,6 @@ type TAiAutofillLoadingOverlayProps = {
 export function AiAutofillLoadingOverlay({
     sidebarOpen = false,
     onBackground,
-    onOpenConversation,
     onCancel,
     cancelling = false,
     isFinishing = false,
@@ -220,15 +218,6 @@ export function AiAutofillLoadingOverlay({
                         >
                             {t('aiAutofillUi.executionPresentation.continueInBackground')}
                         </button>
-                        {onOpenConversation && (
-                            <button
-                                type="button"
-                                onClick={onOpenConversation}
-                                className="min-h-11 rounded-lg px-2 text-main-1 hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1"
-                            >
-                                {t('aiAutofillUi.executionPresentation.openConversation')}
-                            </button>
-                        )}
                         {onCancel && <AiExecutionCancelButton onCancel={onCancel} disabled={cancelling} />}
                     </div>
                 )}

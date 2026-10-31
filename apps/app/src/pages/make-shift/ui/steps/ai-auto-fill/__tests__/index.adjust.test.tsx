@@ -339,7 +339,6 @@ vi.mock('../ai-autofill-loading-overlay', () => ({
         isFinishing: boolean;
         onFinish: () => void;
         onBackground?: () => void;
-        onOpenConversation?: () => void;
     }) => {
         const {isFinishing, onFinish} = props;
 
@@ -349,10 +348,7 @@ vi.mock('../ai-autofill-loading-overlay', () => ({
         }, [isFinishing, onFinish]);
 
         return (
-            <div data-testid="ai-loading-overlay">
-                {props.onBackground && <button onClick={props.onBackground}>hide loader</button>}
-                {props.onOpenConversation && <button onClick={props.onOpenConversation}>open progress</button>}
-            </div>
+            <div data-testid="ai-loading-overlay">{props.onBackground && <button onClick={props.onBackground}>hide loader</button>}</div>
         );
     },
 }));
@@ -752,13 +748,13 @@ describe('AiAutofill adjust panel', () => {
 
         act(() => mocks.conversationProps?.onBusyChange?.(true));
         expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.startedAt).toBeGreaterThanOrEqual(beforeStart);
-        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(false);
-        expect(mocks.conversationProps?.open).toBe(false);
+        expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(true);
+        expect(mocks.conversationProps?.open).toBe(true);
 
         act(() => mocks.conversationProps?.onBusyChange?.(false, succeeded));
         expect(mocks.loadingProps.some((props) => props.isFinishing)).toBe(succeeded);
         expect(screen.queryByTestId('ai-loading-overlay')).not.toBeInTheDocument();
-        expect(mocks.conversationProps?.open).toBe(succeeded);
+        expect(mocks.conversationProps?.open).toBe(true);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
@@ -772,7 +768,7 @@ describe('AiAutofill adjust panel', () => {
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         act(() => mocks.conversationProps?.onBusyChange?.(true));
-        await user.click(screen.getByRole('button', {name: 'open progress'}));
+        expect(mocks.conversationProps?.open).toBe(true);
         act(() => mocks.conversationProps?.onBusyChange?.(false, true));
         expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
         expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.isFinishing).toBe(true);
@@ -818,8 +814,6 @@ describe('AiAutofill adjust panel', () => {
             mocks.conversationProps?.onExecutionChange?.({operation, cancel, cancelling: false});
             mocks.conversationProps?.onBusyChange?.(true);
         });
-        expect(mocks.conversationProps?.open).toBe(false);
-        await user.click(screen.getByRole('button', {name: 'open progress'}));
         expect(mocks.conversationProps?.open).toBe(true);
         expect(screen.getByTestId('ai-loading-overlay')).toBeVisible();
         expect(mocks.loadingProps[mocks.loadingProps.length - 1]?.sidebarOpen).toBe(true);
@@ -869,6 +863,7 @@ describe('AiAutofill adjust panel', () => {
             await user.click(screen.getByRole('button', {name: 'auto fill'}));
             act(() => mocks.conversationProps?.onBusyChange?.(true));
             await user.click(screen.getByRole('button', {name: 'hide loader'}));
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
             act(() => useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}}));
 
             const editor = view.container.querySelector('.ai-autofill-root__main')!;
