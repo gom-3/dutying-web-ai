@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {act, cleanup, render, screen} from '@/shared/util/test-utils';
+import {act, cleanup, fireEvent, render, screen} from '@/shared/util/test-utils';
 import {AiAutofillLoadingOverlay} from '../ai-autofill-loading-overlay';
 
 beforeEach(() => vi.useFakeTimers());
@@ -93,5 +93,31 @@ describe('autofill loading overlay', () => {
         view.unmount();
         act(() => vi.advanceTimersByTime(1000));
         expect(onFinish).not.toHaveBeenCalled();
+    });
+    it('retains the original estimated progress bar and uses only compact background, conversation and cancel actions', () => {
+        const onBackground = vi.fn();
+        const onCancel = vi.fn();
+        const onOpenConversation = vi.fn();
+
+        render(
+            <AiAutofillLoadingOverlay
+                startedAt={Date.now() - 45000}
+                onBackground={onBackground}
+                onCancel={onCancel}
+                onOpenConversation={onOpenConversation}
+            />,
+        );
+        expect(screen.getByRole('dialog')).toHaveAccessibleName('근무표를 채우고 있어요');
+        expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuetext', expect.stringContaining('예상 진행률'));
+        expect(progress()).toBeLessThan(100);
+        fireEvent.click(screen.getByRole('button', {name: '닫고 계속 계산'}));
+        expect(onBackground).toHaveBeenCalledOnce();
+        expect(onCancel).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', {name: '진행 상황 보기'}));
+        expect(onOpenConversation).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', {name: '계산 요청 취소'}));
+        expect(onCancel).toHaveBeenCalledOnce();
+        fireEvent.keyDown(screen.getByRole('dialog'), {key: 'Escape'});
+        expect(onBackground).toHaveBeenCalledTimes(2);
     });
 });

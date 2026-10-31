@@ -19,6 +19,7 @@ export type TAiConversationFailure = {
     sourceRevision?: number;
     sourceRulesHash?: string;
     observation?: TScheduleObservation;
+    title?: string;
     message: string;
     confirmationRequired?: boolean;
     conditionConflict?: boolean;
@@ -37,7 +38,14 @@ export type TAiConversationFailure = {
 /** Trusted UI failures carry a fixed reason, never arbitrary server/exception text. */
 export class AiConversationInputError extends Error {
     constructor(
-        readonly reason: 'loading' | 'pendingExecution' | 'staleRequest' | 'requestTooLong' | 'expiredSuggestion' | 'draftChanged',
+        readonly reason:
+            | 'loading'
+            | 'pendingExecution'
+            | 'staleRequest'
+            | 'requestTooLong'
+            | 'expiredSuggestion'
+            | 'draftChanged'
+            | 'expiredPlan',
         readonly unsentOperation?: 'GENERATE' | 'ADJUST',
         readonly canRetryGeneration = false,
     ) {
@@ -70,7 +78,7 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
             message: i18n.t(`aiAdjust.localError.${error.reason}`),
             blocked: false,
             checkOutcome: error.reason === 'pendingExecution' || error.reason === 'loading',
-            ...(error.reason === 'staleRequest' && error.unsentOperation
+            ...(['staleRequest', 'expiredPlan'].includes(error.reason) && error.unsentOperation
                 ? {
                       unsentOperation: error.unsentOperation,
                       ...(error.unsentOperation === 'GENERATE' && error.canRetryGeneration ? {canRetryGeneration: true} : {}),
@@ -81,6 +89,20 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
     const source = error as {message?: string; serverCode?: string; code?: number} | null;
     const code = source?.serverCode;
     const message = typeof source?.message === 'string' && source.message.trim().length > 0 ? source.message : undefined;
+
+    if (code === 'BACKGROUND_QUEUE_FULL')
+        return {message: i18n.t('aiAdjust.executionFailure.busy'), blocked: false, checkOutcome: false, recovery: 'retry'};
+
+    if (code === 'SCHEDULE_INTERPRET_UNAVAILABLE' || code === 'SCHEDULE_INTERPRET_REJECTED')
+        return {
+            title: i18n.t('aiAutofillUi.interpretFailureTitle'),
+            message: i18n.t(
+                code === 'SCHEDULE_INTERPRET_REJECTED' ? 'aiAutofillUi.interpretRejected' : 'aiAutofillUi.interpretUnavailable',
+            ),
+            blocked: false,
+            checkOutcome: false,
+            recovery: 'retry',
+        };
 
     if (code === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED') return {message: i18n.t('aiAdjust.failure.adjustAccess'), blocked: true};
 

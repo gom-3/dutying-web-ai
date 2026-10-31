@@ -1,73 +1,75 @@
-import type {MouseEventHandler, ReactNode} from 'react';
+import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
-import {AiConversationFeedbackButton} from './ai-conversation-feedback-button';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
     operation,
     appliedLocally = false,
     attempt,
-    feedbackDisabled,
     preview,
+    changeSummary,
     children,
     actions,
-    onReport,
 }: {
     operation: TConversationOperation;
     appliedLocally?: boolean;
     attempt: number;
-    feedbackDisabled: boolean;
     preview?: ReactNode;
+    changeSummary?: ReactNode;
     children?: ReactNode;
     actions?: ReactNode;
-    onReport: MouseEventHandler<HTMLButtonElement>;
     copy: (ko: string, en: string) => string;
 }) {
     const {t} = useTypedTranslation();
     const authoring = operation.result ? authoringOutcome(operation.result) : undefined;
     const messageKey = operation.result ? authoringMessageKey(operation.result) : undefined;
     const review = operation.result && isGenerateReviewDraft(operation.result);
-    const saved = operation.applyStatus === 'APPLIED';
+    const saved = operation.applyStatus === 'APPLIED' || appliedLocally;
+    const savedForLater = operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && !appliedLocally && Boolean(operation.resultVersionId);
     const applied = saved && appliedLocally;
     const visibleMessageKey = saved ? undefined : messageKey;
     const appliedStatusKey =
-        applied && authoring?.requestState === 'NEEDS_REVIEW'
+        saved && authoring?.requestState === 'NEEDS_REVIEW'
             ? 'selectedReview'
-            : applied && authoring?.requestState === 'PARTIAL'
+            : saved && authoring?.requestState === 'PARTIAL'
               ? 'PARTIAL'
               : undefined;
+    const changedCount = operation.result?.changedCells.length;
     const succeeded =
         operation.executionStatus === 'SUCCEEDED' &&
-        applied &&
+        saved &&
+        changedCount !== undefined &&
+        changedCount > 0 &&
         (!authoring ||
             (authoring.draftState === 'APPLICABLE' &&
                 !['PARTIAL', 'NEEDS_REVIEW', 'UNSATISFIED', 'NO_IMPROVEMENT'].includes(authoring.requestState)));
-    const changedCount = operation.result?.changedCells.length;
-    const showPartialCoverage = !applied && authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
+    const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !operation.result?.candidate;
     const title = appliedStatusKey
         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
         : review
           ? t('aiAutofillUi.conversationResult.yourScheduleDraftIsReady')
-          : !applied
+          : !saved || changedCount === undefined
             ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
             : operation.operationType === 'GENERATE'
-              ? t('aiAutofillUi.conversationResult.yourScheduleIsReady')
+              ? changedCount === 0
+                  ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
+                  : t('aiAutofillUi.conversationResult.yourScheduleIsReady')
               : changedCount === 0
                 ? t('aiAutofillUi.conversationResult.noShiftsChangedThisTime')
-                : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady');
-    const scope = applied
+                : t('aiAutofillUi.conversationResult.yourAdjustedScheduleIsReady', {count: changedCount});
+    const scope = saved
         ? null
         : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
-          ? t('aiAutofillUi.conversationResult.yourDraftChangedSoThisResultWasNotAppliedReviewItBeforeContinuing')
+          ? t('aiConversationSidebar.draftChangedResultSaved')
           : t('aiAutofillUi.conversationResult.thisResultHasNotBeenAppliedToTheCurrentScheduleReviewItBeforeContinuing');
 
     return (
         <AiScheduleResultCard
             title={
-                applied
+                saved && changedCount !== undefined
                     ? title
                     : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                       ? t('aiConversationSidebar.sourceChangedNotApplied')
@@ -75,18 +77,18 @@ export function AiConversationResult({
                         ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
                         : title
             }
-            attempt={attempt}
+            attempt={saved || savedForLater ? undefined : attempt}
             outcome={
-                !applied && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
+                !saved && (review || (authoring && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(authoring.draftState)))
                     ? 'review'
                     : succeeded
                       ? 'success'
                       : 'neutral'
             }
             outcomeLabel={
-                !applied && visibleMessageKey
+                !saved && visibleMessageKey
                     ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`)
-                    : !applied
+                    : !saved
                       ? t('aiAutofillUi.conversationResult.yourScheduleResultIsReady')
                       : appliedStatusKey
                         ? t(`aiConversationSidebar.authoring.${appliedStatusKey}`)
@@ -94,7 +96,8 @@ export function AiConversationResult({
                           ? t('aiAutofillUi.conversationResult.autofillSucceeded')
                           : t('aiAutofillUi.conversationResult.adjustmentSucceeded')
             }
-            changedCount={changedCount}
+            changedCount={saved ? changedCount : undefined}
+            changeSummary={saved || savedForLater ? changeSummary : undefined}
             description={
                 authoring
                     ? applied
@@ -107,13 +110,6 @@ export function AiConversationResult({
                       : scope
             }
             preview={preview}
-            headerAction={
-                <AiConversationFeedbackButton
-                    label={t('aiAutofillUi.conversationResult.sendFeedbackOnThisResult')}
-                    disabled={feedbackDisabled}
-                    onClick={onReport}
-                />
-            }
             actions={actions}
         >
             {showPartialCoverage && (

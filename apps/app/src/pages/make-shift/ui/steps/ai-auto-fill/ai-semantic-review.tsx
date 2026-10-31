@@ -137,6 +137,7 @@ export function AiSemanticReview({
         !retry &&
         ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
         Boolean(plan.conditionGroups?.length);
+    const rejectedInterpretation = retry && plan.reasonCodes.includes('INVALID_CONDITION_EDIT');
     const title = ready
         ? complete
             ? t('aiAutofillUi.semanticReview.theCalculationForTheseConditionsIsComplete')
@@ -150,7 +151,9 @@ export function AiSemanticReview({
         : conflict
           ? t('aiAutofillUi.semanticReview.yourRequestConflictsWithFixedShifts')
           : retry
-            ? t('aiAutofillUi.semanticReview.yourRequestCouldNotBeReviewed')
+            ? rejectedInterpretation
+                ? t('aiAutofillUi.interpretFailureTitle')
+                : t('aiAutofillUi.semanticReview.yourRequestCouldNotBeReviewed')
             : expired
               ? t('aiAutofillUi.semanticReview.reviewYourRequestAgain')
               : plan.state === 'UNSUPPORTED'
@@ -191,7 +194,9 @@ export function AiSemanticReview({
             : ready || conflict
               ? null
               : retry
-                ? t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
+                ? rejectedInterpretation
+                    ? t('aiAutofillUi.interpretRejected')
+                    : t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
                 : expired
                   ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
                   : plan.state === 'UNSUPPORTED'

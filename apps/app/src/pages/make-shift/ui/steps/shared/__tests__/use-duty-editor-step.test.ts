@@ -270,6 +270,26 @@ describe('useDutyEditorStep', () => {
         await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual([null, null, null, 'D']));
     });
 
+    it.each([true, false])('retains the server feature decision after first editor initialization: %s', async (enabled) => {
+        wardApiMocks.getShift.mockResolvedValue(makeShift());
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue({
+            ...makeWorkspaceSchedule(),
+            conversationEnabled: enabled,
+            semanticExecutionEnabled: enabled,
+            intentFirstAuthoringEnabled: enabled,
+            authoringContractVersions: ['intent-first-v1'],
+        });
+        const {result} = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => expect(result.current.isHydratingEditor).toBe(false));
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows).toHaveLength(1));
+        const state = useShiftEditorStore.getState();
+
+        expect(state.conversationEnabled).toBe(enabled);
+        expect(state.semanticExecutionEnabled).toBe(enabled);
+        expect(state.intentFirstAuthoringEnabled).toBe(enabled);
+    });
+
     it('waits for workspace fixed cells before hydrating the editor document', async () => {
         const workspace = createDeferred<ReturnType<typeof makeWorkspaceSchedule>>();
 

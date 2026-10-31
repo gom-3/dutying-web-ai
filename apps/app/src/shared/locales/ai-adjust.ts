@@ -151,6 +151,8 @@ export const aiAdjustKo = {
         },
     },
     preparation: {
+        initialRequestLabel: '이번 근무표에 반영할 내용 · 선택',
+        initialRequestExample: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
         previous: '전달 근무에 빈칸이 있어요.\n이대로 진행할까요?',
         previousHelp: '전달 근무를 입력하면 월초의\n연속 근무와 휴식도 함께 확인해요.',
         continue: '이대로 진행할게요',
@@ -361,6 +363,7 @@ export const aiAdjustKo = {
         expiredSuggestion: '표나 조건이 바뀌었거나 제안의 유효 시간이 지났어요. 최신 요청으로 다시 수정해 주세요.',
         loading: '이전 대화를 불러오고 있어요. 잠시만 기다려 주세요.',
         pendingExecution: '이전 요청의 결과를 먼저 확인해 주세요. 아래에서 결과를 다시 확인할 수 있어요.',
+        expiredPlan: '요청을 확인한 뒤 시간이 지나 실행 계획이 만료됐어요. 입력한 요청을 다시 확인해 주세요. 근무표는 그대로예요.',
         staleRequest: '표나 조건이 바뀌었어요. 최신 요청을 확인한 뒤 수정해 주세요. 입력한 내용은 그대로 두었어요.',
         requestTooLong: '요청과 답변을 합쳐 500자 이내로 줄여 주세요.',
     },
@@ -634,6 +637,8 @@ export const aiAdjustEn = {
         },
     },
     preparation: {
+        initialRequestLabel: 'Request for this schedule · optional',
+        initialRequestExample: 'Please reduce Nurse Kim’s weekend shifts this month.',
         previous: 'Some shifts from last month are blank.\nContinue as they are?',
         previousHelp: 'Last month’s shifts help check consecutive work and rest at the start of this month.',
         continue: 'Continue as they are',
@@ -865,6 +870,7 @@ export const aiAdjustEn = {
         expiredSuggestion: 'The schedule or conditions changed, or the suggestion expired. Submit a new request with the current schedule.',
         loading: 'Loading your conversation. Please wait.',
         pendingExecution: 'Check the previous request before starting another. Use Check result below.',
+        expiredPlan: 'The reviewed plan expired during preparation. Review your request again. Your schedule is unchanged.',
         staleRequest: 'The schedule or conditions changed. Review the latest request before editing. Your text has been kept.',
         requestTooLong: 'Keep the request and replies within 500 characters.',
     },

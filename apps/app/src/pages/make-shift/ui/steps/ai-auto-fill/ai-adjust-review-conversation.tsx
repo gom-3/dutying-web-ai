@@ -19,24 +19,30 @@ export function AssistantMessage({
     children,
     tone = 'default',
     fullWidth = false,
+    plain = false,
     showTime = false,
 }: {
     children: ReactNode;
     tone?: 'default' | 'error';
     fullWidth?: boolean;
+    plain?: boolean;
     showTime?: boolean;
 }) {
     const {t} = useTypedTranslation();
     const [displayedAt] = useState(() => new Date().toISOString());
 
     return (
-        <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''}`}>
+        <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''} ${plain ? 'font-apple' : ''}`}>
             <span className="flex items-center gap-1.5 text-[13px] font-medium text-main-1">
                 <img src={assistantIcon} width={16} height={16} alt="" />
                 {t('aiAdjust.assistant')}
             </span>
             <div
-                className={`max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`}
+                className={
+                    plain
+                        ? 'max-w-full min-w-0 text-[14.5px] leading-7 [overflow-wrap:anywhere] break-keep text-[#333D4B]'
+                        : `max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`
+                }
             >
                 {children}
             </div>

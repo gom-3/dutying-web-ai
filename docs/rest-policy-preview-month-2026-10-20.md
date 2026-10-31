@@ -8,8 +8,15 @@
 나이트 배치·고정 휴무·여유 인원 배치는 별도 조사 대상이다. 실제 병동 규칙 확인 없이 개인의 허용 근무를 바꾸거나
 연차를 자동 소진하지 않는다. 기본 D/E/N 최소 3/3/2와 E 우선 추가 배치, 월 O 9일 및 별도 연차 요구를 구분한다.
 
-고정 휴무 모드에서는 `monthlyRestRequirement.exactForRegularWorkers=true`를 전달한다.
-LLM은 명시 허용근무에 따른 나이트 전담을 제외하고 선택 휴무 코드의 일수를 정확히 맞춘다.
-주 단위 모드는 기존 최소 기준 유지. 연차는 별도 신청/쿼터가 필요하며 오프 여유로 자동 배정하지 않는다.
-배포 순서: LLM 엔진 → Spring 요청 DTO → 웹. 기존 서버가 새 필드를 무시하는 동안 고정 목표 보장은 불가능하다.
+## 휴무 요청 계약 정정 (2026-10-28)
+
+이 문서의 이전 `targetMode=fixed → exactForRegularWorkers=true` 해석은 폐기했다.
+고정 모드는 월 기준값을 계산하는 방법이며, 일반근무자의 OFF 상한을 별도로 지정한 것이 아니다.
+화면은 `minimumDaysByShiftNurseId`와 `countedWardShiftTypeIds`를 전송하고 exact 상한을 자동으로 추가하지 않는다.
+명시적인 API `exactForRegularWorkers=true`와 개인별 HARD EXACT 규칙은 계속 지킨다.
+기준값 초과 OFF를 연차로 바꾸거나 연차를 자동 소진하지 않는다.
+현행 계약과 검증 기준은 [고정 휴무 요청 계약](fixed-rest-calculation-request-contract-2026-10-28.md)과
+[회귀 방지 검증](rest-contract-regression-checks-2026-10-28.md)을 따른다.
+
+아래 검증 수치는 10월 20일 당시 실행 기록이다. 현행 계약 보장의 근거로 사용하지 않는다.
 검증: 월 이동/정책 UI 8개, 휴무 계산 모델19개, 고정 휴무 요청3개, 생성 요청 전달1개 및 TypeScript build 검사 통과.

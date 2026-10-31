@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
     currentTeamNurses: [] as Array<{isConnected: boolean}>,
     wardApi: {
         getSnapshots: vi.fn(),
+        getSnapshot: vi.fn(),
         saveSnapshot: vi.fn(),
         publishSnapshot: vi.fn(),
         getShiftConstraintRules: vi.fn(),
@@ -258,7 +259,9 @@ vi.mock('../ai-autofill-loading-overlay', () => ({
 }));
 
 vi.mock('../ai-snapshot-sidebar', () => ({
-    AiSnapshotSidebar: () => null,
+    AiSnapshotSidebar: ({onSelectSnapshot}: {onSelectSnapshot: (snapshot: {snapshotId: number; title: string}) => void}) => (
+        <button onClick={() => onSelectSnapshot({snapshotId: 960, title: '저장된 근무표'})}>load saved grid</button>
+    ),
 }));
 
 vi.mock('../last-shift-warning', () => ({
@@ -294,6 +297,8 @@ function seedEditor(doc = makeDoc()) {
 describe('AiAutofill blank preview', () => {
     beforeEach(() => {
         mocks.previousBlank = false;
+        mocks.shift.days = [];
+        mocks.shift.wardShiftTypes = [];
         mocks.editorSourceError = false;
         localStorage.clear();
         mocks.calendarDocs.length = 0;
@@ -312,6 +317,35 @@ describe('AiAutofill blank preview', () => {
         seedEditor();
     });
 
+    it('keeps the conversation transport and rules when restoring a history snapshot', async () => {
+        Object.assign(mocks.shift, {
+            days: [{day: 1, dayType: 'workday'}],
+            wardShiftTypes: [{wardShiftTypeId: 2, shortName: 'E', name: 'Evening'}],
+        });
+        mocks.wardApi.getSnapshot.mockResolvedValue({
+            snapshotId: 960,
+            title: '저장된 근무표',
+            cells: [{shiftNurseId: 10, date: '2026-07-01', wardShiftTypeId: 2, shiftCode: 'E', fixed: false}],
+            rowOrder: [{shiftNurseId: 10, displayOrder: 1, divisionNum: 1}],
+        });
+        render(<AiAutofill />);
+        act(() => {
+            useShiftEditorStore.getState().setConversationEnabled(true);
+            useShiftEditorStore.getState().setSemanticExecutionEnabled(true);
+            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        });
+        await userEvent.click(screen.getByRole('button', {name: 'load saved grid'}));
+
+        const dialog = screen.getByRole('dialog');
+
+        await userEvent.click(within(dialog).getByRole('button', {name: 'page.makeShift.aiRefill.snapshotSidebar.loadConfirm'}));
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('E'));
+        expect(mocks.wardApi.getSnapshot).toHaveBeenCalledWith(1, 10, 960);
+        expect(useShiftEditorStore.getState().conversationEnabled).toBe(true);
+        expect(useShiftEditorStore.getState().semanticExecutionEnabled).toBe(true);
+        expect(useShiftEditorStore.getState().intentFirstAuthoringEnabled).toBe(true);
+        expect(useShiftEditorStore.getState().rulesHash).toBe('sha256:test');
+    });
     it('enables right-click fixing on the step 4 calendar', () => {
         render(<AiAutofill />);
 

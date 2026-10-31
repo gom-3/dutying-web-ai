@@ -158,6 +158,8 @@ export const aiAdjustJa = {
         },
     },
     preparation: {
+        initialRequestLabel: '今回の勤務表に反映する内容 · 任意',
+        initialRequestExample: '今月はキム看護師の週末勤務を減らしてください。',
         previous: '先月の勤務に空欄があります。\nこのまま進めますか？',
         previousHelp: '先月の勤務を入力すると、月初の\n連続勤務と休息も確認できます。',
         continue: 'このまま進む',
@@ -382,6 +384,7 @@ export const aiAdjustJa = {
         expiredSuggestion: '勤務表や条件が変更されたか、提案の有効期限が切れました。最新の内容でもう一度リクエストしてください。',
         loading: '前のチャットを読み込んでいます。しばらくお待ちください。',
         pendingExecution: '先に前のリクエストの結果を確認してください。下から結果を再確認できます。',
+        expiredPlan: '準備中に実行計画の有効期限が切れました。入力したリクエストを再確認してください。勤務表は変更していません。',
         staleRequest: '勤務表や条件が変更されました。最新のリクエストを確認してから編集してください。入力内容は保持されています。',
         requestTooLong: 'リクエストと回答を合わせて500文字以内にしてください。',
     },

@@ -98,13 +98,15 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
+import {AiAdjustIntro} from './ai-adjust-intro';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillFixedSelectionBar, AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
-import AiConversationSidebar from './ai-conversation-sidebar';
+import AiConversationSidebar, {type TConversationExecution} from './ai-conversation-sidebar';
+import {AiExecutionDock} from './ai-execution-dock';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
 import AiPromoteRulesDialog from './ai-promote-rules-dialog';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
@@ -374,6 +376,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const conversationEnabled = useShiftEditorStore((s) => s.conversationEnabled);
     const intentFirstAuthoringEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const [conversationGenerationRequest, setConversationGenerationRequest] = useState(0);
+    const [initialRequestText, setInitialRequestText] = useState('');
+    const [conversationGenerationText, setConversationGenerationText] = useState('');
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const divisionLabelByNum = useMemo(
@@ -392,6 +396,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [isRequestBusy, setIsRequestBusy] = useState(false);
+    const [aiExecution, setAiExecution] = useState<TConversationExecution | null>(null);
+    const [isAiExecutionDismissed, setIsAiExecutionDismissed] = useState(false);
     const [isAiLoadingOverlayFinishing, setIsAiLoadingOverlayFinishing] = useState(false);
     const [aiStartedAt, setAiStartedAt] = useState<number | null>(null);
     const conversationBusyRef = useRef(false);
@@ -537,7 +544,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
-        editorInputDisabled: isAiGenerating || isAiLoadingOverlayFinishing,
+        editorInputDisabled: isRequestBusy || (isAiGenerating && !isAiExecutionDismissed) || isAiLoadingOverlayFinishing,
     });
     const orderedShift = useMemo(
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
@@ -677,6 +684,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const handleAiLoadingOverlayFinish = useCallback(() => {
         setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
+        setIsAdjustDialogOpen(true);
     }, []);
     const handleConversationBusyChange = useCallback((busy: boolean, succeeded = false) => {
         if (conversationBusyRef.current === busy) return;
@@ -687,7 +695,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         if (busy) {
             setAiStartedAt(Date.now());
             setIsAiLoadingOverlayFinishing(false);
-            setIsAdjustDialogOpen(true);
+            setIsAiExecutionDismissed(false);
+            setIsAdjustDialogOpen(false);
         } else {
             setIsAiLoadingOverlayFinishing(succeeded);
 
@@ -695,9 +704,28 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         }
     }, []);
 
+    useEffect(() => {
+        // A background result must not leave an invisible completion overlay locking the editor.
+        if (isAiLoadingOverlayFinishing && (isAiExecutionDismissed || isAdjustDialogOpen)) {
+            setIsAiLoadingOverlayFinishing(false);
+            setAiStartedAt(null);
+        }
+    }, [isAiLoadingOverlayFinishing, isAiExecutionDismissed, isAdjustDialogOpen]);
+
+    useEffect(() => {
+        if (
+            !isAiGenerating &&
+            !isAiExecutionDismissed &&
+            aiExecution &&
+            ['FAILED', 'CANCELLED'].includes(aiExecution.operation.executionStatus)
+        )
+            setIsAdjustDialogOpen(true);
+    }, [isAiGenerating, isAiExecutionDismissed, aiExecution]);
+
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
     const isStepNavigationBusy =
+        isRequestBusy ||
         isWorking ||
         isCarryingOver ||
         isSavingSnapshot ||
@@ -795,6 +823,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         conversationSequence.current += 1;
         cancelPendingAdjustmentPreparation();
         setConversationGenerationRequest(0);
+        setInitialRequestText('');
+        setConversationGenerationText('');
         setIsReviewingCarryOver(false);
         setCarryOverSelection(null);
         setCarryOverError(null);
@@ -817,6 +847,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
         setIsAiGenerating(false);
+        setAiExecution(null);
+        setIsAiExecutionDismissed(false);
         setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
         setIsAiBlankPreviewVisible(false);
@@ -856,10 +888,10 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         };
     }, [isSnapshotSidebarOpen]);
 
-    const isCalendarReadonly = isAiGenerating;
+    const isCalendarReadonly = isRequestBusy || (isAiGenerating && !isAiExecutionDismissed);
     const visibleCalendarDoc = useMemo(
-        () => (isAiBlankPreviewVisible ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
-        [hydratedDoc, isAiBlankPreviewVisible],
+        () => (isAiBlankPreviewVisible && !isAiExecutionDismissed ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
+        [hydratedDoc, isAiBlankPreviewVisible, isAiExecutionDismissed],
     );
     const annualLeave = useAnnualLeaveSchedule(wardId, currentShiftTeamId, year, month, orderedShift, editorDoc);
     const display = useScheduleDisplay(wardId);
@@ -881,6 +913,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         [annualLeave.data?.days, annualLeave.overview.data?.days, adjustmentDays, hydratedDoc, language, month, orderedShift, policy, year],
     );
     const canConfirm =
+        !isRequestBusy &&
         !isWorking &&
         !isSavingSnapshot &&
         !isAiGenerating &&
@@ -1140,13 +1173,23 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         }
     };
     const handleLoadSnapshot = async (snapshotId: number) => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || loadingSnapshotId != null) return;
+        if (
+            !isCurrentShiftTeamReady ||
+            !wardId ||
+            !currentShiftTeamId ||
+            !orderedShift ||
+            loadingSnapshotId != null ||
+            isAiGenerating ||
+            conversationBusyRef.current
+        )
+            return;
 
         setSnapshotLoadTarget(null);
         setLoadingSnapshotId(snapshotId);
 
         try {
             const requestContext = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+            const requestedRevision = useShiftEditorStore.getState().draftRevision;
             const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
             const latestContext = currentAiContextRef.current;
 
@@ -1159,6 +1202,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 return;
             }
 
+            if (conversationBusyRef.current || useShiftEditorStore.getState().draftRevision !== requestedRevision) {
+                toast.error(t('aiAdjust.localError.draftChanged'));
+
+                return;
+            }
+
             const latestDoc = useShiftEditorStore.getState().doc;
             const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
                 fixedCells: {},
@@ -1167,15 +1216,12 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 lastCellLocksByWorkerId: Object.fromEntries(latestDoc.rows.map((row) => [row.workerId, row.lastCellLocks ?? []])),
             });
 
-            commands.init(nextDoc);
+            // init() resets workspace feature flags, which switches the sidebar transport.
+            commands.restoreSnapshotDoc(nextDoc);
             markEditableDocSaved(nextDoc);
             markLastAiGeneratedDoc(null);
             resetAiStatus();
-            setHasCompletedAiFill(false);
-            setLastAppliedObservation(undefined);
-            setFeedbackObservation(undefined);
-            setHasGeneratedSchedule(false);
-            writeAutofillCompletion(completionStorageKey, false);
+            // Loading a saved grid changes the editor, not the conversation's generation history.
 
             const stateAfterInit = useShiftEditorStore.getState();
 
@@ -2107,6 +2153,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             aiFillDecisionCellKeysRef.current = new Set(
                 doc.rows.flatMap((row) => doc.columns.map((column) => `${row.workerId}|${column}`)),
             );
+
             // Review only the user's filled edits as protected; unchanged AI output stays editable.
             // The snapshot above lets cancellation undo these tentative pins.
             const edited = getEditedFilledCellsSinceBaseline(doc, lastAiGeneratedDocRef.current);
@@ -2156,6 +2203,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         // Invalidate asynchronous work before returning to the entry choices. Keep the
         // current schedule and saved requests; only unconfirmed preparation is undone.
         legacyGenerationPrompt.current = null;
+        setInitialRequestText('');
         conversationSequence.current += 1;
         autofillSequence.current += 1;
         autofillContext.current = null;
@@ -2217,7 +2265,9 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             pendingAdjustmentPreparation.current = null;
             pending.resolve();
         } else if (conversationEnabled) {
+            setConversationGenerationText(initialRequestText.trim());
             setConversationGenerationRequest((count) => count + 1);
+            setInitialRequestText('');
         } else {
             // Keep the visible draft intact until a new result succeeds.
             void runAiFill(
@@ -2402,13 +2452,14 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         } else if (getBlankLastShiftCellsWarningKey(useShiftEditorStore.getState().doc) !== null) {
             showPreviousPreparation();
         } else {
-            showFixedPreparation();
+            showFixedPreparation(!conversationEnabled);
         }
     };
     const handleAiFill = (requestText?: string) => {
         const text = typeof requestText === 'string' ? requestText.trim() : '';
 
         legacyGenerationPrompt.current = text ? {context: currentContextKey, text} : null;
+        setInitialRequestText(text);
         beginAutofillPreparation('generation');
     };
     const prepareAdjustment = (kind: 'generation' | 'adjustment' = 'adjustment') =>
@@ -2459,9 +2510,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         const hasResultCells = currentDoc.rows.some((row) =>
             row.cells.some((cell, column) => cell != null && !currentDoc.requestCells[`${row.workerId}|${currentDoc.columns[column]}`]),
         );
+
         // A paused generation review from an older visit must not trap a filled
         // roster in the refill flow when the user opens natural editing.
-        if (conversationEnabled && hasResultCells && autofillFlow?.status === 'paused' && autofillFlow.kind === 'generation' && !autofillFlow.recovery) {
+        if (
+            conversationEnabled &&
+            hasResultCells &&
+            autofillFlow?.status === 'paused' &&
+            autofillFlow.kind === 'generation' &&
+            !autofillFlow.recovery
+        ) {
             resetAutofillConversation();
         } else if (resumeAutofillPreparation()) return;
 
@@ -2820,6 +2878,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 onUndoFixAll={
                     bulkFixEntry && history.past[history.past.length - 1] === bulkFixEntry ? handleUndoFixAllAiFillDecisionCells : undefined
                 }
+                requestText={initialRequestText}
+                onRequestTextChange={conversationEnabled && intentFirstAuthoringEnabled ? setInitialRequestText : undefined}
                 onCancel={preparationStep === 'previous' ? handleCancelLastShiftBlankWarning : closePreparation}
                 onConfirm={preparationStep === 'previous' ? handleConfirmLastShiftBlankWarning : handleConfirmAiFillDecision}
             />
@@ -2838,7 +2898,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             : t('page.makeShift.aiRefill.publishConfirm.noConnectedDescription');
     const scheduleActions = {
         canConfirm,
-        disabled: isAiGenerating || isWorking || disablingRequestId !== null,
+        disabled: isRequestBusy || isAiGenerating || isWorking || disablingRequestId !== null,
         onConfirm: () => {
             if (!canConfirm) return;
 
@@ -2852,11 +2912,14 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
             <div
                 className="ai-autofill-root__main flex min-w-0 flex-1 flex-col gap-3 pt-3 outline-none"
                 ref={editorRef}
-                onKeyDown={preparationStep ? undefined : onKeyDown}
-                onPasteCapture={preparationStep ? undefined : onPasteCapture}
+                onKeyDown={preparationStep || isRequestBusy ? undefined : onKeyDown}
+                onPasteCapture={preparationStep || isRequestBusy ? undefined : onPasteCapture}
                 tabIndex={0}
             >
                 <AiPlanNotice hasResult={hasCompletedAiFill} />
+                {conversationEnabled && isAiExecutionDismissed && !isConversationOpen && (aiExecution !== null || isAiGenerating) && (
+                    <AiExecutionDock execution={aiExecution} isAdjusting={isAdjusting} onOpen={() => setIsAdjustDialogOpen(true)} />
+                )}
                 {chatSaveFailed && (
                     <p role="status" className="text-sm text-[#667085]">
                         {t('aiAdjust.preparation.historyUnavailable')}
@@ -2926,6 +2989,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             : undefined
                     }
                     isAiGenerating={isAiGenerating}
+                    requestBusy={isRequestBusy}
                     isPreparing={Boolean(preparationStep) && autofillFlow?.status !== 'paused'}
                     isAutofillBlocked={isAutofillBlocked}
                     aiStatus={aiStatus}
@@ -3062,7 +3126,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     key={`conversation:${chatOwner}:${wardId}:${currentShiftTeamId}:${year}:${month}`}
                     open={isConversationOpen}
                     loading={isAiGenerating || isAiLoadingOverlayFinishing}
-                    onClose={preparationStep ? closePreparation : () => setIsAdjustDialogOpen(false)}
+                    onClose={
+                        preparationStep
+                            ? closePreparation
+                            : () => {
+                                  if (isAiGenerating) setIsAiExecutionDismissed(true);
+
+                                  setIsAdjustDialogOpen(false);
+                              }
+                    }
                     onOpenConstraints={onOpenConstraints ?? (() => useCase.goToStep(2))}
                     wardId={wardId}
                     teamId={currentShiftTeamId}
@@ -3071,6 +3143,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     shift={orderedShift}
                     adjustEnabled={isAdjustEnabled}
                     generationRequest={conversationGenerationRequest}
+                    generationText={conversationGenerationText}
                     rebuildRequest={0}
                     generationFillPolicy="REBUILD_UNLOCKED"
                     getProtectedCellKeys={() => {
@@ -3089,7 +3162,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     spotlightInteractive={preparationStep === 'fixed'}
                     onGenerated={rememberGeneratedSchedule}
                     onBusyChange={handleConversationBusyChange}
-                    resultActions={scheduleActions}
+                    onRequestBusyChange={setIsRequestBusy}
+                    onExecutionChange={setAiExecution}
                     onApplied={() => {
                         setHasAiGeneratedUnsavedChanges(true);
                         setHasCompletedAiFill(true);
@@ -3132,6 +3206,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     modifyDisabled={!isAdjustEnabled}
                     textInputRef={adjustTextInputRef}
                     onPickExample={(sentence) => adjustTextInputRef.current?.fill(sentence)}
+                    onRequestBusyChange={setIsRequestBusy}
                     interpret={interpretAdjustText}
                     onApply={handleApplyTextRequests}
                     goalNurses={currentTeamNurses.map((nurse) => ({
@@ -3159,6 +3234,16 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onDisableRequest={handleDisableMonthRequest}
                 />
             )}
+            <AiAdjustIntro
+                open={
+                    isConversationOpen &&
+                    isAdjustEnabled &&
+                    (hasGeneratedSchedule || hasFilledPreparationCells) &&
+                    !preparationStep &&
+                    !isAiGenerating
+                }
+                owner={chatOwner}
+            />
             <AiSnapshotSidebar
                 open={isSnapshotSidebarOpen}
                 onClose={() => setIsSnapshotSidebarOpen(false)}
@@ -3254,13 +3339,26 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
-            {isAiGenerating || isAiLoadingOverlayFinishing ? (
+            {(isAiGenerating || isAiLoadingOverlayFinishing) &&
+            (!conversationEnabled || (!isAiExecutionDismissed && !isConversationOpen)) ? (
                 <AiAutofillLoadingOverlay
                     sidebarOpen={isConversationOpen}
                     isAdjusting={isAdjusting}
                     isFinishing={isAiLoadingOverlayFinishing}
                     startedAt={aiStartedAt}
                     onFinish={handleAiLoadingOverlayFinish}
+                    operation={aiExecution?.operation}
+                    onBackground={conversationEnabled ? () => setIsAiExecutionDismissed(true) : undefined}
+                    onOpenConversation={
+                        conversationEnabled
+                            ? () => {
+                                  setIsAiExecutionDismissed(true);
+                                  setIsAdjustDialogOpen(true);
+                              }
+                            : undefined
+                    }
+                    onCancel={aiExecution?.cancel}
+                    cancelling={aiExecution?.cancelling}
                 />
             ) : null}
         </div>

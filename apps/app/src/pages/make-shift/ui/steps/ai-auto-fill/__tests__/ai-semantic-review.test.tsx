@@ -236,6 +236,19 @@ describe('request review actions', () => {
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
+    it('explains an invalid AI edit as an interpretation failure without asking the user to revise it', async () => {
+        const user = userEvent.setup();
+        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: ['INVALID_CONDITION_EDIT']}});
+        expect(screen.getByText('요청 해석을 마치지 못했어요.')).toBeVisible();
+        expect(screen.getByText(/AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요/)).toHaveTextContent(
+            '이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.',
+        );
+        await user.click(screen.getByRole('button', {name: '다시 시도하기'}));
+        expect(props.onRetry).toHaveBeenCalledOnce();
+        expect(props.onApply).not.toHaveBeenCalled();
+        expect(props.onEdit).not.toHaveBeenCalled();
+    });
+
     it('recovers a failed interpretation through retry without executing or condition selection', async () => {
         const user = userEvent.setup();
         const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: ['MODEL_TIMEOUT']}});
