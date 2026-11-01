@@ -688,7 +688,7 @@ export default function AiAdjustTextInput({
                           {
                               messages: active.messages ?? [],
                               failure: active.failure ?? {message: active.error ?? t('aiAdjust.failed'), blocked: false},
-                              reply: t('aiAdjust.failure.retry'),
+                              reply: t('aiAdjust.failure.retryCalculation'),
                               attempt: active.attempt,
                           },
                       ],

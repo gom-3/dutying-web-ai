@@ -21,7 +21,7 @@ const nurses = [
     {nurseId: 2, name: '박지현'},
 ];
 const interpreted: TScheduleAdjustInterpretRes = {
-    items: [{kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, displayLabel: '오프 균형', lifetimeHint: 'TEAM'}],
+    items: [{kind: 'KNOB', knob: 'OFF_BALANCE', value: 1, displayLabel: '휴무 균형', lifetimeHint: 'TEAM'}],
     unmapped: [],
     strength: 'LIGHT',
 };
@@ -660,7 +660,7 @@ describe('AI adjustment conversation', () => {
         const props = {disabled: false, interpret: vi.fn().mockResolvedValue(interpreted), onApply: vi.fn(), goalNurses: nurses, requests};
         const {rerender} = render(<AiAdjustTextInput {...props} requestsError />);
 
-        await submit('오프 균형');
+        await submit('휴무 균형');
         expect(screen.getByText(/기존 연속근무 제한/)).toBeVisible();
         expect(screen.queryByText('해제된 요청')).toBeNull();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeDisabled();
@@ -674,10 +674,10 @@ describe('AI adjustment conversation', () => {
         render(
             <AiAdjustTextInput disabled={false} interpret={vi.fn().mockResolvedValue(interpreted)} onApply={apply} goalNurses={nurses} />,
         );
-        await submit('오프 균형');
+        await submit('휴무 균형');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('AI 사용 횟수를 모두 썼어요.');
-        expect(screen.queryByRole('button', {name: 'aiAdjust.failure.retry'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.failure.retryCalculation'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
         expect(screen.getByText('aiAdjust.chat.applyReply')).toBeVisible();
         expect(apply).toHaveBeenCalledOnce();
@@ -687,10 +687,10 @@ describe('AI adjustment conversation', () => {
         const interpret = vi.fn().mockRejectedValue(Object.assign(new Error('forbidden'), {code: 403}));
 
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={vi.fn()} goalNurses={nurses} />);
-        fireEvent.change(textbox(), {target: {value: '오프 균형'}});
+        fireEvent.change(textbox(), {target: {value: '휴무 균형'}});
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
         expect(await screen.findByRole('alert')).toHaveTextContent(/권한|access/);
-        expect(textbox()).toHaveValue('오프 균형');
+        expect(textbox()).toHaveValue('휴무 균형');
         expect(interpret).toHaveBeenCalledOnce();
     });
 
@@ -700,11 +700,11 @@ describe('AI adjustment conversation', () => {
         render(
             <AiAdjustTextInput disabled={false} interpret={vi.fn().mockResolvedValue(interpreted)} onApply={apply} goalNurses={nurses} />,
         );
-        await submit('오프 균형');
+        await submit('휴무 균형');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('aiAdjust.failed');
         expect(screen.getByRole('alert')).not.toHaveTextContent('서버 연결 실패');
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.failure.retryCalculation'}));
         await waitFor(() => expect(apply).toHaveBeenCalledTimes(2));
         expect(apply.mock.calls[1]![4]).toBe(apply.mock.calls[0]![4]);
     });
@@ -714,11 +714,11 @@ describe('AI adjustment conversation', () => {
         render(
             <AiAdjustTextInput disabled={false} interpret={vi.fn().mockResolvedValue(interpreted)} onApply={apply} goalNurses={nurses} />,
         );
-        await submit('오프 균형');
+        await submit('휴무 균형');
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         await screen.findByRole('alert');
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeNull();
-        expect(textbox()).toHaveValue('오프 균형');
+        expect(textbox()).toHaveValue('휴무 균형');
     });
     it('ignores an interpretation that arrives after the schedule scope unmounts', async () => {
         let resolve!: (result: TScheduleAdjustInterpretRes) => void;

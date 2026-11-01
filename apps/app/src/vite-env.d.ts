@@ -17,6 +17,8 @@ interface ImportMetaEnv {
     readonly VITE_GA_TRACKING_ID?: string;
     readonly VITE_AI_GA_TRACKING_ID?: string;
     readonly VITE_PIXEL_ID?: string;
+    readonly VITE_ABTO_ENABLED?: string;
+    readonly VITE_ABTO_EVENT_KEY?: string;
     readonly VITE_AI_SCHEDULE_PROVIDER?: string;
     readonly VITE_ENABLE_WARD_CHAT?: string;
     /** LINKED 계정 온보딩 미리보기 강제 on/off (미설정 시 접속 도메인으로 판별) */

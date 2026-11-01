@@ -84,7 +84,7 @@ it('opens the common rule editor for a legacy monthly-rest failure without using
     mount();
     await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
 
-    const modal = screen.getByRole('dialog', {name: '제약조건'});
+    const modal = screen.getByRole('dialog', {name: '근무 조건'});
 
     expect(modal).toBeVisible();
     expect(screen.queryByRole('dialog', {name: '휴무 설정 충돌'})).not.toBeInTheDocument();
@@ -97,6 +97,6 @@ it('opens the common rule editor for a legacy monthly-rest failure without using
 it('keeps an unknown old rest identity in the common team rule editor instead of selecting another nurse', async () => {
     mount({...failure, restConflicts: [{...failure.restConflicts![0], nurseId: 999}]});
     await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiAutofillUi.conflictReview.editSettings')}));
-    expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+    expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
     expect(mocks.get).not.toHaveBeenCalled();
 });

@@ -40,10 +40,10 @@ describe('conflicting condition consent', () => {
         );
         expect(screen.getByText(review.violations[0].message)).toBeInTheDocument();
         expect(proceed).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: '요청 바꾸기'}));
+        fireEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
         expect(revise).toHaveBeenCalledOnce();
-        expect(screen.getByRole('button', {name: '설정 직접 수정'})).toBeEnabled();
-        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '근무 조건 수정하기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이번 근무표에 반영하기'})).toBeEnabled();
         expect(proceed).not.toHaveBeenCalled();
     });
     it('uses the condition label and familiar counts rather than operator codes', () => {
@@ -63,7 +63,7 @@ describe('conflicting condition consent', () => {
             />,
         );
         expect(screen.getByText('가상간호 야간 횟수')).toBeInTheDocument();
-        expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeInTheDocument();
+        expect(screen.getByText('설정한 횟수: 최대 2회 / 배정된 횟수: 4회')).toBeInTheDocument();
         expect(screen.queryByText(/MAX/)).not.toBeInTheDocument();
     });
     it('proceeds only after choosing the proposal', async () => {
@@ -80,9 +80,9 @@ describe('conflicting condition consent', () => {
                 copy={copy}
             />,
         );
-        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '이번 근무표에 반영하기'}));
         expect(proceed).toHaveBeenCalledOnce();
-        await waitFor(() => expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled());
+        await waitFor(() => expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled());
     });
     it.each([false, true])('blocks stale or expired candidates (expired=%s)', (expired) => {
         const proceed = vi.fn(async () => {});
@@ -98,9 +98,9 @@ describe('conflicting condition consent', () => {
                 copy={copy}
             />,
         );
-        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled();
-        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        expect(screen.getByRole('button', {name: '이번 근무표에 반영하기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', {name: '이번 근무표에 반영하기'}));
         expect(proceed).not.toHaveBeenCalled();
     });
     it('shows understood intent and opens settings without applying a proposal', () => {
@@ -120,7 +120,7 @@ describe('conflicting condition consent', () => {
             />,
         );
         expect(screen.getByText('월요일은 3명, 나머지 평일은 4명')).toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '근무 조건 수정하기'}));
         expect(settings).toHaveBeenCalledOnce();
         expect(proceed).not.toHaveBeenCalled();
     });
@@ -180,9 +180,9 @@ describe('conflict review recovery', () => {
 
         p.onProceed.mockRejectedValueOnce(new Error('network'));
         render(<ConstraintConflictReview {...p} />);
-        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
-        expect(await screen.findByRole('alert')).toHaveTextContent('다시 시도');
-        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '이번 근무표에 반영하기'}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('현재 근무표를 먼저 확인');
+        fireEvent.click(screen.getByRole('button', {name: '이번 근무표에 반영하기'}));
         await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
         expect(p.onProceed).toHaveBeenCalledTimes(2);
     });
@@ -235,11 +235,11 @@ describe('conflict review recovery', () => {
                 <ConstraintConflictReview {...p} />
             </form>,
         );
-        fireEvent.click(screen.getByRole('button', {name: '요청 바꾸기'}));
-        fireEvent.click(screen.getByRole('button', {name: '설정 직접 수정'}));
-        fireEvent.click(screen.getByRole('button', {name: '제안대로 이번 표 수정'}));
+        fireEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
+        fireEvent.click(screen.getByRole('button', {name: '근무 조건 수정하기'}));
+        fireEvent.click(screen.getByRole('button', {name: '이번 근무표에 반영하기'}));
 
-        const pending = screen.getByRole('button', {name: '제안 적용 중…'});
+        const pending = screen.getByRole('button', {name: '제안 반영 중…'});
 
         expect(pending).toBeDisabled();
         fireEvent.click(pending);
@@ -253,10 +253,10 @@ describe('conflict review recovery', () => {
         const p = props();
 
         render(<ConstraintConflictReview {...p} />);
-        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이번 근무표에 반영하기'})).toBeEnabled();
         act(() => vi.advanceTimersByTime(60001));
-        expect(screen.getByRole('button', {name: '제안대로 이번 표 수정'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '요청 바꾸기'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: '이번 근무표에 반영하기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
         expect(screen.getByText(/확인 시간이 지났어요/)).toBeVisible();
     });
 });
@@ -273,7 +273,7 @@ it('separates the server conflict explanation from proposed validation without i
         />,
     );
     expect(screen.getByRole('heading', {name: '확인이 필요한 이유'})).toBeVisible();
-    expect(screen.getByRole('heading', {name: '제안 표에 남는 문제'})).toBeVisible();
+    expect(screen.getByRole('heading', {name: '변경안에서 아직 맞추지 못한 조건'})).toBeVisible();
     expect(screen.getByText('기존 조건에서 6일 연속이 필요해요.')).toBeVisible();
-    expect(screen.getByText('제안한 근무표에도 아래 조건은 충족되지 않아요.')).toBeVisible();
+    expect(screen.getByText('제안한 근무표에서도 아래 조건은 맞추지 못했어요.')).toBeVisible();
 });

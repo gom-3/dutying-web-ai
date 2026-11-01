@@ -48,9 +48,9 @@ describe('readable interpretation', () => {
         expect(screen.getByRole('heading', {name: '이렇게 바꿀까요?'})).toBeVisible();
         expect(screen.getByText('신규 간호사 1')).toBeVisible();
         expect(screen.getByText('D 근무를 월 10회 이상 배정')).toBeVisible();
-        expect(screen.getByText('횟수를 따로 말씀하지 않아 월 10회 이상으로 제안했어요.')).toBeVisible();
+        expect(screen.getByText('횟수를 정하지 않아 월 10회 이상으로 제안했어요.')).toBeVisible();
         expect(screen.queryByText(/기본값|가정한 값|말씀하지 않은 값을 가정/)).not.toBeInTheDocument();
-        expect(screen.queryByText('적용 내용 보기')).not.toBeInTheDocument();
+        expect(screen.queryByText('반영 내용 보기')).not.toBeInTheDocument();
         expect(screen.queryByText(/MONTH|MIN|EACH|period|aggregation|operator/)).not.toBeInTheDocument();
         expect(item.params).toEqual({target: [1], shift: 'D', period: 'MONTH', operator: 'MIN', aggregation: 'EACH', count: 10});
     });
@@ -74,9 +74,9 @@ describe('readable interpretation', () => {
 
     it('keeps additional conditions accessible with readable parameter names and values', () => {
         show({...item, condition: {key: 'PATIENT_COUNT', operator: 'GTE', value: 20}});
-        fireEvent.click(screen.getByText('적용 내용 보기'));
+        fireEvent.click(screen.getByText('반영 내용 보기'));
         expect(screen.getByText('환자 수', {exact: false})).toHaveTextContent('환자 수 · 20 이상');
-        expect(screen.getByText('횟수 기준')).toBeVisible();
+        expect(screen.getByText('횟수를 세는 기간')).toBeVisible();
         expect(screen.getByText('한 달')).toBeVisible();
         expect(screen.getByText('최소')).toBeVisible();
         expect(screen.getByText('1인당')).toBeVisible();

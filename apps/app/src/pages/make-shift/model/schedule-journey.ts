@@ -1,6 +1,7 @@
 import type {TScheduleObservation} from '@dutying/api/ward';
 import useAuthStore from '@/features/auth/model/store';
 import client from '@/shared/api/client';
+import {observeScheduleApplication} from './schedule-telemetry';
 
 const flowIds = new Map<string, string>();
 
@@ -56,6 +57,8 @@ export function reportScheduleJourney(observation: TScheduleObservation | undefi
     const previous = deliveries.get(key);
 
     if (previous) return previous;
+
+    if (event.type === 'CLIENT_APPLIED' || event.type === 'CLIENT_UNDONE') observeScheduleApplication(key, event.type);
 
     const payload = {...event, eventId: crypto.randomUUID(), serverEventId: observation.serverEventId};
     const deliver = async () => {

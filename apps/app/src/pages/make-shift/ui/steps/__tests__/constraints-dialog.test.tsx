@@ -294,7 +294,7 @@ describe('Constraints dialog editor', () => {
 
         const pairRow = screen.getByRole('button', {name: 'Nurse A'}).closest('[data-constraint-rule-id]')!;
 
-        await userEvent.click(within(pairRow as HTMLElement).getByRole('button', {name: '제약 조건 삭제'}));
+        await userEvent.click(within(pairRow as HTMLElement).getByRole('button', {name: '근무 조건 삭제'}));
 
         expect(latestState(stateChanged)).toMatchObject({dirty: true, count: 1});
         expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
@@ -361,7 +361,7 @@ describe('Constraints dialog editor', () => {
 
         renderEditor(<Constraints {...editorProps} editorRef={ref} onEditorStateChange={stateChanged} />);
         await ready(stateChanged);
-        await userEvent.click(screen.getByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(screen.getByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '근무자 조합'}));
 
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="NURSE_PAIR_NOT_SAME_SHIFT"]')!;
@@ -413,7 +413,7 @@ describe('Constraints dialog editor', () => {
         view.rerender(<Constraints {...editorProps} editorRef={ref} onEditorStateChange={stateChanged} disabled />);
 
         expect(screen.getByRole('spinbutton')).toBeDisabled();
-        expect(screen.getByRole('button', {name: '제약 조건 추가'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '근무 조건 추가'})).toBeDisabled();
         expect(await apply(ref)).toBe(false);
         expect(api.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
@@ -469,7 +469,7 @@ describe('Constraints dialog editor', () => {
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
         expect(parent).toBeInTheDocument();
 
-        await userEvent.click(within(parent).getByRole('button', {name: '제약 조건 삭제'}));
+        await userEvent.click(within(parent).getByRole('button', {name: '근무 조건 삭제'}));
 
         const warning = await screen.findByRole('dialog', {name: '권장 조건을 삭제할까요?'});
 

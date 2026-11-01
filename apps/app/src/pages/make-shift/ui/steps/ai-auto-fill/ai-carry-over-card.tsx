@@ -50,7 +50,7 @@ export default function AiCarryOverCard({
                 <AssistantMessage>
                     <p role="alert">{t('aiAdjust.carryOver.loadFailed')}</p>
                     <button type="button" className={actionClass} onClick={onRetry}>
-                        {t('aiAdjust.failure.retry')}
+                        {t('aiAdjust.requestsRetry')}
                     </button>
                 </AssistantMessage>
             ) : null}

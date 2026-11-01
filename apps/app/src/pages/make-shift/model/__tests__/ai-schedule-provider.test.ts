@@ -132,7 +132,7 @@ describe('requestAiSchedule', () => {
             expect(result).not.toHaveProperty('response');
             expect(operationRequest).toEqual(originalRequest);
             expect(!result.ok && result.message).not.toMatch(/검토용|승인 조건|unrecognized_reason/);
-            expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+            expect(!result.ok && result.message).toContain('근무표는 변경되지 않았어요.');
         }
     });
 
@@ -230,7 +230,7 @@ describe('requestAiSchedule', () => {
         const result = await requestAiSchedule(request);
 
         expect(result).toMatchObject({ok: false, failure: {recovery: 'retry'}});
-        expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+        expect(!result.ok && result.message).toContain('근무표는 변경되지 않았어요.');
         expect(!result.ok && result.message).not.toMatch(/엔진|호출/);
     });
 });
@@ -296,8 +296,8 @@ describe('requestAiSchedule — 조절(ADJUST)', () => {
         });
 
         expect(result).toMatchObject({ok: false, failure: {blocked: false, recovery: 'retry'}});
-        expect(!result.ok && result.message).toContain('정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
-        expect(!result.ok && result.message).toContain('기존 근무표는 그대로예요.');
+        expect(!result.ok && result.message).toContain('시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
+        expect(!result.ok && result.message).toContain('근무표는 변경되지 않았어요.');
         expect(!result.ok && result.message).not.toMatch(/타임아웃|솔버|엔진|TIME_LIMIT|time_limit_no_solution/);
     });
 

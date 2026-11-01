@@ -944,7 +944,7 @@ export const ko = {
                 "prefillDecision": {
                     "eyebrow": "AI 자동채우기 미리보기",
                     "title": "AI가 바꾸면 안 되는 근무가 있나요?",
-                    "description": "AI는 고정 근무와 신청 근무를 제외한 빈칸을 자동으로 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.",
+                    "description": "고정한 근무와 신청 근무는 유지하고 나머지 근무를 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.",
                     "calendarTitle": "AI 자동채우기 범위",
                     "aiFillArea": "AI가 채울 영역",
                     "keepArea": "그대로 유지",
@@ -964,46 +964,46 @@ export const ko = {
                 },
                 "regenerateDecision": {
                     "title": "다시 채우기 전에 고정할 근무가 있나요?",
-                    "description": "AI 결과 이후 고정하지 않고 수정한 근무가 {{count}}칸 있어요.\n이 칸은 유지하고 싶다면 고정하고 다시 생성하고, 현재 결과를 새로 받고 싶다면 수정한 칸도 다시 생성해 주세요.",
+                    "description": "자동채우기 후 직접 수정했지만 고정하지 않은 근무가 {{count}}칸 있어요.\n유지할 근무는 고정해 주세요. 고정하지 않은 근무는 다시 채울 수 있어요.",
                     "confirm": "수정한 칸 고정",
                     "cancel": "진행하기",
-                    "fix": "수정한 칸 고정 후 재생성"
+                    "fix": "수정한 근무 고정하고 다시 채우기"
                 },
                 "viewComplete": "전체 배정 보기",
                 "viewBaseline": "신청·고정만 보기",
                 "viewCompleteCompact": "전체",
                 "viewBaselineCompact": "신청·고정",
-                "viewCompleteTooltip": "전체 배정을 보고 있어요. 클릭하면 신청·고정만 봅니다.",
-                "viewBaselineTooltip": "신청·고정만 보고 있어요. 클릭하면 전체 배정을 봅니다.",
+                "viewCompleteTooltip": "전체 근무를 보고 있어요. 누르면 신청 근무와 고정한 근무만 보여요.",
+                "viewBaselineTooltip": "신청 근무와 고정한 근무만 보고 있어요. 누르면 전체 근무가 보여요.",
                 "baselineReadonlyToast": "수정하려면 전체 보기로 돌아가 주세요.",
-                "fixedDisplayHighlight": "고정근무 위치 강조",
-                "requestDisplayHighlight": "신청근무 위치 강조",
-                "statusHighlightTools": "신청근무 및 고정근무 표시",
+                "fixedDisplayHighlight": "고정 근무 위치 강조",
+                "requestDisplayHighlight": "신청 근무 위치 강조",
+                "statusHighlightTools": "신청 근무 및 고정 근무 표시",
                 "loadingOverlay": {
                     "title": "AI가 근무표를 채우고 있어요",
-                    "description": "신청·고정근무는 유지하고,\n나머지 칸을 AI가 채워요.",
+                    "description": "신청·고정 근무는 유지하고,\n나머지 칸을 AI가 채워요.",
                     "elapsed": "{{seconds}}초째 진행 중",
                     "ariaLabel": "AI 근무표 채우기 진행률",
-                    "checkingRequests": "신청·고정근무를 확인하고 있어요",
+                    "checkingRequests": "신청·고정 근무를 확인하고 있어요",
                     "fillingBlanks": "빈칸에 맞는 근무를 배치하고 있어요",
                     "finalReview": "마지막 조건을 꼼꼼히 확인하고 있어요",
                     "almostDone": "조금만 더 기다려 주세요"
                 },
-                "restCarryOverSyncFailed": "근무표는 확정됐지만 다음 달 이월 반영에 실패했어요.",
+                "restCarryOverSyncFailed": "근무표는 확정했지만 다음 달로 넘길 휴무를 반영하지 못했어요.",
                 "lastShiftBlankDialog": {
-                    "descriptionLead": "전달근무에 빈칸이 있어요.",
-                    "descriptionHighlight": "이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
-                    "confirmAiFill": "그대로 AI 채우기",
+                    "descriptionLead": "지난달 근무에 빈칸이 있어요.",
+                    "descriptionHighlight": "월초의 연속 근무와 휴식을 함께 확인하려면 지난달 근무를 입력해 주세요.",
+                    "confirmAiFill": "이대로 자동채우기",
                     "cancel": "입력 확인",
                     "confirm": "그대로 확정",
-                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
-                    "title": "전달근무를 확인했나요?"
+                    "description": "지난달 근무에 빈칸이 있어요.\n월초의 연속 근무와 휴식을 함께 확인하려면 지난달 근무를 입력해 주세요.",
+                    "title": "지난달 근무를 확인했나요?"
                 },
                 "exitGuard": {
                     "unsavedTitle": "저장되지 않은 편집 내용이 있어요",
                     "unsavedDescription": "편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
-                    "aiGeneratingTitle": "AI 자동채우기를 중단하고 나갈까요?",
-                    "aiGeneratingDescription": "나가면 자동채우기 결과가 반영되지 않을 수 있습니다.",
+                    "aiGeneratingTitle": "자동채우기 중에 화면을 나갈까요?",
+                    "aiGeneratingDescription": "화면을 나가면 계산 결과가 근무표에 반영되지 않을 수 있어요.",
                     "leaveConfirm": "나가기",
                     "stayCancel": "계속 편집하기",
                     "unsavedMessage": "저장되지 않은 편집 내용이 있어요\n편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
@@ -1014,28 +1014,28 @@ export const ko = {
                 "cannotAutofillYet": "근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.",
                 "confirm": "근무표 확정",
                 "description": {
-                    "error": "AI 요청을 완료하지 못했어요. 현재 화면의 근무표는 그대로 유지되며 바로 다시 시도할 수 있어요.",
-                    "idle": "이전 단계에서 정리한 조건으로 AI 자동 채우기를 시작할 수 있어요.",
-                    "loading": "응답을 기다리는 동안에는 확정과 재요청을 잠시 막아둘게요.",
-                    "success": "AI가 새 근무표를 반영했어요. 검토 후 직접 수정하거나 바로 확정할 수 있어요."
+                    "error": "요청을 완료하지 못했어요. 작성 중인 근무표는 유지했어요. 요청과 근무 조건을 확인해 주세요.",
+                    "idle": "이전 단계에서 정리한 조건으로 AI 자동채우기를 시작할 수 있어요.",
+                    "loading": "근무표를 계산하고 있어요. 계산 중에는 확정하거나 새 계산을 시작할 수 없어요.",
+                    "success": "계산 결과를 근무표에 반영했어요. 내용을 검토하고 필요하면 수정한 뒤 확정해 주세요."
                 },
                 "draft": {
-                    "none": "아직 저장된 편집본 없이 기본 근무표를 보고 있어요.",
-                    "saved": "현재 편집본은 유지되고 자동 저장돼요."
+                    "none": "아직 저장한 근무표가 없어 기본 근무표를 보여드려요.",
+                    "saved": "작성 중인 근무표는 자동으로 저장돼요."
                 },
                 "empty": "근무표 데이터를 불러오지 못했어요",
                 "error": "근무표를 불러오지 못했어요",
-                "firstFill": "자동 채우기",
+                "firstFill": "자동채우기",
                 "fixedOnly": "고정만 보기",
                 "fixedDisplay": "고정 표시",
-                "fixedDisplayHidden": "고정근무 숨김",
-                "fixedDisplayShown": "고정근무 표시 중",
-                "requestDisplay": "신청근무 표시",
-                "requestDisplayHidden": "신청근무 숨김",
-                "requestDisplayShown": "신청근무 표시 중",
+                "fixedDisplayHidden": "고정 근무 숨김",
+                "fixedDisplayShown": "고정 근무 표시 중",
+                "requestDisplay": "신청 근무 표시",
+                "requestDisplayHidden": "신청 근무 숨김",
+                "requestDisplayShown": "신청 근무 표시 중",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
-                "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
+                "intro": "요청을 마치지 못해도 작성 중인 근무표는 유지해요.\n근무 조건과 요청을 확인하거나 직접 수정한 뒤 확정할 수 있어요.",
                 "loading": "근무표를 불러오는 중이에요",
                 "previous": "이전 단계",
                 "progressToast": "근무표 채우는 중",
@@ -1043,15 +1043,15 @@ export const ko = {
                     "confirm": "확정 및 게시",
                     "confirmWithoutRecipients": "확정",
                     "description": "확정하면 연동된 {{count}}명이 앱에서 근무표를 볼 수 있고 알림도 받아요.",
-                    "noConnectedDescription": "확정되지만 연동된 인원이 없어 앱 게시와 알림은 전송되지 않아요.",
+                    "noConnectedDescription": "앱에 연동된 사람이 없어 근무표만 확정해요. 앱 공유와 알림 전송은 하지 않아요.",
                     "title": "근무표를 확정할까요?"
                 },
-                "publishSuccess": "근무표가 확정되었어요",
+                "publishSuccess": "근무표를 확정했어요",
                 "publishSuccessConfirm": "확인",
                 "publishSuccessConnectionDescription": "듀팅 앱에서 확정된 근무표를 자동으로 받아볼 수 있어요!",
                 "publishSuccessWithRecipients": "연동된 {{count}}명에게 근무표를 자동으로 전송했어요.",
                 "publishSuccessWithoutRecipients": "병동코드를 간호사에게 공유해 주세요.",
-                "requestFailed": "AI 자동 채우기를 완료하지 못했어요.",
+                "requestFailed": "AI 자동채우기를 완료하지 못했어요.",
                 "resetAction": "초기화",
                 "retry": "다시 시도",
                 "saveFailed": "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
@@ -1064,26 +1064,26 @@ export const ko = {
                 "snapshotLimitDialog": {
                     "cancel": "취소",
                     "confirm": "삭제 후 저장",
-                    "description": "새 히스토리를 저장하려면 가장 오래된 히스토리 \"{{title}}\"를 삭제해야 해요. 삭제하고 저장할까요?",
-                    "title": "히스토리는 10개까지만 저장돼요"
+                    "description": "새 근무표를 저장하려면 가장 오래된 기록인 \"{{title}}\"를 삭제해야 해요. 삭제하고 저장할까요?",
+                    "title": "저장한 근무표는 10개까지 보관할 수 있어요"
                 },
-                "snapshotLimitReached": "히스토리는 최대 10개까지 저장할 수 있어요.",
+                "snapshotLimitReached": "근무표는 최대 10개까지 저장할 수 있어요.",
                 "snapshotSidebar": {
                     "close": "저장본 닫기",
                     "defaultTitle": "자동채우기 저장본",
-                    "delete": "히스토리 삭제",
+                    "delete": "기록 삭제",
                     "deleteCancel": "취소",
                     "deleteConfirm": "삭제하기",
-                    "deleteDescription": "\"{{title}}\" 히스토리를 삭제해요. 삭제한 히스토리는 다시 불러올 수 없어요.",
-                    "deleteFailed": "히스토리를 삭제하지 못했어요.",
-                    "deleteSuccess": "히스토리를 삭제했어요.",
-                    "deleteTitle": "히스토리를 삭제할까요?",
+                    "deleteDescription": "\"{{title}}\" 기록를 삭제해요. 삭제한 기록는 다시 불러올 수 없어요.",
+                    "deleteFailed": "기록를 삭제하지 못했어요.",
+                    "deleteSuccess": "기록를 삭제했어요.",
+                    "deleteTitle": "기록를 삭제할까요?",
                     "description": "자동채우기 결과 기록",
                     "empty": "아직 임시 저장한 근무표가 없어요.",
                     "emptyCells": "빈칸 {{count}}칸",
                     "error": "저장본 목록을 불러오지 못했어요.",
                     "filledCells": "배정 {{count}}칸",
-                    "hardViolations": "중요위반 {{count}}",
+                    "hardViolations": "꼭 확인할 조건 {{count}}개",
                     "loadCancel": "취소",
                     "loadConfirm": "불러오기",
                     "loadDescription": "\"{{title}}\" 저장본으로 현재 근무표를 바꿔요.\n불러오면 지금 화면에서 편집 중인 내용은 사라져요.",
@@ -1091,34 +1091,34 @@ export const ko = {
                     "loading": "저장본 불러오는 중…",
                     "loadSuccess": "{{title}} 저장본을 불러왔어요.",
                     "loadTitle": "저장본을 불러올까요?",
-                    "renameFailed": "히스토리 제목을 변경하지 못했어요.",
-                    "renameSuccess": "히스토리 제목을 변경했어요.",
-                    "renameTitleAria": "히스토리 제목",
+                    "renameFailed": "기록 제목을 변경하지 못했어요.",
+                    "renameSuccess": "기록 제목을 변경했어요.",
+                    "renameTitleAria": "기록 제목",
                     "restore": "불러오기",
                     "savedCount": "저장본 {{count}}개",
-                    "selectedHistory": "선택한 히스토리",
-                    "softViolations": "일반위반 {{count}}",
-                    "title": "히스토리",
+                    "selectedHistory": "선택한 기록",
+                    "softViolations": "가능하면 맞출 조건 {{count}}개",
+                    "title": "기록",
                     "todayAt": "오늘 {{time}}",
                     "toggleDetails": "상세 보기",
-                    "totalViolations": "전체 {{count}}"
+                    "totalViolations": "확인할 조건 {{count}}개"
                 },
                 "title": {
-                    "error": "채우기 중단",
-                    "idle": "자동 채우기 준비됨",
+                    "error": "자동채우기를 마치지 못했어요",
+                    "idle": "자동채우기를 시작할 수 있어요",
                     "loading": "근무표 계산 중",
-                    "success": "채우기 완료"
+                    "success": "자동채우기를 마쳤어요"
                 },
                 "toolbarHint": "조건과 신청 근무를 기준으로 빈칸을 채워요",
                 "toolbarSubTitle": "AI 자동채우기로 빈칸을 한 번에 채워보세요.",
                 "toolbarTitle": "근무표를 채우고 확정해 주세요",
                 "validationStatus": {
-                    "checking": "제약조건 검토 중"
+                    "checking": "근무 조건을 확인하고 있어요"
                 },
                 "viewAll": "전체 보기",
                 "viewOptions": "표시 옵션",
-                "violationsHidden": "제약조건 위반 숨김",
-                "violationsShown": "제약조건 위반 표시 중"
+                "violationsHidden": "근무 조건 위반 숨김",
+                "violationsShown": "근무 조건 위반 표시 중"
             },
             "calendar": {
                 "carried": "이월",
@@ -1138,7 +1138,7 @@ export const ko = {
                     "error": "중요 {{count}}",
                     "warning": "일반 {{count}}"
                 },
-                "violationDialogAria": "제약조건 위반 {{count}}개",
+                "violationDialogAria": "근무 조건 위반 {{count}}개",
                 "violationLevel": {
                     "error": "중요",
                     "warning": "일반"
@@ -1161,14 +1161,14 @@ export const ko = {
             },
             "constraints": {
                 "action": {
-                    "add": "제약 조건 추가",
+                    "add": "근무 조건 추가",
                     "reset": "초기화"
                 },
                 "category": {
                     "combination": "근무자 조합",
                     "forbidden": "금지 패턴",
                     "personal": "사람별 제한",
-                    "recommended": "권장",
+                    "recommended": "추천 조건",
                     "staffing": "인원수",
                     "workRest": "연속 근무/휴식",
                     "roleCoverage": "숙련도·역할",
@@ -1180,20 +1180,20 @@ export const ko = {
                 },
                 "count": "{{count}}개",
                 "dragHandleAria": "드래그하여 위치를 변경",
-                "empty": "제약조건을 추가하면 여기에 보여요.",
+                "empty": "근무 조건을 추가하면 여기에 보여요.",
                 "exclude": "제외",
-                "excludeRuleAria": "이 제약 조건 적용 해제",
+                "excludeRuleAria": "이 근무 조건 적용 해제",
                 "import": {
                     "cancel": "취소",
                     "confirm": "불러오기",
                     "currentTeam": "현재 팀: {{teamName}}",
                     "disabledTitle": "팀이 2개 이상일 때 사용할 수 있어요",
                     "loading": "불러오는 중",
-                    "modalTitle": "제약조건 불러오기",
+                    "modalTitle": "근무 조건 불러오기",
                     "selectedTeamFallback": "선택된 팀",
                     "sourceTeamFallback": "다른 팀",
                     "teamLabel": "불러올 팀",
-                    "title": "다른 팀 제약조건 불러오기"
+                    "title": "다른 팀 근무 조건 불러오기"
                 },
                 "important": {
                     "ariaMark": "중요 표시",
@@ -1202,14 +1202,14 @@ export const ko = {
                     "recommendedTitle": "권장 중요 사항"
                 },
                 "info": "꼭 지켜야 할 조건은 중요 표시를 켜 주세요",
-                "infoTooltipAria": "제약 조건 중요 표시 안내",
-                "listTitle": "제약조건",
+                "infoTooltipAria": "근무 조건 중요 표시 안내",
+                "listTitle": "근무 조건",
                 "modal": {
-                    "addAria": "제약 조건 추가",
+                    "addAria": "근무 조건 추가",
                     "addTitle": "추가",
                     "close": "닫기",
                     "description": "근무표 상황에 따라 일부 조건은 반영되지 않을 수 있어요.",
-                    "title": "제약조건 추가",
+                    "title": "근무 조건 추가",
                     "added": "추가됨"
                 },
                 "option": {
@@ -1285,15 +1285,15 @@ export const ko = {
                     }
                 },
                 "ruleAction": {
-                    "deleteAria": "제약 조건 삭제"
+                    "deleteAria": "근무 조건 삭제"
                 },
                 "section": {
-                    "strong": "강 제약 조건",
-                    "weak": "약 제약 조건"
+                    "strong": "꼭 지킬 조건",
+                    "weak": "가능하면 맞출 조건"
                 },
                 "state": {
-                    "loadError": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-                    "loading": "제약조건 불러오는 중",
+                    "loadError": "근무 조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                    "loading": "근무 조건 불러오는 중",
                     "teamRequired": "근무팀을 먼저 선택해 주세요."
                 },
                 "templates": {
@@ -1545,19 +1545,19 @@ export const ko = {
                     }
                 },
                 "toast": {
-                    "added": "제약조건을 추가했어요.",
+                    "added": "근무 조건을 추가했어요.",
                     "duplicateSkipped": "같은 조건이 이미 있어요.",
-                    "duplicatesRemoved": "중복 제약조건 {{count}}개를 정리했어요.",
+                    "duplicatesRemoved": "중복 근무 조건 {{count}}개를 정리했어요.",
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "nurseShiftPreferenceImportantBlocked": "간호사별 근무 선호·회피 조건은 중요로 설정할 수 없어요.",
-                    "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
-                    "importFailed": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                    "imported": "{{teamName}} 근무 조건을 그대로 불러왔어요.",
+                    "importFailed": "근무 조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
                     "resetDefaults": "권장 조건 {{count}}개로 초기화했어요.",
-                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+                    "saveFailed": "근무 조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "staffCountConflict": "같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.",
-                    "importSkippedAllNurseRules": "간호사별 제약조건 {{count}}개는 다른 팀에 그대로 적용할 수 없어 불러오지 않았어요.",
-                    "importedWithSkippedNurseRules": "{{teamName}} 제약조건을 불러왔어요. 간호사별 제약조건 {{count}}개는 제외했어요."
+                    "importSkippedAllNurseRules": "간호사별 근무 조건 {{count}}개는 다른 팀에 그대로 적용할 수 없어 불러오지 않았어요.",
+                    "importedWithSkippedNurseRules": "{{teamName}} 근무 조건을 불러왔어요. 간호사별 근무 조건 {{count}}개는 제외했어요."
                 },
                 "violationCount": "{{count}}개",
                 "warning": {
@@ -1576,11 +1576,11 @@ export const ko = {
                     "exact": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
                 },
                 "savedWarnings": {
-                    "title": "저장됐지만 확인이 필요한 제약조건이 있어요"
+                    "title": "저장됐지만 확인이 필요한 근무 조건이 있어요"
                 },
                 "mixed": {
                     "policyTitle": "혼합교대 운영 방식",
-                    "policyHelp": "일반적인 근무표를 어떻게 만들지 선택하세요. 사람별 참여와 날짜별 편성은 아래 제약조건에서 더 세밀하게 설정할 수 있어요.",
+                    "policyHelp": "일반적인 근무표를 어떻게 만들지 선택해 주세요. 사람별 참여와 날짜별 편성은 아래 근무 조건에서 더 세밀하게 설정할 수 있어요.",
                     "participationHelp": "가능 근무는 인력 설정에서 관리하고 여기서는 3교대만·2교대만·계획 병행·인력 부족 시 참여를 선택해요.",
                     "strategy": {
                         "threeBaseFallbackTwo": "3교대 우선·부족 시 2교대",
@@ -1589,7 +1589,7 @@ export const ko = {
                         "plannedMixedHelp": "날짜·사람별 계획에 따라 2교대와 3교대를 의도적으로 같이 사용해요.",
                         "plannedMixedWithFallback": "계획 병행·부족 시 추가 2교대",
                         "plannedMixedWithFallbackHelp": "계획한 2교대를 유지하고 필수 조건을 만족할 수 없을 때 추가 2교대를 사용해요.",
-                        "changeBlocked": "현재 제약조건이 선택한 운영 방식과 맞지 않아 변경할 수 없어요. 먼저 해당 제약조건을 수정해 주세요."
+                        "changeBlocked": "현재 근무 조건이 선택한 운영 방식과 맞지 않아 변경할 수 없어요. 먼저 해당 근무 조건을 수정해 주세요."
                     },
                     "participation": {
                         "threeOnly": "3교대만",
@@ -1626,6 +1626,7 @@ export const ko = {
                         "number": "숫자 값"
                     }
                 },
+                "personalExclusionPreset": "직원별 날짜·요일 근무 제외",
                 "personalExclusion": {
                     "label": "날짜·요일별 배정 제한",
                     "sentence": "{target}에게 {dateScope} {shift} 근무를 배정하지 않아요.",
@@ -1739,10 +1740,10 @@ export const ko = {
                     "label": "확정 근무표"
                 },
                 "constraints": {
-                    "caption": "제약 조건을 정의해요",
+                    "caption": "근무 조건을 정의해요",
                     "introDescription": "꼭 지켜야 할 조건은 중요 버튼을 켜 주세요.",
                     "introTitle": "제약할 조건을 정해 주세요",
-                    "label": "제약조건"
+                    "label": "근무 조건"
                 },
                 "fixedShifts": {
                     "caption": "미리 일부 근무를 고정해요",
@@ -1769,11 +1770,11 @@ export const ko = {
                     "title": "AI 전에 꼭 고정해 주세요"
                 },
                 "constraints": {
-                    "info": "권장 제약조건 7개 외에도 필요한 조건을 추가할 수 있어요.\n조건이 많을수록 배정이 어려워질 수 있어요.",
-                    "title": "제약조건 추가하기"
+                    "info": "권장 근무 조건 7개 외에도 필요한 조건을 추가할 수 있어요.\n조건이 많을수록 배정이 어려워질 수 있어요.",
+                    "title": "근무 조건 추가하기"
                 },
                 "fixedShifts": {
-                    "info": "셀을 선택하고 키보드로 근무 약자를 입력해요.\nD, E, N, O처럼 병동에서 쓰는 약자를 누르면 바로 반영돼요.",
+                    "info": "칸을 선택하고 키보드로 근무 약자를 입력해요.\nD, E, N, O처럼 병동에서 쓰는 약자를 누르면 바로 반영돼요.",
                     "title": "고정 근무 입력하기"
                 },
                 "requests": {
@@ -4773,6 +4774,7 @@ export const en: TLocale = {
                         "number": "Numeric value"
                     }
                 },
+                "personalExclusionPreset": "Exclude a shift by nurse and day",
                 "personalExclusion": {
                     "label": "Assignment restrictions by date or weekday",
                     "sentence": "Do not assign {shift} shifts to {target} on {dateScope}.",
@@ -7918,6 +7920,7 @@ export const ja: TLocale = {
                         "number": "数値"
                     }
                 },
+                "personalExclusionPreset": "看護師・日付・曜日別の勤務除外",
                 "personalExclusion": {
                     "label": "日付・曜日別の勤務制限",
                     "sentence": "{target} / {dateScope} / {shift}勤務を割り当てません。",
@@ -11063,6 +11066,7 @@ export const zh: TLocale = {
                         "number": "数值"
                     }
                 },
+                "personalExclusionPreset": "按护士及日期排除班次",
                 "personalExclusion": {
                     "label": "按日期或星期限制排班",
                     "sentence": "{target}在{dateScope}不安排{shift}班次。",
@@ -14208,6 +14212,7 @@ export const th: TLocale = {
                         "number": "ค่าตัวเลข"
                     }
                 },
+                "personalExclusionPreset": "ยกเว้นเวรตามพยาบาลและวัน",
                 "personalExclusion": {
                     "label": "จำกัดการจัดเวรตามวันที่หรือวันในสัปดาห์",
                     "sentence": "ไม่จัดเวร {shift} ให้ {target} ใน {dateScope}",
@@ -17353,6 +17358,7 @@ export const vi: TLocale = {
                         "number": "Giá trị số"
                     }
                 },
+                "personalExclusionPreset": "Loại ca theo nhân viên và ngày",
                 "personalExclusion": {
                     "label": "Hạn chế phân ca theo ngày hoặc thứ",
                     "sentence": "Không phân ca {shift} cho {target} vào {dateScope}.",

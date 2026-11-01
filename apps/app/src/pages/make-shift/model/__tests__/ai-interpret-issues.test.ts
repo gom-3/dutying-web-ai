@@ -10,6 +10,8 @@ describe('interpretation recovery', () => {
         ['2026년 10월 안의 날짜만 지정할 수 있어요.', 'INVALID_DATE'],
         ['숫자가 빠졌어요. 몇 번인지 알려 주세요.', 'INVALID_VALUE'],
         ['그 조건은 자동 채우기가 아직 반영하지 못해요.', 'UNSUPPORTED_REQUEST'],
+        ['이 요청은 아직 자동채우기로 반영할 수 없어요. 근무 조건에서 직접 설정해 주세요.', 'UNSUPPORTED_REQUEST'],
+        ['이 항목은 아직 자동으로 바꿀 수 없어요. 원하는 내용을 다시 적어 주세요.', 'UNSUPPORTED_REQUEST'],
         ['문장을 이해하지 못했어요. 잠시 후 다시 시도해 주세요.', 'INTERPRETATION_FAILED'],
     ])('handles older server responses: %s', (hint, expected) => {
         expect(interpretIssueCode({text: '요청', hint})).toBe(expected);

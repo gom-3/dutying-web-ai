@@ -36,7 +36,6 @@ type TAiAutofillLoadingOverlayProps = {
     sidebarOpen?: boolean;
     operation?: TConversationOperation;
     onBackground?: () => void;
-    onOpenConversation?: () => void;
     onCancel?: (() => void) | null;
     cancelling?: boolean;
     isFinishing?: boolean;
@@ -49,7 +48,6 @@ type TAiAutofillLoadingOverlayProps = {
 export function AiAutofillLoadingOverlay({
     sidebarOpen = false,
     onBackground,
-    onOpenConversation,
     onCancel,
     cancelling = false,
     isFinishing = false,
@@ -148,7 +146,7 @@ export function AiAutofillLoadingOverlay({
             data-ai-autofill-loading="true"
             className={`fixed z-[1401] flex flex-col items-center overflow-y-auto bg-[#121726]/55 p-4 ${sidebarOpen ? 'inset-x-0 top-0 bottom-[50dvh] md:right-[var(--make-ai-adjust-sidebar-width,407px)] md:bottom-0' : 'inset-0'}`}
             onKeyDown={(event) => {
-                if (backgroundMode && event.key === 'Tab') {
+                if (backgroundMode && !sidebarOpen && event.key === 'Tab') {
                     const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
                     const first = buttons[0];
                     const last = buttons[buttons.length - 1];
@@ -220,15 +218,6 @@ export function AiAutofillLoadingOverlay({
                         >
                             {t('aiAutofillUi.executionPresentation.continueInBackground')}
                         </button>
-                        {onOpenConversation && (
-                            <button
-                                type="button"
-                                onClick={onOpenConversation}
-                                className="min-h-11 rounded-lg px-2 text-main-1 hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1"
-                            >
-                                {t('aiAutofillUi.executionPresentation.openConversation')}
-                            </button>
-                        )}
                         {onCancel && <AiExecutionCancelButton onCancel={onCancel} disabled={cancelling} />}
                     </div>
                 )}

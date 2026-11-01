@@ -1,7 +1,7 @@
 {
     "name": "@dutying/app",
     "private": true,
-    "version": "1.3.27",
+    "version": "1.3.28",
     "type": "module",
     "scripts": {
         "dev": "vite",
@@ -27,6 +27,7 @@
         "type-check": "tsc -b"
     },
     "dependencies": {
+        "@abto-app/event": "1.2.1",
         "@dutying/api": "workspace:*",
         "@dutying/domain": "workspace:*",
         "@dutying/utils": "workspace:*",

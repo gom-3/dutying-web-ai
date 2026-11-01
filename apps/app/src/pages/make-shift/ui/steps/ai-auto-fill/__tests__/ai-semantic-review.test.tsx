@@ -77,8 +77,8 @@ describe('fixed shift conflict recovery', () => {
     it.each(['HARD', 'SOFT'] as const)('shows the request once without exclusion or selection UI: %s', (modality) => {
         renderReview({plan: {...conflictPlan, conditions: [{...conflictPlan.conditions[0], modality}]}});
 
-        expect(screen.getByRole('img', {name: '고정 근무 충돌'})).toBeVisible();
-        expect(screen.getByText('고정 근무와 요청이 충돌해요')).toBeVisible();
+        expect(screen.getByRole('img', {name: '고정한 근무와 맞지 않음'})).toBeVisible();
+        expect(screen.getByText('요청한 내용이 고정한 근무와 맞지 않아요')).toBeVisible();
 
         const requests = screen.getByRole('list', {name: '확인할 요청'});
 
@@ -86,7 +86,7 @@ describe('fixed shift conflict recovery', () => {
         expect(requests).toHaveTextContent('11월 1~5일');
         expect(requests).toHaveTextContent('검증간호사님');
         expect(requests).toHaveTextContent('E 근무 제외');
-        expect(requests).toHaveTextContent(modality === 'HARD' ? '필수 조건' : '선호 조건');
+        expect(requests).toHaveTextContent(modality === 'HARD' ? '꼭 지킬 조건' : '가능하면 맞출 조건');
         expect(screen.getByText('고정 근무를 확인하거나 요청을 수정해 주세요.')).toBeVisible();
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByText(/선택하지 않음|줄바꿈|제외 예정/)).not.toBeInTheDocument();
@@ -114,9 +114,9 @@ describe('fixed shift conflict recovery', () => {
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         expect(screen.getByRole('list', {name: '확인할 요청'})).toHaveTextContent('E 근무 제외');
         await user.click(screen.getByText('선택 내역 보기'));
-        expect(screen.getByRole('list', {name: '적용 및 제외 조건'})).toHaveTextContent('제외:');
-        expect(screen.getByRole('list', {name: '적용 및 제외 조건'})).toHaveTextContent(conflictPlan.conditions[0].sourceSpan.quote);
-        expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+        expect(screen.getByRole('list', {name: '반영 및 제외 조건'})).toHaveTextContent('제외:');
+        expect(screen.getByRole('list', {name: '반영 및 제외 조건'})).toHaveTextContent(conflictPlan.conditions[0].sourceSpan.quote);
+        expect(screen.queryByRole('button', {name: '선택한 조건 다시 확인하기'})).not.toBeInTheDocument();
     });
 
     it.each([false, true])('only edits the request, including when the schedule changed: stale=%s', async (stale) => {
@@ -145,7 +145,7 @@ describe('fixed shift conflict recovery', () => {
     it('keeps historical conflicts readable without exposing actions', () => {
         renderReview({current: false, stale: true});
 
-        expect(screen.getByRole('img', {name: '고정 근무 충돌'})).toBeVisible();
+        expect(screen.getByRole('img', {name: '고정한 근무와 맞지 않음'})).toBeVisible();
         expect(screen.getByRole('list', {name: '확인할 요청'})).toHaveTextContent('E 근무 제외');
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -154,11 +154,11 @@ describe('fixed shift conflict recovery', () => {
     it('does not invent a conflicting target or allow execution when details are missing', () => {
         renderReview({plan: {...conflictPlan, conditions: []}});
 
-        expect(screen.getByText('고정 근무와 요청이 충돌해요')).toBeVisible();
+        expect(screen.getByText('요청한 내용이 고정한 근무와 맞지 않아요')).toBeVisible();
         expect(screen.queryByRole('list', {name: '확인할 요청'})).not.toBeInTheDocument();
         expect(screen.queryByText(/검증간호사|11월|E 근무/)).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button')).toHaveLength(1);
         expect(screen.getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
     });
@@ -168,7 +168,7 @@ describe('fixed shift conflict recovery', () => {
         const props = renderReview({plan: {...conflictPlan, state: 'UNSUPPORTED'}});
 
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '선택한 조건 다시 확인하기'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
 
         expect(props.onEdit).toHaveBeenCalledOnce();
@@ -187,7 +187,7 @@ describe('request review actions', () => {
         expect(screen.getByText('이렇게 바꿀까요?')).toBeVisible();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(screen.getByRole('region')).toHaveTextContent('E 근무 제외');
-        expect(screen.getByRole('region')).toHaveTextContent('필수 조건');
+        expect(screen.getByRole('region')).toHaveTextContent('꼭 지킬 조건');
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '이대로 수정하기'}));
         expect(props.onApply).toHaveBeenCalledOnce();
@@ -222,7 +222,7 @@ describe('request review actions', () => {
     it.each([false, true])('shows historical confirmed requests without rerunning actions: applied=%s', (applied) => {
         renderReview({plan: {...readyPlan, state: 'CONFIRMED'}, current: false, applied});
 
-        expect(screen.getByText(applied ? '이 요청으로 계산을 마쳤어요.' : '이전 요청 내용')).toBeVisible();
+        expect(screen.getByText(applied ? '이 요청의 계산을 마쳤어요.' : '이전 요청 내용')).toBeVisible();
         expect(screen.getByRole('region')).toHaveTextContent('E 근무 제외');
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
@@ -231,23 +231,29 @@ describe('request review actions', () => {
     it('does not offer to execute already applied conditions again even when the message is current', () => {
         renderReview({plan: {...readyPlan, state: 'CONFIRMED'}, applied: true});
 
-        expect(screen.getByText('이 요청으로 계산을 마쳤어요.')).toBeVisible();
+        expect(screen.getByText('이 요청의 계산을 마쳤어요.')).toBeVisible();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
-    it('explains an invalid AI edit as an interpretation failure without asking the user to revise it', async () => {
-        const user = userEvent.setup();
-        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: ['INVALID_CONDITION_EDIT']}});
-        expect(screen.getByText('요청 해석을 마치지 못했어요.')).toBeVisible();
-        expect(screen.getByText(/AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요/)).toHaveTextContent(
-            '이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.',
-        );
-        await user.click(screen.getByRole('button', {name: '다시 시도하기'}));
-        expect(props.onRetry).toHaveBeenCalledOnce();
-        expect(props.onApply).not.toHaveBeenCalled();
-        expect(props.onEdit).not.toHaveBeenCalled();
-    });
+    it.each(['INVALID_CONDITION_EDIT', 'SCHEMA_INVALID', 'EXTRACTION_FAILED', 'UNKNOWN_FAILURE'])(
+        'offers revision or direct editing instead of repeating a failed request: %s',
+        async (reason) => {
+            const user = userEvent.setup();
+            const onEditSchedule = vi.fn();
+            const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
+            expect(screen.getByText('요청을 처리하지 못했어요.')).toBeVisible();
+            expect(screen.getByText(/어떤 근무를 어떻게 바꿀지 확인하지 못했어요/)).toHaveTextContent('근무표는 변경되지 않았어요.');
+            expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('list')).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
+            expect(props.onEdit).toHaveBeenCalledOnce();
+            await user.click(screen.getByRole('button', {name: '표 직접 수정하기'}));
+            expect(onEditSchedule).toHaveBeenCalledOnce();
+            expect(props.onRetry).not.toHaveBeenCalled();
+            expect(props.onApply).not.toHaveBeenCalled();
+        },
+    );
 
     it('recovers a failed interpretation through retry without executing or condition selection', async () => {
         const user = userEvent.setup();
@@ -256,7 +262,8 @@ describe('request review actions', () => {
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', {name: '다시 시도하기'}));
+        expect(screen.getByText(/요청을 확인하는 시간이 길어져 중단됐어요/)).toBeVisible();
+        await user.click(screen.getByRole('button', {name: '요청 다시 확인하기'}));
         expect(props.onRetry).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(props.onEdit).not.toHaveBeenCalled();
@@ -269,7 +276,7 @@ describe('request review actions', () => {
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
         expect(props.onEdit).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
@@ -320,7 +327,7 @@ describe('readable request scope', () => {
             />,
         );
         expect(screen.getByText('전체 간호사')).toBeVisible();
-        expect(screen.getByRole('region')).toHaveTextContent(singleDay ? '휴무 인원 · 정확히 7명' : 'O 근무 · 합계 정확히 7회');
+        expect(screen.getByRole('region')).toHaveTextContent(singleDay ? '휴무 · 정확히 7명 배정' : 'O 근무 · 합계 정확히 7회');
     });
     it('keeps each-nurse counts distinct from group totals in compact conditions', () => {
         renderReview({
@@ -427,18 +434,18 @@ describe('request priority controls', () => {
 
         render(<AiSemanticReview {...props} />);
 
-        const groups = screen.getAllByRole('group', {name: '반영 방식'});
+        const groups = screen.getAllByRole('group', {name: '조건을 지키는 정도'});
 
-        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '권장'}));
-        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '권장'}));
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면 맞추기'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면 맞추기'}));
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
         expect(props.onChangeModalities).not.toHaveBeenCalled();
-        expect(screen.getByText('반영 방식 변경은 이번 실행에만 적용돼요.')).toBeVisible();
+        expect(screen.getByText('바꾼 반영 방식은 이번 계산에만 사용해요.')).toBeVisible();
         fireEvent.click(screen.getByRole('button', {name: '변경 취소'}));
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
-        expect(screen.getAllByRole('radio', {name: '필수'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
-        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '권장'}));
-        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '권장'}));
+        expect(screen.getAllByRole('radio', {name: '꼭 지키기'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면 맞추기'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면 맞추기'}));
         fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
         await waitFor(() => expect(props.onChangeModalities).toHaveBeenCalledExactlyOnceWith({count1: 'SOFT', count2: 'SOFT'}));
         expect(props.onApply).not.toHaveBeenCalled();
@@ -450,14 +457,14 @@ describe('request priority controls', () => {
 
         const {rerender} = render(<AiSemanticReview {...props} />);
 
-        fireEvent.click(screen.getAllByRole('radio', {name: '권장'})[0]!);
+        fireEvent.click(screen.getAllByRole('radio', {name: '가능하면 맞추기'})[0]!);
         fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('변경 내용을 저장하지 못했어요');
-        expect(screen.getAllByRole('radio', {name: '권장'})[0]).toBeChecked();
+        expect(screen.getAllByRole('radio', {name: '가능하면 맞추기'})[0]).toBeChecked();
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
         rerender(<AiSemanticReview {...props} plan={{...priorityPlan, planId: 'new', planHash: 'hash2'}} />);
         expect(screen.queryByRole('button', {name: '변경한 조건 확인하기'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('radio', {name: '필수'})[0]).toBeChecked();
+        expect(screen.getAllByRole('radio', {name: '꼭 지키기'})[0]).toBeChecked();
     });
     it.each([{current: false}, {stale: true}, {disabled: true}, {plan: {...priorityPlan, modalityEditableIntentIds: undefined}}])(
         'prevents editing stale, historical, busy or old-server plans: %j',
@@ -475,7 +482,7 @@ describe('request priority controls', () => {
             />,
         );
         expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-        expect(screen.getByText(/지정·금지한 배정은 필수로 적용해요/)).toBeVisible();
+        expect(screen.getByText(/직접 지정하거나 빼기로 한 근무는 꼭 지켜요/)).toBeVisible();
     });
 });
 
@@ -498,7 +505,7 @@ describe('catalog plan wire compatibility', () => {
         const requests = screen.getByRole('list', {name: '반영할 요청'});
 
         expect(requests).toHaveTextContent(catalogCondition.displayText!);
-        expect(requests).toHaveTextContent('필수 조건');
+        expect(requests).toHaveTextContent('꼭 지킬 조건');
         expect(requests).not.toHaveTextContent('전체 간호사');
         expect(requests).not.toHaveTextContent(/null|정확히|D, E, N, O 근무/);
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
@@ -520,6 +527,6 @@ describe('catalog plan wire compatibility', () => {
 
     it('renders a soft assignment as a preference', () => {
         renderReview({plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'ASSIGN', modality: 'SOFT'}]}});
-        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('E 근무 선호');
+        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('가능하면 E 근무 배정');
     });
 });
