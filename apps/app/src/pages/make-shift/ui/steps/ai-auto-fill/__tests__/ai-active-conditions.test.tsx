@@ -82,7 +82,7 @@ vi.mock('../../constraints', async () => {
 
 const wardRules = [{id: 'rule:17', label: '연속 근무 5일 이내'}];
 const defaults = {wardId: 4, teamId: 7, year: 2026, month: 11, onWardRulesApplied: vi.fn()};
-const open = () => fireEvent.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
+const open = () => fireEvent.click(screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'}));
 const reportEditor = (patch: Partial<TEditorState>) =>
     act(() => {
         editor.state = {...editor.state, ...patch};
@@ -125,11 +125,11 @@ describe('chat conditions modal', () => {
 
         renderPanel([]);
 
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         await user.click(trigger);
         await user.click(screen.getByRole('button', {name: controlName}));
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         await waitFor(() => expect(trigger).toHaveFocus());
     });
     it('handles Escape inside the modal without passing it to the chat', async () => {
@@ -142,13 +142,13 @@ describe('chat conditions modal', () => {
             </div>,
         );
 
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         await user.click(trigger);
         await waitFor(() => expect(screen.getByRole('button', {name: '조건 목록 닫기'})).toHaveFocus());
         chatKeyDown.mockClear();
         await user.keyboard('{Escape}');
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         expect(chatKeyDown).not.toHaveBeenCalled();
         await waitFor(() => expect(trigger).toHaveFocus());
     });
@@ -157,11 +157,11 @@ describe('chat conditions modal', () => {
 
         renderPanel([]);
 
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         await user.click(trigger);
         await user.click(screen.getByTestId('ai-conditions-overlay'));
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         await waitFor(() => expect(trigger).toHaveFocus());
     });
     it('keeps keyboard focus in the modal and hides background controls from accessibility navigation', async () => {
@@ -176,7 +176,7 @@ describe('chat conditions modal', () => {
 
         const background = screen.getByRole('button', {name: '대화 입력'});
 
-        await user.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'}));
 
         const close = screen.getByRole('button', {name: '조건 목록 닫기'});
         const last = screen.getByRole('button', {name: '닫기'});
@@ -221,15 +221,15 @@ describe('chat conditions modal', () => {
             remaining,
         ]);
 
-        await user.click(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'}));
         act(() => screen.getByRole('button', {name: '야간 3회 삭제'}).focus());
         expect(screen.getByRole('button', {name: '야간 3회 삭제'})).toHaveFocus();
         await user.keyboard('{Enter}');
         await waitFor(() => expect(screen.getByRole('button', {name: '이브닝 4회 삭제'})).toHaveFocus());
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
         await user.keyboard('{Enter}');
         await waitFor(() => expect(screen.getByRole('button', {name: '조건 목록 닫기'})).toHaveFocus());
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
     });
     it('guards repeated removal, shows completion, and leaves the other source untouched', async () => {
         let finish!: () => void;
@@ -242,7 +242,7 @@ describe('chat conditions modal', () => {
         );
         const condition = {id: 'request:17', label: '야간 3회', onRemove: remove};
         const view = renderPanel([condition]);
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         open();
 
@@ -292,26 +292,26 @@ describe('chat conditions modal', () => {
         fireEvent.click(screen.getByRole('button', {name: '야간 3회 삭제'}));
         fireEvent.click(screen.getByRole('button', {name: '조건 목록 닫기'}));
         await act(async () => finish());
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         expect(screen.queryByText('조건을 삭제했어요.')).not.toBeInTheDocument();
         open();
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
         expect(screen.queryByText('조건을 삭제했어요.')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: '야간 3회 삭제'})).toBeEnabled();
     });
 
     it('opens the actual constraints editor and AI requests together without source tabs', () => {
         const view = renderPanel([{id: 'request:17', label: '야간 3회', onRemove: vi.fn()}]);
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         expect(trigger).toHaveAccessibleDescription('조건 2개');
         expect(trigger).not.toHaveTextContent('조건 2개');
         expect(trigger).toHaveAttribute('aria-expanded', 'false');
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         expect(screen.queryByText('야간 3회')).not.toBeInTheDocument();
         fireEvent.click(trigger);
 
-        const popup = screen.getByRole('dialog', {name: '제약조건'});
+        const popup = screen.getByRole('dialog', {name: '근무 조건'});
 
         expect(popup).toBeVisible();
         expect(popup).toHaveAttribute('aria-modal', 'true');
@@ -340,7 +340,7 @@ describe('chat conditions modal', () => {
             else if (control === 'Escape') await user.keyboard('{Escape}');
             else await user.click(screen.getByRole('button', {name: control}));
 
-            const confirmation = screen.getByRole('alertdialog', {name: '변경사항을 버릴까요?'});
+            const confirmation = screen.getByRole('alertdialog', {name: '바꾼 내용을 저장하지 않고 닫을까요?'});
 
             expect(confirmation).toBeVisible();
             await user.click(within(confirmation).getByRole('button', {name: '계속 수정하기'}));
@@ -359,8 +359,8 @@ describe('chat conditions modal', () => {
         open();
         reportEditor({dirty: true});
         await user.click(screen.getByRole('button', {name: '닫기'}));
-        await user.click(screen.getByRole('button', {name: '변경사항 버리기'}));
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '저장하지 않고 닫기'}));
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
         expect(editor.apply).not.toHaveBeenCalled();
     });
@@ -371,15 +371,15 @@ describe('chat conditions modal', () => {
         editor.apply.mockImplementation(() => new Promise<boolean>((resolve) => (finish = resolve)));
         renderPanel([]);
         open();
-        expect(screen.getByRole('button', {name: '변경사항 적용'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '변경사항 반영'})).toBeDisabled();
         reportEditor({dirty: true});
-        fireEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
+        fireEvent.click(screen.getByRole('button', {name: '변경사항 반영'}));
         expect(editor.apply).toHaveBeenCalledOnce();
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
         expect(defaults.onWardRulesApplied).not.toHaveBeenCalled();
         await act(async () => finish(true));
         expect(defaults.onWardRulesApplied).toHaveBeenCalledOnce();
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
     });
 
     it('keeps failed ward edits available and permits another apply attempt', async () => {
@@ -387,12 +387,12 @@ describe('chat conditions modal', () => {
         renderPanel([]);
         open();
         fireEvent.change(screen.getByRole('textbox', {name: '제약조건 값'}), {target: {value: '연속 근무 4일 이내'}});
-        fireEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 적용'})).toBeEnabled());
+        fireEvent.click(screen.getByRole('button', {name: '변경사항 반영'}));
+        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 반영'})).toBeEnabled());
         expect(screen.getByRole('textbox', {name: '제약조건 값'})).toHaveValue('연속 근무 4일 이내');
         expect(defaults.onWardRulesApplied).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        fireEvent.click(screen.getByRole('button', {name: '변경사항 반영'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument());
         expect(editor.apply).toHaveBeenCalledTimes(2);
         expect(defaults.onWardRulesApplied).toHaveBeenCalledOnce();
     });
@@ -407,12 +407,12 @@ describe('chat conditions modal', () => {
         reportEditor({dirty: true, saving: true});
         expect(busy).toHaveBeenLastCalledWith(true);
         expect(screen.getByRole('button', {name: '야간 3회 삭제'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '적용 중'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '반영 중'})).toBeDisabled();
         fireEvent.click(screen.getByRole('button', {name: '조건 목록 닫기'}));
         fireEvent.click(screen.getByRole('button', {name: '닫기'}));
         await user.click(screen.getByTestId('ai-conditions-overlay'));
         await user.keyboard('{Escape}');
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
         expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
         expect(remove).not.toHaveBeenCalled();
         reportEditor({saving: false});
@@ -424,12 +424,12 @@ describe('chat conditions modal', () => {
 
         open();
         view.rerender(<AiActiveConditions {...defaults} wardRules={wardRules} aiConditions={[]} available={false} />);
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'})).toBeDisabled();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'})).toBeDisabled();
         view.rerender(<AiActiveConditions {...defaults} wardRules={wardRules} aiConditions={[]} />);
-        expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument();
         open();
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
     });
 
     it('keeps AI identities and meaningful source captions separate from ward edits', async () => {
@@ -456,7 +456,7 @@ describe('chat conditions modal', () => {
         open();
         expect(screen.getByRole('button', {name: '야간 3회 삭제'})).toBeDisabled();
         expect(screen.getByRole('textbox', {name: '제약조건 값'})).toBeDisabled();
-        expect(screen.getByRole('button', {name: '변경사항 적용'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '변경사항 반영'})).toBeDisabled();
         expect(remove).not.toHaveBeenCalled();
     });
 
@@ -474,7 +474,7 @@ describe('chat conditions modal', () => {
     it('updates the banner and manual-apply controls when switching to English', async () => {
         renderPanel([{id: 'request:17', label: 'Nights 3 times', onRemove: vi.fn()}]);
 
-        const trigger = screen.getByRole('button', {name: '현재 적용된 제약조건 보기'});
+        const trigger = screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'});
 
         open();
         await act(async () => i18n.changeLanguage('en'));

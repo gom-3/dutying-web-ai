@@ -21,6 +21,7 @@ export const aiAdjustJa = {
         quota: 'AIの利用回数を使い切りました。\nプランと残りの利用回数を確認してください。',
         rateLimit: '現在のAI利用上限に達しています。\nしばらくしてからもう一度お試しください。',
         retry: '再試行',
+        retryCalculation: '再計算する',
     },
     snapshot: {
         title: '勤務表',

@@ -178,11 +178,11 @@ it('keeps legacy prompt adjustments without offering a generation switch or clea
     };
     const view = render(<AiAdjustDialog {...props} />);
     expect(screen.getByRole('textbox')).toBeVisible();
-    await userEvent.type(screen.getByRole('textbox'), '오프를 더 공평하게 배치해줘');
+    await userEvent.type(screen.getByRole('textbox'), '휴무 일수를 더 공평하게 맞춰줘');
     expect(screen.queryByRole('button', {name: 'aiAutofillUi.conversationEntry.switchToAutofill'})).not.toBeInTheDocument();
     view.rerender(<AiAdjustDialog {...props} open={false} />);
     view.rerender(<AiAdjustDialog {...props} />);
-    expect(screen.getByRole('textbox')).toHaveValue('오프를 더 공평하게 배치해줘');
+    expect(screen.getByRole('textbox')).toHaveValue('휴무 일수를 더 공평하게 맞춰줘');
     expect(generate).not.toHaveBeenCalled();
     expect(interpret).not.toHaveBeenCalled();
     expect(apply).not.toHaveBeenCalled();

@@ -144,7 +144,7 @@ describe('plain candidate copy', () => {
         {
             locale: 'ko',
             title: '이렇게 바꿔볼까요?',
-            prompt: '변경 내용을 보고 원하신 배치인지 확인해 주세요.',
+            prompt: '바뀐 근무가 원하던 내용과 맞는지 확인해 주세요.',
             applied: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
         },
         {

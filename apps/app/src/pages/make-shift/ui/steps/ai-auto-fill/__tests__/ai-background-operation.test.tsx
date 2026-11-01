@@ -85,7 +85,7 @@ describe('append-only background conversation', () => {
         const cancelled = {...operation('COMPUTING', 45000), executionStatus: 'CANCELLED' as const, progress: null};
         view.rerender(<AiConversationOperationStatus {...props} operation={cancelled} />);
         expect(messages()).toHaveLength(2);
-        expect(screen.getByText('계산 요청을 취소했어요. 기존 근무표는 그대로예요.')).toBeVisible();
+        expect(screen.getByText('계산 요청을 취소했어요. 근무표는 변경되지 않았어요.')).toBeVisible();
         view.rerender(<AiConversationOperationStatus {...props} operation={operation('VALIDATING', 45000)} />);
         expect(messages()).toHaveLength(2);
     });

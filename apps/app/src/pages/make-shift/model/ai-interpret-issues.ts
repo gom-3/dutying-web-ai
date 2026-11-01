@@ -12,7 +12,8 @@ export function interpretIssueCode(issue: TScheduleAdjustInterpretUnmapped) {
 
     if (/날짜|며칠인지/.test(hint)) return 'INVALID_DATE';
 
-    if (/아직.*(반영하지 못|조절할 수 없|조절할 수 있는 축)|지원하지/.test(hint)) return 'UNSUPPORTED_REQUEST';
+    if (/아직.*(반영하지 못|반영할 수 없|자동으로 바꿀 수 없|조절할 수 없|조절할 수 있는 축)|지원하지/.test(hint))
+        return 'UNSUPPORTED_REQUEST';
 
     if (/잠시 후.*다시 시도|문장을 이해하지 못했어요\. 칩/.test(hint)) return 'INTERPRETATION_FAILED';
 

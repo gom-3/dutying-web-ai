@@ -199,7 +199,7 @@ it('retains conflict evidence and explicit recovery even without a consent card'
         />,
     );
     expect(screen.getByText('야간 횟수와 필요 인원이 맞지 않아요.')).toBeVisible();
-    expect(screen.getByText('설정: 최대 2회 / 결과: 4회')).toBeVisible();
+    expect(screen.getByText('설정한 횟수: 최대 2회 / 배정된 횟수: 4회')).toBeVisible();
     expect(retry).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.executionFailure.retryConditions')}));
     fireEvent.click(screen.getByRole('button', {name: i18n.t('aiAdjust.issue.edit')}));
