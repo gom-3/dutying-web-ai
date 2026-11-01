@@ -2391,6 +2391,7 @@ export default function AiConversationSidebar({
                                                         copy={copy}
                                                         actions={
                                                             attachNextActions &&
+                                                            !isResultApplied(event.operation) &&
                                                             event.operation.operationId === latestOperation?.operationId ? (
                                                                 <AiConversationEntry
                                                                     choice={null}

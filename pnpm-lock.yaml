@@ -32,6 +32,9 @@ importers:
 
   apps/app:
     dependencies:
+      '@abto-app/event':
+        specifier: 1.2.1
+        version: 1.2.1
       '@dutying/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -413,6 +416,10 @@ importers:
         version: 3.7.1
 
 packages:
+
+  '@abto-app/event@1.2.1':
+    resolution: {integrity: sha512-5Bh3auJ9Z9FDKggqWFJgKrqdqIUDXY9i3dEYcrwtMgYn7rrasevdN2lqxbCnmj+ly/7wybWVVMyG9dJMctF61A==}
+    engines: {node: '>=18'}
 
   '@acemir/cssom@0.9.24':
     resolution: {integrity: sha512-5YjgMmAiT2rjJZU7XK1SNI7iqTy92DpaYVgG6x63FxkJ11UpYfLndHJATtinWJClAXiOlW9XWaUyAQf8pMrQPg==}
@@ -7821,6 +7828,8 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@abto-app/event@1.2.1': {}
 
   '@acemir/cssom@0.9.24': {}
 
