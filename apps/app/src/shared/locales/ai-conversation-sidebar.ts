@@ -421,7 +421,8 @@ export const aiConversationSidebarJa = {
     reportTarget: '{{operation}} {{count}}回目の結果',
     requestHelp: 'どのような変更を依頼できますか？',
     requestHelpHint: '看護師名、日付や期間、勤務、希望回数を入力してください。例を選ぶと入力欄に追加され、送信前に編集できます。',
-    requestHelpLimits: '申請済み・固定の勤務や勤務条件によって、すべて反映できない場合があります。結果で反映内容と残りの条件をご確認ください。',
+    requestHelpLimits:
+        '申請済み・固定の勤務や勤務条件によって、すべて反映できない場合があります。結果で反映内容と残りの条件をご確認ください。',
     helpAssignment: '特定の日の勤務を指定・除外',
     helpCounts: '月の勤務回数',
     helpConsecutive: '連続勤務の日数',
