@@ -1,18 +1,21 @@
 type TProps = {
     label: string;
     description?: string;
+    animated?: boolean;
     className?: string;
 };
 
 /** A quiet, shared waiting state. Motion is decorative; the label carries the status. */
-export function AiConversationLoading({label, description, className = ''}: TProps) {
+export function AiConversationLoading({label, description, animated = true, className = ''}: TProps) {
     return (
-        <div role="status" aria-atomic="true" className={`flex min-w-0 items-start gap-3 py-2 ${className}`}>
-            <span aria-hidden="true" className="flex h-5 shrink-0 items-center gap-1">
-                {[0, 1, 2].map((dot) => (
-                    <span key={dot} className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
-                ))}
-            </span>
+        <div role="status" aria-label={label} aria-atomic="true" className={`flex min-w-0 items-start gap-3 py-2 ${className}`}>
+            {animated && (
+                <span aria-hidden="true" className="flex h-5 shrink-0 items-center gap-1">
+                    {[0, 1, 2].map((dot) => (
+                        <span key={dot} className="ai-adjust-review-dot size-[5px] rounded-full bg-main-1" />
+                    ))}
+                </span>
+            )}
             <div className="min-w-0">
                 <p className="text-[13px] leading-5 font-medium break-keep text-[#475467]">{label}</p>
                 {description && <p className="mt-1 text-xs leading-5 break-keep text-[#667085]">{description}</p>}

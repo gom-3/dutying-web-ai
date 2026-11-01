@@ -5,7 +5,6 @@ import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
-import nextIcon from '@/shared/assets/images/ai-adjust/next.svg';
 import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -61,6 +60,7 @@ import {AiConversationHeader} from './ai-conversation-header';
 import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus} from './ai-conversation-operation-status';
+import {AiConversationRequestHelp} from './ai-conversation-request-help';
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -1820,6 +1820,9 @@ export default function AiConversationSidebar({
             isConversationConfirmationCurrent(detail, active, localDirty),
     );
     const composerHidden =
+        busy ||
+        executionBusy ||
+        awaitingAdjustment ||
         preparing ||
         !detail ||
         failureNeedsAction ||
@@ -1879,38 +1882,104 @@ export default function AiConversationSidebar({
         dayOf(0) === dayOf(4)
             ? t('aiConversationSidebar.exampleDay', {day: dayOf(0)})
             : t('aiConversationSidebar.exampleDayRange', {start: dayOf(0), end: dayOf(4)});
-    const requestExamples =
+    const exampleNight = exampleShiftTypes.find((type) => !type.isOff && type.classification === 'NIGHT');
+    const requestExampleGroups =
         exampleFirst && doc.columns.length
             ? [
+                  {
+                      title: t('aiConversationSidebar.helpAssignment'),
+                      sentences: [
+                          ...(exampleWork
+                              ? [
+                                    t('aiConversationSidebar.exampleNoShifts', {
+                                        name: exampleFirst,
+                                        period: examplePeriod,
+                                        shift: exampleWork.shortName,
+                                    }),
+                                ]
+                              : []),
+                          ...(exampleOff
+                              ? [
+                                    t('aiConversationSidebar.exampleAssignShift', {
+                                        name: exampleSecond,
+                                        day: dayOf(11),
+                                        shift: exampleOff.shortName,
+                                    }),
+                                ]
+                              : []),
+                          ...(exampleDayWork
+                              ? [
+                                    t('aiConversationSidebar.exampleAssignShift', {
+                                        name: exampleFirst,
+                                        day: dayOf(14),
+                                        shift: exampleDayWork.shortName,
+                                    }),
+                                ]
+                              : []),
+                      ],
+                  },
                   ...(exampleWork
                       ? [
-                            t('aiConversationSidebar.exampleNoShifts', {
-                                name: exampleFirst,
-                                period: examplePeriod,
-                                shift: exampleWork.shortName,
-                            }),
+                            {
+                                title: t('aiConversationSidebar.helpCounts'),
+                                sentences: [
+                                    t('aiConversationSidebar.exampleMonthlyCap', {
+                                        name: exampleFirst,
+                                        shift: exampleWork.shortName,
+                                        count: Math.min(6, doc.columns.length),
+                                    }),
+                                ],
+                            },
                         ]
                       : []),
-                  ...(exampleOff
+                  ...(exampleWork && doc.columns.length > 1
                       ? [
-                            t('aiConversationSidebar.exampleAssignShift', {
-                                name: exampleSecond,
-                                day: dayOf(11),
-                                shift: exampleOff.shortName,
-                            }),
+                            {
+                                title: t('aiConversationSidebar.helpConsecutive'),
+                                sentences: [
+                                    t('aiConversationSidebar.exampleConsecutiveWork', {count: Math.min(5, doc.columns.length - 1)}),
+                                ],
+                            },
+                        ]
+                      : []),
+                  ...(exampleNight && exampleOff
+                      ? [
+                            {
+                                title: t('aiConversationSidebar.helpRecovery'),
+                                sentences: [
+                                    t('aiConversationSidebar.exampleRestAfterNight', {
+                                        shift: exampleNight.shortName,
+                                        off: exampleOff.shortName,
+                                    }),
+                                ],
+                            },
                         ]
                       : []),
                   ...(exampleDayWork
                       ? [
-                            t('aiConversationSidebar.exampleAssignShift', {
-                                name: exampleFirst,
-                                day: dayOf(14),
-                                shift: exampleDayWork.shortName,
-                            }),
+                            {
+                                title: t('aiConversationSidebar.helpStaffing'),
+                                sentences: [
+                                    t('aiConversationSidebar.exampleStaffing', {
+                                        day: dayOf(9),
+                                        shift: exampleDayWork.shortName,
+                                        count: Math.min(3, exampleNurses.length),
+                                    }),
+                                ],
+                            },
                         ]
                       : []),
-              ]
+                  ...(exampleFirst !== exampleSecond && exampleWork
+                      ? [
+                            {
+                                title: t('aiConversationSidebar.helpPairing'),
+                                sentences: [t('aiConversationSidebar.examplePairApart', {first: exampleFirst, second: exampleSecond})],
+                            },
+                        ]
+                      : []),
+              ].filter((group) => group.sentences.length)
             : [];
+    const requestExamples = [...new Set(requestExampleGroups.flatMap((group) => group.sentences))];
 
     useEffect(() => {
         if (entryChoice === 'modify' && !composerHidden) textarea.current?.focus();
@@ -2356,8 +2425,6 @@ export default function AiConversationSidebar({
                                             key={event.id}
                                             operation={event.operation}
                                             attempt={operationAttempt(detail, event.operation.operationId)}
-                                            copy={copy}
-                                            storageKey={`dutying.operation-progress:${chatOwner}:${wardId}:${teamId}:${detail.conversation.conversationId}:${event.operation.operationId}`}
                                         >
                                             {event.operation.executionStatus === 'SUCCEEDED' && !operationFailure(event.operation) ? (
                                                 <JourneyObserved
@@ -2726,7 +2793,9 @@ export default function AiConversationSidebar({
                                                             />
                                                         )}
                                                     </JourneyObserved>
-                                                    <AiConversationTimestamp createdAt={event.operation.createdAt} />
+                                                    {!['RUNNING', 'RESULT_READY', 'UNKNOWN'].includes(event.operation.executionStatus) && (
+                                                        <AiConversationTimestamp createdAt={event.operation.createdAt} />
+                                                    )}
                                                 </div>
                                             )}
                                         </AiConversationOperationStatus>
@@ -2775,26 +2844,6 @@ export default function AiConversationSidebar({
                                 modifyDisabled={!adjustEnabled}
                                 onChoose={chooseNextAction}
                             />
-                        )}
-                        {!composerHidden && !editingRequest && !activeTurns.length && !text.trim() && !!requestExamples.length && (
-                            <section aria-label={t('aiAdjust.examples')} className="ai-adjust-examples flex min-w-0 flex-col gap-2 pt-3">
-                                <p className="px-1.5 text-[13px] font-medium text-main-1">{t('aiAdjust.examples')}</p>
-                                {[...new Set(requestExamples)].map((sentence) => (
-                                    <button
-                                        key={sentence}
-                                        type="button"
-                                        disabled={busy || running || !adjustEnabled}
-                                        onClick={() => {
-                                            setText(sentence);
-                                            textarea.current?.focus();
-                                        }}
-                                        className="flex min-h-11 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                    >
-                                        <span>{sentence}</span>
-                                        <img src={nextIcon} alt="" width={22} height={22} className="shrink-0" />
-                                    </button>
-                                ))}
-                            </section>
                         )}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
                             <AiConversationLoading
@@ -2959,6 +3008,17 @@ export default function AiConversationSidebar({
                                 </p>
                             )}
                             {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
+                            {!composerHidden && requestExampleGroups.length > 0 && (
+                                <AiConversationRequestHelp
+                                    groups={requestExampleGroups}
+                                    draft={text}
+                                    disabled={!adjustEnabled}
+                                    onPick={(sentence) => {
+                                        setText(text.trim() ? `${text.trim()}\n${sentence}` : sentence);
+                                        textarea.current?.focus();
+                                    }}
+                                />
+                            )}
                             <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
                                 <label className="block text-sm">
                                     <span className="sr-only">{t('aiConversationSidebar.yourChanges')}</span>
