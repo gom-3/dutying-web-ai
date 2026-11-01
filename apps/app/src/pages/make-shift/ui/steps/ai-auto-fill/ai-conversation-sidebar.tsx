@@ -2109,6 +2109,7 @@ export default function AiConversationSidebar({
                             copy={copy}
                             onChangeModalities={(overrides) => changeModalities(turn, overrides)}
                             onApply={() => void confirmAndAdjust(turn)}
+                            onEditSchedule={() => chooseNextAction('edit')}
                             onEdit={() => editRequest(turn)}
                             onRetry={() => {
                                 const current = detailRef.current;
@@ -2841,6 +2842,30 @@ export default function AiConversationSidebar({
                                             )}
                                         </button>
                                         <button type="button" className={buttonClass} disabled={busy || running} onClick={onClose}>
+                                            {t('aiConversationSidebar.editScheduleDirectly')}
+                                        </button>
+                                    </div>
+                                )}
+                                {error.recovery === 'revise' && !error.unsentOperation && (
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            type="button"
+                                            className={buttonClass}
+                                            disabled={busy || running}
+                                            onClick={() => {
+                                                setError(null);
+                                                setEntryChoice('modify');
+                                                recoveryComposerFocus.current = true;
+                                            }}
+                                        >
+                                            {t('aiConversationSidebar.reviseUnsentRequest')}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={buttonClass}
+                                            disabled={busy || running}
+                                            onClick={() => chooseNextAction('edit')}
+                                        >
                                             {t('aiConversationSidebar.editScheduleDirectly')}
                                         </button>
                                     </div>

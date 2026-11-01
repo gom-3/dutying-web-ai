@@ -96,7 +96,7 @@ export const aiConversationSidebarKo = {
     checkOutcome: '결과 다시 확인하기',
     cancel: '취소',
     preparingChanges: '수정 준비 중',
-    reviewingRequest: '요청 확인 중',
+    reviewingRequest: '바꾸고 싶은 내용을 확인하고 있어요',
     loadingSchedule: '근무표 불러오는 중',
     checkingResult: '결과 확인 중',
     sendingFeedback: '의견 보내는 중',

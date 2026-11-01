@@ -387,6 +387,28 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it.each(['SCHEDULE_INTERPRET_REJECTED', 'SCHEDULE_INTERPRET_UNAVAILABLE'])(
+        'preserves the request and offers editing without rerunning after %s',
+        async (serverCode) => {
+            const onClose = vi.fn();
+            mocks.interpret.mockRejectedValueOnce({serverCode, code: 502, message: 'private upstream response'});
+            renderSidebar({onClose});
+            await waitFor(() => expect(screen.getByRole('complementary')).toHaveAttribute('data-loading', 'false'));
+            const request = '김 선생님 나이트를 줄여줘';
+            await userEvent.type(screen.getByRole('textbox'), request);
+            await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+            await screen.findByText(i18n.t('aiAutofillUi.interpretFailureTitle'));
+            expect(screen.getByRole('textbox')).toHaveValue(request);
+            expect(screen.queryByText(/private upstream/)).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.checkExecutionHistory')})).not.toBeInTheDocument();
+            await userEvent.click(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.reviseUnsentRequest')}));
+            expect(screen.getByRole('textbox')).toHaveFocus();
+            expect(screen.getByRole('textbox')).toHaveValue(request);
+            expect(mocks.interpret).toHaveBeenCalledOnce();
+            expect(mocks.execute).not.toHaveBeenCalled();
+        },
+    );
+
     it('keeps prompt adjustment in the current schedule without a generation switch or losing unsent text', async () => {
         const prepare = vi.fn();
         const props = {onPrepareGeneration: prepare};
@@ -3413,13 +3435,13 @@ describe('persistent schedule sidebar', () => {
             await userEvent.click(screen.getByRole('button', {name: state === 'PREVIEW_READY' ? '수정한 요청 확인' : '요청 보내기'}));
             await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
             expect(prepare).not.toHaveBeenCalled();
-            expect(screen.getAllByText('요청 확인 중')).toHaveLength(1);
+            expect(screen.getAllByText(i18n.t('aiConversationSidebar.reviewingRequest'))).toHaveLength(1);
             expect(screen.queryByText('요청을 확인하고 있어요.')).not.toBeInTheDocument();
             expect(screen.queryByText('대화 불러오는 중')).not.toBeInTheDocument();
             expect(input).toBeDisabled();
             expect(mocks.execute).not.toHaveBeenCalled();
             await act(async () => finishInterpretation(proposal));
-            await waitFor(() => expect(screen.queryByText('요청 확인 중')).not.toBeInTheDocument());
+            await waitFor(() => expect(screen.queryByText(i18n.t('aiConversationSidebar.reviewingRequest'))).not.toBeInTheDocument());
             expect(mocks.execute).not.toHaveBeenCalled();
         },
     );
@@ -3716,19 +3738,15 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('retries a technical extraction failure with the exact original request', async () => {
-        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION', ['INVALID_SOURCE_SPAN']);
+    it('offers editing after invalid extraction and keeps the original request without resending it', async () => {
+        const {raw} = semanticRequest('NEEDS_CLARIFICATION', ['INVALID_SOURCE_SPAN']);
         const prepare = vi.fn().mockResolvedValue(undefined);
 
-        mocks.interpret.mockResolvedValue(proposal);
         renderSidebar({onPrepareAdjustment: prepare});
-        await userEvent.click(await screen.findByRole('button', {name: '다시 시도하기'}));
-        await waitFor(() =>
-            expect(mocks.interpret).toHaveBeenCalledWith(
-                1,
-                expect.objectContaining({text: raw, previousInterpretationId: 'proposal:1', change: 'REPLACE'}),
-            ),
-        );
+        await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
+        expect(screen.getByRole('textbox')).toHaveValue(raw);
+        expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+        expect(mocks.interpret).not.toHaveBeenCalled();
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(prepare).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();

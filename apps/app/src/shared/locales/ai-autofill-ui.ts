@@ -5,10 +5,11 @@ export const aiAutofillUiKo = {
             '자동완성한 근무표에서 바꾸고 싶은 내용을 적어 주세요. 예: “하루짜리 OFF를 줄여줘”.\n고정한 근무는 유지하고 나머지 근무를 조절해요. 요청 확인 중에는 표를 수정할 수 없어요.\n결과를 표에서 확인하고 필요하면 되돌린 뒤 저장·확정해 주세요.',
         confirm: '확인했어요',
     },
-    interpretFailureTitle: '요청 해석을 마치지 못했어요.',
+    interpretFailureTitle: '요청을 처리하지 못했어요.',
     interpretRejected:
-        'AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요.\n이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.\n같은 요청으로 다시 시도해 주세요.',
-    interpretUnavailable: '요청 해석 중 오류가 발생해 이번 요청을 실행하지 못했어요.\n같은 요청으로 다시 시도해 주세요.',
+        '어떤 근무를 어떻게 바꿀지 확인하지 못했어요.\n근무표는 변경되지 않았어요. 바꾸고 싶은 내용을 한 가지씩 나눠 요청하거나 표에서 직접 수정해 주세요.',
+    interpretUnavailable:
+        '요청을 확인하는 중 오류가 생겨 작업을 시작하지 못했어요.\n근무표는 변경되지 않았어요. 표에서 직접 수정할 수 있어요. 문제가 계속되면 고객지원에 알려 주세요.',
     resultSatisfaction: {
         addReason: '이유 남기기',
         close: '닫기',
@@ -189,7 +190,8 @@ export const aiAutofillUiKo = {
         previousRequest2: '이전 요청',
         reviewRequestConditions: '요청 조건 확인',
         moreDetailNeeded: '추가 확인 필요',
-        yourRequestIsKeptYouCanTryItAgain: '입력한 요청은 유지돼요. 같은 요청으로 다시 시도할 수 있어요.',
+        yourRequestIsKeptYouCanTryItAgain:
+            '요청을 확인하는 데 시간이 너무 오래 걸려 중단됐어요.\n근무표는 변경되지 않았어요. 잠시 후 요청을 다시 확인하거나 내용을 수정해 주세요.',
         theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed: '표나 요청이 바뀌어 이전 조건으로 진행할 수 없어요.',
         editYourRequestOrChangeTheScheduleDirectly: '요청을 수정하거나 근무표에서 직접 바꿔 주세요.',
         addALittleMoreDetailAboutThePeopleOrConditions: '대상이나 조건을 조금 더 자세히 알려 주세요.',
@@ -230,7 +232,7 @@ export const aiAutofillUiKo = {
         revalidateOnlySelectedConditions: '선택한 조건만 다시 검증',
         editRequest: '요청 수정하기',
         adjustingYourSchedule: '근무표 수정 중',
-        reviewingYourRequest: '요청 확인 중',
+        reviewingYourRequest: '바꾸고 싶은 내용을 확인하고 있어요',
     },
     conversationResult: {
         yourScheduleDraftIsReady: '근무표 초안을 만들었어요!',
@@ -368,10 +370,11 @@ export const aiAutofillUiEn = {
             'Describe what you want to change, such as “Reduce isolated days off.”\nFixed shifts stay in place. Editing is paused while your request is reviewed.\nReview the result, undo if needed, then save or confirm the schedule.',
         confirm: 'Got it',
     },
-    interpretFailureTitle: 'Request interpretation could not finish.',
+    interpretFailureTitle: 'We could not process your request.',
     interpretRejected:
-        'An error occurred while checking the AI interpretation of your request.\nThis request did not start schedule generation or change the schedule.\nPlease try the same request again.',
-    interpretUnavailable: 'An error during request interpretation prevented this request from running.\nPlease try the same request again.',
+        'We could not determine which shifts to change or how to change them.\nYour schedule has not changed. Request one change at a time, or edit the schedule directly.',
+    interpretUnavailable:
+        'An error while reviewing your request prevented the work from starting.\nYour schedule has not changed. You can edit it directly. Contact support if the problem continues.',
     resultSatisfaction: {
         addReason: 'Add a reason',
         close: 'Close',
@@ -552,7 +555,8 @@ export const aiAutofillUiEn = {
         previousRequest2: 'Previous request',
         reviewRequestConditions: 'Review request conditions',
         moreDetailNeeded: 'More detail needed',
-        yourRequestIsKeptYouCanTryItAgain: 'Your request is kept. You can try it again.',
+        yourRequestIsKeptYouCanTryItAgain:
+            'Reviewing your request took too long and stopped.\nYour schedule has not changed. Review the request again shortly, or edit it.',
         theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed:
             'The schedule or request changed, so the earlier conditions cannot be used.',
         editYourRequestOrChangeTheScheduleDirectly: 'Edit your request or change the schedule directly.',
@@ -736,11 +740,11 @@ export const aiAutofillUiJa = {
             '「単発の休みを減らして」など、変更したい内容を入力してください。\n固定した勤務は維持されます。リクエストの確認中は勤務表を編集できません。\n結果を確認し、必要なら元に戻してから保存・確定してください。',
         confirm: '確認しました',
     },
-    interpretFailureTitle: 'リクエストの解釈を完了できませんでした。',
+    interpretFailureTitle: 'リクエストを処理できませんでした。',
     interpretRejected:
-        'AIによるリクエストの解釈結果を確認中にエラーが発生しました。\n今回のリクエストでは勤務表の自動作成や変更を行っていません。\n同じ内容でもう一度お試しください。',
+        'どの勤務をどのように変更するか確認できませんでした。\n勤務表は変更されていません。変更したい内容を一つずつリクエストするか、勤務表を直接編集してください。',
     interpretUnavailable:
-        'リクエストの解釈中にエラーが発生し、今回のリクエストを実行できませんでした。\n同じ内容でもう一度お試しください。',
+        'リクエストの確認中にエラーが発生し、処理を開始できませんでした。\n勤務表は変更されていません。直接編集することもできます。問題が続く場合はサポートにお知らせください。',
     resultSatisfaction: {
         addReason: '理由を添える',
         close: '閉じる',
@@ -921,7 +925,8 @@ export const aiAutofillUiJa = {
         previousRequest2: '以前のリクエスト',
         reviewRequestConditions: 'リクエスト条件の確認',
         moreDetailNeeded: '追加の確認が必要',
-        yourRequestIsKeptYouCanTryItAgain: '入力したリクエストは保持されます。同じ内容で再試行できます。',
+        yourRequestIsKeptYouCanTryItAgain:
+            'リクエストの確認に時間がかかり、中断しました。\n勤務表は変更されていません。しばらくしてから再確認するか、内容を修正してください。',
         theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed:
             '勤務表またはリクエストが変更されたため、以前の条件では続行できません。',
         editYourRequestOrChangeTheScheduleDirectly: 'リクエストを修正するか、勤務表を直接変更してください。',

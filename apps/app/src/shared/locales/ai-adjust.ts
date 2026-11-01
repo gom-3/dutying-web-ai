@@ -119,7 +119,7 @@ export const aiAdjustKo = {
     },
     issue: {
         nurse: '어느 간호사의 근무를 바꿀까요?\n표에 있는 이름을 알려 주세요.',
-        nurseConnection: '간호사 정보를 확인하지 못했어요.\n같은 요청으로 다시 시도해 주세요.',
+        nurseConnection: '간호사 정보를 확인하지 못했어요.\n표에 적힌 간호사 이름과 바꾸려는 근무를 함께 적어 주세요.',
         shift: '어떤 근무를 바꿀까요?\n표에 있는 근무 이름을 알려 주세요.',
         date: '어느 날짜에 적용할까요?\n작성 중인 달의 날짜를 알려 주세요.',
         value: '적용할 기간이나 횟수를 알려 주세요.',
@@ -198,7 +198,7 @@ export const aiAdjustKo = {
     twoDayExample: '이틀 연속 쉬는 기회를 공평하게 해줘',
     placeholder: '예: 오프를 더 고르게 배치해줘',
     send: '요청 보내기',
-    reviewing: '요청 확인 중',
+    reviewing: '바꾸고 싶은 내용을 확인하고 있어요',
     elapsed: '{{seconds}}초',
     reviewingSlow: '요청을 확인하는 데 시간이 걸리고 있어요. 아직 근무표는 바뀌지 않았어요.',
     generateOrAdjust: '자동으로 채우거나, 아래에 원하는 수정을 적어 주세요.',
@@ -605,7 +605,8 @@ export const aiAdjustEn = {
     },
     issue: {
         nurse: 'Whose shifts would you like to change?\nUse a name shown in the schedule.',
-        nurseConnection: 'I could not verify the nurse details.\nPlease try the same request again.',
+        nurseConnection:
+            'I could not verify the nurse details.\nInclude the nurse name shown in the schedule and the shift you want to change.',
         shift: 'Which shift would you like to change?\nUse a shift name shown in the schedule.',
         date: 'Which date should this apply to?\nChoose a date in the month you are editing.',
         value: 'Please specify the period or count.',

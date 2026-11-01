@@ -236,18 +236,24 @@ describe('request review actions', () => {
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
 
-    it('explains an invalid AI edit as an interpretation failure without asking the user to revise it', async () => {
-        const user = userEvent.setup();
-        const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: ['INVALID_CONDITION_EDIT']}});
-        expect(screen.getByText('요청 해석을 마치지 못했어요.')).toBeVisible();
-        expect(screen.getByText(/AI의 요청 해석 결과를 확인하는 중 오류가 발생했어요/)).toHaveTextContent(
-            '이번 요청으로 자동완성을 시작하거나 근무표를 바꾸지 않았어요.',
-        );
-        await user.click(screen.getByRole('button', {name: '다시 시도하기'}));
-        expect(props.onRetry).toHaveBeenCalledOnce();
-        expect(props.onApply).not.toHaveBeenCalled();
-        expect(props.onEdit).not.toHaveBeenCalled();
-    });
+    it.each(['INVALID_CONDITION_EDIT', 'SCHEMA_INVALID', 'EXTRACTION_FAILED', 'UNKNOWN_FAILURE'])(
+        'offers revision or direct editing instead of repeating a failed request: %s',
+        async (reason) => {
+            const user = userEvent.setup();
+            const onEditSchedule = vi.fn();
+            const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
+            expect(screen.getByText('요청을 처리하지 못했어요.')).toBeVisible();
+            expect(screen.getByText(/어떤 근무를 어떻게 바꿀지 확인하지 못했어요/)).toHaveTextContent('근무표는 변경되지 않았어요.');
+            expect(screen.queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('list')).not.toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: '요청 수정하기'}));
+            expect(props.onEdit).toHaveBeenCalledOnce();
+            await user.click(screen.getByRole('button', {name: '표 직접 수정하기'}));
+            expect(onEditSchedule).toHaveBeenCalledOnce();
+            expect(props.onRetry).not.toHaveBeenCalled();
+            expect(props.onApply).not.toHaveBeenCalled();
+        },
+    );
 
     it('recovers a failed interpretation through retry without executing or condition selection', async () => {
         const user = userEvent.setup();
@@ -256,6 +262,7 @@ describe('request review actions', () => {
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
+        expect(screen.getByText(/요청을 확인하는 데 시간이 너무 오래 걸려 중단됐어요/)).toBeVisible();
         await user.click(screen.getByRole('button', {name: '다시 시도하기'}));
         expect(props.onRetry).toHaveBeenCalledOnce();
         expect(props.onApply).not.toHaveBeenCalled();
