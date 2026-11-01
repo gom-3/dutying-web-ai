@@ -99,19 +99,8 @@ export function requestTextForTurn(detail: TConversationDetail, turn: TConversat
 }
 
 export function semanticRecovery(plan: TSemanticPlan): 'retry' | 'edit' {
-    return plan.state === 'FAILED' ||
-        plan.reasonCodes.some((code) =>
-            [
-                'EXTRACTION_FAILED',
-                'INVALID_SOURCE_SPAN',
-                'INVALID_INTERPRETATION_RESPONSE',
-                'INVALID_CONDITION_EDIT',
-                'SCHEMA_INVALID',
-                'MODEL_TIMEOUT',
-            ].includes(code),
-        )
-        ? 'retry'
-        : 'edit';
+    // A failed or invalid model response is not evidence that the same request will succeed.
+    return plan.reasonCodes.includes('MODEL_TIMEOUT') ? 'retry' : 'edit';
 }
 
 /** The model receives the retained plan; the dialogue shows only the new reply. */

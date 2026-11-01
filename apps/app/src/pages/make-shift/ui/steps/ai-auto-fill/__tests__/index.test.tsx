@@ -598,9 +598,7 @@ describe('AiAutofill blank preview', () => {
 
             expect(useShiftEditorStore.getState().autofillAdjustEnabled).toBe(adjustEnabled);
             expect(
-                await within(sidebar).findByText(
-                    /AI가 만든 근무표가 요청한 조건을 지켰는지 확인하는 단계에서 통과하지 못해 적용하지 않았어요/,
-                ),
+                await within(sidebar).findByText(/계산한 근무표가 필요한 조건을 모두 지켰는지 확인하지 못해 반영하지 않았어요/),
             ).toBeVisible();
             expect(screen.queryByText('초안을 만들었어요 · 확인할 규칙이 있어요')).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: '안내 닫기'})).not.toBeInTheDocument();
@@ -611,7 +609,7 @@ describe('AiAutofill blank preview', () => {
 
             const failedRequest = mocks.requestAiSchedule.mock.calls[0]?.[0];
 
-            await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.failure.retry'}));
+            await user.click(within(sidebar).getByRole('button', {name: 'aiAdjust.failure.retryCalculation'}));
             await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
 
             const retriedRequest = mocks.requestAiSchedule.mock.calls[1]?.[0];
@@ -664,7 +662,7 @@ describe('AiAutofill blank preview', () => {
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
 
         expect(mocks.requestAiSchedule.mock.calls[0]?.[0]).toMatchObject({authoringContractVersion: 'intent-first-v1'});
-        expect(screen.queryByRole('button', {name: '제안대로 이번 표 수정'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '이번 근무표에 반영하기'})).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
     });
 

@@ -19,6 +19,7 @@ type TProps = {
     onApply: () => void;
     onEdit: () => void;
     onRetry: () => void;
+    onEditSchedule?: () => void;
     onChangeModalities?: (overrides: Record<string, 'HARD' | 'SOFT'>) => Promise<void>;
 };
 
@@ -81,6 +82,7 @@ export function AiSemanticReview({
     onApply,
     onEdit,
     onRetry,
+    onEditSchedule,
     onChangeModalities,
 }: TProps) {
     const {t} = useTypedTranslation();
@@ -131,13 +133,27 @@ export function AiSemanticReview({
     const conflict = plan.state === 'LOCKED_CONFLICT';
     const expired = plan.state === 'EXPIRED';
     const complete = ready && applied;
-    const retry = !ready && !conflict && !expired && semanticRecovery(plan) === 'retry';
+    const failed =
+        !ready &&
+        !conflict &&
+        !expired &&
+        (plan.state === 'FAILED' ||
+            plan.reasonCodes.some((code) =>
+                [
+                    'EXTRACTION_FAILED',
+                    'INVALID_SOURCE_SPAN',
+                    'INVALID_INTERPRETATION_RESPONSE',
+                    'INVALID_CONDITION_EDIT',
+                    'SCHEMA_INVALID',
+                    'MODEL_TIMEOUT',
+                ].includes(code),
+            ));
+    const retry = failed && semanticRecovery(plan) === 'retry';
     const showGroups =
         !plan.selectionAudit &&
-        !retry &&
+        !failed &&
         ['UNSUPPORTED', 'NEEDS_CLARIFICATION'].includes(plan.state) &&
         Boolean(plan.conditionGroups?.length);
-    const rejectedInterpretation = retry && plan.reasonCodes.includes('INVALID_CONDITION_EDIT');
     const title = ready
         ? complete
             ? t('aiAutofillUi.semanticReview.theCalculationForTheseConditionsIsComplete')
@@ -150,10 +166,8 @@ export function AiSemanticReview({
                   : t('aiAutofillUi.semanticReview.shallWeAdjustItThisWay')
         : conflict
           ? t('aiAutofillUi.semanticReview.yourRequestConflictsWithFixedShifts')
-          : retry
-            ? rejectedInterpretation
-                ? t('aiAutofillUi.interpretFailureTitle')
-                : t('aiAutofillUi.semanticReview.yourRequestCouldNotBeReviewed')
+          : failed
+            ? t('aiAutofillUi.interpretFailureTitle')
             : expired
               ? t('aiAutofillUi.semanticReview.reviewYourRequestAgain')
               : plan.state === 'UNSUPPORTED'
@@ -164,7 +178,7 @@ export function AiSemanticReview({
     const kind: TIconKind =
         conflict || expired
             ? 'warning'
-            : retry
+            : failed
               ? 'failure'
               : complete
                 ? 'success'
@@ -179,7 +193,7 @@ export function AiSemanticReview({
         ? t('aiAutofillUi.semanticReview.fixedShiftConflict')
         : expired
           ? t('aiAutofillUi.semanticReview.reviewNeeded')
-          : retry
+          : failed
             ? t('aiAutofillUi.semanticReview.requestReviewFailed')
             : complete
               ? t('aiAutofillUi.semanticReview.calculationCompleted')
@@ -193,10 +207,10 @@ export function AiSemanticReview({
             ? t('aiAdjust.regenerateDescription')
             : ready || conflict
               ? null
-              : retry
-                ? rejectedInterpretation
-                    ? t('aiAutofillUi.interpretRejected')
-                    : t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
+              : failed
+                ? retry
+                    ? t('aiAutofillUi.semanticReview.yourRequestIsKeptYouCanTryItAgain')
+                    : t('aiAutofillUi.interpretRejected')
                 : expired
                   ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
                   : plan.state === 'UNSUPPORTED'
@@ -218,7 +232,7 @@ export function AiSemanticReview({
                 <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">{title}</p>
             </header>
             {description && <p className="text-[13px] leading-6 break-keep whitespace-pre-line text-[#667085]">{description}</p>}
-            {!showGroups && !!plan.conditions.length && (
+            {!failed && !showGroups && !!plan.conditions.length && (
                 <div className="space-y-2">
                     <p className="text-xs leading-5 font-medium text-[#667085]">{listLabel}</p>
                     <ul aria-label={listLabel} className="space-y-2">
@@ -432,6 +446,11 @@ export function AiSemanticReview({
                         >
                             {t('aiAutofillUi.semanticReview.editRequest')}
                         </button>
+                        {failed && !retry && onEditSchedule && (
+                            <button type="button" className={secondary} disabled={disabled} onClick={onEditSchedule}>
+                                {t('aiAutofillUi.conversationEntry.editSchedule')}
+                            </button>
+                        )}
                     </div>
                 </>
             )}

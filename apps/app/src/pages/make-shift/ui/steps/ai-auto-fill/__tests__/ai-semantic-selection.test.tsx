@@ -26,7 +26,7 @@ const plan: TSemanticPlan = {
     planHash: 'a'.repeat(64),
     sourceVersionId: 'v1',
     state: 'UNSUPPORTED',
-    summary: '지원하지 않는 조건',
+    summary: '아직 반영할 수 없는 조건',
     confirmationAllowed: false,
     reasonCodes: ['UNSUPPORTED_CAPABILITY'],
     conditions: [],
@@ -57,7 +57,7 @@ describe('clarification without condition selection', () => {
             expect(screen.getByText('A 1일 D 배정')).toBeVisible();
             expect(screen.getByText('B 입사일부터 N 금지')).toBeVisible();
             expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: '선택한 조건 다시 확인하기'})).not.toBeInTheDocument();
             await userEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
             expect(onEdit).toHaveBeenCalledOnce();
             expect(onApply).not.toHaveBeenCalled();
@@ -102,7 +102,7 @@ describe('clarification without condition selection', () => {
         expect(screen.getByText('제외:')).toBeInTheDocument();
         expect(screen.getByText('B 입사일부터 N 금지')).toBeInTheDocument();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '선택한 조건만 다시 검증'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '선택한 조건 다시 확인하기'})).not.toBeInTheDocument();
 
         if (!current) expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });

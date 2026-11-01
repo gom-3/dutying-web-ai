@@ -78,7 +78,7 @@ describe('ongoing autofill entry', () => {
     it.each([
         ['SUCCEEDED', 'APPLIED', '자동채우기 결과가 준비됐어요'],
         ['SUCCEEDED', 'NOT_APPLIED_SOURCE_CHANGED', '계산이 끝났어요. 수정한 근무표는 유지했어요.'],
-        ['CANCELLED', 'NOT_APPLIED', '계산 요청을 취소했어요. 기존 근무표는 그대로예요.'],
+        ['CANCELLED', 'NOT_APPLIED', '계산 요청을 취소했어요. 근무표는 변경되지 않았어요.'],
         ['FAILED', 'NOT_APPLIED', '자동채우기를 마치지 못했어요. 결과를 확인해 주세요.'],
     ] as const)('keeps %s results reachable after closing the loader', (executionStatus, applyStatus, label) => {
         render(

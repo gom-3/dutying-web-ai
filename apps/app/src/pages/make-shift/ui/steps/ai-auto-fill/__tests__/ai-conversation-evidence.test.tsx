@@ -47,7 +47,15 @@ describe('conversation result evidence', () => {
     it('does not expose internal quality measurements or change counts', () => {
         const r = response(quality);
         r.changedCells = [{shiftNurseId: 1, date: '2026-10-02', wardShiftTypeId: 1}];
-        const {container} = render(<ConversationEvidence result={{...r, failure: undefined}} nurseName={id => id} suggestionsCurrent disabled={false} onSelect={vi.fn()} />);
+        const {container} = render(
+            <ConversationEvidence
+                result={{...r, failure: undefined}}
+                nurseName={(id) => id}
+                suggestionsCurrent
+                disabled={false}
+                onSelect={vi.fn()}
+            />,
+        );
         expect(container).toBeEmptyDOMElement();
     });
     it('selects a verified candidate without executing and preserves unknown impact', async () => {
@@ -97,7 +105,7 @@ describe('conversation result evidence', () => {
             />,
         );
         expect(screen.getByText('가능하면 맞추기로 한 요청을 이번 계산에서 제외해요.')).toBeInTheDocument();
-        expect(screen.getByText('가능하면 맞추기로 한 요청의 우선순위를 보통에서 낮음으로 바꿔요.')).toBeInTheDocument();
+        expect(screen.getByText('가능하면 맞추기로 한 요청을 다른 요청보다 나중에 반영하도록 바꿔요.')).toBeInTheDocument();
         expect(screen.queryByText(/\[object Object\]|NORMAL|LOW|SOFT/)).not.toBeInTheDocument();
     });
     it('blocks stale or unauthorized candidates', () => {
