@@ -1102,7 +1102,7 @@ describe('persistent schedule sidebar', () => {
         expect(within(result).queryByRole('button', {name: '이 결과에 의견 보내기'})).not.toBeInTheDocument();
         expect(screen.getAllByText('듀팅 AI')).toHaveLength(1);
         expect(screen.queryByText('바꾸고 싶은 부분이 있나요?')).not.toBeInTheDocument();
-        expect(within(result).getByRole('group', {name: i18n.t('aiAdjust.snapshot.nextAction')})).toBeVisible();
+        expect(within(result).queryByRole('group', {name: i18n.t('aiAdjust.snapshot.nextAction')})).not.toBeInTheDocument();
     });
 
     it('keeps next choices in the saved result without a duplicate schedule confirmation', async () => {
@@ -1157,7 +1157,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.execute).not.toHaveBeenCalled();
     });
 
-    it('opens direct editing only from the latest result without regenerating, clearing or fixing the schedule', async () => {
+    it('omits direct editing for the applied result without changing the schedule', async () => {
         const onEditSchedule = vi.fn();
         const onPrepareGeneration = vi.fn();
 
@@ -1165,6 +1165,8 @@ describe('persistent schedule sidebar', () => {
             {...operation, result: successfulResult},
             {...operation, operationId: 'generate:latest', sequence: 2, resultVersionId: 'result:latest', result: successfulResult},
         ];
+        current.conversation.currentVersionId = 'result:latest';
+        current.draft = {...source, versionId: 'result:latest'};
 
         const before = structuredClone(useShiftEditorStore.getState().doc);
 
@@ -1176,8 +1178,11 @@ describe('persistent schedule sidebar', () => {
             within(results[0]).queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}),
         ).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
-        await userEvent.click(within(results[1]).getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')}));
-        expect(onEditSchedule).toHaveBeenCalledOnce();
+        expect(within(results[1]).getByText(i18n.t('aiConversationSidebar.authoring.currentResult'))).toBeVisible();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).not.toBeInTheDocument();
+        expect(within(results[1]).getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.undo')})).toBeEnabled();
+        expect(screen.getByRole('textbox')).toBeVisible();
+        expect(onEditSchedule).not.toHaveBeenCalled();
         expect(onPrepareGeneration).not.toHaveBeenCalled();
         expect(mocks.sync).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
@@ -1621,7 +1626,7 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.create).not.toHaveBeenCalled();
 
-        expect(screen.getByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).toBeEnabled();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: i18n.t('aiAdjust.chat.regenerate')})).not.toBeInTheDocument();
         expect(props.onPrepareGeneration).not.toHaveBeenCalled();
         expect(mocks.execute).toHaveBeenCalledOnce();
@@ -4485,6 +4490,7 @@ describe('intent-first sidebar integration', () => {
             carryOverCells: savedVersion.carryOverCells,
         });
         expect(await screen.findByText(i18n.t('aiConversationSidebar.authoring.currentResult'))).toBeVisible();
+        expect(screen.queryByRole('button', {name: i18n.t('aiAutofillUi.conversationEntry.editSchedule')})).not.toBeInTheDocument();
         view.unmount();
         renderSidebar();
         await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.undo')}));
