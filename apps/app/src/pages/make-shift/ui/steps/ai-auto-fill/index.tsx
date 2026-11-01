@@ -70,6 +70,7 @@ import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
+import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {
     markCarryOverAnswered,
     promotableRuleRequests,
@@ -1872,13 +1873,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         const seq = ++interpretSeqRef.current;
         const revision = useShiftEditorStore.getState().draftRevision;
         const [result] = await Promise.all([
-            WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
-                journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
-                text,
-                language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
-                year,
-                month,
-            }),
+            observeScheduleRequest('INTERPRET', () =>
+                WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
+                    journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
+                    text,
+                    language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
+                    year,
+                    month,
+                }),
+            ),
             refetchMonthRequests(),
         ]);
 

@@ -6,6 +6,7 @@ import WardAPI from '@/shared/api/ward';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
 import {loadMonthlyRestRequirement} from './monthly-rest-requirement';
 import {scheduleJourneyId} from './schedule-journey';
+import {observeScheduleRequest, observeScheduleResult} from './schedule-telemetry';
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
     generate: async ({
@@ -89,7 +90,11 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
         sessionStorage.setItem(storageKey, JSON.stringify({key, fingerprint}));
 
         try {
-            const result = await WardAPI.autofillSchedule(wardId, shiftTeamId, {...dto, idempotencyKey: key}, {signal});
+            const operation = adjust ? 'ADJUST' : 'GENERATE';
+            const result = await observeScheduleRequest(operation, () =>
+                WardAPI.autofillSchedule(wardId, shiftTeamId, {...dto, idempotencyKey: key}, {signal}),
+            );
+            observeScheduleResult(operation, result);
 
             sessionStorage.removeItem(storageKey);
             window.dispatchEvent(new Event('dutying:commercial-usage-changed'));

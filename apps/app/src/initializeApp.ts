@@ -9,9 +9,11 @@ import {
     isMetaPixelEnabled,
 } from '@/shared/config/analytics';
 import {isNonProductionAppDomain} from '@/shared/config/feature-flags';
+import {initializeAbto} from '@/shared/util/abto';
 
 export default function initializeApp() {
     enableMapSet();
+    initializeAbto();
 
     if (import.meta.env.PROD) {
         const gaTrackingId = googleAnalyticsMeasurementId();
