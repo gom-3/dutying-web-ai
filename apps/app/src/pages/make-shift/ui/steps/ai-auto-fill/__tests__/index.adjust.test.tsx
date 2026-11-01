@@ -1278,7 +1278,7 @@ describe('AiAutofill adjust panel', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent('AI 사용 횟수를 모두 썼어요.');
         expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeVisible();
         expect(screen.queryByText('aiAdjust.generationCompleted')).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.failure.retry'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.failure.retryCalculation'})).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc).toEqual(before);
         expect(mocks.requestAiSchedule.mock.calls[0][0].doc.rows[0].cells).toEqual(['D', 'E', null, null]);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.close'}));
@@ -1297,7 +1297,7 @@ describe('AiAutofill adjust panel', () => {
         await openModification(user);
 
         expect(screen.getByText(ADJUST_TITLE)).toBeInTheDocument();
-        await waitFor(() => expect(screen.getByRole('button', {name: '현재 적용된 제약조건 보기'})).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('button', {name: '현재 반영된 근무 조건 보기'})).toBeInTheDocument());
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
     });
 
@@ -2127,20 +2127,21 @@ describe('AiAutofill adjust panel', () => {
             const message = failure.textContent!;
             const log = screen.getByRole('log').textContent!;
 
-            expect(message).toContain('기존 근무표는 그대로예요.');
+            expect(message).toContain('근무표는 변경되지 않았어요.');
             expect(log.lastIndexOf('aiAdjust.preparation.next')).toBeLessThan(log.indexOf(message));
             expect(log).not.toContain('검토용');
             expect(screen.queryByRole('button', {name: CARD_APPLY})).not.toBeInTheDocument();
             expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
 
-            if (reason === 'solver_result_failed_final_gate') expect(message).toContain('조건끼리 충돌하는지는 아직 확인되지 않았어요.');
+            if (reason === 'solver_result_failed_final_gate')
+                expect(message).toContain('조건끼리 함께 지킬 수 없는 상황인지는 아직 알 수 없어요.');
 
             const failedRequest = mocks.requestAiSchedule.mock.calls[1]![0];
 
             expect(screen.getByRole('button', {name: 'aiAdjust.issue.edit'})).toBeEnabled();
             mocks.requestAiSchedule.mockImplementation(async () => okResult([cell(11, '2026-07-01', 'O')], 'ADJUST'));
-            await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
+            await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retryCalculation'}));
             await screen.findByRole('region', {name: DECISION_TITLE});
             expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2);
             expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
@@ -2246,7 +2247,7 @@ describe('AiAutofill adjust panel', () => {
         // 채우기 전이라도 조절 버튼으로 이미 저장된 요청을 확인할 수 있다.
         await openModification(user);
 
-        await user.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(await screen.findByRole('button', {name: '현재 반영된 근무 조건 보기'}));
 
         expect(screen.getByText('fair off')).toBeInTheDocument();
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
@@ -2261,7 +2262,7 @@ describe('AiAutofill adjust panel', () => {
 
         await openModification(user);
 
-        await user.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(await screen.findByRole('button', {name: '현재 반영된 근무 조건 보기'}));
         expect(screen.getByText('fair off')).toBeInTheDocument();
 
         const originalDoc = useShiftEditorStore.getState().doc;
@@ -2273,7 +2274,7 @@ describe('AiAutofill adjust panel', () => {
         expect(mocks.interpretScheduleAdjust).not.toHaveBeenCalled();
         expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
         await waitFor(() => expect(screen.queryByText('fair off')).not.toBeInTheDocument());
-        expect(within(screen.getByRole('dialog', {name: '제약조건'})).getByRole('heading', {name: /^AI 요청\s*0$/})).toBeVisible();
+        expect(within(screen.getByRole('dialog', {name: '근무 조건'})).getByRole('heading', {name: /^AI 요청\s*0$/})).toBeVisible();
         await user.click(screen.getByRole('button', {name: '조건 목록 닫기'}));
         expect(screen.getByRole('dialog', {name: ADJUST_DIALOG_TITLE})).toBeInTheDocument();
     });
@@ -2284,15 +2285,15 @@ describe('AiAutofill adjust panel', () => {
 
         render(<AiAutofill />);
         await openModification(user);
-        await user.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(await screen.findByRole('button', {name: '현재 반영된 근무 조건 보기'}));
         expect(screen.getByRole('region', {name: '테스트 제약조건 편집기'})).toHaveAttribute('data-context', '1:10:2026-7');
 
         const previousReads = mocks.getShiftConstraintRules.mock.calls.length;
 
         await user.click(screen.getByRole('button', {name: '제약조건 수정'}));
         expect(mocks.applyConstraints).not.toHaveBeenCalled();
-        await user.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        await user.click(screen.getByRole('button', {name: '변경사항 반영'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument());
         expect(mocks.applyConstraints).toHaveBeenCalledOnce();
         expect(mocks.getShiftConstraintRules.mock.calls.length).toBeGreaterThan(previousReads);
         expect(mocks.goToStep).not.toHaveBeenCalled();
@@ -2310,13 +2311,13 @@ describe('AiAutofill adjust panel', () => {
 
         render(<AiAutofill />);
         await openModification(user);
-        await user.click(await screen.findByRole('button', {name: '현재 적용된 제약조건 보기'}));
+        await user.click(await screen.findByRole('button', {name: '현재 반영된 근무 조건 보기'}));
         await user.click(screen.getByRole('button', {name: '제약조건 수정'}));
-        await user.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 적용'})).toBeEnabled());
-        expect(screen.getByRole('dialog', {name: '제약조건'})).toBeVisible();
-        await user.click(screen.getByRole('button', {name: '변경사항 적용'}));
-        await waitFor(() => expect(screen.queryByRole('dialog', {name: '제약조건'})).not.toBeInTheDocument());
+        await user.click(screen.getByRole('button', {name: '변경사항 반영'}));
+        await waitFor(() => expect(screen.getByRole('button', {name: '변경사항 반영'})).toBeEnabled());
+        expect(screen.getByRole('dialog', {name: '근무 조건'})).toBeVisible();
+        await user.click(screen.getByRole('button', {name: '변경사항 반영'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: '근무 조건'})).not.toBeInTheDocument());
         expect(mocks.applyConstraints).toHaveBeenCalledTimes(2);
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         expect(mocks.updateScheduleMonthRequest).not.toHaveBeenCalled();
@@ -2494,11 +2495,11 @@ describe('AiAutofill adjust panel', () => {
 
         mocks.requestAiSchedule.mockResolvedValueOnce({ok: false, message: 'network failed'});
         await adjustBySentence(user, [{kind: 'CELL', nurseId: 911, date: '2026-07-03', shiftCode: 'O'}], 'Lee 3일은 오프 줘');
-        await screen.findByRole('button', {name: 'aiAdjust.failure.retry'});
+        await screen.findByRole('button', {name: 'aiAdjust.failure.retryCalculation'});
         expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
         expect(mocks.requestAiSchedule.mock.calls[1]?.[0].doc.rows[1].cells[2]).toBe('O');
         mocks.requestAiSchedule.mockImplementation(async () => okResult([], 'ADJUST'));
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retry'}));
+        await user.click(screen.getByRole('button', {name: 'aiAdjust.failure.retryCalculation'}));
         await finishAdjustmentPreparation(user);
         await waitFor(() => expect(rowCells('11')?.[2]).toBe('O'));
         expect(mocks.requestAiSchedule.mock.calls[2]?.[0].idempotencyKey).toBe(mocks.requestAiSchedule.mock.calls[1]?.[0].idempotencyKey);
@@ -2936,7 +2937,7 @@ describe('AiAutofill adjust panel', () => {
             render(<AiAutofill />);
             await user.click(screen.getByRole('button', {name: 'auto fill'}));
             expect(await screen.findByRole('alert')).toHaveTextContent('aiAdjust.carryOver.loadFailed');
-            expect(screen.getByRole('button', {name: 'aiAdjust.failure.retry'})).toBeEnabled();
+            expect(screen.getByRole('button', {name: 'aiAdjust.requestsRetry'})).toBeEnabled();
             await user.click(screen.getByRole('button', {name: 'aiAdjust.carryOver.skip'}));
             await screen.findByRole('region', {name: DECISION_TITLE});
             expect(mocks.carryOverScheduleMonthRequests).not.toHaveBeenCalled();

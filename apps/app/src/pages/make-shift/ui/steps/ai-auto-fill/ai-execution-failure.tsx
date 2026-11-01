@@ -104,7 +104,7 @@ export function AiExecutionFailure({
                         )}
                         {showRetry && (
                             <button type="button" className={primaryClass} disabled={disabled} onClick={onRetry}>
-                                {t(reviewGeneration ? 'aiAdjust.executionFailure.retryConditions' : 'aiAdjust.failure.retry')}
+                                {t(reviewGeneration ? 'aiAdjust.executionFailure.retryConditions' : 'aiAdjust.failure.retryCalculation')}
                             </button>
                         )}
                         {showRevise && (

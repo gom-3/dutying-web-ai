@@ -107,7 +107,7 @@ describe('MakeShiftCalendar', () => {
         view.rerender(<MakeShiftCalendar {...props} doc={{...doc, fixedCells: {'2|2026-05-02': true}}} />);
         expect(screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · 고정됨'})).toHaveAttribute('aria-pressed', 'true');
         view.rerender(<MakeShiftCalendar {...props} doc={{...doc, requestCells: {'2|2026-05-02': true}}} />);
-        expect(screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · 신청근무, 변경 불가'})).toHaveAttribute('aria-disabled', 'true');
+        expect(screen.getByRole('button', {name: 'Kim · 2026-05-02 · D · 신청 근무, 변경 불가'})).toHaveAttribute('aria-disabled', 'true');
         await user.keyboard(' {Home}{End}{Enter}');
         expect(onCellClick).toHaveBeenCalledTimes(1);
         expect(assigned).toHaveFocus();
@@ -605,7 +605,7 @@ describe('MakeShiftCalendar', () => {
             await user.click(trigger!);
         });
 
-        const popover = screen.getByRole('dialog', {name: '제약조건 위반 2개'});
+        const popover = screen.getByRole('dialog', {name: '근무 조건 위반 2개'});
         const popoverContent = within(popover);
 
         expect(popover).toBeInTheDocument();
@@ -798,7 +798,7 @@ describe('MakeShiftCalendar', () => {
             await user.click(firstTrigger!);
         });
 
-        const popover = screen.getByRole('dialog', {name: '제약조건 위반 1개'});
+        const popover = screen.getByRole('dialog', {name: '근무 조건 위반 1개'});
         const popoverContent = within(popover);
         const row = popoverContent.getByText('N 다음날 D 근무를 할 수 없어요.').closest<HTMLElement>('[data-violation-row="true"]');
 
@@ -864,13 +864,13 @@ describe('MakeShiftCalendar', () => {
             await user.click(dayHeader!);
         });
 
-        const popover = screen.getByRole('dialog', {name: '제약조건 위반 2개'});
+        const popover = screen.getByRole('dialog', {name: '근무 조건 위반 2개'});
         const popoverContent = within(popover);
 
         expect(popoverContent.getByText('중요 2')).toBeInTheDocument();
         expect(popoverContent.getAllByText('D 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(popoverContent.getAllByText('E 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
-        expect(screen.queryByRole('dialog', {name: '제약조건 위반 20개'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('dialog', {name: '근무 조건 위반 20개'})).not.toBeInTheDocument();
     });
 
     it('shows N interval violations as one concise issue without repeated N labels', async () => {
@@ -920,7 +920,7 @@ describe('MakeShiftCalendar', () => {
             await user.click(trigger!);
         });
 
-        const popover = screen.getByRole('dialog', {name: '제약조건 위반 1개'});
+        const popover = screen.getByRole('dialog', {name: '근무 조건 위반 1개'});
         const popoverContent = within(popover);
 
         expect(popoverContent.getByText('N 근무 사이를 3일 이상 띄워야 해요.')).toBeInTheDocument();

@@ -101,7 +101,7 @@ export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjus
             ),
             blocked: false,
             checkOutcome: false,
-            recovery: 'retry',
+            recovery: 'revise',
         };
 
     if (code === 'SCHEDULE_AUTOFILL_ADJUST_NOT_ALLOWED') return {message: i18n.t('aiAdjust.failure.adjustAccess'), blocked: true};

@@ -279,7 +279,7 @@ describe('Constraints', () => {
             ],
         } as never);
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="SHIFT_COUNT_PER_PERIOD"]')!;
         expect(card).toBeInTheDocument();
@@ -356,7 +356,7 @@ describe('Constraints', () => {
     it('keeps the rule list empty when the server has no saved rules', async () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        expect(await screen.findByText('제약조건을 추가하면 여기에 보여요.')).toBeInTheDocument();
+        expect(await screen.findByText('근무 조건을 추가하면 여기에 보여요.')).toBeInTheDocument();
 
         expect(screen.queryByText((content) => content.includes('연속 근무는'))).not.toBeInTheDocument();
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
@@ -620,7 +620,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const dialog = screen.getByRole('dialog');
         const sequenceCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_THEN_CONTINUATION"]');
@@ -725,7 +725,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const dialog = screen.getByRole('dialog');
         const minOffCard = dialog.querySelector<HTMLElement>('[data-constraint-template-card="TWO_SHIFT_NIGHT_PAIR_MIN_OFF"]');
@@ -761,7 +761,7 @@ describe('Constraints', () => {
     it('exposes the add modal as a bounded dialog, closes it with Escape, and restores focus', async () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        const openButton = await screen.findByRole('button', {name: '제약 조건 추가'});
+        const openButton = await screen.findByRole('button', {name: '근무 조건 추가'});
 
         await waitFor(() => expect(openButton).toBeEnabled());
         await userEvent.click(openButton);
@@ -770,7 +770,7 @@ describe('Constraints', () => {
         const closeButton = within(dialog).getByRole('button', {name: '닫기'});
 
         expect(dialog).toHaveAttribute('aria-modal', 'true');
-        expect(dialog).toHaveAccessibleName('제약조건 추가');
+        expect(dialog).toHaveAccessibleName('근무 조건 추가');
         expect(dialog).toHaveClass('h-[min(90dvh,900px)]', 'max-h-[calc(100dvh-1rem)]');
         await waitFor(() => expect(closeButton).toHaveFocus());
 
@@ -781,7 +781,7 @@ describe('Constraints', () => {
     });
 
     it.each([
-        ['ko', '저장됐지만 확인이 필요한 제약조건이 있어요'],
+        ['ko', '저장됐지만 확인이 필요한 근무 조건이 있어요'],
         ['en', 'Saved, but some constraints need review'],
         ['ja', '保存しましたが、確認が必要な制約条件があります'],
         ['zh', '已保存，但有些约束条件需要确认'],
@@ -869,7 +869,7 @@ describe('Constraints', () => {
         expect(await screen.findByText('PREVIOUS_WARNING_MESSAGE')).toBeInTheDocument();
 
         await userEvent.click(document.getElementById('make_constraint_add_button') as HTMLButtonElement);
-        await userEvent.click(screen.getAllByRole('button', {name: /^제약 조건 추가:/})[0]!);
+        await userEvent.click(screen.getAllByRole('button', {name: /^근무 조건 추가:/})[0]!);
         await waitFor(() => expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledTimes(1));
 
         expect(screen.getByText('PREVIOUS_WARNING_MESSAGE')).toBeInTheDocument();
@@ -913,7 +913,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        expect(await screen.findByText('제약조건을 추가하면 여기에 보여요.')).toBeInTheDocument();
+        expect(await screen.findByText('근무 조건을 추가하면 여기에 보여요.')).toBeInTheDocument();
         expect(screen.queryByRole('switch', {name: '2교대 자동 배치 사용'})).not.toBeInTheDocument();
 
         await userEvent.click(document.getElementById('make_constraint_add_button') as HTMLButtonElement);
@@ -1054,7 +1054,7 @@ describe('Constraints', () => {
         });
 
         render(<Constraints wardId={92} shiftTeamId={920} shiftTeams={[]} year={2026} month={6} variant="settings" />);
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const dialog = screen.getByRole('dialog');
         const recommendationCodes = [
@@ -1160,7 +1160,7 @@ describe('Constraints', () => {
             return element as HTMLElement;
         });
 
-        expect(within(row).queryByText('권장')).not.toBeInTheDocument();
+        expect(within(row).queryByText('가능하면 맞추기')).not.toBeInTheDocument();
         expect(within(row).getByText('중요')).toBeInTheDocument();
         expect(within(row).queryByRole('checkbox')).not.toBeInTheDocument();
     });
@@ -1215,26 +1215,26 @@ describe('Constraints', () => {
         expect(screen.queryByText('sentinel-min_off_after_consecutive_work')).not.toBeInTheDocument();
 
         if (rotationMode === 'THREE') {
-            await userEvent.click(screen.getByRole('button', {name: '권장'}));
+            await userEvent.click(screen.getByRole('button', {name: '추천 조건'}));
             expect(screen.getAllByTitle('추가')).toHaveLength(2);
         }
 
         await userEvent.click(screen.getByRole('button', {name: rotationMode === 'MIXED' ? '금지 패턴' : '야간·전환'}));
 
         if (rotationMode === 'MIXED') {
-            expect(screen.getByRole('button', {name: /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /제약 조건 추가:.*야간 근무 후 최소.*휴무/})).toBeInTheDocument();
-            expect(screen.queryByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /근무 조건 추가:.*야간 근무 다음 날 데이·주간 근무/})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /근무 조건 추가:.*야간 근무 후 최소.*휴무/})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /근무 조건 추가:.*N.*다음 날.*D/})).not.toBeInTheDocument();
         } else {
-            expect(screen.getByRole('button', {name: /제약 조건 추가:.*N.*다음 날.*D/})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /제약 조건 추가:.*N 근무 후 최소.*휴무/})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /근무 조건 추가:.*N.*다음 날.*D/})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /근무 조건 추가:.*N 근무 후 최소.*휴무/})).toBeInTheDocument();
         }
 
         expect(screen.getAllByRole('button', {name: '모든 간호사'}).length).toBeGreaterThan(0);
 
         await userEvent.click(
             screen.getByRole('button', {
-                name: rotationMode === 'MIXED' ? /제약 조건 추가:.*야간 근무 다음 날 데이·주간 근무/ : /제약 조건 추가:.*N.*다음 날.*D/,
+                name: rotationMode === 'MIXED' ? /근무 조건 추가:.*야간 근무 다음 날 데이·주간 근무/ : /근무 조건 추가:.*N.*다음 날.*D/,
             }),
         );
 
@@ -1965,7 +1965,7 @@ describe('Constraints', () => {
             />,
         );
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         await userEvent.click(screen.getByRole('button', {name: '모든 간호사'}));
 
@@ -2052,7 +2052,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         expect(screen.queryByText('UNLISTED_MIXED_SENTINEL_TEXT')).not.toBeInTheDocument();
         expect(screen.getByLabelText('시간대별 필요 인원: 시작 시각')).toHaveValue('07:00');
@@ -2451,7 +2451,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
 
         expect(screen.getByRole('button', {name: '그룹 합계'})).toBeInTheDocument();
@@ -2494,7 +2494,7 @@ describe('Constraints', () => {
 
         const {unmount} = render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const enabledAddButton = screen.getByTitle('추가');
 
@@ -2535,7 +2535,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const disabledAddButton = screen.getByTitle('추가');
         const guidance = screen.getByText('가능 근무가 맞는 간호사를 2명 이상 선택해 주세요.');
@@ -2617,7 +2617,7 @@ describe('Constraints', () => {
             />,
         );
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '모든 간호사'}));
 
         const listbox = await screen.findByRole('listbox');
@@ -2677,7 +2677,7 @@ describe('Constraints', () => {
             return screen.findByRole('listbox');
         };
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
 
         const listbox = await openOptions('인력 부족 시 2교대 가능');
 
@@ -2762,7 +2762,7 @@ describe('Constraints', () => {
             />,
         );
 
-        const importButton = await screen.findByRole('button', {name: '다른 팀 제약조건 불러오기'});
+        const importButton = await screen.findByRole('button', {name: '다른 팀 근무 조건 불러오기'});
 
         await waitFor(() => expect(importButton).toBeEnabled());
         await userEvent.click(importButton);
@@ -2879,7 +2879,7 @@ describe('Constraints', () => {
             />,
         );
 
-        await userEvent.click(await screen.findByRole('button', {name: '다른 팀 제약조건 불러오기'}));
+        await userEvent.click(await screen.findByRole('button', {name: '다른 팀 근무 조건 불러오기'}));
         await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', {name: '불러오기'}));
 
         await waitFor(() => {
@@ -2892,7 +2892,7 @@ describe('Constraints', () => {
             expect(screen.getByText('CORE_MAX_CONTINUOUS_WORK')).toBeInTheDocument();
         });
 
-        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('간호사별 제약조건 1개는 제외했어요.'));
+        expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('간호사별 근무 조건 1개는 제외했어요.'));
 
         expect(document.body.textContent).not.toContain('PLANNED_POLICY_SENTINEL');
         expect(screen.queryByText('혼합교대 운영 방식')).not.toBeInTheDocument();
@@ -3035,7 +3035,7 @@ describe('Constraints', () => {
 
         await openAddModal();
         {
-            const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+            const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
 
             await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
         }
@@ -3047,7 +3047,7 @@ describe('Constraints', () => {
 
         await openAddModal();
 
-        const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+        const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
         const modalAddButton = modalAddButtons[modalAddButtons.length - 1]!;
 
         expect(screen.queryByText('추가됨')).not.toBeInTheDocument();
@@ -3112,7 +3112,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(await screen.findByRole('button', {name: '모든 간호사'}));
 
         const listbox = await screen.findByRole('listbox');
@@ -3230,7 +3230,7 @@ describe('Constraints', () => {
 
         await userEvent.click(addButton);
 
-        const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+        const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
         const modalAddButton = modalAddButtons[modalAddButtons.length - 1]!;
 
         expect(screen.queryByText('추가됨')).not.toBeInTheDocument();
@@ -3337,7 +3337,7 @@ describe('Constraints', () => {
         await userEvent.click(await screen.findByRole('button', {name: '정확히'}));
         await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '최소'}));
 
-        const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+        const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
         const modalAddButton = modalAddButtons[modalAddButtons.length - 1]!;
 
         expect(screen.queryByText('추가됨')).not.toBeInTheDocument();
@@ -3609,7 +3609,7 @@ describe('Constraints', () => {
 
         await userEvent.click(within(listbox).getByRole('option', {name: '주말/공휴일'}));
 
-        const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+        const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
 
         await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
 
@@ -3740,7 +3740,7 @@ describe('Constraints', () => {
             );
             return;
         }
-        await userEvent.click(await screen.findByRole('button', {name: '제약 조건 추가'}));
+        await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="STAFF_COUNT_BY_SHIFT"]')!;
         if (scenario === 'no nurse') {
@@ -3875,7 +3875,7 @@ describe('Constraints', () => {
         expect(screen.getByRole('button', {name: '정확히'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '모든'})).not.toBeInTheDocument();
 
-        const modalAddButtons = screen.getAllByRole('button', {name: /^제약 조건 추가:/});
+        const modalAddButtons = screen.getAllByRole('button', {name: /^근무 조건 추가:/});
 
         await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
 
@@ -4158,7 +4158,7 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(openButton);
-        await userEvent.click(screen.getAllByRole('button', {name: /^제약 조건 추가:/})[0]!);
+        await userEvent.click(screen.getAllByRole('button', {name: /^근무 조건 추가:/})[0]!);
 
         await waitFor(() => {
             const savedRule = getLastUpdatePayload()?.rules?.find((rule) => rule.templateCode === 'NURSE_PAIR_NOT_SAME_SHIFT');
@@ -4531,7 +4531,7 @@ describe('Constraints', () => {
 
         expect(await screen.findAllByRole('button', {name: '모든 간호사'})).not.toHaveLength(0);
 
-        await userEvent.click(screen.getAllByRole('button', {name: '제약 조건 삭제'})[0]!);
+        await userEvent.click(screen.getAllByRole('button', {name: '근무 조건 삭제'})[0]!);
         expect(screen.getByText('권장 조건을 삭제할까요?')).toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '유지하기'}));
