@@ -27,6 +27,7 @@
         "type-check": "tsc -b"
     },
     "dependencies": {
+        "@abto-app/event": "1.2.1",
         "@dutying/api": "workspace:*",
         "@dutying/domain": "workspace:*",
         "@dutying/utils": "workspace:*",

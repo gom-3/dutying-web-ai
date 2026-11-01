@@ -7,6 +7,7 @@ import type {
     TSnapshotRowOrderDTO,
 } from '@dutying/api/ward';
 import client from '@/shared/api/client';
+import {observeConversationResult, observeScheduleRequest} from './schedule-telemetry';
 
 export type TConversation = {
     conversationId: number;
@@ -213,7 +214,7 @@ export function conversationApi(wardId: number, teamId: number) {
                 targetConditionIds?: string[];
                 removeLabels?: string[];
             },
-        ) => post<TConversationTurn>(`/conversations/${id}/interpretations`, request),
+        ) => observeScheduleRequest('INTERPRET', () => post<TConversationTurn>(`/conversations/${id}/interpretations`, request)),
         confirm: (id: number, interpretationId: string, expectedRevision: number, items: TScheduleMonthRequestItem[]) =>
             put<TConversationTurn>(`/conversations/${id}/interpretations/${encodeURIComponent(interpretationId)}`, {
                 expectedRevision,
@@ -254,22 +255,29 @@ export function conversationApi(wardId: number, teamId: number) {
                 ...(idempotencyKey === undefined ? {} : {idempotencyKey}),
             }),
         execute: async (id: number, request: TConversationExecute) =>
-            (
-                await client.post<TConversationOperation>(`${base}/conversations/${id}/operations`, request, {
-                    suppressErrorToast: true,
-                    // Servers without async support still need the current synchronous calculation window.
-                    timeout: 330000,
-                    headers: {Prefer: 'respond-async'},
-                })
-            ).data,
+            observeScheduleRequest(request.operationType, async () =>
+                observeConversationResult(
+                    (
+                        await client.post<TConversationOperation>(`${base}/conversations/${id}/operations`, request, {
+                            suppressErrorToast: true,
+                            // Servers without async support still need the current synchronous calculation window.
+                            timeout: 330000,
+                            headers: {Prefer: 'respond-async'},
+                        })
+                    ).data,
+                ),
+            ),
         cancelOperation: async (id: string) =>
-            (
-                await client.delete<TConversationOperation>(`${base}/conversation-operations/${encodeURIComponent(id)}`, {
-                    suppressErrorToast: true,
-                    timeout: 15000,
-                })
-            ).data,
-        operation: (id: string) => get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`),
+            observeConversationResult(
+                (
+                    await client.delete<TConversationOperation>(`${base}/conversation-operations/${encodeURIComponent(id)}`, {
+                        suppressErrorToast: true,
+                        timeout: 15000,
+                    })
+                ).data,
+            ),
+        operation: async (id: string) =>
+            observeConversationResult(await get<TConversationOperation>(`/conversation-operations/${encodeURIComponent(id)}`)),
         version: (id: string) => get<TResultVersion>(`/result-versions/${encodeURIComponent(id)}`),
         branch: (id: number, versionId: string, expectedRevision: number) =>
             post<TConversation>(`/conversations/${id}/branches`, {versionId, expectedRevision}),
