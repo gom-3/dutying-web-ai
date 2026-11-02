@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.29
+
+### Patch Changes
+
+- a68369c: 친구·모임 초대 웹페이지에 URL 언어를 우선 적용하고 6개 언어의 안내와 홈 링크를 제공합니다.
+    - @dutying/api@1.3.29
+    - @dutying/domain@1.3.29
+    - @dutying/utils@1.3.29
+
 ## 1.3.28
 
 ### Patch Changes

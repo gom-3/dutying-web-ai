@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.29 - 2026-11-02
+
+- `@dutying/app` (patch): 친구·모임 초대 웹페이지에 URL 언어를 우선 적용하고 6개 언어의 안내와 홈 링크를 제공합니다.
+
 ## 1.3.28 - 2026-11-01
 
 - `@dutying/app` (patch): 현재 표에 적용된 자동완성 결과에서 불필요한 '표 직접 수정하기' 버튼을 숨깁니다.
