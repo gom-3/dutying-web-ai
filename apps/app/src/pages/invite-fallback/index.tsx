@@ -1,4 +1,5 @@
 import {Helmet} from 'react-helmet';
+import {useTranslation} from 'react-i18next';
 import {useLocation} from 'react-router-dom';
 import {
     ANDROID_PLAY_STORE_URL,
@@ -9,36 +10,14 @@ import {
     resolveIosAppStoreUrl,
     type TInviteKind,
 } from '@/shared/config/invite';
+import {DEFAULT_PREFERRED_LANGUAGE, getLocaleForLanguage, normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {getMarketingAppStoreUrls, getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
+import {INVITE_PAGE_COPY} from './copy';
 
 export type TDeepLinkFallbackKind = TInviteKind | 'nultalk' | 'ward' | 'notice';
 
 type TContentFallbackKind = Exclude<TDeepLinkFallbackKind, TInviteKind>;
 
-const INVITE_COPY_BY_KIND: Record<
-    TInviteKind,
-    {
-        codeLabel: string;
-        description: string;
-        openButtonLabel: string;
-        pageLabel: string;
-        title: string;
-    }
-> = {
-    friend: {
-        codeLabel: '친구 코드',
-        description: '듀팅 앱에서 친구 초대를 이어서 확인하세요.',
-        openButtonLabel: '듀팅 앱에서 친구 추가하기',
-        pageLabel: '친구 초대',
-        title: '친구와 근무 일정을\n함께 확인해요',
-    },
-    moim: {
-        codeLabel: '모임 코드',
-        description: '듀팅 앱에서 모임 초대를 이어서 확인하세요.',
-        openButtonLabel: '듀팅 앱에서 모임 초대 확인하기',
-        pageLabel: '모임 초대',
-        title: '모임 멤버와 일정을\n함께 확인해요',
-    },
-};
 const CONTENT_COPY_BY_KIND: Record<
     TContentFallbackKind,
     {
@@ -102,14 +81,23 @@ function InviteActionIcon({kind}: {kind: TInviteKind}) {
 }
 
 function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteCode: string | null; kind: TInviteKind}) {
-    const copy = INVITE_COPY_BY_KIND[kind];
-    const appStoreLink = getBrowserIosAppStoreUrl();
-    const playStoreLink = getBrowserAndroidPlayStoreUrl();
+    const {i18n} = useTranslation();
+    const location = useLocation();
+    // i18n detects saved web preferences and browser languages on entry. Read the
+    // route query first as well, so client-side invite navigation respects lng.
+    const language =
+        normalizePreferredLanguage(new URLSearchParams(location.search).get('lng')) ??
+        normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
+        DEFAULT_PREFERRED_LANGUAGE;
+    const pageCopy = INVITE_PAGE_COPY[language];
+    const copy = pageCopy.invites[kind];
+    const {ios: appStoreLink, android: playStoreLink} = getMarketingAppStoreUrls(language);
 
     return (
         <main className="min-h-dvh overflow-x-hidden bg-[#F7F9FB] font-apple text-[#191F28]">
             <Helmet>
-                <title>{`${copy.pageLabel} 열기 | 듀팅`}</title>
+                <html lang={getLocaleForLanguage(language)} />
+                <title>{copy.pageTitle}</title>
                 <meta name="description" content={copy.description} />
                 <meta name="robots" content="noindex, nofollow" />
             </Helmet>
@@ -121,8 +109,8 @@ function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteC
                 >
                     <a
                         className="inline-flex min-h-11 items-center justify-center rounded-[12px] px-2 transition-colors duration-150 hover:bg-[#F0ECFF] focus-visible:bg-[#EDE4FF] focus-visible:text-[#34207A] motion-reduce:transition-none"
-                        href="/"
-                        aria-label="듀팅 홈"
+                        href={getMarketingLanguageHref(language)}
+                        aria-label={pageCopy.homeLabel}
                     >
                         <img src="/img/group-19.png" alt="dutying" className="h-auto w-[122px]" />
                     </a>
@@ -148,7 +136,7 @@ function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteC
                     <p
                         className={`${inviteCode ? 'mt-[18px]' : 'mt-8'} mb-0 text-[15px] leading-[1.65] font-medium break-keep whitespace-pre-line text-[#657084] sm:text-base`}
                     >
-                        {'앱이 바로 열리지 않나요?\n아래 버튼으로 초대를 확인하세요.'}
+                        {pageCopy.openHint}
                     </p>
 
                     <a
@@ -185,18 +173,16 @@ function InviteFallbackPage({appUrl, inviteCode, kind}: {appUrl: string; inviteC
                         <div>
                             <h2
                                 id="download-title"
-                                className="m-0 max-w-[230px] text-[28px] leading-[1.3] font-extrabold tracking-[-0.035em] break-keep text-[#15151A] sm:max-w-[280px] sm:text-[32px]"
+                                className="m-0 max-w-[230px] text-[28px] leading-[1.3] font-extrabold tracking-[-0.035em] break-keep whitespace-pre-line text-[#15151A] sm:max-w-[280px] sm:text-[32px]"
                             >
-                                <span className="text-[#663DFA]">듀팅 앱</span>이
-                                <br />
-                                아직 없다면?
+                                {pageCopy.downloadTitle}
                             </h2>
                             <p className="mt-4 mb-0 max-w-[330px] text-[15px] leading-[1.6] font-medium break-keep text-[#595961] sm:text-base">
-                                앱을 설치한 뒤 초대를 이어서 확인할 수 있어요.
+                                {pageCopy.downloadDescription}
                             </p>
                         </div>
 
-                        <div className="mt-6 grid grid-cols-2 gap-2" aria-label="앱 설치 안내">
+                        <div className="mt-6 grid grid-cols-2 gap-2" aria-label={pageCopy.downloadLabel}>
                             <a
                                 className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-[16px] bg-[#151A20] px-3 py-3 text-[14px] leading-[1.3] font-bold whitespace-nowrap text-white no-underline transition-colors duration-150 hover:bg-[#2D333B] focus-visible:bg-[#663DFA] focus-visible:text-[#FFF0A6] active:bg-black motion-reduce:transition-none"
                                 href={appStoreLink}

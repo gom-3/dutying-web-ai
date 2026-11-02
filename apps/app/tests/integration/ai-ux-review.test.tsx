@@ -53,16 +53,16 @@ describe('local UI review', () => {
             await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
             const failure = await chat().findByRole('alert');
             expect(failure).toHaveTextContent('자동채우기를 마치지 못했어요.');
-            expect(failure).toHaveTextContent('정해진 시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
+            expect(failure).toHaveTextContent('시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
             expect(within(failure).getByRole('img', {name: '자동채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
             expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(chat().queryByText(/근무표를 채웠어요./)).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc).toEqual(before);
-            await userEvent.click(chat().getByRole('button', {name: '다시 시도하기'}));
-            const retryQuestion = chat().getByText('다시 자동채우기 할까요?');
+            await userEvent.click(chat().getByRole('button', {name: '다시 계산하기'}));
+            const retryQuestion = chat().getByText('근무표를 다시 채울까요?');
             expect(failure.compareDocumentPosition(retryQuestion) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-            expect(chat().queryByRole('button', {name: '다시 시도하기'})).not.toBeInTheDocument();
+            expect(chat().queryByRole('button', {name: '다시 계산하기'})).not.toBeInTheDocument();
             await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
             expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
             expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
@@ -74,7 +74,7 @@ describe('local UI review', () => {
             render(<Review />);
             expect((await chat().findByText(/^근무표를 채웠어요\.$/)).parentElement).not.toHaveTextContent('회차');
             expect(chat().getByRole('alert')).toHaveTextContent('자동채우기를 마치지 못했어요. (1회차)');
-            expect(chat().getByRole('alert')).toHaveTextContent('기존 근무표는 그대로예요.');
+            expect(chat().getByRole('alert')).toHaveTextContent('근무표는 변경되지 않았어요.');
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         },
         REVIEW_TIMEOUT_MS,
