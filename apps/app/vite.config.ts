@@ -281,6 +281,7 @@ export default defineConfig(({mode}) => {
                     if (!shouldEmitStaticRoutes) return;
 
                     const indexHtml = readFileSync(resolve(resolvedOutDir, 'index.html'), 'utf8');
+
                     writeFileSync(
                         resolve(resolvedOutDir, 'app-shell.html'),
                         indexHtml.replace(/<meta name="robots" content="[^"]*"\s*\/>/, '<meta name="robots" content="noindex, follow" />'),
@@ -324,19 +325,49 @@ export default defineConfig(({mode}) => {
 
                     try {
                         const {renderLanding} = await renderer.ssrLoadModule('/src/pages/landing/entry-server.tsx');
+                        const {INVITE_PAGE_COPY} = await renderer.ssrLoadModule('/src/pages/invite-fallback/copy.ts');
+                        const previewImages = JSON.parse(readFileSync(resolve(appRoot, 'edge/invite-preview-images.json'), 'utf8'));
+                        const previewData = Object.fromEntries(
+                            Object.entries(previewImages).map(([language, image]) => [
+                                language,
+                                {image, invites: INVITE_PAGE_COPY[language].invites},
+                            ]),
+                        );
+                        const previewWorker = readFileSync(resolve(appRoot, 'edge/invite-preview-worker.mjs'), 'utf8').replace(
+                            '/*__INVITE_PREVIEW_DATA__*/',
+                            () => JSON.stringify(previewData).slice(1, -1),
+                        );
+
+                        writeFileSync(resolve(resolvedOutDir, '_worker.js'), previewWorker);
+                        writeFileSync(
+                            resolve(resolvedOutDir, '_routes.json'),
+                            JSON.stringify({
+                                version: 1,
+                                include: ['/app/friends/invite', '/app/friends/invite/', '/app/moim/invite', '/app/moim/invite/'],
+                                exclude: [],
+                            }),
+                        );
+
                         const manifest = JSON.parse(readFileSync(resolve(resolvedOutDir, '.vite/manifest.json'), 'utf8'));
                         const styles = new Set<string>();
                         const visited = new Set<string>();
                         const collectStyles = (key: string) => {
                             if (visited.has(key)) return;
+
                             visited.add(key);
+
                             const entry = manifest[key];
+
                             if (!entry) return;
+
                             (entry.css ?? []).forEach((file: string) => styles.add(file));
                             (entry.imports ?? []).forEach(collectStyles);
                         };
+
                         collectStyles('src/pages/landing/entry-client.tsx');
+
                         if (styles.size === 0) throw new Error('Landing styles are missing from the Vite manifest');
+
                         const stylesheetLinks = [...styles]
                             .map((file) => `<link rel="stylesheet" crossorigin href="/${file}" />`)
                             .join('\n');
@@ -353,6 +384,7 @@ export default defineConfig(({mode}) => {
                                 .replace('<div id="root"></div>', `<div id="root" data-rendered="landing">${html}</div>`)
                                 .replace('</head>', `${stylesheetLinks}\n</head>`)
                                 .replace('</body>', `<script id="landing-data" type="application/json">${data}</script>\n</body>`);
+
                             writeFileSync(routeFile, document);
                         }
                     } finally {
