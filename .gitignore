@@ -28,6 +28,7 @@ dist-ssr
 .env
 .env.production
 .vercel
+.wrangler/
 
 cypress.env.json
 

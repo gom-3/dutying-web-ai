@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.30
+
+### Patch Changes
+
+- 6d57381: 카카오톡 친구·모임 초대 미리보기의 이미지·제목·설명을 링크 언어에 맞춰 6개 언어로 제공합니다.
+    - @dutying/api@1.3.30
+    - @dutying/domain@1.3.30
+    - @dutying/utils@1.3.30
+
 ## 1.3.29
 
 ### Patch Changes
