@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.30 - 2026-11-02
+
+- `@dutying/app` (patch): 카카오톡 친구·모임 초대 미리보기의 이미지·제목·설명을 링크 언어에 맞춰 6개 언어로 제공합니다.
+
 ## 1.3.29 - 2026-11-02
 
 - `@dutying/app` (patch): 친구·모임 초대 웹페이지에 URL 언어를 우선 적용하고 6개 언어의 안내와 홈 링크를 제공합니다.
