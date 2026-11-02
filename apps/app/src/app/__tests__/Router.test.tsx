@@ -24,6 +24,7 @@ vi.mock('@/features/auth', () => ({
 
 vi.mock('@/widgets/layouts/not-auth-layout', async () => {
     const {Outlet} = await import('react-router-dom');
+
     return {NotAuthLayout: () => <Outlet />};
 });
 vi.mock('@/pages/login', () => ({default: () => <div>commercial login route</div>}));
@@ -202,11 +203,11 @@ describe('Router', () => {
         );
         expect(screen.getByRole('link', {name: 'App Store'})).toHaveAttribute(
             'href',
-            'https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827',
+            'https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827',
         );
         expect(screen.getByRole('link', {name: 'Google Play'})).toHaveAttribute(
             'href',
-            'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=en&gl=US',
+            'https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ko&gl=KR',
         );
     });
 
