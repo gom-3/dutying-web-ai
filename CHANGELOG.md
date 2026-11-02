@@ -6,6 +6,17 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.29 - 2026-11-02
+
+- `@dutying/app` (patch): 친구·모임 초대 웹페이지에 URL 언어를 우선 적용하고 6개 언어의 안내와 홈 링크를 제공합니다.
+
+## 1.3.28 - 2026-11-01
+
+- `@dutying/app` (patch): 현재 표에 적용된 자동완성 결과에서 불필요한 '표 직접 수정하기' 버튼을 숨깁니다.
+- `@dutying/app` (patch): 자동채우기와 근무표 수정 안내를 익숙한 용어와 같은 말투로 정리하고, 요청 확인·다시 계산·목록 불러오기 버튼을 구분합니다.
+- `@dutying/app` (patch): 저장된 오류 기록에서도 원래 요청을 다시 확인할 수 있도록 복구 버튼을 제공합니다. 미해결 오류 아래에 근무표 확정 버튼만 나타나던 흐름을 수정합니다.
+- `@dutying/app` (patch): 근무표 히스토리를 불러와도 대화 기록을 유지하고 저장된 결과를 다시 적용할 수 있습니다. 준비 중 만료된 요청은 원문을 보존한 채 재확인하도록 안내합니다.
+
 ## 1.3.27 - 2026-10-29
 
 - `@dutying/app` (patch): 근무 만들기에서 오른쪽 AI 대화창을 열어도 근무 배지가 캘린더 폭에 맞춰 줄어들어 제약조건 위반 테두리를 가리지 않도록 수정합니다.

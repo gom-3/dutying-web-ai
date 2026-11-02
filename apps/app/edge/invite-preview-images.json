@@ -1,0 +1,8 @@
+{
+    "ko": {"path": "/img/og-image-preview222.png", "width": 1200, "height": 630, "locale": "ko_KR"},
+    "ja": {"path": "/img/landing-hero-ja-2026.png", "width": 1672, "height": 941, "locale": "ja_JP"},
+    "en": {"path": "/img/landing-hero-en-2026.png", "width": 1672, "height": 941, "locale": "en_US"},
+    "zh": {"path": "/img/invite-share-zh-v1.png", "width": 1672, "height": 941, "locale": "zh_CN"},
+    "th": {"path": "/img/invite-share-th-v1.png", "width": 1672, "height": 941, "locale": "th_TH"},
+    "vi": {"path": "/img/invite-share-vi-v1.png", "width": 1672, "height": 941, "locale": "vi_VN"}
+}
