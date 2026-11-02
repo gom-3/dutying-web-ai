@@ -26,3 +26,9 @@ export const getMarketingLanguageHref = (language: TPreferredLanguage) => {
 
     return `/?lng=${language}`;
 };
+
+export const getMarketingAppStoreUrls = (language: TPreferredLanguage) => {
+    const page = marketingPages.pages.find((page) => page.language === language)!;
+
+    return {ios: page.iosStoreUrl, android: page.androidStoreUrl};
+};
