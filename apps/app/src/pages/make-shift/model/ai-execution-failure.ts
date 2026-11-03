@@ -308,10 +308,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         const review = Boolean(response.conflictReview);
 
         return {
-            message:
-                [...new Set(explanations)].join('\n\n') +
-                '\n\n' +
-                i18n.t(review ? 'aiAdjust.executionFailure.monthlyCapacityReview' : 'aiAdjust.executionFailure.combinedConflictNext'),
+            message: [...new Set(explanations)].join('\n\n'),
             blocked: false,
             recovery: review ? 'review' : 'revise',
             ...(restConflicts.length ? {restConflicts} : {}),

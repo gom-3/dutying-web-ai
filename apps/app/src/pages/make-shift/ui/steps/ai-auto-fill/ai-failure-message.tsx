@@ -33,11 +33,13 @@ export function AiFailureMessage({
                             <AiConversationOutcomeIcon status="failure" label={resolvedTitle} />
                             <p className={`text-base leading-6 font-semibold ${wrapping} text-[#333D4B]`}>{resolvedTitle}</p>
                         </div>
-                        <ul className={`mt-2 list-disc space-y-2 pl-5 text-[14px] leading-6 ${wrapping} text-[#667085]`}>
-                            {points.map((point, index) => (
-                                <li key={index}>{point}</li>
-                            ))}
-                        </ul>
+                        {points.length > 0 && (
+                            <ul className={`mt-2 list-disc space-y-2 pl-5 text-[14px] leading-6 ${wrapping} text-[#667085]`}>
+                                {points.map((point, index) => (
+                                    <li key={index}>{point}</li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
                     {headerAction && <div className="absolute top-0 right-0">{headerAction}</div>}
                 </div>

@@ -92,7 +92,6 @@ export function ConstraintConflictReview({
             {hasDetails ? (
                 <>
                     <h3 className="text-sm font-medium">{t('aiAutofillUi.conflictReview.changes')}</h3>
-                    <p className="text-sm leading-relaxed">{t('aiAutofillUi.conflictReview.resultContext')}</p>
                     <AiConflictViolationList review={review} />
                     <p className="text-sm">{t('aiAutofillUi.conflictReview.applyNotice')}</p>
                 </>

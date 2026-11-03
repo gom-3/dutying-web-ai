@@ -320,7 +320,7 @@ describe('monthly staffing capacity evidence', () => {
             expect(failure?.recovery).toBe('review');
             expect(failure?.confirmationRequired).toBe(true);
 
-            if (locale === 'ja') expect(failure?.message).toContain('検証済み');
+            expect(failure?.message).not.toContain(i18n.t('aiAdjust.executionFailure.monthlyCapacityReview'));
         } finally {
             await i18n.changeLanguage(previous);
         }

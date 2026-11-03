@@ -45,6 +45,7 @@ type TProps = {
     generationFailure?: TAiConversationFailure | null;
     renderConflictReview?: TConflictReviewRenderer;
     onDismissFailure?: () => void;
+    onConditionsChanged?: () => void;
     disabled: boolean;
     conditionsDisabled?: boolean;
     modifyDisabled?: boolean;
@@ -97,6 +98,7 @@ export default function AiAdjustDialog({
     generationFailure,
     renderConflictReview,
     onDismissFailure,
+    onConditionsChanged,
     disabled,
     conditionsDisabled = disabled,
     modifyDisabled,
@@ -131,6 +133,7 @@ export default function AiAdjustDialog({
         enabled: open && hasConditionContext,
         onChanged: async () => {
             setConditionsVersion((version) => version + 1);
+            onConditionsChanged?.();
             await onRetryRequests?.();
         },
     });

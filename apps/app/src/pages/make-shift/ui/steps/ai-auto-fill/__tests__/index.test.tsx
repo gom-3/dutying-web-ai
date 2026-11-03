@@ -662,8 +662,82 @@ describe('AiAutofill blank preview', () => {
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1));
 
         expect(mocks.requestAiSchedule.mock.calls[0]?.[0]).toMatchObject({authoringContractVersion: 'intent-first-v1'});
-        expect(screen.queryByRole('button', {name: '이번 근무표에 반영하기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'aiAutofillUi.conflictReview.proceed'})).not.toBeInTheDocument();
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+    });
+
+    it.each(['confirm', 'edit', 'rules'] as const)('keeps direct conflict consent bound to its input: %s', async (next) => {
+        const review = {
+            token: 'direct-review-token',
+            expiresAt: '2099-01-01T00:00:00Z',
+            violations: [
+                {
+                    violationId: 'shortage',
+                    ruleId: 9,
+                    templateCode: 'EXACT_STAFF_BY_SHIFT',
+                    severity: 'HARD',
+                    message: 'D shortage',
+                    messageArgs: {shift: 'D', actual: 3, expected: 4},
+                    affectedCells: [{shiftNurseId: 10, date: '2026-07-03'}],
+                    fixable: true,
+                },
+            ],
+        };
+        mocks.requestAiSchedule
+            .mockResolvedValueOnce({
+                ok: false,
+                message: 'conflict',
+                conflictReview: review,
+                failure: {message: 'conflict', blocked: false, confirmationRequired: true, recovery: 'review'},
+            })
+            .mockImplementationOnce(async (request) => ({
+                ok: true,
+                response: {
+                    operationType: 'GENERATE',
+                    draftRevision: request.draftRevision,
+                    applicable: true,
+                    approvable: true,
+                    confirmedConstraintException: true,
+                    engineResult: {status: 'ACCEPTED', reviewRequired: false},
+                    changedCells: [{shiftNurseId: 10, date: '2026-07-03', wardShiftTypeId: 4, shiftCode: 'O'}],
+                    unmetInstructions: [],
+                    validation: {summary: {hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
+                },
+                validation: {summary: {hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
+            }));
+        const user = userEvent.setup();
+        render(<AiAutofill />);
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.fill'}));
+        const proceed = await screen.findByRole('button', {name: 'aiAutofillUi.conflictReview.proceed'});
+        expect(proceed).toBeEnabled();
+        expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+        expect(screen.queryByRole('button', {name: 'aiAdjust.executionFailure.retryConditions'})).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAutofillUi.adjustIntro.title')).not.toBeInTheDocument();
+        const original = mocks.requestAiSchedule.mock.calls[0]![0];
+        if (next !== 'confirm') {
+            act(() => {
+                const state = useShiftEditorStore.getState();
+                if (next === 'rules') state.setRulesHash('sha256:changed');
+                else state.setDoc({...state.doc, rows: state.doc.rows.map((row) => ({...row, cells: ['D', 'E', 'O']}))});
+            });
+            expect(proceed).toBeDisabled();
+            await user.click(proceed);
+            expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
+            return;
+        }
+        await user.click(proceed);
+        await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
+        expect(mocks.requestAiSchedule.mock.calls[1]![0]).toMatchObject({
+            doc: original.doc,
+            draftRevision: original.draftRevision,
+            rulesHash: original.rulesHash,
+            conflictReviewToken: review.token,
+            conflictConfirmed: true,
+        });
+        expect(mocks.requestAiSchedule.mock.calls[1]![0].idempotencyKey).not.toBe(original.idempotencyKey);
+        await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'O']));
     });
 
     it('toggles a non-empty preparation cell between fixed and unfixed', async () => {

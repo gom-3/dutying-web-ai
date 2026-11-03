@@ -225,6 +225,7 @@ export default function AiConversationSidebar({
     const revision = useShiftEditorStore((s) => s.draftRevision);
     const [detail, setDetail] = useState<TConversationDetail | null>(null);
     const [conditionsContextInvalid, setConditionsContextInvalid] = useState(false);
+    const [invalidatedConflictIds, setInvalidatedConflictIds] = useState<Set<string>>(() => new Set());
     const detailRef = useRef<TConversationDetail | null>(null);
     const [earlierConversations, setEarlierConversations] = useState<TConversation[]>([]);
     const [operationBusy, setBusy] = useState(false);
@@ -434,6 +435,9 @@ export default function AiConversationSidebar({
         enabled: open,
         onChanged: async () => {
             setConditionsContextInvalid(true);
+            setInvalidatedConflictIds(
+                new Set(detailRef.current?.operations.filter((op) => op.result?.conflictReview).map((op) => op.operationId)),
+            );
             reviewedPreparation.current = null;
             setSelectedSuggestion(undefined);
             await refresh();
@@ -2438,6 +2442,7 @@ export default function AiConversationSidebar({
                                                                 disabled={busy || running}
                                                                 current={
                                                                     !localDirty &&
+                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
                                                                     event.operation.baseRevision === detail.conversation.revision &&
                                                                     event.operation.operationId === latestOperation?.operationId
                                                                 }
@@ -2494,6 +2499,13 @@ export default function AiConversationSidebar({
                                                         operationType={event.operation.operationType}
                                                         failure={operationFailure(event.operation)!}
                                                         detailsInChildren={Boolean(event.operation.result?.conflictReview)}
+                                                        confirmationAvailable={
+                                                            !invalidatedConflictIds.has(event.operation.operationId) &&
+                                                            !localDirty &&
+                                                            event.operation.baseRevision === detail.conversation.revision &&
+                                                            event.operation.operationId === latestOperation?.operationId &&
+                                                            Date.parse(event.operation.result?.conflictReview?.expiresAt ?? '') > Date.now()
+                                                        }
                                                         active={
                                                             failureNeedsAction &&
                                                             event.operation === latestOperation &&
@@ -2588,6 +2600,7 @@ export default function AiConversationSidebar({
                                                                 disabled={busy || running}
                                                                 current={
                                                                     !localDirty &&
+                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
                                                                     event.operation.baseRevision === detail.conversation.revision &&
                                                                     event.operation.operationId === latestOperation?.operationId
                                                                 }
@@ -2681,6 +2694,7 @@ export default function AiConversationSidebar({
                                                                 disabled={busy || running}
                                                                 current={
                                                                     !localDirty &&
+                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
                                                                     event.operation.baseRevision === detail.conversation.revision &&
                                                                     event.operation.operationId === latestOperation?.operationId
                                                                 }

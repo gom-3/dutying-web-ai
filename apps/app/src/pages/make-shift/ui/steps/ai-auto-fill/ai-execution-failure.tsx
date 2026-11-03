@@ -26,6 +26,7 @@ export function AiExecutionFailure({
     headerAction,
     children,
     detailsInChildren = false,
+    confirmationAvailable = detailsInChildren,
 }: {
     failure: TAiConversationFailure;
     active?: boolean;
@@ -42,6 +43,7 @@ export function AiExecutionFailure({
     headerAction?: ReactNode;
     children?: ReactNode;
     detailsInChildren?: boolean;
+    confirmationAvailable?: boolean;
 }) {
     const {t} = useTypedTranslation();
     const displayRef = useScheduleJourneyDisplay(failure.observation);
@@ -54,7 +56,7 @@ export function AiExecutionFailure({
     const retryable = !failure.blocked && (!failure.recovery || failure.recovery === 'retry');
     const showSettings = failure.recovery === 'settings';
     const reviewGeneration = operationType === 'GENERATE' && !failure.blocked && ['review', 'revise'].includes(failure.recovery ?? '');
-    const showRetry = (retryable || reviewGeneration) && Boolean(onRetry);
+    const showRetry = (!failure.confirmationRequired || !confirmationAvailable) && (retryable || reviewGeneration) && Boolean(onRetry);
     const showRevise =
         !failure.blocked &&
         (failure.recovery !== 'review' || (Boolean(failure.confirmationRequired) && !detailsInChildren)) &&
@@ -79,7 +81,9 @@ export function AiExecutionFailure({
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-4">
             <AiFailureMessage
-                message={failure.message}
+                message={
+                    detailsInChildren && failure.confirmationRequired && failure.conflictDetails?.violations.length ? '' : failure.message
+                }
                 title={attemptLabel ? `${title} (${attemptLabel})` : title}
                 headerAction={headerAction}
             >
