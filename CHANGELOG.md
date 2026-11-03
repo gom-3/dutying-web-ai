@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.32 - 2026-11-03
+
+- `@dutying/app` (patch): 개인 소셜 계정으로 기존 근무표를 미리 확인한 뒤 가져오는 페이지와 파일 가져오기를 추가하고, 직접 접속과 로그인 복귀 경로를 보완합니다.
+
 ## 1.3.31 - 2026-11-03
 
 - `@dutying/app` (patch), `@dutying/docs` (patch): 자동채우기 충돌 조건은 명시적으로 동의한 경우에만 이번 표에 허용하고, 검색 메타데이터와 공개 이용 가이드를 개선합니다.

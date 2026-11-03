@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.32
+
+### Patch Changes
+
+- 4fe5502: 개인 소셜 계정으로 기존 근무표를 미리 확인한 뒤 가져오는 페이지와 파일 가져오기를 추가하고, 직접 접속과 로그인 복귀 경로를 보완합니다.
+    - @dutying/api@1.3.32
+    - @dutying/domain@1.3.32
+    - @dutying/utils@1.3.32
+
 ## 1.3.31
 
 ### Patch Changes
