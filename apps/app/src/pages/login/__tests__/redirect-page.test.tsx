@@ -272,4 +272,13 @@ describe('RedirectPage', () => {
 
         expect(readStoredOAuthRedirectPayload()).toBeNull();
     });
+    it('routes personal roster recovery to its own cookie-authenticated page without an admin login', async () => {
+        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=%2Flegacy-roster');
+
+        const replace = mockLocationReplace();
+
+        render(<RedirectPage />);
+        await waitFor(() => expect(replace).toHaveBeenCalledWith('/legacy-roster'));
+        expect(handleLogin).not.toHaveBeenCalled();
+    });
 });

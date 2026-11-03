@@ -15,6 +15,7 @@ const ROUTE = {
     REGISTER_WARD: '/register-ward',
     ONBOARDING_WARD_CREATE: '/onboarding/ward-create',
     LOGIN: '/login',
+    LEGACY_ROSTER: '/legacy-roster',
     SIGN_IN: '/login',
     SIGN_UP: '/signup',
     REFRESH: '/refresh',

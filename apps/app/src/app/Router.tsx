@@ -19,6 +19,7 @@ const RenewalPage = lazy(() => import('@/pages/service-status').then((module) =>
 const PrivacyPolicyPage = lazy(() => import('@/pages/legal').then((module) => ({default: module.PrivacyPolicyPage})));
 const TermsOfServicePage = lazy(() => import('@/pages/legal').then((module) => ({default: module.TermsOfServicePage})));
 const UiPreviewPage = lazy(() => import('@/pages/ui-preview'));
+const LegacyRosterPage = lazy(() => import('@/pages/legacy-roster'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
 const EnterWard = lazy(() => import('@/pages/register/enter-ward-page.tsx'));
@@ -51,8 +52,8 @@ export const Router = () => {
 
     if (
         isPhoneDevice &&
-        !['/workspace', '/login', '/signup', '/redirect', '/refresh', '/register', '/profile'].some((prefix) =>
-            location.pathname.startsWith(prefix),
+        !['/workspace', '/login', '/signup', '/legacy-roster', '/oauth2/redirect', '/redirect', '/refresh', '/register', '/profile'].some(
+            (prefix) => location.pathname.startsWith(prefix),
         )
     ) {
         return (
@@ -123,6 +124,7 @@ export const Router = () => {
                 <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
                 <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                 <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
+                <Route path={ROUTE.LEGACY_ROSTER} element={<LegacyRosterPage />} />
                 <Route path={ROUTE.OAUTH_ERROR} element={<OAuthErrorPage />} />
                 {import.meta.env.DEV ? <Route path={ROUTE.UI_PREVIEW} element={<UiPreviewPage />} /> : null}
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}

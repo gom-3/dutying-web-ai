@@ -12,6 +12,8 @@ import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useProfileImage from '@/features/file';
+import {LegacyRosterEntryLink} from '@/features/legacy-roster/LegacyRosterEntryLink';
+import {LegacyRosterImport} from '@/features/legacy-roster/LegacyRosterImport';
 import {CameraIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -794,6 +796,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                         </div>
                     </div>
                 </Card>
+                {!isWardAdmin && accountMe?.accountId ? (
+                    <LegacyRosterImport accountId={accountMe.accountId} linked={accountMe.status === 'LINKED'} />
+                ) : null}
+                {isWardAdmin ? <LegacyRosterEntryLink /> : null}
                 {isModalLayout ? null : accountActionButtons}
             </div>
 

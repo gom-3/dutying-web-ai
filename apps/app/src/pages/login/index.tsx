@@ -6,6 +6,7 @@ import {Link, useLocation} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
+import {LegacyRosterEntryLink} from '@/features/legacy-roster/LegacyRosterEntryLink';
 import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon, LineIcon} from '@/shared/assets/svg';
@@ -113,12 +114,7 @@ const LegalAgreementOptions = ({
             />
             <span>
                 <span className="font-semibold text-main-1">{t('page.login.requiredConsentLabel')}</span>{' '}
-                <a
-                    href={ROUTE.TERMS}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sub-2 underline underline-offset-[3px]"
-                >
+                <a href={ROUTE.TERMS} target="_blank" rel="noreferrer" className="text-sub-2 underline underline-offset-[3px]">
                     {t('page.login.termsOfService')}
                 </a>
                 {t('page.login.termsAgreementSuffix')}
@@ -133,18 +129,12 @@ const LegalAgreementOptions = ({
                 className="mt-0.5 h-4 w-4 shrink-0 accent-main-1"
             />
             <span>
-                <span className="font-semibold text-gray-3">{t('page.login.optionalConsentLabel')}</span>{' '}
-                {t('page.login.marketingConsent')}
+                <span className="font-semibold text-gray-3">{t('page.login.optionalConsentLabel')}</span> {t('page.login.marketingConsent')}
             </span>
         </label>
         <p className="pl-6 text-xs leading-5 text-gray-3">
             {t('page.login.privacyNoticePrefix')}{' '}
-            <a
-                href={ROUTE.PRIVACY}
-                target="_blank"
-                rel="noreferrer"
-                className="text-gray-3 underline underline-offset-[3px]"
-            >
+            <a href={ROUTE.PRIVACY} target="_blank" rel="noreferrer" className="text-gray-3 underline underline-offset-[3px]">
                 {t('page.login.privacyPolicy')}
             </a>
             {t('page.login.privacyNoticeSuffix')}
@@ -225,11 +215,13 @@ function LoginPage() {
     const currentLoginVisualPage = safeLoginVisualSlideIndex + 1;
     const currentLoginVisualSlide = loginVisualSlides[safeLoginVisualSlideIndex];
     const nextLoginVisualSlide = loginVisualSlides[(safeLoginVisualSlideIndex + 1) % totalLoginVisualPages];
+
     preload(currentLoginVisualSlide.webp, {
         as: 'image',
         fetchPriority: 'high',
         type: 'image/webp',
     });
+
     if (hasMultipleLoginVisualSlides) {
         preload(nextLoginVisualSlide.webp, {
             as: 'image',
@@ -237,6 +229,7 @@ function LoginPage() {
             type: 'image/webp',
         });
     }
+
     const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
     const legacyInvalidLoginCredentialsServerText = t('page.login.feedback.legacyInvalidCredentialsServerText');
     const title = isSignupPage
@@ -255,6 +248,7 @@ function LoginPage() {
 
     scheduleLoginVisualAutoRotateRef.current = (delay: number) => {
         clearLoginVisualAutoRotateTimer();
+
         if (!hasMultipleLoginVisualSlides) {
             return;
         }
@@ -296,7 +290,9 @@ function LoginPage() {
 
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
+
         let nextVerificationError: string | null = null;
+
         const isEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
 
         if (!signupName.trim()) {
@@ -333,6 +329,7 @@ function LoginPage() {
 
         setSignupErrors(nextErrors);
         setSignupVerificationError(nextVerificationError);
+
         if (nextVerificationError) {
             setSignupVerificationMessage(null);
         }
@@ -368,6 +365,7 @@ function LoginPage() {
         }
 
         setPasswordResetErrors(nextErrors);
+
         if (nextErrors.resetToken) {
             setPasswordResetMessage(null);
         }
@@ -442,6 +440,7 @@ function LoginPage() {
     };
     const handleSignupVerificationCodeChange = (value: string) => {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
+
         setSignupVerificationCode(normalizedCode);
         setSignupEmailVerificationToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
         setIsSignupEmailVerified(false);
@@ -460,6 +459,7 @@ function LoginPage() {
     };
     const handlePasswordResetCodeChange = (value: string) => {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
+
         setPasswordResetCode(normalizedCode);
         setPasswordResetToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
         setIsPasswordResetTokenVerified(false);
@@ -698,6 +698,7 @@ function LoginPage() {
             setIsSubmitting(false);
         }
     };
+
     return (
         <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
             <aside className="login-visual-panel" aria-label={t('page.login.loginVisualAria')}>
@@ -711,10 +712,7 @@ function LoginPage() {
                                 src={isActive ? fallback : undefined}
                                 alt=""
                                 aria-hidden="true"
-                                className={cn(
-                                    'login-visual-slide',
-                                    isActive && hasInitialLoginVisualLoaded && 'login-visual-slide-active',
-                                )}
+                                className={cn('login-visual-slide', isActive && hasInitialLoginVisualLoaded && 'login-visual-slide-active')}
                                 decoding="async"
                                 fetchPriority={isActive ? 'high' : 'low'}
                                 loading={isActive ? 'eager' : 'lazy'}
@@ -760,9 +758,7 @@ function LoginPage() {
                     {isDemoSignupFlow ? (
                         <div className="mb-6 rounded-[16px] border border-main-3/40 bg-main-light px-5 py-4">
                             <p className="font-apple text-sm font-semibold text-main-1">{t('page.login.demoSignupTitle')}</p>
-                            <p className="mt-1 font-apple text-sm leading-6 text-sub-2.5">
-                                {t('page.login.demoSignupDescription')}
-                            </p>
+                            <p className="mt-1 font-apple text-sm leading-6 text-sub-2.5">{t('page.login.demoSignupDescription')}</p>
                         </div>
                     ) : null}
 
@@ -889,24 +885,26 @@ function LoginPage() {
                                 {hasRequestedPasswordReset ? (
                                     <div className="mt-2">
                                         <div className="flex gap-2">
-                                        <input
-                                            id="password-reset-code"
-                                            value={passwordResetCode}
-                                            type="text"
-                                            className={cn(getInputClassName(Boolean(passwordResetErrors.resetToken)), 'min-w-0')}
-                                            placeholder={t('page.login.sixDigitVerificationCodePlaceholder')}
-                                            aria-label={t('page.login.passwordResetVerificationCodeAria')}
-                                            inputMode="numeric"
-                                            autoComplete="one-time-code"
-                                            maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
-                                            pattern="[0-9]{6}"
-                                            onChange={(event) => handlePasswordResetCodeChange(event.target.value)}
-                                            aria-invalid={Boolean(passwordResetErrors.resetToken)}
-                                            aria-describedby={passwordResetErrors.resetToken ? 'password-reset-code-error' : undefined}
-                                        />
+                                            <input
+                                                id="password-reset-code"
+                                                value={passwordResetCode}
+                                                type="text"
+                                                className={cn(getInputClassName(Boolean(passwordResetErrors.resetToken)), 'min-w-0')}
+                                                placeholder={t('page.login.sixDigitVerificationCodePlaceholder')}
+                                                aria-label={t('page.login.passwordResetVerificationCodeAria')}
+                                                inputMode="numeric"
+                                                autoComplete="one-time-code"
+                                                maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
+                                                pattern="[0-9]{6}"
+                                                onChange={(event) => handlePasswordResetCodeChange(event.target.value)}
+                                                aria-invalid={Boolean(passwordResetErrors.resetToken)}
+                                                aria-describedby={passwordResetErrors.resetToken ? 'password-reset-code-error' : undefined}
+                                            />
                                             <button
                                                 type="button"
-                                                disabled={!hasPasswordResetCode || isConfirmingPasswordReset || isPasswordResetTokenVerified}
+                                                disabled={
+                                                    !hasPasswordResetCode || isConfirmingPasswordReset || isPasswordResetTokenVerified
+                                                }
                                                 className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                                 onClick={handleConfirmPasswordResetToken}
                                             >
@@ -947,7 +945,10 @@ function LoginPage() {
                             </div>
 
                             <div>
-                                <label htmlFor="password-reset-new-password-confirm" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                <label
+                                    htmlFor="password-reset-new-password-confirm"
+                                    className="mb-1.5 block text-sm font-medium text-sub-2"
+                                >
                                     {t('page.login.newPasswordConfirm')}
                                 </label>
                                 <input
@@ -959,9 +960,14 @@ function LoginPage() {
                                     autoComplete="new-password"
                                     onChange={(event) => handlePasswordResetNewPasswordConfirmChange(event.target.value)}
                                     aria-invalid={Boolean(passwordResetErrors.newPasswordConfirm)}
-                                    aria-describedby={passwordResetErrors.newPasswordConfirm ? 'password-reset-new-password-confirm-error' : undefined}
+                                    aria-describedby={
+                                        passwordResetErrors.newPasswordConfirm ? 'password-reset-new-password-confirm-error' : undefined
+                                    }
                                 />
-                                <FieldError id="password-reset-new-password-confirm-error" message={passwordResetErrors.newPasswordConfirm} />
+                                <FieldError
+                                    id="password-reset-new-password-confirm-error"
+                                    message={passwordResetErrors.newPasswordConfirm}
+                                />
                             </div>
 
                             {passwordResetError ? (
@@ -1190,6 +1196,7 @@ function LoginPage() {
                             </div>
                         </div>
                     ) : null}
+                    <LegacyRosterEntryLink />
                 </div>
             </div>
         </div>
