@@ -34,6 +34,8 @@ if (process.argv[2] === '--preview') {
     process.exit(0);
 }
 
+assert(existsSync(resolve(root, 'apps/app/dist/legacy-roster.html')), '개인 근무표 이전 직접 진입 HTML 누락');
+
 const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html'));
 const marketingPages = JSON.parse(read('apps/app/src/shared/seo/marketing-pages.json')).pages;
 const marketingPageByFile = new Map(

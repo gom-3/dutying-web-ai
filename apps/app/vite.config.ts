@@ -36,6 +36,7 @@ const appStaticRoutes = [
     '/register-ward',
     '/onboarding/ward-create',
     '/login',
+    '/legacy-roster',
     '/signup',
     '/refresh',
     '/maintenance',
