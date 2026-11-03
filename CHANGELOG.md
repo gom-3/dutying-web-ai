@@ -6,6 +6,11 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.31 - 2026-11-03
+
+- `@dutying/app` (patch), `@dutying/docs` (patch): 자동채우기 충돌 조건은 명시적으로 동의한 경우에만 이번 표에 허용하고, 검색 메타데이터와 공개 이용 가이드를 개선합니다.
+- `@dutying/app` (patch): 자동채우기 중 조절 입력 안내를 숨기고 진행 상태를 간결하게 표시해요. 조절 예시는 접어 볼 수 있는 도움말로 정리하고 배정·횟수·연속 근무·휴무·인원·동료 조합 예시를 추가했어요.
+
 ## 1.3.30 - 2026-11-02
 
 - `@dutying/app` (patch): 카카오톡 친구·모임 초대 미리보기의 이미지·제목·설명을 링크 언어에 맞춰 6개 언어로 제공합니다.
