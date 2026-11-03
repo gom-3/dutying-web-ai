@@ -3,7 +3,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const DEFAULT_MARKETING_SITE_URL = 'https://www.dutying.ai';
-const DEFAULT_APP_SITE_URL = 'https://app.dutying.ai';
+const DEFAULT_APP_SITE_URL = 'https://www.dutying.ai';
 const DEFAULT_DOCS_SITE_URL = 'https://docs.dutying.ai';
 
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');

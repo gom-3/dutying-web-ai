@@ -1397,6 +1397,14 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                         </a>
                     </div>
                     <div className="flex flex-wrap gap-5">
+                        <a href="https://docs.dutying.ai/guides/nurse-scheduling" hrefLang="ko" className="hover:text-main-1">
+                            {t('page.landing.common.guideLink')}
+                        </a>
+                        <a href="https://docs.dutying.ai/troubleshooting/faq" hrefLang="ko" className="hover:text-main-1">
+                            {t('page.landing.common.faqLink')}
+                        </a>
+                    </div>
+                    <div className="flex flex-wrap gap-5">
                         <a href="/pricing">Plus 요금제</a>
                         <a href="/subscription-terms">정기결제 안내</a>
                         <a href="/refund">환불정책</a>

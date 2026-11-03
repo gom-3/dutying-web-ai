@@ -52,7 +52,7 @@ export const ko = {
                 "title": "지금은 체험용 임시 계정으로 근무표를 작성 중이에요.",
                 "titleExpiringSoon": "체험 종료가 얼마 남지 않았어요."
             },
-            "documentTitle": "간호사 근무표 만들기, AI로 1분 만에 | 듀팅",
+            "documentTitle": "듀팅 | 간호사 근무표 자동 생성·교대근무 관리",
             "sessionExpired": "로그인 시간이 끝났어요. 다시 로그인해 주세요.",
             "state": {
                 "errorDescription": "세션이 만료되었거나 네트워크 연결이 불안정할 수 있어요.",
@@ -727,7 +727,9 @@ export const ko = {
                 "tryDemo": "체험하기",
                 "viewDesktop": "PC 버전으로 보기",
                 "viewMobile": "모바일 버전으로 보기",
-                "webMakeSchedule": "웹에서 근무표 만들기"
+                "webMakeSchedule": "웹에서 근무표 만들기",
+                "guideLink": "간호사 근무표 작성 가이드",
+                "faqLink": "듀팅 자주 묻는 질문"
             },
             "feature": {
                 "ai": {
@@ -3875,7 +3877,9 @@ export const en: TLocale = {
                 "tryDemo": "Try demo",
                 "viewDesktop": "View desktop version",
                 "viewMobile": "View mobile version",
-                "webMakeSchedule": "Create a schedule on web"
+                "webMakeSchedule": "Create a schedule on web",
+                "guideLink": "Nurse scheduling guide (Korean)",
+                "faqLink": "Dutying FAQ (Korean)"
             },
             "feature": {
                 "ai": {
@@ -7021,7 +7025,9 @@ export const ja: TLocale = {
                 "tryDemo": "体験する",
                 "viewDesktop": "PC版で見る",
                 "viewMobile": "モバイル版で見る",
-                "webMakeSchedule": "Webで勤務表を作成"
+                "webMakeSchedule": "Webで勤務表を作成",
+                "guideLink": "看護師勤務表の作成ガイド（韓国語）",
+                "faqLink": "Dutying よくある質問（韓国語）"
             },
             "feature": {
                 "ai": {
@@ -10167,7 +10173,9 @@ export const zh: TLocale = {
                 "tryDemo": "体验一下",
                 "viewDesktop": "查看电脑版",
                 "viewMobile": "查看移动版",
-                "webMakeSchedule": "在 Web 上创建排班表"
+                "webMakeSchedule": "在 Web 上创建排班表",
+                "guideLink": "护士排班指南（韩语）",
+                "faqLink": "Dutying 常见问题（韩语）"
             },
             "feature": {
                 "ai": {
@@ -13313,7 +13321,9 @@ export const th: TLocale = {
                 "tryDemo": "ทดลองใช้",
                 "viewDesktop": "ดูเวอร์ชันเดสก์ท็อป",
                 "viewMobile": "ดูเวอร์ชันมือถือ",
-                "webMakeSchedule": "สร้างตารางเวรบน Web"
+                "webMakeSchedule": "สร้างตารางเวรบน Web",
+                "guideLink": "คู่มือจัดตารางเวรพยาบาล (ภาษาเกาหลี)",
+                "faqLink": "คำถามที่พบบ่อยของ Dutying (ภาษาเกาหลี)"
             },
             "feature": {
                 "ai": {
@@ -16459,7 +16469,9 @@ export const vi: TLocale = {
                 "tryDemo": "Hãy thử bản demo",
                 "viewDesktop": "Xem phiên bản máy tính để bàn",
                 "viewMobile": "Xem phiên bản di động",
-                "webMakeSchedule": "Tạo lịch trên web"
+                "webMakeSchedule": "Tạo lịch trên web",
+                "guideLink": "Hướng dẫn xếp lịch điều dưỡng (tiếng Hàn)",
+                "faqLink": "Câu hỏi thường gặp về Dutying (tiếng Hàn)"
             },
             "feature": {
                 "ai": {

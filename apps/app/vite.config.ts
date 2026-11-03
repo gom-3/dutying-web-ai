@@ -17,7 +17,6 @@ const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 type TMarketingPage = (typeof marketingPageData.pages)[number];
 
 const marketingPages = marketingPageData.pages;
-const koreanMarketingPage = marketingPages.find((page) => page.language === 'ko') as TMarketingPage;
 const englishMarketingPage = marketingPages.find((page) => page.language === 'en') as TMarketingPage;
 const appStaticRoutes = [
     ...marketingPages.filter((page) => page.path !== '/').map((page) => page.path),
@@ -70,7 +69,6 @@ const normalizeMarketingPath = (value: string) => {
 
     return pathname.replace(/\/+$/, '');
 };
-const getMarketingPage = (path: string) => marketingPages.find((page) => page.path === normalizeMarketingPath(path)) ?? koreanMarketingPage;
 const getCanonicalUrl = (appSiteUrl: string, path: string) => (path === '/' ? `${appSiteUrl}/` : `${appSiteUrl}${path}`);
 const getOgImageMetadata = (page: TMarketingPage) => {
     if (page.language === 'ko') {
@@ -104,22 +102,36 @@ const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
             {
                 '@type': 'Organization',
                 '@id': `${appSiteUrl}/#organization`,
-                name: 'Dutying',
+                name: '듀팅',
+                alternateName: 'Dutying',
                 url: `${appSiteUrl}/`,
+                sameAs: ['https://www.instagram.com/dutying_official/'],
                 logo: `${appSiteUrl}/logo-wordmark-purple.png`,
             },
             {
                 '@type': 'WebSite',
-                '@id': `${canonicalUrl}#website`,
-                name: 'Dutying',
-                url: canonicalUrl,
-                inLanguage: page.schemaLanguage,
+                '@id': `${appSiteUrl}/#website`,
+                name: '듀팅',
+                alternateName: 'Dutying',
+                url: `${appSiteUrl}/`,
+                inLanguage: marketingPages.map((item) => item.schemaLanguage),
                 publisher: {'@id': `${appSiteUrl}/#organization`},
+            },
+            {
+                '@type': 'WebPage',
+                '@id': `${canonicalUrl}#webpage`,
+                url: canonicalUrl,
+                name: page.title,
+                description: page.description,
+                inLanguage: page.schemaLanguage,
+                isPartOf: {'@id': `${appSiteUrl}/#website`},
+                about: {'@id': `${appSiteUrl}/#software-application`},
             },
             {
                 '@type': 'SoftwareApplication',
                 '@id': `${appSiteUrl}/#software-application`,
-                name: 'Dutying',
+                name: page.language === 'ko' ? '듀팅' : 'Dutying',
+                alternateName: page.language === 'ko' ? 'Dutying' : '듀팅',
                 description: page.description,
                 url: canonicalUrl,
                 applicationCategory: 'BusinessApplication',
@@ -154,6 +166,7 @@ ${marketingPages
         <link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, englishMarketingPage.path)}" />
 
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="듀팅 · Dutying" />
         <meta property="og:url" content="${canonicalUrl}" />
         <meta property="og:locale" content="${page.ogLocale}" />
 ${alternatePages.map((alternatePage) => `        <meta property="og:locale:alternate" content="${alternatePage.ogLocale}" />`).join('\n')}
@@ -176,6 +189,17 @@ const renderMarketingSeoHtml = (html: string, page: TMarketingPage, appSiteUrl: 
     html
         .replace(/<html lang="[^"]*">/, `<html lang="${page.language}">`)
         .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots));
+// Authenticated tools and SPA shells have no public landing content. Do not copy
+// home-page hreflang or product markup onto them, or advertise them in the sitemap.
+const renderAppSeoHtml = (html: string, appSiteUrl: string, path?: string) =>
+    html.replace(
+        marketingSeoBlockPattern,
+        `<!-- MARKETING_SEO_START -->
+        <title>듀팅 · Dutying</title>
+        <meta name="robots" content="noindex, follow" />
+        ${path ? `<link rel="canonical" href="${escapeHtml(getCanonicalUrl(appSiteUrl, path))}" />` : ''}
+        <!-- MARKETING_SEO_END -->`,
+    );
 const createSitemap = (appSiteUrl: string) => {
     const localizedUrls = marketingPages
         .map((page) => {
@@ -190,7 +214,7 @@ const createSitemap = (appSiteUrl: string) => {
         })
         .join('\n');
 
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${localizedUrls}\n  <url>\n    <loc>${appSiteUrl}/privacy</loc>\n  </url>\n  <url>\n    <loc>${appSiteUrl}/terms</loc>\n  </url>\n</urlset>\n`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${localizedUrls}\n</urlset>\n`;
 };
 const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
     const explicitUrl = getEnvValue(env.VITE_APP_PUBLIC_URL) ?? getEnvValue(env.VITE_APP_SITE_URL);
@@ -212,7 +236,10 @@ export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
     const appSiteUrl = getConfiguredAppSiteUrl(env);
     // 운영 www 빌드만 검색 색인을 허용하고 dev/preview는 차단한다.
-    const isProductionSite = appSiteUrl === defaultAppSiteUrl;
+    const isProductionSite =
+        appSiteUrl === defaultAppSiteUrl &&
+        !(process.env.CF_PAGES === '1' && process.env.CF_PAGES_BRANCH !== 'main') &&
+        !(process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production');
     const isWindows = process.platform === 'win32';
     const isTest = mode === 'test';
 
@@ -255,9 +282,12 @@ export default defineConfig(({mode}) => {
                 transformIndexHtml(html, context) {
                     // 개발 서버의 SPA fallback은 context.path를 /index.html로 바꾼다.
                     // 원래 요청 주소를 우선해야 언어별 랜딩에서도 올바른 메타데이터가 나온다.
-                    const page = getMarketingPage(context.originalUrl ?? context.path);
+                    const path = normalizeMarketingPath(context.originalUrl ?? context.path);
+                    const page = marketingPages.find((item) => item.path === path);
 
-                    return renderMarketingSeoHtml(html, page, appSiteUrl, isProductionSite ? 'index, follow' : 'noindex, nofollow');
+                    return page
+                        ? renderMarketingSeoHtml(html, page, appSiteUrl, isProductionSite ? 'index, follow' : 'noindex, nofollow')
+                        : renderAppSeoHtml(html, appSiteUrl, path);
                 },
                 generateBundle() {
                     // www의 리뉴얼 랜딩은 색인하고 dev/preview 배포는 중복 색인을 막는다.
@@ -282,10 +312,7 @@ export default defineConfig(({mode}) => {
 
                     const indexHtml = readFileSync(resolve(resolvedOutDir, 'index.html'), 'utf8');
 
-                    writeFileSync(
-                        resolve(resolvedOutDir, 'app-shell.html'),
-                        indexHtml.replace(/<meta name="robots" content="[^"]*"\s*\/>/, '<meta name="robots" content="noindex, follow" />'),
-                    );
+                    writeFileSync(resolve(resolvedOutDir, 'app-shell.html'), renderAppSeoHtml(indexHtml, appSiteUrl));
 
                     // Cloudflare Pages에 404.html이 있으면 자동 SPA fallback이 꺼진다.
                     // 유효한 라우트만 정적 HTML 별칭으로 발행해 딥링크는 200을 유지하고,
@@ -300,7 +327,7 @@ export default defineConfig(({mode}) => {
                                   appSiteUrl,
                                   isProductionSite ? 'index, follow' : 'noindex, nofollow',
                               )
-                            : indexHtml;
+                            : renderAppSeoHtml(indexHtml, appSiteUrl, route);
 
                         mkdirSync(dirname(routeFile), {recursive: true});
                         writeFileSync(routeFile, routeHtml);

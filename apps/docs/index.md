@@ -1,40 +1,43 @@
 ---
 layout: home
-
+title: 듀팅 사용 가이드
+description: 간호사 근무표 작성부터 AI 자동 생성, 신청근무 관리, 모바일 교대근무 캘린더까지 듀팅 사용법을 확인하세요.
 hero:
-    name: Dutying Docs
-    text: 웹에서 시작하고 모바일까지 확장하는 사용자 가이드
-    tagline: 웹 사용자 여정을 먼저 문서화하고, 같은 문서 사이트 안에서 모바일 앱 가이드까지 이어질 수 있도록 구조를 분리했습니다.
+    name: 듀팅 사용 가이드
+    text: 간호사 근무표 작성부터 내 근무 일정 확인까지
+    tagline: 병동 근무표를 만드는 관리자와 교대근무 일정을 확인하는 간호사를 위한 안내입니다.
     actions:
         - theme: brand
-          text: 웹 가이드 시작하기
-          link: /web-guide/
+          text: 근무표 작성 방법
+          link: /guides/nurse-scheduling
         - theme: alt
-          text: 문서 구조 보기
-          link: /getting-started/
+          text: 모바일 캘린더 사용법
+          link: /mobile-guide/
         - theme: alt
-          text: 로그인 가이드 보기
-          link: /web-guide/login
-
+          text: 자주 묻는 질문
+          link: /troubleshooting/faq
 features:
-    - title: 웹 우선, 모바일 확장 가능
-      details: 1차 문서는 웹 사용자 여정을 기준으로 정리하고, 같은 정보 구조 안에 모바일 가이드가 자연스럽게 추가되도록 구획을 분리했습니다.
-    - title: 독립 배포 가능한 docs 앱
-      details: apps/docs를 별도 VitePress 앱으로 구성해 독립 배포할 수 있는 기반을 만들었습니다.
-    - title: 앱/랜딩/문서 연결 분리
-      details: 문서 사이트는 사용 설명과 FAQ에 집중하고, 실제 제품 사용은 웹 앱으로, 서비스 소개는 랜딩으로 연결되도록 역할을 나눴습니다.
+    - title: 병동 근무표 작성
+      details: 간호사와 근무 유형을 등록하고, 병동 규칙과 신청근무를 정리해 월별 근무표를 작성합니다.
+      link: /web-guide/schedule
+    - title: AI 근무표 자동 생성
+      details: 필요한 인원, 고정 근무와 병동 조건을 확인한 뒤 AI 초안을 생성하고 결과를 검토합니다.
+      link: /guides/nurse-scheduling
+    - title: 교대근무 캘린더
+      details: 모바일 앱에서 내 근무와 개인 일정을 확인하고, 연결된 병동의 근무표와 소식을 함께 확인합니다.
+      link: /mobile-guide/
 ---
 
-## 어떤 문서를 담나요?
+## 듀팅은 어떤 서비스인가요?
 
-- **시작하기**: 문서 사이트의 범위, 플랫폼 구분, 빠른 진입 링크
-- **웹 가이드**: 로그인부터 병동 진입, 근무표 운영까지 웹 중심 안내
-- **모바일 가이드**: 추후 모바일 앱 설치, 일정 확인, 신청근무 흐름 문서화 예정
-- **문제 해결 / FAQ**: 사용자 문의가 반복되는 항목을 축적하는 공간
+[듀팅(Dutying)](https://www.dutying.ai/)은 간호사 근무표 작성과 교대근무 일정 관리를 돕는 서비스입니다. 웹에서는 병동 관리자가 근무자, 근무 규칙, 신청근무를 정리하고 AI로 근무표 초안을 만들 수 있습니다. iOS·Android 앱에서는 간호사가 근무 일정과 병동 소식을 확인할 수 있습니다.
 
-## 바로 가기
+현재 공식 서비스 주소는 **[www.dutying.ai](https://www.dutying.ai/)**입니다. 이전 `dutying.net` 링크로 방문한 경우 새 주소를 북마크해 주세요.
 
-- [문서 사이트 개요](/getting-started/)
-- [웹 가이드 소개](/web-guide/)
-- [모바일 가이드 확장 자리](/mobile-guide/)
-- [FAQ](/troubleshooting/faq)
+## 필요한 안내를 찾아보세요
+
+- 처음 이용한다면 [듀팅 시작하기](/getting-started/)
+- 간호사 근무표 자동 프로그램을 찾는다면 [AI 근무표 작성 가이드](/guides/nurse-scheduling)
+- 병동 설정과 신청근무 처리가 필요하다면 [웹 사용자 가이드](/web-guide/)
+- 내 근무와 개인 일정을 확인하려면 [모바일 교대근무 캘린더](/mobile-guide/)
+- 로그인, 병동 연결, AI 결과가 궁금하다면 [자주 묻는 질문](/troubleshooting/faq)

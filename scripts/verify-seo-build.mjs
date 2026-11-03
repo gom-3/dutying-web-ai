@@ -18,6 +18,22 @@ const collectHtmlFiles = (directory) =>
         return entry.name.endsWith('.html') ? [relativePath] : [];
     });
 
+if (process.argv[2] === '--preview') {
+    const directories = process.argv.slice(3);
+    assert(directories.length === 2, 'preview 앱·문서 빌드 폴더를 지정하세요');
+    for (const directory of directories) {
+        const files = collectHtmlFiles(directory);
+        assert(files.length > 0, `${directory}: HTML이 없음`);
+        for (const file of files) {
+            assert(/<meta name="robots" content="noindex[, "]/.test(read(file)), `${file}: preview가 indexable함`);
+        }
+        assertContains(read(`${directory}/robots.txt`), 'Disallow: /', `${directory}/robots.txt`);
+        assert(!existsSync(resolve(root, directory, 'sitemap.xml')), `${directory}: preview sitemap이 발행됨`);
+    }
+    console.log('Preview SEO verification passed: noindex HTML, blocked robots, no sitemaps.');
+    process.exit(0);
+}
+
 const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html'));
 const marketingPages = JSON.parse(read('apps/app/src/shared/seo/marketing-pages.json')).pages;
 const marketingPageByFile = new Map(
@@ -29,15 +45,19 @@ const marketingDescriptions = new Set();
 for (const file of appHtmlFiles) {
     const html = read(file);
     const marketingPage = marketingPageByFile.get(file);
-    const canonicalPath = marketingPage?.path ?? '/';
+    const canonicalPath = marketingPage?.path ?? file.replace('apps/app/dist', '').replace(/\.html$/, '');
     const canonicalUrl = canonicalPath === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${canonicalPath}`;
 
     assertContains(
         html,
-        file.endsWith('/app-shell.html') ? '<meta name="robots" content="noindex, follow"' : '<meta name="robots" content="index, follow"',
+        marketingPage ? '<meta name="robots" content="index, follow"' : '<meta name="robots" content="noindex, follow"',
         file,
     );
-    assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
+    if (file.endsWith('/app-shell.html')) {
+        assert(!html.includes('rel="canonical"'), `${file}: 동적 앱 셸에 잘못된 canonical이 있음`);
+    } else {
+        assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
+    }
 
     if (marketingPage) {
         const landingData = JSON.parse(
@@ -70,10 +90,21 @@ for (const file of appHtmlFiles) {
 
         assertContains(html, '<link rel="alternate" hreflang="x-default" href="https://www.dutying.ai/en"', file);
         assertContains(html, `"inLanguage":"${marketingPage.schemaLanguage}"`, file);
+        const graph = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1] ?? 'null')?.['@graph'];
+        assert(Array.isArray(graph), `${file}: JSON-LD graph 누락`);
+        const website = graph.find((node) => node['@type'] === 'WebSite');
+        const webpage = graph.find((node) => node['@type'] === 'WebPage');
+        assert(website?.['@id'] === 'https://www.dutying.ai/#website', `${file}: 언어마다 WebSite ID가 달라짐`);
+        assert(website?.name === '듀팅' && website?.alternateName === 'Dutying', `${file}: 사이트 브랜드명 누락`);
+        assert(webpage?.url === canonicalUrl && webpage?.name === marketingPage.title, `${file}: WebPage 내용 불일치`);
+        assertContains(html, 'href="https://docs.dutying.ai/guides/nurse-scheduling"', file);
+        assertContains(html, 'href="https://docs.dutying.ai/troubleshooting/faq"', file);
         marketingTitles.add(marketingPage.title);
         marketingDescriptions.add(marketingPage.description);
     } else {
         assert(!html.includes('data-rendered="landing"'), `${file}: 앱 내부 경로에 랜딩이 남아 있음`);
+        assert(!html.includes('application/ld+json'), `${file}: 앱 내부 경로에 홈 구조화 데이터가 남아 있음`);
+        assert(!html.includes('hreflang='), `${file}: 앱 내부 경로에 홈 언어 대체 링크가 남아 있음`);
     }
 }
 
@@ -92,11 +123,12 @@ const appSitemap = read('apps/app/dist/sitemap.xml');
 
 for (const url of [
     ...marketingPages.map((page) => (page.path === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${page.path}`)),
-    'https://www.dutying.ai/privacy',
-    'https://www.dutying.ai/terms',
 ]) {
     assertContains(appSitemap, `<loc>${url}</loc>`, 'apps/app/dist/sitemap.xml');
 }
+
+const sitemapUrls = [...appSitemap.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]);
+assert(sitemapUrls.length === marketingPages.length, '앱 sitemap에 검색용 본문이 없는 경로가 포함됨');
 
 for (const page of marketingPages) {
     const alternateUrl = page.path === '/' ? 'https://www.dutying.ai/' : `https://www.dutying.ai${page.path}`;
@@ -127,20 +159,46 @@ assert(
     'apps/app/vercel.json: 호스트 구분 없는 루트 리디렉션이 남아 있음',
 );
 
-const docsPages = [
-    'apps/docs/.vitepress/dist/index.html',
-    'apps/docs/.vitepress/dist/troubleshooting/faq.html',
-    'apps/docs/.vitepress/dist/web-guide/index.html',
-];
+const docsPages = collectHtmlFiles('apps/docs/.vitepress/dist').filter((file) => !file.endsWith('/404.html'));
+const docsTitles = new Set();
+const docsDescriptions = new Set();
+const docsSitemap = read('apps/docs/.vitepress/dist/sitemap.xml');
 
 for (const file of docsPages) {
     const html = read(file);
+    const routePath = file
+        .replace('apps/docs/.vitepress/dist', '')
+        .replace(/index\.html$/, '')
+        .replace(/\.html$/, '');
+    const canonicalUrl = `https://docs.dutying.ai${routePath}`;
+    const title = html.match(/<title>(.*?)<\/title>/)?.[1];
+    const description = html.match(/<meta name="description" content="([^"]*)"/)?.[1];
 
-    assertContains(html, '<title>', file);
-    assertContains(html, '<meta name="description"', file);
-    assertContains(html, '<link rel="canonical"', file);
+    assert(title && !docsTitles.has(title), `${file}: 문서 제목 누락 또는 중복`);
+    assert(description && !docsDescriptions.has(description), `${file}: 문서 설명 누락 또는 중복`);
+    assertContains(html, `<link rel="canonical" href="${canonicalUrl}"`, file);
+    assertContains(html, '<meta name="robots" content="index, follow"', file);
     assertContains(html, '<h1', file);
     assertContains(html, '<body', file);
+    const structuredData = JSON.parse(html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1] ?? 'null');
+    assert(
+        structuredData?.['@graph']?.some((node) => node['@type'] === 'BreadcrumbList'),
+        `${file}: BreadcrumbList 누락`,
+    );
+    assert(
+        structuredData?.['@graph']?.some((node) => node['@type'] === 'WebPage' && node.url === canonicalUrl),
+        `${file}: WebPage URL 불일치`,
+    );
+    assertContains(docsSitemap, `<loc>${canonicalUrl}</loc>`, 'docs sitemap');
+    docsTitles.add(title);
+    docsDescriptions.add(description);
 }
 
-console.log(`SEO build verification passed: ${appHtmlFiles.length} indexed www app routes, ${docsPages.length} docs pages.`);
+assertContains(read('apps/docs/.vitepress/dist/404.html'), '<meta name="robots" content="noindex, follow"', 'docs 404');
+assertContains(read('apps/docs/.vitepress/dist/robots.txt'), 'Sitemap: https://docs.dutying.ai/sitemap.xml', 'docs robots');
+assertContains(read('apps/docs/.vitepress/dist/guides/nurse-scheduling.html'), 'AI가 만든 표는 무엇을 검토하나요?', '근무표 가이드');
+assertContains(read('apps/docs/.vitepress/dist/troubleshooting/faq.html'), 'www.dutying.ai', '공식 주소 FAQ');
+
+console.log(
+    `SEO build verification passed: ${appHtmlFiles.length} www HTML routes (only public landing pages indexable), ${docsPages.length} docs pages.`,
+);

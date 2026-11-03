@@ -43,6 +43,7 @@
         "release:status": "pnpm run changeset:status",
         "release:version": "pnpm run changeset:version",
         "verify:seo": "node ./scripts/verify-seo-build.mjs",
+        "audit:seo": "node ./scripts/audit-public-seo.mjs",
         "type-check": "pnpm run type-check:app",
         "type-check:app": "pnpm --dir ./apps/app type-check",
         "type-check:docs": "pnpm --dir ./apps/docs type-check",
