@@ -13,6 +13,7 @@ import {
     getSocialSignupProfileFromQuery,
     saveSocialSignupProfile,
 } from '@/features/auth/model/social-signup';
+import {isLegacyRosterReturn} from '@/features/legacy-roster/session';
 import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -77,6 +78,16 @@ const RedirectPage = () => {
         const query = getOAuthRedirectQuery();
         const accessToken = getRedirectAccessToken(query);
         const {hasNextPageUrl, nextPageUrl, socialSignupProfile, isSocialSignupRequired} = getRedirectTarget(query);
+
+        if (isLegacyRosterReturn(nextPageUrl)) {
+            hasHandledRedirectRef.current = true;
+            clearStoredOAuthRedirectPayload();
+            // Personal recovery uses only the verified app refresh cookie, never callback tokens/admin auth state.
+            location.replace(ROUTE.LEGACY_ROSTER);
+
+            return;
+        }
+
         const redirectNextPageUrl = buildRedirectNextPageUrl(nextPageUrl, isSocialSignupRequired);
 
         if (!accessToken) {
