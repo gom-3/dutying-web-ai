@@ -9,3 +9,5 @@ API 계약·원본 DB 연결·OAuth namespace 검증·운영 활성화는 [서�
 웹 구현 기준: `5d773877c53952832ab6401094d7b7906e7cd8eb` (origin/develop). 테스트 69개는 프로필 23개, 이전 기능 9개, 개인 세션 2개, 공개 이전 페이지 2개, 로그인/콜백 33개를 포함한다. 기존 “기능·프로필 테스트” 표기는 이 전체 관련 범위를 뜻한다.
 
 담당자는 [최신 인수인계](https://github.com/gom-3/dutying-server-ai/blob/develop/docs/legacy-roster-migration-handoff-2026-11-03.md)에 따라 원본 DB 및 검증한 제공자 설정 → staging MySQL·실제 개인 소셜 로그인 → 미리보기·확정 → 저장 후 앱 조회 → 정상 배포 순으로 확인한다. 아직 운영에서 제공 중이거나 고객 #913의 실제 이전이 완료됐다고 안내하지 않는다. 병동 전체 데이터 이전은 별도 범위다.
+
+운영 반영 검토: Cloudflare Pages는 404.html을 발행하므로 신규 공개 진입 `/legacy-roster`도 정적 앱 경로 목록에 포함해야 한다. 로그인 복귀와 새로고침이 404가 되지 않도록 앱 셸 HTML을 생성하고 SEO 빌드 검증에서 해당 산출물의 존재를 확인한다.
