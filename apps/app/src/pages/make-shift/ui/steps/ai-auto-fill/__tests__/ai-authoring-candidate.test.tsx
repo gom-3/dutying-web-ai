@@ -1,8 +1,8 @@
 import {describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
-import {authoringMessageKey} from '../../../../model/intent-first-authoring';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {candidate, outcome, response} from '../../../../model/__tests__/fixtures/intent-first';
+import {authoringMessageKey} from '../../../../model/intent-first-authoring';
 import {AiAuthoringCandidate} from '../ai-authoring-candidate';
 import {AiConversationResult} from '../ai-conversation-result';
 import {AiConversationResultDetails} from '../ai-conversation-result-details';
@@ -37,6 +37,7 @@ describe('reviewable authoring candidate', () => {
     });
     it('shows original night bounds and actual candidate violations without treating SATISFIED as applied', () => {
         const input = props();
+
         input.result.authoringOutcome = outcome({draftState: 'CONSENT_REQUIRED', requestState: 'SATISFIED', candidateDigest: 'digest:1'});
         input.result.engineResult = {
             status: 'CONSENT_REQUIRED',
@@ -69,7 +70,9 @@ describe('reviewable authoring candidate', () => {
             },
         ];
         expect(authoringMessageKey(input.result)).toBe('CONSENT_REQUIRED');
+
         const before = structuredClone(input.result);
+
         render(<AiAuthoringCandidate {...input} />);
         expect(screen.getByRole('list')).toHaveTextContent('최소 14회 / 최대 3회');
         expect(screen.getByRole('list')).toHaveTextContent('2026-10-31');
@@ -269,4 +272,33 @@ describe('material consent title', () => {
             await i18n.changeLanguage('ko');
         }
     });
+});
+
+it('shows why an unsuccessful search left the roster unchanged', () => {
+    render(
+        <AiConversationResult
+            operation={{
+                operationId: 'op-feedback',
+                sequence: 1,
+                resultVersionId: null,
+                interpretationId: null,
+                fillPolicy: null,
+                failureReason: null,
+                createdAt: '',
+                operationType: 'ADJUST',
+                baseRevision: 0,
+                sourceVersionId: 'source:1',
+                executionStatus: 'SUCCEEDED',
+                applyStatus: 'NOT_APPLIED_NO_CHANGE',
+                result: response({
+                    changedCells: [],
+                    applicable: false,
+                    authoringOutcome: outcome({draftState: 'NONE', requestState: 'NO_IMPROVEMENT'}),
+                }),
+            }}
+            attempt={1}
+            copy={(ko) => ko}
+        />,
+    );
+    expect(screen.getByText(/변경이 불가능하다고 확인된 것은 아니며/)).toBeVisible();
 });
