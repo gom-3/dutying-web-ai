@@ -328,6 +328,7 @@ export const aiAutofillUiKo = {
     },
     conversationEntry: {
         editSchedule: '표 직접 수정하기',
+        returnToSchedule: '근무표 확인하고 돌아가기',
         switchToAutofill: '자동채우기로 전환',
         requestChanges: '수정 요청하기',
         refill: '다시 채우기',
@@ -698,6 +699,7 @@ export const aiAutofillUiEn = {
     },
     conversationEntry: {
         editSchedule: 'Edit the schedule directly',
+        returnToSchedule: 'View schedule and return',
         switchToAutofill: 'Switch to autofill',
         requestChanges: 'Request changes',
         refill: 'Refill',
@@ -1067,6 +1069,7 @@ export const aiAutofillUiJa = {
     },
     conversationEntry: {
         editSchedule: '勤務表を直接編集する',
+        returnToSchedule: '勤務表を確認して戻る',
         switchToAutofill: '自動作成に切り替える',
         requestChanges: '修正をリクエスト',
         refill: '再作成',

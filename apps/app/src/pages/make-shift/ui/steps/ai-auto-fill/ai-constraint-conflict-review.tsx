@@ -8,6 +8,7 @@ type TProps = {
     review: NonNullable<TAutofillResponse['conflictReview']>;
     disabled: boolean;
     current: boolean;
+    active?: boolean;
     onProceed: () => Promise<void>;
     onRevise: () => void;
     onEditSettings?: () => void;
@@ -21,6 +22,7 @@ export function ConstraintConflictReview({
     review,
     disabled,
     current,
+    active = true,
     onProceed,
     onRevise,
     onEditSettings,
@@ -47,7 +49,7 @@ export function ConstraintConflictReview({
     }, [expiry, now]);
 
     const proceed = async () => {
-        if (disabled || !current || !hasDetails || inFlight.current) return;
+        if (disabled || !active || !current || !hasDetails || inFlight.current) return;
 
         if (!Number.isFinite(expiry) || expiry <= Date.now()) {
             setNow(Date.now());
@@ -104,43 +106,45 @@ export function ConstraintConflictReview({
                     {t('aiAutofillUi.conflictReview.applyFailed')}
                 </p>
             )}
-            <div className="flex flex-wrap gap-2">
-                <button
-                    type="button"
-                    className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
-                    disabled={disabled || !available || submitting}
-                    onClick={() => void proceed()}
-                >
-                    {submitting ? t('aiAutofillUi.conflictReview.applying') : t('aiAutofillUi.conflictReview.proceed')}
-                </button>
-                <button
-                    type="button"
-                    className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
-                    disabled={disabled || submitting}
-                    onClick={onRevise}
-                >
-                    {t('aiAutofillUi.conflictReview.revise')}
-                </button>
-                {settingsHref ? (
-                    <a
-                        className="flex min-h-11 items-center rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
-                        href={settingsHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
+            {active && (
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        className="min-h-11 rounded-lg bg-main-1 px-4 py-2 text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                        disabled={disabled || !available || submitting}
+                        onClick={() => void proceed()}
                     >
-                        {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
-                    </a>
-                ) : (
+                        {submitting ? t('aiAutofillUi.conflictReview.applying') : t('aiAutofillUi.conflictReview.proceed')}
+                    </button>
                     <button
                         type="button"
                         className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
                         disabled={disabled || submitting}
-                        onClick={onEditSettings}
+                        onClick={onRevise}
                     >
-                        {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
+                        {t('aiAutofillUi.conflictReview.revise')}
                     </button>
-                )}
-            </div>
+                    {settingsHref ? (
+                        <a
+                            className="flex min-h-11 items-center rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+                            href={settingsHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
+                        </a>
+                    ) : (
+                        <button
+                            type="button"
+                            className="min-h-11 rounded-lg border px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-40"
+                            disabled={disabled || submitting}
+                            onClick={onEditSettings}
+                        >
+                            {settingsLabel ?? t('aiAutofillUi.conflictReview.editSettings')}
+                        </button>
+                    )}
+                </div>
+            )}
         </section>
     );
 }
