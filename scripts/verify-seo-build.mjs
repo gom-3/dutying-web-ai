@@ -18,11 +18,19 @@ const collectHtmlFiles = (directory) =>
         return entry.name.endsWith('.html') ? [relativePath] : [];
     });
 
+// Naver's ownership challenge is a literal verification response, not an HTML page.
+const isSiteVerificationFile = (file) => {
+    const match = file.match(/\/(naver[0-9a-f]{32}\.html)$/);
+    if (!match) return false;
+    assert(read(file) === `naver-site-verification: ${match[1]}`, `${file}: 네이버 소유 확인 응답 불일치`);
+    return true;
+};
+
 if (process.argv[2] === '--preview') {
     const directories = process.argv.slice(3);
     assert(directories.length === 2, 'preview 앱·문서 빌드 폴더를 지정하세요');
     for (const directory of directories) {
-        const files = collectHtmlFiles(directory);
+        const files = collectHtmlFiles(directory).filter((file) => !isSiteVerificationFile(file));
         assert(files.length > 0, `${directory}: HTML이 없음`);
         for (const file of files) {
             assert(/<meta name="robots" content="noindex[, "]/.test(read(file)), `${file}: preview가 indexable함`);
@@ -36,7 +44,8 @@ if (process.argv[2] === '--preview') {
 
 assert(existsSync(resolve(root, 'apps/app/dist/legacy-roster.html')), '개인 근무표 이전 직접 진입 HTML 누락');
 
-const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html'));
+const appHtmlFiles = collectHtmlFiles('apps/app/dist').filter((file) => !file.endsWith('/404.html') && !isSiteVerificationFile(file));
+assert(existsSync(resolve(root, 'apps/app/dist/naverb0ecf482534f7fa837c88fc96af7e302.html')), '네이버 .ai 사이트 소유 확인 파일 누락');
 const marketingPages = JSON.parse(read('apps/app/src/shared/seo/marketing-pages.json')).pages;
 const marketingPageByFile = new Map(
     marketingPages.map((page) => [page.path === '/' ? 'apps/app/dist/index.html' : `apps/app/dist${page.path}.html`, page]),

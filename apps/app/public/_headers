@@ -17,3 +17,7 @@
 
 /app/*
   X-Robots-Tag: noindex, nofollow
+
+# Public ownership proof is fetchable but is not a search result page.
+/naverb0ecf482534f7fa837c88fc96af7e302.html
+  X-Robots-Tag: noindex
