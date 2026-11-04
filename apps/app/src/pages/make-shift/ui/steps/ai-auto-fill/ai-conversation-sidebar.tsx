@@ -61,6 +61,7 @@ import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus} from './ai-conversation-operation-status';
 import {AiConversationRequestHelp} from './ai-conversation-request-help';
+import {AiCandidateReview} from './ai-candidate-review';
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -676,7 +677,7 @@ export default function AiConversationSidebar({
                           sourceVersionId: conflict.result.candidate.sourceVersionId,
                       }
                     : {}),
-                ...(conflict?.result?.conflictReview
+                ...(!conflict?.result?.candidate && conflict?.result?.conflictReview
                     ? {conflictReviewToken: conflict.result.conflictReview.token, conflictConfirmed: true}
                     : {}),
                 ...(fillPolicy ? {fillPolicy, rebuildConfirmed: fillPolicy === 'REBUILD_UNLOCKED'} : {}),
@@ -2040,7 +2041,37 @@ export default function AiConversationSidebar({
     };
     const openConflictSettings = (_operation: TConversationOperation) => conditionsEditor.current?.openConditions();
     const renderAuthoringActions = (operation: TConversationOperation) => {
-        if (!detail || !hasSavedResult(operation)) return null;
+        if (!detail) return null;
+
+        if (operation.result?.candidate && !hasSavedResult(operation))
+            return (
+                <AiCandidateReview
+                    key={`${operation.operationId}:${operation.result.candidate.candidateDigest}`}
+                    result={operation.result}
+                    currentVersionId={detail.conversation.currentVersionId}
+                    current={
+                        intentFirstEnabled &&
+                        !localDirty &&
+                        !preparing &&
+                        operation.baseRevision === detail.conversation.revision &&
+                        operation.operationId === latestOperation?.operationId
+                    }
+                    disabled={busy || running || preparing}
+                    loadVersion={api.version}
+                    nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
+                    onApply={() =>
+                        void execute(
+                            operation.operationType as 'GENERATE' | 'ADJUST',
+                            operation.fillPolicy === 'REBUILD_UNLOCKED' ? 'REBUILD_UNLOCKED' : 'EMPTY_ONLY',
+                            operation.interpretationId ?? undefined,
+                            undefined,
+                            operation,
+                        )
+                    }
+                />
+            );
+
+        if (!hasSavedResult(operation)) return null;
 
         return (
             <>

@@ -1,5 +1,8 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        requestResults: '요청별 결과',
+        measuredCount: '{{before}}회 → {{after}}회',
+        loadingComparison: '변경 전 근무표를 불러와 비교하고 있어요.',
         searchTimedOut:
             '계산 시간이 끝나 요청을 반영한 변경안을 확인하지 못했어요. 근무표는 그대로예요. 같은 요청으로 다시 계산할 수 있어요.',
         changeLimit: '제안된 변경량이 이번 수정 범위를 넘었어요. 근무표는 그대로예요.',
@@ -154,6 +157,9 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        requestResults: 'Request results',
+        measuredCount: '{{before}} → {{after}} occurrences',
+        loadingComparison: 'Loading the original schedule for comparison.',
         searchTimedOut:
             'The calculation ran out of time before an adjustment could be verified. Your schedule is unchanged. You can calculate again with the same request.',
         changeLimit: 'The proposed changes exceeded the limit for this adjustment. Your schedule is unchanged.',
@@ -308,6 +314,9 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        requestResults: 'リクエストごとの結果',
+        measuredCount: '{{before}}回 → {{after}}回',
+        loadingComparison: '変更前の勤務表を読み込んで比較しています。',
         searchTimedOut: '計算時間内に変更案を検証できませんでした。勤務表は変更されていません。同じリクエストで再計算できます。',
         changeLimit: '提案された変更数が今回の上限を超えました。勤務表は変更されていません。',
         protectedCandidate: '提案された配置が保護対象の勤務や条件を守れなかったため、反映しませんでした。',

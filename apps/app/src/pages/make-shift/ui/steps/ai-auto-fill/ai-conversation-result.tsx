@@ -3,6 +3,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
 import {authoringExplanationKey, authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
+import {AiRequestOutcome} from './ai-request-outcome';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
@@ -120,6 +121,7 @@ export function AiConversationResult({
                     {t('aiConversationSidebar.authoring.partialCoverage')}
                 </p>
             )}
+            {operation.result && <AiRequestOutcome result={operation.result} />}
             {children}
         </AiScheduleResultCard>
     );
