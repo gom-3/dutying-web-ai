@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.33
+
+### Patch Changes
+
+- 자동채우기 완료 후 다음 동작과 충돌 복구 흐름을 개선하고, AI 도메인의 네이버 소유 확인 파일을 제공합니다.
+    - @dutying/api@1.3.33
+    - @dutying/domain@1.3.33
+    - @dutying/utils@1.3.33
+
 ## 1.3.32
 
 ### Patch Changes
