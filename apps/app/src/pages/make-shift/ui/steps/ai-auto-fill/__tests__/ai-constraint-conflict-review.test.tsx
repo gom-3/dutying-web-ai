@@ -66,6 +66,24 @@ describe('conflicting condition consent', () => {
         expect(screen.getByText('설정한 횟수: 최대 2회 / 배정된 횟수: 4회')).toBeInTheDocument();
         expect(screen.queryByText(/MAX/)).not.toBeInTheDocument();
     });
+    it('keeps dismissed conflict evidence without its old choices', () => {
+        render(
+            <ConstraintConflictReview
+                review={review}
+                current
+                active={false}
+                disabled={false}
+                onProceed={vi.fn(async () => {})}
+                onRevise={vi.fn()}
+                onEditSettings={vi.fn()}
+                copy={copy}
+            />,
+        );
+        expect(screen.getByRole('region', {name: i18n.t('aiAutofillUi.conflictReview.title')})).toBeVisible();
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
     it('proceeds only after choosing the proposal', async () => {
         const proceed = vi.fn(async () => {});
 

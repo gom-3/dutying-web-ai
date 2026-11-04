@@ -963,6 +963,9 @@ export default function AiConversationSidebar({
         if (!current) return;
 
         const original = requestTextForTurn(current, turn);
+        const failedOperation = [...current.operations].reverse().find((operation) => operation.interpretationId === turn.interpretationId);
+
+        if (failedOperation) setDismissedFailureId(failedOperation.operationId);
 
         setEditingRequest(turn);
         setEntryChoice('modify');
@@ -1745,6 +1748,8 @@ export default function AiConversationSidebar({
         latestOperation &&
             operationFailure(latestOperation) &&
             dismissedFailureId !== latestOperation.operationId &&
+            !editingRequest &&
+            entryChoice !== 'modify' &&
             !detail?.turns.some((turn) => turn.sequence > latestOperation.sequence),
     );
     const latestStoredError = visibleLocalEvents
@@ -1765,53 +1770,7 @@ export default function AiConversationSidebar({
             : null;
     const failure = latestOperation ? operationFailure(latestOperation) : null;
     const canReviewFixedAfterFailure = Boolean(latestOperation?.operationType === 'GENERATE' && failure?.reviewFixed);
-
-    useEffect(() => {
-        if (
-            !onRecoverGeneration ||
-            !canReviewFixedAfterFailure ||
-            !failureNeedsAction ||
-            !latestOperation ||
-            !open ||
-            loading ||
-            preparing ||
-            busy ||
-            running ||
-            awaitingAdjustment ||
-            error ||
-            entryChoice ||
-            text.trim() ||
-            recoveredFailures.current.has(latestOperation.operationId)
-        )
-            return;
-
-        // Open a review once, never a calculation. Refreshing the failed record
-        // or closing its preparation must not start another attempt.
-        recoveredFailures.current.add(latestOperation.operationId);
-        writeScheduleChat(transcriptKey, {
-            conversationId: detail!.conversation.conversationId,
-            events: localEvents,
-            restoredResult,
-            recoveredFailures: [...recoveredFailures.current],
-            composer: {editingEventId: editingRequest?.eventId, previousId, change},
-        });
-        onRecoverGeneration();
-    }, [
-        onRecoverGeneration,
-        canReviewFixedAfterFailure,
-        failureNeedsAction,
-        latestOperation,
-        open,
-        loading,
-        preparing,
-        busy,
-        running,
-        awaitingAdjustment,
-        error,
-        entryChoice,
-        text,
-    ]);
-
+    // A failure waits for the user's recovery choice, without reopening preparation.
     // Once a request has an execution record, its preview is history. Further
     // actions belong to that execution's result or recovery controls.
     const executedInterpretationIds = new Set(detail?.operations.flatMap((op) => (op.interpretationId ? [op.interpretationId] : [])));
@@ -2013,6 +1972,7 @@ export default function AiConversationSidebar({
             (autofillFlow?.id === discardedPreparationId.current || autofillFlow?.status !== 'paused') &&
             !preparing &&
             !entryChoice &&
+            !text.trim() &&
             !awaitingAdjustment &&
             !running &&
             !busy &&
@@ -2462,12 +2422,12 @@ export default function AiConversationSidebar({
                                                         copy={copy}
                                                         actions={
                                                             attachNextActions &&
-                                                            !isResultApplied(event.operation) &&
                                                             event.operation.operationId === latestOperation?.operationId ? (
                                                                 <AiConversationEntry
                                                                     choice={null}
                                                                     hideIntro
                                                                     attached
+                                                                    generationCompleted={isResultApplied(event.operation)}
                                                                     disabled={busy || running}
                                                                     modifyDisabled={!adjustEnabled || isAutofillBlocked}
                                                                     onChoose={chooseNextAction}
@@ -2493,6 +2453,14 @@ export default function AiConversationSidebar({
                                                         {event.operation.result?.conflictReview && (
                                                             <ConstraintConflictReview
                                                                 review={event.operation.result.conflictReview}
+                                                                active={
+                                                                    failureNeedsAction &&
+                                                                    event.operation === latestOperation &&
+                                                                    !preparing &&
+                                                                    !awaitingAdjustment &&
+                                                                    !busy &&
+                                                                    !running
+                                                                }
                                                                 onEditSettings={
                                                                     settingsHrefFor(event.operation)
                                                                         ? undefined
@@ -2651,6 +2619,14 @@ export default function AiConversationSidebar({
                                                         {event.operation.result?.conflictReview && (
                                                             <ConstraintConflictReview
                                                                 review={event.operation.result.conflictReview}
+                                                                active={
+                                                                    failureNeedsAction &&
+                                                                    event.operation === latestOperation &&
+                                                                    !preparing &&
+                                                                    !awaitingAdjustment &&
+                                                                    !busy &&
+                                                                    !running
+                                                                }
                                                                 onEditSettings={
                                                                     settingsHrefFor(event.operation)
                                                                         ? undefined
@@ -2745,6 +2721,14 @@ export default function AiConversationSidebar({
                                                         {event.operation.result?.conflictReview && (
                                                             <ConstraintConflictReview
                                                                 review={event.operation.result.conflictReview}
+                                                                active={
+                                                                    failureNeedsAction &&
+                                                                    event.operation === latestOperation &&
+                                                                    !preparing &&
+                                                                    !awaitingAdjustment &&
+                                                                    !busy &&
+                                                                    !running
+                                                                }
                                                                 onEditSettings={
                                                                     settingsHrefFor(event.operation)
                                                                         ? undefined

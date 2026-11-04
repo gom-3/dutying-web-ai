@@ -439,41 +439,43 @@ export function AiActiveConditions({
                     </Dialog.Content>
                 </Dialog.Overlay>
             </Dialog.Portal>
-            <Dialog.Root open={discardOpen && open && available} onOpenChange={setDiscardOpen}>
-                <Dialog.Portal>
-                    <Dialog.Overlay className="fixed inset-0 z-[1600] flex items-center justify-center bg-[#121726]/55 p-4">
-                        <Dialog.Content
-                            role="alertdialog"
-                            onKeyDown={(event) => event.stopPropagation()}
-                            onEscapeKeyDown={(event) => event.stopPropagation()}
-                            className="w-full max-w-[420px] rounded-[18px] bg-white p-6 focus-visible:outline-none"
-                        >
-                            <Dialog.Title className="text-[20px] leading-7 font-semibold text-[#242B36]">
-                                {t('aiAutofillUi.activeConditions.discardChanges')}
-                            </Dialog.Title>
-                            <Dialog.Description className="mt-2 text-[14px] leading-6 text-[#667085]">
-                                {t('aiAutofillUi.activeConditions.youHaveUnappliedConstraintChanges')}
-                            </Dialog.Description>
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setDiscardOpen(false)}
-                                    className="min-h-[44px] grow rounded-[10px] bg-[#F3F5F7] px-4 py-3 text-[14px] font-semibold text-[#475467] focus-visible:bg-[#333D4B] focus-visible:text-white focus-visible:outline-none"
-                                >
-                                    {t('aiAutofillUi.activeConditions.keepEditing')}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={finishClose}
-                                    className="min-h-[44px] grow rounded-[10px] bg-[#C83F36] px-4 py-3 text-[14px] font-semibold text-white focus-visible:bg-[#982F28] focus-visible:text-[#FFF1D6] focus-visible:outline-none"
-                                >
-                                    {t('aiAutofillUi.activeConditions.discardChanges2')}
-                                </button>
-                            </div>
-                        </Dialog.Content>
-                    </Dialog.Overlay>
-                </Dialog.Portal>
-            </Dialog.Root>
+            {discardOpen && open && available && (
+                <Dialog.Root open onOpenChange={setDiscardOpen}>
+                    <Dialog.Portal>
+                        <Dialog.Overlay className="fixed inset-0 z-[1600] flex items-center justify-center bg-[#121726]/55 p-4">
+                            <Dialog.Content
+                                role="alertdialog"
+                                onKeyDown={(event) => event.stopPropagation()}
+                                onEscapeKeyDown={(event) => event.stopPropagation()}
+                                className="w-full max-w-[420px] rounded-[18px] bg-white p-6 focus-visible:outline-none"
+                            >
+                                <Dialog.Title className="text-[20px] leading-7 font-semibold text-[#242B36]">
+                                    {t('aiAutofillUi.activeConditions.discardChanges')}
+                                </Dialog.Title>
+                                <Dialog.Description className="mt-2 text-[14px] leading-6 text-[#667085]">
+                                    {t('aiAutofillUi.activeConditions.youHaveUnappliedConstraintChanges')}
+                                </Dialog.Description>
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDiscardOpen(false)}
+                                        className="min-h-[44px] grow rounded-[10px] bg-[#F3F5F7] px-4 py-3 text-[14px] font-semibold text-[#475467] focus-visible:bg-[#333D4B] focus-visible:text-white focus-visible:outline-none"
+                                    >
+                                        {t('aiAutofillUi.activeConditions.keepEditing')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={finishClose}
+                                        className="min-h-[44px] grow rounded-[10px] bg-[#C83F36] px-4 py-3 text-[14px] font-semibold text-white focus-visible:bg-[#982F28] focus-visible:text-[#FFF1D6] focus-visible:outline-none"
+                                    >
+                                        {t('aiAutofillUi.activeConditions.discardChanges2')}
+                                    </button>
+                                </div>
+                            </Dialog.Content>
+                        </Dialog.Overlay>
+                    </Dialog.Portal>
+                </Dialog.Root>
+            )}
         </Dialog.Root>
     );
 }

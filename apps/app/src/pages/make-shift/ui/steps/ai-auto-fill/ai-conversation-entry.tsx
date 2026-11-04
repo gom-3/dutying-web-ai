@@ -135,10 +135,18 @@ export function AiConversationEntry({
                             onClick={() => onChoose(value)}
                             className={`group flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`}
                         >
-                            {value === 'edit' ? <PencilLine aria-hidden className="size-4 shrink-0" /> : <RotateCw aria-hidden className="size-4 shrink-0" />}
+                            {value === 'edit' ? (
+                                <PencilLine aria-hidden className="size-4 shrink-0" />
+                            ) : (
+                                <RotateCw aria-hidden className="size-4 shrink-0" />
+                            )}
                             <span className={compact ? 'min-w-0 break-keep' : 'min-w-0 flex-1 break-keep'}>
                                 {value === 'edit'
-                                    ? t('aiAutofillUi.conversationEntry.editSchedule')
+                                    ? t(
+                                          generationCompleted
+                                              ? 'aiAutofillUi.conversationEntry.returnToSchedule'
+                                              : 'aiAutofillUi.conversationEntry.editSchedule',
+                                      )
                                     : compact
                                       ? t('aiAutofillUi.conversationEntry.refill')
                                       : t(`aiAdjust.chat.${value}`)}
