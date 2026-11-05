@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.34 - 2026-11-05
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 근무표 요청별 검증 결과와 변경 수를 표시하고, 후보 표를 원본과 비교한 뒤 명시적으로 적용할 수 있도록 개선합니다. 실패 안내는 확인된 원인에 따라 구분합니다.
+
 ## 1.3.33 - 2026-11-04
 
 - `@dutying/app` (patch): 자동채우기 완료 후 다음 동작과 충돌 복구 흐름을 개선하고, AI 도메인의 네이버 소유 확인 파일을 제공합니다.

@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.34
+
+### Patch Changes
+
+- 근무표 요청별 검증 결과와 변경 수를 표시하고, 후보 표를 원본과 비교한 뒤 명시적으로 적용할 수 있도록 개선합니다. 실패 안내는 확인된 원인에 따라 구분합니다.
+- Updated dependencies
+    - @dutying/api@1.3.34
+    - @dutying/domain@1.3.34
+    - @dutying/utils@1.3.34
+
 ## 1.3.33
 
 ### Patch Changes
