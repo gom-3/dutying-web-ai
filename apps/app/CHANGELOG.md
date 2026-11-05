@@ -1,5 +1,52 @@
 # @dutying/app
 
+## 1.3.34
+
+### Patch Changes
+
+- 근무표 요청별 검증 결과와 변경 수를 표시하고, 후보 표를 원본과 비교한 뒤 명시적으로 적용할 수 있도록 개선합니다. 실패 안내는 확인된 원인에 따라 구분합니다.
+- Updated dependencies
+    - @dutying/api@1.3.34
+    - @dutying/domain@1.3.34
+    - @dutying/utils@1.3.34
+
+## 1.3.33
+
+### Patch Changes
+
+- 자동채우기 완료 후 다음 동작과 충돌 복구 흐름을 개선하고, AI 도메인의 네이버 소유 확인 파일을 제공합니다.
+    - @dutying/api@1.3.33
+    - @dutying/domain@1.3.33
+    - @dutying/utils@1.3.33
+
+## 1.3.32
+
+### Patch Changes
+
+- 4fe5502: 개인 소셜 계정으로 기존 근무표를 미리 확인한 뒤 가져오는 페이지와 파일 가져오기를 추가하고, 직접 접속과 로그인 복귀 경로를 보완합니다.
+    - @dutying/api@1.3.32
+    - @dutying/domain@1.3.32
+    - @dutying/utils@1.3.32
+
+## 1.3.31
+
+### Patch Changes
+
+- 자동채우기 충돌 조건은 명시적으로 동의한 경우에만 이번 표에 허용하고, 검색 메타데이터와 공개 이용 가이드를 개선합니다.
+- 2fc42d0: 자동채우기 중 조절 입력 안내를 숨기고 진행 상태를 간결하게 표시해요. 조절 예시는 접어 볼 수 있는 도움말로 정리하고 배정·횟수·연속 근무·휴무·인원·동료 조합 예시를 추가했어요.
+    - @dutying/api@1.3.31
+    - @dutying/domain@1.3.31
+    - @dutying/utils@1.3.31
+
+## 1.3.30
+
+### Patch Changes
+
+- 6d57381: 카카오톡 친구·모임 초대 미리보기의 이미지·제목·설명을 링크 언어에 맞춰 6개 언어로 제공합니다.
+    - @dutying/api@1.3.30
+    - @dutying/domain@1.3.30
+    - @dutying/utils@1.3.30
+
 ## 1.3.29
 
 ### Patch Changes
