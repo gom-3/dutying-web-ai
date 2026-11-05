@@ -10,9 +10,8 @@ export function getReviewQuestions(card: TAdjustCard): TReviewQuestion[] {
     const questions = card.items.flatMap(({item}, itemIndex) => {
         const kinds: TReviewQuestionKind[] = [];
 
-        if (item.kind === 'KNOB' || item.kind === 'RULE') kinds.push('lifetime');
-
-        if (item.kind === 'RULE') kinds.push('severity');
+        // Interpretation already supplies lifetime and severity. Preserve that
+        // meaning instead of inviting unsupported HARD or permanent promotion.
 
         if (item.kind === 'GOAL') kinds.push('offDifference', 'targetNurses', 'comparisonNurses');
 

@@ -10,17 +10,12 @@ const card: TAdjustCard = {
 };
 
 describe('conversational review answers', () => {
-    it('confirms the interpretation before asking for rule scope', () => {
-        const ruleCard: TAdjustCard = {...card, items: [{item: {kind: 'RULE'}, lifetime: 'MONTH', severity: 'SOFT'}]};
-        const questions = getReviewQuestions(ruleCard);
-
-        expect(questions.map(({kind}) => kind)).toEqual(['proposal', 'lifetime', 'severity']);
-        expect(answerReviewQuestion(ruleCard, questions[0]!, 'MONTH')).toBeNull();
-        expect(answerReviewQuestion(ruleCard, questions[0]!, 'CONFIRM')).toBe(ruleCard);
-        expect(parseReviewReply(questions[0], '네, 이대로 좋아요')).toBe('CONFIRM');
-        expect(parseReviewReply(questions[0], '아니요')).toBeNull();
-        expect(parseReviewReply(questions[0], '네, 5회로 바꿔줘')).toBeNull();
-        expect(parseReviewReply(questions[1], '네')).toBeNull();
+    it('preserves interpreted rule preference without a lifetime or severity questionnaire', () => {
+        const ruleCard: TAdjustCard = {...card, items: [{item: {kind: 'RULE', templateCode: 'NURSE_PREFER_SHIFT'}, lifetime: 'MONTH', severity: 'SOFT'}]};
+        expect(getReviewQuestions(ruleCard)).toEqual([]);
+        expect(isReviewComplete(ruleCard, [])).toBe(true);
+        expect(answerReviewQuestion(ruleCard, {id: '0:severity', kind: 'severity', itemIndex: 0}, 'HARD')).toBeNull();
+        expect(ruleCard.items[0]!.severity).toBe('SOFT');
     });
     it.each(['-1일', '32일', '3.1일', '1.5일', '999일'])('does not turn an invalid tolerance into another number: %s', (text) => {
         expect(
