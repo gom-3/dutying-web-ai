@@ -4495,6 +4495,52 @@ describe('intent-first sidebar integration', () => {
             expect(screen.queryByText(i18n.t('aiConversationSidebar.authoring.expired'))).not.toBeInTheDocument();
         },
     );
+    it('shows verified request evidence and applies a concrete candidate through its cached token', async () => {
+        enable();
+        const result = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({
+                draftState: 'PREVIEW_ONLY',
+                requestState: 'NEEDS_REVIEW',
+                candidateDigest: 'digest:1',
+                clauses: [
+                    {
+                        clauseId: 'pattern:1',
+                        kind: 'DIRECTIONAL',
+                        status: 'IMPROVED',
+                        before: 5,
+                        after: 2,
+                        affectedCells: [],
+                        displayText: '김 간호사 하루짜리 휴무를 줄여줘',
+                        metricKey: 'PATTERN_COUNT',
+                    },
+                ],
+            }),
+        });
+        const pending = {...operation, operationType: 'ADJUST' as const, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result};
+        current.operations = [pending];
+        mocks.version.mockResolvedValue(source);
+        renderSidebar();
+        expect(await screen.findByText('김 간호사 하루짜리 휴무를 줄여줘')).toBeVisible();
+        expect(await screen.findByText('5회 → 2회')).toBeVisible();
+        const apply = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')});
+        await waitFor(() => expect(apply).toBeEnabled());
+        expect(mocks.execute).not.toHaveBeenCalled();
+        await userEvent.click(apply);
+        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
+        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
+            conflictReviewToken: 'synthetic-token',
+            candidateDigest: 'digest:1',
+            sourceOperationId: 'operation:1',
+            sourceVersionId: 'source:1',
+            conflictConfirmed: true,
+        });
+        expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+
     it('keeps historical candidates read-only without stale or confirmation controls', async () => {
         enable();
         current.operations = [

@@ -854,6 +854,7 @@ export type TAuthoringClauseResult = {
     after: number | null;
     affectedCells: TAffectedCellDto[];
     displayText?: string;
+    metricKey?: string;
     reasonCodes?: string[];
 };
 export type TAuthoringViolationDelta = {

@@ -1,5 +1,15 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        requestResults: '요청별 결과',
+        measuredCount: '{{before}}회 → {{after}}회',
+        loadingComparison: '변경 전 근무표를 불러와 비교하고 있어요.',
+        searchTimedOut:
+            '계산 시간이 끝나 요청을 반영한 변경안을 확인하지 못했어요. 근무표는 그대로예요. 같은 요청으로 다시 계산할 수 있어요.',
+        changeLimit: '제안된 변경량이 이번 수정 범위를 넘었어요. 근무표는 그대로예요.',
+        protectedCandidate: '제안된 배치가 보호해야 할 근무나 조건을 지키지 못해 반영하지 않았어요.',
+        unverifiedResult: '변경안을 검증하지 못해 반영하지 않았어요. 현재 표를 기준으로 다시 계산할 수 있어요.',
+        searchNoImprovement:
+            '이번 탐색에서 요청을 개선하는 변경안을 찾지 못했어요. 변경이 불가능하다고 확인된 것은 아니며, 근무표는 그대로예요.',
         staffingShortage: '{{date}} {{shift}}: {{actual}}명 / 필요 {{required}}명',
         partialCoverage: '빈칸이 있어 일부 조건은 아직 확인하지 못했어요.',
         details: '변경 내용 더 보기',
@@ -147,6 +157,17 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        requestResults: 'Request results',
+        measuredCount: '{{before}} → {{after}} occurrences',
+        loadingComparison: 'Loading the original schedule for comparison.',
+        searchTimedOut:
+            'The calculation ran out of time before an adjustment could be verified. Your schedule is unchanged. You can calculate again with the same request.',
+        changeLimit: 'The proposed changes exceeded the limit for this adjustment. Your schedule is unchanged.',
+        protectedCandidate: 'The proposed arrangement failed to preserve protected shifts or conditions and was not applied.',
+        unverifiedResult:
+            'The proposed result could not be verified and was not applied. You can calculate again using the current schedule.',
+        searchNoImprovement:
+            'This search found no adjustment that improved your request. This does not prove that improvement is impossible. Your schedule is unchanged.',
         staffingShortage: '{{date}} {{shift}}: {{actual}} staff / {{required}} required',
         partialCoverage: 'Some conditions could not be checked yet because there are blank cells.',
         details: 'More about these changes',
@@ -293,6 +314,15 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        requestResults: 'リクエストごとの結果',
+        measuredCount: '{{before}}回 → {{after}}回',
+        loadingComparison: '変更前の勤務表を読み込んで比較しています。',
+        searchTimedOut: '計算時間内に変更案を検証できませんでした。勤務表は変更されていません。同じリクエストで再計算できます。',
+        changeLimit: '提案された変更数が今回の上限を超えました。勤務表は変更されていません。',
+        protectedCandidate: '提案された配置が保護対象の勤務や条件を守れなかったため、反映しませんでした。',
+        unverifiedResult: '変更案を検証できなかったため、反映しませんでした。現在の勤務表で再計算できます。',
+        searchNoImprovement:
+            '今回の探索ではリクエストを改善する変更案が見つかりませんでした。改善が不可能と確認されたわけではありません。勤務表は変更されていません。',
         staffingShortage: '{{date}} {{shift}}：{{actual}}人／必要{{required}}人',
         partialCoverage: '空欄があるため、まだ確認できていない条件があります。',
         details: '変更内容を詳しく見る',

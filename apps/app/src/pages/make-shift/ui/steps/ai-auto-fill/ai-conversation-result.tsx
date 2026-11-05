@@ -1,8 +1,9 @@
 import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
-import {authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
+import {authoringExplanationKey, authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
+import {AiRequestOutcome} from './ai-request-outcome';
 import {AiScheduleResultCard} from './ai-schedule-result-card';
 
 export function AiConversationResult({
@@ -26,6 +27,7 @@ export function AiConversationResult({
     const {t} = useTypedTranslation();
     const authoring = operation.result ? authoringOutcome(operation.result) : undefined;
     const messageKey = operation.result ? authoringMessageKey(operation.result) : undefined;
+    const explanationKey = operation.result ? authoringExplanationKey(operation.result) : undefined;
     const review = operation.result && isGenerateReviewDraft(operation.result);
     const saved = operation.applyStatus === 'APPLIED' || appliedLocally;
     const savedForLater = operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && !appliedLocally && Boolean(operation.resultVersionId);
@@ -104,7 +106,9 @@ export function AiConversationResult({
                         ? null
                         : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                           ? scope
-                          : null
+                          : !saved && explanationKey
+                            ? t(`aiConversationSidebar.authoring.${explanationKey}`)
+                            : null
                     : review
                       ? t('aiAutofillUi.conversationResult.reviewTheHighlightedRulesAndAdjustShiftsWhereNeeded')
                       : scope
@@ -117,6 +121,7 @@ export function AiConversationResult({
                     {t('aiConversationSidebar.authoring.partialCoverage')}
                 </p>
             )}
+            {operation.result && <AiRequestOutcome result={operation.result} />}
             {children}
         </AiScheduleResultCard>
     );

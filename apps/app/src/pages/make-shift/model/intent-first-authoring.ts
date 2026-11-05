@@ -103,3 +103,23 @@ export function authoringMessageKey(response: TAutofillResponse) {
 
     return outcome.requestState;
 }
+
+/** Explain only observed failure evidence, never invent a conflicting rule. */
+export function authoringExplanationKey(response: TAutofillResponse) {
+    const outcome = authoringOutcome(response);
+
+    if (outcome?.draftState !== 'NONE') return undefined;
+
+    if (outcome.timing?.deadlineExceeded) return 'searchTimedOut';
+
+    if (outcome.reasonCodes?.includes('CHANGE_BUDGET_EXCEEDED')) return 'changeLimit';
+
+    if (outcome.reasonCodes?.some((reason) => ['PROTECTION_VIOLATION', 'LOCKED_CELL_CHANGED'].includes(reason)))
+        return 'protectedCandidate';
+
+    if (outcome.solveState === 'UNKNOWN') return 'unverifiedResult';
+
+    if (outcome.requestState === 'NO_IMPROVEMENT' && outcome.solveState === 'FEASIBLE') return 'searchNoImprovement';
+
+    return undefined;
+}
