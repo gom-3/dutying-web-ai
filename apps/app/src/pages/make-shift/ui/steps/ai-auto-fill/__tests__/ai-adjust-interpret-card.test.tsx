@@ -43,6 +43,14 @@ function show(rule: TScheduleMonthRequestItem) {
 }
 
 describe('readable interpretation', () => {
+    it('shows the catalog nurse slot as a roster name instead of a raw ID', () => {
+        show({kind: 'RULE', templateCode: 'NURSE_PREFER_SHIFT', params: {nurse: 1, shift: 'E'}, displayLabel: '이브 선호', severity: 'SOFT'});
+        fireEvent.click(screen.getByText('반영 내용 보기'));
+        expect(screen.queryByText('nurse')).not.toBeInTheDocument();
+        expect(screen.queryByText('1', {exact: true})).not.toBeInTheDocument();
+        expect(screen.getAllByText('신규 간호사 1').length).toBeGreaterThan(0);
+    });
+
     it('explains the actual rule and its inferred count once without technical details', () => {
         show(item);
         expect(screen.getByRole('heading', {name: '이렇게 바꿀까요?'})).toBeVisible();

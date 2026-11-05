@@ -71,6 +71,9 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
     };
     const fieldLabels = {
         target: 'aiAdjust.review.target',
+        nurse: 'aiAdjust.review.target',
+        nurseA: 'aiAdjust.review.target',
+        nurseB: 'aiAdjust.review.target',
         nurseIds: 'aiAdjust.review.target',
         nurseId: 'aiAdjust.review.target',
         shift: 'aiAdjust.review.shift',
@@ -118,7 +121,7 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
         }
 
         if (value === 'ALL') {
-            if (['target', 'nurseId', 'nurseIds'].includes(field)) return targetDescription(value);
+            if (['target', 'nurse', 'nurseId', 'nurseIds', 'nurseA', 'nurseB'].includes(field)) return targetDescription(value);
 
             if (field === 'shift') return t('aiAutofillUi.interpretCard.allShifts');
 
@@ -129,7 +132,7 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
 
         if (Array.isArray(value)) return value.map((entry) => formatValue(entry, field)).join(', ');
 
-        if (['target', 'nurseId', 'nurseIds'].includes(field) && typeof value === 'number') return nurseName(value);
+        if (['target', 'nurse', 'nurseId', 'nurseIds', 'nurseA', 'nurseB'].includes(field) && typeof value === 'number') return nurseName(value);
 
         if (value && typeof value === 'object')
             return Object.entries(value)
