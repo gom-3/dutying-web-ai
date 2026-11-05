@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.35 - 2026-11-05
+
+- `@dutying/app` (patch): 간호사 근무 선호를 해석한 뒤 대상·기간·강도를 불필요하게 반복 질문하지 않고, 조건 카드에 간호사 이름을 표시합니다.
+
 ## 1.3.34 - 2026-11-05
 
 - `@dutying/api` (patch), `@dutying/app` (patch): 근무표 요청별 검증 결과와 변경 수를 표시하고, 후보 표를 원본과 비교한 뒤 명시적으로 적용할 수 있도록 개선합니다. 실패 안내는 확인된 원인에 따라 구분합니다.

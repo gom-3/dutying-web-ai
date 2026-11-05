@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.35
+
+### Patch Changes
+
+- 간호사 근무 선호를 해석한 뒤 대상·기간·강도를 불필요하게 반복 질문하지 않고, 조건 카드에 간호사 이름을 표시합니다.
+    - @dutying/api@1.3.35
+    - @dutying/domain@1.3.35
+    - @dutying/utils@1.3.35
+
 ## 1.3.34
 
 ### Patch Changes
