@@ -16,6 +16,7 @@ import {
 } from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
+import {Link} from 'react-router';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import type {TAnnualLeaveScheduleColumns} from '@/features/annual-leave/schedule-columns';
@@ -33,6 +34,7 @@ import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import i18n from '@/i18n';
 import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {CalendarNurseName} from './calendar-nurse-name';
@@ -43,6 +45,7 @@ type TViolationMap = Map<string, TViolation>;
 type TMakeShiftCalendarProps = {
     annualLeaveColumns?: TAnnualLeaveScheduleColumns;
     showRestCheck?: boolean;
+    linkShiftTypeSettings?: boolean;
     annualLeaveDays?: TAnnualLeaveDay[];
     shift: TShift;
     doc: TDutyDoc;
@@ -1212,6 +1215,7 @@ function ShiftTypeDropdown({
 export function MakeShiftCalendar({
     annualLeaveColumns,
     showRestCheck = true,
+    linkShiftTypeSettings = false,
     annualLeaveDays,
     shift,
     doc,
@@ -1851,20 +1855,38 @@ export function MakeShiftCalendar({
                         }}
                     >
                         {hasSummaryShiftTypes &&
-                            summaryShiftTypes.map((type) => (
-                                <div
-                                    key={type.wardShiftTypeId}
-                                    className={cn(
-                                        'make-shift-calendar__type-summary-badge',
-                                        'grid place-items-center font-poppins text-[clamp(10px,0.82cqw,14px)] leading-none font-medium',
-                                        SUMMARY_CELL_HEIGHT,
-                                        SUMMARY_CELL_WIDTH,
-                                    )}
-                                    style={{color: type.color}}
-                                >
-                                    {type.shortName}
-                                </div>
-                            ))}
+                            summaryShiftTypes.map((type) => {
+                                const label = (
+                                    <div
+                                        key={type.wardShiftTypeId}
+                                        className={cn(
+                                            'make-shift-calendar__type-summary-badge',
+                                            'grid place-items-center font-poppins text-[clamp(10px,0.82cqw,14px)] leading-none font-medium',
+                                            SUMMARY_CELL_HEIGHT,
+                                            SUMMARY_CELL_WIDTH,
+                                        )}
+                                        style={{color: type.color}}
+                                    >
+                                        {type.shortName}
+                                    </div>
+                                );
+
+                                return linkShiftTypeSettings && !staticPreview ? (
+                                    <Link
+                                        key={type.wardShiftTypeId}
+                                        to={`${ROUTE.WARD_SETTINGS}?tab=shiftTypes`}
+                                        data-navigation-path={`${ROUTE.WARD_SETTINGS}?tab=shiftTypes`}
+                                        data-preserve-duty-selection="true"
+                                        title={t('page.wardSettings.tabs.shiftTypes')}
+                                        aria-label={`${type.name || type.shortName} · ${t('page.wardSettings.tabs.shiftTypes')}`}
+                                        className="rounded-md hover:bg-main-4 focus-visible:outline-2 focus-visible:outline-main-1"
+                                    >
+                                        {label}
+                                    </Link>
+                                ) : (
+                                    label
+                                );
+                            })}
                         {showRestCheckColumn ? (
                             <div
                                 className={cn(

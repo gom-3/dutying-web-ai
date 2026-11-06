@@ -70,7 +70,6 @@ import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
-import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {
     markCarryOverAnswered,
     promotableRuleRequests,
@@ -79,6 +78,7 @@ import {
     toInterpretCells,
 } from '../../../model/schedule-month-requests';
 import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-success-store';
+import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
@@ -99,13 +99,13 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillFixedSelectionBar, AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiConversationSidebar, {type TConversationExecution} from './ai-conversation-sidebar';
 import {AiExecutionDock} from './ai-execution-dock';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
@@ -1571,6 +1571,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         prompt,
                     });
                 }
+
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -3111,6 +3112,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             />
                         )}
                         <MakeShiftCalendar
+                            linkShiftTypeSettings
                             shift={orderedShift}
                             doc={isAiFillDecisionPreviewOpen ? editorDoc : visibleCalendarDoc}
                             annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
@@ -3243,6 +3245,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                       onProceed={async () => {
                                           const state = useShiftEditorStore.getState();
                                           const ready = getAiFillReadyContext();
+
                                           if (
                                               !ready ||
                                               pendingConflict.context !== currentContextKey ||
@@ -3251,11 +3254,13 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                               JSON.stringify(pendingConflict.baseline) !== JSON.stringify(state.doc)
                                           )
                                               throw new Error(t('aiAdjust.stale'));
+
                                           const result = await runAiFill(ready, pendingConflict.adjust, pendingConflict.prompt, {
                                               doc: pendingConflict.doc,
                                               idempotencyKey: crypto.randomUUID(),
                                               conflictReviewToken: pendingConflict.review.token,
                                           });
+
                                           if (result?.error) throw new Error(result.error);
                                       }}
                                       onRevise={() => {

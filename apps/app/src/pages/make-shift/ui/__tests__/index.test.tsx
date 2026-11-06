@@ -1,5 +1,5 @@
 import type * as ReactQuery from '@tanstack/react-query';
-import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
+import {Link, MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
@@ -91,6 +91,9 @@ vi.mock('../make-shift-step-content', () => ({
 
         return (
             <div data-testid="make-shift-step-content">
+                <Link to="/ward-settings?tab=shiftTypes" data-navigation-path="/ward-settings?tab=shiftTypes">
+                    근무 유형 설정
+                </Link>
                 <button type="button" onClick={onOpenConstraints}>
                     제약조건 탭으로 이동
                 </button>
@@ -102,7 +105,12 @@ vi.mock('../make-shift-step-content', () => ({
 function LocationProbe() {
     const location = useLocation();
 
-    return <div data-testid="location-path">{location.pathname}</div>;
+    return (
+        <div data-testid="location-path">
+            {location.pathname}
+            {location.search}
+        </div>
+    );
 }
 
 function renderMakeShiftPageView() {
@@ -119,6 +127,7 @@ function renderMakeShiftPageView() {
                     }
                 />
                 <Route path={ROUTE.MEMBER} element={<LocationProbe />} />
+                <Route path={ROUTE.WARD_SETTINGS} element={<LocationProbe />} />
             </Routes>
         </MemoryRouter>,
     );
@@ -311,6 +320,21 @@ describe('MakeShiftPageView layout', () => {
         await userEvent.click(screen.getByRole('button', {name: '제약조건 탭으로 이동'}));
         await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.leaveConfirm'}));
         expect(mockUseCase.goToStep).toHaveBeenCalledExactlyOnceWith(2);
+    });
+
+    it('protects unsaved schedules before navigating to shift type settings', async () => {
+        makeShiftState = {...makeShiftState, currentStep: 4, maxReachedStep: 4};
+        useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: true, isAiGenerating: false});
+        renderMakeShiftPageView();
+
+        await userEvent.click(screen.getByRole('link', {name: '근무 유형 설정'}));
+        expect(screen.getByRole('dialog')).toHaveTextContent('page.makeShift.aiRefill.exitGuard.unsavedTitle');
+        expect(screen.getByTestId('location-path')).toHaveTextContent(ROUTE.MAKE);
+        await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.stayCancel'}));
+        expect(screen.getByTestId('location-path')).toHaveTextContent(ROUTE.MAKE);
+        await userEvent.click(screen.getByRole('link', {name: '근무 유형 설정'}));
+        await userEvent.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.leaveConfirm'}));
+        expect(screen.getByTestId('location-path')).toHaveTextContent('/ward-settings?tab=shiftTypes');
     });
 
     it('checks live navigation and exit state when an older chat shortcut is invoked', async () => {
