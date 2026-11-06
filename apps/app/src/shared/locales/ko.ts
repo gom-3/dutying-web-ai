@@ -1,4 +1,12 @@
 export const ko = {
+    scheduleFinalValidation: {
+        title: '확정 전에 확인해 주세요',
+        summary: '빈칸 {{emptyCount}}칸 · 근무 조건 위반 {{violationCount}}건이 있어요.',
+        description: '내용을 확인한 뒤 이대로 확정하거나 돌아가서 수정할 수 있어요.',
+        edit: '돌아가서 수정',
+        confirm: '이대로 확정',
+        failed: '확정 전 검증을 완료하지 못했어요. 다시 시도해 주세요.',
+    },
     page: {
         state: {
             loadingTitle: '화면을 준비하고 있어요',

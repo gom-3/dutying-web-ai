@@ -26,7 +26,7 @@ function affectedCellsToPositions(doc: TDutyDoc, affectedCells: TScheduleViolati
         const row = findRowIndexByShiftNurseId(doc, cell.shiftNurseId) ?? (doc.rows.length > 0 ? 0 : null);
         const col = findColIndexByDate(doc, cell.date);
 
-        if (row === null || col === null) continue;
+        if (row === null || col === null || doc.rows[row]?.cells[col] == null) continue;
 
         const key = `${row}:${col}`;
 
@@ -54,9 +54,7 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
 
     if (cells.length === 0) return null;
 
-    const displayContextCells = item.displayContext?.affectedCells
-        ? affectedCellsToPositions(doc, item.displayContext.affectedCells)
-        : [];
+    const displayContextCells = item.displayContext?.affectedCells ? affectedCellsToPositions(doc, item.displayContext.affectedCells) : [];
     const level: TViolation['level'] = item.severity === 'HARD' ? 'error' : 'warning';
     const scope = resolveViolationScope(item);
     const violation: TViolation = {
@@ -91,7 +89,7 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
 
 /** Spring ValidationRes → 캘린더 표시용 TViolation[] */
 export function violationsFromSpringValidation(validation: TValidationRes, doc: TDutyDoc): TViolation[] {
-    return validation.violations.flatMap((item) => {
+    return (validation.draftViolations ?? validation.violations).flatMap((item) => {
         const violation = toViolation(item, doc);
 
         return violation ? [violation] : [];
