@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.36 - 2026-11-06
+
+- `@dutying/app` (patch): 후속 요청과 실패한 대화 메시지의 복구를 개선하고, 기존 앱 계정의 가입 전환 중복 집계를 방지하며 회사 소유 측정 자산을 연결합니다.
+
 ## 1.3.35 - 2026-11-05
 
 - `@dutying/app` (patch): 간호사 근무 선호를 해석한 뒤 대상·기간·강도를 불필요하게 반복 질문하지 않고, 조건 카드에 간호사 이름을 표시합니다.

@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.36
+
+### Patch Changes
+
+- 후속 요청과 실패한 대화 메시지의 복구를 개선하고, 기존 앱 계정의 가입 전환 중복 집계를 방지하며 회사 소유 측정 자산을 연결합니다.
+    - @dutying/api@1.3.36
+    - @dutying/domain@1.3.36
+    - @dutying/utils@1.3.36
+
 ## 1.3.35
 
 ### Patch Changes
