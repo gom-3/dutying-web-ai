@@ -111,7 +111,7 @@ describe('RegisterNurse', () => {
         });
     });
 
-    it.each(['INITIAL', 'NURSE_INFO_PENDING', 'WORKSPACE_SETUP_PENDING'])(
+    it.each(['INITIAL', 'WORKSPACE_SETUP_PENDING'])(
         'counts successful social registration at %s only after the API resolves',
         async (status) => {
             const user = userEvent.setup();
@@ -135,6 +135,18 @@ describe('RegisterNurse', () => {
             await waitFor(() => expect(trackProductOutcome).toHaveBeenCalledExactlyOnceWith('sign_up', 'social'));
         },
     );
+
+    it.each(['NURSE_INFO_PENDING', 'WARD_SELECT_PENDING'])('does not count an already registered account at %s again', async (status) => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {status};
+        render(<RegisterNurse mode="social" />);
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), '홍길동');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01098765432');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await waitFor(() => expect(mocks.registerAccountProfile).toHaveBeenCalledTimes(1));
+        expect(trackProductOutcome).not.toHaveBeenCalled();
+    });
 
     it('does not count a failed social registration', async () => {
         const user = userEvent.setup();

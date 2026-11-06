@@ -140,7 +140,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                         isSocialMode &&
                         accountMe &&
                         (accountMe.status === 'INITIAL' ||
-                            accountMe.status === 'NURSE_INFO_PENDING' ||
                             ((accountMe.status as string) === 'WORKSPACE_SETUP_PENDING' && !accountMe.phoneNum))
                     ) {
                         trackProductOutcome('sign_up', 'social');
