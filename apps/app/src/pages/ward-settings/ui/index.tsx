@@ -176,6 +176,10 @@ function getSelectedShiftTypeRotationSystem(shiftType: TWardSettingsShiftType): 
 }
 
 function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSettingsShiftType) {
+    const displayOrder = (a.displayOrder ?? Number.MAX_SAFE_INTEGER) - (b.displayOrder ?? Number.MAX_SAFE_INTEGER);
+
+    if (displayOrder !== 0) return displayOrder;
+
     const getSettingsOrder = (shiftType: TWardSettingsShiftType) => {
         const rotationSystem = getShiftTypeRotationSystem(shiftType);
         const classification = getShiftTypeClassification(shiftType);
@@ -378,7 +382,6 @@ function ShiftTypeTable({
     const [colorPickerPosition, setColorPickerPosition] = useState<TColorPickerPosition | null>(null);
     const rotationMode = useMemo(() => inferWardRotationMode(shiftTypes), [shiftTypes]);
     const savingRef = useRef(false);
-    const hasInitializedShiftTypeOrderRef = useRef(false);
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
     const openedColorMenuRef = useRef<HTMLDivElement | null>(null);
     const tempShiftTypeIdRef = useRef(-1);
@@ -392,12 +395,7 @@ function ShiftTypeTable({
     useEffect(() => {
         if (status !== 'success') return;
 
-        setDraftShiftTypes(
-            hasInitializedShiftTypeOrderRef.current
-                ? withShiftTypeDisplayOrders(shiftTypes)
-                : withInitialShiftTypeDisplayOrders(shiftTypes),
-        );
-        hasInitializedShiftTypeOrderRef.current = true;
+        setDraftShiftTypes(withInitialShiftTypeDisplayOrders(shiftTypes));
         setDeletedShiftTypeIds([]);
         setShortNameErrorById({});
         setShowValidationHighlight(false);
@@ -886,7 +884,7 @@ function ShiftTypeTable({
                                             key={shiftType.wardShiftTypeId}
                                             draggableId={String(shiftType.wardShiftTypeId)}
                                             index={index}
-                                            isDragDisabled={shiftType.isUsed === true}
+                                            disableInteractiveElementBlocking
                                         >
                                             {(dragProvided) => (
                                                 <div
