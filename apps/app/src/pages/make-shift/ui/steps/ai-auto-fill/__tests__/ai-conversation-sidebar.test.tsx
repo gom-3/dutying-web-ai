@@ -61,6 +61,7 @@ const mocks = vi.hoisted(() => ({
     selectConditions: vi.fn(),
     changeModalities: vi.fn(),
     report: vi.fn(),
+    reportClientFailure: vi.fn(),
     getShiftConstraintRules: vi.fn(),
     applyConstraints: vi.fn(),
     getScheduleMonthRequests: vi.fn(),
@@ -146,6 +147,7 @@ vi.mock('@/shared/api/ward', async (original) => {
         },
     };
 });
+vi.mock('../../../../model/schedule-client-failure', () => ({reportScheduleClientFailure: mocks.reportClientFailure}));
 vi.mock('../../../../model/schedule-conversation-api', async (original) => ({
     ...(await original<typeof ConversationApiModule>()),
     conversationApi: () => mocks,
@@ -387,6 +389,159 @@ afterEach(() => {
 });
 
 describe('persistent schedule sidebar', () => {
+    it('accepts a new ordinary request after the previous adjustment clears its interpretation ID', async () => {
+        const firstText = '합성간호사 5일 E 빼줘';
+        const nextText = '다른합성간호사 E 근무 줄여줘';
+
+        mocks.interpret.mockImplementationOnce(async (_id, request) => {
+            const raw: TConversationTurn = {
+                eventId: 1,
+                sequence: 2,
+                actor: 'USER',
+                type: 'MESSAGE',
+                text: request.text,
+                interpretationId: null,
+                interpretation: null,
+                baseRevision: 0,
+                contextHash: null,
+                createdAt: source.createdAt,
+            };
+            const result = {
+                ...raw,
+                eventId: 2,
+                sequence: 3,
+                actor: 'ASSISTANT',
+                type: 'INTERPRETATION',
+                text: null,
+                interpretationId: 'completed:1',
+            };
+
+            current = {
+                ...current,
+                turns: [raw, result],
+                conversation: {...current.conversation, revision: 1, latestInterpretationId: null},
+                operations: [
+                    ...current.operations,
+                    {...operation, operationId: 'adjust:1', sequence: 4, operationType: 'ADJUST', interpretationId: 'completed:1'},
+                ],
+            };
+
+            return result;
+        });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'next:1'});
+        renderSidebar();
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), firstText);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        await waitFor(() => expect(screen.getByRole('textbox')).toHaveValue(''));
+        expect(screen.getAllByText(firstText)).toHaveLength(1);
+        await userEvent.type(screen.getByRole('textbox'), nextText);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledTimes(2));
+        expect(mocks.interpret.mock.calls[1]![1]).toMatchObject({text: nextText, expectedRevision: 1});
+        expect(mocks.interpret.mock.calls[1]![1]).not.toHaveProperty('previousInterpretationId');
+        expect(mocks.interpret.mock.calls[1]![1]).not.toHaveProperty('change');
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('keeps a locally blocked request visible across remount and reports the guard stage', async () => {
+        localStorage.setItem(
+            'dutying:schedule-chat:v2:account:4:1:2:2026:11:server-transcript',
+            JSON.stringify({
+                conversationId: 1,
+                events: [],
+                recoveredFailures: [],
+                composer: {previousId: 'pending:old', change: 'ADD'},
+            }),
+        );
+        current.conversation.latestInterpretationId = 'pending:new';
+
+        const request = '합성간호사 E 근무 싫대';
+        const before = structuredClone(useShiftEditorStore.getState().doc);
+        const first = renderSidebar();
+
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        expect(await screen.findByRole('alert')).toHaveTextContent('근무표나 조건이 바뀌었어요.');
+        expect(screen.getByText(request, {selector: ':not(textarea)'})).toBeVisible();
+        expect(mocks.reportClientFailure).toHaveBeenCalledWith(
+            {wardId: 1, teamId: 2, conversationId: 1},
+            'GUARD',
+            expect.objectContaining({reason: 'staleRequest'}),
+            expect.any(String),
+        );
+        expect(mocks.interpret).not.toHaveBeenCalled();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc).toEqual(before);
+        first.unmount();
+        renderSidebar();
+        expect(await screen.findByText(request, {selector: ':not(textarea)'})).toBeVisible();
+        expect(screen.getByRole('textbox')).toHaveValue(request);
+    });
+
+    it('shows the sent message while interpretation is pending and retains each rejected attempt', async () => {
+        let reject!: (cause: unknown) => void;
+
+        mocks.interpret.mockImplementationOnce(
+            () =>
+                new Promise((_resolve, fail) => {
+                    reject = fail;
+                }),
+        );
+        mocks.interpret.mockRejectedValueOnce({code: 502, serverCode: 'SCHEDULE_INTERPRET_UNAVAILABLE'});
+        renderSidebar();
+        await screen.findByRole('textbox');
+
+        const request = '합성간호사 E를 줄여줘';
+
+        await userEvent.type(screen.getByRole('textbox'), request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        expect(await screen.findByText(request, {selector: ':not(textarea)'})).toBeVisible();
+        await act(async () => reject({code: 502, serverCode: 'SCHEDULE_INTERPRET_UNAVAILABLE'}));
+        await screen.findByRole('alert');
+        expect(screen.getByRole('textbox')).toHaveValue(request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.getAllByText(request, {selector: ':not(textarea)'})).toHaveLength(2));
+        expect(mocks.reportClientFailure).toHaveBeenCalledTimes(2);
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('uses the server user message once after a lost interpretation response', async () => {
+        const request = '합성간호사 E 근무 조절해줘';
+
+        mocks.interpret.mockImplementationOnce(async () => {
+            current = {
+                ...current,
+                turns: [
+                    {
+                        eventId: 1,
+                        sequence: 2,
+                        actor: 'USER',
+                        type: 'MESSAGE',
+                        text: request,
+                        interpretationId: null,
+                        interpretation: null,
+                        baseRevision: 0,
+                        contextHash: null,
+                        createdAt: source.createdAt,
+                    },
+                ],
+            };
+            throw {code: -1};
+        });
+        renderSidebar();
+        await screen.findByRole('textbox');
+        await userEvent.type(screen.getByRole('textbox'), request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+        await screen.findByRole('alert');
+        expect(screen.getAllByText(request, {selector: ':not(textarea)'})).toHaveLength(1);
+        expect(mocks.interpret).toHaveBeenCalledOnce();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it.each(['SCHEDULE_INTERPRET_REJECTED', 'SCHEDULE_INTERPRET_UNAVAILABLE'])(
         'preserves the request and offers editing without rerunning after %s',
         async (serverCode) => {
@@ -4497,6 +4652,7 @@ describe('intent-first sidebar integration', () => {
     );
     it('shows verified request evidence and applies a concrete candidate through its cached token', async () => {
         enable();
+
         const result = intentResponse({
             changedCells: [],
             applicable: false,
@@ -4521,12 +4677,15 @@ describe('intent-first sidebar integration', () => {
             }),
         });
         const pending = {...operation, operationType: 'ADJUST' as const, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result};
+
         current.operations = [pending];
         mocks.version.mockResolvedValue(source);
         renderSidebar();
         expect(await screen.findByText('김 간호사 하루짜리 휴무를 줄여줘')).toBeVisible();
         expect(await screen.findByText('5회 → 2회')).toBeVisible();
+
         const apply = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.apply')});
+
         await waitFor(() => expect(apply).toBeEnabled());
         expect(mocks.execute).not.toHaveBeenCalled();
         await userEvent.click(apply);

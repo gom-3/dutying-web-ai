@@ -1,5 +1,12 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
-import {analyticsPageLocation, googleAnalyticsMeasurementId, isAuthenticationReferrer, isMarketingAnalyticsEnabled} from '../analytics';
+import {
+    analyticsPageLocation,
+    googleAnalyticsMeasurementId,
+    isAuthenticationReferrer,
+    isMarketingAnalyticsEnabled,
+    metaPixelId,
+    isMetaPixelLocationSafe,
+} from '../analytics';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -47,4 +54,31 @@ it('excludes authentication referrers while preserving search and social acquisi
     expect(isAuthenticationReferrer('https://www.instagram.com/')).toBe(false);
     expect(isAuthenticationReferrer('https://accounts.google.com.example.com/')).toBe(false);
     expect(isAuthenticationReferrer('')).toBe(false);
+});
+
+it('uses the company-owned Meta dataset even when legacy deployment configuration remains', () => {
+    vi.stubEnv('VITE_PIXEL_ID', '225085720489207');
+    vi.stubEnv('VITE_AI_META_PIXEL_ID', '');
+    expect(metaPixelId()).toBe('1138075548924419');
+});
+it.each(['225085720489207', 'invalid', '0'])('rejects legacy or invalid dedicated Meta overrides: %s', (id) => {
+    vi.stubEnv('VITE_AI_META_PIXEL_ID', id);
+    expect(metaPixelId()).toBe('1138075548924419');
+});
+it('accepts an explicit numeric dedicated Meta override', () => {
+    vi.stubEnv('VITE_AI_META_PIXEL_ID', '123456789');
+    expect(metaPixelId()).toBe('123456789');
+});
+
+it.each([
+    {pathname: '/oauth2/redirect', search: '', hash: ''},
+    {pathname: '/login', search: '?accessToken=private', hash: ''},
+    {pathname: '/login', search: '?email=test%40example.com', hash: ''},
+    {pathname: '/login', search: '', hash: '#access_token=private'},
+    {pathname: '/login', search: '?code=private', hash: ''},
+])('blocks Pixel on authentication URLs: %o', (location) => {
+    expect(isMetaPixelLocationSafe(location)).toBe(false);
+});
+it('allows ordinary marketing attribution without credential parameters', () => {
+    expect(isMetaPixelLocationSafe({pathname: '/signup', search: '?utm_source=instagram&fbclid=ad-click', hash: ''})).toBe(true);
 });

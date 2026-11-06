@@ -28,6 +28,7 @@ import {isConversationSuggestionCurrent, isFailureSuggestionAvailable} from '../
 import {INTENT_FIRST_CONTRACT, canApplyAuthoringResult, canSelectAuthoringCandidate} from '../../../model/intent-first-authoring';
 import {loadMonthlyRestRequirement} from '../../../model/monthly-rest-requirement';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
+import {reportScheduleClientFailure, type TRequestStage} from '../../../model/schedule-client-failure';
 import {
     conversationApi,
     conversationEvents,
@@ -50,6 +51,7 @@ import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
+import {AiCandidateReview} from './ai-candidate-review';
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import {AiConversationChanges} from './ai-conversation-changes';
@@ -61,7 +63,6 @@ import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus} from './ai-conversation-operation-status';
 import {AiConversationRequestHelp} from './ai-conversation-request-help';
-import {AiCandidateReview} from './ai-candidate-review';
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -110,7 +111,12 @@ type TProps = {
     onExecutionChange?: (execution: TConversationExecution | null) => void;
     resultActions?: TAdjustResultActions;
 };
-type TLocalEvent = {kind: 'local'; id: string; sequence: number; messages: TAutofillMessage[]};
+type TLocalEvent = {
+    kind: 'local';
+    id: string;
+    sequence: number;
+    messages: TAutofillMessage[];
+};
 type TComposerContext = {
     editingEventId?: number;
     previousId?: string;
@@ -1150,82 +1156,137 @@ export default function AiConversationSidebar({
 
         await run(
             async () => {
-                reviewedPreparation.current = null;
+                const attemptId = crypto.randomUUID();
+                const requestEventId = `request:${++localSequence.current}`;
+                const before = detailRef.current;
+                const afterSequence = Math.max(0, ...(before ? conversationEvents(before).map((event) => event.sequence) : []));
 
-                const current = await sync();
+                setLocalEvents((events) => [
+                    ...events,
+                    {
+                        kind: 'local',
+                        id: requestEventId,
+                        sequence: Math.max(afterSequence, ...events.map((event) => event.sequence)) + 0.001,
+                        messages: [{role: 'user', text: message, createdAt: new Date().toISOString()}],
+                    },
+                ]);
 
-                if (!current.conversationState && reference && current.conversation.latestInterpretationId !== reference) {
-                    throw new AiConversationInputError('staleRequest');
+                let stage: TRequestStage = 'SYNC';
+                let sentText = message;
+
+                try {
+                    reviewedPreparation.current = null;
+
+                    const current = await sync();
+
+                    stage = 'GUARD';
+
+                    // Applying a result clears the server's latest interpretation. A completed
+                    // request is history, not a stale edit target for the next ordinary message.
+                    const activeReference =
+                        !editingRequest &&
+                        !current.conversation.latestInterpretationId &&
+                        current.operations.some((op) => op.interpretationId === reference && isExecutionFinished(op))
+                            ? undefined
+                            : reference;
+
+                    if (!current.conversationState && activeReference && current.conversation.latestInterpretationId !== activeReference) {
+                        throw new AiConversationInputError('staleRequest');
+                    }
+
+                    const previous =
+                        activeReference ??
+                        current.turns.find(
+                            (turn) =>
+                                turn.interpretationId === current.conversation.latestInterpretationId &&
+                                (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
+                        )?.interpretationId;
+                    const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
+                    const state = current.conversationState;
+
+                    if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
+                        throw new Error(t('aiConversationSidebar.requestChanged'));
+
+                    const original =
+                        !state &&
+                        priorPlan &&
+                        !editingRequest &&
+                        (!intentFirstEnabled || priorPlan.semanticPlan?.state === 'NEEDS_CLARIFICATION')
+                            ? requestTextForTurn(current, priorPlan)
+                            : '';
+                    const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
+                    const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
+
+                    if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
+
+                    sentText = interpretedText;
+                    stage = 'INTERPRET';
+
+                    const interpreted = await api
+                        .interpret(current.conversation.conversationId, {
+                            expectedRevision: current.conversation.revision,
+                            text: interpretedText,
+                            clientContext: {
+                                surfaceVersion: 'conversation-minimal-v1',
+                                entryChoice: entryChoice ?? undefined,
+                                inputMode: editingRequest ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                                typedText: message,
+                            },
+                            ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
+                            language: i18n.language,
+                            ...(state
+                                ? {
+                                      expectedStateVersion: state.version,
+                                      change: 'AUTO' as const,
+                                      targetConditionIds: [],
+                                  }
+                                : previous && current.conversation.latestInterpretationId === previous
+                                  ? {
+                                        previousInterpretationId: previous,
+                                        change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
+                                            ? 'REPLACE'
+                                            : change,
+                                    }
+                                  : {}),
+                        })
+                        .catch(async (cause) => {
+                            // The server reserves a request version before model work. Refresh it for retry.
+                            await refresh().catch(() => undefined);
+
+                            throw cause;
+                        });
+
+                    if (initialGeneration) initialGenerationPending.current = true;
+
+                    setText('');
+
+                    setEditingRequest(null);
+                    setPreviousId(interpreted.interpretationId ?? undefined);
+                    setChange('ADD');
+                    setEntryChoice('modify');
+                    stage = 'REFRESH';
+                    await refresh();
+                } catch (cause) {
+                    if (before)
+                        void reportScheduleClientFailure(
+                            {wardId, teamId, conversationId: before.conversation.conversationId},
+                            stage,
+                            cause,
+                            attemptId,
+                        );
+
+                    throw cause;
+                } finally {
+                    // Replace only this attempt's optimistic message after a server receipt.
+                    // Earlier failed attempts remain in history even if the same text is sent again.
+                    const latest = detailRef.current;
+
+                    if (
+                        latest?.conversation.conversationId === before?.conversation.conversationId &&
+                        latest?.turns.some((turn) => turn.actor === 'USER' && turn.sequence > afterSequence && turn.text === sentText)
+                    )
+                        setLocalEvents((events) => events.filter((event) => event.id !== requestEventId));
                 }
-
-                const previous =
-                    reference ??
-                    current.turns.find(
-                        (turn) =>
-                            turn.interpretationId === current.conversation.latestInterpretationId &&
-                            (Boolean(turn.semanticPlan) || isConversationConfirmationCurrent(current, turn, false)),
-                    )?.interpretationId;
-                const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
-                const state = current.conversationState;
-
-                if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
-                    throw new Error(t('aiConversationSidebar.requestChanged'));
-
-                const original =
-                    !state &&
-                    priorPlan &&
-                    !editingRequest &&
-                    (!intentFirstEnabled || priorPlan.semanticPlan?.state === 'NEEDS_CLARIFICATION')
-                        ? requestTextForTurn(current, priorPlan)
-                        : '';
-                const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
-                const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
-
-                if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
-
-                const interpreted = await api
-                    .interpret(current.conversation.conversationId, {
-                        expectedRevision: current.conversation.revision,
-                        text: interpretedText,
-                        clientContext: {
-                            surfaceVersion: 'conversation-minimal-v1',
-                            entryChoice: entryChoice ?? undefined,
-                            inputMode: editingRequest ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
-                            typedText: message,
-                        },
-                        ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
-                        language: i18n.language,
-                        ...(state
-                            ? {
-                                  expectedStateVersion: state.version,
-                                  change: 'AUTO' as const,
-                                  targetConditionIds: [],
-                              }
-                            : previous && current.conversation.latestInterpretationId === previous
-                              ? {
-                                    previousInterpretationId: previous,
-                                    change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
-                                        ? 'REPLACE'
-                                        : change,
-                                }
-                              : {}),
-                    })
-                    .catch(async (cause) => {
-                        // The server reserves a request version before model work. Refresh it for retry.
-                        if (state) await refresh().catch(() => undefined);
-
-                        throw cause;
-                    });
-
-                if (initialGeneration) initialGenerationPending.current = true;
-
-                setText('');
-
-                setEditingRequest(null);
-                setPreviousId(interpreted.interpretationId ?? undefined);
-                setChange('ADD');
-                setEntryChoice('modify');
-                await refresh();
             },
             false,
             'reviewing',
