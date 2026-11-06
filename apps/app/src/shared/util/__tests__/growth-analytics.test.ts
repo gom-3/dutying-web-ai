@@ -4,6 +4,7 @@ import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/anal
 import {trackProductOutcome, trackScheduleSignal} from '../growth-analytics';
 
 const pixelTrack = vi.fn();
+
 vi.mock('react-ga4', () => ({default: {event: vi.fn()}}));
 vi.mock('@/shared/config/analytics', () => ({isGoogleAnalyticsEnabled: vi.fn(() => true), isMetaPixelEnabled: vi.fn(() => true)}));
 beforeEach(() => {
