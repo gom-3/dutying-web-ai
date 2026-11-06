@@ -1,4 +1,3 @@
-import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
 import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
 
@@ -23,8 +22,11 @@ export function trackProductOutcome(
     }
 
     try {
-        if (event === 'sign_up' && isMetaPixelEnabled()) {
-            ReactPixel.track('CompleteRegistration', {status: true, ...(method ? {registration_method: method} : {})});
+        if (event === 'sign_up' && typeof window !== 'undefined' && isMetaPixelEnabled()) {
+            // Initialization belongs to the browser entry; shared landing imports must also work in Node.
+            const pixel = (window as Window & {fbq?: (...args: unknown[]) => void}).fbq;
+
+            pixel?.('track', 'CompleteRegistration', {status: true, ...(method ? {registration_method: method} : {})});
         }
     } catch {
         // Each measurement destination fails independently of signup and the other SDK.
