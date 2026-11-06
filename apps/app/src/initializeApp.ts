@@ -7,6 +7,7 @@ import {
     isAuthenticationReferrer,
     isGoogleAnalyticsEnabled,
     isMetaPixelEnabled,
+    metaPixelId,
 } from '@/shared/config/analytics';
 import {isNonProductionAppDomain} from '@/shared/config/feature-flags';
 import {initializeAbto} from '@/shared/util/abto';
@@ -17,7 +18,7 @@ export default function initializeApp() {
 
     if (import.meta.env.PROD) {
         const gaTrackingId = googleAnalyticsMeasurementId();
-        const pixelId = import.meta.env.VITE_PIXEL_ID;
+        const pixelId = metaPixelId();
 
         Sentry.init({
             dsn: 'https://5035f79c451043f4b6438a90817ff608@o4505477969084416.ingest.us.sentry.io/4505477970526208',
@@ -37,7 +38,8 @@ export default function initializeApp() {
 
         // Pixel 관련 초기화
         if (isMetaPixelEnabled() && pixelId) {
-            ReactPixel.init(pixelId);
+            // Collect explicit events only; do not enable automatic page/form metadata collection.
+            ReactPixel.init(pixelId, undefined, {autoConfig: false, debug: false});
             ReactPixel.pageView();
         }
     }

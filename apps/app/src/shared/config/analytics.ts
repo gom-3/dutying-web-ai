@@ -2,6 +2,15 @@
 // G-94QM502EQF belongs to the legacy .net property and must not be reused.
 export const AI_GA_MEASUREMENT_ID = 'G-WT44BR53VN';
 
+// Company-owned .ai dataset; the legacy pixel mixes .net and development traffic.
+export const AI_META_PIXEL_ID = '1138075548924419';
+
+export function metaPixelId(): string {
+    const override = import.meta.env.VITE_AI_META_PIXEL_ID?.trim();
+
+    return override && /^[1-9][0-9]+$/.test(override) && override !== '225085720489207' ? override : AI_META_PIXEL_ID;
+}
+
 export function googleAnalyticsMeasurementId(): string {
     const override = import.meta.env.VITE_AI_GA_TRACKING_ID?.trim();
 
@@ -19,8 +28,32 @@ export function isGoogleAnalyticsEnabled(): boolean {
     return isMarketingAnalyticsEnabled() && Boolean(googleAnalyticsMeasurementId());
 }
 
+/** OAuth callbacks and credential-bearing URLs must never initialize or send Pixel events. */
+export function isMetaPixelLocationSafe(location: Pick<Location, 'pathname' | 'search' | 'hash'> = window.location): boolean {
+    if (location.pathname.startsWith('/oauth2/')) return false;
+
+    const credentialKeys = new Set([
+        'token',
+        'accesstoken',
+        'access_token',
+        'refreshtoken',
+        'refresh_token',
+        'idtoken',
+        'id_token',
+        'code',
+        'password',
+        'email',
+        'phone',
+        'authorization',
+    ]);
+
+    return [location.search, location.hash.replace(/^#/, '?')].every((part) =>
+        [...new URLSearchParams(part).keys()].every((key) => !credentialKeys.has(key.toLowerCase())),
+    );
+}
+
 export function isMetaPixelEnabled(): boolean {
-    return isMarketingAnalyticsEnabled() && Boolean(import.meta.env.VITE_PIXEL_ID);
+    return isMarketingAnalyticsEnabled() && isMetaPixelLocationSafe() && Boolean(metaPixelId());
 }
 
 /** Preserve campaign attribution, but never send arbitrary query parameters or fragments. */

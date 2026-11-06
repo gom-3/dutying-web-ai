@@ -17,6 +17,7 @@ interface ImportMetaEnv {
     readonly VITE_GA_TRACKING_ID?: string;
     readonly VITE_AI_GA_TRACKING_ID?: string;
     readonly VITE_PIXEL_ID?: string;
+    readonly VITE_AI_META_PIXEL_ID?: string;
     readonly VITE_ABTO_ENABLED?: string;
     readonly VITE_ABTO_EVENT_KEY?: string;
     readonly VITE_AI_SCHEDULE_PROVIDER?: string;
