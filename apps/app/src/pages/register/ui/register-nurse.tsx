@@ -24,6 +24,7 @@ import {
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 
 const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
 const FIELD_CLASS =
@@ -134,6 +135,17 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                         preferredLanguage,
                         serviceRegion,
                     });
+
+                    if (
+                        isSocialMode &&
+                        accountMe &&
+                        (accountMe.status === 'INITIAL' ||
+                            accountMe.status === 'NURSE_INFO_PENDING' ||
+                            ((accountMe.status as string) === 'WORKSPACE_SETUP_PENDING' && !accountMe.phoneNum))
+                    ) {
+                        trackProductOutcome('sign_up', 'social');
+                    }
+
                     onCompleted?.();
                 } catch (error) {
                     if (isDuplicatePhoneNumError(error)) {

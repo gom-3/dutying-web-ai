@@ -1,7 +1,9 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {saveSocialSignupProfile, clearSocialSignupProfile} from '@/features/auth/model/social-signup';
+import {trackProductOutcome} from '@/shared/util/growth-analytics';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import RegisterNurse from '../register-nurse';
+vi.mock('@/shared/util/growth-analytics', () => ({trackProductOutcome: vi.fn()}));
 
 const mocks = vi.hoisted(() => ({
     accountMe: null as {
@@ -44,6 +46,7 @@ vi.mock('@/entities/account/ui/profile-image', () => ({
 
 describe('RegisterNurse', () => {
     beforeEach(() => {
+        vi.mocked(trackProductOutcome).mockReset();
         mocks.accountMe = null;
         mocks.registerAccountProfile.mockReset();
         mocks.registerAccountProfile.mockResolvedValue(undefined);
@@ -106,6 +109,44 @@ describe('RegisterNurse', () => {
                 }),
             );
         });
+    });
+
+    it.each(['INITIAL', 'NURSE_INFO_PENDING', 'WORKSPACE_SETUP_PENDING'])(
+        'counts successful social registration at %s only after the API resolves',
+        async (status) => {
+            const user = userEvent.setup();
+
+            mocks.accountMe = {status};
+
+            let finish!: () => void;
+
+            mocks.registerAccountProfile.mockImplementationOnce(
+                () =>
+                    new Promise<void>((resolve) => {
+                        finish = resolve;
+                    }),
+            );
+            render(<RegisterNurse mode="social" />);
+            await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), '홍길동');
+            await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01098765432');
+            await user.click(screen.getByRole('button', {name: '다음'}));
+            expect(trackProductOutcome).not.toHaveBeenCalled();
+            finish();
+            await waitFor(() => expect(trackProductOutcome).toHaveBeenCalledExactlyOnceWith('sign_up', 'social'));
+        },
+    );
+
+    it('does not count a failed social registration', async () => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {status: 'INITIAL'};
+        mocks.registerAccountProfile.mockRejectedValueOnce(new Error('signup failed'));
+        render(<RegisterNurse mode="social" />);
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), '홍길동');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01098765432');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await waitFor(() => expect(mocks.registerAccountProfile).toHaveBeenCalledTimes(1));
+        expect(trackProductOutcome).not.toHaveBeenCalled();
     });
 
     it('submits an English-region international phone number', async () => {
