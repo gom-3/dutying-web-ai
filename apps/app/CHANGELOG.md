@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.38
+
+### Patch Changes
+
+- eb9c2ab: 자동채우기 대화에서 진행 상태, 요청 복구, 변경 내역을 보기 쉽게 다듬고 병동 추가 안내를 간결하게 정리했습니다.
+    - @dutying/api@1.3.38
+    - @dutying/domain@1.3.38
+    - @dutying/utils@1.3.38
+
 ## 1.3.37
 
 ### Patch Changes
