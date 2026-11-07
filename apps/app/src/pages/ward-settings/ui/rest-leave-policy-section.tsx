@@ -21,6 +21,7 @@ import {
     type TRestLeavePolicy,
     type TRestTargetMode,
     useRestLeavePolicy,
+    withDefaultHolidayCountry,
 } from '../model/rest-leave-policy';
 import {type TWardSettingsShiftType} from '../model/ward-settings-hook';
 
@@ -75,21 +76,6 @@ function getCurrentYearMonth() {
     const today = new Date();
 
     return {year: today.getFullYear(), month: today.getMonth() + 1};
-}
-
-const DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE: Record<string, THolidayCountry> = {
-    ko: 'KR',
-    ja: 'JP',
-    zh: 'CN',
-    th: 'TH',
-    vi: 'VN',
-    en: 'US',
-};
-
-function withDefaultHolidayCountry(policy: TRestLeavePolicy, language: string): TRestLeavePolicy {
-    if (!policy.includeHolidays || policy.holidayCountry) return policy;
-
-    return {...policy, holidayCountry: DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE[language.split('-')[0]] ?? 'US'};
 }
 
 function ChoiceCard({title, description, selected, onClick, children}: TChoiceCardProps) {
@@ -496,13 +482,9 @@ export function RestLeavePolicySection({wardId, shiftTypes, onDirtyChange}: TRes
                                             description={t('page.wardSettings.restLeavePolicy.holiday.include.description')}
                                             selected={draft.includeHolidays}
                                             onClick={() =>
-                                                patchDraft({
-                                                    includeHolidays: true,
-                                                    holidayCountry:
-                                                        draft.holidayCountry ??
-                                                        DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE[language.split('-')[0]] ??
-                                                        'US',
-                                                })
+                                                setDraft((current) =>
+                                                    withDefaultHolidayCountry({...current, includeHolidays: true}, language),
+                                                )
                                             }
                                         />
                                         <ChoiceCard

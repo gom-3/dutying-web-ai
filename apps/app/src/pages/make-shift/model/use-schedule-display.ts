@@ -1,36 +1,28 @@
 import {useEffect, useState} from 'react';
 
-export type TScheduleDisplay = {rest: boolean; annualLeave: boolean};
-
-const defaults: TScheduleDisplay = {rest: true, annualLeave: false};
 const eventName = 'dutying-schedule-display';
 const key = (wardId: number | null) => `schedule-display:${wardId}`;
 
-function read(wardId: number | null): TScheduleDisplay {
-    if (wardId == null) return defaults;
+function readAnnualLeave(wardId: number | null): boolean {
+    if (wardId == null) return false;
 
     try {
         const saved = JSON.parse(localStorage.getItem(key(wardId)) ?? 'null');
 
-        return {
-            rest: typeof saved?.rest === 'boolean' ? saved.rest : true,
-            annualLeave:
-                typeof saved?.annualLeave === 'boolean'
-                    ? saved.annualLeave
-                    : localStorage.getItem(`annual-leave-display:${wardId}`) === 'true',
-        };
+        return typeof saved?.annualLeave === 'boolean'
+            ? saved.annualLeave
+            : localStorage.getItem(`annual-leave-display:${wardId}`) === 'true';
     } catch {
-        return defaults;
+        return false;
     }
 }
 
-/** Display only: changing these preferences never changes a ward's calculation policy. */
 export function useScheduleDisplay(wardId: number | null) {
-    const [snapshot, setSnapshot] = useState(() => ({wardId, value: read(wardId)}));
-    const value = snapshot.wardId === wardId ? snapshot.value : read(wardId);
+    const [snapshot, setSnapshot] = useState(() => ({wardId, showAnnualLeave: readAnnualLeave(wardId)}));
+    const showAnnualLeave = snapshot.wardId === wardId ? snapshot.showAnnualLeave : readAnnualLeave(wardId);
 
     useEffect(() => {
-        const sync = () => setSnapshot({wardId, value: read(wardId)});
+        const sync = () => setSnapshot({wardId, showAnnualLeave: readAnnualLeave(wardId)});
 
         sync();
         window.addEventListener('storage', sync);
@@ -42,19 +34,17 @@ export function useScheduleDisplay(wardId: number | null) {
         };
     }, [wardId]);
 
-    const change = (field: keyof TScheduleDisplay, checked: boolean) => {
-        const next = {...value, [field]: checked};
-
+    const setShowAnnualLeave = (checked: boolean) => {
         try {
-            if (wardId != null) localStorage.setItem(key(wardId), JSON.stringify(next));
+            if (wardId != null) localStorage.setItem(key(wardId), JSON.stringify({annualLeave: checked}));
 
             window.dispatchEvent(new Event(eventName));
         } catch {
             // The current screen remains usable when storage is unavailable.
         }
 
-        setSnapshot({wardId, value: next});
+        setSnapshot({wardId, showAnnualLeave: checked});
     };
 
-    return {value, change};
+    return {showAnnualLeave, setShowAnnualLeave};
 }

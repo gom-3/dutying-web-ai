@@ -585,7 +585,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     );
     const connectedNurseCount = useMemo(() => currentTeamNurses.filter((nurse) => nurse.isConnected).length, [currentTeamNurses]);
     const hasNursesToConnect = connectedNurseCount === 0 || connectedNurseCount < currentTeamNurses.length;
-    const {policy} = useRestLeavePolicy(wardId);
+    const restPolicy = useRestLeavePolicy(wardId);
+    const {policy} = restPolicy;
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const promotableRules = useMemo(() => promotableRuleRequests(monthRequests), [monthRequests]);
     const aiRequestSeqRef = useRef(0);
@@ -928,7 +929,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     );
     const annualLeave = useAnnualLeaveSchedule(wardId, currentShiftTeamId, year, month, orderedShift, editorDoc);
     const display = useScheduleDisplay(wardId);
-    const annualColumns = useAnnualLeaveScheduleColumns(annualLeave, display.value.annualLeave);
+    const annualColumns = useAnnualLeaveScheduleColumns(annualLeave, display.showAnnualLeave);
     const restCheckByShiftNurseId = useMemo(
         () =>
             orderedShift
@@ -3082,6 +3083,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     displaySettings={
                         <ScheduleDisplayMenu
                             display={display}
+                            restPolicy={restPolicy}
                             settings={
                                 <RestLeavePolicySummaryButton
                                     wardId={wardId}
@@ -3219,7 +3221,6 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             doc={isAiFillDecisionPreviewOpen ? editorDoc : visibleCalendarDoc}
                             annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
                             annualLeaveColumns={annualColumns.columns}
-                            showRestCheck={display.value.rest}
                             violationMap={violationMap}
                             teamViolations={teamViolations}
                             showFaults={showFaults}
