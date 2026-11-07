@@ -2,6 +2,7 @@ import {createEvent, fireEvent, render, screen, within} from '@testing-library/r
 import userEvent from '@testing-library/user-event';
 import {act} from 'react';
 import toast from 'react-hot-toast';
+import {MemoryRouter, Route, Routes} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
@@ -77,6 +78,41 @@ describe('MakeShiftCalendar', () => {
         vi.mocked(toast.success).mockClear();
         useShiftEditorStore.getState().reset();
         useUIConfigStore.getState().reset();
+    });
+
+    it('opens shift type settings from a summary header with the keyboard', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={['/make']}>
+                <Routes>
+                    <Route
+                        path="/make"
+                        element={
+                            <MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} linkShiftTypeSettings />
+                        }
+                    />
+                    <Route path="/ward-settings" element={<h1>근무 유형 설정</h1>} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const link = screen.getByRole('link', {name: 'Day · 근무 유형'});
+
+        expect(link).toHaveAttribute('href', '/ward-settings?tab=shiftTypes');
+        expect(link).toHaveAttribute('data-navigation-path', '/ward-settings?tab=shiftTypes');
+        link.focus();
+        await user.keyboard('{Enter}');
+        expect(screen.getByRole('heading', {name: '근무 유형 설정'})).toBeVisible();
+    });
+
+    it('keeps static preview shift type headers noninteractive', () => {
+        render(
+            <MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} linkShiftTypeSettings staticPreview />,
+        );
+
+        expect(screen.queryByRole('link')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__type-summary-badge')).toHaveTextContent('D');
     });
 
     it('supports one tab stop and arrow-key navigation while protecting requested and blank shifts in fixed preview', async () => {

@@ -4,6 +4,14 @@ import {type TLocale} from './ko';
 
 export const zh = {
     ...generatedZh,
+    scheduleFinalValidation: {
+        title: '确认前请检查',
+        summary: '有 {{emptyCount}} 个空白单元格和 {{violationCount}} 项排班条件违规。',
+        description: '检查详情后，可按当前内容确认或返回修改。',
+        edit: '返回修改',
+        confirm: '按当前内容确认',
+        failed: '未能完成确认前检查，请重试。',
+    },
     widget: {
         ...generatedZh.widget,
         wardChat: {

@@ -4,6 +4,14 @@ import {type TLocale} from './ko';
 
 export const vi = {
     ...generatedVi,
+    scheduleFinalValidation: {
+        title: 'Kiểm tra trước khi xác nhận',
+        summary: 'Có {{emptyCount}} ô trống và {{violationCount}} vi phạm điều kiện lịch trực.',
+        description: 'Kiểm tra chi tiết rồi xác nhận như hiện tại hoặc quay lại chỉnh sửa.',
+        edit: 'Quay lại chỉnh sửa',
+        confirm: 'Xác nhận như hiện tại',
+        failed: 'Không thể hoàn tất kiểm tra trước khi xác nhận. Vui lòng thử lại.',
+    },
     widget: {
         ...generatedVi.widget,
         wardChat: {

@@ -4,6 +4,14 @@ import type {TLocale} from './ko';
 
 export const ja: TLocale = {
     ...en,
+    scheduleFinalValidation: {
+        title: '確定前に確認してください',
+        summary: '未入力 {{emptyCount}}マス・勤務条件違反 {{violationCount}}件があります。',
+        description: '内容を確認して、このまま確定するか、戻って修正できます。',
+        edit: '戻って修正',
+        confirm: 'このまま確定',
+        failed: '確定前の検証が完了しませんでした。もう一度お試しください。',
+    },
     page: {
         ...en.page,
         state: {
@@ -1567,7 +1575,8 @@ export const ja: TLocale = {
                 toast: {
                     duplicatesRemoved: '重複する制約条件{{count}}件を整理しました。',
                     duplicateSkipped: '同じ条件がすでにあります。',
-                    periodCountConflict: '同じ対象・勤務・期間に最低{{minimum}}回と最大{{maximum}}回が設定されています。両方は満たせません。以下の条件を確認し、希望する回数に修正してください。',
+                    periodCountConflict:
+                        '同じ対象・勤務・期間に最低{{minimum}}回と最大{{maximum}}回が設定されています。両方は満たせません。以下の条件を確認し、希望する回数に修正してください。',
                     reviewLowerBound: '最低回数の条件を確認',
                     reviewUpperBound: '最大回数の条件を確認',
                     staffCountConflict: '同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。',

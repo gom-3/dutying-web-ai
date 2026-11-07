@@ -1,17 +1,19 @@
-import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
-import {beforeEach, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {isGoogleAnalyticsEnabled, isMetaPixelEnabled} from '@/shared/config/analytics';
 import {trackProductOutcome, trackScheduleSignal} from '../growth-analytics';
 
-vi.mock('react-facebook-pixel', () => ({default: {track: vi.fn()}}));
+const pixelTrack = vi.fn();
+
 vi.mock('react-ga4', () => ({default: {event: vi.fn()}}));
 vi.mock('@/shared/config/analytics', () => ({isGoogleAnalyticsEnabled: vi.fn(() => true), isMetaPixelEnabled: vi.fn(() => true)}));
 beforeEach(() => {
     vi.resetAllMocks();
+    vi.stubGlobal('fbq', pixelTrack);
     vi.mocked(isMetaPixelEnabled).mockReturnValue(true);
     vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(true);
 });
+afterEach(() => vi.unstubAllGlobals());
 it('sends only controlled outcome metadata', () => {
     trackProductOutcome('sign_up', 'password');
     expect(ReactGA.event).toHaveBeenCalledWith('sign_up', {schema_version: 1, service: 'dutying_ai', method: 'password'});
@@ -58,12 +60,12 @@ it('keeps scheduling usable when either analytics configuration or the SDK fails
 
 it.each(['password', 'social'] as const)('sends standard Meta registration after %s signup', (method) => {
     trackProductOutcome('sign_up', method);
-    expect(ReactPixel.track).toHaveBeenCalledExactlyOnceWith('CompleteRegistration', {status: true, registration_method: method});
+    expect(pixelTrack).toHaveBeenCalledExactlyOnceWith('track', 'CompleteRegistration', {status: true, registration_method: method});
 });
 it('does not treat login or scheduling as registration', () => {
     trackProductOutcome('login', 'social');
     trackProductOutcome('ward_created');
-    expect(ReactPixel.track).not.toHaveBeenCalled();
+    expect(pixelTrack).not.toHaveBeenCalled();
 });
 it('sends Meta registration even when GA is disabled or throws', () => {
     vi.mocked(isGoogleAnalyticsEnabled).mockReturnValue(false);
@@ -73,14 +75,14 @@ it('sends Meta registration even when GA is disabled or throws', () => {
         throw new Error('GA unavailable');
     });
     trackProductOutcome('sign_up', 'social');
-    expect(ReactPixel.track).toHaveBeenCalledTimes(2);
+    expect(pixelTrack).toHaveBeenCalledTimes(2);
 });
 it('blocks Meta on disabled hosts and contains pixel failures', () => {
     vi.mocked(isMetaPixelEnabled).mockReturnValue(false);
     trackProductOutcome('sign_up', 'password');
-    expect(ReactPixel.track).not.toHaveBeenCalled();
+    expect(pixelTrack).not.toHaveBeenCalled();
     vi.mocked(isMetaPixelEnabled).mockReturnValue(true);
-    vi.mocked(ReactPixel.track).mockImplementationOnce(() => {
+    vi.mocked(pixelTrack).mockImplementationOnce(() => {
         throw new Error('pixel unavailable');
     });
     expect(() => trackProductOutcome('sign_up', 'password')).not.toThrow();

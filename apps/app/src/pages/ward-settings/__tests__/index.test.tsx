@@ -1,4 +1,4 @@
-import {fireEvent, waitFor} from '@testing-library/react';
+import {act, fireEvent, waitFor} from '@testing-library/react';
 import toast from 'react-hot-toast';
 import type * as ReactRouterModule from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -369,7 +369,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('-')).toBeInTheDocument();
     });
 
-    it('renders primary shifts, then off, then other shifts regardless of the API order', () => {
+    it('renders primary shifts, then off, then other shifts when no display order has been saved', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
                 state: {
@@ -384,7 +384,6 @@ describe('WardSettingsPage', () => {
                             isDefault: false,
                             classification: 'OTHER_WORK',
                             rotationSystem: 'NONE',
-                            displayOrder: 1,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -397,7 +396,6 @@ describe('WardSettingsPage', () => {
                             isCounted: false,
                             classification: 'OFF',
                             rotationSystem: 'NONE',
-                            displayOrder: 2,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -407,7 +405,6 @@ describe('WardSettingsPage', () => {
                             startTime: '07:00',
                             endTime: '15:00',
                             classification: 'DAY',
-                            displayOrder: 3,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -417,7 +414,6 @@ describe('WardSettingsPage', () => {
                             startTime: '15:00',
                             endTime: '23:00',
                             classification: 'EVENING',
-                            displayOrder: 4,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -427,7 +423,6 @@ describe('WardSettingsPage', () => {
                             startTime: '23:00',
                             endTime: '07:00',
                             classification: 'NIGHT',
-                            displayOrder: 5,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -439,7 +434,6 @@ describe('WardSettingsPage', () => {
                             isDefault: false,
                             classification: 'DAY',
                             rotationSystem: 'TWO',
-                            displayOrder: 6,
                         },
                         {
                             ...baseValue().state.shiftTypes[0],
@@ -451,7 +445,6 @@ describe('WardSettingsPage', () => {
                             isDefault: false,
                             classification: 'NIGHT',
                             rotationSystem: 'TWO',
-                            displayOrder: 7,
                         },
                     ],
                 },
@@ -463,6 +456,88 @@ describe('WardSettingsPage', () => {
         const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map((input) => input.value);
 
         expect(names).toEqual(['Day', 'Evening', 'Night', '2교대 주간', '2교대 야간', 'Off', '교육']);
+    });
+
+    it('restores saved display orders across classifications on every visit', () => {
+        const [day, evening, night, off] = requiredShiftTypes();
+        const shiftTypes = [
+            {...day!, displayOrder: 3},
+            {...evening!, displayOrder: 4},
+            {...night!, displayOrder: 2},
+            {...off!, displayOrder: 1},
+        ];
+
+        mockUseWardSettings.mockReturnValue(createValue({state: {shiftTypes}}));
+
+        const firstVisit = render(<WardSettingsPage />);
+        const names = () => Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map((input) => input.value);
+
+        expect(names()).toEqual([off!.name, night!.name, day!.name, evening!.name]);
+        firstVisit.unmount();
+        render(<WardSettingsPage />);
+        expect(names()).toEqual([off!.name, night!.name, day!.name, evening!.name]);
+    });
+
+    it.each([false, true])('starts dragging from the handle button padding (isUsed=%s)', async (isUsed) => {
+        mockUseWardSettings.mockReturnValue(
+            createValue({state: {shiftTypes: requiredShiftTypes().map((shiftType) => ({...shiftType, isUsed}))}}),
+        );
+        render(<WardSettingsPage />);
+
+        const row = document.querySelector<HTMLElement>('[data-rfd-draggable-id="1"]')!;
+        const handle = row.querySelector('button')!;
+
+        fireEvent.mouseDown(handle, {button: 0, clientX: 10, clientY: 10});
+        fireEvent.mouseMove(window, {clientX: 10, clientY: 30});
+        await waitFor(() => expect(row).toHaveStyle({position: 'fixed'}));
+        fireEvent.keyDown(window, {key: 'Escape', keyCode: 27});
+    });
+
+    it('reorders used shifts with the keyboard and saves their display orders', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+        const shiftTypes = requiredShiftTypes().map((shiftType, index) => ({...shiftType, isUsed: true, displayOrder: index + 1}));
+
+        mockUseWardSettings.mockReturnValue(createValue({state: {shiftTypes}, actions: {updateShiftType}}));
+        render(<WardSettingsPage />);
+
+        // jsdom has no layout; give the real drag sensors distinct row dimensions.
+        const bounds = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+            const rows = Array.from(document.querySelectorAll('[data-rfd-draggable-id]'));
+            const index = rows.indexOf(this);
+
+            return new DOMRect(0, index < 0 ? 0 : index * 68, 900, index < 0 ? 400 : 68);
+        });
+
+        try {
+            const row = document.querySelector<HTMLElement>('[data-rfd-draggable-id="1"]')!;
+            const handle = row.querySelector('button')!;
+
+            handle.focus();
+            fireEvent.keyDown(handle, {key: ' ', code: 'Space', keyCode: 32});
+            await waitFor(() => expect(row).toHaveStyle({position: 'fixed'}));
+            await act(async () => {
+                fireEvent.keyDown(handle, {key: 'ArrowDown', keyCode: 40});
+                await new Promise((resolve) => requestAnimationFrame(resolve));
+            });
+            fireEvent.keyDown(handle, {key: ' ', code: 'Space', keyCode: 32});
+            fireEvent.transitionEnd(row, {propertyName: 'transform'});
+
+            await waitFor(() => {
+                const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map(
+                    (input) => input.value,
+                );
+
+                expect(names).toEqual([shiftTypes[1]!.name, shiftTypes[0]!.name, shiftTypes[2]!.name, shiftTypes[3]!.name]);
+            });
+            await user.click(screen.getByRole('button', {name: '저장하기'}));
+            await waitFor(() => {
+                expect(updateShiftType).toHaveBeenCalledWith(2, expect.objectContaining({displayOrder: 1, classification: 'EVENING'}));
+                expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({displayOrder: 2, classification: 'DAY'}));
+            });
+        } finally {
+            bounds.mockRestore();
+        }
     });
 
     it('does not merge or reclassify duplicate-looking rows from their names and times', () => {

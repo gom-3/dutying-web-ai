@@ -220,6 +220,7 @@ export function FixedShifts() {
             {!dutyQuery.isLoading && !isHydratingEditor && !hasEditorSourceError && orderedShift && (
                 <div className="fixed-shifts-calendar-wrap w-full min-w-0">
                     <MakeShiftCalendar
+                        linkShiftTypeSettings
                         shift={orderedShift}
                         doc={fixedOnlyDoc}
                         // 고정 근무 화면에서는 위반(violation) 표시를 항상 끈다.

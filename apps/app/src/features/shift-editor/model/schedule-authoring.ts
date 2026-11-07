@@ -31,6 +31,7 @@ export function docToLockedCellKeys(doc: TDutyDoc): string[] {
 }
 
 export function buildValidateSnapshotDTO(params: {
+    validationPhase?: TValidateSnapshotDTO['validationPhase'];
     year: number;
     month: number;
     draftRevision: number;
@@ -41,6 +42,7 @@ export function buildValidateSnapshotDTO(params: {
     const {year, month, draftRevision, rulesHash, doc, originalShift} = params;
 
     return {
+        validationPhase: params.validationPhase ?? 'DRAFT',
         year,
         month,
         draftRevision,

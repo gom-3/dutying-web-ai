@@ -527,9 +527,12 @@ export type TValidationRes = {
     rulesHash: string;
     summary: TValidationSummaryDto;
     violations: TScheduleViolationDto[];
+    /** 작성 중 표시용 실제 위반. 전체 검증/AI 응답에도 제공된다. */
+    draftViolations?: TScheduleViolationDto[];
 };
 
 export type TValidateSnapshotDTO = {
+    validationPhase?: 'DRAFT' | 'FINAL';
     year: number;
     month: number;
     draftRevision: number;
