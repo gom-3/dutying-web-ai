@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
     currentTeamNurses: [] as Array<{isConnected: boolean}>,
     wardApi: {
         getSnapshots: vi.fn(),
+        validateSnapshot: vi.fn(),
         getSnapshot: vi.fn(),
         saveSnapshot: vi.fn(),
         publishSnapshot: vi.fn(),
@@ -296,6 +297,7 @@ function seedEditor(doc = makeDoc()) {
 
 describe('AiAutofill blank preview', () => {
     beforeEach(() => {
+        vi.mocked(toast.error).mockClear();
         mocks.previousBlank = false;
         mocks.shift.days = [];
         mocks.shift.wardShiftTypes = [];
@@ -309,6 +311,14 @@ describe('AiAutofill blank preview', () => {
         mocks.moveScheduleRow.mockReset();
         mocks.currentTeamNurses = [];
         mocks.wardApi.getSnapshots.mockReset().mockResolvedValue({snapshots: []});
+        mocks.wardApi.validateSnapshot.mockReset().mockImplementation((_ward, _team, dto) =>
+            Promise.resolve({
+                draftRevision: dto.draftRevision,
+                rulesHash: dto.rulesHash,
+                summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+                violations: [],
+            }),
+        );
         mocks.wardApi.saveSnapshot.mockReset().mockResolvedValue({snapshotId: 101});
         mocks.wardApi.publishSnapshot.mockReset().mockResolvedValue(undefined);
         mocks.wardApi.getShiftConstraintRules.mockReset().mockResolvedValue({schemaVersion: 1, wardId: 1, shiftTeamId: 10, rules: []});
@@ -413,6 +423,124 @@ describe('AiAutofill blank preview', () => {
             '듀팅 앱에서 확정된 근무표를 자동으로 받아볼 수 있어요!',
         );
         expect(ko.page.makeShift.aiRefill.publishSuccessWithoutRecipients).not.toContain('연동된 인원이 없어');
+    });
+
+    it('reviews empty cells at confirmation and allows returning without saving', async () => {
+        const doc = makeDoc();
+
+        doc.rows[0]!.cells[2] = null;
+        seedEditor(doc);
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'confirm'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'scheduleFinalValidation.title'});
+
+        expect(within(dialog).getByText(/scheduleFinalValidation.summary/)).toHaveTextContent('"emptyCount":1');
+        expect(mocks.wardApi.validateSnapshot).toHaveBeenCalledWith(1, 10, expect.objectContaining({validationPhase: 'FINAL'}));
+        expect(mocks.wardApi.saveSnapshot).not.toHaveBeenCalled();
+        await userEvent.click(within(dialog).getByRole('button', {name: 'scheduleFinalValidation.edit'}));
+        await waitFor(() => expect(screen.queryByRole('dialog', {name: 'scheduleFinalValidation.title'})).not.toBeInTheDocument());
+        expect(mocks.wardApi.publishSnapshot).not.toHaveBeenCalled();
+        expect(useSchedulePublishSuccessStore.getState().notice).toBeNull();
+    });
+
+    it('requires review of full staffing warnings before saving and publishing', async () => {
+        mocks.wardApi.validateSnapshot.mockImplementation((_ward, _team, dto) =>
+            Promise.resolve({
+                draftRevision: dto.draftRevision,
+                rulesHash: dto.rulesHash,
+                summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+                draftViolations: [],
+                violations: [
+                    {
+                        violationId: 'staff-1',
+                        ruleId: 1,
+                        templateCode: 'MIN_STAFF_BY_SHIFT',
+                        severity: 'HARD',
+                        message: 'Need more nurses',
+                        affectedCells: [],
+                        fixable: true,
+                    },
+                ],
+            }),
+        );
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'confirm'}));
+
+        const dialog = await screen.findByRole('dialog', {name: 'scheduleFinalValidation.title'});
+
+        expect(within(dialog).getByText('Need more nurses')).toBeInTheDocument();
+        expect(mocks.wardApi.saveSnapshot).not.toHaveBeenCalled();
+        await userEvent.click(within(dialog).getByRole('button', {name: 'scheduleFinalValidation.confirm'}));
+        await waitFor(() => expect(mocks.wardApi.publishSnapshot).toHaveBeenCalledTimes(1));
+    });
+
+    it('does not publish when final validation fails', async () => {
+        mocks.wardApi.validateSnapshot.mockRejectedValue(new Error('unavailable'));
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'confirm'}));
+        await waitFor(() => expect(toast.error).toHaveBeenCalled());
+        expect(mocks.wardApi.saveSnapshot).not.toHaveBeenCalled();
+        expect(mocks.wardApi.publishSnapshot).not.toHaveBeenCalled();
+        expect(useSchedulePublishSuccessStore.getState().notice).toBeNull();
+    });
+
+    it('rejects a final validation response after the grid changes', async () => {
+        let finish!: () => void;
+
+        mocks.wardApi.validateSnapshot.mockImplementation(
+            (_ward, _team, dto) =>
+                new Promise((resolve) => {
+                    finish = () =>
+                        resolve({
+                            draftRevision: dto.draftRevision,
+                            rulesHash: dto.rulesHash,
+                            summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+                            violations: [],
+                        });
+                }),
+        );
+        render(<AiAutofill />);
+        await userEvent.click(screen.getByRole('button', {name: 'confirm'}));
+        await waitFor(() => expect(mocks.wardApi.validateSnapshot).toHaveBeenCalled());
+        act(() => {
+            const doc = structuredClone(useShiftEditorStore.getState().doc);
+
+            doc.rows[0]!.cells[0] = 'O';
+            useShiftEditorStore.getState().setDoc(doc);
+            finish();
+        });
+        await waitFor(() => expect(toast.error).toHaveBeenCalled());
+        expect(mocks.wardApi.saveSnapshot).not.toHaveBeenCalled();
+        expect(mocks.wardApi.publishSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('does not save or publish after leaving while final validation is pending', async () => {
+        let finish!: () => void;
+
+        mocks.wardApi.validateSnapshot.mockImplementation(
+            (_ward, _team, dto) =>
+                new Promise((resolve) => {
+                    finish = () =>
+                        resolve({
+                            draftRevision: dto.draftRevision,
+                            rulesHash: dto.rulesHash,
+                            summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+                            violations: [],
+                        });
+                }),
+        );
+
+        const view = render(<AiAutofill />);
+
+        await userEvent.click(screen.getByRole('button', {name: 'confirm'}));
+        await waitFor(() => expect(mocks.wardApi.validateSnapshot).toHaveBeenCalled());
+        view.unmount();
+        await act(async () => {
+            finish();
+        });
+        expect(mocks.wardApi.saveSnapshot).not.toHaveBeenCalled();
+        expect(mocks.wardApi.publishSnapshot).not.toHaveBeenCalled();
     });
 
     it('uses the purple previous-shift warning image in the publish confirmation', async () => {
@@ -655,6 +783,7 @@ describe('AiAutofill blank preview', () => {
         });
 
         const user = userEvent.setup();
+
         render(<AiAutofill />);
 
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
@@ -683,6 +812,7 @@ describe('AiAutofill blank preview', () => {
                 },
             ],
         };
+
         mocks.requestAiSchedule
             .mockResolvedValueOnce({
                 ok: false,
@@ -705,28 +835,37 @@ describe('AiAutofill blank preview', () => {
                 },
                 validation: {summary: {hardCount: 1, softCount: 0, totalCount: 1}, violations: []},
             }));
+
         const user = userEvent.setup();
+
         render(<AiAutofill />);
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.fill'}));
+
         const proceed = await screen.findByRole('button', {name: 'aiAutofillUi.conflictReview.proceed'});
+
         expect(proceed).toBeEnabled();
         expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
         expect(screen.queryByRole('button', {name: 'aiAdjust.executionFailure.retryConditions'})).not.toBeInTheDocument();
         expect(screen.queryByText('aiAutofillUi.adjustIntro.title')).not.toBeInTheDocument();
+
         const original = mocks.requestAiSchedule.mock.calls[0]![0];
+
         if (next !== 'confirm') {
             act(() => {
                 const state = useShiftEditorStore.getState();
+
                 if (next === 'rules') state.setRulesHash('sha256:changed');
                 else state.setDoc({...state.doc, rows: state.doc.rows.map((row) => ({...row, cells: ['D', 'E', 'O']}))});
             });
             expect(proceed).toBeDisabled();
             await user.click(proceed);
             expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(1);
+
             return;
         }
+
         await user.click(proceed);
         await waitFor(() => expect(mocks.requestAiSchedule).toHaveBeenCalledTimes(2));
         expect(mocks.requestAiSchedule.mock.calls[1]![0]).toMatchObject({

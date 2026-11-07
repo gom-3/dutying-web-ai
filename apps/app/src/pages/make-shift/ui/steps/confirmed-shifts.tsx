@@ -242,6 +242,7 @@ export function ConfirmedShifts() {
                             }
                         >
                             <MakeShiftCalendar
+                                linkShiftTypeSettings
                                 shift={orderedShift}
                                 doc={doc}
                                 annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}

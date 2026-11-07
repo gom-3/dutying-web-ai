@@ -4,6 +4,14 @@ import {type TLocale} from './ko';
 
 export const th = {
     ...generatedTh,
+    scheduleFinalValidation: {
+        title: 'ตรวจสอบก่อนยืนยัน',
+        summary: 'มีช่องว่าง {{emptyCount}} ช่อง และการละเมิดเงื่อนไขตารางเวร {{violationCount}} รายการ',
+        description: 'ตรวจสอบรายละเอียด แล้วเลือกยืนยันตามนี้หรือกลับไปแก้ไข',
+        edit: 'กลับไปแก้ไข',
+        confirm: 'ยืนยันตามนี้',
+        failed: 'ตรวจสอบก่อนยืนยันไม่สำเร็จ กรุณาลองอีกครั้ง',
+    },
     widget: {
         ...generatedTh.widget,
         wardChat: {

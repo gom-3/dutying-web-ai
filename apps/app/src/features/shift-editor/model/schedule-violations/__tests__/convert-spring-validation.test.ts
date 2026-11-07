@@ -1,9 +1,9 @@
 import type {TValidationRes} from '@dutying/api/ward';
 import {afterEach, describe, expect, it} from 'vitest';
-import {buildViolationMapAll} from '../../validator';
-import type {TDutyDoc} from '../../types';
-import {violationsFromSpringValidation} from '../convert-spring-validation';
 import i18n from '@/i18n';
+import type {TDutyDoc} from '../../types';
+import {buildViolationMapAll} from '../../validator';
+import {violationsFromSpringValidation} from '../convert-spring-validation';
 
 const doc: TDutyDoc = {
     columns: Array.from({length: 5}, (_, i) => `2026-05-0${i + 1}`),
@@ -22,6 +22,53 @@ const doc: TDutyDoc = {
 describe('violationsFromSpringValidation', () => {
     afterEach(async () => {
         await i18n.changeLanguage('ko');
+    });
+
+    it('uses draft violations for editing even when full validation contains shortages', () => {
+        const validation: TValidationRes = {
+            draftRevision: 1,
+            rulesHash: 'hash',
+            summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+            violations: [
+                {
+                    violationId: 'staff',
+                    ruleId: 1,
+                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    severity: 'HARD',
+                    message: 'staffing shortage',
+                    fixable: true,
+                    affectedCells: [{cellKey: '8753:2026-05-01', shiftNurseId: 8753, date: '2026-05-01', wardShiftTypeId: 1}],
+                },
+            ],
+            draftViolations: [],
+        };
+
+        expect(violationsFromSpringValidation(validation, doc)).toEqual([]);
+    });
+
+    it('does not highlight an empty cell from an older validation snapshot', () => {
+        const incomplete = structuredClone(doc);
+
+        incomplete.rows[0]!.cells[0] = null;
+
+        const validation: TValidationRes = {
+            draftRevision: 1,
+            rulesHash: 'hash',
+            summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+            violations: [
+                {
+                    violationId: 'old',
+                    ruleId: 1,
+                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    severity: 'HARD',
+                    message: 'staffing shortage',
+                    fixable: true,
+                    affectedCells: [{cellKey: '8753:2026-05-01', shiftNurseId: 8753, date: '2026-05-01', wardShiftTypeId: 1}],
+                },
+            ],
+        };
+
+        expect(violationsFromSpringValidation(validation, incomplete)).toEqual([]);
     });
 
     it('maps nurse-specific violations using affectedCells', () => {
@@ -250,7 +297,6 @@ describe('violationsFromSpringValidation', () => {
                 },
             ],
         };
-
         const violations = violationsFromSpringValidation(validation, doc);
 
         expect(violations.map((violation) => violation.message)).toEqual([

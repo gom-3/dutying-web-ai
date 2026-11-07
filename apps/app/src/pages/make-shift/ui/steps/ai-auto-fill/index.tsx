@@ -1,4 +1,4 @@
-import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto} from '@dutying/api/ward';
+import type {TScheduleGoalResult, TSnapshotCellDTO, TSnapshotSummaryDto, TValidationRes} from '@dutying/api/ward';
 import type {
     TAutofillAdjustDto,
     TAutofillAdjustStrength,
@@ -20,6 +20,7 @@ import {batchCellsForReview, type CommercialBatchResult} from '@/features/commer
 import {AiPlanNotice} from '@/features/commercial/entry';
 import {
     buildSaveSnapshotDTO,
+    buildValidateSnapshotDTO,
     docToShift,
     fetchAndApplyScheduleValidation,
     isDutyDocInScheduleScope,
@@ -32,6 +33,7 @@ import {
 } from '@/features/shift-editor';
 import {getDocCellKey, getEditedFilledCellsSinceBaseline} from '@/features/shift-editor/model/doc-diff';
 import {adjustLockedCellKeys} from '@/features/shift-editor/model/schedule-authoring';
+import {localizeScheduleValidationMessage} from '@/features/shift-editor/model/schedule-violations/format-validation-message';
 import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {docToSnapshotCellsDTO} from '@/features/shift-editor/model/shift-adapter';
 import i18n from '@/i18n';
@@ -70,7 +72,6 @@ import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {readScheduleChat, scheduleChatKey, scheduleChatOwner, writeScheduleChat} from '../../../model/schedule-chat-cache';
 import {lastAppliedScheduleObservation, reportScheduleJourney, scheduleJourneyId} from '../../../model/schedule-journey';
-import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {
     markCarryOverAnswered,
     promotableRuleRequests,
@@ -79,6 +80,7 @@ import {
     toInterpretCells,
 } from '../../../model/schedule-month-requests';
 import {useSchedulePublishSuccessStore} from '../../../model/schedule-publish-success-store';
+import {observeScheduleRequest} from '../../../model/schedule-telemetry';
 import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {useScheduleCarryOverCandidates, useScheduleMonthRequests} from '../../../model/use-schedule-month-requests';
 import {
@@ -99,13 +101,13 @@ import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {ScheduleDisplayMenu} from '../shared/schedule-display-menu';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import AiAdjustDialog from './ai-adjust-dialog';
-import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiAdjustResultNote from './ai-adjust-result-note';
 import type {TAdjustTextInputHandle} from './ai-adjust-text-input';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillFixedSelectionBar, AiAutofillPreparation, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import AiCarryOverCard from './ai-carry-over-card';
+import {ConstraintConflictReview} from './ai-constraint-conflict-review';
 import AiConversationSidebar, {type TConversationExecution} from './ai-conversation-sidebar';
 import {AiExecutionDock} from './ai-execution-dock';
 import {AiGoalCandidateReview} from './ai-goal-candidate-review';
@@ -477,6 +479,26 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
     const [clearUnlockedCellsConfirmOpen, setClearUnlockedCellsConfirmOpen] = useState(false);
+    const [finalValidationReview, setFinalValidationReview] = useState<{validation: TValidationRes; emptyCount: number} | null>(null);
+    const resolveFinalValidationReview = useRef<((accepted: boolean) => void) | null>(null);
+    const confirmationContextActive = useRef(true);
+    const closeFinalValidationReview = (accepted: boolean) => {
+        resolveFinalValidationReview.current?.(accepted);
+        resolveFinalValidationReview.current = null;
+        setFinalValidationReview(null);
+    };
+
+    useEffect(() => {
+        confirmationContextActive.current = true;
+        setFinalValidationReview(null);
+
+        return () => {
+            confirmationContextActive.current = false;
+            resolveFinalValidationReview.current?.(false);
+            resolveFinalValidationReview.current = null;
+        };
+    }, [wardId, currentShiftTeamId, year, month]);
+
     const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
     const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
     // 확정 직전에 고른 승격 대상. ref 인 이유는 확정 경로가 여럿이기 때문이다(스냅샷 한도에
@@ -899,7 +921,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         };
     }, [isSnapshotSidebarOpen]);
 
-    const isCalendarReadonly = isRequestBusy || isAiGenerating || isAiLoadingOverlayFinishing;
+    const isCalendarReadonly = isRequestBusy || isWorking || isAiGenerating || isAiLoadingOverlayFinishing;
     const visibleCalendarDoc = useMemo(
         () => (isAiBlankPreviewVisible && !isAiExecutionDismissed ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
         [hydratedDoc, isAiBlankPreviewVisible, isAiExecutionDismissed],
@@ -1055,11 +1077,85 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         if (hasScheduleScopeShape(orderedShift) && !isDutyDocInScheduleScope(docToPublish, orderedShift, year, month)) return;
 
+        const requested = useShiftEditorStore.getState();
+
+        if (!requested.rulesHash) {
+            toast.error(t('scheduleFinalValidation.failed'), {id: 'make-shift-confirm-progress'});
+
+            return false;
+        }
+
+        const requestContext = currentAiContextRef.current;
+        const isCurrent = () => {
+            const latest = useShiftEditorStore.getState();
+
+            return (
+                confirmationContextActive.current &&
+                latest.doc === docToPublish &&
+                latest.draftRevision === requested.draftRevision &&
+                latest.rulesHash === requested.rulesHash &&
+                currentAiContextRef.current.wardId === requestContext.wardId &&
+                currentAiContextRef.current.shiftTeamId === requestContext.shiftTeamId &&
+                currentAiContextRef.current.year === requestContext.year &&
+                currentAiContextRef.current.month === requestContext.month
+            );
+        };
+        const validation = await WardAPI.validateSnapshot(
+            wardId,
+            currentShiftTeamId,
+            buildValidateSnapshotDTO({
+                year,
+                month,
+                draftRevision: requested.draftRevision,
+                rulesHash: requested.rulesHash,
+                doc: docToPublish,
+                originalShift: orderedShift,
+                validationPhase: 'FINAL',
+            }),
+        ).catch(() => null);
+
+        if (!confirmationContextActive.current) return false;
+
+        if (
+            !validation ||
+            validation.draftRevision !== requested.draftRevision ||
+            validation.rulesHash !== requested.rulesHash ||
+            !isCurrent()
+        ) {
+            toast.error(t('scheduleFinalValidation.failed'), {id: 'make-shift-confirm-progress'});
+
+            return false;
+        }
+
+        const emptyCount = docToPublish.rows.reduce(
+            (count, row) => count + docToPublish.columns.filter((_, col) => row.cells[col] == null).length,
+            0,
+        );
+
+        if (emptyCount > 0 || validation.violations.length > 0) {
+            toast.dismiss('make-shift-confirm-progress');
+
+            const accepted = await new Promise<boolean>((resolve) => {
+                resolveFinalValidationReview.current = resolve;
+                setFinalValidationReview({validation, emptyCount});
+            });
+
+            if (!accepted) return false;
+
+            if (!isCurrent()) {
+                toast.error(t('scheduleFinalValidation.failed'), {id: 'make-shift-confirm-progress'});
+
+                return false;
+            }
+        }
+
         if (snapshotToDelete) {
             setDeletingSnapshotId(snapshotToDelete.snapshotId);
             await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
             removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
         }
+
+        if (!isCurrent()) return false;
 
         const snapshot = await WardAPI.saveSnapshot(
             wardId,
@@ -1075,6 +1171,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
         prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshot);
         invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+
+        if (!isCurrent()) return false;
 
         const publishResult = await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
             ...(lastAppliedScheduleObservation(wardId, currentShiftTeamId, year, month)
@@ -1147,6 +1245,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         } catch {
             toast.error(t('page.makeShift.aiRefill.restCarryOverSyncFailed'));
         }
+
+        return true;
     };
     const handleSaveSnapshot = async () => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || isSavingSnapshot) return;
@@ -1302,7 +1402,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 return;
             }
 
-            await publishCurrentSchedule(snapshots);
+            if (!(await publishCurrentSchedule(snapshots))) return;
+
             toast.dismiss(progressToastId);
             useSchedulePublishSuccessStore.getState().show({
                 connectedNurseCount,
@@ -1430,7 +1531,8 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            await publishCurrentSchedule(snapshots, oldestSnapshot);
+            if (!(await publishCurrentSchedule(snapshots, oldestSnapshot))) return;
+
             toast.dismiss(progressToastId);
             useSchedulePublishSuccessStore.getState().show({
                 connectedNurseCount,
@@ -1571,6 +1673,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         prompt,
                     });
                 }
+
                 const failure =
                     result.failure ??
                     aiConversationFailure(
@@ -3111,6 +3214,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                             />
                         )}
                         <MakeShiftCalendar
+                            linkShiftTypeSettings
                             shift={orderedShift}
                             doc={isAiFillDecisionPreviewOpen ? editorDoc : visibleCalendarDoc}
                             annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
@@ -3243,6 +3347,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                       onProceed={async () => {
                                           const state = useShiftEditorStore.getState();
                                           const ready = getAiFillReadyContext();
+
                                           if (
                                               !ready ||
                                               pendingConflict.context !== currentContextKey ||
@@ -3251,11 +3356,13 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                               JSON.stringify(pendingConflict.baseline) !== JSON.stringify(state.doc)
                                           )
                                               throw new Error(t('aiAdjust.stale'));
+
                                           const result = await runAiFill(ready, pendingConflict.adjust, pendingConflict.prompt, {
                                               doc: pendingConflict.doc,
                                               idempotencyKey: crypto.randomUUID(),
                                               conflictReviewToken: pendingConflict.review.token,
                                           });
+
                                           if (result?.error) throw new Error(result.error);
                                       }}
                                       onRevise={() => {
@@ -3343,6 +3450,36 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 )}
                 onClose={() => setPublishConfirmOpen(false)}
                 onConfirm={handlePublishConfirm}
+                icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
+            />
+            <ConfirmActionDialog
+                open={finalValidationReview !== null}
+                title={t('scheduleFinalValidation.title')}
+                description={
+                    finalValidationReview && (
+                        <>
+                            <span className="block">
+                                {t('scheduleFinalValidation.summary', {
+                                    emptyCount: finalValidationReview.emptyCount,
+                                    violationCount: finalValidationReview.validation.violations.length,
+                                })}
+                            </span>
+                            <span className="mt-2 block">{t('scheduleFinalValidation.description')}</span>
+                            <span role="list" className="mt-3 block max-h-60 overflow-y-auto text-left">
+                                {finalValidationReview.validation.violations.map((issue) => (
+                                    <span role="listitem" className="mb-2 block" key={issue.violationId}>
+                                        {localizeScheduleValidationMessage(issue)}
+                                        {issue.period && ` (${issue.period.startDate} ~ ${issue.period.endDate})`}
+                                    </span>
+                                ))}
+                            </span>
+                        </>
+                    )
+                }
+                confirmLabel={t('scheduleFinalValidation.confirm')}
+                cancelLabel={t('scheduleFinalValidation.edit')}
+                onClose={() => closeFinalValidationReview(false)}
+                onConfirm={() => closeFinalValidationReview(true)}
                 icon={<img src={purpleWarnIcon} alt="" width={48} height={48} className="h-12 w-12 object-contain" />}
             />
             <ConfirmActionDialog

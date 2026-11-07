@@ -1,6 +1,14 @@
 import {type TLocale} from './ko';
 
 export const en: TLocale = {
+    scheduleFinalValidation: {
+        title: 'Review before confirming',
+        summary: '{{emptyCount}} empty cells · {{violationCount}} schedule violations.',
+        description: 'Review the details, then confirm as is or return to edit.',
+        edit: 'Return to edit',
+        confirm: 'Confirm as is',
+        failed: 'Final validation could not be completed. Please try again.',
+    },
     page: {
         state: {
             loadingTitle: 'Preparing the screen',
@@ -959,7 +967,8 @@ export const en: TLocale = {
                 toast: {
                     duplicatesRemoved: 'Cleaned up {{count}} duplicate constraints.',
                     duplicateSkipped: 'The same constraint already exists.',
-                    periodCountConflict: 'The same people, shift and period require at least {{minimum}} and at most {{maximum}} shifts. Both cannot be met. Review the conditions below and choose the intended counts.',
+                    periodCountConflict:
+                        'The same people, shift and period require at least {{minimum}} and at most {{maximum}} shifts. Both cannot be met. Review the conditions below and choose the intended counts.',
                     reviewLowerBound: 'Review minimum condition',
                     reviewUpperBound: 'Review maximum condition',
                     staffCountConflict: 'The minimum, maximum, and exact staffing values conflict for this scope and shift.',
