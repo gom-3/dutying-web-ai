@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.39
+
+### Patch Changes
+
+- 69aa961: 근무표의 목표 OFF 스위치와 병동의 휴무일 계산 설정을 동기화하고, 저장된 설정이 없는 병동은 기본으로 켭니다.
+    - @dutying/api@1.3.39
+    - @dutying/domain@1.3.39
+    - @dutying/utils@1.3.39
+
 ## 1.3.38
 
 ### Patch Changes
