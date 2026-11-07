@@ -292,6 +292,20 @@
     min-height: 44px;
 }
 
+.ai-adjust-sidebar .ai-conversation-request-examples > button {
+    min-height: 40px;
+}
+
+.ai-conversation-request-examples > button:nth-of-type(3) {
+    display: none;
+}
+
+@container ai-chat (min-width: 375px) and (min-height: 760px) {
+    .ai-conversation-request-examples > button:nth-of-type(3) {
+        display: flex;
+    }
+}
+
 /* Suggestions yield space to the conversation and composer instead of scrolling. */
 @container ai-chat (max-height: 820px) {
     .ai-adjust-examples > button:nth-of-type(n + 3) {
@@ -320,6 +334,54 @@
     .ai-adjust-sidebar textarea {
         font-size: 14.5px;
     }
+}
+
+.ai-conversation-composer-field {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 68px;
+    max-height: clamp(68px, 21dvh, 126px);
+    font-size: 14px;
+}
+
+/* The hidden copy sizes the row, including soft wraps and a final line break. */
+.ai-conversation-composer-field > textarea,
+.ai-conversation-composer-field::after {
+    grid-area: 1 / 1;
+    min-width: 0;
+    min-height: 0;
+    line-height: 21px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.ai-conversation-composer-field::after {
+    content: attr(data-draft) ' ';
+    visibility: hidden;
+    overflow: hidden;
+}
+
+.ai-conversation-composer-field > textarea {
+    height: 100%;
+    font-size: inherit;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #c8ced8 transparent;
+}
+
+.ai-conversation-composer-field > textarea::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+}
+
+.ai-conversation-composer-field > textarea::-webkit-scrollbar-thumb {
+    border-radius: 6px;
+    background: #c8ced8;
+}
+
+.ai-adjust-sidebar .ai-conversation-composer button {
+    min-height: 32px;
 }
 
 .ai-adjust-sidebar[data-state='open'] {

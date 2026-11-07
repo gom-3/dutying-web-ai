@@ -27,21 +27,27 @@ const operation = (phase: 'QUEUED' | 'COMPUTING' | 'VALIDATING', elapsedMs: numb
 });
 
 describe('transient background progress', () => {
-    it('updates one status through observed phases without creating AI messages', async () => {
+    it('updates one transient assistant bubble through the observed phases', async () => {
         await i18n.changeLanguage('ko');
 
         const {rerender} = render(<AiConversationOperationStatus attempt={1} operation={operation('QUEUED', 1000)} />);
+        const status = screen.getByRole('status');
+        const bubble = status.closest('[data-conversation-bubble="assistant"]');
+        const fixedShifts = '신청·고정 근무는 유지해요.';
 
-        expect(screen.getByRole('status')).toHaveTextContent('계산 순서를 기다리고 있어요');
+        expect(bubble).toBeVisible();
+        expect(status).toHaveTextContent('계산 차례를 기다려요');
+        expect(status).not.toHaveTextContent(fixedShifts);
         rerender(<AiConversationOperationStatus attempt={1} operation={operation('COMPUTING', 4000)} />);
         expect(screen.getAllByRole('status')).toHaveLength(1);
-        expect(screen.queryByText('계산 순서를 기다리고 있어요')).not.toBeInTheDocument();
-        expect(screen.queryByText('듀팅 AI')).not.toBeInTheDocument();
+        expect(screen.getByRole('status', {name: '근무표를 채우고 있어요'})).toHaveTextContent(fixedShifts);
+        expect(screen.getByRole('status').closest('[data-conversation-bubble="assistant"]')).toBe(bubble);
+        expect(screen.getAllByText('듀팅 AI')).toHaveLength(1);
         rerender(<AiConversationOperationStatus attempt={1} operation={operation('COMPUTING', 35000)} />);
         expect(screen.getAllByRole('status')).toHaveLength(1);
-        expect(screen.getByRole('status')).toHaveTextContent(i18n.t('aiAutofillUi.conversationOperationStatus.continuing'));
+        expect(screen.getByRole('status', {name: '계산이 조금 더 걸려요'})).toHaveTextContent('창을 닫아도 계속돼요.');
         rerender(<AiConversationOperationStatus attempt={1} operation={operation('VALIDATING', 45000)} />);
-        expect(screen.getByRole('status')).toHaveTextContent('완성된 근무표의 조건을 확인하고 있어요');
+        expect(screen.getByRole('status', {name: '근무 조건 확인 중…'})).not.toHaveTextContent(fixedShifts);
         expect(screen.queryByRole('log')).not.toBeInTheDocument();
     });
 
@@ -84,7 +90,7 @@ describe('transient background progress', () => {
             />,
         );
         expect(screen.getAllByRole('status')).toHaveLength(1);
-        expect(screen.getByRole('status')).toHaveTextContent('계산 요청을 취소했어요. 근무표는 변경되지 않았어요.');
+        expect(screen.getByRole('status')).toHaveTextContent('계산을 취소했어요. 근무표는 그대로예요.');
         expect(screen.queryByText(i18n.t('aiAutofillUi.conversationOperationStatus.fillingYourSchedule'))).not.toBeInTheDocument();
     });
 });

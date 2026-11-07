@@ -52,27 +52,34 @@ describe('clarification without condition selection', () => {
         async (state) => {
             const onEdit = vi.fn();
             const onApply = vi.fn();
+
             render(<AiSemanticReview {...props} plan={{...plan, state}} onEdit={onEdit} onApply={onApply} />);
 
             expect(screen.getByText('A 1일 D 배정')).toBeVisible();
             expect(screen.getByText('B 입사일부터 N 금지')).toBeVisible();
             expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
             expect(screen.queryByRole('button', {name: '선택한 조건 다시 확인하기'})).not.toBeInTheDocument();
-            await userEvent.click(screen.getByRole('button', {name: '요청 수정하기'}));
+            await userEvent.click(
+                screen.getByRole('button', {name: state === 'NEEDS_CLARIFICATION' ? '입력창에서 요청 바꾸기' : '요청 수정하기'}),
+            );
             expect(onEdit).toHaveBeenCalledOnce();
             expect(onApply).not.toHaveBeenCalled();
         },
     );
     it('keeps the group explanation read-only when a new plan arrives', () => {
         const {rerender} = render(<AiSemanticReview {...props} />);
+
         rerender(<AiSemanticReview {...props} plan={{...plan, planId: 'new'}} />);
         expect(screen.getByText('A 1일 D 배정')).toBeVisible();
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     });
     it('disables editing while another action is busy', async () => {
         const onEdit = vi.fn();
+
         render(<AiSemanticReview {...props} disabled onEdit={onEdit} />);
+
         const edit = screen.getByRole('button', {name: '요청 수정하기'});
+
         expect(edit).toBeDisabled();
         await userEvent.click(edit);
         expect(onEdit).not.toHaveBeenCalled();

@@ -185,7 +185,8 @@ export const aiAdjustKo = {
         keyboardHelp: '방향키로 날짜와 간호사를 이동하고 Enter 또는 Space로 고정을 바꿀 수 있어요. 신청 근무와 빈칸은 고정할 수 없어요.',
         restoredHistory: '이전 대화를 불러왔어요. 새 요청은 아래에서 이어서 할 수 있어요.',
         reviewAdjustmentAgain: '이전 수정 요청을 다시 확인한 뒤 진행해 주세요.',
-        interruptedHistory: '화면을 떠나기 전 요청의 결과를 확인하지 못했어요. 근무표를 확인한 뒤 다음 작업을 선택해 주세요.',
+        interruptedHistory: '이전 요청 결과를 확인하지 못했어요.\n근무표에 반영됐는지 먼저 확인해 주세요.',
+        interruptedHistoryLegacy: '화면을 떠나기 전 요청의 결과를 확인하지 못했어요. 근무표를 확인한 뒤 다음 작업을 선택해 주세요.',
         historyUnavailable: '이 브라우저에 대화 기록을 저장하지 못했어요. 화면을 떠나면 일부 기록이 사라질 수 있어요.',
         fixedHelp: '다시 누르면 고정이 풀려요.\n고정하지 않은 근무는 다시 채워요.',
     },
@@ -675,7 +676,8 @@ export const aiAdjustEn = {
             'Use arrow keys to move between dates and nurses. Press Enter or Space to toggle fixed shifts. Requested and blank shifts cannot be toggled.',
         restoredHistory: 'Previous messages are restored. Continue with a new request below.',
         reviewAdjustmentAgain: 'Review the previous change request again before continuing.',
-        interruptedHistory:
+        interruptedHistory: 'We couldn’t confirm your last request’s result.\nCheck whether the changes appear in your schedule.',
+        interruptedHistoryLegacy:
             'The outcome of the request before you left was not confirmed. Check the schedule before choosing your next action.',
         historyUnavailable: 'Could not save chat history in this browser. Some messages may be lost when you leave.',
         fixedHelp: 'Click again to unfix a shift.\nOther shifts will be filled again.',

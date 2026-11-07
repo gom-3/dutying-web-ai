@@ -1,6 +1,7 @@
+import {MinusCircle, PencilLine} from 'lucide-react';
 import {useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {semanticRecovery} from '../../../model/conversation-presentation';
+import {clarificationQuestion, semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 import {AiConversationLoading} from './ai-conversation-loading';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
@@ -8,6 +9,7 @@ import {AiSemanticCondition} from './ai-semantic-condition';
 
 type TProps = {
     plan: TSemanticPlan;
+    clarification?: {text: string; id: string; unresolvedRequest?: {text: string; onRemove: () => void}};
     current: boolean;
     disabled: boolean;
     stale: boolean;
@@ -24,11 +26,39 @@ type TProps = {
 };
 
 const action =
-    'flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-center text-[13px] leading-5 font-semibold transition-colors focus-visible:bg-[#4620B8] focus-visible:text-[#FFF1D6] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none';
+    'flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-center text-[13px] leading-5 font-semibold transition-colors focus-visible:bg-[#4620B8] focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-[#EEF1F4] disabled:text-[#667085] forced-colors:focus-visible:outline motion-reduce:transition-none';
 const primary = `${action} bg-main-1 text-white hover:bg-[#5931B9]`;
 const secondary = `${action} bg-white text-[#5931B9] hover:bg-[#EDE7FF]`;
 
 type TIconKind = 'review' | 'confirmed' | 'clarify' | 'history' | 'warning' | 'failure' | 'success';
+
+export function AiClarificationText({text, id}: {text?: string; id?: string}) {
+    const {t} = useTypedTranslation();
+    const paragraphs = (text ?? t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions'))
+        // Keep dotted dates and initials together.
+        .replace(/([가-힣]\.|[!?]+)[ \t]+/g, '$1\n')
+        .replace(/([。！？]+[」』”’）)]*)[ \t]*/g, '$1\n')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    return (
+        <div
+            id={id}
+            role={id ? 'status' : undefined}
+            className="space-y-2 text-sm leading-6 text-pretty [overflow-wrap:anywhere] break-keep text-[#333D4B]"
+        >
+            {paragraphs.map((line, index) => (
+                <p
+                    key={index}
+                    className={index === paragraphs.length - 1 || /[?？]$/.test(line) ? 'font-semibold text-[#191F28]' : undefined}
+                >
+                    {line}
+                </p>
+            ))}
+        </div>
+    );
+}
 
 function StateIcon({kind, label}: {kind: TIconKind; label: string}) {
     if (kind === 'success' || kind === 'failure') return <AiConversationOutcomeIcon status={kind} label={label} />;
@@ -71,6 +101,7 @@ function StateIcon({kind, label}: {kind: TIconKind; label: string}) {
 
 export function AiSemanticReview({
     plan,
+    clarification,
     current,
     disabled,
     stale,
@@ -149,6 +180,7 @@ export function AiSemanticReview({
                 ].includes(code),
             ));
     const retry = failed && semanticRecovery(plan) === 'retry';
+    const needsClarification = plan.state === 'NEEDS_CLARIFICATION' && !failed;
     const showGroups =
         !plan.selectionAudit &&
         !failed &&
@@ -215,84 +247,125 @@ export function AiSemanticReview({
                   ? t('aiAutofillUi.semanticReview.theScheduleOrRequestChangedSoTheEarlierConditionsCannotBeUsed')
                   : plan.state === 'UNSUPPORTED'
                     ? t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
-                    : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
+                    : needsClarification
+                      ? null
+                      : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
+    const question = clarificationQuestion(clarification?.text, needsClarification ? plan.summary : undefined);
+    const unresolvedRequest = clarification?.unresolvedRequest;
     const listLabel =
-        conflict || !ready
-            ? t('aiAutofillUi.semanticReview.requestToReview')
-            : complete
-              ? t('aiAutofillUi.semanticReview.conditionsUsedForThisCalculation')
-              : plan.state === 'CONFIRMED'
-                ? t('aiAutofillUi.semanticReview.confirmedRequest')
-                : t('aiAutofillUi.semanticReview.requestedChanges');
+        needsClarification && !showGroups
+            ? t('aiAutofillUi.semanticReview.understoodConditions')
+            : conflict || !ready
+              ? t('aiAutofillUi.semanticReview.requestToReview')
+              : complete
+                ? t('aiAutofillUi.semanticReview.conditionsUsedForThisCalculation')
+                : plan.state === 'CONFIRMED'
+                  ? t('aiAutofillUi.semanticReview.confirmedRequest')
+                  : t('aiAutofillUi.semanticReview.requestedChanges');
 
     return (
-        <section aria-label={t('aiAutofillUi.semanticReview.reviewRequestConditions')} className="min-w-0 space-y-4">
+        <section aria-label={t('aiAutofillUi.semanticReview.reviewRequestConditions')} className="min-w-0 space-y-3">
             <header className="flex items-start gap-2.5">
                 <StateIcon kind={kind} label={iconLabel} />
                 <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">{title}</p>
             </header>
-            {description && <p className="text-[13px] leading-6 break-keep whitespace-pre-line text-[#667085]">{description}</p>}
+            {question || (current && needsClarification) ? (
+                <AiClarificationText
+                    text={question ?? (unresolvedRequest ? t('aiAutofillUi.semanticReview.resolveOrRemoveRequest') : undefined)}
+                    id={clarification?.id}
+                />
+            ) : (
+                description && (
+                    <p id={clarification?.id} className="text-[13px] leading-6 break-keep whitespace-pre-line text-[#667085]">
+                        {description}
+                    </p>
+                )
+            )}
+            {unresolvedRequest && (
+                <div className="rounded-xl bg-white px-3.5 pt-3 pb-1">
+                    <p className="text-xs font-medium text-[#667085]">{t('aiAutofillUi.semanticReview.unresolvedRequest')}</p>
+                    <p className="mt-1 text-sm leading-5 [overflow-wrap:anywhere] whitespace-pre-wrap text-[#333D4B]">
+                        {unresolvedRequest.text}
+                    </p>
+                    {current && (
+                        <button
+                            type="button"
+                            className="inline-flex min-h-11 items-center gap-1.5 rounded text-[13px] font-semibold text-[#B42318] hover:underline focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
+                            disabled={disabled}
+                            onClick={unresolvedRequest.onRemove}
+                        >
+                            <MinusCircle aria-hidden className="size-3.5 shrink-0" />
+                            {t('aiAutofillUi.semanticReview.removeUnresolvedRequest')}
+                        </button>
+                    )}
+                </div>
+            )}
             {!failed && !showGroups && !!plan.conditions.length && (
                 <div className="space-y-2">
                     <p className="text-xs leading-5 font-medium text-[#667085]">{listLabel}</p>
                     <ul aria-label={listLabel} className="space-y-2">
-                        {plan.conditions.map((condition) => (
-                            <AiSemanticCondition
-                                key={condition.intentId}
-                                condition={condition}
-                                nurseName={nurseName}
-                                rosterNurseIds={rosterNurseIds}
-                                copy={copy}
-                            >
-                                {canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId) ? (
-                                    <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
-                                        <legend className="text-[13px] font-medium">{t('aiAutofillUi.semanticReview.priority')}</legend>
-                                        <div className="flex flex-wrap gap-2">
-                                            {(['SOFT', 'HARD'] as const).map((value) => (
-                                                <label
-                                                    key={value}
-                                                    className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
-                                                >
-                                                    <input
-                                                        type="radio"
-                                                        className="accent-main-1"
-                                                        name={`priority-${plan.planId}-${condition.intentId}`}
-                                                        value={value}
-                                                        checked={(overrides[condition.intentId] ?? condition.modality) === value}
-                                                        onChange={() => {
-                                                            const values = {...overrides};
+                        {plan.conditions.map((condition) => {
+                            const editable = canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId);
 
-                                                            if (value === condition.modality) delete values[condition.intentId];
-                                                            else values[condition.intentId] = value;
+                            return (
+                                <AiSemanticCondition
+                                    key={condition.intentId}
+                                    condition={condition}
+                                    nurseName={nurseName}
+                                    rosterNurseIds={rosterNurseIds}
+                                    copy={copy}
+                                    showPriority={!needsClarification && !editable}
+                                >
+                                    {editable ? (
+                                        <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
+                                            <legend className="text-[13px] font-medium">{t('aiAutofillUi.semanticReview.priority')}</legend>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(['SOFT', 'HARD'] as const).map((value) => (
+                                                    <label
+                                                        key={value}
+                                                        className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
+                                                    >
+                                                        <input
+                                                            type="radio"
+                                                            className="accent-main-1"
+                                                            name={`priority-${plan.planId}-${condition.intentId}`}
+                                                            value={value}
+                                                            checked={(overrides[condition.intentId] ?? condition.modality) === value}
+                                                            onChange={() => {
+                                                                const values = {...overrides};
 
-                                                            setPriorityEdits({hash: plan.planHash, values});
-                                                            setPriorityError(false);
-                                                        }}
-                                                    />
-                                                    {value === 'HARD'
-                                                        ? t('aiAutofillUi.semanticReview.required')
-                                                        : t('aiAutofillUi.semanticReview.preferred')}
-                                                </label>
-                                            ))}
-                                        </div>
-                                        <p className="text-[13px] break-keep text-[#475467]">
-                                            {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
-                                                ? t('aiAutofillUi.semanticReview.aResultThatMissesThisConditionCannotBeApplied')
-                                                : t('aiAutofillUi.semanticReview.weTryToMeetThisPreferenceOtherConditionsMayPreventIt')}
-                                        </p>
-                                    </fieldset>
-                                ) : (
-                                    <p className="text-[13px] break-keep text-[#475467]">
-                                        {condition.modality === 'HARD'
-                                            ? t('aiAutofillUi.semanticReview.required')
-                                            : t('aiAutofillUi.semanticReview.preferred')}
-                                        {current && ready && condition.action !== 'COUNT' && (
-                                            <> · {t('aiAutofillUi.semanticReview.explicitAssignmentsAndExclusionsAreRequired')}</>
-                                        )}
-                                    </p>
-                                )}
-                            </AiSemanticCondition>
-                        ))}
+                                                                if (value === condition.modality) delete values[condition.intentId];
+                                                                else values[condition.intentId] = value;
+
+                                                                setPriorityEdits({hash: plan.planHash, values});
+                                                                setPriorityError(false);
+                                                            }}
+                                                        />
+                                                        {value === 'HARD'
+                                                            ? t('aiAutofillUi.semanticReview.required')
+                                                            : t('aiAutofillUi.semanticReview.preferred')}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            <p className="text-[13px] break-keep text-[#475467]">
+                                                {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
+                                                    ? t('aiAutofillUi.semanticReview.aResultThatMissesThisConditionCannotBeApplied')
+                                                    : t('aiAutofillUi.semanticReview.weTryToMeetThisPreferenceOtherConditionsMayPreventIt')}
+                                            </p>
+                                        </fieldset>
+                                    ) : (
+                                        current &&
+                                        ready &&
+                                        condition.modality === 'HARD' &&
+                                        (condition.action === 'ASSIGN' || condition.action === 'FORBID') && (
+                                            <p className="mt-1 text-xs leading-5 break-keep text-[#475467]">
+                                                {t('aiAutofillUi.semanticReview.explicitAssignmentsAndExclusionsAreRequired')}
+                                            </p>
+                                        )
+                                    )}
+                                </AiSemanticCondition>
+                            );
+                        })}
                     </ul>
                 </div>
             )}
@@ -438,14 +511,27 @@ export function AiSemanticReview({
                                 {t('aiAutofillUi.semanticReview.tryAgain')}
                             </button>
                         )}
-                        <button
-                            type="button"
-                            className={ready || retry || plan.state === 'NEEDS_CLARIFICATION' ? secondary : primary}
-                            disabled={disabled || savingPriority}
-                            onClick={onEdit}
-                        >
-                            {t('aiAutofillUi.semanticReview.editRequest')}
-                        </button>
+                        {!unresolvedRequest && (
+                            <button
+                                type="button"
+                                className={
+                                    needsClarification
+                                        ? 'inline-flex min-h-11 items-center gap-1.5 justify-self-start rounded-lg px-2 text-[13px] font-semibold text-[#5931B9] hover:text-[#4620B8] hover:underline focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40'
+                                        : ready || retry || plan.state === 'NEEDS_CLARIFICATION'
+                                          ? secondary
+                                          : primary
+                                }
+                                disabled={disabled || savingPriority}
+                                onClick={onEdit}
+                            >
+                                {needsClarification && <PencilLine aria-hidden className="size-3.5 shrink-0" />}
+                                {t(
+                                    needsClarification
+                                        ? 'aiAutofillUi.semanticReview.editInComposer'
+                                        : 'aiAutofillUi.semanticReview.editRequest',
+                                )}
+                            </button>
+                        )}
                         {failed && !retry && onEditSchedule && (
                             <button type="button" className={secondary} disabled={disabled} onClick={onEditSchedule}>
                                 {t('aiAutofillUi.conversationEntry.editSchedule')}

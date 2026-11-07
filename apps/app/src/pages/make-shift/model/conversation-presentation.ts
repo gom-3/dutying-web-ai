@@ -103,6 +103,13 @@ export function semanticRecovery(plan: TSemanticPlan): 'retry' | 'edit' {
     return plan.reasonCodes.includes('MODEL_TIMEOUT') ? 'retry' : 'edit';
 }
 
+export function clarificationQuestion(pending?: string, summary?: string): string | undefined {
+    // Saved plans can contain the server's generic summary instead of a question.
+    const genericSummary = '요청의 대상·기간·조건을 더 확인해야 해요';
+
+    return [pending?.trim(), summary?.trim()].find((message) => message && message.replace(/\.$/, '') !== genericSummary);
+}
+
 /** The model receives the retained plan; the dialogue shows only the new reply. */
 export function conversationTurnText(detail: TConversationDetail, turn: TConversationTurn): string | null {
     if (turn.actor !== 'USER' || !turn.text) return turn.text;

@@ -132,11 +132,13 @@ describe('reviewable authoring candidate', () => {
                     copy={(ko) => ko}
                 />,
             );
-            expect(
-                screen.getByText(
-                    i18n.t(`aiConversationSidebar.authoring.${requestState === 'NEEDS_REVIEW' ? 'selectedReview' : requestState}`),
-                ),
-            ).toBeVisible();
+
+            const applied = requestState === 'PARTIAL' || requestState === 'NEEDS_REVIEW';
+            const title = applied
+                ? i18n.t('aiAutofillUi.conversationResult.appliedChangeCount', {count: 1})
+                : i18n.t(`aiConversationSidebar.authoring.${requestState}`);
+
+            expect(screen.getByText(title)).toBeVisible();
             expect(screen.queryByRole('img', {name: /adjustmentSucceeded|수정 완료|수정 성공/})).toBeNull();
         },
     );
@@ -148,21 +150,24 @@ describe('plain candidate copy', () => {
             locale: 'ko',
             title: '이렇게 바꿔볼까요?',
             prompt: '바뀐 근무가 원하던 내용과 맞는지 확인해 주세요.',
-            applied: '변경을 표에 반영했어요. 결과를 확인해 주세요.',
+            applied: '1칸을 바꿨어요.',
+            review: '확인할 조건이 남았어요.',
         },
         {
             locale: 'en',
             title: 'How about these changes?',
             prompt: 'Check the changes to see whether this is the arrangement you wanted.',
-            applied: 'Applied the changes to the schedule. Review the result.',
+            applied: 'Updated 1 shift.',
+            review: 'Some conditions need a review.',
         },
         {
             locale: 'ja',
             title: 'このように変えてみませんか？',
             prompt: '変更内容を見て、ご希望の配置になっているかご確認ください。',
-            applied: '変更を勤務表に反映しました。結果をご確認ください。',
+            applied: '勤務を1件変更しました。',
+            review: '確認が必要な条件があります。',
         },
-    ])('uses a single natural prompt in $locale without a technical review claim', async ({locale, title, prompt, applied}) => {
+    ])('uses a single natural prompt in $locale without a technical review claim', async ({locale, title, prompt, applied, review}) => {
         await i18n.changeLanguage(locale);
 
         try {
@@ -206,6 +211,7 @@ describe('plain candidate copy', () => {
                 />,
             );
             expect(screen.getByText(applied)).toBeVisible();
+            expect(screen.getByText(review)).toBeVisible();
             expect(container.querySelector('svg[aria-label="success"]')).toBeNull();
         } finally {
             await i18n.changeLanguage('ko');

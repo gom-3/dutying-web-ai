@@ -611,23 +611,37 @@ function OnboardingWardWizardPage({hospitalContext}: {hospitalContext?: THospita
                             : t('page.onboardingWardCreate.backToWardSelect')}
                     </button>
                 ) : null}
-                {hospitalContext ? (
-                    <div className="mb-6 rounded-[16px] bg-main-light px-5 py-4 font-apple">
-                        <p className="text-[15px] font-semibold break-words text-sub-1">
-                            {isKorean ? `${hospitalContext.name}에 새 병동 추가` : `Add a ward to ${hospitalContext.name}`}
-                        </p>
-                        <p className="mt-1 text-[14px] leading-6 break-keep text-sub-2">
-                            {isKorean
-                                ? '설정을 마치면 이 병원에 자동으로 연결됩니다. 담당자 초대는 설정 후 진행할 수 있습니다.'
-                                : 'This ward will join the hospital when setup is complete. You can then invite ward staff.'}
-                        </p>
-                        {hospitalContext.name.trim().length > 20 ? (
-                            <p className="mt-2 text-[14px] leading-6 text-sub-2">
-                                {isKorean
-                                    ? '아래 병원명은 20자 이내로 입력해 주세요.'
-                                    : 'Enter a hospital name of up to 20 characters below.'}
+                {hospitalContext && draft.currentStep === 1 ? (
+                    <div className="mb-6 flex items-start gap-2 rounded-[12px] bg-main-light px-4 py-3 font-apple">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="mt-1 size-4 shrink-0 text-main-1">
+                            <path
+                                fillRule="evenodd"
+                                clipRule="evenodd"
+                                d="M7 2a2 2 0 0 0-2 2v4H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V4a2 2 0 0 0-2-2H7Zm4 3v2H9v2h2v2h2V9h2V7h-2V5h-2ZM3 11v2h2v-2H3Zm16 0v2h2v-2h-2ZM3 15v2h2v-2H3Zm16 0v2h2v-2h-2ZM8 13v2h2v-2H8Zm6 0v2h2v-2h-2Zm-4 4v5h4v-5h-4Z"
+                            />
+                        </svg>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm leading-6 [overflow-wrap:anywhere] break-keep text-sub-2">
+                                {isKorean ? (
+                                    <>
+                                        <strong className="font-semibold text-main-1">{hospitalContext.name}</strong>에 새 병동으로
+                                        추가돼요!
+                                    </>
+                                ) : (
+                                    <>
+                                        This ward will be added to{' '}
+                                        <strong className="font-semibold text-main-1">{hospitalContext.name}</strong>.
+                                    </>
+                                )}
                             </p>
-                        ) : null}
+                            {hospitalContext.name.trim().length > 20 ? (
+                                <p className="mt-2 text-[14px] leading-6 text-sub-2">
+                                    {isKorean
+                                        ? '아래 병원명은 20자 이내로 입력해 주세요.'
+                                        : 'Enter a hospital name of up to 20 characters below.'}
+                                </p>
+                            ) : null}
+                        </div>
                     </div>
                 ) : null}
                 <SectionHeader step={draft.currentStep} nightRecovery={isNightRecoveryStep} />

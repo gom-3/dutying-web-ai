@@ -127,8 +127,8 @@ describe('hospital ward setup entry', () => {
     it('keeps an existing ward owner in the hospital setup flow and explains automatic affiliation', () => {
         mount();
 
-        expect(screen.getByText('서울병원에 새 병동 추가')).toBeInTheDocument();
-        expect(screen.getByText(/설정을 마치면 이 병원에 자동으로 연결됩니다/)).toBeInTheDocument();
+        expect(screen.getByText('서울병원')).toBeInTheDocument();
+        expect(screen.getByText(/에 새 병동으로 추가돼요!/)).toHaveTextContent('서울병원에 새 병동으로 추가돼요!');
         expect(screen.getByLabelText('current route')).toHaveTextContent('/onboarding/ward-create?organizationId=hospital-1');
         expect(mocks.hospitalActions).toHaveBeenCalledWith('hospital-1');
         expect(mocks.wizard).toHaveBeenCalledWith(expect.objectContaining({initialHospitalName: '서울병원'}));
@@ -227,6 +227,6 @@ describe('hospital ward setup entry', () => {
         mount('/onboarding/ward-create');
 
         await waitFor(() => expect(screen.getByLabelText('current route')).not.toHaveTextContent('/onboarding/ward-create'));
-        expect(screen.queryByText(/새 병동 추가/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/새 병동으로 추가돼요!/)).not.toBeInTheDocument();
     });
 });

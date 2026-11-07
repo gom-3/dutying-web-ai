@@ -4,7 +4,7 @@ import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TWardShiftType} from '@/entities/ward';
 
 interface IShiftBadgeProps extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
-    shiftType: TWardShiftType | null | undefined;
+    shiftType: Pick<TWardShiftType, 'color' | 'shortName'> | null | undefined;
     forwardRef?: Ref<HTMLDivElement>;
     isOnlyRequest?: boolean;
     borderless?: boolean;

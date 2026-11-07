@@ -10,7 +10,7 @@ import {
 } from '../../../model/ai-adjust-review-flow';
 import {canRetryInterpretation} from '../../../model/ai-interpret-issues';
 import {AiAdjustInterpretCard, type TAdjustCard} from './ai-adjust-interpret-card';
-import {AiConversationTimestamp} from './ai-conversation-timestamp';
+import {AiConversationTimestamp, AiMessageBubble} from './ai-conversation-timestamp';
 
 const choiceClass =
     'min-h-11 max-w-full rounded-xl bg-main-light px-4 py-3 text-left leading-5 text-[13.5px] font-medium text-main-1 hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40';
@@ -32,22 +32,26 @@ export function AssistantMessage({
     const [displayedAt] = useState(() => new Date().toISOString());
 
     return (
-        <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''} ${plain ? 'font-apple' : ''}`}>
-            <span className="flex items-center gap-1.5 text-[13px] font-medium text-main-1">
-                <img src={assistantIcon} width={16} height={16} alt="" />
-                {t('aiAdjust.assistant')}
-            </span>
-            <div
-                className={
-                    plain
-                        ? 'max-w-full min-w-0 text-[14.5px] leading-7 [overflow-wrap:anywhere] break-keep text-[#333D4B]'
-                        : `max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`
-                }
-            >
-                {children}
+        <AiConversationTimestamp createdAt={showTime ? displayedAt : undefined}>
+            <div className={`flex min-w-0 flex-col items-start gap-2 ${fullWidth ? 'w-full' : ''} ${plain ? 'font-apple' : ''}`}>
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-main-1">
+                    <img src={assistantIcon} width={16} height={16} alt="" />
+                    {t('aiAdjust.assistant')}
+                </span>
+                <AiMessageBubble
+                    data-conversation-bubble="assistant"
+                    side="right"
+                    plain={plain}
+                    className={
+                        plain
+                            ? 'max-w-full min-w-0 text-[14.5px] leading-7 [overflow-wrap:anywhere] break-keep text-[#333D4B]'
+                            : `max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`
+                    }
+                >
+                    {children}
+                </AiMessageBubble>
             </div>
-            {showTime && <AiConversationTimestamp createdAt={displayedAt} />}
-        </div>
+        </AiConversationTimestamp>
     );
 }
 
@@ -55,10 +59,15 @@ export function UserMessage({children, showTime = false}: {children: ReactNode; 
     const [displayedAt] = useState(() => new Date().toISOString());
 
     return (
-        <div className="ml-auto w-fit max-w-full min-w-0 rounded-2xl rounded-tr-sm bg-main-light px-4 py-3 text-[14.5px] leading-7 break-words text-[#5931B9]">
-            {children}
-            {showTime && <AiConversationTimestamp createdAt={displayedAt} align="right" />}
-        </div>
+        <AiConversationTimestamp createdAt={showTime ? displayedAt : undefined} align="right">
+            <AiMessageBubble
+                data-conversation-bubble="user"
+                side="left"
+                className="ml-auto w-fit max-w-full min-w-0 rounded-2xl rounded-tr-sm bg-main-light px-4 py-3 text-[14.5px] leading-7 break-words text-[#5931B9]"
+            >
+                {children}
+            </AiMessageBubble>
+        </AiConversationTimestamp>
     );
 }
 

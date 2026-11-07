@@ -3145,7 +3145,10 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                                 void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
                             }}
                             showDivisionHeaders
-                            showDivisionStatistics
+                            showDivisionStatistics={
+                                orderedShift.divisionShiftNurses.filter((division) => division.some((row) => row.shiftNurse.isWorker))
+                                    .length > 1
+                            }
                             divisionLabelByNum={divisionLabelByNum}
                             stickyHeader
                         />

@@ -9,7 +9,7 @@ import {
     type TConversationOperation,
 } from '../../../model/schedule-conversation-api';
 import {AiConversationLoading} from './ai-conversation-loading';
-import {AiConversationTimestamp} from './ai-conversation-timestamp';
+import {AiConversationTimestamp, AiMessageBubble, AiMessageTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionFailure} from './ai-execution-failure';
 
 type TProps = {
@@ -48,7 +48,7 @@ export function AiConversationHistory({conversation, load, onView}: TProps) {
             }}
         >
             <summary className="cursor-pointer text-sm text-[#475467]">
-                {t('aiAutofillUi.conversationHistory.earlierConversation')} · <AiConversationTimestamp createdAt={conversation.createdAt} />
+                {t('aiAutofillUi.conversationHistory.earlierConversation')} <AiConversationTimestamp createdAt={conversation.createdAt} />
             </summary>
             <div className="mt-3 space-y-3">
                 {loading && <AiConversationLoading label={t('aiAutofillUi.conversationHistory.loadingEarlierConversation')} />}
@@ -66,13 +66,17 @@ export function AiConversationHistory({conversation, load, onView}: TProps) {
                                 </p>
                             ) : (
                                 <div key={event.id}>
-                                    <p className="text-sm whitespace-pre-wrap">
-                                        {conversationTurnText(detail, event.turn) ?? event.turn.semanticPlan?.summary}
-                                    </p>
                                     <AiConversationTimestamp
                                         createdAt={event.turn.createdAt}
                                         align={event.turn.actor === 'USER' ? 'right' : 'left'}
-                                    />
+                                    >
+                                        <div className="group/bubble relative">
+                                            <p className="text-sm whitespace-pre-wrap">
+                                                {conversationTurnText(detail, event.turn) ?? event.turn.semanticPlan?.summary}
+                                            </p>
+                                            <AiMessageTimestamp inline />
+                                        </div>
+                                    </AiConversationTimestamp>
                                 </div>
                             );
                         }
@@ -92,37 +96,38 @@ export function AiConversationHistory({conversation, load, onView}: TProps) {
 
                         return (
                             <div key={event.id}>
-                                {failure ? (
-                                    <AiExecutionFailure
-                                        key={event.id}
-                                        operationType={event.operation.operationType}
-                                        failure={failure}
-                                        attemptLabel={t('aiAutofillUi.conversationHistory.attemptLabel', {
-                                            attempt: operationAttempt(detail, event.operation.operationId),
-                                        })}
-                                    >
-                                        {viewAction}
-                                    </AiExecutionFailure>
-                                ) : (
-                                    <div key={event.id} className="rounded-lg bg-white p-3 text-sm">
-                                        <div className="flex items-start gap-2">
-                                            <p className="min-w-0 font-semibold">
-                                                {event.operation.operationType === 'GENERATE'
-                                                    ? t('aiAutofillUi.conversationHistory.autofill')
-                                                    : t('aiAutofillUi.conversationHistory.adjustment')}{' '}
-                                                {operationAttempt(detail, event.operation.operationId)}
-                                                {t('aiAutofillUi.conversationHistory.attempt')} ·{' '}
-                                                {event.operation.executionStatus === 'SUCCEEDED'
-                                                    ? t('aiAutofillUi.conversationHistory.completed')
-                                                    : event.operation.executionStatus === 'FAILED'
-                                                      ? t('aiAutofillUi.conversationHistory.failed')
-                                                      : t('aiAutofillUi.conversationHistory.outcomeNeedsChecking')}
-                                            </p>
-                                        </div>
-                                        {viewAction}
-                                    </div>
-                                )}
-                                <AiConversationTimestamp createdAt={event.operation.createdAt} />
+                                <AiConversationTimestamp createdAt={event.operation.createdAt}>
+                                    {failure ? (
+                                        <AiExecutionFailure
+                                            key={event.id}
+                                            operationType={event.operation.operationType}
+                                            failure={failure}
+                                            attemptLabel={t('aiAutofillUi.conversationHistory.attemptLabel', {
+                                                attempt: operationAttempt(detail, event.operation.operationId),
+                                            })}
+                                        >
+                                            {viewAction}
+                                        </AiExecutionFailure>
+                                    ) : (
+                                        <AiMessageBubble key={event.id} className="rounded-lg bg-white p-3 text-sm">
+                                            <div className="flex items-start gap-2">
+                                                <p className="min-w-0 font-semibold">
+                                                    {event.operation.operationType === 'GENERATE'
+                                                        ? t('aiAutofillUi.conversationHistory.autofill')
+                                                        : t('aiAutofillUi.conversationHistory.adjustment')}{' '}
+                                                    {operationAttempt(detail, event.operation.operationId)}
+                                                    {t('aiAutofillUi.conversationHistory.attempt')} ·{' '}
+                                                    {event.operation.executionStatus === 'SUCCEEDED'
+                                                        ? t('aiAutofillUi.conversationHistory.completed')
+                                                        : event.operation.executionStatus === 'FAILED'
+                                                          ? t('aiAutofillUi.conversationHistory.failed')
+                                                          : t('aiAutofillUi.conversationHistory.outcomeNeedsChecking')}
+                                                </p>
+                                            </div>
+                                            {viewAction}
+                                        </AiMessageBubble>
+                                    )}
+                                </AiConversationTimestamp>
                             </div>
                         );
                     })}

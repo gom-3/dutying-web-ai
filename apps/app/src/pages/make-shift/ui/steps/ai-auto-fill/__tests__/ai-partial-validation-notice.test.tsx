@@ -1,7 +1,7 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
-import {render, screen} from '@/shared/util/test-utils';
+import {render, screen, userEvent, within} from '@/shared/util/test-utils';
 import {candidate, response} from '../../../../model/__tests__/fixtures/intent-first';
 import {authoringOutcome, canApplyAuthoringResult, canSelectAuthoringCandidate} from '../../../../model/intent-first-authoring';
 import {AiAuthoringCandidate} from '../ai-authoring-candidate';
@@ -84,7 +84,20 @@ describe('partial table validation notice', () => {
 
                 expect(canApplyAuthoringResult(result, 'source:1')).toBe(true);
                 render(resultCard(result, false, appliedLocally));
-                expect(screen.getByRole('status')).toHaveTextContent(copy);
+                expect(screen.queryByText(copy)).not.toBeInTheDocument();
+
+                if (appliedLocally) expect(screen.getByText(i18n.t('aiAutofillUi.conversationResult.conditionsToReview'))).toBeVisible();
+
+                await userEvent.click(
+                    screen.getByRole('button', {
+                        name: i18n.t(
+                            appliedLocally
+                                ? 'aiAutofillUi.conversationResult.viewDetails'
+                                : 'aiConversationSidebar.authoring.previousChanges',
+                        ),
+                    }),
+                );
+                expect(within(await screen.findByRole('dialog')).getByRole('status')).toHaveTextContent(copy);
                 expect(screen.queryByText(/전체.*완료|위반 0|すべて.*確認済み/)).toBeNull();
             } finally {
                 await i18n.changeLanguage('ko');

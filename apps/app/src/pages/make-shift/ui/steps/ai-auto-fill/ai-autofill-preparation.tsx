@@ -5,6 +5,7 @@ import type {TAutofillCellSummary} from '../../../model/ai-autofill-state';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiInfoTip} from './ai-conversation-entry';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
+import {AiInterruptedRequestNotice, isInterruptedRequestNotice} from './ai-interrupted-request-notice';
 
 export type TAutofillPreparationStep = 'carryOver' | 'previous' | 'fixed';
 export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string; createdAt?: string};
@@ -29,11 +30,16 @@ export function AiAutofillMessages({messages}: {messages: TAutofillMessage[]}) {
 
                 return (
                     <div key={index}>
-                        <Message>
-                            <span className="whitespace-pre-line">{message.text}</span>
-                            {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
-                        </Message>
-                        <AiConversationTimestamp createdAt={message.createdAt} align={message.role === 'user' ? 'right' : 'left'} />
+                        <AiConversationTimestamp createdAt={message.createdAt} align={message.role === 'user' ? 'right' : 'left'}>
+                            <Message>
+                                {message.role === 'assistant' && isInterruptedRequestNotice(message.text) ? (
+                                    <AiInterruptedRequestNotice />
+                                ) : (
+                                    <span className="whitespace-pre-line">{message.text}</span>
+                                )}
+                                {message.help && <AiInfoTip label={t('aiAdjust.chat.help')}>{message.help}</AiInfoTip>}
+                            </Message>
+                        </AiConversationTimestamp>
                     </div>
                 );
             })}

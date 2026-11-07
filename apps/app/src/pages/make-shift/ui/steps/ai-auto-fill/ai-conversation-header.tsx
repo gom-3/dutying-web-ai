@@ -14,7 +14,7 @@ export function AiConversationHeader({
     const {t} = useTypedTranslation();
 
     return (
-        <header className="flex min-h-24 shrink-0 flex-wrap items-center gap-2 px-[25px] py-4">
+        <header className="flex min-h-[64px] shrink-0 flex-wrap items-center gap-2 px-[25px] py-[8px]">
             <img src={headerIcon} alt="" width={28} height={28} className="shrink-0" />
             <h2 className="min-w-[96px] flex-1 text-[16px] leading-6 font-semibold text-[#242B36]">{t('aiAdjust.title')}</h2>
             <button

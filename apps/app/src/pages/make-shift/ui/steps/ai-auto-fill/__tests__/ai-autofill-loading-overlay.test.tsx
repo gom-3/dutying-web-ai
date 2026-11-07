@@ -119,7 +119,7 @@ describe('autofill loading overlay', () => {
 
         const cancel = screen.getByRole('button', {name: '계산 요청 취소'});
 
-        cancel.focus();
+        act(() => cancel.focus());
         expect(fireEvent.keyDown(cancel, {key: 'Tab'})).toBe(true);
     });
 });

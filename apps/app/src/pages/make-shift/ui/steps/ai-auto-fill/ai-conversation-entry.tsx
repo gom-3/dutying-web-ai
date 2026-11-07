@@ -133,14 +133,26 @@ export function AiConversationEntry({
                             type="button"
                             disabled={disabled}
                             onClick={() => onChoose(value)}
-                            className={`group flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`}
+                            className={
+                                attached && generationCompleted
+                                    ? 'group forced-colors:focus-visible:outline-auto inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 py-1 text-[13px] leading-5 font-medium whitespace-nowrap text-main-1 transition-colors hover:text-main-1-hover focus-visible:text-[#4524A8] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+                                    : `group forced-colors:focus-visible:outline-auto flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`
+                            }
                         >
-                            {value === 'edit' ? (
+                            {attached && generationCompleted ? null : value === 'edit' ? (
                                 <PencilLine aria-hidden className="size-4 shrink-0" />
                             ) : (
                                 <RotateCw aria-hidden className="size-4 shrink-0" />
                             )}
-                            <span className={compact ? 'min-w-0 break-keep' : 'min-w-0 flex-1 break-keep'}>
+                            <span
+                                className={
+                                    attached && generationCompleted
+                                        ? 'min-w-0 group-hover:underline group-focus-visible:underline'
+                                        : compact
+                                          ? 'min-w-0 break-keep'
+                                          : 'min-w-0 flex-1 break-keep'
+                                }
+                            >
                                 {value === 'edit'
                                     ? t(
                                           generationCompleted
@@ -151,7 +163,12 @@ export function AiConversationEntry({
                                       ? t('aiAutofillUi.conversationEntry.refill')
                                       : t(`aiAdjust.chat.${value}`)}
                             </span>
-                            {!compact && <ChevronRight aria-hidden className="size-4 shrink-0" />}
+                            {attached && generationCompleted && (
+                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-3.5 shrink-0">
+                                    <path d="M3 9h10.2L9.5 5.3 10.9 4l6 6-6 6-1.4-1.3 3.7-3.7H3V9Z" />
+                                </svg>
+                            )}
+                            {!compact && !(attached && generationCompleted) && <ChevronRight aria-hidden className="size-4 shrink-0" />}
                         </button>
                     ))}
                     {confirmation && <AiConversationConfirmation confirmation={confirmation} />}

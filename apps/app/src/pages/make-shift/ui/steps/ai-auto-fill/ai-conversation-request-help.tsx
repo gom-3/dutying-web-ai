@@ -1,42 +1,38 @@
-import {ChevronDown} from 'lucide-react';
+import {useId} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TProps = {
-    groups: {title: string; sentences: string[]}[];
+    examples: string[];
     draft: string;
-    disabled?: boolean;
+    compact: boolean;
+    disabled: boolean;
     onPick: (sentence: string) => void;
 };
 
-export function AiConversationRequestHelp({groups, draft, disabled = false, onPick}: TProps) {
+export function AiConversationRequestExamples({examples, draft, compact, disabled, onPick}: TProps) {
     const {t} = useTypedTranslation();
+    const headingId = useId();
+    const draftLength = draft.trim().length;
 
     return (
-        <details className="ai-adjust-examples group min-w-0 rounded-lg border border-gray-6">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-3 text-[13px] font-medium text-[#475467] hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1 [&::-webkit-details-marker]:hidden">
-                {t('aiConversationSidebar.requestHelp')}
-                <ChevronDown aria-hidden="true" className="size-4 shrink-0 group-open:rotate-180" />
-            </summary>
-            <section aria-label={t('aiAdjust.examples')} className="max-h-72 space-y-4 overflow-y-auto overscroll-contain px-3 pb-3">
-                <p className="text-xs leading-5 text-[#667085]">{t('aiConversationSidebar.requestHelpHint')}</p>
-                {groups.map((group) => (
-                    <div key={group.title} className="space-y-2">
-                        <h3 className="text-[13px] font-medium text-[#475467]">{group.title}</h3>
-                        {[...new Set(group.sentences)].map((sentence) => (
-                            <button
-                                key={sentence}
-                                type="button"
-                                disabled={disabled || (draft.trim() ? draft.trim().length + 1 : 0) + sentence.length > 500}
-                                onClick={() => onPick(sentence)}
-                                className="flex min-h-11 w-full items-center rounded-lg bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:opacity-50"
-                            >
-                                {sentence}
-                            </button>
-                        ))}
-                    </div>
-                ))}
-                <p className="text-xs leading-5 text-[#667085]">{t('aiConversationSidebar.requestHelpLimits')}</p>
-            </section>
-        </details>
+        <section aria-labelledby={headingId} className="ai-conversation-request-examples flex min-w-0 flex-col gap-[4px]">
+            <h3 id={headingId} className="mb-[2px] px-[12px] text-[12px] leading-[18px] font-medium text-main-1">
+                {t('aiAdjust.examples')}
+            </h3>
+            {examples.slice(0, compact ? 2 : 3).map((sentence) => (
+                <button
+                    key={sentence}
+                    type="button"
+                    disabled={disabled || draftLength + (draftLength ? 1 : 0) + sentence.length > 500}
+                    onClick={() => onPick(sentence)}
+                    className="forced-colors:focus-visible:outline-auto flex min-h-[40px] w-full items-center justify-between gap-2 rounded-lg bg-[#F7F8FA] px-[12px] py-[8px] text-left text-[13px] leading-[20px] text-[#596579] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
+                >
+                    <span className="min-w-0 [overflow-wrap:anywhere] break-keep">{sentence}</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-[18px] shrink-0">
+                        <path d="m9 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </button>
+            ))}
+        </section>
     );
 }
