@@ -1,11 +1,11 @@
-import {type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {ArrowRight, Redo2} from 'lucide-react';
+import {type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
 import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
-import sendIcon from '@/shared/assets/images/ai-adjust/send.svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog, {ConfirmationSpotlight} from '@/shared/ui/ConfirmActionDialog';
@@ -17,6 +17,7 @@ import {conversationOperationFailure as operationFailure} from '../../../model/a
 import {conversationDraftSignature as signature} from '../../../model/conversation-draft-signature';
 import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
 import {
+    clarificationQuestion,
     conversationTurnText,
     currentConversationTurns,
     operationAttempt,
@@ -62,15 +63,15 @@ import {AiConversationHeader} from './ai-conversation-header';
 import {AiConversationHistory} from './ai-conversation-history';
 import {AiConversationLoading, AiConversationLoadingPlaceholder} from './ai-conversation-loading';
 import {AiConversationOperationStatus} from './ai-conversation-operation-status';
-import {AiConversationRequestHelp} from './ai-conversation-request-help';
+import {AiConversationRequestExamples} from './ai-conversation-request-help';
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
-import {AiConversationTimestamp} from './ai-conversation-timestamp';
+import {AiConversationTimestamp, AiMessageTimestamp} from './ai-conversation-timestamp';
 import {AiExecutionCancelButton} from './ai-execution-cancel-button';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
-import {AiSemanticReview} from './ai-semantic-review';
+import {AiClarificationText, AiSemanticReview} from './ai-semantic-review';
 import {JourneyObserved} from './journey-observed';
 
 export type TConversationExecution = {
@@ -116,6 +117,7 @@ type TLocalEvent = {
     id: string;
     sequence: number;
     messages: TAutofillMessage[];
+    pendingRequest?: {text: string; afterSequence: number};
 };
 type TComposerContext = {
     editingEventId?: number;
@@ -128,12 +130,18 @@ type TLocalTranscript = {
     recoveredFailures: string[];
     composer?: TComposerContext;
     restoredResult?: {operationId: string; signature: string; sourceVersionId?: string};
+    undoneOperationIds?: string[];
 };
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
+const MAX_REQUEST_LENGTH = 500;
 const buttonClass =
     'min-h-11 rounded-lg bg-gray-7 px-3 py-2 text-sm hover:bg-main-light hover:text-main-1 focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:opacity-40';
+const recoveryActionClass =
+    'inline-flex min-h-11 max-w-full items-center justify-center gap-2 rounded-lg py-2 text-[13px] leading-5 font-semibold focus-visible:outline-none disabled:bg-[#EEF1F4] disabled:text-[#667085] forced-colors:focus-visible:outline';
+const recoveryButtonClass = `${recoveryActionClass} bg-main-light px-3 text-[#5931B9] hover:bg-[#E7DFFF] hover:text-[#4620B8] focus-visible:bg-[#4620B8] focus-visible:text-white`;
+const restoreRequestButtonClass = `${recoveryActionClass} bg-main-1 px-4 text-white enabled:hover:bg-[#5931B9] focus-visible:bg-[#4620B8] focus-visible:underline`;
 
 export default function AiConversationSidebar({
     open,
@@ -199,6 +207,8 @@ export default function AiConversationSidebar({
                             event?.kind === 'local' &&
                             typeof event.id === 'string' &&
                             Number.isFinite(event.sequence) &&
+                            (!event.pendingRequest ||
+                                (typeof event.pendingRequest.text === 'string' && Number.isFinite(event.pendingRequest.afterSequence))) &&
                             Array.isArray(event.messages) &&
                             event.messages.every(
                                 (message) => message && ['user', 'assistant'].includes(message.role) && typeof message.text === 'string',
@@ -206,6 +216,9 @@ export default function AiConversationSidebar({
                     ) &&
                     Array.isArray(transcript.recoveredFailures) &&
                     transcript.recoveredFailures.every((id) => typeof id === 'string') &&
+                    (transcript.undoneOperationIds === undefined ||
+                        (Array.isArray(transcript.undoneOperationIds) &&
+                            transcript.undoneOperationIds.every((id) => typeof id === 'string'))) &&
                     (!transcript.composer ||
                         (['REPLACE', 'ADD', 'RESET'].includes(transcript.composer.change) &&
                             (transcript.composer.previousId == null || typeof transcript.composer.previousId === 'string') &&
@@ -227,7 +240,6 @@ export default function AiConversationSidebar({
     const automaticAttempts = useRef(new Set<string>());
     const initialGenerationPending = useRef(false);
     const generationPlanIds = useRef(new Set<string>());
-    const semanticExecutionEnabled = useShiftEditorStore((s) => s.semanticExecutionEnabled);
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
     const [detail, setDetail] = useState<TConversationDetail | null>(null);
@@ -244,6 +256,7 @@ export default function AiConversationSidebar({
 
     const [activity, setActivity] = useState<TActivity>('updating');
     const [executing, setExecuting] = useState(false);
+    const [cancellingOperationId, setCancellingOperationId] = useState<string | null>(null);
     const busyRef = useRef(false);
     const [error, setError] = useState<TAiConversationFailure | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
@@ -255,6 +268,7 @@ export default function AiConversationSidebar({
     const previewRequest = useRef(0);
     const sidebarOpen = useRef(open);
     const [restoredResult, setRestoredResult] = useState(storedTranscript?.restoredResult);
+    const [undoneOperationIds, setUndoneOperationIds] = useState(storedTranscript?.undoneOperationIds ?? []);
     const [reapplyTarget, setReapplyTarget] = useState<TConversationOperation | null>(null);
     const [pendingBranch, setPendingBranch] = useState<TConversationDetail | null>(null);
     const [rebuild, setRebuild] = useState(false);
@@ -277,10 +291,31 @@ export default function AiConversationSidebar({
         if (transcriptConversation.current !== null && transcriptConversation.current !== next.conversation.conversationId) {
             setLocalEvents([]);
             setRestoredResult(undefined);
+            setUndoneOperationIds([]);
             recoveredFailures.current.clear();
             setEditingRequest(null);
             setPreviousId(undefined);
             setChange('ADD');
+        }
+
+        if (transcriptConversation.current === next.conversation.conversationId) {
+            // Polling can see the saved user message while interpretation is still running.
+            setLocalEvents((events) => {
+                const request = events.find((event) => event.pendingRequest);
+                const pendingRequest = request?.pendingRequest;
+
+                if (
+                    request &&
+                    pendingRequest &&
+                    next.turns.some(
+                        (turn) =>
+                            turn.actor === 'USER' && turn.sequence > pendingRequest.afterSequence && turn.text === pendingRequest.text,
+                    )
+                )
+                    return events.filter((event) => event.id !== request.id);
+
+                return events;
+            });
         }
 
         transcriptConversation.current = next.conversation.conversationId;
@@ -1123,7 +1158,11 @@ export default function AiConversationSidebar({
             false,
             'recovering',
         );
-    const interpret = async (request = text, reference = previousId, initialGeneration = false) => {
+    const interpret = async (
+        request = text,
+        reference = previousId,
+        {initialGeneration = false, removeConditionId}: {initialGeneration?: boolean; removeConditionId?: string} = {},
+    ) => {
         const message = request.trim();
 
         if (!message) return;
@@ -1172,7 +1211,6 @@ export default function AiConversationSidebar({
                 ]);
 
                 let stage: TRequestStage = 'SYNC';
-                let sentText = message;
 
                 try {
                     reviewedPreparation.current = null;
@@ -1204,7 +1242,10 @@ export default function AiConversationSidebar({
                     const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
                     const state = current.conversationState;
 
-                    if (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion)
+                    if (
+                        (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion) ||
+                        (removeConditionId && state?.pendingQuestion?.conditionId !== removeConditionId)
+                    )
                         throw new Error(t('aiConversationSidebar.requestChanged'));
 
                     const original =
@@ -1217,9 +1258,19 @@ export default function AiConversationSidebar({
                     const marker = priorPlan?.semanticPlan?.state === 'NEEDS_CLARIFICATION' ? '추가 답변' : '추가 요청';
                     const interpretedText = original && message !== original ? `${original}\n${marker}: ${message}` : message;
 
-                    if (interpretedText.length > 500) throw new AiConversationInputError('requestTooLong');
+                    if (interpretedText.length > MAX_REQUEST_LENGTH) throw new AiConversationInputError('requestTooLong');
 
-                    sentText = interpretedText;
+                    const sentAfterSequence = Math.max(0, ...current.turns.map((turn) => turn.sequence));
+
+                    setLocalEvents((events) =>
+                        events.map((event) =>
+                            event.id === requestEventId
+                                ? {...event, pendingRequest: {text: interpretedText, afterSequence: sentAfterSequence}}
+                                : event.pendingRequest
+                                  ? {...event, pendingRequest: undefined}
+                                  : event,
+                        ),
+                    );
                     stage = 'INTERPRET';
 
                     const interpreted = await api
@@ -1229,7 +1280,8 @@ export default function AiConversationSidebar({
                             clientContext: {
                                 surfaceVersion: 'conversation-minimal-v1',
                                 entryChoice: entryChoice ?? undefined,
-                                inputMode: editingRequest ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                                inputMode:
+                                    editingRequest || removeConditionId ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
                                 typedText: message,
                             },
                             ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
@@ -1237,8 +1289,8 @@ export default function AiConversationSidebar({
                             ...(state
                                 ? {
                                       expectedStateVersion: state.version,
-                                      change: 'AUTO' as const,
-                                      targetConditionIds: [],
+                                      change: removeConditionId ? ('REMOVE' as const) : ('AUTO' as const),
+                                      targetConditionIds: removeConditionId ? [removeConditionId] : [],
                                   }
                                 : previous && current.conversation.latestInterpretationId === previous
                                   ? {
@@ -1258,7 +1310,7 @@ export default function AiConversationSidebar({
 
                     if (initialGeneration) initialGenerationPending.current = true;
 
-                    setText('');
+                    if (!removeConditionId) setText('');
 
                     setEditingRequest(null);
                     setPreviousId(interpreted.interpretationId ?? undefined);
@@ -1276,16 +1328,6 @@ export default function AiConversationSidebar({
                         );
 
                     throw cause;
-                } finally {
-                    // Replace only this attempt's optimistic message after a server receipt.
-                    // Earlier failed attempts remain in history even if the same text is sent again.
-                    const latest = detailRef.current;
-
-                    if (
-                        latest?.conversation.conversationId === before?.conversation.conversationId &&
-                        latest?.turns.some((turn) => turn.actor === 'USER' && turn.sequence > afterSequence && turn.text === sentText)
-                    )
-                        setLocalEvents((events) => events.filter((event) => event.id !== requestEventId));
                 }
             },
             false,
@@ -1407,6 +1449,7 @@ export default function AiConversationSidebar({
                 sourceVersionId: current.draft.versionId,
             });
             restore(next.draft, true);
+            setUndoneOperationIds((ids) => ids.filter((id) => id !== operation.operationId));
         });
     const undoOperation = (operation: TConversationOperation) =>
         run(async () => {
@@ -1442,8 +1485,12 @@ export default function AiConversationSidebar({
 
             install(next);
 
+            if (!mounted.current) return;
+
             if (useShiftEditorStore.getState().draftRevision === uiRevision) {
                 restore(next.draft, true);
+                setRestoredResult((restored) => (restored?.operationId === operation.operationId ? undefined : restored));
+                setUndoneOperationIds((ids) => (ids.includes(operation.operationId) ? ids : [...ids, operation.operationId]));
                 void reportScheduleJourney(operation.result?.observation, {
                     type: 'CLIENT_UNDONE',
                     draftRevision: useShiftEditorStore.getState().draftRevision,
@@ -1577,15 +1624,25 @@ export default function AiConversationSidebar({
     const segmentStart = Math.max(0, ...(detail?.turns.filter((turn) => turn.type === 'SEGMENT_START').map((turn) => turn.sequence) ?? []));
     const currentOperations = detail?.operations.filter((operation) => operation.sequence > segmentStart) ?? [];
     const latestOperation = currentOperations[currentOperations.length - 1];
+    const recheckingOperationId = operationBusy && activity === 'recovering' ? latestOperation?.operationId : undefined;
     const executionSucceeded = !error && latestOperation?.executionStatus === 'SUCCEEDED' && !operationFailure(latestOperation);
     const cancelOperation = (operationId: string) =>
         void run(async () => {
-            const cancelled = await api.cancelOperation(operationId);
+            setCancellingOperationId(operationId);
 
-            if (cancelled.executionStatus === 'CANCELLED' && readPendingExecution(sessionStorage, pendingKey)?.operationId === operationId)
-                sessionStorage.removeItem(pendingKey);
+            try {
+                const cancelled = await api.cancelOperation(operationId);
 
-            await refresh();
+                if (
+                    cancelled.executionStatus === 'CANCELLED' &&
+                    readPendingExecution(sessionStorage, pendingKey)?.operationId === operationId
+                )
+                    sessionStorage.removeItem(pendingKey);
+
+                await refresh();
+            } finally {
+                if (mounted.current) setCancellingOperationId(null);
+            }
         });
 
     cancelCurrentOperationRef.current = () => {
@@ -1614,7 +1671,12 @@ export default function AiConversationSidebar({
 
             recordedFeedback.current[kind] = text;
 
-            if (!text || (kind === 'notice' && [t('aiAdjust.recovery.running'), t('aiAdjust.recovery.unknown')].includes(text))) continue;
+            if (
+                !text ||
+                (kind === 'error' && !detail) ||
+                (kind === 'notice' && [t('aiAdjust.recovery.running'), t('aiAdjust.recovery.unknown')].includes(text))
+            )
+                continue;
 
             const id = `feedback:${kind}:${++localSequence.current}`;
 
@@ -1643,6 +1705,7 @@ export default function AiConversationSidebar({
                 conversationId: detail?.conversation.conversationId ?? transcriptConversation.current,
                 events: localEvents,
                 restoredResult,
+                undoneOperationIds,
                 recoveredFailures: [...recoveredFailures.current],
                 composer: {
                     editingEventId: editingRequest?.eventId ?? (!detail ? storedTranscript?.composer?.editingEventId : undefined),
@@ -1651,7 +1714,7 @@ export default function AiConversationSidebar({
                 },
             }),
         );
-    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, restoredResult]);
+    }, [transcriptKey, localEvents, detail, editingRequest, previousId, change, restoredResult, undoneOperationIds]);
 
     useEffect(() => {
         if (!autofillFlow || !detail || autofillFlow.id === discardedPreparationId.current) return;
@@ -1716,7 +1779,7 @@ export default function AiConversationSidebar({
 
         lastGeneration.current = generationRequest;
 
-        if (generationText.trim()) void interpret(generationText.trim(), undefined, true);
+        if (generationText.trim()) void interpret(generationText.trim(), undefined, {initialGeneration: true});
         else void execute('GENERATE', generationFillPolicy);
     }, [generationRequest, generationText, detail, busy, open, preparing, generationFillPolicy]);
 
@@ -1836,7 +1899,49 @@ export default function AiConversationSidebar({
     // Once a request has an execution record, its preview is history. Further
     // actions belong to that execution's result or recovery controls.
     const executedInterpretationIds = new Set(detail?.operations.flatMap((op) => (op.interpretationId ? [op.interpretationId] : [])));
+    const timeline = (
+        detail ? [...conversationEvents({...detail, turns: activeTurns, operations: currentOperations}), ...visibleLocalEvents] : []
+    )
+        .sort((a, b) => a.sequence - b.sequence)
+        .filter((event, index, events) => {
+            const next = events[index + 1];
+
+            // Keep the latest timestamp and recovery action when retries produce the same feedback in a row.
+            return !(
+                event.kind === 'local' &&
+                event.id.startsWith('feedback:error:') &&
+                next?.kind === 'local' &&
+                next.id.startsWith('feedback:error:') &&
+                event.messages[0]?.text === next.messages[0]?.text
+            );
+        });
+    const conversationLoadFailure = Boolean(error && !detail && !readPendingExecution(sessionStorage, pendingKey));
     const active = detail?.turns.find((turn) => turn.interpretationId === detail.conversation.latestInterpretationId);
+    const conversationState = detail?.conversationState;
+    const pendingQuestion = conversationState?.pendingQuestion?.question.trim();
+    const pendingConditionId = conversationState?.pendingQuestion?.conditionId;
+    const unresolvedRequest = conversationState?.conditions.some((condition) => condition.preview.status === 'PREVIEW_READY')
+        ? conversationState.conditions.find(
+              (condition) => condition.conditionId === pendingConditionId && condition.preview.status === 'NEEDS_CLARIFICATION',
+          )
+        : undefined;
+    const clarificationId = useId();
+    const clarificationTurn = activeTurns.find(
+        (turn) =>
+            turn.actor === 'ASSISTANT' &&
+            turn.interpretationId &&
+            turn.interpretationId === detail?.conversation.latestInterpretationId &&
+            !executedInterpretationIds.has(turn.interpretationId) &&
+            turn.semanticPlan?.state === 'NEEDS_CLARIFICATION' &&
+            !turn.semanticPlan.reasonCodes.includes('EMPTY_CONDITIONS'),
+    );
+    const answeringClarification = !editingRequest && (Boolean(pendingQuestion) || Boolean(clarificationTurn));
+    const question = clarificationQuestion(pendingQuestion, clarificationTurn?.semanticPlan?.summary);
+    const composerPlaceholder = answeringClarification
+        ? question
+            ? t('aiConversationSidebar.clarificationAnswerPlaceholder')
+            : t('aiConversationSidebar.clarificationDetailsPlaceholder')
+        : t('aiConversationSidebar.describeChanges');
     const reviewingPlan = Boolean(
         active?.semanticPlan &&
             active.interpretationId &&
@@ -1853,6 +1958,19 @@ export default function AiConversationSidebar({
         failureNeedsAction ||
         entryChoice === 'regenerate' ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
+    const canSendRequest = open && !composerHidden && adjustEnabled && Boolean(text.trim());
+    const showRequestExamples = Boolean(
+        open &&
+            !composerHidden &&
+            adjustEnabled &&
+            !editingRequest &&
+            !error &&
+            !historicalRecovery &&
+            !detail?.conversationState?.pendingQuestion &&
+            activeTurns.length === 0 &&
+            !currentOperations.some((operation) => operation.operationType === 'ADJUST') &&
+            !visibleLocalEvents.some((event) => event.id.startsWith('request:')),
+    );
     const recoveryComposerFocus = useRef(false);
 
     useEffect(() => {
@@ -1899,112 +2017,46 @@ export default function AiConversationSidebar({
     const exampleWork =
         exampleShiftTypes.find((type) => !type.isOff && type.classification === 'NIGHT') ?? exampleShiftTypes.find((type) => !type.isOff);
     const exampleOff = exampleShiftTypes.find((type) => type.isOff);
-    const exampleDayWork = exampleShiftTypes.find((type) => !type.isOff && type !== exampleWork) ?? exampleWork;
     const exampleFirst = exampleNurses[0]?.name;
-    const exampleSecond = exampleNurses[1]?.name ?? exampleFirst;
     const dayOf = (index: number) => Number(doc.columns[Math.min(index, doc.columns.length - 1)]?.slice(-2));
     const examplePeriod =
         dayOf(0) === dayOf(4)
             ? t('aiConversationSidebar.exampleDay', {day: dayOf(0)})
             : t('aiConversationSidebar.exampleDayRange', {start: dayOf(0), end: dayOf(4)});
-    const exampleNight = exampleShiftTypes.find((type) => !type.isOff && type.classification === 'NIGHT');
-    const requestExampleGroups =
-        exampleFirst && doc.columns.length
-            ? [
-                  {
-                      title: t('aiConversationSidebar.helpAssignment'),
-                      sentences: [
-                          ...(exampleWork
-                              ? [
-                                    t('aiConversationSidebar.exampleNoShifts', {
-                                        name: exampleFirst,
-                                        period: examplePeriod,
-                                        shift: exampleWork.shortName,
-                                    }),
-                                ]
-                              : []),
-                          ...(exampleOff
-                              ? [
-                                    t('aiConversationSidebar.exampleAssignShift', {
-                                        name: exampleSecond,
-                                        day: dayOf(11),
-                                        shift: exampleOff.shortName,
-                                    }),
-                                ]
-                              : []),
-                          ...(exampleDayWork
-                              ? [
-                                    t('aiConversationSidebar.exampleAssignShift', {
-                                        name: exampleFirst,
-                                        day: dayOf(14),
-                                        shift: exampleDayWork.shortName,
-                                    }),
-                                ]
-                              : []),
-                      ],
-                  },
-                  ...(exampleWork
-                      ? [
-                            {
-                                title: t('aiConversationSidebar.helpCounts'),
-                                sentences: [
-                                    t('aiConversationSidebar.exampleMonthlyCap', {
-                                        name: exampleFirst,
-                                        shift: exampleWork.shortName,
-                                        count: Math.min(6, doc.columns.length),
-                                    }),
-                                ],
-                            },
-                        ]
-                      : []),
-                  ...(exampleWork && doc.columns.length > 1
-                      ? [
-                            {
-                                title: t('aiConversationSidebar.helpConsecutive'),
-                                sentences: [
-                                    t('aiConversationSidebar.exampleConsecutiveWork', {count: Math.min(5, doc.columns.length - 1)}),
-                                ],
-                            },
-                        ]
-                      : []),
-                  ...(exampleNight && exampleOff
-                      ? [
-                            {
-                                title: t('aiConversationSidebar.helpRecovery'),
-                                sentences: [
-                                    t('aiConversationSidebar.exampleRestAfterNight', {
-                                        shift: exampleNight.shortName,
-                                        off: exampleOff.shortName,
-                                    }),
-                                ],
-                            },
-                        ]
-                      : []),
-                  ...(exampleDayWork
-                      ? [
-                            {
-                                title: t('aiConversationSidebar.helpStaffing'),
-                                sentences: [
-                                    t('aiConversationSidebar.exampleStaffing', {
-                                        day: dayOf(9),
-                                        shift: exampleDayWork.shortName,
-                                        count: Math.min(3, exampleNurses.length),
-                                    }),
-                                ],
-                            },
-                        ]
-                      : []),
-                  ...(exampleFirst !== exampleSecond && exampleWork
-                      ? [
-                            {
-                                title: t('aiConversationSidebar.helpPairing'),
-                                sentences: [t('aiConversationSidebar.examplePairApart', {first: exampleFirst, second: exampleSecond})],
-                            },
-                        ]
-                      : []),
-              ].filter((group) => group.sentences.length)
-            : [];
-    const requestExamples = [...new Set(requestExampleGroups.flatMap((group) => group.sentences))];
+    const requestExamples: string[] = [];
+
+    if (showRequestExamples && doc.columns.length) {
+        if (exampleOff) requestExamples.push(t('aiAdjust.offExample'));
+
+        if (exampleFirst && exampleWork) {
+            requestExamples.push(
+                t('aiConversationSidebar.exampleNoShifts', {name: exampleFirst, period: examplePeriod, shift: exampleWork.shortName}),
+            );
+        } else if (exampleFirst && exampleOff) {
+            requestExamples.push(
+                t('aiConversationSidebar.exampleAssignShift', {name: exampleFirst, day: dayOf(11), shift: exampleOff.shortName}),
+            );
+        }
+
+        if (exampleWork && doc.columns.length > 1) {
+            requestExamples.push(t('aiConversationSidebar.exampleConsecutiveWork', {count: Math.min(5, doc.columns.length - 1)}));
+        }
+
+        if (requestExamples.length < 3 && exampleWork && exampleNurses.length) {
+            requestExamples.push(
+                t('aiConversationSidebar.exampleStaffing', {
+                    day: dayOf(9),
+                    shift: exampleWork.shortName,
+                    count: Math.min(3, exampleNurses.length),
+                }),
+            );
+        }
+    }
+
+    const historyMessageCount = visibleLocalEvents.reduce(
+        (count, event) => count + event.messages.length,
+        currentOperations.length + (segmentStart === 0 ? earlierConversations.length : 0),
+    );
 
     useEffect(() => {
         if (entryChoice === 'modify' && !composerHidden) textarea.current?.focus();
@@ -2028,19 +2080,20 @@ export default function AiConversationSidebar({
     const showNextActions = Boolean(
         detail &&
             canChooseNextAction &&
+            !pendingQuestion &&
             !historicalRecovery &&
             !editingRequest &&
             !failureNeedsAction &&
             (autofillFlow?.id === discardedPreparationId.current || autofillFlow?.status !== 'paused') &&
             !preparing &&
             !entryChoice &&
-            !text.trim() &&
             !awaitingAdjustment &&
             !running &&
             !busy &&
             !error,
     );
     const attachNextActions = showNextActions && executionSucceeded;
+    const hasConversationMessages = Boolean(activeTurns.length || currentOperations.length || localEvents.length);
     const hasGeneratedAssignments = Boolean(
         detail?.operations.some((operation) => operation.applyStatus === 'APPLIED' && !operationFailure(operation)) &&
             doc.rows.some((row) =>
@@ -2134,40 +2187,39 @@ export default function AiConversationSidebar({
 
         if (!hasSavedResult(operation)) return null;
 
-        return (
-            <>
-                {hasSavedResult(operation) && (
-                    <p role="status" className="mt-3 text-[13px] text-[#667085]">
-                        {t(
-                            isResultApplied(operation)
-                                ? 'aiConversationSidebar.authoring.currentResult'
-                                : 'aiConversationSidebar.authoring.savedResult',
-                        )}
-                    </p>
-                )}
-                {hasSavedResult(operation) && !isResultApplied(operation) && (
-                    <button type="button" className={buttonClass} disabled={busy || running} onClick={() => setReapplyTarget(operation)}>
-                        {t(
-                            operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && restoredResult?.operationId !== operation.operationId
-                                ? 'aiConversationSidebar.authoring.restore'
-                                : 'aiConversationSidebar.authoring.reapply',
-                        )}
-                    </button>
-                )}
-                {operation.result &&
-                    hasSavedResult(operation) &&
-                    operation.result.changedCells.length > 0 &&
-                    isResultApplied(operation) && (
-                        <button
-                            type="button"
-                            className={buttonClass}
-                            disabled={busy || running || !isResultApplied(operation)}
-                            onClick={() => void undoOperation(operation)}
-                        >
-                            {t('aiConversationSidebar.authoring.undo')}
-                        </button>
+        if (!isResultApplied(operation))
+            return (
+                <button
+                    type="button"
+                    className="forced-colors:focus-visible:outline-auto inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-transparent px-2.5 py-2 font-apple text-[13px] leading-5 font-medium text-[#5931B9] transition-colors hover:text-[#45248F] focus-visible:text-[#45248F] focus-visible:underline focus-visible:underline-offset-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                    disabled={busy || running}
+                    onClick={() => setReapplyTarget(operation)}
+                >
+                    <Redo2 aria-hidden className="size-4 shrink-0" />
+                    {t(
+                        operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' &&
+                            restoredResult?.operationId !== operation.operationId &&
+                            !undoneOperationIds.includes(operation.operationId)
+                            ? 'aiConversationSidebar.authoring.restore'
+                            : 'aiConversationSidebar.authoring.reapply',
                     )}
-            </>
+                </button>
+            );
+
+        if (!operation.result?.changedCells.length) return null;
+
+        return (
+            <button
+                type="button"
+                className="forced-colors:focus-visible:outline-auto inline-flex min-h-[44px] items-center gap-2 rounded-lg px-2.5 py-2 font-apple text-[13px] leading-5 font-medium text-[#B42318] transition-colors hover:text-[#8F1D16] focus-visible:text-[#8F1D16] focus-visible:underline focus-visible:underline-offset-4 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+                disabled={busy || running}
+                onClick={() => void undoOperation(operation)}
+            >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor" className="size-4 shrink-0">
+                    <path d="M12.5 8c-2.65 0-5.05 1-6.9 2.6L2 7v9h9l-3.62-3.62A8.02 8.02 0 0 1 12.5 10c3.54 0 6.55 2.3 7.6 5.5l2.37-.78C21.05 10.81 17.12 8 12.5 8Z" />
+                </svg>
+                {t('aiConversationSidebar.authoring.undo')}
+            </button>
         );
     };
     const renderTurn = (turn: TConversationTurn) => {
@@ -2186,10 +2238,12 @@ export default function AiConversationSidebar({
 
         const previousRun = detail && precedingCompletedOperation(detail, turn);
         const Message = turn.actor === 'USER' ? UserMessage : AssistantMessage;
+        // The failed turn remains history when the composer takes over from the recovery button.
         const currentRequest = Boolean(
             turn.interpretationId &&
                 turn.interpretationId === detail?.conversation.latestInterpretationId &&
-                !executedInterpretationIds.has(turn.interpretationId),
+                !executedInterpretationIds.has(turn.interpretationId) &&
+                storedErrorRequest?.eventId !== turn.eventId,
         );
         const applied =
             detail?.operations.some(
@@ -2218,6 +2272,21 @@ export default function AiConversationSidebar({
                     {turn.semanticPlan && (
                         <AiSemanticReview
                             plan={turn.semanticPlan}
+                            clarification={
+                                turn === clarificationTurn && pendingQuestion
+                                    ? {
+                                          text: pendingQuestion,
+                                          id: clarificationId,
+                                          unresolvedRequest: unresolvedRequest && {
+                                              text: unresolvedRequest.text,
+                                              onRemove: () =>
+                                                  void interpret(t('aiAutofillUi.semanticReview.removeUnresolvedRequest'), undefined, {
+                                                      removeConditionId: unresolvedRequest.conditionId,
+                                                  }),
+                                          },
+                                      }
+                                    : undefined
+                            }
                             current={currentRequest}
                             disabled={
                                 busy || running || awaitingAdjustment || Boolean(editingRequest) || !adjustEnabled || isAutofillBlocked
@@ -2356,36 +2425,35 @@ export default function AiConversationSidebar({
                     onClose={onClose}
                     disabled={busy || running || awaitingAdjustment || !detail || preparing}
                 />
-                <div className="flex min-h-0 flex-1 flex-col px-[25px] pb-5">
-                    <div className="mb-1 shrink-0">
-                        <AiActiveConditions
-                            hideTrigger
-                            ref={conditionsEditor}
-                            wardId={wardId}
-                            teamId={teamId}
-                            year={year}
-                            month={month}
-                            available={open && !loading && !preparing && !running}
-                            wardRules={activeConditions.wardRules}
-                            aiConditions={aiConditions}
-                            loading={activeConditions.loading}
-                            error={activeConditions.error}
-                            onRetry={async () => {
-                                await activeConditions.reload();
+                <div role="separator" className="mx-[25px] h-px shrink-0 bg-[#E5E8EB]" />
+                <div className="flex min-h-0 flex-1 flex-col px-[25px] pb-[max(16px,env(safe-area-inset-bottom))]">
+                    <AiActiveConditions
+                        hideTrigger
+                        ref={conditionsEditor}
+                        wardId={wardId}
+                        teamId={teamId}
+                        year={year}
+                        month={month}
+                        available={open && !loading && !preparing && !running}
+                        wardRules={activeConditions.wardRules}
+                        aiConditions={aiConditions}
+                        loading={activeConditions.loading}
+                        error={activeConditions.error}
+                        onRetry={async () => {
+                            await activeConditions.reload();
 
-                                if (conditionsContextInvalid) await refresh();
-                            }}
-                            disabled={conditionsDisabled}
-                            onWardRulesApplied={async () => {
-                                await activeConditions.refreshAfterRuleChange();
-                                setNotice(t('aiConversationSidebar.conditionsSaved'));
-                            }}
-                            onBusyChange={setConditionEditorBusy}
-                        />
-                    </div>
+                            if (conditionsContextInvalid) await refresh();
+                        }}
+                        disabled={conditionsDisabled}
+                        onWardRulesApplied={async () => {
+                            await activeConditions.refreshAfterRuleChange();
+                            setNotice(t('aiConversationSidebar.conditionsSaved'));
+                        }}
+                        onBusyChange={setConditionEditorBusy}
+                    />
                     {polling.issue && (
                         <AiFailureMessage message={t(`aiAdjust.polling.${polling.issue}`)}>
-                            <button className={buttonClass} onClick={polling.retry}>
+                            <button type="button" className={recoveryButtonClass} onClick={polling.retry}>
                                 {t('aiConversationSidebar.checkOutcomeAgain')}
                             </button>
                         </AiFailureMessage>
@@ -2418,7 +2486,7 @@ export default function AiConversationSidebar({
                         ready={Boolean(detail)}
                         open={open}
                         composerHidden={composerHidden}
-                        className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2"
+                        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[12px] pb-2"
                         contentClassName="space-y-3"
                     >
                         {!detail && !error && <AiConversationLoadingPlaceholder label={t('aiConversationSidebar.loadingConversation')} />}
@@ -2433,8 +2501,7 @@ export default function AiConversationSidebar({
                                 />
                             ))}
                         {detail &&
-                            [...conversationEvents({...detail, turns: activeTurns, operations: currentOperations}), ...visibleLocalEvents]
-                                .sort((a, b) => a.sequence - b.sequence)
+                            timeline
                                 .filter(
                                     (event) =>
                                         event.kind !== 'turn' ||
@@ -2446,41 +2513,79 @@ export default function AiConversationSidebar({
                                     event.kind === 'local' ? (
                                         event.id.startsWith('feedback:error:') ? (
                                             <div key={event.id}>
-                                                <AiFailureMessage message={event.messages[0]?.text ?? ''} announce={false}>
-                                                    {historicalRecovery?.eventId === event.id && (
-                                                        <div className="space-y-2">
-                                                            <p className="text-[13px] leading-6 text-[#475467]">
-                                                                {t('aiConversationSidebar.reviewSavedRequestHint')}
-                                                            </p>
-                                                            <button
-                                                                type="button"
-                                                                className={buttonClass}
-                                                                disabled={!adjustEnabled}
-                                                                onClick={() => reviewRequest(historicalRecovery.turn)}
-                                                            >
-                                                                {t('aiConversationSidebar.reviewSavedRequest')}
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </AiFailureMessage>
-                                                <AiConversationTimestamp createdAt={event.messages[0]?.createdAt} />
+                                                <AiConversationTimestamp createdAt={event.messages[0]?.createdAt}>
+                                                    <AiFailureMessage
+                                                        message={
+                                                            event.messages[0]?.text === t('aiAdjust.failed')
+                                                                ? ''
+                                                                : (event.messages[0]?.text ?? '')
+                                                        }
+                                                        title={t('aiConversationSidebar.previousRequestFailed')}
+                                                        announce={false}
+                                                    >
+                                                        {historicalRecovery?.eventId === event.id && (
+                                                            <div className="space-y-3">
+                                                                <p className="text-[13px] leading-6 text-[#475467]">
+                                                                    {t('aiConversationSidebar.reviewSavedRequestHint')}
+                                                                </p>
+                                                                <button
+                                                                    type="button"
+                                                                    className={restoreRequestButtonClass}
+                                                                    disabled={!adjustEnabled}
+                                                                    onClick={() => reviewRequest(historicalRecovery.turn)}
+                                                                >
+                                                                    {t('aiConversationSidebar.reviewSavedRequest')}
+                                                                    <ArrowRight aria-hidden className="size-4 shrink-0" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </AiFailureMessage>
+                                                </AiConversationTimestamp>
                                             </div>
                                         ) : (
                                             <AiAutofillMessages key={event.id} messages={event.messages} />
                                         )
                                     ) : event.kind === 'turn' ? (
                                         <div key={event.id} inert={preparing}>
-                                            {renderTurn(event.turn)}
                                             <AiConversationTimestamp
                                                 createdAt={event.turn.createdAt}
                                                 align={event.turn.actor === 'USER' ? 'right' : 'left'}
-                                            />
+                                            >
+                                                {renderTurn(event.turn)}
+                                            </AiConversationTimestamp>
                                         </div>
                                     ) : (
                                         <AiConversationOperationStatus
                                             key={event.id}
                                             operation={event.operation}
                                             attempt={operationAttempt(detail, event.operation.operationId)}
+                                            pendingAction={
+                                                event.operation.operationId === cancellingOperationId
+                                                    ? 'cancel'
+                                                    : event.operation.operationId === recheckingOperationId
+                                                      ? 'recheck'
+                                                      : undefined
+                                            }
+                                            action={
+                                                event.operation.executionStatus === 'UNKNOWN' ? (
+                                                    <button
+                                                        type="button"
+                                                        className="forced-colors:focus-visible:outline-auto min-h-[44px] max-w-full px-1 text-[13px] leading-5 font-medium text-main-1 hover:text-main-1-hover focus-visible:text-[#4524A8] focus-visible:underline focus-visible:underline-offset-4 focus-visible:outline-none disabled:opacity-50"
+                                                        disabled={busy || preparing}
+                                                        onClick={() => void retryPending()}
+                                                    >
+                                                        {t('aiConversationSidebar.checkOutcome')}
+                                                    </button>
+                                                ) : event.operation.progress &&
+                                                  event.operation.executionStatus === 'RUNNING' &&
+                                                  !operationFailure(event.operation) ? (
+                                                    <AiExecutionCancelButton
+                                                        showLabel
+                                                        onCancel={() => cancelOperation(event.operation.operationId)}
+                                                        disabled={busy || preparing}
+                                                    />
+                                                ) : undefined
+                                            }
                                         >
                                             {event.operation.executionStatus === 'SUCCEEDED' && !operationFailure(event.operation) ? (
                                                 <JourneyObserved
@@ -2488,404 +2593,407 @@ export default function AiConversationSidebar({
                                                     observation={event.operation.result?.observation}
                                                     inert={preparing}
                                                 >
-                                                    <AiConversationResult
-                                                        operation={event.operation}
-                                                        appliedLocally={isResultApplied(event.operation)}
-                                                        attempt={operationAttempt(detail, event.operation.operationId)}
-                                                        changeSummary={
-                                                            hasSavedResult(event.operation) &&
-                                                            event.operation.result?.changedCells.length ? (
-                                                                <AiConversationChanges
-                                                                    key={`${event.operation.operationId}:${event.operation.resultVersionId}`}
-                                                                    changedCells={event.operation.result.changedCells}
-                                                                    sourceVersionId={event.operation.sourceVersionId}
-                                                                    loadVersion={api.version}
-                                                                    nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                                                                    label={t(
-                                                                        event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' &&
-                                                                            !isResultApplied(event.operation)
-                                                                            ? 'aiConversationSidebar.savedChanges'
-                                                                            : 'aiConversationSidebar.actualChanges',
-                                                                    )}
-                                                                    locale={i18n.language}
-                                                                />
-                                                            ) : undefined
-                                                        }
-                                                        copy={copy}
-                                                        actions={
-                                                            attachNextActions &&
-                                                            event.operation.operationId === latestOperation?.operationId ? (
-                                                                <AiConversationEntry
-                                                                    choice={null}
-                                                                    hideIntro
-                                                                    attached
-                                                                    generationCompleted={isResultApplied(event.operation)}
+                                                    <AiConversationTimestamp createdAt={event.operation.createdAt}>
+                                                        <AiConversationResult
+                                                            operation={event.operation}
+                                                            appliedLocally={isResultApplied(event.operation)}
+                                                            undone={undoneOperationIds.includes(event.operation.operationId)}
+                                                            dismissDetails={reapplyTarget?.operationId === event.operation.operationId}
+                                                            attempt={operationAttempt(detail, event.operation.operationId)}
+                                                            changeSummary={(inline) =>
+                                                                hasSavedResult(event.operation) &&
+                                                                event.operation.result?.changedCells.length ? (
+                                                                    <AiConversationChanges
+                                                                        key={`${event.operation.operationId}:${event.operation.resultVersionId}`}
+                                                                        changedCells={event.operation.result.changedCells}
+                                                                        sourceVersionId={event.operation.sourceVersionId}
+                                                                        loadVersion={api.version}
+                                                                        nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
+                                                                        label={t(
+                                                                            isResultApplied(event.operation)
+                                                                                ? 'aiConversationSidebar.actualChanges'
+                                                                                : 'aiConversationSidebar.savedChanges',
+                                                                        )}
+                                                                        locale={i18n.language}
+                                                                        inline={inline}
+                                                                        shiftTypes={shift.wardShiftTypes}
+                                                                    />
+                                                                ) : undefined
+                                                            }
+                                                            copy={copy}
+                                                            secondaryActions={renderAuthoringActions(event.operation)}
+                                                            actions={
+                                                                !isResultApplied(event.operation) &&
+                                                                attachNextActions &&
+                                                                event.operation.operationId === latestOperation?.operationId ? (
+                                                                    <AiConversationEntry
+                                                                        choice={null}
+                                                                        hideIntro
+                                                                        attached
+                                                                        generationCompleted={isResultApplied(event.operation)}
+                                                                        disabled={busy || running}
+                                                                        modifyDisabled={!adjustEnabled || isAutofillBlocked}
+                                                                        onChoose={chooseNextAction}
+                                                                    />
+                                                                ) : undefined
+                                                            }
+                                                        >
+                                                            {['GENERATE', 'ADJUST'].includes(event.operation.operationType) &&
+                                                                !!event.operation.result?.changedCells.length &&
+                                                                event.operation.operationId === latestOperation?.operationId &&
+                                                                event.operation.result?.observation &&
+                                                                event.operation.result.observation.serverEventId ===
+                                                                    lastAppliedScheduleObservation(wardId, teamId, year, month)
+                                                                        ?.serverEventId && (
+                                                                    <AiResultSatisfaction
+                                                                        key={event.operation.result.observation.serverEventId}
+                                                                        observation={event.operation.result.observation}
+                                                                        available={open && !preparing}
+                                                                        disabled={busy || running || preparing}
+                                                                    />
+                                                                )}
+                                                            {event.operation.result?.conflictReview && (
+                                                                <ConstraintConflictReview
+                                                                    review={event.operation.result.conflictReview}
+                                                                    active={
+                                                                        failureNeedsAction &&
+                                                                        event.operation === latestOperation &&
+                                                                        !preparing &&
+                                                                        !awaitingAdjustment &&
+                                                                        !busy &&
+                                                                        !running
+                                                                    }
+                                                                    onEditSettings={
+                                                                        settingsHrefFor(event.operation)
+                                                                            ? undefined
+                                                                            : () => openConflictSettings(event.operation)
+                                                                    }
+                                                                    settingsHref={settingsHrefFor(event.operation)}
+                                                                    requestSummary={
+                                                                        detail.turns.find(
+                                                                            (turn) =>
+                                                                                turn.interpretationId === event.operation.interpretationId,
+                                                                        )?.semanticPlan?.summary
+                                                                    }
+                                                                    copy={copy}
                                                                     disabled={busy || running}
-                                                                    modifyDisabled={!adjustEnabled || isAutofillBlocked}
-                                                                    onChoose={chooseNextAction}
-                                                                />
-                                                            ) : undefined
-                                                        }
-                                                    >
-                                                        {['GENERATE', 'ADJUST'].includes(event.operation.operationType) &&
-                                                            !!event.operation.result?.changedCells.length &&
-                                                            event.operation.operationId === latestOperation?.operationId &&
-                                                            event.operation.result?.observation &&
-                                                            event.operation.result.observation.serverEventId ===
-                                                                lastAppliedScheduleObservation(wardId, teamId, year, month)
-                                                                    ?.serverEventId && (
-                                                                <AiResultSatisfaction
-                                                                    key={event.operation.result.observation.serverEventId}
-                                                                    observation={event.operation.result.observation}
-                                                                    available={open && !preparing}
-                                                                    disabled={busy || running || preparing}
+                                                                    current={
+                                                                        !localDirty &&
+                                                                        !invalidatedConflictIds.has(event.operation.operationId) &&
+                                                                        event.operation.baseRevision === detail.conversation.revision &&
+                                                                        event.operation.operationId === latestOperation?.operationId
+                                                                    }
+                                                                    onProceed={() =>
+                                                                        execute(
+                                                                            event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                            event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                                ? 'REBUILD_UNLOCKED'
+                                                                                : 'EMPTY_ONLY',
+                                                                            event.operation.interpretationId ?? undefined,
+                                                                            undefined,
+                                                                            event.operation,
+                                                                        )
+                                                                    }
+                                                                    onRevise={() => {
+                                                                        setDismissedFailureId(event.operation.operationId);
+                                                                        setEntryChoice('modify');
+
+                                                                        const turn = detail.turns.find(
+                                                                            (entry) =>
+                                                                                entry.interpretationId === event.operation.interpretationId,
+                                                                        );
+
+                                                                        if (turn) editRequest(turn);
+                                                                        else {
+                                                                            setText('');
+                                                                            textarea.current?.focus();
+                                                                        }
+                                                                    }}
                                                                 />
                                                             )}
-                                                        {renderAuthoringActions(event.operation)}
-                                                        {event.operation.result?.conflictReview && (
-                                                            <ConstraintConflictReview
-                                                                review={event.operation.result.conflictReview}
-                                                                active={
-                                                                    failureNeedsAction &&
-                                                                    event.operation === latestOperation &&
-                                                                    !preparing &&
-                                                                    !awaitingAdjustment &&
-                                                                    !busy &&
-                                                                    !running
-                                                                }
-                                                                onEditSettings={
-                                                                    settingsHrefFor(event.operation)
-                                                                        ? undefined
-                                                                        : () => openConflictSettings(event.operation)
-                                                                }
-                                                                settingsHref={settingsHrefFor(event.operation)}
-                                                                requestSummary={
-                                                                    detail.turns.find(
-                                                                        (turn) =>
-                                                                            turn.interpretationId === event.operation.interpretationId,
-                                                                    )?.semanticPlan?.summary
-                                                                }
-                                                                copy={copy}
-                                                                disabled={busy || running}
-                                                                current={
-                                                                    !localDirty &&
-                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
-                                                                    event.operation.baseRevision === detail.conversation.revision &&
-                                                                    event.operation.operationId === latestOperation?.operationId
-                                                                }
-                                                                onProceed={() =>
-                                                                    execute(
-                                                                        event.operation.operationType as 'GENERATE' | 'ADJUST',
-                                                                        event.operation.fillPolicy === 'REBUILD_UNLOCKED'
-                                                                            ? 'REBUILD_UNLOCKED'
-                                                                            : 'EMPTY_ONLY',
-                                                                        event.operation.interpretationId ?? undefined,
-                                                                        undefined,
-                                                                        event.operation,
-                                                                    )
-                                                                }
-                                                                onRevise={() => {
-                                                                    setDismissedFailureId(event.operation.operationId);
-                                                                    setEntryChoice('modify');
-
-                                                                    const turn = detail.turns.find(
-                                                                        (entry) =>
-                                                                            entry.interpretationId === event.operation.interpretationId,
-                                                                    );
-
-                                                                    if (turn) editRequest(turn);
-                                                                    else {
-                                                                        setText('');
-                                                                        textarea.current?.focus();
+                                                            {event.operation.result && (
+                                                                <ConversationEvidence
+                                                                    result={event.operation.result}
+                                                                    nurseName={(id) => doc.workerMeta[id]?.name ?? id}
+                                                                    disabled={busy || running}
+                                                                    suggestionsCurrent={
+                                                                        !localDirty &&
+                                                                        isConversationSuggestionCurrent(detail, event.operation)
                                                                     }
-                                                                }}
-                                                            />
-                                                        )}
-                                                        {event.operation.result && (
-                                                            <ConversationEvidence
-                                                                result={event.operation.result}
-                                                                nurseName={(id) => doc.workerMeta[id]?.name ?? id}
-                                                                disabled={busy || running}
-                                                                suggestionsCurrent={
-                                                                    !localDirty && isConversationSuggestionCurrent(detail, event.operation)
-                                                                }
-                                                                onSelect={(suggestion) =>
-                                                                    setSelectedSuggestion({op: event.operation, suggestion})
-                                                                }
-                                                            />
-                                                        )}
-                                                    </AiConversationResult>
-                                                    <AiConversationTimestamp createdAt={event.operation.createdAt} />
+                                                                    onSelect={(suggestion) =>
+                                                                        setSelectedSuggestion({op: event.operation, suggestion})
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </AiConversationResult>
+                                                    </AiConversationTimestamp>
                                                 </JourneyObserved>
                                             ) : operationFailure(event.operation) ? (
                                                 <div key={event.id} inert={preparing}>
-                                                    <AiExecutionFailure
-                                                        attemptLabel={t('aiConversationSidebar.runAttempt', {
-                                                            count: operationAttempt(detail, event.operation.operationId),
-                                                        })}
-                                                        operationType={event.operation.operationType}
-                                                        failure={operationFailure(event.operation)!}
-                                                        detailsInChildren={Boolean(event.operation.result?.conflictReview)}
-                                                        confirmationAvailable={
-                                                            !invalidatedConflictIds.has(event.operation.operationId) &&
-                                                            !localDirty &&
-                                                            event.operation.baseRevision === detail.conversation.revision &&
-                                                            event.operation.operationId === latestOperation?.operationId &&
-                                                            Date.parse(event.operation.result?.conflictReview?.expiresAt ?? '') > Date.now()
-                                                        }
-                                                        active={
-                                                            failureNeedsAction &&
-                                                            event.operation === latestOperation &&
-                                                            !rebuild &&
-                                                            !preparing &&
-                                                            !awaitingAdjustment &&
-                                                            !busy &&
-                                                            !running
-                                                        }
-                                                        onRetry={
-                                                            event.operation.operationType === 'GENERATE' ||
-                                                            detail.turns.some(
-                                                                (turn) => turn.interpretationId === event.operation.interpretationId,
-                                                            )
-                                                                ? () => {
-                                                                      if (event.operation.operationType === 'GENERATE') {
-                                                                          if (onPrepareGeneration) onPrepareGeneration();
-                                                                          else setRebuild(true);
-                                                                      } else {
+                                                    <AiConversationTimestamp createdAt={event.operation.createdAt}>
+                                                        <AiExecutionFailure
+                                                            attemptLabel={t('aiConversationSidebar.runAttempt', {
+                                                                count: operationAttempt(detail, event.operation.operationId),
+                                                            })}
+                                                            operationType={event.operation.operationType}
+                                                            failure={operationFailure(event.operation)!}
+                                                            detailsInChildren={Boolean(event.operation.result?.conflictReview)}
+                                                            confirmationAvailable={
+                                                                !invalidatedConflictIds.has(event.operation.operationId) &&
+                                                                !localDirty &&
+                                                                event.operation.baseRevision === detail.conversation.revision &&
+                                                                event.operation.operationId === latestOperation?.operationId &&
+                                                                Date.parse(event.operation.result?.conflictReview?.expiresAt ?? '') >
+                                                                    Date.now()
+                                                            }
+                                                            active={
+                                                                failureNeedsAction &&
+                                                                event.operation === latestOperation &&
+                                                                !rebuild &&
+                                                                !preparing &&
+                                                                !awaitingAdjustment &&
+                                                                !busy &&
+                                                                !running
+                                                            }
+                                                            onRetry={
+                                                                event.operation.operationType === 'GENERATE' ||
+                                                                detail.turns.some(
+                                                                    (turn) => turn.interpretationId === event.operation.interpretationId,
+                                                                )
+                                                                    ? () => {
+                                                                          if (event.operation.operationType === 'GENERATE') {
+                                                                              if (onPrepareGeneration) onPrepareGeneration();
+                                                                              else setRebuild(true);
+                                                                          } else {
+                                                                              const turn = detail.turns.find(
+                                                                                  (turn) =>
+                                                                                      turn.interpretationId ===
+                                                                                      event.operation.interpretationId,
+                                                                              );
+
+                                                                              if (turn?.semanticPlan) void confirmAndAdjust(turn);
+                                                                              else if (turn) void prepareAndAdjust(turn);
+                                                                          }
+                                                                      }
+                                                                    : undefined
+                                                            }
+                                                            onRevise={
+                                                                adjustEnabled
+                                                                    ? () => {
+                                                                          setDismissedFailureId(event.operation.operationId);
+                                                                          setEntryChoice('modify');
+                                                                          setPreviousId(event.operation.interpretationId ?? undefined);
+                                                                          setChange('REPLACE');
+                                                                          setText('');
+
                                                                           const turn = detail.turns.find(
-                                                                              (turn) =>
-                                                                                  turn.interpretationId ===
+                                                                              (entry) =>
+                                                                                  entry.interpretationId ===
                                                                                   event.operation.interpretationId,
                                                                           );
 
-                                                                          if (turn?.semanticPlan) void confirmAndAdjust(turn);
-                                                                          else if (turn) void prepareAndAdjust(turn);
+                                                                          if (turn?.semanticPlan) editRequest(turn);
                                                                       }
-                                                                  }
-                                                                : undefined
-                                                        }
-                                                        onRevise={
-                                                            adjustEnabled
-                                                                ? () => {
-                                                                      setDismissedFailureId(event.operation.operationId);
-                                                                      setEntryChoice('modify');
-                                                                      setPreviousId(event.operation.interpretationId ?? undefined);
-                                                                      setChange('REPLACE');
-                                                                      setText('');
-
-                                                                      const turn = detail.turns.find(
-                                                                          (entry) =>
-                                                                              entry.interpretationId === event.operation.interpretationId,
-                                                                      );
-
-                                                                      if (turn?.semanticPlan) editRequest(turn);
-                                                                  }
-                                                                : undefined
-                                                        }
-                                                        onReview={
-                                                            event.operation === latestOperation &&
-                                                            canReviewFixedAfterFailure &&
-                                                            onRecoverGeneration
-                                                                ? onRecoverGeneration
-                                                                : (onOpenConstraints ?? onClose)
-                                                        }
-                                                        reviewLabel={
-                                                            event.operation === latestOperation &&
-                                                            canReviewFixedAfterFailure &&
-                                                            onRecoverGeneration
-                                                                ? t('aiAdjust.preparation.reviewFixed')
-                                                                : undefined
-                                                        }
-                                                        onInspectSchedule={onClose}
-                                                        settingsHref={settingsHrefFor(event.operation)}
-                                                        onEditSettings={
-                                                            settingsHrefFor(event.operation)
-                                                                ? undefined
-                                                                : () => openConflictSettings(event.operation)
-                                                        }
-                                                    >
-                                                        {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
-                                                            <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
-                                                        )}
-                                                        {renderAuthoringActions(event.operation)}
-                                                        {event.operation.result?.conflictReview && (
-                                                            <ConstraintConflictReview
-                                                                review={event.operation.result.conflictReview}
-                                                                active={
-                                                                    failureNeedsAction &&
-                                                                    event.operation === latestOperation &&
-                                                                    !preparing &&
-                                                                    !awaitingAdjustment &&
-                                                                    !busy &&
-                                                                    !running
-                                                                }
-                                                                onEditSettings={
-                                                                    settingsHrefFor(event.operation)
-                                                                        ? undefined
-                                                                        : () => openConflictSettings(event.operation)
-                                                                }
-                                                                settingsHref={settingsHrefFor(event.operation)}
-                                                                requestSummary={
-                                                                    detail.turns.find(
-                                                                        (turn) =>
-                                                                            turn.interpretationId === event.operation.interpretationId,
-                                                                    )?.semanticPlan?.summary
-                                                                }
-                                                                copy={copy}
-                                                                disabled={busy || running}
-                                                                current={
-                                                                    !localDirty &&
-                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
-                                                                    event.operation.baseRevision === detail.conversation.revision &&
-                                                                    event.operation.operationId === latestOperation?.operationId
-                                                                }
-                                                                onProceed={() =>
-                                                                    execute(
-                                                                        event.operation.operationType as 'GENERATE' | 'ADJUST',
-                                                                        event.operation.fillPolicy === 'REBUILD_UNLOCKED'
-                                                                            ? 'REBUILD_UNLOCKED'
-                                                                            : 'EMPTY_ONLY',
-                                                                        event.operation.interpretationId ?? undefined,
-                                                                        undefined,
-                                                                        event.operation,
-                                                                    )
-                                                                }
-                                                                onRevise={() => {
-                                                                    setDismissedFailureId(event.operation.operationId);
-                                                                    setEntryChoice('modify');
-
-                                                                    const turn = detail.turns.find(
-                                                                        (entry) =>
-                                                                            entry.interpretationId === event.operation.interpretationId,
-                                                                    );
-
-                                                                    if (turn) editRequest(turn);
-                                                                    else {
-                                                                        setText('');
-                                                                        textarea.current?.focus();
+                                                                    : undefined
+                                                            }
+                                                            onReview={
+                                                                event.operation === latestOperation &&
+                                                                canReviewFixedAfterFailure &&
+                                                                onRecoverGeneration
+                                                                    ? onRecoverGeneration
+                                                                    : (onOpenConstraints ?? onClose)
+                                                            }
+                                                            reviewLabel={
+                                                                event.operation === latestOperation &&
+                                                                canReviewFixedAfterFailure &&
+                                                                onRecoverGeneration
+                                                                    ? t('aiAdjust.preparation.reviewFixed')
+                                                                    : undefined
+                                                            }
+                                                            onInspectSchedule={onClose}
+                                                            settingsHref={settingsHrefFor(event.operation)}
+                                                            onEditSettings={
+                                                                settingsHrefFor(event.operation)
+                                                                    ? undefined
+                                                                    : () => openConflictSettings(event.operation)
+                                                            }
+                                                        >
+                                                            {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
+                                                                <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
+                                                            )}
+                                                            {renderAuthoringActions(event.operation)}
+                                                            {event.operation.result?.conflictReview && (
+                                                                <ConstraintConflictReview
+                                                                    review={event.operation.result.conflictReview}
+                                                                    active={
+                                                                        failureNeedsAction &&
+                                                                        event.operation === latestOperation &&
+                                                                        !preparing &&
+                                                                        !awaitingAdjustment &&
+                                                                        !busy &&
+                                                                        !running
                                                                     }
-                                                                }}
-                                                            />
-                                                        )}
-                                                        {event.operation.result && (
-                                                            <ConversationEvidence
-                                                                result={event.operation.result}
-                                                                nurseName={(id) => doc.workerMeta[id]?.name ?? id}
-                                                                disabled={busy || running}
-                                                                suggestionsCurrent={
-                                                                    !localDirty && isConversationSuggestionCurrent(detail, event.operation)
-                                                                }
-                                                                onSelect={(suggestion) =>
-                                                                    setSelectedSuggestion({op: event.operation, suggestion})
-                                                                }
-                                                            />
-                                                        )}
-                                                    </AiExecutionFailure>
-                                                    <AiConversationTimestamp createdAt={event.operation.createdAt} />
+                                                                    onEditSettings={
+                                                                        settingsHrefFor(event.operation)
+                                                                            ? undefined
+                                                                            : () => openConflictSettings(event.operation)
+                                                                    }
+                                                                    settingsHref={settingsHrefFor(event.operation)}
+                                                                    requestSummary={
+                                                                        detail.turns.find(
+                                                                            (turn) =>
+                                                                                turn.interpretationId === event.operation.interpretationId,
+                                                                        )?.semanticPlan?.summary
+                                                                    }
+                                                                    copy={copy}
+                                                                    disabled={busy || running}
+                                                                    current={
+                                                                        !localDirty &&
+                                                                        !invalidatedConflictIds.has(event.operation.operationId) &&
+                                                                        event.operation.baseRevision === detail.conversation.revision &&
+                                                                        event.operation.operationId === latestOperation?.operationId
+                                                                    }
+                                                                    onProceed={() =>
+                                                                        execute(
+                                                                            event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                            event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                                ? 'REBUILD_UNLOCKED'
+                                                                                : 'EMPTY_ONLY',
+                                                                            event.operation.interpretationId ?? undefined,
+                                                                            undefined,
+                                                                            event.operation,
+                                                                        )
+                                                                    }
+                                                                    onRevise={() => {
+                                                                        setDismissedFailureId(event.operation.operationId);
+                                                                        setEntryChoice('modify');
+
+                                                                        const turn = detail.turns.find(
+                                                                            (entry) =>
+                                                                                entry.interpretationId === event.operation.interpretationId,
+                                                                        );
+
+                                                                        if (turn) editRequest(turn);
+                                                                        else {
+                                                                            setText('');
+                                                                            textarea.current?.focus();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {event.operation.result && (
+                                                                <ConversationEvidence
+                                                                    result={event.operation.result}
+                                                                    nurseName={(id) => doc.workerMeta[id]?.name ?? id}
+                                                                    disabled={busy || running}
+                                                                    suggestionsCurrent={
+                                                                        !localDirty &&
+                                                                        isConversationSuggestionCurrent(detail, event.operation)
+                                                                    }
+                                                                    onSelect={(suggestion) =>
+                                                                        setSelectedSuggestion({op: event.operation, suggestion})
+                                                                    }
+                                                                />
+                                                            )}
+                                                        </AiExecutionFailure>
+                                                    </AiConversationTimestamp>
                                                 </div>
                                             ) : (
                                                 <div key={event.id} className="space-y-3">
-                                                    <JourneyObserved
-                                                        observation={event.operation.result?.observation}
-                                                        inert={preparing}
-                                                        className="min-w-0 text-[14.5px] leading-7 text-[#333D4B]"
+                                                    <AiConversationTimestamp
+                                                        createdAt={
+                                                            ['RUNNING', 'RESULT_READY', 'UNKNOWN', 'CANCELLED'].includes(
+                                                                event.operation.executionStatus,
+                                                            )
+                                                                ? undefined
+                                                                : event.operation.createdAt
+                                                        }
                                                     >
-                                                        {event.operation.progress && event.operation.executionStatus === 'RUNNING' && (
-                                                            <AiExecutionCancelButton
-                                                                onCancel={() => cancelOperation(event.operation.operationId)}
-                                                                disabled={busy}
-                                                            />
-                                                        )}
-                                                        {event.operation.executionStatus === 'UNKNOWN' && (
-                                                            <div className="mt-3 space-y-2">
-                                                                <p className="text-[13px] leading-6 text-[#475467]">
-                                                                    {t('aiConversationSidebar.outcomeUnconfirmed')}
-                                                                </p>
-                                                                <button className={buttonClass} onClick={() => void retryPending()}>
-                                                                    {t('aiConversationSidebar.checkOutcome')}
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                        {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
-                                                            <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
-                                                        )}
-                                                        {renderAuthoringActions(event.operation)}
-                                                        {event.operation.result?.conflictReview && (
-                                                            <ConstraintConflictReview
-                                                                review={event.operation.result.conflictReview}
-                                                                active={
-                                                                    failureNeedsAction &&
-                                                                    event.operation === latestOperation &&
-                                                                    !preparing &&
-                                                                    !awaitingAdjustment &&
-                                                                    !busy &&
-                                                                    !running
-                                                                }
-                                                                onEditSettings={
-                                                                    settingsHrefFor(event.operation)
-                                                                        ? undefined
-                                                                        : () => openConflictSettings(event.operation)
-                                                                }
-                                                                settingsHref={settingsHrefFor(event.operation)}
-                                                                requestSummary={
-                                                                    detail.turns.find(
-                                                                        (turn) =>
-                                                                            turn.interpretationId === event.operation.interpretationId,
-                                                                    )?.semanticPlan?.summary
-                                                                }
-                                                                copy={copy}
-                                                                disabled={busy || running}
-                                                                current={
-                                                                    !localDirty &&
-                                                                    !invalidatedConflictIds.has(event.operation.operationId) &&
-                                                                    event.operation.baseRevision === detail.conversation.revision &&
-                                                                    event.operation.operationId === latestOperation?.operationId
-                                                                }
-                                                                onProceed={() =>
-                                                                    execute(
-                                                                        event.operation.operationType as 'GENERATE' | 'ADJUST',
-                                                                        event.operation.fillPolicy === 'REBUILD_UNLOCKED'
-                                                                            ? 'REBUILD_UNLOCKED'
-                                                                            : 'EMPTY_ONLY',
-                                                                        event.operation.interpretationId ?? undefined,
-                                                                        undefined,
-                                                                        event.operation,
-                                                                    )
-                                                                }
-                                                                onRevise={() => {
-                                                                    setDismissedFailureId(event.operation.operationId);
-                                                                    setEntryChoice('modify');
-
-                                                                    const turn = detail.turns.find(
-                                                                        (entry) =>
-                                                                            entry.interpretationId === event.operation.interpretationId,
-                                                                    );
-
-                                                                    if (turn) editRequest(turn);
-                                                                    else {
-                                                                        setText('');
-                                                                        textarea.current?.focus();
+                                                        <JourneyObserved
+                                                            observation={event.operation.result?.observation}
+                                                            inert={preparing}
+                                                            className="group/bubble relative min-w-0 text-[14.5px] leading-7 text-[#333D4B]"
+                                                        >
+                                                            {event.operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && (
+                                                                <p>{t('aiConversationSidebar.sourceChangedNotApplied')}</p>
+                                                            )}
+                                                            {renderAuthoringActions(event.operation)}
+                                                            {event.operation.result?.conflictReview && (
+                                                                <ConstraintConflictReview
+                                                                    review={event.operation.result.conflictReview}
+                                                                    active={
+                                                                        failureNeedsAction &&
+                                                                        event.operation === latestOperation &&
+                                                                        !preparing &&
+                                                                        !awaitingAdjustment &&
+                                                                        !busy &&
+                                                                        !running
                                                                     }
-                                                                }}
-                                                            />
-                                                        )}
-                                                        {event.operation.result && (
-                                                            <ConversationEvidence
-                                                                result={event.operation.result}
-                                                                nurseName={(id) => doc.workerMeta[id]?.name ?? id}
-                                                                disabled={busy || running}
-                                                                suggestionsCurrent={
-                                                                    !localDirty && isConversationSuggestionCurrent(detail, event.operation)
-                                                                }
-                                                                onSelect={(suggestion) =>
-                                                                    setSelectedSuggestion({op: event.operation, suggestion})
-                                                                }
-                                                            />
-                                                        )}
-                                                    </JourneyObserved>
-                                                    {!['RUNNING', 'RESULT_READY', 'UNKNOWN'].includes(event.operation.executionStatus) && (
-                                                        <AiConversationTimestamp createdAt={event.operation.createdAt} />
-                                                    )}
+                                                                    onEditSettings={
+                                                                        settingsHrefFor(event.operation)
+                                                                            ? undefined
+                                                                            : () => openConflictSettings(event.operation)
+                                                                    }
+                                                                    settingsHref={settingsHrefFor(event.operation)}
+                                                                    requestSummary={
+                                                                        detail.turns.find(
+                                                                            (turn) =>
+                                                                                turn.interpretationId === event.operation.interpretationId,
+                                                                        )?.semanticPlan?.summary
+                                                                    }
+                                                                    copy={copy}
+                                                                    disabled={busy || running}
+                                                                    current={
+                                                                        !localDirty &&
+                                                                        !invalidatedConflictIds.has(event.operation.operationId) &&
+                                                                        event.operation.baseRevision === detail.conversation.revision &&
+                                                                        event.operation.operationId === latestOperation?.operationId
+                                                                    }
+                                                                    onProceed={() =>
+                                                                        execute(
+                                                                            event.operation.operationType as 'GENERATE' | 'ADJUST',
+                                                                            event.operation.fillPolicy === 'REBUILD_UNLOCKED'
+                                                                                ? 'REBUILD_UNLOCKED'
+                                                                                : 'EMPTY_ONLY',
+                                                                            event.operation.interpretationId ?? undefined,
+                                                                            undefined,
+                                                                            event.operation,
+                                                                        )
+                                                                    }
+                                                                    onRevise={() => {
+                                                                        setDismissedFailureId(event.operation.operationId);
+                                                                        setEntryChoice('modify');
+
+                                                                        const turn = detail.turns.find(
+                                                                            (entry) =>
+                                                                                entry.interpretationId === event.operation.interpretationId,
+                                                                        );
+
+                                                                        if (turn) editRequest(turn);
+                                                                        else {
+                                                                            setText('');
+                                                                            textarea.current?.focus();
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {event.operation.result && (
+                                                                <ConversationEvidence
+                                                                    result={event.operation.result}
+                                                                    nurseName={(id) => doc.workerMeta[id]?.name ?? id}
+                                                                    disabled={busy || running}
+                                                                    suggestionsCurrent={
+                                                                        !localDirty &&
+                                                                        isConversationSuggestionCurrent(detail, event.operation)
+                                                                    }
+                                                                    onSelect={(suggestion) =>
+                                                                        setSelectedSuggestion({op: event.operation, suggestion})
+                                                                    }
+                                                                />
+                                                            )}
+                                                            <AiMessageTimestamp inline />
+                                                        </JourneyObserved>
+                                                    </AiConversationTimestamp>
                                                 </div>
                                             )}
                                         </AiConversationOperationStatus>
@@ -2924,37 +3032,53 @@ export default function AiConversationSidebar({
                                 {t('aiAdjust.preparation.historyUnavailable')}
                             </p>
                         )}
-                        {preparation && <div aria-live="polite">{preparation}</div>}
-                        {showNextActions && !attachNextActions && (
-                            <AiConversationEntry
-                                choice={null}
-                                hasSchedule={hasGeneratedAssignments}
-                                hideIntro={Boolean(activeTurns.length || currentOperations.length || localEvents.length)}
-                                disabled={busy || running || isAutofillBlocked}
-                                modifyDisabled={!adjustEnabled}
-                                onChoose={chooseNextAction}
-                            />
+                        {pendingQuestion && !clarificationTurn && !preparing && !(busy && activity === 'reviewing') && (
+                            <AssistantMessage fullWidth>
+                                <AiClarificationText text={question} id={clarificationId} />
+                            </AssistantMessage>
                         )}
+                        {preparation && <div aria-live="polite">{preparation}</div>}
+                        {showNextActions &&
+                            !attachNextActions &&
+                            (hasGeneratedAssignments ? (
+                                !hasConversationMessages && (
+                                    <AssistantMessage showTime>
+                                        <span className="whitespace-pre-line">{t('aiAdjust.chat.welcome')}</span>
+                                    </AssistantMessage>
+                                )
+                            ) : (
+                                <AiConversationEntry
+                                    choice={null}
+                                    hideIntro={hasConversationMessages}
+                                    disabled={busy || running || isAutofillBlocked || Boolean(text.trim())}
+                                    onChoose={chooseNextAction}
+                                />
+                            ))}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
-                            <AiConversationLoading
-                                className="rounded-[12px] bg-[#F5F2FC] px-4 py-3"
-                                label={
-                                    awaitingAdjustment
-                                        ? t('aiConversationSidebar.preparingChanges')
-                                        : activity === 'reviewing'
-                                          ? t('aiConversationSidebar.reviewingRequest')
-                                          : activity === 'viewing'
-                                            ? t('aiConversationSidebar.loadingSchedule')
-                                            : activity === 'recovering'
-                                              ? t('aiConversationSidebar.checkingResult')
-                                              : activity === 'sending'
-                                                ? t('aiConversationSidebar.sendingFeedback')
-                                                : t('aiConversationSidebar.updatingChanges')
-                                }
-                            />
+                            <AssistantMessage>
+                                <AiConversationLoading
+                                    className="py-0!"
+                                    label={
+                                        awaitingAdjustment
+                                            ? t('aiConversationSidebar.preparingChanges')
+                                            : activity === 'reviewing'
+                                              ? t('aiConversationSidebar.reviewingRequest')
+                                              : activity === 'viewing'
+                                                ? t('aiConversationSidebar.loadingSchedule')
+                                                : activity === 'recovering'
+                                                  ? t('aiConversationSidebar.checkingResult')
+                                                  : activity === 'sending'
+                                                    ? t('aiConversationSidebar.sendingFeedback')
+                                                    : t('aiConversationSidebar.updatingChanges')
+                                    }
+                                />
+                            </AssistantMessage>
                         )}
                         {error && (
-                            <AiFailureMessage message={error.message} title={error.title}>
+                            <AiFailureMessage
+                                message={conversationLoadFailure && error.message === t('aiAdjust.failed') ? '' : error.message}
+                                title={conversationLoadFailure ? t('aiConversationSidebar.conversationLoadFailed') : error.title}
+                            >
                                 {error.unsentOperation && (
                                     <div className="flex flex-wrap gap-2">
                                         {error.canRetryGeneration && (
@@ -3011,8 +3135,17 @@ export default function AiConversationSidebar({
                                     </div>
                                 )}
                                 {!error.blocked && error.checkOutcome !== false && (
-                                    <button className={buttonClass} disabled={busy} onClick={() => void retryPending()}>
-                                        {t('aiConversationSidebar.checkExecutionHistory')}
+                                    <button
+                                        type="button"
+                                        className={recoveryButtonClass}
+                                        disabled={busy}
+                                        onClick={() => void retryPending()}
+                                    >
+                                        {t(
+                                            conversationLoadFailure
+                                                ? 'aiConversationSidebar.reloadConversation'
+                                                : 'aiConversationSidebar.checkExecutionHistory',
+                                        )}
                                     </button>
                                 )}
                             </AiFailureMessage>
@@ -3064,7 +3197,7 @@ export default function AiConversationSidebar({
                             onContinue={(version) => void branch(version)}
                         />
                     )}
-                    <footer className={preparing ? 'hidden' : 'shrink-0 space-y-2 pt-3'} inert={preparing}>
+                    <footer className={preparing ? 'hidden' : 'shrink-0 space-y-[6px] pt-[8px]'} inert={preparing}>
                         {pendingBranch && (
                             <button
                                 className={buttonClass}
@@ -3091,70 +3224,100 @@ export default function AiConversationSidebar({
                                 {t('aiConversationSidebar.openSavedBranch')}
                             </button>
                         )}
-                        <div className={composerHidden ? 'hidden' : 'space-y-2'} inert={composerHidden} aria-hidden={composerHidden}>
-                            {detail?.conversationState?.pendingQuestion && (
-                                <p className="text-sm" role="status">
-                                    {detail.conversationState.pendingQuestion.question}
-                                </p>
-                            )}
-                            {editingRequest && <p className="text-[13px] text-[#6B7280]">{t('aiConversationSidebar.editChangesHint')}</p>}
-                            {!composerHidden && requestExampleGroups.length > 0 && (
-                                <AiConversationRequestHelp
-                                    groups={requestExampleGroups}
+                        <div
+                            className={composerHidden ? 'hidden' : requestExamples.length > 0 ? 'space-y-[16px]' : 'space-y-[8px]'}
+                            inert={composerHidden}
+                            aria-hidden={composerHidden}
+                        >
+                            {requestExamples.length > 0 && (
+                                <AiConversationRequestExamples
+                                    examples={requestExamples}
                                     draft={text}
-                                    disabled={!adjustEnabled}
+                                    compact={historyMessageCount >= 3}
+                                    disabled={running}
                                     onPick={(sentence) => {
                                         setText(text.trim() ? `${text.trim()}\n${sentence}` : sentence);
                                         textarea.current?.focus();
                                     }}
                                 />
                             )}
-                            <div className="ai-adjust-composer flex flex-col rounded-[14px] border-[1.8px] border-[#DCE2EB] bg-gray-7 px-4 py-3 focus-within:border-main-1 focus-within:bg-main-light">
-                                <label className="block text-sm">
-                                    <span className="sr-only">{t('aiConversationSidebar.yourChanges')}</span>
-                                    <textarea
-                                        ref={textarea}
-                                        className="text-gray-1 w-full resize-none bg-transparent text-[14.5px] leading-6 outline-none placeholder:text-[#475467] disabled:opacity-50"
-                                        maxLength={500}
-                                        rows={editingRequest ? 4 : 2}
-                                        value={text}
-                                        onChange={(event) => setText(event.target.value)}
-                                        disabled={busy || running || !adjustEnabled}
-                                        placeholder={
-                                            active?.semanticPlan?.state === 'NEEDS_CLARIFICATION' && !editingRequest
-                                                ? t('aiAdjust.chat.replyPlaceholder')
-                                                : semanticExecutionEnabled
-                                                  ? requestExamples[0]
-                                                      ? t('aiConversationSidebar.examplePlaceholder', {example: requestExamples[0]})
-                                                      : t('aiConversationSidebar.describeChanges')
-                                                  : t('aiAdjust.placeholder')
-                                        }
-                                    />
-                                </label>
-                                <div className="mt-2 flex items-center justify-between gap-2">
-                                    {editingRequest && (
-                                        <button
-                                            className="min-h-11 px-3 text-sm text-[#6B7280] hover:text-main-1"
-                                            disabled={busy || running}
-                                            onClick={() => {
-                                                setEditingRequest(null);
-                                                setText('');
-                                                setEntryChoice(null);
-                                            }}
-                                        >
-                                            {t('aiConversationSidebar.cancel')}
-                                        </button>
+                            <div className="ai-adjust-composer ai-conversation-composer flex items-end gap-[8px] rounded-xl border-[1.5px] border-[#DCE2EB] bg-[#F2F4F6] px-[12px] py-[8px] focus-within:border-main-1 focus-within:bg-[#F0EBFF]">
+                                <div className="min-w-0 flex-1 self-center">
+                                    <label className="block">
+                                        <span className="sr-only">{t('aiConversationSidebar.yourChanges')}</span>
+                                        <span className="ai-conversation-composer-field" data-draft={text}>
+                                            <textarea
+                                                ref={textarea}
+                                                className="text-gray-1 w-full resize-none bg-transparent outline-none placeholder:text-[#596579] disabled:opacity-50"
+                                                maxLength={MAX_REQUEST_LENGTH}
+                                                rows={1}
+                                                enterKeyHint="send"
+                                                value={text}
+                                                onChange={(event) => setText(event.target.value)}
+                                                onKeyDown={(event) => {
+                                                    if (
+                                                        event.key !== 'Enter' ||
+                                                        event.shiftKey ||
+                                                        event.altKey ||
+                                                        event.ctrlKey ||
+                                                        event.metaKey ||
+                                                        event.nativeEvent.isComposing ||
+                                                        event.keyCode === 229
+                                                    )
+                                                        return;
+
+                                                    event.preventDefault();
+
+                                                    if (canSendRequest && !event.repeat) void interpret();
+                                                }}
+                                                disabled={busy || running || !adjustEnabled}
+                                                aria-describedby={
+                                                    answeringClarification && pendingQuestion && !preparing ? clarificationId : undefined
+                                                }
+                                                placeholder={composerPlaceholder}
+                                            />
+                                        </span>
+                                    </label>
+                                    {(editingRequest !== null || text.length >= MAX_REQUEST_LENGTH - 50) && (
+                                        <div className="mt-[4px] flex items-center gap-[8px]">
+                                            {editingRequest && (
+                                                <button
+                                                    className="px-1 text-sm text-[#596579] hover:text-main-1"
+                                                    disabled={busy || running}
+                                                    onClick={() => {
+                                                        setEditingRequest(null);
+                                                        setText('');
+                                                        setEntryChoice(null);
+                                                    }}
+                                                >
+                                                    {t('aiConversationSidebar.cancel')}
+                                                </button>
+                                            )}
+                                            {text.length >= MAX_REQUEST_LENGTH - 50 && (
+                                                <span className="text-[11px] text-[#667085] tabular-nums">
+                                                    {text.length} / {MAX_REQUEST_LENGTH}
+                                                </span>
+                                            )}
+                                        </div>
                                     )}
-                                    <button
-                                        type="button"
-                                        aria-label={editingRequest ? t('aiConversationSidebar.reviewChanges') : t('aiAdjust.send')}
-                                        className="ml-auto grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 hover:bg-[#5931B9] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1 disabled:bg-gray-3"
-                                        disabled={busy || running || !text.trim() || !adjustEnabled}
-                                        onClick={() => void interpret()}
-                                    >
-                                        <img src={sendIcon} alt="" width={22} height={22} className="rotate-90" />
-                                    </button>
                                 </div>
+                                <button
+                                    type="button"
+                                    aria-label={editingRequest ? t('aiConversationSidebar.reviewChanges') : t('aiAdjust.send')}
+                                    className="forced-colors:focus-visible:outline-auto grid size-[32px] shrink-0 place-items-center rounded-lg bg-main-1 text-white hover:bg-[#5931B9] focus-visible:bg-[#45248F] focus-visible:outline-none disabled:bg-[#E5DBFA] disabled:text-[#8069A9]"
+                                    disabled={!canSendRequest}
+                                    onClick={() => void interpret()}
+                                >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-[16px]">
+                                        <path
+                                            d="M12 19V5m-6 6 6-6 6 6"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </footer>

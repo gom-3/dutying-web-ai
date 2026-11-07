@@ -86,7 +86,7 @@ describe('fixed shift conflict recovery', () => {
         expect(requests).toHaveTextContent('11월 1~5일');
         expect(requests).toHaveTextContent('검증간호사님');
         expect(requests).toHaveTextContent('E 근무 제외');
-        expect(requests).toHaveTextContent(modality === 'HARD' ? '꼭 지킬 조건' : '가능하면 맞출 조건');
+        expect(requests).toHaveTextContent(modality === 'HARD' ? '필수' : '가능하면');
         expect(screen.getByText('고정 근무를 확인하거나 요청을 수정해 주세요.')).toBeVisible();
         expect(screen.queryByText(conflictPlan.conditions[0].sourceSpan.quote)).not.toBeInTheDocument();
         expect(screen.queryByText(/선택하지 않음|줄바꿈|제외 예정/)).not.toBeInTheDocument();
@@ -187,7 +187,7 @@ describe('request review actions', () => {
         expect(screen.getByText('이렇게 바꿀까요?')).toBeVisible();
         expect(props.onApply).not.toHaveBeenCalled();
         expect(screen.getByRole('region')).toHaveTextContent('E 근무 제외');
-        expect(screen.getByRole('region')).toHaveTextContent('꼭 지킬 조건');
+        expect(screen.getByRole('region')).toHaveTextContent('필수');
         expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '이대로 수정하기'}));
         expect(props.onApply).toHaveBeenCalledOnce();
@@ -242,6 +242,7 @@ describe('request review actions', () => {
             const user = userEvent.setup();
             const onEditSchedule = vi.fn();
             const props = renderReview({plan: {...conflictPlan, state: 'FAILED', reasonCodes: [reason]}, onEditSchedule});
+
             expect(screen.getByText('요청을 처리하지 못했어요.')).toBeVisible();
             expect(screen.getByText(/어떤 근무를 어떻게 바꿀지 확인하지 못했어요/)).toHaveTextContent('근무표는 변경되지 않았어요.');
             expect(screen.queryByRole('button', {name: '요청 다시 확인하기'})).not.toBeInTheDocument();
@@ -434,18 +435,18 @@ describe('request priority controls', () => {
 
         render(<AiSemanticReview {...props} />);
 
-        const groups = screen.getAllByRole('group', {name: '조건을 지키는 정도'});
+        const groups = screen.getAllByRole('group', {name: '조건 반영 방식'});
 
-        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면 맞추기'}));
-        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면 맞추기'}));
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면'}));
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
         expect(props.onChangeModalities).not.toHaveBeenCalled();
         expect(screen.getByText('바꾼 반영 방식은 이번 계산에만 사용해요.')).toBeVisible();
         fireEvent.click(screen.getByRole('button', {name: '변경 취소'}));
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
-        expect(screen.getAllByRole('radio', {name: '꼭 지키기'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
-        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면 맞추기'}));
-        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면 맞추기'}));
+        expect(screen.getAllByRole('radio', {name: '필수'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
+        fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면'}));
+        fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면'}));
         fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
         await waitFor(() => expect(props.onChangeModalities).toHaveBeenCalledExactlyOnceWith({count1: 'SOFT', count2: 'SOFT'}));
         expect(props.onApply).not.toHaveBeenCalled();
@@ -457,14 +458,14 @@ describe('request priority controls', () => {
 
         const {rerender} = render(<AiSemanticReview {...props} />);
 
-        fireEvent.click(screen.getAllByRole('radio', {name: '가능하면 맞추기'})[0]!);
+        fireEvent.click(screen.getAllByRole('radio', {name: '가능하면'})[0]!);
         fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('변경 내용을 저장하지 못했어요');
-        expect(screen.getAllByRole('radio', {name: '가능하면 맞추기'})[0]).toBeChecked();
+        expect(screen.getAllByRole('radio', {name: '가능하면'})[0]).toBeChecked();
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
         rerender(<AiSemanticReview {...props} plan={{...priorityPlan, planId: 'new', planHash: 'hash2'}} />);
         expect(screen.queryByRole('button', {name: '변경한 조건 확인하기'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('radio', {name: '꼭 지키기'})[0]).toBeChecked();
+        expect(screen.getAllByRole('radio', {name: '필수'})[0]).toBeChecked();
     });
     it.each([{current: false}, {stale: true}, {disabled: true}, {plan: {...priorityPlan, modalityEditableIntentIds: undefined}}])(
         'prevents editing stale, historical, busy or old-server plans: %j',
@@ -505,7 +506,7 @@ describe('catalog plan wire compatibility', () => {
         const requests = screen.getByRole('list', {name: '반영할 요청'});
 
         expect(requests).toHaveTextContent(catalogCondition.displayText!);
-        expect(requests).toHaveTextContent('꼭 지킬 조건');
+        expect(requests).toHaveTextContent('필수');
         expect(requests).not.toHaveTextContent('전체 간호사');
         expect(requests).not.toHaveTextContent(/null|정확히|D, E, N, O 근무/);
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
@@ -527,6 +528,10 @@ describe('catalog plan wire compatibility', () => {
 
     it('renders a soft assignment as a preference', () => {
         renderReview({plan: {...readyPlan, conditions: [{...conflictPlan.conditions[0], action: 'ASSIGN', modality: 'SOFT'}]}});
-        expect(screen.getByRole('list', {name: '반영할 요청'})).toHaveTextContent('가능하면 E 근무 배정');
+
+        const request = within(screen.getByRole('list', {name: '반영할 요청'}));
+
+        expect(request.getByText('E 근무 배정')).toBeVisible();
+        expect(request.getByText('가능하면')).toBeVisible();
     });
 });

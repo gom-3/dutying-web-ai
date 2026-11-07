@@ -1,10 +1,13 @@
-export function AiConversationOutcomeIcon({status, label}: {status: 'success' | 'failure' | 'review'; label: string}) {
+export function AiConversationOutcomeIcon({status, label}: {status: 'success' | 'failure' | 'review' | 'history'; label?: string}) {
+    const color = {success: 'text-[#16835E]', review: 'text-[#A15C00]', failure: 'text-[#D92D20]', history: 'text-[#667085]'}[status];
+
     return (
         <svg
-            role="img"
+            role={label ? 'img' : undefined}
             aria-label={label}
+            aria-hidden={label ? undefined : true}
             viewBox="0 0 20 20"
-            className={`mt-[2px] size-[18px] shrink-0 ${status === 'success' ? 'text-[#16835E]' : status === 'review' ? 'text-[#A15C00]' : 'text-[#D92D20]'}`}
+            className={`mt-[2px] size-[18px] shrink-0 ${color}`}
         >
             <circle cx="10" cy="10" r="9" fill="currentColor" />
             <path
@@ -13,7 +16,9 @@ export function AiConversationOutcomeIcon({status, label}: {status: 'success' | 
                         ? 'm5.5 9.5 3 3 6-6L16 8l-7.5 7.5L4 11z'
                         : status === 'review'
                           ? 'M9 5h2v6H9zm0 8h2v2H9z'
-                          : 'M6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6 13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4z'
+                          : status === 'history'
+                            ? 'M9 4h2v5.6l3.2 1.9-1 1.7L9 10.7Z'
+                            : 'M6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6 13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4z'
                 }
                 fill="white"
             />

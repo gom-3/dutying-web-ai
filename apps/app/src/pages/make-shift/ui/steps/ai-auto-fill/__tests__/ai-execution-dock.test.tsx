@@ -25,6 +25,7 @@ const operation: TConversationOperation = {
 describe('ongoing autofill entry', () => {
     it('keeps an unacknowledged request reachable without offering unsupported cancellation', () => {
         const onOpen = vi.fn();
+
         render(<AiExecutionDock execution={null} onOpen={onOpen} isAdjusting />);
         expect(screen.getByRole('region', {name: '근무표 수정 작업'})).toBeVisible();
         expect(screen.getByRole('status')).toHaveTextContent('계산 요청을 보내고 있어요');
@@ -47,6 +48,7 @@ describe('ongoing autofill entry', () => {
     it('removes cancellation on completion even if an older cancel callback remains', () => {
         const cancel = vi.fn();
         const view = render(<AiExecutionDock execution={{operation, cancel, cancelling: false}} onOpen={vi.fn()} />);
+
         expect(screen.getByRole('button', {name: '계산 요청 취소'})).toBeVisible();
         view.rerender(
             <AiExecutionDock
@@ -78,7 +80,7 @@ describe('ongoing autofill entry', () => {
     it.each([
         ['SUCCEEDED', 'APPLIED', '자동채우기 결과가 준비됐어요'],
         ['SUCCEEDED', 'NOT_APPLIED_SOURCE_CHANGED', '계산이 끝났어요. 수정한 근무표는 유지했어요.'],
-        ['CANCELLED', 'NOT_APPLIED', '계산 요청을 취소했어요. 근무표는 변경되지 않았어요.'],
+        ['CANCELLED', 'NOT_APPLIED', '계산을 취소했어요. 근무표는 그대로예요.'],
         ['FAILED', 'NOT_APPLIED', '자동채우기를 마치지 못했어요. 결과를 확인해 주세요.'],
     ] as const)('keeps %s results reachable after closing the loader', (executionStatus, applyStatus, label) => {
         render(

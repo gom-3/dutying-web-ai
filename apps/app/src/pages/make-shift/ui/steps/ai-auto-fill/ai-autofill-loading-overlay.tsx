@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 import {AiExecutionCancelButton} from './ai-execution-cancel-button';
+import {AiExecutionIconButton} from './ai-execution-icon-button';
 
 const INITIAL_PROGRESS = 8;
 const FAST_PROGRESS_TARGET = 90;
@@ -168,8 +169,18 @@ export function AiAutofillLoadingOverlay({
                 }
             }}
         >
-            <div className="my-auto w-full max-w-[420px] shrink-0 rounded-[20px] bg-white px-5 py-5 text-center sm:px-7 sm:py-8">
-                <div aria-hidden="true" className="mx-auto grid size-[60px] grid-cols-3 gap-1 p-3">
+            <div className="relative my-auto w-full max-w-[420px] shrink-0 rounded-[20px] bg-white px-5 py-5 text-center sm:px-7 sm:py-8">
+                {onBackground && !isFinishing && (
+                    <AiExecutionIconButton
+                        label={t('aiAutofillUi.executionPresentation.continueInBackground')}
+                        hint={t('aiAutofillUi.executionPresentation.keepsCalculatingWhenClosed')}
+                        onClick={onBackground}
+                        className="absolute top-2 right-2 sm:top-3 sm:right-3"
+                    >
+                        <span aria-hidden="true" className="h-0.5 w-4 rounded-full bg-current" />
+                    </AiExecutionIconButton>
+                )}
+                <div aria-hidden="true" className="mx-auto grid size-[60px] grid-cols-3 gap-[4px] p-[12px]">
                     {Array.from({length: 9}, (_, cell) => (
                         <span
                             key={cell}
@@ -180,7 +191,7 @@ export function AiAutofillLoadingOverlay({
                 </div>
                 <p
                     id="ai-autofill-loading-title"
-                    className="mt-4 font-apple text-xl leading-[1.35] font-bold text-sub-1 sm:mt-5 sm:text-2xl"
+                    className="mt-4 font-apple text-xl leading-[1.35] font-bold break-keep text-sub-1 sm:mt-5 sm:text-2xl"
                 >
                     {title}
                 </p>
@@ -204,23 +215,18 @@ export function AiAutofillLoadingOverlay({
                     >
                         <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
                     </div>
-                    <div className="mt-3 flex justify-end gap-2 font-apple text-[13px] font-semibold">
-                        <span className="font-normal text-gray-3">{progressLabel}</span>
-                        <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
+                    <div className="mt-2 flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                        <div className="flex shrink-0 items-center gap-2 font-apple text-[13px] font-semibold">
+                            <span className="font-normal whitespace-nowrap text-gray-3">{progressLabel}</span>
+                            <span className="shrink-0 font-poppins text-main-1 tabular-nums">{progressValue}%</span>
+                        </div>
+                        {onBackground && onCancel && !isFinishing && (
+                            <div className="ml-auto">
+                                <AiExecutionCancelButton onCancel={onCancel} disabled={cancelling} />
+                            </div>
+                        )}
                     </div>
                 </div>
-                {onBackground && !isFinishing && (
-                    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 border-t border-gray-6 pt-1 font-apple text-[13px] leading-5 sm:text-sm">
-                        <button
-                            type="button"
-                            onClick={onBackground}
-                            className="min-h-11 rounded-lg px-2 text-[#475467] hover:bg-gray-6 focus-visible:outline-2 focus-visible:outline-main-1"
-                        >
-                            {t('aiAutofillUi.executionPresentation.continueInBackground')}
-                        </button>
-                        {onCancel && <AiExecutionCancelButton onCancel={onCancel} disabled={cancelling} />}
-                    </div>
-                )}
             </div>
         </div>,
         portalContainer,

@@ -199,7 +199,12 @@ export function HospitalOverview({scope}: {scope: Scope}) {
                                     </div>
                                 </form>
                             </details>
-                            <Link className="workspace-button hospital-overview-create" to={onboardingPath}>
+                            <Link
+                                className="workspace-button hospital-overview-create"
+                                to={onboardingPath}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
                                 <span aria-hidden="true">+</span> {t('새 병동 만들기', 'Create a new ward')}
                             </Link>
                         </div>

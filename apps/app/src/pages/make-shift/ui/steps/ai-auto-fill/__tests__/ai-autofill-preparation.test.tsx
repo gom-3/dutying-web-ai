@@ -1,10 +1,36 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
-import {AiAutofillPreparation} from '../ai-autofill-preparation';
+import {AiAutofillMessages, AiAutofillPreparation} from '../ai-autofill-preparation';
+import {AiFailureMessage} from '../ai-failure-message';
 
 afterEach(async () => {
     await i18n.changeLanguage('ko');
+});
+
+describe('interrupted request history', () => {
+    it.each(['ko', 'en', 'ja'])('updates old %s browser notices to the current language without changing user messages', (language) => {
+        const oldNotice = i18n.getFixedT(language)('aiAdjust.preparation.interruptedHistoryLegacy');
+
+        render(
+            <AiAutofillMessages
+                messages={[
+                    {role: 'assistant', text: oldNotice, createdAt: '2026-11-06T10:38:00+09:00'},
+                    {role: 'user', text: oldNotice},
+                ]}
+            />,
+        );
+        expect(screen.getByText('이전 요청 결과를 확인하지 못했어요.')).toBeVisible();
+        expect(screen.getByText('근무표에 반영됐는지 먼저 확인해 주세요.')).toBeVisible();
+        expect(screen.getByText(oldNotice)).toBeVisible();
+    });
+
+    it('shows an unconfirmed adjustment as a neutral notice instead of a failed-request alert', () => {
+        render(<AiFailureMessage message={i18n.t('aiAdjust.preparation.interruptedHistory')} />);
+        expect(screen.getByText('이전 요청 결과를 확인하지 못했어요.')).toBeVisible();
+        expect(screen.queryByText('요청을 처리하지 못했어요.')).not.toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
 });
 
 describe('autofill recovery choices', () => {

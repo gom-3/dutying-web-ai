@@ -248,7 +248,7 @@ export function AiActiveConditions({
                         {summary}
                     </span>
                 )}
-                <div role="separator" className="mt-5 mb-3 h-px w-full bg-[#E5E8EB]" />
+                {!hideTrigger && <div role="separator" className="mt-5 mb-3 h-px w-full bg-[#E5E8EB]" />}
             </section>
             <Dialog.Portal>
                 <Dialog.Overlay

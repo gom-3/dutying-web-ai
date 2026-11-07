@@ -8,6 +8,7 @@ type TProps = {
     nurseName: (id: number) => string;
     rosterNurseIds: number[];
     copy: (ko: string, en: string) => string;
+    showPriority: boolean;
 };
 
 type TTranslate = ReturnType<typeof useTypedTranslation>['t'];
@@ -43,10 +44,7 @@ function description(condition: TProps['condition'], t: TTranslate) {
 
     if (condition.action === 'FORBID') return t('aiAutofillUi.semanticCondition.excludeShifts', {shifts});
 
-    if (condition.action === 'ASSIGN')
-        return condition.modality === 'SOFT'
-            ? t('aiAutofillUi.semanticCondition.preferShifts', {shifts})
-            : t('aiAutofillUi.semanticCondition.assignShifts', {shifts});
+    if (condition.action === 'ASSIGN') return t('aiAutofillUi.semanticCondition.assignShifts', {shifts});
 
     if (condition.action === 'MAX_CONSECUTIVE_WORK') return t('aiAutofillUi.semanticCondition.atMostConsecutiveWorkDays', {count});
 
@@ -68,7 +66,7 @@ function description(condition: TProps['condition'], t: TTranslate) {
         : t('aiAutofillUi.semanticCondition.shiftsTimesEach', {shifts, operator, count});
 }
 
-export function AiSemanticCondition({condition, nurseName, rosterNurseIds, children}: TProps) {
+export function AiSemanticCondition({condition, nurseName, rosterNurseIds, showPriority, children}: TProps) {
     const {t} = useTypedTranslation();
     const everyone =
         rosterNurseIds.length > 0 &&
@@ -87,23 +85,22 @@ export function AiSemanticCondition({condition, nurseName, rosterNurseIds, child
 
     return (
         <li className="rounded-xl bg-white px-3.5 py-3">
-            <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 text-[13.5px] leading-5 font-semibold break-keep text-[#333D4B]">{subject}</p>
-                <span className="shrink-0 text-[11px] leading-5 text-[#667085]">
-                    {condition.modality === 'HARD'
-                        ? t('aiAutofillUi.semanticCondition.required')
-                        : t('aiAutofillUi.semanticCondition.preferred')}
-                </span>
-            </div>
-            <p className="mt-1.5 text-[13px] leading-5 break-keep text-[#667085]">
-                {dates && (
-                    <>
-                        {dates}
-                        {condition.action !== 'CATALOG_RULE' && ' · '}
-                    </>
+            <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 text-sm leading-5 font-semibold break-keep text-[#333D4B]">{subject}</p>
+                {showPriority && (
+                    <span className="shrink-0 rounded-md bg-[#F1F3F5] px-2 text-[11px] leading-5 font-medium text-[#475467]">
+                        {t(
+                            condition.modality === 'HARD'
+                                ? 'aiAutofillUi.semanticReview.required'
+                                : 'aiAutofillUi.semanticReview.preferred',
+                        )}
+                    </span>
                 )}
-                {condition.action !== 'CATALOG_RULE' && description(condition, t)}
-            </p>
+            </div>
+            {condition.action !== 'CATALOG_RULE' && (
+                <p className="mt-1 text-[13px] leading-5 break-keep text-[#333D4B]">{description(condition, t)}</p>
+            )}
+            {dates && <p className="mt-0.5 text-xs leading-5 break-keep text-[#667085]">{dates}</p>}
             {children}
         </li>
     );

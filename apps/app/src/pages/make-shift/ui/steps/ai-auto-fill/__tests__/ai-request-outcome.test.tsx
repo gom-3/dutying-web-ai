@@ -32,8 +32,29 @@ describe('nurse request outcomes', () => {
         );
         expect(screen.getByText('5회 → 2회')).toBeVisible();
         expect(screen.getByText('덜 힘들게 배치')).toBeVisible();
-        expect(screen.getByText('원하신 배치인지 확인해 주세요')).toBeVisible();
+        expect(screen.getByText('확인 필요')).toBeVisible();
         expect(screen.getAllByText('5회 → 2회')).toHaveLength(1);
+    });
+    it('groups repeated request text while keeping the count of each result', () => {
+        const request = {...measured, kind: 'EXACT' as const, displayText: '화요일에 D 근무로 배정해 줘'};
+
+        render(
+            <AiRequestOutcome
+                result={response({
+                    authoringOutcome: outcome({
+                        clauses: [
+                            {...request, clauseId: '1', status: 'SATISFIED'},
+                            {...request, clauseId: '2', status: 'SATISFIED'},
+                            {...request, clauseId: '3', status: 'ALREADY_SATISFIED'},
+                        ],
+                    }),
+                })}
+            />,
+        );
+        expect(screen.getAllByText(request.displayText)).toHaveLength(1);
+        expect(screen.getByText('새로 맞춘 조건')).toHaveTextContent('2개');
+        expect(screen.getByText('이미 맞았던 조건')).toHaveTextContent('1개');
+        expect(screen.queryByText(/회 →/)).not.toBeInTheDocument();
     });
     it.each(['EXACT', 'REVIEW'] as const)('never formats a %s verification score as shift occurrences', (kind) => {
         render(<AiRequestOutcome result={response({authoringOutcome: outcome({clauses: [{...measured, kind}]})})} />);
