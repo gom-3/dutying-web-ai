@@ -125,7 +125,7 @@ describe('local UI review', () => {
             expect(await chat().findByText(/근무표가 완성되었어요!/)).toBeInTheDocument();
             expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
             const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
-            await userEvent.click(chat().getByRole('button', {name: '초기화'}));
+            await userEvent.click(chat().getByRole('button', {name: '새 요청'}));
             expect(chat().queryByText(/^근무표가 완성되었어요!$/)).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
             expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
@@ -133,8 +133,8 @@ describe('local UI review', () => {
             const examples = chat().getByRole('region', {name: '이렇게 요청해 보세요'});
 
             expect(within(examples).getAllByRole('button')).toHaveLength(3);
-            await userEvent.click(within(examples).getByRole('button', {name: '간호사 1 1~5일 N 근무 없게 해줘'}));
-            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue('간호사 1 1~5일 N 근무 없게 해줘');
+            await userEvent.click(within(examples).getByRole('button', {name: '간호사 1 1~5일 N 근무 빼줘'}));
+            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toHaveValue('간호사 1 1~5일 N 근무 빼줘');
             expect(chat().queryByRole('region', {name: '요청 조건 확인'})).not.toBeInTheDocument();
             await userEvent.clear(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}));
             fireEvent.change(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'}), {
