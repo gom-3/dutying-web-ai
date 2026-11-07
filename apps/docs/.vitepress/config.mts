@@ -102,6 +102,9 @@ export default defineConfig({
         };
 
         return [
+            ...(isProductionSite && pageData.relativePath === 'index.md'
+                ? ([['meta', {name: 'naver-site-verification', content: '95c802956a318d4f270de0fb105c30c05ca74900'}]] as [string, Record<string, string>][])
+                : []),
             ['meta', {name: 'robots', content: isProductionSite && !isNotFound ? 'index, follow' : 'noindex, follow'}],
             ...(!isNotFound ? ([['link', {rel: 'canonical', href: pageUrl}]] as [string, Record<string, string>][]) : []),
             ...(!isNotFound
