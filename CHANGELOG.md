@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.37 - 2026-11-07
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 근무형태의 저장된 순서와 순서 변경을 유지하고 근무표에서 설정으로 바로 이동할 수 있게 합니다. 작성 중에는 실제 위반만 표시하며, 확정 전에는 최신 근무표의 부족·빈칸과 전체 검증 결과를 확인합니다.
+
 ## 1.3.36 - 2026-11-06
 
 - `@dutying/app` (patch): 후속 요청과 실패한 대화 메시지의 복구를 개선하고, 기존 앱 계정의 가입 전환 중복 집계를 방지하며 회사 소유 측정 자산을 연결합니다.
