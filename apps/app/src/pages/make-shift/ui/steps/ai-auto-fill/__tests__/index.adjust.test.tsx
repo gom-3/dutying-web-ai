@@ -238,7 +238,7 @@ vi.mock('../../../../model/ai-schedule-provider', () => ({
 }));
 
 vi.mock('@/pages/ward-settings/model/rest-leave-policy', () => ({
-    useRestLeavePolicy: () => ({policy: null}),
+    useRestLeavePolicy: () => ({policy: {enabled: false}, isReady: false, isLoading: false, isSaving: false}),
 }));
 
 vi.mock('../../rest-leave-policy-summary-card', () => ({

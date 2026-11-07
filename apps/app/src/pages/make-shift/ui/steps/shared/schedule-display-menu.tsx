@@ -1,16 +1,59 @@
 import {SlidersHorizontal} from 'lucide-react';
 import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
+import toast from 'react-hot-toast';
+import i18n from '@/i18n';
+import {withDefaultHolidayCountry, type useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {dropdownItemClassName, dropdownSurfaceClassName} from '@/shared/ui/dropdown-styles';
 import type {useScheduleDisplay} from '../../../model/use-schedule-display';
 
-export function ScheduleDisplayMenu({display, settings}: {display: ReturnType<typeof useScheduleDisplay>; settings?: ReactNode}) {
+export function ScheduleDisplayMenu({
+    display,
+    restPolicy,
+    settings,
+}: {
+    display: ReturnType<typeof useScheduleDisplay>;
+    restPolicy: Pick<
+        ReturnType<typeof useRestLeavePolicy>,
+        'policy' | 'version' | 'isReady' | 'isLoading' | 'isSaving' | 'setPolicy' | 'refetch'
+    >;
+    settings?: ReactNode;
+}) {
     const {t} = useTypedTranslation();
     const [open, setOpen] = useState(false);
     const root = useRef<HTMLDivElement>(null);
     const trigger = useRef<HTMLButtonElement>(null);
     const menu = useRef<HTMLDivElement>(null);
+    const restSavePending = useRef(false);
     const id = useId();
+    const restDescriptionId = `${id}-rest-description`;
+    const restDisabled = !restPolicy.isReady || restPolicy.isSaving;
+    const restDescription = t(
+        restPolicy.isSaving
+            ? 'annualLeave.display.restSaving'
+            : restPolicy.isLoading
+              ? 'annualLeave.display.restLoading'
+              : restPolicy.isReady
+                ? 'annualLeave.display.restShared'
+                : 'annualLeave.display.restUnavailable',
+    );
+    const toggleRestPolicy = async () => {
+        if (restDisabled || restSavePending.current) return;
+
+        const next = {...restPolicy.policy, enabled: !restPolicy.policy.enabled};
+        const policy = next.enabled ? withDefaultHolidayCountry(next, i18n.resolvedLanguage ?? i18n.language) : next;
+
+        restSavePending.current = true;
+
+        try {
+            await restPolicy.setPolicy(policy, restPolicy.version);
+        } catch {
+            toast.error(t('annualLeave.display.restSaveFailed'));
+            await restPolicy.refetch();
+        } finally {
+            restSavePending.current = false;
+        }
+    };
 
     useEffect(() => {
         if (!open) return;
@@ -90,26 +133,46 @@ export function ScheduleDisplayMenu({display, settings}: {display: ReturnType<ty
                     }}
                 >
                     <p className="px-3 pt-2 pb-1 text-xs font-medium text-gray-3">{t('annualLeave.display.title')}</p>
-                    {(['rest', 'annualLeave'] as const).map((field) => (
-                        <div key={field} role="none">
-                            <button
-                                type="button"
-                                role="menuitemcheckbox"
-                                aria-checked={display.value[field]}
-                                className={`${dropdownItemClassName} min-h-11 justify-between gap-6 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:outline-none`}
-                                onClick={() => display.change(field, !display.value[field])}
-                            >
-                                <span>{t(`annualLeave.display.${field}`)}</span>
-                                <span
-                                    aria-hidden="true"
-                                    className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 ${display.value[field] ? 'bg-main-1' : 'bg-gray-5'}`}
+                    {(['rest', 'annualLeave'] as const).map((field) => {
+                        const label = t(`annualLeave.display.${field}`);
+                        const isRest = field === 'rest';
+                        const checked = isRest ? restPolicy.policy.enabled : display.showAnnualLeave;
+                        const disabled = isRest && restDisabled;
+
+                        return (
+                            <div key={field} role="none">
+                                <button
+                                    type="button"
+                                    role="menuitemcheckbox"
+                                    aria-label={label}
+                                    aria-checked={checked}
+                                    aria-disabled={disabled || undefined}
+                                    aria-describedby={isRest ? restDescriptionId : undefined}
+                                    className={`${dropdownItemClassName} min-h-11 justify-between gap-3 focus-visible:bg-main-4 focus-visible:text-main-1 focus-visible:outline-none aria-disabled:cursor-default aria-disabled:hover:bg-transparent aria-disabled:focus-visible:bg-main-4`}
+                                    onClick={isRest ? () => void toggleRestPolicy() : () => display.setShowAnnualLeave(!checked)}
                                 >
-                                    <span className={`size-4 rounded-full bg-white ${display.value[field] ? 'translate-x-4' : ''}`} />
-                                </span>
-                            </button>
-                            {field === 'rest' && settings ? <div className="px-2 pb-1">{settings}</div> : null}
-                        </div>
-                    ))}
+                                    <span className="min-w-0">
+                                        <span className="block">{label}</span>
+                                        {isRest && (
+                                            <span
+                                                id={restDescriptionId}
+                                                className="mt-0.5 block text-xs leading-4 whitespace-normal text-gray-3"
+                                            >
+                                                {restDescription}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span
+                                        aria-hidden="true"
+                                        className={`flex h-5 w-9 shrink-0 items-center rounded-full px-0.5 ${checked ? 'bg-main-1' : 'bg-gray-5'} ${disabled ? 'opacity-60' : ''}`}
+                                    >
+                                        <span className={`size-4 rounded-full bg-white ${checked ? 'translate-x-4' : ''}`} />
+                                    </span>
+                                </button>
+                                {isRest && checked && settings ? <div className="px-2 pb-1">{settings}</div> : null}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

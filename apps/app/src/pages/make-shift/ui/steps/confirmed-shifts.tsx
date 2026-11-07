@@ -81,12 +81,13 @@ export function ConfirmedShifts() {
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
     const currentTeamNurses = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.nurses ?? [];
     const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(shift, currentTeamNurses), [currentTeamNurses, shift]);
-    const {policy} = useRestLeavePolicy(wardId);
+    const restPolicy = useRestLeavePolicy(wardId);
+    const {policy} = restPolicy;
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const doc = useMemo(() => toConfirmedDoc(orderedShift, year, month), [month, orderedShift, year]);
     const annualLeave = useAnnualLeaveSchedule(wardId, currentShiftTeamId, year, month, orderedShift, doc, true);
     const display = useScheduleDisplay(wardId);
-    const annualColumns = useAnnualLeaveScheduleColumns(annualLeave, display.value.annualLeave);
+    const annualColumns = useAnnualLeaveScheduleColumns(annualLeave, display.showAnnualLeave);
     const restCheckByShiftNurseId = useMemo(
         () =>
             orderedShift && doc
@@ -171,6 +172,7 @@ export function ConfirmedShifts() {
                     <div className="confirmed-shifts-toolbar__actions ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2">
                         <ScheduleDisplayMenu
                             display={display}
+                            restPolicy={restPolicy}
                             settings={
                                 <RestLeavePolicySummaryButton
                                     wardId={wardId}
@@ -247,7 +249,6 @@ export function ConfirmedShifts() {
                                 doc={doc}
                                 annualLeaveDays={annualLeave.data?.days ?? annualLeave.overview.data?.days}
                                 annualLeaveColumns={annualColumns.columns}
-                                showRestCheck={display.value.rest}
                                 violationMap={EMPTY_VIOLATION_MAP}
                                 showFaults={false}
                                 readonly

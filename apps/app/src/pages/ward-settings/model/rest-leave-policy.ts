@@ -46,6 +46,20 @@ export const DEFAULT_REST_LEAVE_POLICY: TRestLeavePolicy = {
 };
 
 const UNAVAILABLE_POLICY: TRestLeavePolicy = {...DEFAULT_REST_LEAVE_POLICY, enabled: false};
+const DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE: Record<string, THolidayCountry> = {
+    ko: 'KR',
+    ja: 'JP',
+    zh: 'CN',
+    th: 'TH',
+    vi: 'VN',
+    en: 'US',
+};
+
+export function withDefaultHolidayCountry(policy: TRestLeavePolicy, language: string): TRestLeavePolicy {
+    if (!policy.includeHolidays || policy.holidayCountry) return policy;
+
+    return {...policy, holidayCountry: DEFAULT_HOLIDAY_COUNTRY_BY_LANGUAGE[language.split('-')[0]] ?? 'US'};
+}
 
 function getStorageKey(wardId: number) {
     return `dutying:ward:${wardId}:rest-leave-policy`;
@@ -70,7 +84,7 @@ function normalizeIdList(value: unknown) {
 }
 
 export function normalizeRestLeavePolicy(value: unknown): TRestLeavePolicy {
-    const raw = value && typeof value === 'object' ? (value as Partial<TRestLeavePolicy>) : {};
+    const raw = value && typeof value === 'object' ? (value as Partial<TRestLeavePolicyResponse>) : {};
     const holidayCountry = HOLIDAY_COUNTRIES.includes(raw.holidayCountry as THolidayCountry)
         ? (raw.holidayCountry as THolidayCountry)
         : null;
@@ -80,7 +94,8 @@ export function normalizeRestLeavePolicy(value: unknown): TRestLeavePolicy {
     return {
         holidayCountry,
         holidayRegion,
-        enabled: raw.enabled === undefined ? DEFAULT_REST_LEAVE_POLICY.enabled : Boolean(raw.enabled),
+        // A ward without a saved policy uses the web default, even if the response says enabled=false.
+        enabled: raw.persisted === false || raw.enabled === undefined ? DEFAULT_REST_LEAVE_POLICY.enabled : Boolean(raw.enabled),
         targetMode: normalizeStringOption<TRestTargetMode>(raw.targetMode, DEFAULT_REST_LEAVE_POLICY.targetMode, ['weekly', 'fixed']),
         weeklyOffDays: clampDayCount(raw.weeklyOffDays, DEFAULT_REST_LEAVE_POLICY.weeklyOffDays, 1, 7),
         fixedMonthlyOffDays: clampDayCount(raw.fixedMonthlyOffDays, DEFAULT_REST_LEAVE_POLICY.fixedMonthlyOffDays),
@@ -153,7 +168,9 @@ export function useRestLeavePolicy(wardId: number | null | undefined) {
             const savedQueryKey = restLeavePolicyQueryKey(data.wardId);
 
             await queryClient.cancelQueries({queryKey: savedQueryKey});
-            queryClient.setQueryData(savedQueryKey, data);
+            queryClient.setQueryData<TRestLeavePolicyResponse>(savedQueryKey, (current) =>
+                current && current.version > data.version ? current : data,
+            );
         },
     });
     const policy = useMemo(
@@ -165,6 +182,7 @@ export function useRestLeavePolicy(wardId: number | null | undefined) {
         policy,
         version: query.data?.version ?? 0,
         persisted: query.data?.persisted ?? false,
+        isReady: Boolean(query.data) && !query.isError,
         isLoading: Boolean(wardId) && query.isPending,
         isError: query.isError,
         isSaving: mutation.isPending,
