@@ -361,17 +361,20 @@ export default defineConfig(({mode}) => {
                                 {image, invites: INVITE_PAGE_COPY[language].invites},
                             ]),
                         );
-                        const previewWorker = readFileSync(resolve(appRoot, 'edge/invite-preview-worker.mjs'), 'utf8').replace(
-                            '/*__INVITE_PREVIEW_DATA__*/',
-                            () => JSON.stringify(previewData).slice(1, -1),
-                        );
+                        const homeLanguageData = {
+                            ...marketingPageData.homeLanguagePreference,
+                            paths: Object.fromEntries(marketingPages.map(({language, path}) => [language, path])),
+                        };
+                        const pagesWorker = readFileSync(resolve(appRoot, 'edge/invite-preview-worker.mjs'), 'utf8')
+                            .replace('/*__INVITE_PREVIEW_DATA__*/', () => JSON.stringify(previewData).slice(1, -1))
+                            .replace('/*__HOME_LANGUAGE_DATA__*/', () => JSON.stringify(homeLanguageData).slice(1, -1));
 
-                        writeFileSync(resolve(resolvedOutDir, '_worker.js'), previewWorker);
+                        writeFileSync(resolve(resolvedOutDir, '_worker.js'), pagesWorker);
                         writeFileSync(
                             resolve(resolvedOutDir, '_routes.json'),
                             JSON.stringify({
                                 version: 1,
-                                include: ['/app/friends/invite', '/app/friends/invite/', '/app/moim/invite', '/app/moim/invite/'],
+                                include: ['/', '/app/friends/invite', '/app/friends/invite/', '/app/moim/invite', '/app/moim/invite/'],
                                 exclude: [],
                             }),
                         );

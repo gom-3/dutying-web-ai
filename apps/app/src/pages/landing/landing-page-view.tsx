@@ -11,7 +11,7 @@ import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
-import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
+import {getMarketingLanguageHref, rememberMarketingLanguage} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import {trackGrowthAction} from '@/shared/util/growth-analytics';
 import './landing-page.css';
@@ -752,7 +752,10 @@ function HeaderLanguageMenu() {
                                 to={getMarketingLanguageHref(language)}
                                 role="option"
                                 aria-selected={isSelected}
-                                onClick={() => setIsOpen(false)}
+                                onClick={() => {
+                                    rememberMarketingLanguage(language);
+                                    setIsOpen(false);
+                                }}
                                 className={`flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold transition-colors hover:bg-main-light hover:text-main-1 ${
                                     isSelected ? 'bg-main-light text-main-1' : 'text-[#5F557F]'
                                 }`}
