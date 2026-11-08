@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.41 - 2026-11-08
+
+- `@dutying/app` (patch): Route first direct home visits from China, Thailand, and Vietnam to the corresponding language page while preserving saved preferences and search behavior.
+
 ## 1.3.40 - 2026-11-08
 
 - `@dutying/app` (patch): 홈에 직접 접속하면 국가와 저장된 언어에 맞는 랜딩을 보여줍니다. 메뉴에서 선택한 언어는 이후 방문에도 유지합니다.

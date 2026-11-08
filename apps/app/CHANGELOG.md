@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.41
+
+### Patch Changes
+
+- 94373ce: Route first direct home visits from China, Thailand, and Vietnam to the corresponding language page while preserving saved preferences and search behavior.
+    - @dutying/api@1.3.41
+    - @dutying/domain@1.3.41
+    - @dutying/utils@1.3.41
+
 ## 1.3.40
 
 ### Patch Changes
