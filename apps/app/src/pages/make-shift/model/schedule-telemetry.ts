@@ -38,6 +38,19 @@ function once(key: string, report: () => void) {
 
 /** E5: only declared engine statuses, never infer success from changed-cell count. */
 export function observeScheduleResult(operation: Operation, result: TAutofillResponse) {
+    const draftState = result.authoringOutcome?.draftState;
+    const hasCandidate =
+        draftState === 'APPLICABLE' ||
+        draftState === 'PREVIEW_ONLY' ||
+        draftState === 'CONSENT_REQUIRED' ||
+        (!draftState && Boolean(result.goalCandidate));
+
+    if (hasCandidate) {
+        const id = result.observation?.serverEventId;
+        if (id) once(`candidate:${id}`, () => captureScheduleEvent('schedule_candidate_ready', operation));
+        else captureScheduleEvent('schedule_candidate_ready', operation);
+    }
+
     const status = result.engineResult?.status;
     const outcome =
         status === 'ACCEPTED' || status === 'REPAIRED'
@@ -66,6 +79,10 @@ export function observeConversationResult(result: TConversationOperation) {
 }
 
 /** E6/E7: called only after an actual editor action, independently of receipt retries. */
-export function observeScheduleApplication(key: string, type: 'CLIENT_APPLIED' | 'CLIENT_UNDONE') {
-    once(`application:${key}`, () => captureScheduleEvent(type === 'CLIENT_APPLIED' ? 'schedule_applied' : 'schedule_undone', 'UNKNOWN'));
+export function observeScheduleApplication(
+    key: string,
+    type: 'CLIENT_APPLIED' | 'CLIENT_UNDONE',
+    operation: 'GENERATE' | 'ADJUST' | 'UNKNOWN' = 'UNKNOWN',
+) {
+    once(`application:${key}`, () => captureScheduleEvent(type === 'CLIENT_APPLIED' ? 'schedule_applied' : 'schedule_undone', operation));
 }

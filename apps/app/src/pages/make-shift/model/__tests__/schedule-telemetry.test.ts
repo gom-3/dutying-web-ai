@@ -99,3 +99,33 @@ it('wires conversation execute/poll/cancel without changing async headers or cou
     expect(captureScheduleEvent).toHaveBeenCalledWith('schedule_server_result', 'ADJUST', 'CANCELLED');
     expect(JSON.stringify(vi.mocked(captureScheduleEvent).mock.calls)).not.toContain('private');
 });
+
+it('counts a reviewable adjustment candidate once and keeps application separate', () => {
+    const result = {
+        operationId: 'private-candidate-operation',
+        operationType: 'ADJUST',
+        executionStatus: 'SUCCEEDED',
+        result: {
+            observation: {serverEventId: 'private-candidate-receipt'},
+            authoringOutcome: {draftState: 'PREVIEW_ONLY', candidateDigest: 'private-digest'},
+        },
+    } as TConversationOperation;
+    observeConversationResult(result);
+    observeConversationResult(result);
+    expect(captureScheduleEvent).toHaveBeenCalledWith('schedule_candidate_ready', 'ADJUST');
+    expect(vi.mocked(captureScheduleEvent).mock.calls.filter(([name]) => name === 'schedule_candidate_ready')).toHaveLength(1);
+    expect(captureScheduleEvent).not.toHaveBeenCalledWith('schedule_applied', expect.anything());
+    observeScheduleApplication('private-candidate-apply', 'CLIENT_APPLIED', 'ADJUST');
+    expect(captureScheduleEvent).toHaveBeenLastCalledWith('schedule_applied', 'ADJUST');
+    expect(JSON.stringify(vi.mocked(captureScheduleEvent).mock.calls)).not.toContain('private');
+});
+
+it('does not count a completed adjustment without a candidate', () => {
+    observeConversationResult({
+        operationId: 'no-candidate-operation',
+        operationType: 'ADJUST',
+        executionStatus: 'SUCCEEDED',
+        result: {authoringOutcome: {draftState: 'NONE'}, engineResult: {status: 'ACCEPTED'}},
+    } as TConversationOperation);
+    expect(captureScheduleEvent).toHaveBeenCalledExactlyOnceWith('schedule_server_result', 'ADJUST', 'COMPLETED');
+});

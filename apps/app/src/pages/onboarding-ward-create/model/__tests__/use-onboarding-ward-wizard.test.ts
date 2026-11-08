@@ -829,8 +829,8 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {targetYear: 2026, targetMonth: 11});
         const team = result.current.draft.teams[0];
-        const roster = result.current.draft.scheduleInputs[team.id][getScheduleMonthKey(2026, 11)];
-        expect(roster.rows[0]).toMatchObject({name: '홍길동', shifts: {'1': 'D', '4': 'N'}});
+        const roster = result.current.draft.scheduleInputs[team.id]?.[getScheduleMonthKey(2026, 11)];
+        expect(roster?.rows[0]).toMatchObject({name: '홍길동', shifts: {'1': 'D', '4': 'N'}});
         expect(result.current.uploadStatus).toBe('warning');
     });
 

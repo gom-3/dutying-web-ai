@@ -1799,11 +1799,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
 
             const docAfterApply = useShiftEditorStore.getState().doc;
 
-            void reportScheduleJourney(result.response.observation, {
-                type: 'CLIENT_APPLIED',
-                changedCellCount: describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length,
-                draftRevision: useShiftEditorStore.getState().draftRevision,
-            });
+            void reportScheduleJourney(
+                result.response.observation,
+                {
+                    type: 'CLIENT_APPLIED',
+                    changedCellCount: describeAdjustChanges(stateBeforeRequest.doc, docAfterApply).length,
+                    draftRevision: useShiftEditorStore.getState().draftRevision,
+                },
+                result.response.operationType,
+            );
             setLastAppliedObservation(result.response.observation);
             setFeedbackObservation(
                 result.response.operationType === 'GENERATE' && result.response.changedCells.length > 0
@@ -2195,11 +2199,15 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
         });
 
         commands.applyChangedCells(persisted.changedCells, originalShift, 'ai');
-        void reportScheduleJourney(response.observation, {
-            type: 'CLIENT_APPLIED',
-            changedCellCount: persisted.changedCells.length,
-            draftRevision: useShiftEditorStore.getState().draftRevision,
-        });
+        void reportScheduleJourney(
+            response.observation,
+            {
+                type: 'CLIENT_APPLIED',
+                changedCellCount: persisted.changedCells.length,
+                draftRevision: useShiftEditorStore.getState().draftRevision,
+            },
+            'ADJUST',
+        );
         setLastAppliedObservation(response.observation);
         setFeedbackObservation(undefined);
 
