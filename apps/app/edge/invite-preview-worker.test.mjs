@@ -134,6 +134,9 @@ describe('direct home language routing', () => {
     it.each([
         ['JP', 'ja'],
         ['US', 'en'],
+        ['CN', 'zh'],
+        ['TH', 'th'],
+        ['VN', 'vi'],
     ])('temporarily redirects %s using Cloudflare country and preserves the query', async (country, language) => {
         const request = requestFrom(country, {url: origin + '/?utm_source=example'});
         const assets = makeAssets();
