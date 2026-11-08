@@ -1,7 +1,6 @@
 import {Undo2} from 'lucide-react';
 import {useEffect, useRef} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import type {TAutofillCellSummary} from '../../../model/ai-autofill-state';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiInfoTip} from './ai-conversation-entry';
@@ -69,9 +68,6 @@ export function AiAutofillPreparation({
     onUndoFixAll,
     onEditConditions,
     onEditSchedule,
-    requestText = '',
-    onRequestTextChange,
-    summary,
     active = true,
 }: {
     step: Exclude<TAutofillPreparationStep, 'carryOver'>;
@@ -88,9 +84,6 @@ export function AiAutofillPreparation({
     onUndoFixAll?: () => void;
     onEditConditions?: () => void;
     onEditSchedule?: () => void;
-    requestText?: string;
-    onRequestTextChange?: (text: string) => void;
-    summary?: TAutofillCellSummary;
     active?: boolean;
 }) {
     const {t} = useTypedTranslation();
@@ -114,21 +107,6 @@ export function AiAutofillPreparation({
             data-fixed-selection={step === 'fixed' || undefined}
             className="flex flex-col gap-5 outline-none"
         >
-            {step === 'fixed' && summary && <AutofillSelectionSummary summary={summary} />}
-            {step === 'fixed' && onRequestTextChange && (
-                <label className="flex flex-col gap-2 text-[13px] font-medium text-[#344054]">
-                    {t('aiAdjust.preparation.initialRequestLabel')}
-                    <textarea
-                        value={requestText}
-                        onChange={(event) => onRequestTextChange(event.target.value)}
-                        maxLength={500}
-                        rows={2}
-                        disabled={disabled}
-                        placeholder={t('aiAdjust.preparation.initialRequestExample')}
-                        className="w-full resize-none rounded-xl border border-[#DCE2EB] bg-white px-3 py-2 text-sm leading-6 font-normal text-[#333D4B] placeholder:text-[#667085] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
-                    />
-                </label>
-            )}
             {step === 'fixed' && onUndoFixAll && (
                 <button
                     type="button"
@@ -203,28 +181,7 @@ export function AiAutofillPreparation({
     );
 }
 
-function AutofillSelectionSummary({summary}: {summary: TAutofillCellSummary}) {
-    const {t} = useTypedTranslation();
-
-    return (
-        <div className="rounded-xl bg-gray-50 px-4 py-3 text-[13px] leading-6 text-[#475467]">
-            <p role="status" aria-atomic="true">
-                {t('aiAdjust.preparation.selectionSummary', summary)}
-            </p>
-            <p className="text-xs text-[#667085]">{t('aiAdjust.preparation.selectionHelp')}</p>
-        </div>
-    );
-}
-
-export function AiAutofillFixedSelectionBar({
-    summary,
-    onContinue,
-    onCancel,
-}: {
-    summary: TAutofillCellSummary;
-    onContinue: () => void;
-    onCancel: () => void;
-}) {
+export function AiAutofillFixedSelectionBar({onContinue, onCancel}: {onContinue: () => void; onCancel: () => void}) {
     const {t} = useTypedTranslation();
     const sectionRef = useRef<HTMLElement>(null);
 
@@ -238,10 +195,7 @@ export function AiAutofillFixedSelectionBar({
             aria-label={t('aiAdjust.preparation.editSchedule')}
             className="sticky top-0 z-[100] flex flex-col items-stretch gap-3 rounded-xl border border-purple-100 bg-white p-3 shadow-sm outline-none sm:flex-row sm:items-center"
         >
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[#344054]">{t('aiAdjust.preparation.editingFixed')}</p>
-                <AutofillSelectionSummary summary={summary} />
-            </div>
+            <p className="min-w-0 flex-1 text-sm font-semibold text-[#344054]">{t('aiAdjust.preparation.editingFixed')}</p>
             <div className="flex flex-wrap justify-end gap-2">
                 <button
                     type="button"

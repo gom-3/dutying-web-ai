@@ -104,7 +104,6 @@ type TProps = {
     shift: TShift;
     adjustEnabled: boolean;
     generationRequest: number;
-    generationText?: string;
     rebuildRequest: number;
     onApplied: () => void;
     onGenerated?: () => void;
@@ -209,7 +208,6 @@ export default function AiConversationSidebar({
     shift,
     adjustEnabled,
     generationRequest,
-    generationText = '',
     rebuildRequest,
     onApplied,
     onGenerated,
@@ -282,8 +280,6 @@ export default function AiConversationSidebar({
     const doc = useShiftEditorStore((s) => s.doc);
     const intentFirstEnabled = useShiftEditorStore((s) => s.intentFirstAuthoringEnabled);
     const automaticAttempts = useRef(new Set<string>());
-    const initialGenerationPending = useRef(false);
-    const generationPlanIds = useRef(new Set<string>());
     const isAutofillBlocked = isScheduleFullyProtected(doc);
     const revision = useShiftEditorStore((s) => s.draftRevision);
     const [detail, setDetail] = useState<TConversationDetail | null>(null);
@@ -890,7 +886,6 @@ export default function AiConversationSidebar({
 
         preparationReviewTurn.current = turn;
 
-        const initialGeneration = initialGenerationPending.current && !plan.generationIntent;
         const preparationKey = () => {
             const draft = dto();
 
@@ -925,7 +920,7 @@ export default function AiConversationSidebar({
             // Request review never opens schedule preparation. Ask about protected shifts
             // only after the user accepts the proposed conditions and is ready to calculate.
             if (onPrepareAdjustment && reviewedPreparation.current !== preparationKey()) {
-                await onPrepareAdjustment(plan.generationIntent || initialGeneration ? 'generation' : 'adjustment');
+                await onPrepareAdjustment(plan.generationIntent ? 'generation' : 'adjustment');
             }
 
             if (!mounted.current || !sidebarOpen.current || detailRef.current?.conversation.conversationId !== conversationId) return;
@@ -950,7 +945,7 @@ export default function AiConversationSidebar({
 
                 let reviewed = turn;
 
-                const unsentOperation = plan.generationIntent || initialGeneration ? 'GENERATE' : 'ADJUST';
+                const unsentOperation = plan.generationIntent ? 'GENERATE' : 'ADJUST';
 
                 // Refresh only rebinds a live plan; the server cannot renew an expired one.
                 if (plan.authoringContractVersion === INTENT_FIRST_CONTRACT && !hasCurrentIntentFirstExecutionWindow(plan))
@@ -1034,14 +1029,9 @@ export default function AiConversationSidebar({
                 reviewedPreparation.current = null;
                 preparationReviewTurn.current = null;
 
-                if (initialGeneration) {
-                    initialGenerationPending.current = false;
-                    generationPlanIds.current.add(confirmedId);
-                }
-
                 await execute(
-                    plan.generationIntent || initialGeneration ? 'GENERATE' : 'ADJUST',
-                    plan.generationIntent || initialGeneration ? 'REBUILD_UNLOCKED' : undefined,
+                    plan.generationIntent ? 'GENERATE' : 'ADJUST',
+                    plan.generationIntent ? 'REBUILD_UNLOCKED' : undefined,
                     confirmedId,
                 );
             }
@@ -1212,11 +1202,7 @@ export default function AiConversationSidebar({
             false,
             'recovering',
         );
-    const interpret = async (
-        request = text,
-        reference = previousId,
-        {initialGeneration = false, removeConditionId}: {initialGeneration?: boolean; removeConditionId?: string} = {},
-    ) => {
+    const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
         const message = request.trim();
 
         if (!message) return;
@@ -1227,7 +1213,6 @@ export default function AiConversationSidebar({
             !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
 
         if (
-            !initialGeneration &&
             !isAutofillBlocked &&
             !editingRequest &&
             !currentDetail?.conversationState?.pendingQuestion &&
@@ -1364,8 +1349,6 @@ export default function AiConversationSidebar({
 
                     const failed = interpreted.semanticPlan?.state === 'FAILED';
 
-                    if (initialGeneration && !failed) initialGenerationPending.current = true;
-
                     if (!removeConditionId) setText(failed ? request : '');
 
                     setEditingRequest(null);
@@ -1421,7 +1404,6 @@ export default function AiConversationSidebar({
         return api.version(previewSourceId);
     }, [api, previewSourceId]);
     const resetSectionUi = () => {
-        initialGenerationPending.current = false;
         preparationReviewTurn.current = null;
         discardedPreparationId.current = autofillFlow?.id ?? null;
         reviewedPreparation.current = null;
@@ -1813,9 +1795,7 @@ export default function AiConversationSidebar({
         );
 
         if (
-            initialGenerationPending.current ||
             !turn?.interpretationId ||
-            generationPlanIds.current.has(turn.interpretationId) ||
             !turn.semanticPlan?.autoExecutable ||
             Boolean(turn.semanticPlan.generationIntent) ||
             !isSemanticExecutionCurrent(detail, turn, false) ||
@@ -1837,35 +1817,8 @@ export default function AiConversationSidebar({
 
         lastGeneration.current = generationRequest;
 
-        if (generationText.trim()) void interpret(generationText.trim(), undefined, {initialGeneration: true});
-        else void execute('GENERATE', generationFillPolicy);
-    }, [generationRequest, generationText, detail, busy, open, preparing, generationFillPolicy]);
-
-    useEffect(() => {
-        if (!initialGenerationPending.current || !detail || busy || !open || preparing || localDirty) return;
-
-        const turn = detail.turns.find(
-            (entry) => entry.interpretationId === detail.conversation.latestInterpretationId && entry.semanticPlan,
-        );
-
-        if (turn?.semanticPlan?.generationIntent) {
-            initialGenerationPending.current = false;
-
-            return;
-        }
-
-        if (
-            !turn?.interpretationId ||
-            !turn.semanticPlan?.autoExecutable ||
-            !isSemanticExecutionCurrent(detail, turn, false) ||
-            detail.operations.some((operation) => operation.interpretationId === turn.interpretationId)
-        )
-            return;
-
-        generationPlanIds.current.add(turn.interpretationId);
-        initialGenerationPending.current = false;
-        void execute('GENERATE', generationFillPolicy, turn.interpretationId);
-    }, [detail, busy, open, preparing, localDirty, generationFillPolicy]);
+        void execute('GENERATE', generationFillPolicy);
+    }, [generationRequest, detail, busy, open, preparing, generationFillPolicy]);
 
     useEffect(() => {
         if (rebuildRequest <= lastRebuild.current) return;
@@ -2046,7 +1999,6 @@ export default function AiConversationSidebar({
 
         if (!current || busy || running || preparing || sessionStorage.getItem(pendingKey)) return;
 
-        initialGenerationPending.current = false;
         reviewedPreparation.current = null;
         setEditingRequest(turn);
         setEntryChoice('modify');

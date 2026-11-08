@@ -1083,6 +1083,9 @@ describe('AiAutofill adjust panel', () => {
         await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.editSchedule'}));
         expect(mocks.conversationProps?.open).toBe(false);
         expect(screen.getByRole('region', {name: 'aiAdjust.preparation.editSchedule'})).toBeVisible();
+        expect(screen.getByText('aiAdjust.preparation.editingFixed')).toBeVisible();
+        expect(screen.queryByText('aiAdjust.preparation.selectionSummary')).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAdjust.preparation.selectionHelp')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'toggle first fixed shift'}));
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-01']).not.toBe(true);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.finishSelection'}));
