@@ -171,20 +171,17 @@ export type TConversationExecute = {
     failureSuggestionDigest?: string;
     suggestionConfirmed?: boolean;
 };
+function postTimeout(path: string, data: unknown) {
+    const intentFirst = (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1';
+    if (path.endsWith('/operations') || !intentFirst) return 330000;
+    return path.endsWith('/interpretations') ? 45000 : 30000;
+}
+
 export function conversationApi(wardId: number, teamId: number) {
     const base = `/wards/${wardId}/shift-teams/${teamId}/schedule`;
     const get = async <T>(path: string) => (await client.get<T>(`${base}${path}`, {suppressErrorToast: true, timeout: 15000})).data;
     const post = async <T>(path: string, data: unknown) =>
-        (
-            await client.post<T>(`${base}${path}`, data, {
-                suppressErrorToast: true,
-                timeout: path.endsWith('/operations')
-                    ? 330000
-                    : (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1'
-                      ? 30000
-                      : 330000,
-            })
-        ).data;
+        (await client.post<T>(`${base}${path}`, data, {suppressErrorToast: true, timeout: postTimeout(path, data)})).data;
     const put = async <T>(path: string, data: unknown) => (await client.put<T>(`${base}${path}`, data, {suppressErrorToast: true})).data;
 
     return {

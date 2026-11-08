@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.42 - 2026-11-08
+
+- `@dutying/app` (patch): 자동완성의 준비·확인과 오래된 초안 복구를 개선하고 병동 온보딩에서 근무표 이미지 입력을 지원합니다.
+
 ## 1.3.41 - 2026-11-08
 
 - `@dutying/app` (patch): Route first direct home visits from China, Thailand, and Vietnam to the corresponding language page while preserving saved preferences and search behavior.

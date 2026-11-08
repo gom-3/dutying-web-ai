@@ -45,12 +45,26 @@ export class AiConversationInputError extends Error {
             | 'requestTooLong'
             | 'expiredSuggestion'
             | 'draftChanged'
+            | 'draftConflict'
             | 'expiredPlan',
         readonly unsentOperation?: 'GENERATE' | 'ADJUST',
         readonly canRetryGeneration = false,
     ) {
         super(reason);
     }
+}
+
+/** Only a definitive rejection from the draft revision check is safe to replay. */
+export function isDraftRevisionConflict(error: unknown): boolean {
+    const source = error as {code?: number; serverCode?: string; responseBody?: {message?: string}} | null;
+
+    return (
+        source?.serverCode === 'SCHEDULE_STALE_DRAFT_REVISION' ||
+        // Older Spring builds return the exact revision guard message as server text.
+        (source?.code === 400 &&
+            source.serverCode === 'INVALID_PARAMETER' &&
+            source.responseBody?.message === '작업표가 변경되었습니다. 최신 작업표를 불러와 주세요.')
+    );
 }
 
 // Local, translated UI explanations may be shown; arbitrary API/exception text may not.

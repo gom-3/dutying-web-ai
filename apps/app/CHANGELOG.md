@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.42
+
+### Patch Changes
+
+- 자동완성의 준비·확인과 오래된 초안 복구를 개선하고 병동 온보딩에서 근무표 이미지 입력을 지원합니다.
+    - @dutying/api@1.3.42
+    - @dutying/domain@1.3.42
+    - @dutying/utils@1.3.42
+
 ## 1.3.41
 
 ### Patch Changes

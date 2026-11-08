@@ -153,8 +153,6 @@ export const aiAdjustKo = {
         },
     },
     preparation: {
-        initialRequestLabel: '이번 근무표에 반영할 내용 · 선택',
-        initialRequestExample: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
         previous: '지난달 근무에 빈칸이 있어요.\n이대로 진행할까요?',
         previousHelp: '지난달 근무를 입력하면 월초의\n연속 근무와 휴식도 함께 확인해요.',
         continue: '이대로 진행할게요',
@@ -171,11 +169,9 @@ export const aiAdjustKo = {
         reviewFixed: '고정한 근무 다시 확인하기',
         editConditions: '근무 조건 확인하기',
         editSchedule: '표에서 고정 편집하기',
-        editingFixed: '유지할 근무를 눌러 고정하거나 해제해 주세요.',
+        editingFixed: '고정할 근무를 눌러주세요.',
         finishSelection: '선택 완료하고 계속하기',
         cancelSelection: '고정 선택 취소',
-        selectionSummary: '고정 {{fixed}}칸 · 신청 근무 {{requested}}칸 · AI 변경 대상 {{editable}}칸',
-        selectionHelp: '고정·신청 근무는 유지하고, 나머지 근무와 빈칸을 채워요. 신청 근무는 여기서 해제할 수 없어요.',
         noEditableCells: 'AI가 바꿀 수 있는 칸이 없어요. 표에서 고정을 풀어 주세요. 신청 근무는 신청 관리에서 수정할 수 있어요.',
         fixedCellLabel: '{{name}} · {{date}} · {{shift}} · {{state}}',
         fixedState: '고정됨',
@@ -363,6 +359,9 @@ export const aiAdjustKo = {
     value: '값',
     localError: {
         draftChanged: '작성 중인 근무표가 바뀌어 이전 결과로 돌아가지 않았어요. 현재 내용을 확인한 뒤 다시 선택해 주세요.',
+        viewSavedDraft: '저장된 근무표 보기',
+        draftConflict:
+            '다른 곳에서 바뀐 근무표와 이 화면에서 수정한 내용이 달라요. 수정 내용은 이 화면에 남겨 두었어요. 최신 근무표와 비교한 뒤 다시 요청해 주세요.',
         expiredSuggestion:
             '근무표나 조건이 바뀌었거나 시간이 지나 이전 제안을 사용할 수 없어요. 현재 근무표를 기준으로 다시 요청해 주세요.',
         loading: '이전 대화를 불러오고 있어요. 잠시만 기다려 주세요.',
@@ -643,8 +642,6 @@ export const aiAdjustEn = {
         },
     },
     preparation: {
-        initialRequestLabel: 'Request for this schedule · optional',
-        initialRequestExample: 'Please reduce Nurse Kim’s weekend shifts this month.',
         previous: 'Some shifts from last month are blank.\nContinue as they are?',
         previousHelp: 'Last month’s shifts help check consecutive work and rest at the start of this month.',
         continue: 'Continue as they are',
@@ -661,11 +658,9 @@ export const aiAdjustEn = {
         reviewFixed: 'Review fixed shifts',
         editConditions: 'Review shift conditions',
         editSchedule: 'Edit fixed shifts in the schedule',
-        editingFixed: 'Select shifts to fix or unfix them.',
+        editingFixed: 'Select the shifts you want to fix.',
         finishSelection: 'Finish selection and continue',
         cancelSelection: 'Cancel fixed-shift selection',
-        selectionSummary: '{{fixed}} fixed · {{requested}} requested · {{editable}} cells AI may change',
-        selectionHelp: 'Fixed and requested shifts stay. AI fills the other shifts and blanks. Requested shifts cannot be unlocked here.',
         noEditableCells: 'AI has no cells to change. Unfix shifts in the schedule, or edit requested shifts in request management.',
         fixedCellLabel: '{{name}} · {{date}} · {{shift}} · {{state}}',
         fixedState: 'Fixed',
@@ -874,6 +869,9 @@ export const aiAdjustEn = {
     value: 'Value',
     localError: {
         draftChanged: 'Your draft changed, so the previous result was not restored. Review your edits before trying again.',
+        viewSavedDraft: 'View saved schedule',
+        draftConflict:
+            'The saved schedule and your edits differ. Your edits are still here. Compare them with the latest schedule before trying again.',
         expiredSuggestion: 'The schedule or conditions changed, or the suggestion expired. Submit a new request with the current schedule.',
         loading: 'Loading your conversation. Please wait.',
         pendingExecution: 'Check the previous request before starting another. Use Check result below.',

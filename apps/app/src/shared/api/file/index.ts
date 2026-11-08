@@ -17,6 +17,14 @@ class FileAPI implements IFileAPI {
         ).data;
     }
 
+    public async recordBrowserExcelImport(file: File, year: number, month: number) {
+        await axiosInstance.post(
+            '/files/wards/onboarding/browser-import',
+            {filename: file.name, size: file.size, year, month},
+            {suppressErrorToast: true},
+        );
+    }
+
     public async parseOnboardingWardExcel(file: File, options?: TOnboardingWardParseOptions) {
         const formData = new FormData();
 

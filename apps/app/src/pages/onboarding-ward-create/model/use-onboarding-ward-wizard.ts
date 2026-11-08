@@ -18,6 +18,7 @@ import {
     restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
+    isOnboardingImageFile,
     isSupportedOnboardingUploadFile,
     type TOnboardingParsedShiftType,
 } from './adapter';
@@ -1578,8 +1579,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         setUploadWarnings([]);
 
         try {
-            const fileForParsing = await normalizeOnboardingScheduleFile(file);
-            const scheduleTemplate = await parseScheduleTemplateSafely(fileForParsing, options);
+            const image = isOnboardingImageFile(file.name);
+            const fileForParsing = image ? file : await normalizeOnboardingScheduleFile(file);
+            const scheduleTemplate = image ? [] : await parseScheduleTemplateSafely(fileForParsing, options);
             const targetYear = options?.targetYear;
             const targetMonth = options?.targetMonth;
 
@@ -1607,6 +1609,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                     setSelectedTeamId(nextActiveTeamId);
                 }
 
+                void FileAPI.recordBrowserExcelImport(file, targetYear, targetMonth).catch(() => {
+                    // Browser parsing succeeded. A diagnostics request must not block the draft.
+                });
                 setUploadStatus('success');
                 toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
 
@@ -1661,7 +1666,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-            toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
+            toast.success(t(image
+                ? 'page.onboardingWardCreate.upload.reviewImage'
+                : 'page.onboardingWardCreate.toast.uploadApplied'));
         } catch (error) {
             const message = getOnboardingUploadFailureMessage(error, {
                 defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),

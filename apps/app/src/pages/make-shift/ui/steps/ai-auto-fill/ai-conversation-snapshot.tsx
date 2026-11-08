@@ -9,7 +9,7 @@ type TProps = {
     returnFocusTo?: HTMLElement | null;
     disabled: boolean;
     onClose: () => void;
-    onContinue: (version: TResultVersion) => void;
+    onContinue?: (version: TResultVersion) => void;
     currentVersionId?: string | null;
 };
 

@@ -52,7 +52,7 @@ export const ko = {
                 "title": "지금은 체험용 임시 계정으로 근무표를 작성 중이에요.",
                 "titleExpiringSoon": "체험 종료가 얼마 남지 않았어요."
             },
-            "documentTitle": "듀팅 | 간호사 근무표 자동 생성·교대근무 관리",
+            "documentTitle": "간호사 근무표 만들기, AI로 1분 만에 | 듀팅",
             "sessionExpired": "로그인 시간이 끝났어요. 다시 로그인해 주세요.",
             "state": {
                 "errorDescription": "세션이 만료되었거나 네트워크 연결이 불안정할 수 있어요.",
@@ -2273,10 +2273,10 @@ export const ko = {
                 "uploadFile": "근무표 파일 업로드"
             },
             "scheduleUpload": {
-                "description": "엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.",
+                "description": "엑셀이나 이미지에서 이름과 날짜별 근무를 읽어 병동 초안에 채워요.",
                 "downloadTemplate": "양식 다운로드",
-                "dropzoneTitle": "엑셀 파일을 선택하거나 끌어다 놓아 주세요.",
-                "fileSupport": ".xlsx, .xls 파일을 지원해요.",
+                "dropzoneTitle": "엑셀이나 근무표 이미지를 선택해 주세요.",
+                "fileSupport": "엑셀(.xlsx, .xls) · 이미지(JPG, PNG, 최대 12MB)",
                 "submit": "파일 적용",
                 "submitting": "업로드 중",
                 "template": {
@@ -2420,10 +2420,11 @@ export const ko = {
                 "failedSheet": "시트 \"{{sheetName}}\" 데이터를 불러오지 못했어요.",
                 "failedTitle": "파일 업로드에 실패했어요",
                 "networkFailed": "파싱 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
-                "parseFailed": "파일을 해석하지 못했어요. 엑셀 양식을 확인한 뒤 다시 업로드해 주세요.",
+                "parseFailed": "파일을 읽지 못했어요. 엑셀 형식이나 이미지의 날짜와 이름이 선명한지 확인해 주세요.",
                 "parsing": "파일 해석 중...",
+                "reviewImage": "사진에서 읽은 이름과 근무를 확인해 주세요.",
                 "targetMonth": "근무표 기준 월",
-                "unsupportedFile": "엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.",
+                "unsupportedFile": "엑셀(.xlsx, .xls)이나 JPG, PNG 이미지를 올려 주세요.",
                 "uploadFile": "파일 업로드"
             },
             "rotation": {
@@ -5423,10 +5424,10 @@ export const en: TLocale = {
                 "uploadFile": "Upload schedule file"
             },
             "scheduleUpload": {
-                "description": "We will read names, teams, and daily shifts from the Excel file and apply them to the initial ward setup.",
+                "description": "Read names and daily shifts from an Excel file or image to fill the ward draft.",
                 "downloadTemplate": "Download template",
-                "dropzoneTitle": "Choose or drop an Excel file.",
-                "fileSupport": "Supports .xlsx and .xls files.",
+                "dropzoneTitle": "Choose or drop an Excel file or roster image.",
+                "fileSupport": "Excel (.xlsx, .xls) · Images (JPG, PNG, up to 12 MB)",
                 "submit": "Apply file",
                 "submitting": "Uploading",
                 "template": {
@@ -5570,10 +5571,11 @@ export const en: TLocale = {
                 "failedSheet": "Could not load data from sheet \"{{sheetName}}\".",
                 "failedTitle": "File upload failed",
                 "networkFailed": "Could not connect to the parsing server. Please try again shortly.",
-                "parseFailed": "Could not parse the file. Check the Excel template and upload it again.",
+                "parseFailed": "Could not read the file. Check the Excel format or make sure dates and names in the image are clear.",
                 "parsing": "Parsing file...",
+                "reviewImage": "Review the names and shifts read from the image.",
                 "targetMonth": "Schedule month",
-                "unsupportedFile": "Only Excel files (.xlsx, .xls) can be uploaded.",
+                "unsupportedFile": "Upload an Excel file (.xlsx, .xls) or a JPG or PNG image.",
                 "uploadFile": "Upload file"
             },
             "rotation": {
@@ -8571,10 +8573,10 @@ export const ja: TLocale = {
                 "uploadFile": "勤務表ファイルをアップロード"
             },
             "scheduleUpload": {
-                "description": "Excelファイルの名前、チーム、日別勤務を読み取り、初期病棟設定に反映します。",
+                "description": "Excelまたは画像から氏名と日別勤務を読み取り、病棟の下書きに入力します。",
                 "downloadTemplate": "テンプレートをダウンロード",
-                "dropzoneTitle": "Excelファイルを選択またはドラッグしてください。",
-                "fileSupport": ".xlsx、.xlsファイルに対応しています。",
+                "dropzoneTitle": "Excelファイルまたは勤務表の画像を選択してください。",
+                "fileSupport": "Excel（.xlsx、.xls）・画像（JPG、PNG、最大12MB）",
                 "submit": "ファイルを適用",
                 "submitting": "アップロード中",
                 "template": {
@@ -8718,10 +8720,11 @@ export const ja: TLocale = {
                 "failedSheet": "シート「{{sheetName}}」のデータを読み込めませんでした。",
                 "failedTitle": "ファイルのアップロードに失敗しました",
                 "networkFailed": "解析サーバーに接続できませんでした。しばらくしてから再度お試しください。",
-                "parseFailed": "ファイルを解析できませんでした。Excel形式を確認してから再度アップロードしてください。",
+                "parseFailed": "ファイルを読み取れませんでした。Excelの形式や画像の日付と氏名を確認してください。",
                 "parsing": "ファイル解析中...",
+                "reviewImage": "画像から読み取った氏名と勤務を確認してください。",
                 "targetMonth": "勤務表の基準月",
-                "unsupportedFile": "Excelファイル（.xlsx, .xls）のみアップロードできます。",
+                "unsupportedFile": "Excel（.xlsx、.xls）またはJPG、PNG画像をアップロードしてください。",
                 "uploadFile": "ファイルをアップロード"
             },
             "rotation": {
@@ -11719,10 +11722,10 @@ export const zh: TLocale = {
                 "uploadFile": "上传时间表文件"
             },
             "scheduleUpload": {
-                "description": "从 Excel 文件中按日期读取姓名、团队和轮班，并将其反映在初始病区设置中。",
+                "description": "从 Excel 或图片读取姓名和每日班次，填入病区草稿。",
                 "downloadTemplate": "下载表格",
-                "dropzoneTitle": "请选择或拖放 Excel 文件。",
-                "fileSupport": "支持 .xlsx 和 .xls 文件。",
+                "dropzoneTitle": "请选择或拖放 Excel 文件或排班表图片。",
+                "fileSupport": "Excel（.xlsx、.xls）· 图片（JPG、PNG，最大 12 MB）",
                 "submit": "申请文件",
                 "submitting": "上传中",
                 "template": {
@@ -11866,10 +11869,11 @@ export const zh: TLocale = {
                 "failedSheet": "无法加载排班表“{{sheetName}}”数据。",
                 "failedTitle": "文件上传失败",
                 "networkFailed": "无法连接到解析服务器。请稍后重试。",
-                "parseFailed": "无法解释该文件。请检查Excel表格并重新上传。",
+                "parseFailed": "无法读取文件。请检查 Excel 格式或确保图片中的日期和姓名清晰。",
                 "parsing": "正在解析文件...",
+                "reviewImage": "请核对从图片读取的姓名和班次。",
                 "targetMonth": "月份根据排班表",
-                "unsupportedFile": "您只能上传 Excel 文件（.xlsx、.xls）。",
+                "unsupportedFile": "请上传 Excel（.xlsx、.xls）或 JPG、PNG 图片。",
                 "uploadFile": "文件上传"
             },
             "rotation": {
@@ -14867,10 +14871,10 @@ export const th: TLocale = {
                 "uploadFile": "อัพโหลดไฟล์กำหนดการ"
             },
             "scheduleUpload": {
-                "description": "เราจะอ่านชื่อ ทีม และกะการทำงานรายวันจากไฟล์ Excel และนำไปใช้กับการตั้งค่าวอร์ดเริ่มต้น",
+                "description": "อ่านชื่อและกะรายวันจาก Excel หรือรูปภาพเพื่อกรอกแบบร่างวอร์ด",
                 "downloadTemplate": "ดาวน์โหลดเทมเพลต",
-                "dropzoneTitle": "เลือกหรือวางไฟล์ Excel",
-                "fileSupport": "รองรับไฟล์ .xlsx และ .xls",
+                "dropzoneTitle": "เลือกหรือลากไฟล์ Excel หรือรูปตารางเวร",
+                "fileSupport": "Excel (.xlsx, .xls) · รูปภาพ (JPG, PNG ไม่เกิน 12 MB)",
                 "submit": "ไฟล์ Apply",
                 "submitting": "กำลังอัพโหลด",
                 "template": {
@@ -15014,10 +15018,11 @@ export const th: TLocale = {
                 "failedSheet": "ไม่สามารถโหลดข้อมูลจากชีต \"{{sheetName}}\"",
                 "failedTitle": "การอัปโหลดไฟล์ล้มเหลว",
                 "networkFailed": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์การแยกวิเคราะห์ โปรดลองอีกครั้งในอีกสักครู่",
-                "parseFailed": "ไม่สามารถแยกวิเคราะห์ไฟล์ได้ ตรวจสอบเทมเพลต Excel แล้วอัปโหลดอีกครั้ง",
+                "parseFailed": "อ่านไฟล์ไม่ได้ โปรดตรวจรูปแบบ Excel หรือให้วันที่และชื่อในภาพชัดเจน",
                 "parsing": "กำลังแยกวิเคราะห์ไฟล์...",
+                "reviewImage": "ตรวจสอบชื่อและกะที่อ่านจากรูปภาพ",
                 "targetMonth": "กำหนดการเดือน",
-                "unsupportedFile": "สามารถอัปโหลดได้เฉพาะไฟล์ Excel (.xlsx, .xls) เท่านั้น",
+                "unsupportedFile": "อัปโหลดไฟล์ Excel (.xlsx, .xls) หรือรูป JPG หรือ PNG",
                 "uploadFile": "อัพโหลดไฟล์"
             },
             "rotation": {
@@ -18015,10 +18020,10 @@ export const vi: TLocale = {
                 "uploadFile": "Tải lên tệp lịch"
             },
             "scheduleUpload": {
-                "description": "Chúng ta sẽ đọc tên, đội và ca làm việc hàng ngày từ tệp Excel và áp dụng chúng vào thiết lập khoa ban đầu.",
+                "description": "Đọc tên và ca làm từng ngày từ Excel hoặc ảnh để điền vào bản nháp khoa.",
                 "downloadTemplate": "Tải xuống mẫu",
-                "dropzoneTitle": "Chọn hoặc thả một tệp Excel.",
-                "fileSupport": "Hỗ trợ các tệp.xlsx và.xls.",
+                "dropzoneTitle": "Chọn hoặc thả tệp Excel hoặc ảnh lịch trực.",
+                "fileSupport": "Excel (.xlsx, .xls) · Ảnh (JPG, PNG, tối đa 12 MB)",
                 "submit": "Áp dụng tập tin",
                 "submitting": "Đang tải lên",
                 "template": {
@@ -18162,10 +18167,11 @@ export const vi: TLocale = {
                 "failedSheet": "Không thể tải dữ liệu từ trang tính \"{{sheetName}}\".",
                 "failedTitle": "Tải tệp lên không thành công",
                 "networkFailed": "Không thể kết nối với máy chủ phân tích cú pháp. Vui lòng thử lại trong thời gian ngắn.",
-                "parseFailed": "Không thể phân tích tập tin. Kiểm tra mẫu Excel và tải lại.",
+                "parseFailed": "Không đọc được tệp. Hãy kiểm tra định dạng Excel hoặc đảm bảo ngày và tên trong ảnh rõ ràng.",
                 "parsing": "Đang phân tích tệp...",
+                "reviewImage": "Kiểm tra tên và ca làm đã đọc từ ảnh.",
                 "targetMonth": "Lên lịch tháng",
-                "unsupportedFile": "Chỉ có thể tải lên các tệp Excel (.xlsx,.xls).",
+                "unsupportedFile": "Tải lên tệp Excel (.xlsx, .xls) hoặc ảnh JPG hay PNG.",
                 "uploadFile": "Tải tập tin lên"
             },
             "rotation": {
