@@ -47,7 +47,11 @@ export const lastAppliedScheduleObservation = (ward: number, team: number, year:
 const deliveries = new Map<string, Promise<void>>();
 
 /** Best effort; absence of this receipt means UNKNOWN, never "not displayed/applied". */
-export function reportScheduleJourney(observation: TScheduleObservation | undefined, event: TClientEvent): Promise<void> {
+export function reportScheduleJourney(
+    observation: TScheduleObservation | undefined,
+    event: TClientEvent,
+    operation?: 'GENERATE' | 'ADJUST' | 'REPAIR',
+): Promise<void> {
     if (!observation) return Promise.resolve();
     const scope = `${useAuthStore.getState().accountId}:${observation.wardId}:${observation.shiftTeamId}:${observation.year}:${observation.month}`;
     if (event.type === 'CLIENT_APPLIED') applied.set(scope, observation);
@@ -58,7 +62,8 @@ export function reportScheduleJourney(observation: TScheduleObservation | undefi
 
     if (previous) return previous;
 
-    if (event.type === 'CLIENT_APPLIED' || event.type === 'CLIENT_UNDONE') observeScheduleApplication(key, event.type);
+    if (event.type === 'CLIENT_APPLIED' || event.type === 'CLIENT_UNDONE')
+        observeScheduleApplication(key, event.type, operation === 'REPAIR' ? 'UNKNOWN' : operation);
 
     const payload = {...event, eventId: crypto.randomUUID(), serverEventId: observation.serverEventId};
     const deliver = async () => {

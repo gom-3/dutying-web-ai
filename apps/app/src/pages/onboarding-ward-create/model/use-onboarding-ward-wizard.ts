@@ -1,3 +1,4 @@
+import {captureRosterImportEvent} from '@/shared/util/abto';
 ﻿import type {
     TOnboardingScheduleInputPreviewDTO,
     TOnboardingScheduleInputPreviewResponse,
@@ -1578,6 +1579,8 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         setUploadError(null);
         setUploadWarnings([]);
 
+        let serverImportFormat: 'PHOTO' | 'EXCEL' | undefined;
+
         try {
             const image = isOnboardingImageFile(file.name);
             const fileForParsing = image ? file : await normalizeOnboardingScheduleFile(file);
@@ -1618,6 +1621,8 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 return;
             }
 
+            serverImportFormat = image ? 'PHOTO' : 'EXCEL';
+            captureRosterImportEvent('roster_import_requested', serverImportFormat);
             const response = await FileAPI.parseOnboardingWardExcel(fileForParsing, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
@@ -1669,7 +1674,9 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             toast.success(t(image
                 ? 'page.onboardingWardCreate.upload.reviewImage'
                 : 'page.onboardingWardCreate.toast.uploadApplied'));
+            captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
         } catch (error) {
+            if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
             const message = getOnboardingUploadFailureMessage(error, {
                 defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),
                 networkMessage: t('page.onboardingWardCreate.upload.networkFailed'),

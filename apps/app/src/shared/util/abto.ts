@@ -37,7 +37,7 @@ if (import.meta.hot) {
 
 /** Only controlled scalar metadata is accepted; optional telemetry never throws. */
 export function captureScheduleEvent(
-    name: keyof typeof abtoEvents,
+    name: Extract<keyof typeof abtoEvents, `schedule_${string}`>,
     operation: 'GENERATE' | 'ADJUST' | 'INTERPRET' | 'UNKNOWN',
     outcome?: 'COMPLETED' | 'BLOCKED' | 'FAILED' | 'CANCELLED' | 'UNKNOWN',
     milliseconds?: number,
@@ -51,5 +51,16 @@ export function captureScheduleEvent(
         });
     } catch {
         // Analytics must not alter request results or editor behavior.
+    }
+}
+
+export function captureRosterImportEvent(
+    name: Extract<keyof typeof abtoEvents, `roster_import_${string}`>,
+    format: 'PHOTO' | 'EXCEL',
+) {
+    try {
+        initializeAbto()?.capture(name, {value: 1, scale: 'count', format});
+    } catch {
+        // Optional analytics must not affect file import.
     }
 }
