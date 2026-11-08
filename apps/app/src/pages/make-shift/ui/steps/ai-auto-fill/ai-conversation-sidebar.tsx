@@ -680,11 +680,15 @@ export default function AiConversationSidebar({
                         draftRevision: useShiftEditorStore.getState().draftRevision,
                     });
 
-                void reportScheduleJourney(operation.result?.observation, {
-                    type: 'CLIENT_APPLIED',
-                    changedCellCount: describeAdjustChanges(before, useShiftEditorStore.getState().doc).length,
-                    draftRevision: useShiftEditorStore.getState().draftRevision,
-                });
+                void reportScheduleJourney(
+                    operation.result?.observation,
+                    {
+                        type: 'CLIENT_APPLIED',
+                        changedCellCount: describeAdjustChanges(before, useShiftEditorStore.getState().doc).length,
+                        draftRevision: useShiftEditorStore.getState().draftRevision,
+                    },
+                    operation.operationType,
+                );
             } else setNotice(t('aiConversationSidebar.draftChangedResultSaved'));
         } else if (
             operation.executionStatus === 'SUCCEEDED' &&
