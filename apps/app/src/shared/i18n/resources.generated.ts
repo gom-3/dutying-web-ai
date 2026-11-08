@@ -52,7 +52,7 @@ export const ko = {
                 "title": "지금은 체험용 임시 계정으로 근무표를 작성 중이에요.",
                 "titleExpiringSoon": "체험 종료가 얼마 남지 않았어요."
             },
-            "documentTitle": "듀팅 | 간호사 근무표 자동 생성·교대근무 관리",
+            "documentTitle": "간호사 근무표 만들기, AI로 1분 만에 | 듀팅",
             "sessionExpired": "로그인 시간이 끝났어요. 다시 로그인해 주세요.",
             "state": {
                 "errorDescription": "세션이 만료되었거나 네트워크 연결이 불안정할 수 있어요.",
