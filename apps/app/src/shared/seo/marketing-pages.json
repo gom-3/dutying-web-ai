@@ -1,4 +1,8 @@
 {
+    "homeLanguagePreference": {
+        "cookieName": "__Host-dutying-home-language",
+        "maxAge": 31536000
+    },
     "pages": [
         {
             "language": "ko",
