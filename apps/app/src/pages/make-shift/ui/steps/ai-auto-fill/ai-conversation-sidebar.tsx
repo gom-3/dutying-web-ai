@@ -51,7 +51,7 @@ import {AiActiveConditions, type TActiveConditionsHandle} from './ai-active-cond
 import {AiAdjustInterpretCard} from './ai-adjust-interpret-card';
 import type {TAdjustResultActions} from './ai-adjust-result';
 import {AiAdjustApplyChoices, AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
-import {AiAutofillMessages, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
+import {AiAutofillMessages, type TAutofillExecution, type TAutofillFlow, type TAutofillMessage} from './ai-autofill-preparation';
 import {AiCandidateReview} from './ai-candidate-review';
 import {AiChatScroll} from './ai-chat-scroll';
 import {ConstraintConflictReview} from './ai-constraint-conflict-review';
@@ -66,10 +66,11 @@ import {AiConversationOperationStatus} from './ai-conversation-operation-status'
 import {AiConversationRequestExamples} from './ai-conversation-request-help';
 import {AiConversationResult} from './ai-conversation-result';
 import AiConversationSnapshot from './ai-conversation-snapshot';
-import {AiConversationTimestamp, AiMessageTimestamp} from './ai-conversation-timestamp';
+import {AiConversationTimestamp, AiMessageTimestamp, conversationMessageDate} from './ai-conversation-timestamp';
 import {AiExecutionCancelButton} from './ai-execution-cancel-button';
 import {AiExecutionFailure} from './ai-execution-failure';
 import {AiFailureMessage} from './ai-failure-message';
+import {isInterruptedRequestNotice} from './ai-interrupted-request-notice';
 import {AiResultSatisfaction} from './ai-result-satisfaction';
 import {AiClarificationText, AiSemanticReview} from './ai-semantic-review';
 import {JourneyObserved} from './journey-observed';
@@ -109,6 +110,7 @@ type TProps = {
     onGenerated?: () => void;
     onBusyChange?: (busy: boolean, succeeded?: boolean) => void;
     onRequestBusyChange?: (busy: boolean) => void;
+    onAutofillExecution?: (flowId: number, execution: TAutofillExecution) => void;
     onExecutionChange?: (execution: TConversationExecution | null) => void;
     resultActions?: TAdjustResultActions;
 };
@@ -117,6 +119,7 @@ type TLocalEvent = {
     id: string;
     sequence: number;
     messages: TAutofillMessage[];
+    autofillExecution?: TAutofillExecution;
     pendingRequest?: {text: string; afterSequence: number};
 };
 type TComposerContext = {
@@ -134,6 +137,46 @@ type TLocalTranscript = {
 };
 type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
+
+function preparationHistoryMessages(event: TLocalEvent, detail: TConversationDetail): TAutofillMessage[] {
+    if (!event.id.startsWith('preparation:')) return event.messages;
+
+    const isWarning = (message: TAutofillMessage) => message.role === 'assistant' && isInterruptedRequestNotice(message.text);
+    const warningIndex = event.messages.findIndex(isWarning);
+
+    if (warningIndex === -1) return event.messages;
+
+    const execution = event.autofillExecution;
+
+    if (execution) {
+        const found =
+            detail.conversation.conversationId === execution.conversationId &&
+            detail.operations.some(
+                (operation) =>
+                    operation.sequence > execution.afterSequence &&
+                    operation.operationType === execution.operationType &&
+                    operation.baseRevision === execution.baseRevision &&
+                    operation.interpretationId === execution.interpretationId,
+            );
+
+        return found ? event.messages.filter((message) => !isWarning(message)) : event.messages;
+    }
+
+    // Older browser histories only have the preparation and restore timestamps.
+    // Require a generation receipt within that interval so an older result cannot hide this warning.
+    const requestedAt = conversationMessageDate(event.messages[warningIndex - 1]?.createdAt);
+    const restoredAt = conversationMessageDate(event.messages[warningIndex]?.createdAt);
+    const found =
+        requestedAt &&
+        restoredAt &&
+        detail.operations.some((operation) => {
+            const createdAt = conversationMessageDate(operation.createdAt);
+
+            return operation.operationType === 'GENERATE' && createdAt && requestedAt <= createdAt && createdAt <= restoredAt;
+        });
+
+    return found ? event.messages.filter((message) => !isWarning(message)) : event.messages;
+}
 
 const MAX_REQUEST_LENGTH = 500;
 const buttonClass =
@@ -172,6 +215,7 @@ export default function AiConversationSidebar({
     onGenerated,
     onBusyChange,
     onRequestBusyChange,
+    onAutofillExecution,
     onExecutionChange,
 }: TProps) {
     const cancelCurrentOperationRef = useRef<() => void>(() => {});
@@ -782,6 +826,16 @@ export default function AiConversationSidebar({
 
                 if (conflict?.result?.candidate && !canSelectAuthoringCandidate(conflict.result, latest.conversation.currentVersionId))
                     throw new AiConversationInputError('expiredSuggestion');
+            }
+
+            if (autofillFlow?.status === 'running') {
+                onAutofillExecution?.(autofillFlow.id, {
+                    conversationId: current.conversation.conversationId,
+                    afterSequence: Math.max(0, ...current.operations.map((operation) => operation.sequence)),
+                    operationType,
+                    baseRevision: request.expectedRevision,
+                    interpretationId: request.interpretationId ?? null,
+                });
             }
 
             sessionStorage.setItem(
@@ -1724,16 +1778,18 @@ export default function AiConversationSidebar({
         setLocalEvents((current) => {
             const id = `preparation:${autofillFlow.id}`;
             const existing = current.find((event) => event.id === id);
+            const preparationHistory = {messages: autofillFlow.messages, autofillExecution: autofillFlow.execution};
 
-            if (existing?.messages === autofillFlow.messages) return current;
+            if (existing?.messages === preparationHistory.messages && existing.autofillExecution === preparationHistory.autofillExecution)
+                return current;
 
-            if (existing) return current.map((event) => (event.id === id ? {...event, messages: autofillFlow.messages} : event));
+            if (existing) return current.map((event) => (event.id === id ? {...event, ...preparationHistory} : event));
 
             const sequence =
                 Math.max(0, ...conversationEvents(detail).map((event) => event.sequence), ...current.map((event) => event.sequence)) +
                 0.001;
 
-            return [...current, {kind: 'local', id, sequence, messages: autofillFlow.messages}];
+            return [...current, {kind: 'local', id, sequence, ...preparationHistory}];
         });
     }, [autofillFlow, detail]);
 
@@ -2548,7 +2604,7 @@ export default function AiConversationSidebar({
                                                 </AiConversationTimestamp>
                                             </div>
                                         ) : (
-                                            <AiAutofillMessages key={event.id} messages={event.messages} />
+                                            <AiAutofillMessages key={event.id} messages={preparationHistoryMessages(event, detail)} />
                                         )
                                     ) : event.kind === 'turn' ? (
                                         <div key={event.id} inert={preparing}>

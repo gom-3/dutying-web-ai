@@ -2,6 +2,7 @@ import {Undo2} from 'lucide-react';
 import {useEffect, useRef} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TAutofillCellSummary} from '../../../model/ai-autofill-state';
+import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 import {AssistantMessage, UserMessage} from './ai-adjust-review-conversation';
 import {AiInfoTip} from './ai-conversation-entry';
 import {AiConversationTimestamp} from './ai-conversation-timestamp';
@@ -9,12 +10,18 @@ import {AiInterruptedRequestNotice, isInterruptedRequestNotice} from './ai-inter
 
 export type TAutofillPreparationStep = 'carryOver' | 'previous' | 'fixed';
 export type TAutofillMessage = {role: 'assistant' | 'user'; text: string; help?: string; createdAt?: string};
+export type TAutofillExecution = {
+    conversationId: number;
+    afterSequence: number;
+} & Pick<TConversationOperation, 'operationType' | 'baseRevision' | 'interpretationId'>;
+
 export type TAutofillFlow = {
     id: number;
     kind?: 'generation' | 'adjustment';
     recovery?: boolean;
     messages: TAutofillMessage[];
     status: 'preparing' | 'running' | 'paused' | 'completed';
+    execution?: TAutofillExecution;
     resumeStep?: TAutofillPreparationStep;
     previousWarningKey?: string | null;
 };

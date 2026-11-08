@@ -1348,6 +1348,52 @@ describe('persistent schedule sidebar', () => {
         expect(statusMessage).not.toHaveTextContent('2026-11');
     });
 
+    it.each([
+        {scenario: 'an older execution', createdAt: '2026-10-03T09:59:00', hasReceipt: false, status: 'SUCCEEDED', warns: true},
+        {scenario: 'a matching legacy execution', createdAt: '2026-10-03T10:00:08', hasReceipt: false, status: 'SUCCEEDED', warns: false},
+        {scenario: 'a matching recorded execution', createdAt: '2026-10-03T09:59:00', hasReceipt: true, status: 'SUCCEEDED', warns: false},
+        {scenario: 'an execution still running', createdAt: '2026-10-03T10:00:08', hasReceipt: false, status: 'RUNNING', warns: false},
+    ] as const)('checks $scenario before displaying a restored interruption warning', async ({createdAt, hasReceipt, status, warns}) => {
+        if (status === 'SUCCEEDED') current.conversation.currentVersionId = 'result:1';
+
+        current.operations = [
+            {
+                ...operation,
+                createdAt,
+                executionStatus: status,
+                ...(status === 'RUNNING'
+                    ? {applyStatus: 'PENDING', resultVersionId: null}
+                    : {result: {...successfulResult, changedCells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]}}),
+            },
+        ];
+
+        const warning = i18n.t('aiAdjust.preparation.interruptedHistory');
+        const warningTitle = warning.split('\n')[0]!;
+
+        renderSidebar({
+            autofillFlow: {
+                id: 1,
+                kind: 'generation',
+                status: 'completed',
+                execution: hasReceipt
+                    ? {conversationId: 1, afterSequence: 0, operationType: 'GENERATE', baseRevision: 0, interpretationId: null}
+                    : undefined,
+                messages: [
+                    {role: 'user', text: '이대로 진행할게요', createdAt: '2026-10-03T01:00:00Z'},
+                    {role: 'assistant', text: warning, createdAt: '2026-10-03T01:00:54Z'},
+                ],
+            },
+        });
+
+        expect(screen.queryByText(warningTitle)).not.toBeInTheDocument();
+        expect(await screen.findByText('이대로 진행할게요')).toBeVisible();
+
+        if (warns) expect(screen.getByText(warningTitle)).toBeVisible();
+        else expect(screen.queryByText(warningTitle)).not.toBeInTheDocument();
+
+        if (status === 'SUCCEEDED') expect(await screen.findByText('근무표가 완성되었어요!')).toBeVisible();
+    });
+
     it('keeps the bubble compact and opens changes and result actions in one dialog', async () => {
         current.conversation.currentVersionId = 'result:1';
         current.operations = [{...operation, result: {...successfulResult, changedCells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]}}];

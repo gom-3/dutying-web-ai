@@ -3299,7 +3299,11 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     onBusyChange={handleConversationBusyChange}
                     onRequestBusyChange={setIsRequestBusy}
                     onExecutionChange={setAiExecution}
+                    onAutofillExecution={(flowId, execution) => {
+                        setAutofillFlow((flow) => (flow?.id === flowId && !flow.execution ? {...flow, execution} : flow));
+                    }}
                     onApplied={() => {
+                        setAutofillFlow((flow) => (flow?.status === 'running' ? {...flow, status: 'completed'} : flow));
                         setHasAiGeneratedUnsavedChanges(true);
                         setHasCompletedAiFill(true);
                         rememberGeneratedSchedule();
