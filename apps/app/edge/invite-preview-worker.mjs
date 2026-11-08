@@ -6,6 +6,9 @@ const HOME_LANGUAGE_HOSTS = new Set(['www.dutying.ai', 'dev.dutying.ai']);
 const countryLanguage = new Map([
     ['JP', 'ja'],
     ['US', 'en'],
+    ['CN', 'zh'],
+    ['TH', 'th'],
+    ['VN', 'vi'],
 ]);
 
 function isDirectHomeNavigation(request, url) {
