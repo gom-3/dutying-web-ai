@@ -1308,9 +1308,11 @@ export default function AiConversationSidebar({
                             throw cause;
                         });
 
-                    if (initialGeneration) initialGenerationPending.current = true;
+                    const failed = interpreted.semanticPlan?.state === 'FAILED';
 
-                    if (!removeConditionId) setText('');
+                    if (initialGeneration && !failed) initialGenerationPending.current = true;
+
+                    if (!removeConditionId) setText(failed ? request : '');
 
                     setEditingRequest(null);
                     setPreviousId(interpreted.interpretationId ?? undefined);
@@ -1957,7 +1959,10 @@ export default function AiConversationSidebar({
         !detail ||
         failureNeedsAction ||
         entryChoice === 'regenerate' ||
-        (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
+        (reviewingPlan &&
+            !editingRequest &&
+            active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION' &&
+            active?.semanticPlan?.state !== 'FAILED');
     const canSendRequest = open && !composerHidden && adjustEnabled && Boolean(text.trim());
     const showRequestExamples = Boolean(
         open &&

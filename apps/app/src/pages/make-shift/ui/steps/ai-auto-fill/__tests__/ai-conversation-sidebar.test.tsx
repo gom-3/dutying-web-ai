@@ -4148,6 +4148,97 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it('keeps a failed clarification answer editable and resends it with the refreshed state', async () => {
+        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION');
+        const question = '전체 간호사에게 적용할까요?';
+        const answer = '전체간호사';
+        const state = {
+            version: 7,
+            sourceVersionId: current.conversation.currentVersionId,
+            contextHash: current.contextHash,
+            expiresAt: null,
+            conditions: [],
+            pendingQuestion: {conditionId: '', question, originalText: raw},
+        };
+
+        proposal.semanticPlan!.summary = question;
+        current.conversationState = state;
+
+        const reply: TConversationTurn = {
+            ...current.turns[0],
+            eventId: 3,
+            sequence: 3,
+            text: answer,
+        };
+        const failed: TConversationTurn = {
+            ...proposal,
+            eventId: 4,
+            sequence: 4,
+            interpretationId: 'proposal:failed',
+            semanticPlan: {
+                ...proposal.semanticPlan!,
+                state: 'FAILED',
+                reasonCodes: ['INVALID_CONDITION_EDIT'],
+                conditions: [],
+            },
+        };
+        const ready: TConversationTurn = {
+            ...proposal,
+            eventId: 6,
+            sequence: 6,
+            interpretationId: 'proposal:ready',
+            semanticPlan: {...proposal.semanticPlan!, state: 'PREVIEW_READY', confirmationAllowed: true},
+        };
+
+        mocks.interpret
+            .mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, latestInterpretationId: failed.interpretationId},
+                    turns: [...current.turns, reply, failed],
+                    conversationState: {...state, version: 8},
+                };
+
+                return failed;
+            })
+            .mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, latestInterpretationId: ready.interpretationId},
+                    turns: [...current.turns, {...reply, eventId: 5, sequence: 5}, ready],
+                    conversationState: {...state, version: 9, pendingQuestion: null},
+                };
+
+                return ready;
+            });
+
+        renderSidebar();
+        await userEvent.type(await screen.findByRole('textbox'), answer);
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        const restoredInput = await screen.findByRole('textbox');
+
+        expect(restoredInput).toBeVisible();
+        expect(restoredInput).toBeEnabled();
+        expect(restoredInput).toHaveValue(answer);
+        expect(restoredInput).toHaveAccessibleDescription(question);
+
+        const send = screen.getByRole('button', {name: '요청 보내기'});
+
+        expect(send).toBeEnabled();
+        await userEvent.click(send);
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledTimes(2));
+        expect(mocks.interpret.mock.calls[1][1]).toMatchObject({
+            text: answer,
+            expectedStateVersion: 8,
+            change: 'AUTO',
+            clientContext: {inputMode: 'clarification', typedText: answer},
+        });
+        expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('lets the server distinguish a separate request while a question is waiting', async () => {
         const {raw, proposal} = semanticRequest();
 
