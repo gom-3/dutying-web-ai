@@ -359,6 +359,9 @@ export const aiAdjustKo = {
     value: '값',
     localError: {
         draftChanged: '작성 중인 근무표가 바뀌어 이전 결과로 돌아가지 않았어요. 현재 내용을 확인한 뒤 다시 선택해 주세요.',
+        viewSavedDraft: '저장된 근무표 보기',
+        draftConflict:
+            '다른 곳에서 바뀐 근무표와 이 화면에서 수정한 내용이 달라요. 수정 내용은 이 화면에 남겨 두었어요. 최신 근무표와 비교한 뒤 다시 요청해 주세요.',
         expiredSuggestion:
             '근무표나 조건이 바뀌었거나 시간이 지나 이전 제안을 사용할 수 없어요. 현재 근무표를 기준으로 다시 요청해 주세요.',
         loading: '이전 대화를 불러오고 있어요. 잠시만 기다려 주세요.',
@@ -866,6 +869,9 @@ export const aiAdjustEn = {
     value: 'Value',
     localError: {
         draftChanged: 'Your draft changed, so the previous result was not restored. Review your edits before trying again.',
+        viewSavedDraft: 'View saved schedule',
+        draftConflict:
+            'The saved schedule and your edits differ. Your edits are still here. Compare them with the latest schedule before trying again.',
         expiredSuggestion: 'The schedule or conditions changed, or the suggestion expired. Submit a new request with the current schedule.',
         loading: 'Loading your conversation. Please wait.',
         pendingExecution: 'Check the previous request before starting another. Use Check result below.',

@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import type {TShift} from '@/entities/shift';
 import useAuthStore from '@/features/auth/model/store';
 import {snapshotDetailToDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {mergePreviousShiftContext} from '@/features/shift-editor/model/previous-shift-context';
 import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring';
 import i18n from '@/i18n';
 import ROUTE from '@/shared/constant/path';
@@ -12,7 +13,12 @@ import ConfirmActionDialog, {ConfirmationSpotlight} from '@/shared/ui/ConfirmAct
 import {trackScheduleSignal} from '@/shared/util/growth-analytics';
 import {describeAdjustChanges, isPlainAutofillCommand} from '../../../model/ai-adjust-conversation';
 import {isScheduleFullyProtected} from '../../../model/ai-autofill-state';
-import {AiConversationInputError, aiConversationFailure, type TAiConversationFailure} from '../../../model/ai-conversation-failure';
+import {
+    AiConversationInputError,
+    aiConversationFailure,
+    isDraftRevisionConflict,
+    type TAiConversationFailure,
+} from '../../../model/ai-conversation-failure';
 import {conversationOperationFailure as operationFailure} from '../../../model/ai-execution-failure';
 import {conversationDraftSignature as signature} from '../../../model/conversation-draft-signature';
 import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict} from '../../../model/conversation-pending-execution';
@@ -134,7 +140,7 @@ type TLocalTranscript = {
     restoredResult?: {operationId: string; signature: string; sourceVersionId?: string};
     undoneOperationIds?: string[];
 };
-type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null};
+type TPreview = {version: TResultVersion; sourceVersionId?: string; returnFocusTo: HTMLElement | null; readOnly?: boolean};
 type TActivity = 'updating' | 'reviewing' | 'viewing' | 'recovering' | 'sending';
 
 function preparationHistoryMessages(event: TLocalEvent, detail: TConversationDetail): TAutofillMessage[] {
@@ -316,6 +322,7 @@ export default function AiConversationSidebar({
     const mounted = useRef(true);
     const initialized = useRef(false);
     const syncTail = useRef<Promise<unknown>>(Promise.resolve());
+    const conflictedDraft = useRef<{base: TConversationDetail; latest?: TResultVersion} | null>(null);
     const preserveGenerationComposer = useRef(false);
     const lastGeneration = useRef(0);
     const lastRebuild = useRef(0);
@@ -417,12 +424,12 @@ export default function AiConversationSidebar({
                 onGenerated?.();
         }
     };
-    const dto = () => {
+    const dto = (doc = useShiftEditorStore.getState().doc) => {
         const state = useShiftEditorStore.getState();
         const draft = buildAutofillDTO({
             year,
             month,
-            doc: state.doc,
+            doc,
             originalShift: shift,
             draftRevision: state.draftRevision,
             rulesHash: state.rulesHash ?? '',
@@ -431,6 +438,7 @@ export default function AiConversationSidebar({
 
         return {
             ...draft,
+            carryOverCells: draft.carryOverCells ?? [],
             cells: draft.cells.map((cell) => (protectedKeys.has(`${cell.shiftNurseId}:${cell.date}`) ? {...cell, fixed: true} : cell)),
         };
     };
@@ -462,6 +470,52 @@ export default function AiConversationSidebar({
                 (detail.conversation.currentVersionId === operation.resultVersionId ||
                     (restoredResult?.operationId === operation.operationId && restoredResult.signature === signature(detail.draft))),
         );
+    const recoverDraft = async (base: TConversationDetail) => {
+        const id = base.conversation.conversationId;
+        conflictedDraft.current = {base};
+        const latest = await api.detail(id);
+
+        if (!mounted.current || detailRef.current?.conversation.conversationId !== id) throw new AiConversationInputError('loading');
+
+        if (latest.conversation.revision < detailRef.current.conversation.revision) throw new AiConversationInputError('draftConflict');
+
+        conflictedDraft.current = {base, latest: latest.draft};
+        const local = signature(dto());
+        const saved = signature(latest.draft);
+        const original = signature(base.draft);
+
+        // Keep the original baseline while both drafts differ. Installing the server revision
+        // here would let the next autosave overwrite the other edit with the entire local grid.
+        if (local !== saved && saved !== original) {
+            if (local !== original || !canRestoreVersion(latest.draft)) throw new AiConversationInputError('draftConflict');
+
+            const next = mergePreviousShiftContext(snapshotDoc(latest.draft), useShiftEditorStore.getState().doc);
+            if (signature(dto(next)) !== saved) throw new AiConversationInputError('draftConflict');
+
+            commands.restoreSnapshotDoc(next);
+        }
+
+        install(latest);
+        conflictedDraft.current = null;
+
+        return latest;
+    };
+    const saveDraft = async (current: TConversationDetail) => {
+        const draft = dto();
+
+        if (signature(draft) === signature(current.draft)) return current;
+
+        const next = await api.sync(current.conversation.conversationId, {
+            expectedRevision: current.conversation.revision,
+            cells: draft.cells,
+            rowOrder: draft.rowOrder,
+            carryOverCells: draft.carryOverCells,
+        });
+
+        install(next);
+
+        return next;
+    };
     const sync = async () => {
         const work = syncTail.current
             .catch(() => undefined)
@@ -470,20 +524,28 @@ export default function AiConversationSidebar({
 
                 if (!current) throw new AiConversationInputError('loading');
 
-                const draft = dto();
+                const blocked = conflictedDraft.current?.base;
+                let latest: TConversationDetail;
+                if (blocked?.conversation.conversationId === current.conversation.conversationId) {
+                    latest = await recoverDraft(blocked);
+                } else {
+                    try {
+                        return await saveDraft(current);
+                    } catch (cause) {
+                        if (!isDraftRevisionConflict(cause)) throw cause;
 
-                if (signature({...draft, carryOverCells: draft.carryOverCells ?? []}) === signature(current.draft)) return current;
+                        latest = await recoverDraft(current);
+                    }
+                }
 
-                const next = await api.sync(current.conversation.conversationId, {
-                    expectedRevision: current.conversation.revision,
-                    cells: draft.cells,
-                    rowOrder: draft.rowOrder,
-                    carryOverCells: draft.carryOverCells,
-                });
+                try {
+                    return await saveDraft(latest);
+                } catch (cause) {
+                    if (!isDraftRevisionConflict(cause)) throw cause;
 
-                install(next);
-
-                return next;
+                    conflictedDraft.current = {base: latest};
+                    throw new AiConversationInputError('draftConflict');
+                }
             });
 
         syncTail.current = work;
@@ -553,9 +615,7 @@ export default function AiConversationSidebar({
             }
         }
     };
-    const restore = (version: TResultVersion, fullSnapshot = false) => {
-        if (!mounted.current) return;
-
+    const snapshotDoc = (version: TResultVersion) => {
         const current = useShiftEditorStore.getState().doc;
         const next = snapshotDetailToDoc(version, shift, year, month, {fixedCells: current.fixedCells, requestCells: current.requestCells});
 
@@ -568,6 +628,12 @@ export default function AiConversationSidebar({
             if (carry.length) row.lastCells = carry.map((cell) => cell.shiftCode ?? null);
         });
 
+        return next;
+    };
+    const restore = (version: TResultVersion, fullSnapshot = false) => {
+        if (!mounted.current) return;
+
+        const next = snapshotDoc(version);
         if (fullSnapshot) commands.restoreSnapshotDoc(next);
         else commands.applyAdjustedDoc(next);
 
@@ -1282,7 +1348,7 @@ export default function AiConversationSidebar({
                     const state = current.conversationState;
 
                     if (
-                        (state && reviewedStateVersion !== undefined && state.version !== reviewedStateVersion) ||
+                        (reviewedStateVersion !== undefined && state?.version !== reviewedStateVersion) ||
                         (removeConditionId && state?.pendingQuestion?.conditionId !== removeConditionId)
                     )
                         throw new Error(t('aiConversationSidebar.requestChanged'));
@@ -1312,40 +1378,65 @@ export default function AiConversationSidebar({
                     );
                     stage = 'INTERPRET';
 
-                    const interpreted = await api
-                        .interpret(current.conversation.conversationId, {
-                            expectedRevision: current.conversation.revision,
-                            text: interpretedText,
-                            clientContext: {
-                                surfaceVersion: 'conversation-minimal-v1',
-                                entryChoice: entryChoice ?? undefined,
-                                inputMode:
-                                    editingRequest || removeConditionId ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
-                                typedText: message,
-                            },
-                            ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
-                            language: i18n.language,
-                            ...(state
-                                ? {
-                                      expectedStateVersion: state.version,
-                                      change: removeConditionId ? ('REMOVE' as const) : ('AUTO' as const),
-                                      targetConditionIds: removeConditionId ? [removeConditionId] : [],
-                                  }
-                                : previous && current.conversation.latestInterpretationId === previous
-                                  ? {
-                                        previousInterpretationId: previous,
-                                        change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
-                                            ? 'REPLACE'
-                                            : change,
-                                    }
-                                  : {}),
-                        })
-                        .catch(async (cause) => {
-                            // The server reserves a request version before model work. Refresh it for retry.
+                    const interpretationRequest: Parameters<typeof api.interpret>[1] = {
+                        expectedRevision: current.conversation.revision,
+                        text: interpretedText,
+                        clientContext: {
+                            surfaceVersion: 'conversation-minimal-v1',
+                            entryChoice: entryChoice ?? undefined,
+                            inputMode:
+                                editingRequest || removeConditionId ? 'revision' : state?.pendingQuestion ? 'clarification' : 'request',
+                            typedText: message,
+                        },
+                        ...(intentFirstEnabled ? {authoringContractVersion: INTENT_FIRST_CONTRACT} : {}),
+                        language: i18n.language,
+                        ...(state
+                            ? {
+                                  expectedStateVersion: state.version,
+                                  change: removeConditionId ? ('REMOVE' as const) : ('AUTO' as const),
+                                  targetConditionIds: removeConditionId ? [removeConditionId] : [],
+                              }
+                            : previous && current.conversation.latestInterpretationId === previous
+                              ? {
+                                    previousInterpretationId: previous,
+                                    change: current.turns.some((turn) => turn.interpretationId === previous && turn.semanticPlan)
+                                        ? 'REPLACE'
+                                        : change,
+                                }
+                              : {}),
+                    };
+                    const id = current.conversation.conversationId;
+                    const interpreted = await api.interpret(id, interpretationRequest).catch(async (cause) => {
+                        if (!isDraftRevisionConflict(cause)) {
+                            // A failed model request may have reserved a new conversation state version.
                             await refresh().catch(() => undefined);
-
                             throw cause;
-                        });
+                        }
+
+                        await recoverDraft(current);
+                        const ready = await sync();
+                        if (
+                            !mounted.current ||
+                            ready.conversation.conversationId !== id ||
+                            ready.conversationState?.version !== interpretationRequest.expectedStateVersion ||
+                            (interpretationRequest.previousInterpretationId &&
+                                (ready.conversation.latestInterpretationId !== interpretationRequest.previousInterpretationId ||
+                                    ready.contextHash !== current.contextHash))
+                        )
+                            throw new AiConversationInputError('staleRequest');
+
+                        try {
+                            return await api.interpret(id, {...interpretationRequest, expectedRevision: ready.conversation.revision});
+                        } catch (retryCause) {
+                            if (isDraftRevisionConflict(retryCause)) {
+                                await recoverDraft(ready);
+                                throw new AiConversationInputError('staleRequest');
+                            }
+
+                            await refresh().catch(() => undefined);
+                            throw retryCause;
+                        }
+                    });
 
                     const failed = interpreted.semanticPlan?.state === 'FAILED';
 
@@ -1628,7 +1719,11 @@ export default function AiConversationSidebar({
         if (!detailRef.current || busy) return;
 
         const timer = window.setTimeout(() => {
-            if (busyRef.current) return;
+            if (
+                busyRef.current ||
+                conflictedDraft.current?.base.conversation.conversationId === detailRef.current?.conversation.conversationId
+            )
+                return;
 
             void sync().catch((e) => {
                 if (mounted.current) setError(aiConversationFailure(e));
@@ -3092,6 +3187,21 @@ export default function AiConversationSidebar({
                                 message={conversationLoadFailure && error.message === t('aiAdjust.failed') ? '' : error.message}
                                 title={conversationLoadFailure ? t('aiConversationSidebar.conversationLoadFailed') : error.title}
                             >
+                                {conflictedDraft.current?.base.conversation.conversationId === detail?.conversation.conversationId &&
+                                    conflictedDraft.current?.latest && (
+                                        <button
+                                            type="button"
+                                            className={recoveryButtonClass}
+                                            disabled={busy}
+                                            onClick={(event) => {
+                                                const latest = conflictedDraft.current?.latest;
+                                                if (latest)
+                                                    setPreview({version: latest, returnFocusTo: event.currentTarget, readOnly: true});
+                                            }}
+                                        >
+                                            {t('aiAdjust.localError.viewSavedDraft')}
+                                        </button>
+                                    )}
                                 {error.unsentOperation && (
                                     <div className="flex flex-wrap gap-2">
                                         {error.canRetryGeneration && (
@@ -3207,7 +3317,7 @@ export default function AiConversationSidebar({
                             disabled={busy || running}
                             currentVersionId={localDirty ? undefined : detail?.conversation.currentVersionId}
                             onClose={() => setPreview(null)}
-                            onContinue={(version) => void branch(version)}
+                            onContinue={preview.readOnly ? undefined : (version) => void branch(version)}
                         />
                     )}
                     <footer className={preparing ? 'hidden' : 'shrink-0 space-y-[6px] pt-[8px]'} inert={preparing}>
