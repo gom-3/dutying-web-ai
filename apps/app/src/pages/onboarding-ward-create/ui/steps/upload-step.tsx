@@ -4,6 +4,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
 import {Input} from '@/shared/ui/primitives/input';
+import {ONBOARDING_UPLOAD_ACCEPT} from '../../model/adapter';
 
 interface IUploadStepProps {
     onUpload: (file: File, options?: TUploadTargetMonth) => void;
@@ -74,7 +75,7 @@ function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
                     data-testid="upload-input"
                     hidden
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept={ONBOARDING_UPLOAD_ACCEPT}
                     onChange={(event) => {
                         const file = event.target.files?.[0];
 

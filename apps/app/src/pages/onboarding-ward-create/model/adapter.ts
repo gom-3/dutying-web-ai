@@ -96,7 +96,9 @@ export type TOnboardingUploadFailureCopy = {
     networkMessage: string;
 };
 
-const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls'] as const;
+const ONBOARDING_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
+const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls', ...ONBOARDING_IMAGE_EXTENSIONS];
+export const ONBOARDING_UPLOAD_ACCEPT = SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.map((extension) => `.${extension}`).join(',');
 const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'MIN_STAFF_BY_SHIFT',
     'MAX_CONSECUTIVE_WORK_DAYS',
@@ -1172,12 +1174,12 @@ const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) => {
         }));
 };
 
-export const getOnboardingUploadExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() ?? '';
+export const getOnboardingUploadExtension = (fileName: string) => /\.([^.]+)$/.exec(fileName)?.[1].toLowerCase() ?? '';
+
+export const isOnboardingImageFile = (fileName: string) => ONBOARDING_IMAGE_EXTENSIONS.includes(getOnboardingUploadExtension(fileName));
 
 export const isSupportedOnboardingUploadFile = (fileName: string) =>
-    SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.includes(
-        getOnboardingUploadExtension(fileName) as (typeof SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS)[number],
-    );
+    SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.includes(getOnboardingUploadExtension(fileName));
 
 export const getOnboardingUploadFailureMessage = (error: unknown, copy: TOnboardingUploadFailureCopy = DEFAULT_UPLOAD_FAILURE_COPY) => {
     const message = error instanceof Error ? error.message.trim() : '';

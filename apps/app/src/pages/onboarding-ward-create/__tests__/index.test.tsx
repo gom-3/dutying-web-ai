@@ -146,6 +146,7 @@ vi.mock('@/shared/api', async () => {
         FileAPI: {
             ...actual.FileAPI,
             parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+            recordBrowserExcelImport: vi.fn().mockResolvedValue(undefined),
         },
         HospitalAPI: {
             ...actual.HospitalAPI,
@@ -640,7 +641,7 @@ describe('OnboardingWardCreatePage', () => {
         const dialog = screen.getByRole('dialog');
 
         expect(within(dialog).getByText('근무표 파일 업로드')).toBeInTheDocument();
-        expect(within(dialog).getByText('엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.')).toBeInTheDocument();
+        expect(within(dialog).getByText('엑셀이나 이미지에서 이름과 날짜별 근무를 읽어 병동 초안에 채워요.')).toBeInTheDocument();
         // 양식을 받지 않아도 바로 올릴 수 있어야 한다. 서식은 선택지일 뿐 관문이 아니다.
         expect(within(dialog).getByRole('button', {name: /양식 다운로드/})).toBeInTheDocument();
         expect(within(dialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();

@@ -5,6 +5,7 @@ import {type DragEvent, useEffect, useRef, useState} from 'react';
 import excelIcon from '@/shared/assets/images/excel.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
+import {ONBOARDING_UPLOAD_ACCEPT} from '../../model/adapter';
 
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 
@@ -256,7 +257,7 @@ function ScheduleFileUploadModal({
                             data-testid="schedule-file-upload-input"
                             hidden
                             type="file"
-                            accept=".xlsx,.xls"
+                            accept={ONBOARDING_UPLOAD_ACCEPT}
                             disabled={isUploading}
                             onChange={(event) => {
                                 selectFile(event.target.files?.[0]);
