@@ -3,7 +3,8 @@ import {resolve} from 'node:path';
 import {describe, expect, it, vi} from 'vitest';
 import {INVITE_PAGE_COPY} from '../src/pages/invite-fallback/copy';
 import images from './invite-preview-images.json';
-import {createInvitePreviewWorker, resolvePreviewLanguage} from './invite-preview-worker.mjs';
+import marketingPages from '../src/shared/seo/marketing-pages.json';
+import {createInvitePreviewWorker, createPagesWorker, resolvePreviewLanguage} from './invite-preview-worker.mjs';
 
 const data = Object.fromEntries(
     Object.entries(images).map(([language, image]) => [language, {image, invites: INVITE_PAGE_COPY[language].invites}]),
@@ -111,5 +112,89 @@ describe('invitation metadata request handling', () => {
         });
 
         expect(response.status).toBe(404);
+    });
+});
+
+describe('direct home language routing', () => {
+    const worker = createPagesWorker(data, {
+        ...marketingPages.homeLanguagePreference,
+        paths: Object.fromEntries(marketingPages.pages.map(({language, path}) => [language, path])),
+    });
+    const {cookieName} = marketingPages.homeLanguagePreference;
+    const origin = 'https://www.dutying.ai';
+    const directHeaders = {
+        'Accept-Language': 'ko-KR',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Site': 'none',
+    };
+    const requestFrom = (country, {url = origin + '/', headers = directHeaders, method = 'GET', verifiedBot = false} = {}) =>
+        Object.assign(new Request(url, {headers, method}), {cf: {country, botManagement: {verifiedBot}}});
+
+    it.each([
+        ['JP', 'ja'],
+        ['US', 'en'],
+    ])('temporarily redirects %s using Cloudflare country and preserves the query', async (country, language) => {
+        const request = requestFrom(country, {url: origin + '/?utm_source=example'});
+        const assets = makeAssets();
+        const response = await worker.fetch(request, {ASSETS: assets});
+
+        expect(response.status).toBe(302);
+        expect(response.headers.get('Location')).toBe(origin + '/' + language + '?utm_source=example');
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(response.headers.get('Set-Cookie')).toContain(`${cookieName}=${language};`);
+        expect(assets.fetch).not.toHaveBeenCalled();
+    });
+
+    it.each(['KR', 'CA', null])('keeps Korean HTML and remembers the first visit from %s', async (country) => {
+        const request = requestFrom(country);
+        const assets = makeAssets();
+        const response = await worker.fetch(request, {ASSETS: assets});
+
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe(shell);
+        expect(response.headers.get('Set-Cookie')).toContain(`${cookieName}=ko;`);
+        expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
+    });
+
+    it.each([
+        ['ko', null],
+        ['en', origin + '/en'],
+        ['zh', origin + '/zh'],
+    ])('uses saved %s even when visiting from Japan', async (language, location) => {
+        const request = requestFrom('JP', {headers: {...directHeaders, Cookie: `other=1; ${cookieName}=${language}`}});
+        const response = await worker.fetch(request, {ASSETS: makeAssets()});
+
+        expect(response.status).toBe(location ? 302 : 200);
+        expect(response.headers.get('Location')).toBe(location);
+        expect(response.headers.has('Set-Cookie')).toBe(false);
+    });
+
+    it('does not redirect to a destination supplied through a cookie', async () => {
+        const request = requestFrom('US', {headers: {...directHeaders, Cookie: `${cookieName}=//evil.example`}});
+        const response = await worker.fetch(request, {ASSETS: makeAssets()});
+
+        expect(response.headers.get('Location')).toBe(origin + '/en');
+    });
+
+    it.each([
+        ['ordinary crawler request', {headers: {}}],
+        ['verified crawler with browser headers', {verifiedBot: true}],
+        ['link from search or another site', {headers: {...directHeaders, 'Sec-Fetch-Site': 'cross-site'}}],
+        ['prefetch', {headers: {...directHeaders, 'Sec-Purpose': 'prefetch'}}],
+        ['explicit locale URL', {url: origin + '/ja'}],
+        ['explicit language query', {url: origin + '/?lng=ko'}],
+        ['app host', {url: 'https://app.dutying.ai/'}],
+        ['HEAD', {method: 'HEAD'}],
+    ])('preserves the static response for %s', async (_, options) => {
+        const request = requestFrom('US', options);
+        const assets = makeAssets();
+        const response = await worker.fetch(request, {ASSETS: assets});
+
+        expect(assets.fetch).toHaveBeenCalledExactlyOnceWith(request);
+        expect(response.status).toBe(200);
+        expect(response.headers.has('Location')).toBe(false);
+        expect(response.headers.has('Set-Cookie')).toBe(false);
     });
 });

@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.40 - 2026-11-08
+
+- `@dutying/app` (patch): 홈에 직접 접속하면 국가와 저장된 언어에 맞는 랜딩을 보여줍니다. 메뉴에서 선택한 언어는 이후 방문에도 유지합니다.
+
 ## 1.3.39 - 2026-11-08
 
 - `@dutying/app` (patch): 근무표의 목표 OFF 스위치와 병동의 휴무일 계산 설정을 동기화하고, 저장된 설정이 없는 병동은 기본으로 켭니다.

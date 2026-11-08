@@ -1,6 +1,76 @@
-// Vite inlines the existing invitation translations and image catalog into the
-// generated _worker.js. This module has no browser or external runtime imports.
+// Vite inlines the invitation and home language settings into _worker.js.
+// This module has no browser or external runtime imports.
 export const INVITE_PREVIEW_PATHS = ['/app/friends/invite', '/app/moim/invite'];
+
+const HOME_LANGUAGE_HOSTS = new Set(['www.dutying.ai', 'dev.dutying.ai']);
+const countryLanguage = new Map([
+    ['JP', 'ja'],
+    ['US', 'en'],
+]);
+
+function isDirectHomeNavigation(request, url) {
+    const {headers} = request;
+
+    return (
+        HOME_LANGUAGE_HOSTS.has(url.hostname) &&
+        url.protocol === 'https:' &&
+        url.pathname === '/' &&
+        !url.searchParams.has('lng') &&
+        request.method === 'GET' &&
+        headers.get('Sec-Fetch-Mode') === 'navigate' &&
+        headers.get('Sec-Fetch-Dest') === 'document' &&
+        headers.get('Sec-Fetch-Site') === 'none' &&
+        Boolean(headers.get('Accept-Language')) &&
+        !headers.has('Sec-Purpose') &&
+        !headers.has('Purpose') &&
+        !request.cf?.botManagement?.verifiedBot
+    );
+}
+
+export function createPagesWorker(inviteData, {cookieName, maxAge, paths}) {
+    const invitePreview = createInvitePreviewWorker(inviteData);
+
+    return {
+        async fetch(request, env) {
+            const url = new URL(request.url);
+            if (!isDirectHomeNavigation(request, url)) return invitePreview.fetch(request, env);
+
+            const prefix = `${cookieName}=`;
+            const preference = request.headers
+                .get('Cookie')
+                ?.split(';')
+                .map((part) => part.trim())
+                .find((part) => part.startsWith(prefix))
+                ?.slice(prefix.length);
+            const saved = Object.hasOwn(paths, preference);
+            const language = saved ? preference : (countryLanguage.get(request.cf?.country) ?? 'ko');
+            const path = paths[language];
+
+            if (saved && path === '/') return env.ASSETS.fetch(request);
+
+            const headers = new Headers({'Cache-Control': 'private, no-store'});
+            if (!saved) {
+                headers.set('Set-Cookie', `${cookieName}=${language}; Max-Age=${maxAge}; Path=/; Secure; SameSite=Lax`);
+            }
+
+            if (path !== '/') {
+                url.pathname = path;
+                headers.set('Location', url.href);
+
+                return new Response(null, {status: 302, headers});
+            }
+
+            const home = await env.ASSETS.fetch(request);
+            if (home.status !== 200 && home.status !== 304) return home;
+
+            const homeHeaders = new Headers(home.headers);
+            homeHeaders.set('Cache-Control', headers.get('Cache-Control'));
+            homeHeaders.append('Set-Cookie', headers.get('Set-Cookie'));
+
+            return new Response(home.body, {status: home.status, statusText: home.statusText, headers: homeHeaders});
+        },
+    };
+}
 
 const escapeHtml = (value) =>
     String(value).replace(
@@ -104,6 +174,11 @@ export function createInvitePreviewWorker(data) {
     };
 }
 
-export default createInvitePreviewWorker({
-    /*__INVITE_PREVIEW_DATA__*/
-});
+export default createPagesWorker(
+    {
+        /*__INVITE_PREVIEW_DATA__*/
+    },
+    {
+        /*__HOME_LANGUAGE_DATA__*/
+    },
+);

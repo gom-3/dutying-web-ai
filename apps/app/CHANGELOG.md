@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.40
+
+### Patch Changes
+
+- 홈에 직접 접속하면 국가와 저장된 언어에 맞는 랜딩을 보여줍니다. 메뉴에서 선택한 언어는 이후 방문에도 유지합니다.
+    - @dutying/api@1.3.40
+    - @dutying/domain@1.3.40
+    - @dutying/utils@1.3.40
+
 ## 1.3.39
 
 ### Patch Changes
