@@ -4,7 +4,6 @@ import {SELLER} from '@/shared/business/profile';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {trackLandingAdoption} from './landing-adoption-analytics';
-import {adoptionSignInUrl, saveAdoptionDraft, takeAdoptionDraft} from './landing-adoption-return';
 import './landing-adoption.css';
 
 type TAdoptionResult = 'idle' | 'sending' | 'accepted' | 'failed';
@@ -14,7 +13,6 @@ const adoptionFields = [
     {name: 'wardName', autoComplete: undefined, maxLength: 100},
     {name: 'contact', autoComplete: undefined, maxLength: 160},
 ] as const;
-const personalSignInProviders = ['google', 'apple', 'kakao'] as const;
 
 type TAdoptionField = (typeof adoptionFields)[number]['name'];
 type TAdoptionError = {message: string; field?: TAdoptionField};
@@ -44,30 +42,13 @@ export function LandingAdoption() {
     const isHydrated = useSyncExternalStore(subscribeToHydration, getClientHydration, getServerHydration);
     const formStarted = useRef(false);
     const pending = useRef(false);
-    const formRef = useRef<HTMLFormElement>(null);
     const confirmation = useRef<HTMLDivElement>(null);
     const [result, setResult] = useState<TAdoptionResult>('idle');
     const [error, setError] = useState<TAdoptionError | null>(null);
-    const [signInRequired, setSignInRequired] = useState(false);
 
     useEffect(() => {
         if (result === 'accepted') confirmation.current?.focus();
     }, [result]);
-
-    useEffect(() => {
-        if (!isHydrated || !formRef.current || window.location.hash !== '#adoption') return;
-
-        const draft = takeAdoptionDraft(window.location.pathname);
-
-        if (!draft) return;
-
-        for (const {name} of adoptionFields) {
-            const input = formRef.current.elements.namedItem(name) as HTMLInputElement;
-
-            input.value = draft[name];
-        }
-        (formRef.current.elements.namedItem('privacyConsent') as HTMLInputElement).checked = true;
-    }, [isHydrated]);
 
     function trackFormStart() {
         if (formStarted.current) return;
@@ -103,26 +84,11 @@ export function LandingAdoption() {
 
         pending.current = true;
         setResult('sending');
-        setSignInRequired(false);
 
         try {
             const {submitLandingAdoption} = await import('./landing-adoption-api');
-            const status = await submitLandingAdoption(values);
 
-            if (status === 'signIn') {
-                setResult('idle');
-                setSignInRequired(true);
-
-                return;
-            }
-            if (status === 'emailRequired') {
-                setResult('idle');
-                setError({field: 'contact', message: t('page.landing.adoption.emailRequired')});
-                form.querySelector<HTMLInputElement>('[name="contact"]')?.focus();
-
-                return;
-            }
-
+            await submitLandingAdoption(values);
             setResult('accepted');
             trackLandingAdoption('form_success');
             form.reset();
@@ -143,7 +109,7 @@ export function LandingAdoption() {
 
                 <div className="landing-adoption__panel">
                     {isHydrated && result !== 'accepted' && (
-                        <form ref={formRef} method="post" onSubmit={(event) => void handleSubmit(event)} aria-busy={result === 'sending'}>
+                        <form method="post" onSubmit={(event) => void handleSubmit(event)} aria-busy={result === 'sending'}>
                             <fieldset disabled={result === 'sending'} className="landing-adoption__fields">
                                 <legend className="sr-only">{t('page.landing.adoption.formLegend')}</legend>
                                 <div className="landing-adoption__input-grid">
@@ -207,30 +173,6 @@ export function LandingAdoption() {
                                         <button type="submit" className="landing-adoption__submit">
                                             {result === 'sending' ? t('page.landing.adoption.sending') : t('page.landing.header.inquiry')}
                                         </button>
-                                        {signInRequired && (
-                                            <div className="landing-adoption__hint" role="status">
-                                                <p>{t('page.landing.adoption.signInRequired')}</p>
-                                                <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                                    {personalSignInProviders.map((provider) => (
-                                                        <a
-                                                            key={provider}
-                                                            href={adoptionSignInUrl(provider, window.location.pathname)}
-                                                            onClick={() => {
-                                                                if (!formRef.current) return;
-
-                                                                const current = new FormData(formRef.current);
-
-                                                                if (current.has('privacyConsent')) {
-                                                                    saveAdoptionDraft(window.location.pathname, readAdoptionForm(current));
-                                                                }
-                                                            }}
-                                                        >
-                                                            {t(`page.landing.adoption.signIn.${provider}`)}
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                         {error && !error.field && (
                                             <p className="landing-adoption__error" role="alert">
                                                 {error.message}

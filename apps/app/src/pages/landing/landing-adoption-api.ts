@@ -1,37 +1,16 @@
-import {isAxiosError} from 'axios';
-import {createPersonalAccountSession} from '@/features/auth/model/personal-session';
-import type {TAdoptionDraft} from './landing-adoption-return';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 
-const isAdoptionEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+type TAdoptionFields = {hospitalName: string; wardName: string; contact: string};
 
-export async function submitLandingAdoption({hospitalName, wardName, contact}: TAdoptionDraft) {
-    try {
-        const {account, client} = await createPersonalAccountSession();
-        const replyEmail = isAdoptionEmail(contact) ? contact : account.email?.trim();
+export async function submitLandingAdoption(fields: TAdoptionFields) {
+    const response = await fetch(`${RUNTIME_CONFIG.serverUrl()}/public/v1/support/adoption-inquiries`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'omit',
+        redirect: 'error',
+        signal: AbortSignal.timeout(15_000),
+        body: JSON.stringify({...fields, privacyConsent: true}),
+    });
 
-        if (!replyEmail || !isAdoptionEmail(replyEmail)) return 'emailRequired';
-
-        const content = [
-            '[랜딩] 병원·병동 도입 문의',
-            `병원명: ${hospitalName}`,
-            `병동명: ${wardName}`,
-            `연락처: ${contact}`,
-            '개인정보 수집·이용 동의',
-        ].join('\n');
-        const {data} = await client.post<{inquiryId: number}>(
-            `/accounts/${account.accountId}/support/inquiries`,
-            {replyEmail, content},
-            {
-                timeout: 15_000,
-            },
-        );
-
-        if (!Number.isSafeInteger(data?.inquiryId) || data.inquiryId <= 0) throw new Error('Inquiry was not acknowledged');
-
-        return 'accepted';
-    } catch (error) {
-        if (isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) return 'signIn';
-
-        throw error;
-    }
+    if (response.status !== 204) throw new Error('Inquiry was not acknowledged');
 }

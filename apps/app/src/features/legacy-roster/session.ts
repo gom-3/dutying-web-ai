@@ -1,4 +1,5 @@
-import {createPersonalAccountSession} from '@/features/auth/model/personal-session';
+import axios from 'axios';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {createLegacyRosterApi} from './api';
@@ -24,7 +25,21 @@ export const personalRosterLoginUrl = (provider: 'kakao' | 'apple') => {
 
 /** Keep this short-lived token out of the administrator auth store, storage and URLs. */
 async function createPersonalRosterSession() {
-    const {account, client} = await createPersonalAccountSession();
+    const refresh = axios.create({baseURL: RUNTIME_CONFIG.serverUrl(), withCredentials: true});
+    const {data: token} = await refresh.post<{accessToken: string}>('/token/refresh');
+
+    if (!token || typeof token.accessToken !== 'string' || !token.accessToken || isWardAdminAccessToken(token.accessToken))
+        throw new Error('Personal account required');
+
+    const client = axios.create({
+        baseURL: RUNTIME_CONFIG.serverUrl(),
+        withCredentials: false,
+        headers: {Authorization: `Bearer ${token.accessToken}`},
+    });
+    const {data: account} = await client.get<{accountId: number; status: string; name: string}>('/accounts/me');
+
+    if (!account || !Number.isSafeInteger(account.accountId) || account.accountId <= 0 || typeof account.status !== 'string')
+        throw new Error('Personal account required');
 
     return {account, api: createLegacyRosterApi(client)};
 }

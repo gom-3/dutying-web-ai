@@ -891,14 +891,7 @@ export const ko = {
                 "emailLabel": "도입 문의",
                 "emailFallback": "이메일로 도입을 문의할 수 있어요.",
                 "emailSubject": "듀팅 병원·병동 도입 문의",
-                "emailConsent": "도입 안내를 위한 개인정보 수집·이용에 동의합니다.",
-                "signInRequired": "듀팅 앱 계정으로 로그인한 뒤 문의를 제출해 주세요. 입력한 내용은 그대로 이어서 작성할 수 있어요.",
-                "signIn": {
-                    "google": "Google로 로그인",
-                    "apple": "Apple로 로그인",
-                    "kakao": "카카오로 로그인"
-                },
-                "emailRequired": "회신받을 이메일을 입력해 주세요."
+                "emailConsent": "도입 안내를 위한 개인정보 수집·이용에 동의합니다."
             },
             "footer": {
                 "plusPlan": "Plus 요금제",
@@ -4124,14 +4117,7 @@ export const en: TLocale = {
                 "emailLabel": "Onboarding inquiries",
                 "emailFallback": "You can also ask about onboarding by email.",
                 "emailSubject": "Dutying hospital and ward onboarding inquiry",
-                "emailConsent": "I agree to the collection and use of my personal information to respond to my onboarding inquiry.",
-                "signInRequired": "Sign in with your Dutying app account to submit your inquiry. Your details will be waiting when you return.",
-                "signIn": {
-                    "google": "Sign in with Google",
-                    "apple": "Sign in with Apple",
-                    "kakao": "Sign in with Kakao"
-                },
-                "emailRequired": "Enter an email address where we can reach you."
+                "emailConsent": "I agree to the collection and use of my personal information to respond to my onboarding inquiry."
             },
             "footer": {
                 "plusPlan": "Plus plan",
@@ -7355,14 +7341,7 @@ export const ja: TLocale = {
                 "emailLabel": "導入のお問い合わせ",
                 "emailFallback": "導入についてはメールでもお問い合わせいただけます。",
                 "emailSubject": "Dutying 病院・病棟の導入に関するお問い合わせ",
-                "emailConsent": "導入のご案内に必要な個人情報の取得・利用に同意します。",
-                "signInRequired": "Dutyingアプリのアカウントでログインしてから送信してください。入力した内容はログイン後も引き継がれます。",
-                "signIn": {
-                    "google": "Googleでログイン",
-                    "apple": "Appleでログイン",
-                    "kakao": "Kakaoでログイン"
-                },
-                "emailRequired": "返信先のメールアドレスを入力してください。"
+                "emailConsent": "導入のご案内に必要な個人情報の取得・利用に同意します。"
             },
             "footer": {
                 "plusPlan": "Plusプラン",
@@ -10586,14 +10565,7 @@ export const zh: TLocale = {
                 "emailLabel": "导入咨询",
                 "emailFallback": "您也可以通过电子邮件咨询导入事宜。",
                 "emailSubject": "Dutying 医院及病区导入咨询",
-                "emailConsent": "我同意收集和使用个人信息以回复导入咨询。",
-                "signInRequired": "请使用 Dutying 应用账号登录后提交。登录后可继续使用已填写的信息。",
-                "signIn": {
-                    "google": "使用 Google 登录",
-                    "apple": "使用 Apple 登录",
-                    "kakao": "使用 Kakao 登录"
-                },
-                "emailRequired": "请输入接收回复的邮箱地址。"
+                "emailConsent": "我同意收集和使用个人信息以回复导入咨询。"
             },
             "footer": {
                 "plusPlan": "Plus 套餐",
@@ -13817,14 +13789,7 @@ export const th: TLocale = {
                 "emailLabel": "สอบถามการเริ่มใช้งาน",
                 "emailFallback": "คุณสามารถสอบถามการเริ่มใช้งานทางอีเมลได้",
                 "emailSubject": "สอบถามการเริ่มใช้งาน Dutying ในโรงพยาบาลและหอผู้ป่วย",
-                "emailConsent": "ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลส่วนบุคคลเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งาน",
-                "signInRequired": "เข้าสู่ระบบด้วยบัญชีแอป Dutying เพื่อส่งคำขอ ข้อมูลที่กรอกไว้จะยังอยู่เมื่อกลับมา",
-                "signIn": {
-                    "google": "เข้าสู่ระบบด้วย Google",
-                    "apple": "เข้าสู่ระบบด้วย Apple",
-                    "kakao": "เข้าสู่ระบบด้วย Kakao"
-                },
-                "emailRequired": "กรอกอีเมลสำหรับรับการตอบกลับ"
+                "emailConsent": "ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลส่วนบุคคลเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งาน"
             },
             "footer": {
                 "plusPlan": "แพ็กเกจ Plus",
@@ -17048,14 +17013,7 @@ export const vi: TLocale = {
                 "emailLabel": "Liên hệ tư vấn triển khai",
                 "emailFallback": "Bạn cũng có thể hỏi về việc triển khai qua email.",
                 "emailSubject": "Yêu cầu tư vấn triển khai Dutying tại bệnh viện và khoa",
-                "emailConsent": "Tôi đồng ý với việc thu thập và sử dụng thông tin cá nhân để tư vấn triển khai.",
-                "signInRequired": "Đăng nhập bằng tài khoản ứng dụng Dutying để gửi yêu cầu. Thông tin bạn đã nhập sẽ được giữ khi quay lại.",
-                "signIn": {
-                    "google": "Đăng nhập bằng Google",
-                    "apple": "Đăng nhập bằng Apple",
-                    "kakao": "Đăng nhập bằng Kakao"
-                },
-                "emailRequired": "Nhập địa chỉ email để nhận phản hồi."
+                "emailConsent": "Tôi đồng ý với việc thu thập và sử dụng thông tin cá nhân để tư vấn triển khai."
             },
             "footer": {
                 "plusPlan": "Gói Plus",
