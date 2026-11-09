@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.43 - 2026-11-09
+
+- `@dutying/app` (patch): 랜딩의 병원·병동 도입 문의를 기존 듀팅 앱 고객문의로 접수하고, 앱 계정 로그인 후 입력을 이어갈 수 있게 합니다.
+
 ## 1.3.42 - 2026-11-08
 
 - `@dutying/app` (patch): 자동완성의 준비·확인과 오래된 초안 복구를 개선하고 병동 온보딩에서 근무표 이미지 입력을 지원합니다.

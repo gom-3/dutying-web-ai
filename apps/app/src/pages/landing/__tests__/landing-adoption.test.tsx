@@ -1,26 +1,36 @@
+import type {AxiosInstance} from 'axios';
 import {renderToString} from 'react-dom/server';
 import {afterEach, describe, expect, it, vi} from 'vitest';
+import {createPersonalAccountSession} from '@/features/auth/model/personal-session';
 import {SELLER} from '@/shared/business/profile';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {LandingAdoption} from '../landing-adoption';
+import {saveAdoptionDraft} from '../landing-adoption-return';
+
+vi.mock('@/features/auth/model/personal-session', () => ({createPersonalAccountSession: vi.fn()}));
+
+const mockPersonalSession = (post: AxiosInstance['post']) =>
+    vi.mocked(createPersonalAccountSession).mockResolvedValue({
+        account: {accountId: 23, email: 'account@example.test', name: '테스트', status: 'LINKED'},
+        client: {post} as AxiosInstance,
+    });
 
 describe('LandingAdoption', () => {
     afterEach(() => {
+        vi.resetAllMocks();
         vi.unstubAllEnvs();
-        vi.unstubAllGlobals();
+        sessionStorage.clear();
+        window.history.replaceState({}, '', '/');
     });
 
-    it('renders an email link and no form before hydration even when an endpoint is configured', () => {
-        vi.stubEnv('VITE_LANDING_ADOPTION_ENDPOINT', 'https://forms.example.test/landing');
-
+    it('renders the email fallback before hydration', () => {
         const html = renderToString(<LandingAdoption />);
 
         expect(html).toContain(`href="mailto:${SELLER.email}"`);
         expect(html).not.toContain('<form');
     });
 
-    it('offers an email handoff when a submission endpoint is unavailable', () => {
-        vi.stubEnv('VITE_LANDING_ADOPTION_ENDPOINT', '');
+    it('offers direct submission after hydration', () => {
         render(<LandingAdoption />);
 
         expect(screen.getByRole('button', {name: '문의하기'})).toBeInTheDocument();
@@ -30,15 +40,12 @@ describe('LandingAdoption', () => {
         expect(screen.queryByText('신청이 접수됐어요.')).not.toBeInTheDocument();
     });
 
-    it('requires consent and only confirms an acknowledged submission, reusing the same request ID on retry', async () => {
-        vi.stubEnv('VITE_LANDING_ADOPTION_ENDPOINT', 'https://forms.example.test/landing');
-
-        const fetchMock = vi
-            .fn<typeof fetch>()
-            .mockResolvedValueOnce(Response.json({accepted: false}))
-            .mockResolvedValueOnce(Response.json({accepted: true}));
-
-        vi.stubGlobal('fetch', fetchMock);
+    it('requires consent and submits the inquiry body to the existing app endpoint', async () => {
+        const post = vi
+            .fn()
+            .mockResolvedValueOnce({data: {}})
+            .mockResolvedValueOnce({data: {inquiryId: 19}});
+        mockPersonalSession(post);
 
         const user = userEvent.setup();
 
@@ -50,7 +57,7 @@ describe('LandingAdoption', () => {
         const submit = screen.getByRole('button', {name: '문의하기'});
 
         await user.click(submit);
-        expect(fetchMock).not.toHaveBeenCalled();
+        expect(createPersonalAccountSession).not.toHaveBeenCalled();
 
         const consent = screen.getByRole('checkbox', {name: /개인정보 처리방침.*위 정보를 도입 안내 목적으로 수집·이용하는 데 동의합니다/});
 
@@ -63,20 +70,63 @@ describe('LandingAdoption', () => {
         await user.click(submit);
         expect(await screen.findByText('신청이 접수됐어요.')).toBeInTheDocument();
         expect(screen.getByRole('status')).toHaveFocus();
-        expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(fetchMock.mock.calls[0][1]?.body).toEqual(fetchMock.mock.calls[1][1]?.body);
-        expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
-            hospitalName: '예시병원',
-            wardName: '예시병동',
-            contact: 'nurse@example.test',
-            privacyConsent: true,
-            requestId: expect.any(String),
-        });
+        expect(post).toHaveBeenCalledTimes(2);
+        expect(post).toHaveBeenLastCalledWith(
+            '/accounts/23/support/inquiries',
+            {
+                replyEmail: 'nurse@example.test',
+                content:
+                    '[랜딩] 병원·병동 도입 문의\n병원명: 예시병원\n병동명: 예시병동\n연락처: nurse@example.test\n개인정보 수집·이용 동의',
+            },
+            {timeout: 15_000},
+        );
+    });
+
+    it('offers personal sign-in when the existing API requires authentication', async () => {
+        vi.mocked(createPersonalAccountSession).mockRejectedValue({isAxiosError: true, response: {status: 401}});
+        const user = userEvent.setup();
+
+        render(<LandingAdoption />);
+        await user.type(screen.getByRole('textbox', {name: '병원명'}), '예시병원');
+        await user.type(screen.getByRole('textbox', {name: '병동명'}), '예시병동');
+        const contact = screen.getByRole('textbox', {name: '담당자 연락처'});
+        await user.type(contact, 'nurse@example.test');
+        await user.click(screen.getByRole('checkbox'));
+        await user.click(screen.getByRole('button', {name: '문의하기'}));
+
+        const link = await screen.findByRole('link', {name: 'Google로 로그인'});
+        const signInUrl = new URL((link as HTMLAnchorElement).href);
+        const callback = new URL(signInUrl.searchParams.get('nextPageUrl')!);
+
+        expect(signInUrl.pathname).toBe('/oauth2/authorization/google');
+        expect(callback.pathname).toBe('/legacy-roster');
+        expect(callback.searchParams.get('landingAdoption')).toBe('/');
+        expect(contact).toHaveValue('nurse@example.test');
+        expect(screen.queryByText('신청이 접수됐어요.')).not.toBeInTheDocument();
+    });
+
+    it('restores the draft after sign-in and sends phone numbers in the inquiry text', async () => {
+        window.history.replaceState({}, '', '/#adoption');
+        saveAdoptionDraft('/', {hospitalName: '예시병원', wardName: '예시병동', contact: '010-1234-5678'});
+        const post = vi.fn().mockResolvedValue({data: {inquiryId: 19}});
+        mockPersonalSession(post);
+        const user = userEvent.setup();
+
+        render(<LandingAdoption />);
+        expect(screen.getByRole('textbox', {name: '담당자 연락처'})).toHaveValue('010-1234-5678');
+        expect(screen.getByRole('checkbox')).toBeChecked();
+        expect(post).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', {name: '문의하기'}));
+
+        expect(await screen.findByText('신청이 접수됐어요.')).toBeInTheDocument();
+        expect(post).toHaveBeenCalledExactlyOnceWith(
+            '/accounts/23/support/inquiries',
+            {replyEmail: 'account@example.test', content: expect.stringContaining('연락처: 010-1234-5678')},
+            {timeout: 15_000},
+        );
     });
 
     it('shows contact validation beside the field and clears it when the contact changes', async () => {
-        vi.stubEnv('VITE_LANDING_ADOPTION_ENDPOINT', '');
-
         const user = userEvent.setup();
 
         render(<LandingAdoption />);

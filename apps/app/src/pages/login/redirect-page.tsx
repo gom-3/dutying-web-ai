@@ -20,6 +20,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 import {trackProductOutcome} from '@/shared/util/growth-analytics';
+import {getAdoptionReturnPath} from '../landing/landing-adoption-return';
 
 const normalizeQueryValue = (value: unknown): string | undefined => {
     if (Array.isArray(value)) {
@@ -79,11 +80,13 @@ const RedirectPage = () => {
         const accessToken = getRedirectAccessToken(query);
         const {hasNextPageUrl, nextPageUrl, socialSignupProfile, isSocialSignupRequired} = getRedirectTarget(query);
 
-        if (isLegacyRosterReturn(nextPageUrl)) {
+        const adoptionReturn = getAdoptionReturnPath(nextPageUrl);
+
+        if (adoptionReturn || isLegacyRosterReturn(nextPageUrl)) {
             hasHandledRedirectRef.current = true;
             clearStoredOAuthRedirectPayload();
-            // Personal recovery uses only the verified app refresh cookie, never callback tokens/admin auth state.
-            location.replace(ROUTE.LEGACY_ROSTER);
+            // Personal account flows use the app refresh cookie independently of the admin session.
+            location.replace(adoptionReturn ?? ROUTE.LEGACY_ROSTER);
 
             return;
         }

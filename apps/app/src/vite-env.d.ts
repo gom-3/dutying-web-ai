@@ -13,8 +13,6 @@ interface ImportMetaEnv {
     readonly VITE_MEMBER_TUTORIAL_URL?: string;
     readonly VITE_REQUEST_TUTORIAL_URL?: string;
     readonly VITE_MAKE_TUTORIAL_URL?: string;
-    /** HTTPS JSON POST for landing applications. Deduplicate by requestId and return {accepted: true} only after accepting the application. */
-    readonly VITE_LANDING_ADOPTION_ENDPOINT?: string;
     /** Legacy .net ID; not used for .ai tracking. */
     readonly VITE_GA_TRACKING_ID?: string;
     readonly VITE_AI_GA_TRACKING_ID?: string;
