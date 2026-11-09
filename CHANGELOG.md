@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.45 - 2026-11-09
+
+- `@dutying/app` (patch): 랜딩 이용 현황의 숫자를 강조하고 병원 목록과 좌우 폭을 맞춥니다.
+
 ## 1.3.44 - 2026-11-09
 
 - `@dutying/app` (patch): 랜딩의 병원·병동 도입 문의를 로그인 없이 제출하고 기존 어드민에서 받을 수 있게 합니다.
