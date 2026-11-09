@@ -1,7 +1,7 @@
 import ReactGA from 'react-ga4';
 import {isGoogleAnalyticsEnabled} from '@/shared/config/analytics';
 
-type TAdoptionEvent = ['cta_click', 'header'] | ['form_start' | 'form_success' | 'email_handoff'];
+type TAdoptionEvent = ['cta_click', 'header'] | ['form_start' | 'form_success'];
 
 export function trackLandingAdoption(...[event, placement]: TAdoptionEvent) {
     try {

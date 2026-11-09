@@ -4,6 +4,7 @@ import {SELLER} from '@/shared/business/profile';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {trackLandingAdoption} from './landing-adoption-analytics';
+import {adoptionSignInUrl, saveAdoptionDraft, takeAdoptionDraft} from './landing-adoption-return';
 import './landing-adoption.css';
 
 type TAdoptionResult = 'idle' | 'sending' | 'accepted' | 'failed';
@@ -13,6 +14,7 @@ const adoptionFields = [
     {name: 'wardName', autoComplete: undefined, maxLength: 100},
     {name: 'contact', autoComplete: undefined, maxLength: 160},
 ] as const;
+const personalSignInProviders = ['google', 'apple', 'kakao'] as const;
 
 type TAdoptionField = (typeof adoptionFields)[number]['name'];
 type TAdoptionError = {message: string; field?: TAdoptionField};
@@ -21,18 +23,6 @@ const subscribeToHydration = () => () => undefined;
 const getClientHydration = () => true;
 const getServerHydration = () => false;
 
-function getAdoptionEndpoint(value: string | undefined) {
-    if (!value?.trim()) return null;
-
-    try {
-        const url = new URL(value);
-
-        return url.protocol === 'https:' && !url.username && !url.password ? url.href : null;
-    } catch {
-        return null;
-    }
-}
-
 function isContactValid(contact: string) {
     const phoneDigits = contact.replace(/\D/g, '');
     const isPhone = /^\+?[\d\s().-]+$/.test(contact) && phoneDigits.length >= 7 && phoneDigits.length <= 15;
@@ -40,21 +30,44 @@ function isContactValid(contact: string) {
     return isPhone || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
 }
 
+function readAdoptionForm(data: FormData) {
+    return {
+        hospitalName: String(data.get('hospitalName') ?? '').trim(),
+        wardName: String(data.get('wardName') ?? '').trim(),
+        contact: String(data.get('contact') ?? '').trim(),
+    };
+}
+
 export function LandingAdoption() {
     const {t} = useTypedTranslation();
-    const endpoint = getAdoptionEndpoint(import.meta.env.VITE_LANDING_ADOPTION_ENDPOINT);
     // Render the form only once its submit handler can prevent a native POST to the landing page.
     const isHydrated = useSyncExternalStore(subscribeToHydration, getClientHydration, getServerHydration);
     const formStarted = useRef(false);
     const pending = useRef(false);
-    const submission = useRef<{body: string; requestId: string} | null>(null);
+    const formRef = useRef<HTMLFormElement>(null);
     const confirmation = useRef<HTMLDivElement>(null);
     const [result, setResult] = useState<TAdoptionResult>('idle');
     const [error, setError] = useState<TAdoptionError | null>(null);
+    const [signInRequired, setSignInRequired] = useState(false);
 
     useEffect(() => {
         if (result === 'accepted') confirmation.current?.focus();
     }, [result]);
+
+    useEffect(() => {
+        if (!isHydrated || !formRef.current || window.location.hash !== '#adoption') return;
+
+        const draft = takeAdoptionDraft(window.location.pathname);
+
+        if (!draft) return;
+
+        for (const {name} of adoptionFields) {
+            const input = formRef.current.elements.namedItem(name) as HTMLInputElement;
+
+            input.value = draft[name];
+        }
+        (formRef.current.elements.namedItem('privacyConsent') as HTMLInputElement).checked = true;
+    }, [isHydrated]);
 
     function trackFormStart() {
         if (formStarted.current) return;
@@ -70,9 +83,8 @@ export function LandingAdoption() {
 
         const form = event.currentTarget;
         const data = new FormData(form);
-        const hospitalName = String(data.get('hospitalName') ?? '').trim();
-        const wardName = String(data.get('wardName') ?? '').trim();
-        const contact = String(data.get('contact') ?? '').trim();
+        const values = readAdoptionForm(data);
+        const {hospitalName, wardName, contact} = values;
 
         if (!data.has('privacyConsent')) return;
 
@@ -89,48 +101,30 @@ export function LandingAdoption() {
             return;
         }
 
-        if (!endpoint) {
-            const subject = t('page.landing.adoption.emailSubject');
-            const body = [
-                `${t('page.landing.adoption.fields.hospitalName')}: ${hospitalName}`,
-                `${t('page.landing.adoption.fields.wardName')}: ${wardName}`,
-                `${t('page.landing.adoption.fields.contact')}: ${contact}`,
-                '',
-                t('page.landing.adoption.emailConsent'),
-            ].join('\r\n');
-
-            trackLandingAdoption('email_handoff');
-            window.location.assign(`mailto:${SELLER.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-
-            return;
-        }
-
-        const values = {hospitalName, wardName, contact, privacyConsent: true};
-        const body = JSON.stringify(values);
-
         pending.current = true;
         setResult('sending');
+        setSignInRequired(false);
 
         try {
-            // Reuse the ID when retrying an unchanged application after an uncertain response.
-            if (submission.current?.body !== body) submission.current = {body, requestId: crypto.randomUUID()};
+            const {submitLandingAdoption} = await import('./landing-adoption-api');
+            const status = await submitLandingAdoption(values);
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'omit',
-                redirect: 'error',
-                signal: AbortSignal.timeout(15_000),
-                body: JSON.stringify({...values, requestId: submission.current.requestId}),
-            });
+            if (status === 'signIn') {
+                setResult('idle');
+                setSignInRequired(true);
 
-            if (!response.ok || (await response.json())?.accepted !== true) {
-                throw new Error('Application was not acknowledged');
+                return;
+            }
+            if (status === 'emailRequired') {
+                setResult('idle');
+                setError({field: 'contact', message: t('page.landing.adoption.emailRequired')});
+                form.querySelector<HTMLInputElement>('[name="contact"]')?.focus();
+
+                return;
             }
 
             setResult('accepted');
             trackLandingAdoption('form_success');
-            submission.current = null;
             form.reset();
         } catch {
             setResult('failed');
@@ -149,7 +143,7 @@ export function LandingAdoption() {
 
                 <div className="landing-adoption__panel">
                     {isHydrated && result !== 'accepted' && (
-                        <form method="post" onSubmit={(event) => void handleSubmit(event)} aria-busy={result === 'sending'}>
+                        <form ref={formRef} method="post" onSubmit={(event) => void handleSubmit(event)} aria-busy={result === 'sending'}>
                             <fieldset disabled={result === 'sending'} className="landing-adoption__fields">
                                 <legend className="sr-only">{t('page.landing.adoption.formLegend')}</legend>
                                 <div className="landing-adoption__input-grid">
@@ -213,6 +207,30 @@ export function LandingAdoption() {
                                         <button type="submit" className="landing-adoption__submit">
                                             {result === 'sending' ? t('page.landing.adoption.sending') : t('page.landing.header.inquiry')}
                                         </button>
+                                        {signInRequired && (
+                                            <div className="landing-adoption__hint" role="status">
+                                                <p>{t('page.landing.adoption.signInRequired')}</p>
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                                    {personalSignInProviders.map((provider) => (
+                                                        <a
+                                                            key={provider}
+                                                            href={adoptionSignInUrl(provider, window.location.pathname)}
+                                                            onClick={() => {
+                                                                if (!formRef.current) return;
+
+                                                                const current = new FormData(formRef.current);
+
+                                                                if (current.has('privacyConsent')) {
+                                                                    saveAdoptionDraft(window.location.pathname, readAdoptionForm(current));
+                                                                }
+                                                            }}
+                                                        >
+                                                            {t(`page.landing.adoption.signIn.${provider}`)}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                         {error && !error.field && (
                                             <p className="landing-adoption__error" role="alert">
                                                 {error.message}
