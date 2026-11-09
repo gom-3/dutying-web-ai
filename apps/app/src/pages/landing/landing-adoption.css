@@ -1,0 +1,220 @@
+.landing-adoption {
+    background: #fff;
+    color: #150b3c;
+}
+
+.landing-adoption__layout {
+    max-width: 74rem;
+    margin-inline: auto;
+    padding: clamp(2.5rem, 4.5vw, 4rem) clamp(1.25rem, 4vw, 2rem);
+}
+
+.landing-adoption__intro {
+    margin-bottom: clamp(1.4rem, 2.8vw, 2rem);
+    overflow-wrap: anywhere;
+}
+
+.landing-adoption__intro:lang(ko) {
+    word-break: keep-all;
+}
+
+.landing-adoption__intro h2 {
+    font-size: clamp(1.75rem, 3.8vw, 2.75rem);
+    font-weight: 850;
+    line-height: 1.2;
+    letter-spacing: -0.045em;
+}
+
+.landing-adoption__panel {
+    min-width: 0;
+    padding: clamp(1rem, 3vw, 2rem);
+    border-radius: 1rem;
+    background: #f7f6f9;
+}
+
+.landing-adoption__fields,
+.landing-adoption__input-grid,
+.landing-adoption__form-footer {
+    display: grid;
+    min-width: 0;
+}
+
+.landing-adoption__fields {
+    gap: clamp(1rem, 2.4vw, 1.4rem);
+}
+
+.landing-adoption__input-grid {
+    gap: 1rem;
+}
+
+.landing-adoption__field {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 0.4rem;
+}
+
+.landing-adoption__field label,
+.landing-adoption__consent {
+    font-size: 0.875rem;
+    font-weight: 750;
+}
+
+.landing-adoption__field input {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.65rem 0.8rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #ece9f2;
+    color: #150b3c;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.landing-adoption__field input::placeholder {
+    color: #6a6274;
+}
+
+.landing-adoption__field input[aria-invalid='true'] {
+    background: #fae8ec;
+}
+
+.landing-adoption__form-footer {
+    gap: 1rem;
+}
+
+.landing-adoption__consent {
+    display: flex;
+    min-height: 2.75rem;
+    width: fit-content;
+    align-items: center;
+    gap: 0.6rem;
+    border-radius: 0.4rem;
+}
+
+.landing-adoption__consent label {
+    cursor: pointer;
+}
+
+.landing-adoption__consent input {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex: none;
+    accent-color: #663dfa;
+}
+
+.landing-adoption__hint,
+.landing-adoption__error,
+.landing-adoption__status p {
+    margin: 0;
+    color: #5e576b;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+
+.landing-adoption__consent a,
+.landing-adoption__hint a {
+    color: #502ac9;
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
+}
+
+.landing-adoption__action {
+    display: grid;
+    align-content: start;
+    gap: 0.45rem;
+}
+
+.landing-adoption__submit {
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: #663dfa;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.landing-adoption__submit:hover {
+    background: #5832e7;
+}
+
+.landing-adoption__submit:disabled {
+    background: #e9e3f4;
+    color: #494154;
+    cursor: progress;
+}
+
+.landing-adoption__error {
+    color: #a72846;
+    font-weight: 650;
+}
+
+.landing-adoption__status:not(:empty) {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #efe9ff;
+}
+
+.landing-adoption__status strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #402099;
+    font-size: 1.2rem;
+}
+
+.landing-adoption__panel form ~ .landing-adoption__email {
+    margin-top: 1rem;
+}
+
+@media (min-width: 48rem) {
+    .landing-adoption__input-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(0, 1.2fr);
+    }
+
+    .landing-adoption__form-footer {
+        grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 16rem);
+        align-items: start;
+        gap: 1.5rem;
+    }
+}
+
+@media (forced-colors: none) {
+    .landing-adoption__field input:focus-visible {
+        outline: 0;
+        background: #dfd5ff;
+        color: #2e1864;
+        text-decoration: underline;
+        text-underline-offset: 0.22em;
+    }
+
+    .landing-adoption__field input[aria-invalid='true']:focus-visible {
+        background: #f8dce5;
+        color: #822339;
+    }
+
+    .landing-adoption__consent:has(input:focus-visible) {
+        background: #e9e0ff;
+        color: #2e1864;
+        text-decoration: underline;
+        text-underline-offset: 0.18em;
+    }
+
+    .landing-adoption__consent input:focus-visible {
+        outline: 0;
+    }
+
+    .landing-adoption__consent a:focus-visible,
+    .landing-adoption__hint a:focus-visible,
+    .landing-adoption__submit:focus-visible {
+        outline: 0;
+        background: #301b68;
+        color: #fff;
+        text-decoration: underline;
+        text-underline-offset: 0.22em;
+    }
+}

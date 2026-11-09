@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {resources} from '@/shared/i18n/resources.generated';
-import {getIndexedMarketingLanguageFromPath, getMarketingLanguageHref} from '../marketing-locale';
+import {getIndexedMarketingLanguageFromPath, getMarketingLanguageHref, getNurseAppHref, isNurseAppMarketingPath} from '../marketing-locale';
 import marketingPages from '../marketing-pages.json';
 
 describe('marketing locale routing', () => {
@@ -21,6 +21,14 @@ describe('marketing locale routing', () => {
         expect(getMarketingLanguageHref('zh')).toBe('/zh');
         expect(getMarketingLanguageHref('th')).toBe('/th');
         expect(getMarketingLanguageHref('vi')).toBe('/vi');
+    });
+
+    it('resolves the separate nurse app page in the same language as the landing', () => {
+        expect(getNurseAppHref('ko')).toBe('/nurse-app');
+        expect(getNurseAppHref('ja')).toBe('/ja/nurse-app');
+        expect(getIndexedMarketingLanguageFromPath('/vi/nurse-app/')).toBe('vi');
+        expect(isNurseAppMarketingPath('/en/nurse-app')).toBe(true);
+        expect(isNurseAppMarketingPath('/en')).toBe(false);
     });
 
     it('keeps product app titles identical to the localized landing titles', () => {

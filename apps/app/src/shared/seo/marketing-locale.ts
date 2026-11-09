@@ -7,17 +7,30 @@ const indexedMarketingPathByLanguage = Object.fromEntries(marketingPages.pages.m
     TIndexedMarketingLanguage,
     string
 >;
-const indexedMarketingLanguageByPath = Object.fromEntries(marketingPages.pages.map((page) => [page.path, page.language])) as Record<
-    string,
-    TIndexedMarketingLanguage
+const nurseAppPathByLanguage = Object.fromEntries(marketingPages.pages.map((page) => [page.language, page.nurseApp.path])) as Record<
+    TIndexedMarketingLanguage,
+    string
 >;
+const indexedMarketingLanguageByPath = new Map<string, TIndexedMarketingLanguage>(
+    marketingPages.pages.flatMap((page) => [
+        [page.path, page.language as TIndexedMarketingLanguage],
+        [page.nurseApp.path, page.language as TIndexedMarketingLanguage],
+    ]),
+);
+
+export const nurseAppMarketingPaths = marketingPages.pages.map((page) => page.nurseApp.path);
+
 const normalizePathname = (pathname: string) => {
     if (pathname === '/') return '/';
 
     return pathname.replace(/\/+$/, '');
 };
 
-export const getIndexedMarketingLanguageFromPath = (pathname: string) => indexedMarketingLanguageByPath[normalizePathname(pathname)];
+export const getIndexedMarketingLanguageFromPath = (pathname: string) => indexedMarketingLanguageByPath.get(normalizePathname(pathname));
+
+export const getNurseAppHref = (language: TPreferredLanguage) => nurseAppPathByLanguage[language];
+
+export const isNurseAppMarketingPath = (pathname: string) => nurseAppMarketingPaths.includes(normalizePathname(pathname));
 
 export const getMarketingLanguageHref = (language: TPreferredLanguage) => {
     if (language in indexedMarketingPathByLanguage) {
