@@ -281,4 +281,15 @@ describe('RedirectPage', () => {
         await waitFor(() => expect(replace).toHaveBeenCalledWith('/legacy-roster'));
         expect(handleLogin).not.toHaveBeenCalled();
     });
+
+    it('returns personal adoption sign-in to the original localized landing form', async () => {
+        const callback = encodeURIComponent('/legacy-roster?landingAdoption=%2Fja');
+        window.history.replaceState({}, '', `/oauth2/redirect?nextPageUrl=${callback}`);
+        const replace = mockLocationReplace();
+
+        render(<RedirectPage />);
+
+        await waitFor(() => expect(replace).toHaveBeenCalledWith('/ja#adoption'));
+        expect(handleLogin).not.toHaveBeenCalled();
+    });
 });
