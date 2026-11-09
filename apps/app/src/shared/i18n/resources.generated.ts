@@ -729,19 +729,24 @@ export const ko = {
                 "viewMobile": "모바일 버전으로 보기",
                 "webMakeSchedule": "웹에서 근무표 만들기",
                 "guideLink": "간호사 근무표 작성 가이드",
-                "faqLink": "듀팅 자주 묻는 질문"
+                "faqLink": "듀팅 자주 묻는 질문",
+                "startFree": "무료로 시작하기"
             },
             "feature": {
                 "ai": {
                     "description": "놓치기 쉬운 조건을\n단계별로 확인하고 반영할 수 있어요",
                     "label": "AI 자동채우기",
-                    "title": "빈 근무표를\n처음부터 채우지 않아도 돼요"
+                    "title": "빈 근무표를\n처음부터 채우지 않아도 돼요",
+                    "scheduleDetails": "필요 인원과 신청·고정근무를 반영해 빈칸을 채워요. 완성된 초안은 직접 검토하고 수정할 수 있어요."
                 },
                 "integration": {
                     "description": "신청근무를 앱에서 보낼 수 있어요.\n근무표가 확정되면 앱으로 즉시 전달돼요.",
                     "highlight": "연동",
                     "label": "연동",
-                    "title": "간호사와 병동을\n연동할 수 있어요"
+                    "title": "간호사와 병동을\n연동할 수 있어요",
+                    "leaveDetails": "간호사별 근무 현황과 사용·잔여 연차를 확인하고 휴무를 함께 관리해요.",
+                    "managementMessage": "휴가·연차부터 신청근무까지, 한곳에서 관리할 수 있어요.",
+                    "appGuide": "간호사 앱 안내"
                 },
                 "review": {
                     "description": "수정이 필요한 부분을\n바로 보고, 수정안까지 볼 수 있어요.",
@@ -764,6 +769,7 @@ export const ko = {
             },
             "header": {
                 "app": "간호사 앱",
+                "customerSupport": "고객센터",
                 "homeAria": "듀팅 랜딩 홈",
                 "inquiry": "문의하기",
                 "sectionAria": "랜딩 섹션",
@@ -774,7 +780,8 @@ export const ko = {
                 "description": "AI로 근무표를 쉽고 빠르게 만들고,\n간호사와 연동해 병동 관리를 더 간편하게",
                 "phraseSchedule": "교대 근무표,",
                 "phraseWard": "병동 관리,",
-                "suffix": "듀팅으로 더 간편하게"
+                "suffix": "듀팅으로 더 간편하게",
+                "freeOffer": "지금 \u003cemphasis>무료로 시작해 보세요!\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AI가 자동으로 생성한 간호사 근무표 화면",
@@ -789,6 +796,9 @@ export const ko = {
                 "mobileHero": "듀팅 앱 근무 일정 화면",
                 "wardBoard": "병동 게시판 화면",
                 "webSchedule": "듀팅 웹 근무표 작성 화면"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}}일 연속 근무 · 최대 {{expected}}일"
             },
             "mobileBenefits": {
                 "community": {
@@ -831,7 +841,72 @@ export const ko = {
                 "titleHighlight": "AI로 1분",
                 "titleLine1": "복잡한 근무표,",
                 "titleLine2Prefix": "이제",
-                "titleLine2Suffix": "만에 만들기"
+                "titleLine2Suffix": "만에 만들기",
+                "importTitle": "기존 근무표 이미지·엑셀 가져오기",
+                "importDescription": "쓰던 근무표 이미지나 엑셀 파일을 올리면 병동 설정을 간편하게 마칠 수 있어요."
+            },
+            "workflow": {
+                "title": "다음 달 근무표, 이번에도 빈칸부터 채우시나요?",
+                "ai": {
+                    "problem": "빈칸을 일일이 채울 때",
+                    "solution": "AI로 1분 만에 근무표 만들기"
+                },
+                "ward-management": {
+                    "problem": "휴무·연차 관리가 힘들 때",
+                    "solution": "휴가·연차를 편하게 관리"
+                },
+                "integration": {
+                    "problem": "신청과 공유가 번거로울 때",
+                    "solution": "간호사 앱으로 OFF 신청·공지 공유"
+                },
+                "excel": {
+                    "problem": "기존 근무표가 있다면",
+                    "solution": "이미지·엑셀로 바로 시작하기"
+                }
+            },
+            "usage": {
+                "total": "누적 \u003ccount>1만 명\u003c/count> 이상의 간호사가 듀팅을 사용하고 있어요!"
+            },
+            "adoption": {
+                "title": "병원·병동 도입 문의",
+                "navLink": "병원·병동 도입 문의",
+                "formLegend": "병동 도입 신청 정보",
+                "fields": {
+                    "hospitalName": "병원명",
+                    "wardName": "병동명",
+                    "contact": "담당자 연락처"
+                },
+                "contactPlaceholder": "전화번호 또는 이메일",
+                "contactHint": "전화번호 또는 이메일을 입력해 주세요.",
+                "validation": {
+                    "hospitalName": "병원명을 입력해 주세요.",
+                    "wardName": "병동명을 입력해 주세요.",
+                    "contact": "전화번호 또는 이메일을 확인해 주세요."
+                },
+                "privacyConsent": "\u003cpolicy>개인정보 처리방침\u003c/policy>\u003cconsent>에 따라 위 정보를 도입 안내 목적으로 수집·이용하는 데 동의합니다. (필수)\u003c/consent>",
+                "sending": "접수 중…",
+                "acceptedTitle": "신청이 접수됐어요.",
+                "acceptedDescription": "입력하신 연락처로 병동 도입을 안내드릴게요.",
+                "submitError": "접수 여부를 확인하지 못했어요. 다시 시도하거나 이메일로 문의해 주세요.",
+                "emailLabel": "도입 문의",
+                "emailFallback": "이메일로 도입을 문의할 수 있어요.",
+                "emailSubject": "듀팅 병원·병동 도입 문의",
+                "emailConsent": "도입 안내를 위한 개인정보 수집·이용에 동의합니다."
+            },
+            "footer": {
+                "plusPlan": "Plus 요금제",
+                "subscriptionTerms": "정기결제 안내",
+                "refundPolicy": "환불정책",
+                "seller": {
+                    "brand": "듀팅(Dutying)",
+                    "pending": "사업자 상세정보를 준비하고 있습니다. 현재 온라인 구독 신청을 준비 중입니다.",
+                    "representative": "대표자",
+                    "registrationNumber": "사업자등록번호",
+                    "address": "사업장 주소",
+                    "phone": "고객센터",
+                    "email": "이메일",
+                    "ecommerceNumber": "통신판매업 신고번호"
+                }
             }
         },
         "login": {
@@ -3880,19 +3955,24 @@ export const en: TLocale = {
                 "viewMobile": "View mobile version",
                 "webMakeSchedule": "Create a schedule on web",
                 "guideLink": "Nurse scheduling guide (Korean)",
-                "faqLink": "Dutying FAQ (Korean)"
+                "faqLink": "Dutying FAQ (Korean)",
+                "startFree": "Start for free"
             },
             "feature": {
                 "ai": {
                     "description": "Review easy-to-miss conditions\nstep by step and apply them.",
                     "label": "AI autofill",
-                    "title": "No need to fill\nblank schedules from scratch"
+                    "title": "No need to fill\nblank schedules from scratch",
+                    "scheduleDetails": "Fill open slots based on staffing needs, shift requests, and fixed assignments. Review and edit the draft before finalizing."
                 },
                 "integration": {
                     "description": "Nurses can send requests in the app.\nConfirmed schedules are delivered instantly.",
                     "highlight": "Connect",
                     "label": "Connected workflow",
-                    "title": "Connect nurses\nwith the ward"
+                    "title": "Connect nurses\nwith the ward",
+                    "leaveDetails": "See each nurse’s shifts and annual leave used and remaining, and manage days off together.",
+                    "managementMessage": "Manage time off, annual leave, and shift requests in one place.",
+                    "appGuide": "Explore the nurse app"
                 },
                 "review": {
                     "description": "See what needs attention\nand review suggested fixes.",
@@ -3915,6 +3995,7 @@ export const en: TLocale = {
             },
             "header": {
                 "app": "Nurse app",
+                "customerSupport": "Customer support",
                 "homeAria": "Dutying landing home",
                 "inquiry": "Contact us",
                 "sectionAria": "Landing sections",
@@ -3925,7 +4006,8 @@ export const en: TLocale = {
                 "description": "Create schedules faster with AI,\nand connect nurses to simplify ward operations.",
                 "phraseSchedule": "Shift schedules,",
                 "phraseWard": "Ward operations,",
-                "suffix": "made easier with Dutying"
+                "suffix": "made easier with Dutying",
+                "freeOffer": "\u003cemphasis>Start for free\u003c/emphasis> today!"
             },
             "imageAlt": {
                 "aiSchedule": "AI-generated nurse shift schedule",
@@ -3940,6 +4022,9 @@ export const en: TLocale = {
                 "mobileHero": "Dutying app shift schedule screen",
                 "wardBoard": "Ward board screen",
                 "webSchedule": "Dutying web schedule editor screen"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}} days in a row · Max {{expected}}"
             },
             "mobileBenefits": {
                 "community": {
@@ -3982,7 +4067,72 @@ export const en: TLocale = {
                 "titleHighlight": "1 minute with AI",
                 "titleLine1": "Complex schedules,",
                 "titleLine2Prefix": "now built in",
-                "titleLine2Suffix": ""
+                "titleLine2Suffix": "",
+                "importTitle": "Import an existing schedule from an image or Excel",
+                "importDescription": "Upload an image or Excel file of your existing schedule to set up your ward quickly."
+            },
+            "workflow": {
+                "title": "Building next month’s schedule from scratch again?",
+                "ai": {
+                    "problem": "Filling each slot by hand?",
+                    "solution": "Build a schedule in one minute with AI"
+                },
+                "ward-management": {
+                    "problem": "Struggling to manage time off?",
+                    "solution": "Manage time off with ease"
+                },
+                "integration": {
+                    "problem": "Juggling requests and updates?",
+                    "solution": "Request days off and share notices in the nurse app"
+                },
+                "excel": {
+                    "problem": "Already have a schedule?",
+                    "solution": "Start with an image or Excel file"
+                }
+            },
+            "usage": {
+                "total": "\u003ccount>10,000+\u003c/count> nurses have used Dutying!"
+            },
+            "adoption": {
+                "title": "Hospital & ward onboarding",
+                "navLink": "Onboarding inquiry",
+                "formLegend": "Ward onboarding details",
+                "fields": {
+                    "hospitalName": "Hospital name",
+                    "wardName": "Ward name",
+                    "contact": "Contact details"
+                },
+                "contactPlaceholder": "Phone number or email",
+                "contactHint": "Enter a phone number or email address.",
+                "validation": {
+                    "hospitalName": "Enter the hospital name.",
+                    "wardName": "Enter the ward name.",
+                    "contact": "Check your phone number or email address."
+                },
+                "privacyConsent": "\u003cconsent>I agree to the collection and use of the information above for onboarding guidance in accordance with the \u003c/consent>\u003cpolicy>Privacy Policy\u003c/policy>. (Required)",
+                "sending": "Sending…",
+                "acceptedTitle": "We received your inquiry.",
+                "acceptedDescription": "We’ll contact you using the details you provided to help set up your ward.",
+                "submitError": "We couldn’t confirm receipt. Please try again or contact us by email.",
+                "emailLabel": "Onboarding inquiries",
+                "emailFallback": "You can also ask about onboarding by email.",
+                "emailSubject": "Dutying hospital and ward onboarding inquiry",
+                "emailConsent": "I agree to the collection and use of my personal information to respond to my onboarding inquiry."
+            },
+            "footer": {
+                "plusPlan": "Plus plan",
+                "subscriptionTerms": "Subscription terms",
+                "refundPolicy": "Refund policy",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "Business details and online subscription sign-ups are being prepared.",
+                    "representative": "Representative",
+                    "registrationNumber": "Business registration number",
+                    "address": "Business address",
+                    "phone": "Customer support",
+                    "email": "Email",
+                    "ecommerceNumber": "E-commerce registration number"
+                }
             }
         },
         "login": {
@@ -7029,19 +7179,24 @@ export const ja: TLocale = {
                 "viewMobile": "モバイル版で見る",
                 "webMakeSchedule": "Webで勤務表を作成",
                 "guideLink": "看護師勤務表の作成ガイド（韓国語）",
-                "faqLink": "Dutying よくある質問（韓国語）"
+                "faqLink": "Dutying よくある質問（韓国語）",
+                "startFree": "無料で始める"
             },
             "feature": {
                 "ai": {
                     "description": "見落としやすい条件を\n段階ごとに確認して反映できます",
                     "label": "AI自動入力",
-                    "title": "空の勤務表を\n一から埋める必要はありません"
+                    "title": "空の勤務表を\n一から埋める必要はありません",
+                    "scheduleDetails": "必要人数や希望勤務・固定勤務を反映して空欄を埋めます。作成された勤務表案は確認・編集できます。"
                 },
                 "integration": {
                     "description": "勤務希望をアプリから送れます。\n勤務表が確定するとアプリへすぐ届きます。",
                     "highlight": "連携",
                     "label": "連携",
-                    "title": "看護師と病棟を\n連携できます"
+                    "title": "看護師と病棟を\n連携できます",
+                    "leaveDetails": "看護師ごとの勤務状況と年休の取得・残日数を確認し、休日もまとめて管理できます。",
+                    "managementMessage": "休暇・年休から希望勤務まで、まとめて管理できます。",
+                    "appGuide": "看護師アプリを見る"
                 },
                 "review": {
                     "description": "修正が必要な箇所を\nすぐ確認し、修正案も確認できます。",
@@ -7064,6 +7219,7 @@ export const ja: TLocale = {
             },
             "header": {
                 "app": "看護師アプリ",
+                "customerSupport": "カスタマーサポート",
                 "homeAria": "Dutyingランディングホーム",
                 "inquiry": "お問い合わせ",
                 "sectionAria": "ランディングセクション",
@@ -7074,7 +7230,8 @@ export const ja: TLocale = {
                 "description": "AIで勤務表をすばやく作成し、\n看護師と連携して病棟管理をもっと簡単に。",
                 "phraseSchedule": "交代勤務表、",
                 "phraseWard": "病棟管理、",
-                "suffix": "Dutyingでもっと簡単に"
+                "suffix": "Dutyingでもっと簡単に",
+                "freeOffer": "今すぐ\u003cemphasis>無料で始めましょう！\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AIが自動生成した看護師の勤務表画面",
@@ -7089,6 +7246,9 @@ export const ja: TLocale = {
                 "mobileHero": "Dutyingアプリの勤務予定画面",
                 "wardBoard": "病棟掲示板画面",
                 "webSchedule": "Dutying Web勤務表作成画面"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}}日連続勤務・上限{{expected}}日"
             },
             "mobileBenefits": {
                 "community": {
@@ -7131,7 +7291,72 @@ export const ja: TLocale = {
                 "titleHighlight": "AIで1分",
                 "titleLine1": "複雑な勤務表を、",
                 "titleLine2Prefix": "これからは",
-                "titleLine2Suffix": "で作成"
+                "titleLine2Suffix": "で作成",
+                "importTitle": "既存の勤務表を画像・Excelから取り込む",
+                "importDescription": "使っていた勤務表の画像やExcelファイルをアップロードするだけで、病棟の設定が簡単に完了します。"
+            },
+            "workflow": {
+                "title": "来月の勤務表も、また空欄から埋めますか？",
+                "ai": {
+                    "problem": "空欄を一つずつ埋めるとき",
+                    "solution": "AIで1分で勤務表を作成"
+                },
+                "ward-management": {
+                    "problem": "休日・年休の管理が大変なとき",
+                    "solution": "休暇・年休をかんたんに管理"
+                },
+                "integration": {
+                    "problem": "申請や共有に手間がかかるとき",
+                    "solution": "看護師アプリで休みを申請・お知らせを共有"
+                },
+                "excel": {
+                    "problem": "既存の勤務表があるとき",
+                    "solution": "画像・Excelですぐに始める"
+                }
+            },
+            "usage": {
+                "total": "これまでに\u003ccount>1万人\u003c/count>以上の看護師がDutyingを利用しています！"
+            },
+            "adoption": {
+                "title": "病院・病棟の導入相談",
+                "navLink": "導入相談",
+                "formLegend": "病棟導入のお申し込み情報",
+                "fields": {
+                    "hospitalName": "病院名",
+                    "wardName": "病棟名",
+                    "contact": "担当者の連絡先"
+                },
+                "contactPlaceholder": "電話番号またはメールアドレス",
+                "contactHint": "電話番号またはメールアドレスを入力してください。",
+                "validation": {
+                    "hospitalName": "病院名を入力してください。",
+                    "wardName": "病棟名を入力してください。",
+                    "contact": "電話番号またはメールアドレスを確認してください。"
+                },
+                "privacyConsent": "\u003cpolicy>プライバシーポリシー\u003c/policy>\u003cconsent>に基づき、導入のご案内のために上記の情報を取得・利用することに同意します。（必須）\u003c/consent>",
+                "sending": "送信中…",
+                "acceptedTitle": "お問い合わせを受け付けました。",
+                "acceptedDescription": "ご入力の連絡先に病棟導入についてご案内します。",
+                "submitError": "受け付けを確認できませんでした。もう一度お試しいただくか、メールでお問い合わせください。",
+                "emailLabel": "導入のお問い合わせ",
+                "emailFallback": "導入についてはメールでもお問い合わせいただけます。",
+                "emailSubject": "Dutying 病院・病棟の導入に関するお問い合わせ",
+                "emailConsent": "導入のご案内に必要な個人情報の取得・利用に同意します。"
+            },
+            "footer": {
+                "plusPlan": "Plusプラン",
+                "subscriptionTerms": "定期購入のご案内",
+                "refundPolicy": "返金ポリシー",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "事業者情報とオンラインでのお申し込みの準備を進めています。",
+                    "representative": "代表者",
+                    "registrationNumber": "事業者登録番号",
+                    "address": "事業所所在地",
+                    "phone": "カスタマーサポート",
+                    "email": "メール",
+                    "ecommerceNumber": "通信販売業届出番号"
+                }
             }
         },
         "login": {
@@ -10178,19 +10403,24 @@ export const zh: TLocale = {
                 "viewMobile": "查看移动版",
                 "webMakeSchedule": "在 Web 上创建排班表",
                 "guideLink": "护士排班指南（韩语）",
-                "faqLink": "Dutying 常见问题（韩语）"
+                "faqLink": "Dutying 常见问题（韩语）",
+                "startFree": "免费开始"
             },
             "feature": {
                 "ai": {
                     "description": "容易遗漏的条件\n也可以按步骤检查并应用。",
                     "label": "AI 自动填充",
-                    "title": "空白排班表\n不必再从零填写"
+                    "title": "空白排班表\n不必再从零填写",
+                    "scheduleDetails": "根据所需人手、班次申请和固定班次填补空缺。生成的排班草稿可自行检查和修改。"
                 },
                 "integration": {
                     "description": "护士可以在 App 中提交班次申请。\n排班表确认后，会立即同步到 App。",
                     "highlight": "联动",
                     "label": "联动",
-                    "title": "护士和病区\n可以轻松联动"
+                    "title": "护士和病区\n可以轻松联动",
+                    "leaveDetails": "查看每位护士的排班、已休和剩余年假，并统一管理休息日。",
+                    "managementMessage": "从休假、年假到班次申请，都能集中管理。",
+                    "appGuide": "了解护士 App"
                 },
                 "review": {
                     "description": "需要调整的地方\n可以立即查看，也能看到修改建议。",
@@ -10213,6 +10443,7 @@ export const zh: TLocale = {
             },
             "header": {
                 "app": "护士 App",
+                "customerSupport": "客户支持",
                 "homeAria": "Dutying 落地页首页",
                 "inquiry": "联系我们",
                 "sectionAria": "落地页导航",
@@ -10223,7 +10454,8 @@ export const zh: TLocale = {
                 "description": "用 AI 轻松快速地创建排班表，\n并与护士联动，让病区管理更简单",
                 "phraseSchedule": "轮班排班，",
                 "phraseWard": "病区管理、",
-                "suffix": "用 Dutying 更轻松"
+                "suffix": "用 Dutying 更轻松",
+                "freeOffer": "现在就\u003cemphasis>免费开始吧！\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AI 自动生成的护士排班表界面",
@@ -10238,6 +10470,9 @@ export const zh: TLocale = {
                 "mobileHero": "Dutying App 排班日程画面",
                 "wardBoard": "病区公告栏屏幕",
                 "webSchedule": "Dutying Web 排班表编辑画面"
+            },
+            "schedulePreview": {
+                "workStreak": "连续工作 {{actual}} 天 · 上限 {{expected}} 天"
             },
             "mobileBenefits": {
                 "community": {
@@ -10280,7 +10515,72 @@ export const zh: TLocale = {
                 "titleHighlight": "AI 1 分钟",
                 "titleLine1": "复杂的排班表，",
                 "titleLine2Prefix": "用",
-                "titleLine2Suffix": "就能完成"
+                "titleLine2Suffix": "就能完成",
+                "importTitle": "从图片或 Excel 导入现有排班表",
+                "importDescription": "上传现有排班表的图片或 Excel 文件，即可轻松完成病区设置。"
+            },
+            "workflow": {
+                "title": "下个月的排班表，又要从空白开始填吗？",
+                "ai": {
+                    "problem": "需要逐一填写空班时",
+                    "solution": "用 AI 1 分钟生成排班表"
+                },
+                "ward-management": {
+                    "problem": "休息日和年假难以管理时",
+                    "solution": "轻松管理休假和年假"
+                },
+                "integration": {
+                    "problem": "申请和共享通知不方便时",
+                    "solution": "在护士 App 申请休息日、分享通知"
+                },
+                "excel": {
+                    "problem": "已有排班表时",
+                    "solution": "用图片或 Excel 直接开始"
+                }
+            },
+            "usage": {
+                "total": "累计已有\u003ccount>1 万名\u003c/count>以上的护士使用过 Dutying！"
+            },
+            "adoption": {
+                "title": "医院及病区导入咨询",
+                "navLink": "导入咨询",
+                "formLegend": "病区导入申请信息",
+                "fields": {
+                    "hospitalName": "医院名称",
+                    "wardName": "病区名称",
+                    "contact": "联系人联系方式"
+                },
+                "contactPlaceholder": "电话号码或电子邮箱",
+                "contactHint": "请输入电话号码或电子邮箱。",
+                "validation": {
+                    "hospitalName": "请输入医院名称。",
+                    "wardName": "请输入病区名称。",
+                    "contact": "请检查电话号码或电子邮箱。"
+                },
+                "privacyConsent": "我同意按照\u003cpolicy>隐私政策\u003c/policy>\u003cconsent>收集和使用上述信息，以便为我提供导入指导。（必选）\u003c/consent>",
+                "sending": "正在提交…",
+                "acceptedTitle": "已收到您的咨询。",
+                "acceptedDescription": "我们会通过您填写的联系方式介绍病区导入流程。",
+                "submitError": "暂时无法确认是否收到。请重试或通过电子邮件联系我们。",
+                "emailLabel": "导入咨询",
+                "emailFallback": "您也可以通过电子邮件咨询导入事宜。",
+                "emailSubject": "Dutying 医院及病区导入咨询",
+                "emailConsent": "我同意收集和使用个人信息以回复导入咨询。"
+            },
+            "footer": {
+                "plusPlan": "Plus 套餐",
+                "subscriptionTerms": "订阅条款",
+                "refundPolicy": "退款政策",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "经营者信息和在线订阅申请正在准备中。",
+                    "representative": "负责人",
+                    "registrationNumber": "营业登记号",
+                    "address": "经营地址",
+                    "phone": "客户支持",
+                    "email": "电子邮箱",
+                    "ecommerceNumber": "电子商务备案号"
+                }
             }
         },
         "login": {
@@ -13327,19 +13627,24 @@ export const th: TLocale = {
                 "viewMobile": "ดูเวอร์ชันมือถือ",
                 "webMakeSchedule": "สร้างตารางเวรบน Web",
                 "guideLink": "คู่มือจัดตารางเวรพยาบาล (ภาษาเกาหลี)",
-                "faqLink": "คำถามที่พบบ่อยของ Dutying (ภาษาเกาหลี)"
+                "faqLink": "คำถามที่พบบ่อยของ Dutying (ภาษาเกาหลี)",
+                "startFree": "เริ่มใช้งานฟรี"
             },
             "feature": {
                 "ai": {
                     "description": "เงื่อนไขที่มักพลาด\nตรวจและนำไปใช้ได้ทีละขั้นตอน",
                     "label": "เติมอัตโนมัติด้วย AI",
-                    "title": "ตารางเวรว่าง\nไม่ต้องเริ่มกรอกเองตั้งแต่ศูนย์"
+                    "title": "ตารางเวรว่าง\nไม่ต้องเริ่มกรอกเองตั้งแต่ศูนย์",
+                    "scheduleDetails": "เติมเวรที่ว่างตามจำนวนคนที่ต้องการ คำขอเวร และเวรที่กำหนดไว้ คุณตรวจสอบและแก้ไขร่างตารางได้"
                 },
                 "integration": {
                     "description": "พยาบาลส่งคำขอเวรผ่านแอปได้\nเมื่อยืนยันตารางแล้ว ระบบจะซิงก์ไปยังแอปทันที",
                     "highlight": "เชื่อมต่อ",
                     "label": "เชื่อมต่อ",
-                    "title": "เชื่อมต่อพยาบาล\nกับหอผู้ป่วยได้ง่ายขึ้น"
+                    "title": "เชื่อมต่อพยาบาล\nกับหอผู้ป่วยได้ง่ายขึ้น",
+                    "leaveDetails": "ดูตารางเวรและวันลาที่ใช้ไปหรือคงเหลือของพยาบาลแต่ละคน พร้อมจัดการวันหยุดในที่เดียว",
+                    "managementMessage": "จัดการวันหยุด วันลา และคำขอเวรได้ในที่เดียว",
+                    "appGuide": "ดูแอปสำหรับพยาบาล"
                 },
                 "review": {
                     "description": "จุดที่ต้องแก้\nดูได้ทันที พร้อมคำแนะนำในการปรับ",
@@ -13362,6 +13667,7 @@ export const th: TLocale = {
             },
             "header": {
                 "app": "App สำหรับพยาบาล",
+                "customerSupport": "ฝ่ายบริการลูกค้า",
                 "homeAria": "หน้าแรกของ Landing page Dutying",
                 "inquiry": "ติดต่อเรา",
                 "sectionAria": "เมนูนำทาง Landing page",
@@ -13372,7 +13678,8 @@ export const th: TLocale = {
                 "description": "สร้างตารางเวรได้ง่ายและรวดเร็วด้วย AI\nเชื่อมต่อกับพยาบาล เพื่อให้การจัดการหอผู้ป่วยง่ายขึ้น",
                 "phraseSchedule": "ตารางเวร,",
                 "phraseWard": "การจัดการหอผู้ป่วย,",
-                "suffix": "ง่ายขึ้นด้วย Dutying"
+                "suffix": "ง่ายขึ้นด้วย Dutying",
+                "freeOffer": "\u003cemphasis>เริ่มใช้งานฟรี\u003c/emphasis>ได้เลย!"
             },
             "imageAlt": {
                 "aiSchedule": "หน้าจอตารางเวรพยาบาลที่ AI สร้างอัตโนมัติ",
@@ -13387,6 +13694,9 @@ export const th: TLocale = {
                 "mobileHero": "หน้าจอตารางเวรในแอป Dutying",
                 "wardBoard": "หน้าจอบอร์ดประกาศของหอผู้ป่วย",
                 "webSchedule": "หน้าจอแก้ไขตารางเวรบน Dutying Web"
+            },
+            "schedulePreview": {
+                "workStreak": "ทำงานติดกัน {{actual}} วัน · สูงสุด {{expected}} วัน"
             },
             "mobileBenefits": {
                 "community": {
@@ -13429,7 +13739,72 @@ export const th: TLocale = {
                 "titleHighlight": "AI ใน 1 นาที",
                 "titleLine1": "ตารางเวรที่ซับซ้อน,",
                 "titleLine2Prefix": "ใช้",
-                "titleLine2Suffix": "ก็สร้างได้"
+                "titleLine2Suffix": "ก็สร้างได้",
+                "importTitle": "นำเข้าตารางเวรเดิมจากรูปภาพหรือ Excel",
+                "importDescription": "อัปโหลดรูปภาพหรือไฟล์ Excel ของตารางเวรเดิมเพื่อตั้งค่าหอผู้ป่วยได้ง่าย ๆ"
+            },
+            "workflow": {
+                "title": "ตารางเวรเดือนหน้า ต้องเริ่มกรอกใหม่ทีละช่องอีกไหม?",
+                "ai": {
+                    "problem": "เมื่อต้องกรอกเวรทีละช่อง",
+                    "solution": "สร้างตารางเวรใน 1 นาทีด้วย AI"
+                },
+                "ward-management": {
+                    "problem": "เมื่อจัดการวันหยุดและวันลาลำบาก",
+                    "solution": "จัดการวันหยุดและวันลาได้ง่าย"
+                },
+                "integration": {
+                    "problem": "เมื่อส่งคำขอและแชร์ประกาศได้ไม่สะดวก",
+                    "solution": "ขอวันหยุดและแชร์ประกาศผ่านแอปพยาบาล"
+                },
+                "excel": {
+                    "problem": "เมื่อมีตารางเวรเดิมอยู่แล้ว",
+                    "solution": "เริ่มได้ทันทีด้วยรูปภาพหรือไฟล์ Excel"
+                }
+            },
+            "usage": {
+                "total": "มีพยาบาล \u003ccount>10,000 คนขึ้นไป\u003c/count> ใช้ Dutying แล้ว!"
+            },
+            "adoption": {
+                "title": "สอบถามการเริ่มใช้งานในโรงพยาบาลและหอผู้ป่วย",
+                "navLink": "สอบถามการใช้งาน",
+                "formLegend": "ข้อมูลสำหรับขอเริ่มใช้งานในหอผู้ป่วย",
+                "fields": {
+                    "hospitalName": "ชื่อโรงพยาบาล",
+                    "wardName": "ชื่อหอผู้ป่วย",
+                    "contact": "ช่องทางติดต่อผู้รับผิดชอบ"
+                },
+                "contactPlaceholder": "เบอร์โทรศัพท์หรืออีเมล",
+                "contactHint": "กรุณากรอกเบอร์โทรศัพท์หรืออีเมล",
+                "validation": {
+                    "hospitalName": "กรุณากรอกชื่อโรงพยาบาล",
+                    "wardName": "กรุณากรอกชื่อหอผู้ป่วย",
+                    "contact": "กรุณาตรวจสอบเบอร์โทรศัพท์หรืออีเมล"
+                },
+                "privacyConsent": "\u003cconsent>ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลข้างต้นเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งานตาม\u003c/consent>\u003cpolicy>นโยบายความเป็นส่วนตัว\u003c/policy> (จำเป็น)",
+                "sending": "กำลังส่ง…",
+                "acceptedTitle": "เราได้รับคำถามของคุณแล้ว",
+                "acceptedDescription": "เราจะติดต่อกลับผ่านช่องทางที่คุณให้ไว้เพื่อแนะนำการเริ่มใช้งานในหอผู้ป่วย",
+                "submitError": "ยืนยันการรับคำขอไม่ได้ กรุณาลองอีกครั้งหรือติดต่อเราทางอีเมล",
+                "emailLabel": "สอบถามการเริ่มใช้งาน",
+                "emailFallback": "คุณสามารถสอบถามการเริ่มใช้งานทางอีเมลได้",
+                "emailSubject": "สอบถามการเริ่มใช้งาน Dutying ในโรงพยาบาลและหอผู้ป่วย",
+                "emailConsent": "ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลส่วนบุคคลเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งาน"
+            },
+            "footer": {
+                "plusPlan": "แพ็กเกจ Plus",
+                "subscriptionTerms": "เงื่อนไขการสมัครสมาชิก",
+                "refundPolicy": "นโยบายการคืนเงิน",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "กำลังเตรียมข้อมูลผู้ประกอบการและการสมัครสมาชิกออนไลน์",
+                    "representative": "ผู้แทน",
+                    "registrationNumber": "เลขทะเบียนธุรกิจ",
+                    "address": "ที่อยู่ธุรกิจ",
+                    "phone": "ฝ่ายบริการลูกค้า",
+                    "email": "อีเมล",
+                    "ecommerceNumber": "เลขทะเบียนพาณิชย์อิเล็กทรอนิกส์"
+                }
             }
         },
         "login": {
@@ -16476,19 +16851,24 @@ export const vi: TLocale = {
                 "viewMobile": "Xem phiên bản di động",
                 "webMakeSchedule": "Tạo lịch trên web",
                 "guideLink": "Hướng dẫn xếp lịch điều dưỡng (tiếng Hàn)",
-                "faqLink": "Câu hỏi thường gặp về Dutying (tiếng Hàn)"
+                "faqLink": "Câu hỏi thường gặp về Dutying (tiếng Hàn)",
+                "startFree": "Bắt đầu miễn phí"
             },
             "feature": {
                 "ai": {
                     "description": "Xem lại các điều kiện dễ bỏ lỡ\ntừng bước và áp dụng chúng.",
                     "label": "Tự động điền AI",
-                    "title": "Không cần phải điền\nlịch trống từ đầu"
+                    "title": "Không cần phải điền\nlịch trống từ đầu",
+                    "scheduleDetails": "Điền các ô trống theo nhu cầu nhân sự, yêu cầu ca và ca cố định. Bạn có thể xem lại và chỉnh sửa bản nháp."
                 },
                 "integration": {
                     "description": "điều dưỡng có thể gửi yêu cầu trong ứng dụng.\nlịch đã được xác nhận sẽ được gửi ngay lập tức.",
                     "highlight": "Kết nối",
                     "label": "Quy trình làm việc được kết nối",
-                    "title": "Kết nối điều dưỡng\nvới khoa"
+                    "title": "Kết nối điều dưỡng\nvới khoa",
+                    "leaveDetails": "Xem lịch trực, số ngày phép đã dùng và còn lại của từng điều dưỡng, đồng thời quản lý ngày nghỉ.",
+                    "managementMessage": "Quản lý ngày nghỉ, phép năm và yêu cầu ca trực ở một nơi.",
+                    "appGuide": "Khám phá ứng dụng điều dưỡng"
                 },
                 "review": {
                     "description": "Xem những gì cần chú ý\nvà xem xét các bản sửa lỗi được đề xuất.",
@@ -16511,6 +16891,7 @@ export const vi: TLocale = {
             },
             "header": {
                 "app": "ứng dụng điều dưỡng",
+                "customerSupport": "Hỗ trợ khách hàng",
                 "homeAria": "Về trang chủ Dutying",
                 "inquiry": "Liên hệ với chúng tôi",
                 "sectionAria": "Đoạn hạ cánh",
@@ -16521,7 +16902,8 @@ export const vi: TLocale = {
                 "description": "Tạo lịch nhanh hơn với AI,\nvà kết nối các điều dưỡng để đơn giản hóa hoạt động của khoa.",
                 "phraseSchedule": "lịch thay đổi,",
                 "phraseWard": "Hoạt động của khoa,",
-                "suffix": "trở nên dễ dàng hơn với Dutying"
+                "suffix": "trở nên dễ dàng hơn với Dutying",
+                "freeOffer": "\u003cemphasis>Bắt đầu miễn phí\u003c/emphasis> ngay!"
             },
             "imageAlt": {
                 "aiSchedule": "Màn hình lịch trực điều dưỡng do AI tự động tạo",
@@ -16536,6 +16918,9 @@ export const vi: TLocale = {
                 "mobileHero": "Màn hình lịch ca làm việc của ứng dụng trực",
                 "wardBoard": "Màn hình bảng khoa",
                 "webSchedule": "Màn hình soạn lịch web Dutying"
+            },
+            "schedulePreview": {
+                "workStreak": "Làm việc {{actual}} ngày liền · Tối đa {{expected}} ngày"
             },
             "mobileBenefits": {
                 "community": {
@@ -16578,7 +16963,72 @@ export const vi: TLocale = {
                 "titleHighlight": "1 phút với AI",
                 "titleLine1": "lịch phức tạp,",
                 "titleLine2Prefix": "bây giờ được xây dựng trong",
-                "titleLine2Suffix": "là xong"
+                "titleLine2Suffix": "là xong",
+                "importTitle": "Nhập lịch trực hiện có từ ảnh hoặc Excel",
+                "importDescription": "Tải ảnh hoặc tệp Excel của lịch trực đang dùng lên để thiết lập khoa nhanh chóng."
+            },
+            "workflow": {
+                "title": "Lịch trực tháng tới, bạn lại phải điền từ đầu?",
+                "ai": {
+                    "problem": "Khi phải điền từng ô trống",
+                    "solution": "Tạo lịch trực trong 1 phút với AI"
+                },
+                "ward-management": {
+                    "problem": "Khi khó quản lý ngày nghỉ và phép năm",
+                    "solution": "Quản lý ngày nghỉ và phép năm dễ dàng"
+                },
+                "integration": {
+                    "problem": "Khi việc gửi yêu cầu và chia sẻ còn bất tiện",
+                    "solution": "Xin nghỉ và chia sẻ thông báo qua ứng dụng điều dưỡng"
+                },
+                "excel": {
+                    "problem": "Khi đã có lịch trực",
+                    "solution": "Bắt đầu ngay với ảnh hoặc tệp Excel"
+                }
+            },
+            "usage": {
+                "total": "Đã có \u003ccount>10.000+\u003c/count> điều dưỡng sử dụng Dutying!"
+            },
+            "adoption": {
+                "title": "Tư vấn triển khai tại bệnh viện và khoa",
+                "navLink": "Tư vấn triển khai",
+                "formLegend": "Thông tin đăng ký triển khai tại khoa",
+                "fields": {
+                    "hospitalName": "Tên bệnh viện",
+                    "wardName": "Tên khoa",
+                    "contact": "Liên hệ người phụ trách"
+                },
+                "contactPlaceholder": "Số điện thoại hoặc email",
+                "contactHint": "Vui lòng nhập số điện thoại hoặc địa chỉ email.",
+                "validation": {
+                    "hospitalName": "Vui lòng nhập tên bệnh viện.",
+                    "wardName": "Vui lòng nhập tên khoa.",
+                    "contact": "Vui lòng kiểm tra số điện thoại hoặc địa chỉ email."
+                },
+                "privacyConsent": "\u003cconsent>Tôi đồng ý cho thu thập và sử dụng thông tin trên để tư vấn triển khai theo \u003c/consent>\u003cpolicy>Chính sách quyền riêng tư\u003c/policy>. (Bắt buộc)",
+                "sending": "Đang gửi…",
+                "acceptedTitle": "Chúng tôi đã nhận được yêu cầu của bạn.",
+                "acceptedDescription": "Chúng tôi sẽ liên hệ theo thông tin bạn cung cấp để hướng dẫn triển khai tại khoa.",
+                "submitError": "Chưa thể xác nhận đã nhận được yêu cầu. Vui lòng thử lại hoặc liên hệ qua email.",
+                "emailLabel": "Liên hệ tư vấn triển khai",
+                "emailFallback": "Bạn cũng có thể hỏi về việc triển khai qua email.",
+                "emailSubject": "Yêu cầu tư vấn triển khai Dutying tại bệnh viện và khoa",
+                "emailConsent": "Tôi đồng ý với việc thu thập và sử dụng thông tin cá nhân để tư vấn triển khai."
+            },
+            "footer": {
+                "plusPlan": "Gói Plus",
+                "subscriptionTerms": "Điều khoản đăng ký",
+                "refundPolicy": "Chính sách hoàn tiền",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "Thông tin doanh nghiệp và đăng ký trực tuyến đang được chuẩn bị.",
+                    "representative": "Người đại diện",
+                    "registrationNumber": "Mã số đăng ký kinh doanh",
+                    "address": "Địa chỉ kinh doanh",
+                    "phone": "Hỗ trợ khách hàng",
+                    "email": "Email",
+                    "ecommerceNumber": "Số đăng ký thương mại điện tử"
+                }
             }
         },
         "login": {

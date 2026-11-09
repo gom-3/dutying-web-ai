@@ -3,6 +3,7 @@ import {Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {nurseAppMarketingPaths} from '@/shared/seo/marketing-locale';
 import PageState from '@/shared/ui/PageState';
 
 const SubscriptionInfoPage = lazy(() => import('@/pages/subscription-info'));
@@ -74,6 +75,9 @@ export const Router = () => {
                     <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                    {nurseAppMarketingPaths.map((path) => (
+                        <Route key={path} path={path} element={<LandingPage />} />
+                    ))}
                     <Route path="/pricing" element={<SubscriptionInfoPage />} />
                     <Route path="/refund" element={<SubscriptionInfoPage />} />
                     <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />
@@ -110,6 +114,9 @@ export const Router = () => {
                 <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                {nurseAppMarketingPaths.map((path) => (
+                    <Route key={path} path={path} element={<LandingPage />} />
+                ))}
                 <Route path="/pricing" element={<SubscriptionInfoPage />} />
                 <Route path="/refund" element={<SubscriptionInfoPage />} />
                 <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />

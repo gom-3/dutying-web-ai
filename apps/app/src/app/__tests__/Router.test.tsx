@@ -99,6 +99,23 @@ describe('Router', () => {
         },
     );
 
+    it.each([
+        {path: '/nurse-app', phone: false},
+        {path: '/en/nurse-app', phone: true},
+    ])('keeps the public nurse app route $path on direct entry', async ({path, phone}) => {
+        setPhoneDevice(phone);
+
+        render(
+            <MemoryRouter initialEntries={[path]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
+        expect(screen.getByTestId('location')).toHaveTextContent(path);
+    });
+
     it('keeps authentication available for phone billing and invitation flows', async () => {
         setPhoneDevice(true);
 

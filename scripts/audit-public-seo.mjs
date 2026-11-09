@@ -4,8 +4,9 @@ import marketingPageData from '../apps/app/src/shared/seo/marketing-pages.json' 
 
 const origin = 'https://www.dutying.ai';
 const docsOrigin = 'https://docs.dutying.ai';
+const publicMarketingUrls = marketingPageData.pages.flatMap((page) => [`${origin}${page.path}`, `${origin}${page.nurseApp.path}`]);
 const targets = [
-    ...marketingPageData.pages.map((page) => ({url: `${origin}${page.path}`, canonical: `${origin}${page.path}`, publicPage: true})),
+    ...publicMarketingUrls.map((url) => ({url, canonical: url, publicPage: true})),
     {url: `${origin}/login`, canonical: `${origin}/login`, publicPage: false},
     ...['/', '/guides/nurse-scheduling', '/troubleshooting/faq'].map((path) => ({
         url: `${docsOrigin}${path}`,
@@ -55,8 +56,11 @@ const audit = async (target) => {
             const urls = [...body.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]);
             if (!urls.length) issues.push('Sitemap has no URLs');
             if (urls.some((url) => !url.startsWith(`${target.sitemapOrigin}/`))) issues.push('Sitemap contains a different host');
-            if (target.sitemapOrigin === origin && urls.length !== marketingPageData.pages.length)
-                issues.push('App sitemap contains non-marketing routes');
+            if (
+                target.sitemapOrigin === origin &&
+                (urls.length !== publicMarketingUrls.length || publicMarketingUrls.some((url) => !urls.includes(url)))
+            )
+                issues.push('App sitemap does not match the public marketing routes');
             if (target.sitemapOrigin === docsOrigin && !urls.includes(`${docsOrigin}/guides/nurse-scheduling`))
                 issues.push('Guide missing from docs sitemap');
         }

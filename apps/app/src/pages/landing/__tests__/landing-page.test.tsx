@@ -1,10 +1,11 @@
-import {waitFor} from '@testing-library/react';
+import {waitFor, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
 import i18n from '@/i18n';
 import {WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
+import {CHANNEL_TALK_URL} from '@/shared/lib/channel-talk';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import LandingPage from '../landing-page';
 
@@ -61,17 +62,43 @@ describe('LandingPage', () => {
 
         expect(screen.getByRole('heading', {name: /교대 근무표,.*듀팅으로 더 간편하게/})).toBeInTheDocument();
         expect(screen.getAllByRole('heading', {level: 1})).toHaveLength(1);
-        expect(Array.from(document.querySelectorAll('img')).every((image) => (image.getAttribute('alt') ?? '').trim().length > 0)).toBe(
-            true,
-        );
+        expect(
+            Array.from(document.querySelectorAll('img')).every((image) => {
+                const alt = image.getAttribute('alt');
+
+                return alt === '' ? image.closest('[aria-hidden="true"]') !== null : Boolean(alt?.trim());
+            }),
+        ).toBe(true);
+        expect(screen.getByRole('link', {name: /이미지·엑셀로 바로 시작하기/})).toHaveAttribute('href', '#excel');
+        expect(screen.getByRole('link', {name: /AI로 1분 만에 근무표 만들기/})).toHaveAttribute('href', '#ai');
+        expect(screen.queryByText('수간호사의 반복 업무를 줄이는 4가지 기능')).not.toBeInTheDocument();
+
+        const hospitalUsage = screen.getByRole('region', {name: '듀팅을 사용하는 간호사 소속 병원'});
+        const workflowTitle = screen.getByRole('heading', {name: '다음 달 근무표, 이번에도 빈칸부터 채우시나요?'});
+
+        expect(hospitalUsage).toHaveTextContent('충북대학교병원 간호사가 듀팅을 사용하고 있어요.');
+        expect(hospitalUsage.querySelectorAll('[data-buffer="false"] img')).toHaveLength(5);
+        expect(within(hospitalUsage).queryByRole('button')).not.toBeInTheDocument();
+        expect(hospitalUsage.compareDocumentPosition(workflowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(screen.queryByText('엑셀 가져오기 화면 보기')).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.LOGIN);
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
         expect(screen.getByRole('button', {name: '언어 선택'})).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '웹에서 근무표 만들기'})).toHaveAttribute('href', `${ROUTE.LOGIN}?next=%2Fmake`);
+        expect(screen.getByRole('link', {name: '무료로 시작하기'})).toHaveAttribute('href', `${ROUTE.LOGIN}?next=%2Fmake`);
+        expect(screen.getByRole('link', {name: '병원·병동 도입 문의'})).toHaveAttribute('href', '#adoption');
+        expect(within(screen.getByRole('navigation', {name: '랜딩 섹션'})).getByRole('link', {name: '고객센터'})).toHaveAttribute(
+            'href',
+            CHANNEL_TALK_URL,
+        );
         expect(screen.getByRole('link', {name: '근무표 관리자 웹'})).toHaveAttribute('href', '#web');
-        expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '#app');
-        expect(screen.getByRole('link', {name: '이용약관'})).toHaveAttribute('href', ROUTE.TERMS);
-        expect(screen.getByRole('link', {name: '개인정보 처리방침'})).toHaveAttribute('href', ROUTE.PRIVACY);
+        expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '/nurse-app');
+        expect(screen.getByRole('link', {name: '간호사 앱 안내'})).toHaveAttribute('href', '/nurse-app');
+        expect(document.querySelector('#app-home')).not.toBeInTheDocument();
+
+        const footer = within(document.querySelector('footer')!);
+
+        expect(footer.getByRole('link', {name: '이용약관'})).toHaveAttribute('href', ROUTE.TERMS);
+        expect(footer.getByRole('link', {name: '개인정보 처리방침'})).toHaveAttribute('href', ROUTE.PRIVACY);
 
         await user.click(screen.getByRole('button', {name: '언어 선택'}));
         expect(screen.getByRole('option', {name: 'English'})).toHaveAttribute('href', ROUTE.LANDING_EN);
@@ -84,13 +111,17 @@ describe('LandingPage', () => {
 
     it('links the App Store button to the localized iOS listing', async () => {
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={['/nurse-app']}>
                 <LandingPage />
             </MemoryRouter>,
         );
 
         const appStoreLinks = screen.getAllByRole('link', {name: 'App Store'});
 
+        expect(screen.getByRole('heading', {level: 1})).toHaveTextContent(/근무 일정 관리부터.*병동까지 한 번에/);
+        expect(screen.getByRole('link', {name: '근무표 관리자 웹'})).toHaveAttribute('href', '/#web');
+        expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('aria-current', 'page');
+        expect(document.querySelector('#web')).not.toBeInTheDocument();
         expect(appStoreLinks.length).toBeGreaterThan(0);
         expect(appStoreLinks[0]).toHaveAttribute(
             'href',
@@ -206,7 +237,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage(language);
 
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={[language === 'ko' ? '/nurse-app' : `/${language}/nurse-app`]}>
                 <LandingPage />
             </MemoryRouter>,
         );
@@ -230,7 +261,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage(language);
 
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={[language === 'ko' ? '/nurse-app' : `/${language}/nurse-app`]}>
                 <LandingPage />
             </MemoryRouter>,
         );
@@ -248,7 +279,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage(language);
 
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={[language === 'ko' ? '/nurse-app' : `/${language}/nurse-app`]}>
                 <LandingPage />
             </MemoryRouter>,
         );
@@ -267,7 +298,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage(language);
 
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={[language === 'ko' ? '/nurse-app' : `/${language}/nurse-app`]}>
                 <LandingPage />
             </MemoryRouter>,
         );
@@ -287,7 +318,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage(language);
 
         render(
-            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+            <MemoryRouter initialEntries={[language === 'ko' ? '/nurse-app' : `/${language}/nurse-app`]}>
                 <LandingPage />
             </MemoryRouter>,
         );
@@ -369,7 +400,7 @@ describe('LandingPage', () => {
 
         expect(mockHandleLogout).toHaveBeenCalledWith(ROUTE.ROOT);
         expect(screen.getAllByRole('link', {name: '근무표 만들기'})[0]).toHaveAttribute('href', ROUTE.MAKE);
-        expect(screen.queryByRole('link', {name: '웹에서 근무표 만들기'})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '무료로 시작하기'})).toHaveAttribute('href', ROUTE.MAKE);
     });
 
     it('renders profile modal account fields while ward profile is still loading', async () => {
@@ -411,7 +442,7 @@ describe('LandingPage', () => {
         getWaitingNursesSpy.mockRestore();
     });
 
-    it('keeps product information and app download links in one responsive document on phones', () => {
+    it('links from the responsive landing to the app page download area on phones', () => {
         setPhoneDevice(true);
         render(
             <MemoryRouter>
@@ -422,7 +453,7 @@ describe('LandingPage', () => {
         expect(screen.getAllByRole('heading', {level: 1})).toHaveLength(1);
         expect(screen.getByRole('heading', {name: /빈 근무표를\s*처음부터/})).toBeInTheDocument();
         expect(screen.getAllByRole('link', {name: 'App Store'}).length).toBeGreaterThan(0);
-        expect(screen.getByRole('link', {name: '앱 다운로드'})).toHaveAttribute('href', '#mobile-app-download');
+        expect(screen.getByRole('link', {name: '앱 다운로드'})).toHaveAttribute('href', '/nurse-app#mobile-app-download');
         expect(document.querySelector('picture source')).toHaveAttribute('media', '(max-width: 767px)');
     });
 
