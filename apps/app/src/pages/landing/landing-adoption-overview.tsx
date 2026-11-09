@@ -86,18 +86,12 @@ const hospitalPalette = [
     {color: '#88396e', tint: '#f7e5f2', hue: 60},
 ] as const;
 const hospitalCycle = landingHospitals.length * hospitalPalette.length;
-const hospitalsPerGroup = 4;
-const framesPerGroup = hospitalsPerGroup + 1;
-const rotationCycle = hospitalCycle * framesPerGroup;
 // The first and last slots let the icons enter and leave the visible rail.
 const hospitalIconOffsets = [-5, -4, -3, -2, -1, 0, 1] as const;
 
 export function LandingHospitalRotation() {
-    const [frame, setFrame] = useState(0);
+    const [hospitalStep, setHospitalStep] = useState(0);
     const reducedMotion = useLandingReducedMotion();
-    const showUsage = frame % framesPerGroup === hospitalsPerGroup;
-    // Keep the previous hospital's icons in place while showing the usage total.
-    const hospitalStep = (frame - Math.floor((frame + 1) / framesPerGroup)) % hospitalCycle;
     const name = landingHospitals[hospitalStep % landingHospitals.length];
     const {color} = hospitalPalette[hospitalStep % hospitalPalette.length];
 
@@ -105,18 +99,30 @@ export function LandingHospitalRotation() {
         if (reducedMotion) return;
 
         const interval = window.setInterval(() => {
-            setFrame((current) => (current + 1) % rotationCycle);
+            setHospitalStep((current) => (current + 1) % hospitalCycle);
         }, 3800);
 
         return () => window.clearInterval(interval);
     }, [reducedMotion]);
 
     return (
-        <section
-            id="hospital-usage"
-            className="landing-hospital-rotation mx-auto max-w-[1440px] px-5 md:px-8"
-            aria-label="듀팅을 사용하는 간호사 소속 병원"
-        >
+        <section id="hospital-usage" className="landing-hospital-rotation mx-auto max-w-[1440px] px-5 md:px-8" aria-label="듀팅 이용 현황">
+            <dl className="landing-usage-metrics">
+                <div>
+                    <dt>듀팅 앱</dt>
+                    <dd>
+                        <strong>1만 명 이상</strong>
+                        <span>누적 사용자</span>
+                    </dd>
+                </div>
+                <div>
+                    <dt>듀팅 웹</dt>
+                    <dd>
+                        <strong>50곳 이상</strong>
+                        <span>병원</span>
+                    </dd>
+                </div>
+            </dl>
             <div className="landing-hospital-rotation__surface">
                 <div className="landing-hospital-rotation__rail" aria-hidden="true">
                     {hospitalIconOffsets.map((offset) => {
@@ -143,19 +149,11 @@ export function LandingHospitalRotation() {
                     })}
                 </div>
                 <p className="landing-hospital-rotation__copy">
-                    {showUsage ? (
-                        <span>
-                            <NurseUsageMessage />
-                        </span>
-                    ) : (
-                        <>
-                            <strong key={name} style={{color}}>
-                                {name}
-                            </strong>{' '}
-                            <span className="landing-hospital-rotation__caption--wide">간호사가 듀팅을 사용하고 있어요.</span>
-                            <span className="landing-hospital-rotation__caption--compact">간호사 이용 중</span>
-                        </>
-                    )}
+                    <strong key={name} style={{color}}>
+                        {name}
+                    </strong>{' '}
+                    <span className="landing-hospital-rotation__caption--wide">간호사가 듀팅을 사용하고 있어요.</span>
+                    <span className="landing-hospital-rotation__caption--compact">간호사 이용 중</span>
                 </p>
             </div>
             <p className="landing-hospital-rotation__note">간호사 개인 이용 사례 포함</p>

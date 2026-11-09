@@ -64,11 +64,11 @@ export function AiConversationEntry({
     disabled,
     generationCompleted = false,
     hasSchedule = false,
-    generationCompletedMessage,
     hideIntro = false,
     compact = false,
     attached = false,
-    confirmation,
+    inComposer = false,
+    offerScheduleChoices = false,
     onChoose,
 }: {
     choice: TConversationEntryChoice | null;
@@ -76,25 +76,23 @@ export function AiConversationEntry({
     modifyDisabled?: boolean;
     generationCompleted?: boolean;
     hasSchedule?: boolean;
-    generationCompletedMessage?: string;
     hideIntro?: boolean;
     compact?: boolean;
     attached?: boolean;
-    confirmation?: TAdjustResultActions;
+    inComposer?: boolean;
+    offerScheduleChoices?: boolean;
     onChoose: (choice: TConversationEntryChoice) => void;
 }) {
     const {t} = useTypedTranslation();
     const primary: Exclude<TConversationEntryChoice, 'modify'> = hasSchedule || attached || generationCompleted ? 'edit' : 'regenerate';
+    const question = t(offerScheduleChoices ? 'aiConversationSidebar.entry.question' : 'aiAdjust.chat.welcome');
+    const choices: TConversationEntryChoice[] = offerScheduleChoices ? ['regenerate', 'modify'] : [primary];
 
     return (
         <div className="flex min-w-0 flex-col gap-4">
             {!hideIntro && (
                 <AssistantMessage showTime>
-                    <span className="whitespace-pre-line">
-                        {generationCompleted
-                            ? (generationCompletedMessage ?? t('aiAdjust.generationCompleted'))
-                            : t('aiAdjust.chat.welcome')}
-                    </span>
+                    <span className="whitespace-pre-line">{generationCompleted ? t('aiAdjust.generationCompleted') : question}</span>
                 </AssistantMessage>
             )}
             {choice ? (
@@ -112,37 +110,33 @@ export function AiConversationEntry({
                             ? t('aiAdjust.snapshot.nextAction')
                             : compact
                               ? t('aiAutofillUi.conversationEntry.continueCurrentSchedule')
-                              : t('aiAdjust.chat.welcome')
+                              : question
                     }
-                    className={
-                        attached
-                            ? 'flex w-full min-w-0 flex-col gap-2'
-                            : compact
-                              ? 'flex w-full min-w-0 flex-col gap-2'
-                              : 'flex w-full min-w-0 flex-col gap-2 pt-3'
-                    }
+                    className={`flex w-full min-w-0 flex-col gap-2 ${attached || compact || inComposer ? '' : 'pt-3'}`}
                 >
                     {compact && (
                         <p className="px-1 text-xs leading-5 text-[#667085]">
                             {t('aiAutofillUi.conversationEntry.continueCurrentSchedule')}
                         </p>
                     )}
-                    {[primary].map((value) => (
+                    {choices.map((value) => (
                         <button
                             key={value}
                             type="button"
                             disabled={disabled}
                             onClick={() => onChoose(value)}
                             className={
-                                attached && generationCompleted
-                                    ? 'group forced-colors:focus-visible:outline-auto inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 py-1 text-[13px] leading-5 font-medium whitespace-nowrap text-main-1 transition-colors hover:text-main-1-hover focus-visible:text-[#4524A8] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
-                                    : `group forced-colors:focus-visible:outline-auto flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`
+                                inComposer
+                                    ? 'forced-colors:focus-visible:outline-auto flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-[10px] bg-main-light px-3 py-2 text-left text-[13px] leading-5 font-medium text-main-1 transition-colors hover:bg-main-1 hover:text-white focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+                                    : attached && generationCompleted
+                                      ? 'group forced-colors:focus-visible:outline-auto inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 py-1 text-[13px] leading-5 font-medium whitespace-nowrap text-main-1 transition-colors hover:text-main-1-hover focus-visible:text-[#4524A8] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none'
+                                      : `group forced-colors:focus-visible:outline-auto flex w-full min-w-0 items-center rounded-[10px] py-3 text-left font-medium text-[#475467] transition-colors hover:bg-main-light hover:text-[#5931B9] focus-visible:bg-main-1 focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${attached ? 'min-h-11 gap-2.5 bg-white px-3 text-[13px] leading-5' : compact ? 'min-h-11 justify-center gap-2 bg-[#F2F4F6] px-3 text-[13px] leading-5' : 'min-h-14 gap-3 bg-[#F2F4F6] px-4 text-[14px]'}`
                             }
                         >
-                            {attached && generationCompleted ? null : value === 'edit' ? (
-                                <PencilLine aria-hidden className="size-4 shrink-0" />
-                            ) : (
+                            {attached && generationCompleted ? null : value === 'regenerate' ? (
                                 <RotateCw aria-hidden className="size-4 shrink-0" />
+                            ) : (
+                                <PencilLine aria-hidden className="size-4 shrink-0" />
                             )}
                             <span
                                 className={
@@ -150,7 +144,7 @@ export function AiConversationEntry({
                                         ? 'min-w-0 group-hover:underline group-focus-visible:underline'
                                         : compact
                                           ? 'min-w-0 break-keep'
-                                          : 'min-w-0 flex-1 break-keep'
+                                          : 'min-w-0 flex-1 [overflow-wrap:anywhere] break-keep'
                                 }
                             >
                                 {value === 'edit'
@@ -159,19 +153,22 @@ export function AiConversationEntry({
                                               ? 'aiAutofillUi.conversationEntry.returnToSchedule'
                                               : 'aiAutofillUi.conversationEntry.editSchedule',
                                       )
-                                    : compact
-                                      ? t('aiAutofillUi.conversationEntry.refill')
-                                      : t(`aiAdjust.chat.${value}`)}
+                                    : offerScheduleChoices
+                                      ? t(`aiConversationSidebar.entry.${value}`)
+                                      : compact
+                                        ? t('aiAutofillUi.conversationEntry.refill')
+                                        : t(`aiAdjust.chat.${value}`)}
                             </span>
                             {attached && generationCompleted && (
                                 <svg aria-hidden="true" viewBox="0 0 20 20" fill="currentColor" className="size-3.5 shrink-0">
                                     <path d="M3 9h10.2L9.5 5.3 10.9 4l6 6-6 6-1.4-1.3 3.7-3.7H3V9Z" />
                                 </svg>
                             )}
-                            {!compact && !(attached && generationCompleted) && <ChevronRight aria-hidden className="size-4 shrink-0" />}
+                            {!inComposer && !compact && !(attached && generationCompleted) && (
+                                <ChevronRight aria-hidden className="size-4 shrink-0" />
+                            )}
                         </button>
                     ))}
-                    {confirmation && <AiConversationConfirmation confirmation={confirmation} />}
                 </div>
             )}
         </div>

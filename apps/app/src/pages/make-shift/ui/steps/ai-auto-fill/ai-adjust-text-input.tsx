@@ -831,6 +831,7 @@ export default function AiAdjustTextInput({
     const attachEntryToResult = Boolean(
         canShowNextEntry && onRegenerate && active?.status === 'messages' && active.snapshot && active.completion,
     );
+    const showStandaloneEntry = canShowNextEntry && !attachEntryToResult && Boolean(onRegenerate);
     const chooseNextAction = (choice: TConversationEntryChoice) => {
         if (choice === 'edit') {
             setEntryChoice(null);
@@ -1131,36 +1132,22 @@ export default function AiAdjustTextInput({
                         {preparation}
                     </div>
                 )}
-                {attachEntryToResult && confirmation && (
+                {canShowNextEntry && !attachEntryToResult && turns.length === 0 && (!onRegenerate || !flowCompleted) && (
+                    <div className={onRegenerate ? 'mt-6' : undefined}>
+                        <AssistantMessage showTime={Boolean(onRegenerate)}>
+                            <span className="whitespace-pre-line">
+                                {generationCompleted && !noticeDismissed
+                                    ? completedMessage
+                                    : t(onRegenerate ? 'aiAdjust.chat.welcome' : 'aiAdjust.chat.askChanges')}
+                            </span>
+                        </AssistantMessage>
+                    </div>
+                )}
+                {(attachEntryToResult || showStandaloneEntry) && confirmation && (
                     <div className="mt-3">
                         <AiConversationConfirmation confirmation={confirmation} />
                     </div>
                 )}
-                {canShowNextEntry &&
-                    !attachEntryToResult &&
-                    (onRegenerate ? (
-                        <div className="mt-6">
-                            <AiConversationEntry
-                                choice={null}
-                                disabled={disabled || isBusy}
-                                modifyDisabled={modifyDisabled}
-                                hideIntro={flowCompleted || turns.length > 0}
-                                hasSchedule={hasGeneratedSchedule}
-                                generationCompleted={generationCompleted && !noticeDismissed}
-                                generationCompletedMessage={completedMessage}
-                                confirmation={confirmation}
-                                onChoose={chooseNextAction}
-                            />
-                        </div>
-                    ) : (
-                        turns.length === 0 && (
-                            <AssistantMessage>
-                                <span className="whitespace-pre-line">
-                                    {generationCompleted && !noticeDismissed ? completedMessage : t('aiAdjust.chat.askChanges')}
-                                </span>
-                            </AssistantMessage>
-                        )
-                    ))}
                 {generationFailure && !autofillFlow && (
                     <AiExecutionFailure
                         operationType="GENERATE"
@@ -1198,6 +1185,20 @@ export default function AiAdjustTextInput({
                     )}
                 {conversationActions && <div className="mt-6">{conversationActions}</div>}
             </AiChatScroll>
+            {showStandaloneEntry && (
+                <div className={composerHidden ? 'shrink-0 px-6 pt-3 pb-12' : 'shrink-0 px-6 pt-3'}>
+                    <AiConversationEntry
+                        choice={null}
+                        disabled={disabled || isBusy}
+                        modifyDisabled={modifyDisabled}
+                        hideIntro
+                        inComposer
+                        hasSchedule={hasGeneratedSchedule}
+                        generationCompleted={generationCompleted && !noticeDismissed}
+                        onChoose={chooseNextAction}
+                    />
+                </div>
+            )}
             <div
                 className={composerHidden ? 'hidden' : 'relative z-10 flex max-h-[60%] min-h-0 shrink-0 flex-col px-6 pt-3 pb-12'}
                 inert={composerHidden}

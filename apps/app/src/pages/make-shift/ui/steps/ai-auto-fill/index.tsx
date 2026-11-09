@@ -3281,6 +3281,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         return adjustLockedCellKeys(doc, getEditedFilledCellsSinceBaseline(doc, lastAiGeneratedDocRef.current));
                     }}
                     onPrepareGeneration={handleAiFill}
+                    isGenerationReady={() => getAiFillReadyContext() !== null}
                     onEditSchedule={handleEditSchedule}
                     onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     onPrepareAdjustment={prepareAdjustment}

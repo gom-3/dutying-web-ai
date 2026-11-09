@@ -73,10 +73,12 @@ describe('LandingPage', () => {
         expect(screen.getByRole('link', {name: /AI로 1분 만에 근무표 만들기/})).toHaveAttribute('href', '#ai');
         expect(screen.queryByText('수간호사의 반복 업무를 줄이는 4가지 기능')).not.toBeInTheDocument();
 
-        const hospitalUsage = screen.getByRole('region', {name: '듀팅을 사용하는 간호사 소속 병원'});
+        const hospitalUsage = screen.getByRole('region', {name: '듀팅 이용 현황'});
         const workflowTitle = screen.getByRole('heading', {name: '다음 달 근무표, 이번에도 빈칸부터 채우시나요?'});
 
         expect(hospitalUsage).toHaveTextContent('충북대학교병원 간호사가 듀팅을 사용하고 있어요.');
+        expect(within(hospitalUsage).getByText('1만 명 이상')).toBeVisible();
+        expect(within(hospitalUsage).getByText('50곳 이상')).toBeVisible();
         expect(hospitalUsage.querySelectorAll('[data-buffer="false"] img')).toHaveLength(5);
         expect(within(hospitalUsage).queryByRole('button')).not.toBeInTheDocument();
         expect(hospitalUsage.compareDocumentPosition(workflowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
