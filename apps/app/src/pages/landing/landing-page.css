@@ -524,10 +524,11 @@ html:has(.landing-main--responsive) {
 
     .landing-hero-product__screen {
         position: absolute;
-        inset: 7.4% 14% 19.5% 10.7%;
+        /* Leave the full date and memo toolbar visible in every localized mockup. */
+        inset: 9.8% 14% 19.5% 10.7%;
         display: grid;
         align-items: start;
-        padding: 2.4cqw 2.6cqw;
+        padding: 0.9cqw 2.6cqw 2.4cqw;
         background: white;
     }
 
