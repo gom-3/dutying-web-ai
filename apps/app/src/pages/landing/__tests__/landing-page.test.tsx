@@ -78,7 +78,7 @@ describe('LandingPage', () => {
 
         expect(hospitalUsage).toHaveTextContent('충북대학교병원 간호사가 듀팅을 사용하고 있어요.');
         expect(within(hospitalUsage).getByText('1만 명 이상')).toBeVisible();
-        expect(within(hospitalUsage).getByText('50곳 이상')).toBeVisible();
+        expect(within(hospitalUsage).getByText('듀팅 웹 사용자가 근무하는 병원')).toBeVisible();
         expect(hospitalUsage.querySelectorAll('[data-buffer="false"] img')).toHaveLength(5);
         expect(within(hospitalUsage).queryByRole('button')).not.toBeInTheDocument();
         expect(hospitalUsage.compareDocumentPosition(workflowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

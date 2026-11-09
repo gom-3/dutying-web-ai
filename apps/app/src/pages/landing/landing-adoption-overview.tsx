@@ -60,7 +60,7 @@ function NurseUsageMessage() {
 
 export function LandingNurseUsage() {
     return (
-        <div className="landing-nurse-usage mx-auto max-w-[1440px] px-5 md:px-8">
+        <div className="landing-usage-layout landing-nurse-usage">
             <p>
                 <NurseUsageMessage />
             </p>
@@ -106,20 +106,24 @@ export function LandingHospitalRotation() {
     }, [reducedMotion]);
 
     return (
-        <section id="hospital-usage" className="landing-hospital-rotation mx-auto max-w-[1440px] px-5 md:px-8" aria-label="듀팅 이용 현황">
+        <section id="hospital-usage" className="landing-usage-layout landing-hospital-rotation" aria-label="듀팅 이용 현황">
             <dl className="landing-usage-metrics">
                 <div>
-                    <dt>듀팅 앱</dt>
+                    <dt>듀팅 앱 누적 사용자</dt>
                     <dd>
-                        <strong>1만 명 이상</strong>
-                        <span>누적 사용자</span>
+                        <span aria-hidden="true">
+                            1만<span className="landing-usage-metrics__plus">+</span>
+                        </span>
+                        <span className="sr-only">1만 명 이상</span>
                     </dd>
                 </div>
                 <div>
-                    <dt>듀팅 웹</dt>
+                    <dt>듀팅 웹 사용자가 근무하는 병원</dt>
                     <dd>
-                        <strong>50곳 이상</strong>
-                        <span>병원</span>
+                        <span aria-hidden="true">
+                            50<span className="landing-usage-metrics__plus">+</span>
+                        </span>
+                        <span className="sr-only">50개 이상</span>
                     </dd>
                 </div>
             </dl>
