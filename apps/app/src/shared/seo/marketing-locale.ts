@@ -1,7 +1,7 @@
-import type {TPreferredLanguage} from '@dutying/domain';
+import type {TWebLanguage} from '@/shared/i18n/locale';
 import marketingPages from './marketing-pages.json';
 
-export type TIndexedMarketingLanguage = TPreferredLanguage;
+export type TIndexedMarketingLanguage = TWebLanguage;
 
 const indexedMarketingPathByLanguage = Object.fromEntries(marketingPages.pages.map((page) => [page.language, page.path])) as Record<
     TIndexedMarketingLanguage,
@@ -28,11 +28,11 @@ const normalizePathname = (pathname: string) => {
 
 export const getIndexedMarketingLanguageFromPath = (pathname: string) => indexedMarketingLanguageByPath.get(normalizePathname(pathname));
 
-export const getNurseAppHref = (language: TPreferredLanguage) => nurseAppPathByLanguage[language];
+export const getNurseAppHref = (language: TWebLanguage) => nurseAppPathByLanguage[language];
 
 export const isNurseAppMarketingPath = (pathname: string) => nurseAppMarketingPaths.includes(normalizePathname(pathname));
 
-export const getMarketingLanguageHref = (language: TPreferredLanguage) => {
+export const getMarketingLanguageHref = (language: TWebLanguage) => {
     if (language in indexedMarketingPathByLanguage) {
         return indexedMarketingPathByLanguage[language as TIndexedMarketingLanguage];
     }
@@ -40,7 +40,7 @@ export const getMarketingLanguageHref = (language: TPreferredLanguage) => {
     return `/?lng=${language}`;
 };
 
-export const rememberMarketingLanguage = (language: TPreferredLanguage) => {
+export const rememberMarketingLanguage = (language: TWebLanguage) => {
     const {cookieName, maxAge} = marketingPages.homeLanguagePreference;
 
     try {
@@ -50,7 +50,7 @@ export const rememberMarketingLanguage = (language: TPreferredLanguage) => {
     }
 };
 
-export const getMarketingAppStoreUrls = (language: TPreferredLanguage) => {
+export const getMarketingAppStoreUrls = (language: TWebLanguage) => {
     const page = marketingPages.pages.find((page) => page.language === language)!;
 
     return {ios: page.iosStoreUrl, android: page.androidStoreUrl};

@@ -73,6 +73,7 @@ export const Router = () => {
                     <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                    <Route path={ROUTE.LANDING_ZH_TW} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
                     {nurseAppMarketingPaths.map((path) => (
@@ -112,6 +113,7 @@ export const Router = () => {
                 <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                <Route path={ROUTE.LANDING_ZH_TW} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
                 {nurseAppMarketingPaths.map((path) => (

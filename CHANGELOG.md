@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.46 - 2026-11-10
+
+- `@dutying/app` (patch): 한국어 외 랜딩에서 국내 전용 정보를 분리하고 대만 번체와 AI 자동채우기 채팅 번역을 지원합니다.
+
 ## 1.3.45 - 2026-11-09
 
 - `@dutying/app` (patch): 랜딩 이용 현황의 숫자를 강조하고 병원 목록과 좌우 폭을 맞춥니다.

@@ -5,6 +5,7 @@ import {
     getLocaleForLanguage,
     normalizePreferredLanguage,
     normalizeServiceRegion,
+    normalizeWebLanguage,
 } from '../locale';
 
 describe('locale helpers', () => {
@@ -54,6 +55,18 @@ describe('locale helpers', () => {
             'Accept-Language': 'ko-KR',
             'X-Service-Region': 'KR',
         });
+    });
+
+    it('keeps Traditional Chinese on the web while preserving the account language contract', () => {
+        expect(normalizeWebLanguage('zh-Hant-TW')).toBe('zh-TW');
+        expect(normalizeWebLanguage('zh', 'TW')).toBe('zh-TW');
+        expect(normalizeWebLanguage('zh-CN')).toBe('zh');
+        expect(normalizePreferredLanguage('zh-TW')).toBe('zh');
+        expect(buildApiLocaleHeaders('zh-TW')).toEqual({
+            'Accept-Language': 'zh-TW',
+            'X-Service-Region': 'TW',
+        });
+        expect(buildApiLocaleHeaders('zh', 'TW')).toEqual(buildApiLocaleHeaders('zh-TW'));
     });
 
     it('defaults API locale headers to Korean when no locale signal exists', () => {

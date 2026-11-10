@@ -73,6 +73,23 @@
             }
         },
         {
+            "language": "zh-TW",
+            "path": "/zh-tw",
+            "title": "護理師班表製作，AI 1分鐘自動生成 | Dutying",
+            "description": "手動建立護理人員班表，或使用 AI 快速自動排班。用 Dutying 管理病房排班規則、預班需求與輪班行程。",
+            "schemaLanguage": "zh-TW",
+            "ogLocale": "zh_TW",
+            "imageAlt": "Dutying AI 護理排班表與班表管理畫面",
+            "iosStoreUrl": "https://apps.apple.com/tw/app/dutying-nurse-shift-calendar/id6804144827",
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=zh-TW&gl=TW",
+            "nurseApp": {
+                "path": "/zh-tw/nurse-app",
+                "title": "護理人員班表日曆 App | Dutying",
+                "description": "使用 Dutying 護理人員 App 查看班表與病房公告、提出預班申請，並管理個人行程。",
+                "imageAlt": "Dutying 護理人員 App 的班表日曆"
+            }
+        },
+        {
             "language": "th",
             "path": "/th",
             "title": "สร้างตารางเวรพยาบาลด้วย AI ใน 1 นาที | Dutying",

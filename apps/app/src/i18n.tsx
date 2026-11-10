@@ -2,7 +2,7 @@ import {DateUtil} from '@dutying/utils/date';
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import {initReactI18next} from 'react-i18next';
-import {DEFAULT_PREFERRED_LANGUAGE, getLocaleForLanguage, normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
+import {DEFAULT_PREFERRED_LANGUAGE, getLocaleForLanguage, normalizeWebLanguage, WEB_LANGUAGES} from '@/shared/i18n/locale';
 import {
     en as generatedEn,
     ja as generatedJa,
@@ -10,9 +10,14 @@ import {
     th as generatedTh,
     vi as generatedVi,
     zh as generatedZh,
+    zhTW as generatedZhTW,
 } from '@/shared/i18n/resources.generated';
 import {aiAdjustKo, aiAdjustEn} from '@/shared/locales/ai-adjust';
 import {aiAdjustJa} from '@/shared/locales/ai-adjust-ja';
+import aiChatTh from '@/shared/locales/ai-chat.th.json';
+import aiChatVi from '@/shared/locales/ai-chat.vi.json';
+import aiChatZhTW from '@/shared/locales/ai-chat.zh-TW.json';
+import aiChatZh from '@/shared/locales/ai-chat.zh.json';
 import {aiAutofillPageKo, aiAutofillPageEn, aiAutofillPageJa} from '@/shared/locales/ai-autofill-page';
 import {aiAutofillUiKo, aiAutofillUiEn, aiAutofillUiJa} from '@/shared/locales/ai-autofill-ui';
 import {aiConversationSidebarKo, aiConversationSidebarEn, aiConversationSidebarJa} from '@/shared/locales/ai-conversation-sidebar';
@@ -31,6 +36,7 @@ import {
 import {th} from '@/shared/locales/th';
 import {vi} from '@/shared/locales/vi';
 import {zh} from '@/shared/locales/zh';
+import zhTWSupplemental from '@/shared/locales/zh-TW-supplemental.json';
 
 const fillMissingTranslations = <TPrimary, TFallback>(primary: TPrimary, fallback: TFallback): TPrimary & TFallback => {
     if (typeof primary !== 'object' || primary === null || Array.isArray(primary)) {
@@ -176,10 +182,16 @@ const resources = {
             requestCapacity: requestCapacityZh,
             ...fillMissingTranslations(generatedZh, zh),
             annualLeave: annualLeaveEn,
-            aiAdjust: aiAdjustEn,
-            aiAutofillPage: aiAutofillPageEn,
-            aiAutofillUi: aiAutofillUiEn,
-            aiConversationSidebar: aiConversationSidebarEn,
+            aiAdjust: aiChatZh.aiAdjust,
+            aiAutofillPage: aiChatZh.aiAutofillPage,
+            aiAutofillUi: aiChatZh.aiAutofillUi,
+            aiConversationSidebar: aiChatZh.aiConversationSidebar,
+        },
+    },
+    'zh-TW': {
+        translation: {
+            ...fillMissingTranslations(generatedZhTW, zhTWSupplemental),
+            ...aiChatZhTW,
         },
     },
     th: {
@@ -187,10 +199,10 @@ const resources = {
             requestCapacity: requestCapacityTh,
             ...fillMissingTranslations(generatedTh, th),
             annualLeave: annualLeaveEn,
-            aiAdjust: aiAdjustEn,
-            aiAutofillPage: aiAutofillPageEn,
-            aiAutofillUi: aiAutofillUiEn,
-            aiConversationSidebar: aiConversationSidebarEn,
+            aiAdjust: aiChatTh.aiAdjust,
+            aiAutofillPage: aiChatTh.aiAutofillPage,
+            aiAutofillUi: aiChatTh.aiAutofillUi,
+            aiConversationSidebar: aiChatTh.aiConversationSidebar,
         },
     },
     vi: {
@@ -198,15 +210,15 @@ const resources = {
             requestCapacity: requestCapacityVi,
             ...fillMissingTranslations(generatedVi, vi),
             annualLeave: annualLeaveEn,
-            aiAdjust: aiAdjustEn,
-            aiAutofillPage: aiAutofillPageEn,
-            aiAutofillUi: aiAutofillUiEn,
-            aiConversationSidebar: aiConversationSidebarEn,
+            aiAdjust: aiChatVi.aiAdjust,
+            aiAutofillPage: aiChatVi.aiAutofillPage,
+            aiAutofillUi: aiChatVi.aiAutofillUi,
+            aiConversationSidebar: aiChatVi.aiConversationSidebar,
         },
     },
 } as const;
 const syncDocumentLocale = (lng?: string) => {
-    const language = normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;
+    const language = normalizeWebLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE;
     const locale = getLocaleForLanguage(language);
 
     if (typeof document !== 'undefined') {
@@ -220,15 +232,15 @@ i18n.use(LanguageDetector)
     .use(initReactI18next)
     .init({
         fallbackLng: DEFAULT_PREFERRED_LANGUAGE,
-        supportedLngs: [...SUPPORTED_LANGUAGES],
+        supportedLngs: [...WEB_LANGUAGES],
         nonExplicitSupportedLngs: true,
-        load: 'languageOnly',
+        load: 'all',
         detection: {
             order: ['querystring', 'localStorage', 'navigator', 'htmlTag'],
             lookupQuerystring: 'lng',
             lookupLocalStorage: 'i18nextLng',
             caches: ['localStorage'],
-            convertDetectedLanguage: (lng) => normalizePreferredLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE,
+            convertDetectedLanguage: (lng) => normalizeWebLanguage(lng) ?? DEFAULT_PREFERRED_LANGUAGE,
         },
         resources,
         interpolation: {
