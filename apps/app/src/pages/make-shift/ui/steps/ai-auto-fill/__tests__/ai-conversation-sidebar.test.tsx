@@ -5172,7 +5172,10 @@ describe('intent-first sidebar integration', () => {
 
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();
-        installPlan();
+        const turn = autoTurn();
+        const deferred = '이전 요청: 미등록 N·S 근무 늘리기';
+        turn.semanticPlan!.deferredRequests = [deferred];
+        installPlan(turn);
 
         const unchanged = intentResponse({
             changedCells: [],
@@ -5208,6 +5211,9 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(await screen.findByText(deferred)).toBeVisible();
+        expect(screen.getByText('이전 요청은 확인이 필요해 이번 계산에서 보류했어요.')).toBeVisible();
+        expect(screen.queryByRole('button', {name: '이 요청만 빼기'})).not.toBeInTheDocument();
         await screen.findByText(i18n.t('aiConversationSidebar.authoring.NO_IMPROVEMENT'));
         rendered.rerender(sidebarElement({open: false}));
         rendered.rerender(sidebarElement());

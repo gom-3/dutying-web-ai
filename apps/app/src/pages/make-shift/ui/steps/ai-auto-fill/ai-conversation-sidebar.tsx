@@ -2430,7 +2430,19 @@ export default function AiConversationSidebar({
                                 : localizeConversationServerCopy(conversationTurnText(detail, turn), t)}
                         </p>
                     )}
-                    {turn.semanticPlan && (
+                    {!!turn.semanticPlan?.deferredRequests?.length && (
+                        <div className="space-y-1 text-[13px] leading-6 text-[#667085]">
+                            <p>{t('aiAutofillUi.semanticReview.deferredRequests')}</p>
+                            <ul className="list-disc space-y-1 pl-5">
+                                {turn.semanticPlan.deferredRequests.map((request, index) => (
+                                    <li key={index} className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                                        {request}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {turn.semanticPlan && !executedInterpretationIds.has(turn.interpretationId ?? '') && (
                         <AiSemanticReview
                             plan={turn.semanticPlan}
                             clarification={
@@ -2668,6 +2680,7 @@ export default function AiConversationSidebar({
                                         event.kind !== 'turn' ||
                                         event.turn.actor !== 'ASSISTANT' ||
                                         !event.turn.interpretationId ||
+                                        Boolean(event.turn.semanticPlan?.deferredRequests?.length) ||
                                         !executedInterpretationIds.has(event.turn.interpretationId),
                                 )
                                 .map((event) =>

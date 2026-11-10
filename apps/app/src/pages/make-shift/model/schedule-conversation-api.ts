@@ -75,6 +75,7 @@ export type TSemanticPlan = {
     modalityEditableIntentIds?: string[] | null;
     reasonCodes: string[];
     unresolvedStoredConditionIds?: string[];
+    deferredRequests?: string[];
     conditions: {
         intentId: string;
         action: 'ASSIGN' | 'FORBID' | 'COUNT' | 'MAX_CONSECUTIVE_WORK' | 'CATALOG_RULE';
