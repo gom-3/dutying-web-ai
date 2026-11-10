@@ -37,6 +37,8 @@ export const aiAdjustKo = {
     },
     executionFailure: {
         nightRunBoundsEvidence: '{{name}}: 연속 야간 최소 {{minimum}}회 / 최대 {{maximum}}회',
+        pairedNightStaffingEvidence:
+            '인원 조건을 유지하면 {{date}} {{night}} 최소 {{minimumNight}}명 중 최대 {{maximumContinuation}}명만 {{nextDate}} {{continuation}}로 이어질 수 있어요. 따라서 최소 {{minimumRepeats}}명은 {{night}}를 연속으로 해야 해요.',
         incomingNightEvidence: '{{start}} ~ {{end}}: 전달에서 이어진 야간 {{actual}}회',
         nightRunBoundsNext: '해당 간호사의 연속 야간 최소·최대 횟수와 전달 말 배정을 확인하고 수정해 주세요. 기존 표와 설정은 그대로예요.',
         minimumNightEvidence: '{{name}}: 연속 야간 {{actual}}회 / 필요한 최소 {{expected}}회',
@@ -503,6 +505,8 @@ export const aiAdjustEn = {
     },
     executionFailure: {
         nightRunBoundsEvidence: '{{name}}: consecutive nights minimum {{minimum}} / maximum {{maximum}}',
+        pairedNightStaffingEvidence:
+            'With the current staffing rules, at most {{maximumContinuation}} of the {{minimumNight}} or more staff on {{night}} on {{date}} can move to {{continuation}} on {{nextDate}}. At least {{minimumRepeats}} must work consecutive {{night}} shifts.',
         incomingNightEvidence: '{{start}} – {{end}}: {{actual}} night(s) carried from the previous month',
         nightRunBoundsNext:
             'Review this nurse’s minimum and maximum consecutive nights and assignments at the end of the previous month. The roster and settings are unchanged.',
