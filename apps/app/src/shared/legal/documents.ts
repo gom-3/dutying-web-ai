@@ -1,4 +1,4 @@
-import {normalizePreferredLanguage} from '@/shared/i18n/locale';
+import {normalizeWebLanguage} from '@/shared/i18n/locale';
 
 export type TPublishedLegalDocument = 'termsOfService' | 'privacyPolicy';
 
@@ -21,7 +21,7 @@ const PUBLISHED_LEGAL_DOCUMENT_URLS = {
 type TPublishedDocumentLanguage = keyof (typeof PUBLISHED_LEGAL_DOCUMENT_URLS)['termsOfService'];
 
 const getPublishedDocumentLanguage = (language?: string | null): TPublishedDocumentLanguage => {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
     if (normalizedLanguage === 'ko' || normalizedLanguage === 'ja' || normalizedLanguage === 'zh') {
         return normalizedLanguage;

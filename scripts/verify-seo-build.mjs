@@ -102,8 +102,10 @@ for (const file of appHtmlFiles) {
             assertContains(html, 'id="web"', file);
             assertContains(html, 'href="/login?next=%2Fmake"', file);
             assertContains(html, `href="${page.nurseApp.path}"`, file);
-            assertContains(html, 'href="https://docs.dutying.ai/guides/nurse-scheduling"', file);
-            assertContains(html, 'href="https://docs.dutying.ai/troubleshooting/faq"', file);
+            if (page.language === 'ko') assertContains(html, 'href="https://docs.dutying.ai/guides/nurse-scheduling"', file);
+            else assert(!html.includes('href="https://docs.dutying.ai/guides/nurse-scheduling"'), `${file}: 한국어 문서 링크가 남아 있음`);
+            if (page.language === 'ko') assertContains(html, 'href="https://docs.dutying.ai/troubleshooting/faq"', file);
+            else assert(!html.includes('href="https://docs.dutying.ai/troubleshooting/faq"'), `${file}: 한국어 문서 링크가 남아 있음`);
         } else {
             assert(!html.includes('id="web"'), `${file}: 관리자 웹 소개가 간호사 앱에 남아 있음`);
             assertContains(html, `href="${page.iosStoreUrl}"`, file);

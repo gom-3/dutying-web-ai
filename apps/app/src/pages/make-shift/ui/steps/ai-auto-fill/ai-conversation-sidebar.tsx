@@ -25,6 +25,7 @@ import {isExecutionFinished, readPendingExecution, isDefinitiveExecutionConflict
 import {
     clarificationQuestion,
     conversationTurnText,
+    localizeConversationServerCopy,
     currentConversationTurns,
     operationAttempt,
     precedingCompletedOperation,
@@ -2411,7 +2412,13 @@ export default function AiConversationSidebar({
                     </div>
                 )}
                 <Message {...(turn.actor !== 'USER' && turn.semanticPlan ? {fullWidth: true} : {})}>
-                    {turn.text && detail && <p className="whitespace-pre-wrap">{conversationTurnText(detail, turn)}</p>}
+                    {turn.text && detail && (
+                        <p className="whitespace-pre-wrap">
+                            {turn.actor === 'USER' && turn.type !== 'CONDITION_SELECTION'
+                                ? conversationTurnText(detail, turn)
+                                : localizeConversationServerCopy(conversationTurnText(detail, turn), t)}
+                        </p>
+                    )}
                     {turn.semanticPlan && (
                         <AiSemanticReview
                             plan={turn.semanticPlan}

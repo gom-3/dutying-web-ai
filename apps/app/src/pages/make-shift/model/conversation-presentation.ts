@@ -1,5 +1,58 @@
 import type {TConversationDetail, TConversationOperation, TConversationTurn, TSemanticPlan} from './schedule-conversation-api';
 
+const serverCopyKeys = new Map([
+    ['대상 간호사를 확인하지 못했어요. 표에 있는 이름을 알려 주세요', 'aiChatServerCopy.checkPeople'],
+    ['대상 간호사를 이 근무팀에서 찾지 못했어요', 'aiChatServerCopy.checkPeople'],
+    ['의도와 규칙의 변환을 확인했어요. 실행 계획은 아직 생성하지 않았어요', 'aiChatServerCopy.conditionsChecked'],
+    ['요청에 아직 처리할 수 없는 조건이 있어요', 'aiChatServerCopy.unsupported'],
+    ['누구에게 적용할까요? 현재 근무표 전체인지, 특정 그룹인지, 간호사 이름을 알려 주세요', 'aiChatServerCopy.choosePeople'],
+    ['요청의 대상·기간·조건을 더 확인해야 해요', 'aiChatServerCopy.clarify'],
+    ['어느 간호사에게 적용할지 이름을 다시 확인해 주세요', 'aiChatServerCopy.checkPeople'],
+    [
+        '가능한 근무 종류를 바꾸려면 간호사 설정에서 수정해 주세요. 이번 달에 실제로 배정하려는 요청이라면 근무와 날짜 또는 횟수를 알려 주세요',
+        'aiChatServerCopy.shiftEligibility',
+    ],
+    ['이번 달의 어느 날짜에 적용할지 확인해 주세요', 'aiChatServerCopy.checkDates'],
+    ['어느 근무에 적용할지 근무 코드를 확인해 주세요', 'aiChatServerCopy.checkShifts'],
+    ['횟수와 최소·최대·정확히 중 어느 조건인지 확인해 주세요', 'aiChatServerCopy.checkCount'],
+    ['각자 횟수인지 그룹 합계인지 확인해 주세요', 'aiChatServerCopy.checkAggregation'],
+    ['반드시 지킬 조건인지, 가능하면 맞출 조건인지 확인해 주세요', 'aiChatServerCopy.checkPriority'],
+    ['확인한 조건으로 계산할 준비가 됐어요', 'aiChatServerCopy.ready'],
+    ['대상·기간·조건을 확인한 뒤 진행해 주세요', 'aiChatServerCopy.review'],
+    ['고정된 배치와 요청이 충돌해요. 해당 배치를 확인해 주세요', 'aiChatServerCopy.locked'],
+    ['표 또는 요청이 바뀌어 다시 확인해야 해요', 'aiChatServerCopy.expired'],
+    ['조건을 삭제했어요. 새 요청을 입력해 주세요', 'aiChatServerCopy.removed'],
+    ['바꾸고 싶은 내용을 확인하지 못했어요. 근무표는 변경되지 않았어요. 요청 내용을 확인해 주세요', 'aiChatServerCopy.noChangesFound'],
+    [
+        '이번 실행에만 적용할 요청과 이번 근무표에서 계속 유지할 조건을 함께 확인했어요. 기존에 저장한 조건도 계속 적용돼요',
+        'aiChatServerCopy.runAndRoster',
+    ],
+    [
+        '이 조건은 이번 근무표의 활성 요청으로 유지돼요. 다음 달이나 팀의 상시 설정으로 저장하려면 조건 설정을 이용해 주세요. 기존에 저장한 조건도 계속 적용돼요',
+        'aiChatServerCopy.rosterOnly',
+    ],
+    [
+        '이번 요청은 이번 실행에만 적용돼요. 이후 자동완성에서도 유지할 새 조건은 조건 설정에서 저장해 주세요. 기존에 저장한 조건은 계속 적용돼요',
+        'aiChatServerCopy.runOnly',
+    ],
+    ['선택한 조건만 적용하고 나머지 조건은 이번 실행에서 제외합니다', 'aiChatServerCopy.selectedConditions'],
+]);
+
+/** Older responses and saved conversations can contain fixed Korean server copy. */
+export function localizeConversationServerCopy<T extends string | null | undefined>(
+    text: T,
+    t: (key: string, options?: {names: string}) => string,
+): T | string {
+    const message = text?.trim().replace(/\.$/, '');
+    const key = message && serverCopyKeys.get(message);
+    const names = message?.match(
+        /^말씀하신 간호사가 ([가-힣]{3,4}(?: \/ [가-힣]{3,4}){0,2}) 선생님인가요\? 이름을 확인해 주시면 앞서 요청한 내용을 이어서 확인할게요$/,
+    )?.[1];
+
+    if (names) return t('aiChatServerCopy.confirmSpelling', {names});
+    return key ? t(key) : text;
+}
+
 /** Storage events are not dialogue. Confirmations and explicit refreshes replace their source cards. */
 export function visibleConversationTurns(detail: TConversationDetail): TConversationTurn[] {
     const latestPlan = new Map<string, number>();

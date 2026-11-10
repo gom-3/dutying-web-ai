@@ -5,6 +5,7 @@ const ROUTE = {
     LANDING_EN: '/en',
     LANDING_JA: '/ja',
     LANDING_ZH: '/zh',
+    LANDING_ZH_TW: '/zh-tw',
     LANDING_TH: '/th',
     LANDING_VI: '/vi',
     PRIVACY: '/privacy',

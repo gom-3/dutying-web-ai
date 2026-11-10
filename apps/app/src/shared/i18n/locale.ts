@@ -1,28 +1,32 @@
 import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 
 export const SUPPORTED_LANGUAGES = ['ko', 'ja', 'en', 'zh', 'th', 'vi'] as const satisfies readonly TPreferredLanguage[];
-export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TH', 'VN'] as const satisfies readonly TServiceRegion[];
+export const WEB_LANGUAGES = ['ko', 'ja', 'en', 'zh', 'zh-TW', 'th', 'vi'] as const;
+export type TWebLanguage = (typeof WEB_LANGUAGES)[number];
+export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TW', 'TH', 'VN'] as const satisfies readonly TServiceRegion[];
 
 export const DEFAULT_PREFERRED_LANGUAGE = 'ko' as const satisfies TPreferredLanguage;
 export const DEFAULT_SERVICE_REGION = 'KR' as const satisfies TServiceRegion;
 export const SERVICE_REGION_STORAGE_KEY = 'dutying.serviceRegion';
 
-type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN';
+type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'zh-TW' | 'th-TH' | 'vi-VN';
 
-const LANGUAGE_TO_LOCALE: Record<TPreferredLanguage, TBcp47Locale> = {
+const LANGUAGE_TO_LOCALE: Record<TWebLanguage, TBcp47Locale> = {
     ko: 'ko-KR',
     ja: 'ja-JP',
     en: 'en-US',
     zh: 'zh-CN',
+    'zh-TW': 'zh-TW',
     th: 'th-TH',
     vi: 'vi-VN',
 };
 
-const LANGUAGE_TO_REGION: Record<TPreferredLanguage, TServiceRegion> = {
+const LANGUAGE_TO_REGION: Record<TWebLanguage, TServiceRegion> = {
     ko: 'KR',
     ja: 'JP',
     en: 'EN',
     zh: 'CN',
+    'zh-TW': 'TW',
     th: 'TH',
     vi: 'VN',
 };
@@ -38,6 +42,14 @@ export const normalizePreferredLanguage = (value?: string | null): TPreferredLan
     return language && isSupportedLanguage(language) ? language : undefined;
 };
 
+export const normalizeWebLanguage = (value?: string | null, serviceRegion?: TServiceRegion): TWebLanguage | undefined => {
+    const language = normalizePreferredLanguage(value);
+
+    if (language === 'zh' && (serviceRegion === 'TW' || /^zh[-_](?:tw|hant)(?:[-_]|$)/i.test(value ?? ''))) return 'zh-TW';
+
+    return language;
+};
+
 export const normalizeServiceRegion = (value?: string | null): TServiceRegion | undefined => {
     if (!value) return undefined;
 
@@ -47,13 +59,13 @@ export const normalizeServiceRegion = (value?: string | null): TServiceRegion | 
 };
 
 export const getLocaleForLanguage = (value?: string | null): TBcp47Locale => {
-    const language = normalizePreferredLanguage(value) ?? DEFAULT_PREFERRED_LANGUAGE;
+    const language = normalizeWebLanguage(value) ?? DEFAULT_PREFERRED_LANGUAGE;
 
     return LANGUAGE_TO_LOCALE[language];
 };
 
 export const getDefaultServiceRegionForLanguage = (value?: string | null): TServiceRegion => {
-    const language = normalizePreferredLanguage(value);
+    const language = normalizeWebLanguage(value);
 
     return language ? LANGUAGE_TO_REGION[language] : DEFAULT_SERVICE_REGION;
 };
@@ -69,8 +81,8 @@ export const setStoredServiceRegion = (value: TServiceRegion) => {
 };
 
 export const buildApiLocaleHeaders = (language?: string | null, serviceRegion?: string | null): Record<string, string> => {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
-    const normalizedRegion = normalizeServiceRegion(serviceRegion) ?? getDefaultServiceRegionForLanguage(normalizedLanguage);
+    const normalizedRegion = normalizeServiceRegion(serviceRegion) ?? getDefaultServiceRegionForLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language, normalizedRegion) ?? DEFAULT_PREFERRED_LANGUAGE;
 
     return {
         'Accept-Language': getLocaleForLanguage(normalizedLanguage),

@@ -1,6 +1,6 @@
 export type TAccountStatus = 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED' | 'DEMO';
 export type TPreferredLanguage = 'ko' | 'ja' | 'en' | 'zh' | 'th' | 'vi';
-export type TServiceRegion = 'KR' | 'JP' | 'EN' | 'CN' | 'TH' | 'VN';
+export type TServiceRegion = 'KR' | 'JP' | 'EN' | 'CN' | 'TW' | 'TH' | 'VN';
 
 export type TTutorialKey =
     | 'make'
