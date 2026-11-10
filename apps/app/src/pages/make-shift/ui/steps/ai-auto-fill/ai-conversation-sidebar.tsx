@@ -1356,10 +1356,16 @@ export default function AiConversationSidebar({
                         )?.interpretationId;
                     const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
                     const state = current.conversationState;
+                    const currentPlan = current.turns.find(
+                        (turn) => turn.interpretationId === current.conversation.latestInterpretationId && turn.semanticPlan,
+                    )?.semanticPlan;
 
                     if (
                         (reviewedStateVersion !== undefined && state?.version !== reviewedStateVersion) ||
-                        (removeConditionId && state?.pendingQuestion?.conditionId !== removeConditionId)
+                        (removeConditionId &&
+                            (!state ||
+                                (state.pendingQuestion?.conditionId !== removeConditionId &&
+                                    !currentPlan?.unresolvedStoredConditionIds?.includes(removeConditionId))))
                     )
                         throw new Error(t('aiConversationSidebar.requestChanged'));
 
@@ -2036,11 +2042,6 @@ export default function AiConversationSidebar({
     const conversationState = detail?.conversationState;
     const pendingQuestion = conversationState?.pendingQuestion?.question.trim();
     const pendingConditionId = conversationState?.pendingQuestion?.conditionId;
-    const unresolvedRequest = conversationState?.conditions.some((condition) => condition.preview.status === 'PREVIEW_READY')
-        ? conversationState.conditions.find(
-              (condition) => condition.conditionId === pendingConditionId && condition.preview.status === 'NEEDS_CLARIFICATION',
-          )
-        : undefined;
     const clarificationId = useId();
     const clarificationTurn = activeTurns.find(
         (turn) =>
@@ -2051,6 +2052,16 @@ export default function AiConversationSidebar({
             turn.semanticPlan?.state === 'NEEDS_CLARIFICATION' &&
             !turn.semanticPlan.reasonCodes.includes('EMPTY_CONDITIONS'),
     );
+    const unresolvedStoredIds = clarificationTurn?.semanticPlan?.unresolvedStoredConditionIds ?? [];
+    const unresolvedRequest = conversationState?.conditions.some(
+        (condition) => condition.preview.status === 'PREVIEW_READY' && !unresolvedStoredIds.includes(condition.conditionId),
+    )
+        ? conversationState.conditions.find(
+              (condition) =>
+                  (condition.conditionId === pendingConditionId && condition.preview.status === 'NEEDS_CLARIFICATION') ||
+                  unresolvedStoredIds.includes(condition.conditionId),
+          )
+        : undefined;
     const answeringClarification = !editingRequest && (Boolean(pendingQuestion) || Boolean(clarificationTurn));
     const question = clarificationQuestion(pendingQuestion, clarificationTurn?.semanticPlan?.summary);
     const composerPlaceholder = answeringClarification
@@ -2423,9 +2434,9 @@ export default function AiConversationSidebar({
                         <AiSemanticReview
                             plan={turn.semanticPlan}
                             clarification={
-                                turn === clarificationTurn && pendingQuestion
+                                turn === clarificationTurn && (pendingQuestion || unresolvedRequest)
                                     ? {
-                                          text: pendingQuestion,
+                                          text: pendingQuestion ?? turn.semanticPlan.summary,
                                           id: clarificationId,
                                           unresolvedRequest: unresolvedRequest && {
                                               text: unresolvedRequest.text,
