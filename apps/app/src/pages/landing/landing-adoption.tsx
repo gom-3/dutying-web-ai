@@ -1,7 +1,9 @@
 import {useEffect, useRef, useState, useSyncExternalStore, type FormEvent} from 'react';
-import {Trans} from 'react-i18next';
+import {Trans, useTranslation} from 'react-i18next';
 import {SELLER} from '@/shared/business/profile';
 import ROUTE from '@/shared/constant/path';
+import {normalizeWebLanguage} from '@/shared/i18n/locale';
+import {getPublishedLegalDocumentUrl} from '@/shared/legal/documents';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {trackLandingAdoption} from './landing-adoption-analytics';
 import './landing-adoption.css';
@@ -38,6 +40,9 @@ function readAdoptionForm(data: FormData) {
 
 export function LandingAdoption() {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const language = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const privacyHref = language === 'ko' ? ROUTE.PRIVACY : getPublishedLegalDocumentUrl('privacyPolicy', language);
     // Render the form only once its submit handler can prevent a native POST to the landing page.
     const isHydrated = useSyncExternalStore(subscribeToHydration, getClientHydration, getServerHydration);
     const formStarted = useRef(false);
@@ -163,7 +168,7 @@ export function LandingAdoption() {
                                             <Trans
                                                 i18nKey="page.landing.adoption.privacyConsent"
                                                 components={{
-                                                    policy: <a href={ROUTE.PRIVACY} />,
+                                                    policy: <a href={privacyHref} />,
                                                     consent: <label htmlFor="landing-adoption-consent" />,
                                                 }}
                                             />

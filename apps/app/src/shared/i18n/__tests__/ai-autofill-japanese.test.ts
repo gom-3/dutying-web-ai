@@ -1,5 +1,6 @@
 import {afterAll, describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
+import {localizeConversationServerCopy} from '@/pages/make-shift/model/conversation-presentation';
 
 function leaves(value: unknown, prefix = ''): Record<string, string> {
     if (typeof value === 'string') return {[prefix]: value};
@@ -68,10 +69,43 @@ describe('Japanese AI autofill translations', () => {
         );
     });
 
-    it.each(['zh', 'th', 'vi'])('keeps the existing English fallback for %s', async (language) => {
+    it.each([
+        ['zh', '正在加载对话'],
+        ['zh-TW', '正在載入對話'],
+        ['th', 'กำลังโหลดการสนทนา'],
+        ['vi', 'Đang tải cuộc trò chuyện'],
+    ])('renders the chat directly in %s', async (language, loading) => {
         await i18n.changeLanguage(language);
 
-        expect(i18n.t('aiConversationSidebar.loadingConversation')).toBe('Loading your conversation');
-        expect(i18n.t('aiAutofillPage.batchReview')).toBe('Load result for review · no extra use');
+        expect(i18n.t('aiConversationSidebar.loadingConversation')).toBe(loading);
+        for (const section of ['aiAdjust', 'aiAutofillPage', 'aiAutofillUi', 'aiConversationSidebar']) {
+            const english = leaves(i18n.getResource('en', 'translation', section));
+            const translated = leaves(i18n.getResource(language, 'translation', section));
+
+            expect(Object.keys(translated).sort()).toEqual(Object.keys(english).sort());
+            for (const [key, text] of Object.entries(translated)) {
+                expect(text, `${section}.${key}`).not.toMatch(/[가-힣]|<unk>/);
+                expect(placeholders(text), `${section}.${key}`).toEqual(placeholders(english[key]));
+            }
+        }
+    });
+});
+
+describe('saved AI clarification messages', () => {
+    it.each(['en', 'ja', 'zh', 'zh-TW', 'th', 'vi'])('renders a known server clarification in %s', (language) => {
+        const t = i18n.getFixedT(language);
+        const legacyMessage = '어느 간호사에게 적용할지 이름을 다시 확인해 주세요.';
+        const localized = localizeConversationServerCopy(legacyMessage, t);
+
+        expect(localized).toBe(i18n.getResource(language, 'translation', 'aiChatServerCopy.checkPeople'));
+        expect(localized).not.toMatch(/[가-힣]/);
+        expect(localizeConversationServerCopy('대상 간호사를 확인하지 못했어요. 표에 있는 이름을 알려 주세요.', t)).toBe(localized);
+        expect(localizeConversationServerCopy('대상 간호사를 이 근무팀에서 찾지 못했어요.', t)).toBe(localized);
+        expect(localizeConversationServerCopy('未設定的訊息', t)).toBe('未設定的訊息');
+
+        const spellingQuestion =
+            '말씀하신 간호사가 김서연 / 김서현 선생님인가요? 이름을 확인해 주시면 앞서 요청한 내용을 이어서 확인할게요.';
+
+        expect(localizeConversationServerCopy(spellingQuestion, t)).toBe(t('aiChatServerCopy.confirmSpelling', {names: '김서연 / 김서현'}));
     });
 });

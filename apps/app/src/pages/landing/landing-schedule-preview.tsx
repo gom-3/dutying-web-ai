@@ -1,4 +1,4 @@
-import type {TPreferredLanguage} from '@dutying/domain';
+import type {TWebLanguage} from '@/shared/i18n/locale';
 import {Check, Eraser, Eye, History, Pin, Redo2, Undo2} from 'lucide-react';
 import {type CSSProperties, useEffect, useState} from 'react';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
@@ -7,7 +7,7 @@ import {useLandingReducedMotion} from './use-landing-reduced-motion';
 import './landing-schedule-preview.css';
 
 // Fictional staff for the public product preview.
-const namesByLanguage: Record<TPreferredLanguage, readonly string[]> = {
+const namesByLanguage: Record<TWebLanguage, readonly string[]> = {
     ko: [
         '김서연',
         '이수진',
@@ -71,6 +71,22 @@ const namesByLanguage: Record<TPreferredLanguage, readonly string[]> = {
         '孙晓月',
         '马梓涵',
         '胡婉清',
+    ],
+    'zh-TW': [
+        '陳怡君',
+        '林雅婷',
+        '黃佳穎',
+        '張詩涵',
+        '李佩珊',
+        '王思妤',
+        '吳欣怡',
+        '劉宛庭',
+        '蔡宜蓁',
+        '楊佳蓉',
+        '許婉婷',
+        '鄭心怡',
+        '謝雨彤',
+        '郭子晴',
     ],
     th: [
         'ณิชา',
@@ -156,7 +172,7 @@ const previewStages = [
     {stage: 'violations', duration: 2700},
 ] as const;
 
-export function LandingSchedulePreview({language}: {language: TPreferredLanguage}) {
+export function LandingSchedulePreview({language}: {language: TWebLanguage}) {
     const {t} = useTypedTranslation();
     const [stageIndex, setStageIndex] = useState(0);
     const reducedMotion = useLandingReducedMotion();

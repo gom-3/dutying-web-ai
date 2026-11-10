@@ -24,6 +24,7 @@ const localeModules = {
     zh: loadTsModule(resolve(localeDir, 'zh.ts')).zh,
     th: loadTsModule(resolve(localeDir, 'th.ts')).th,
     vi: loadTsModule(resolve(localeDir, 'vi.ts')).vi,
+    'zh-TW': loadTsModule(resolve(appRoot, 'src/shared/i18n/resources.generated.ts')).zhTW,
 };
 
 const flatLocales = Object.fromEntries(
@@ -58,6 +59,7 @@ const headers = [
     'vi',
     'serverMessageKey',
     'updatedAt',
+    'zh-TW',
 ];
 
 const rows = runtimeKeys.map((runtimeKey) => ({
@@ -70,7 +72,7 @@ const rows = runtimeKeys.map((runtimeKey) => ({
     status: 'imported',
     displayPolicy: '',
     maxLength: '',
-    emptyLocales: ['ko', 'en', 'ja', 'zh', 'th', 'vi'].filter((locale) => flatLocales[locale][runtimeKey] === '').join('|'),
+    emptyLocales: ['ko', 'en', 'ja', 'zh', 'th', 'vi', 'zh-TW'].filter((locale) => flatLocales[locale][runtimeKey] === '').join('|'),
     termIds: '',
     context: '',
     route: '',
@@ -82,6 +84,7 @@ const rows = runtimeKeys.map((runtimeKey) => ({
     zh: flatLocales.zh[runtimeKey] ?? '',
     th: flatLocales.th[runtimeKey] ?? '',
     vi: flatLocales.vi[runtimeKey] ?? '',
+    'zh-TW': flatLocales['zh-TW'][runtimeKey] ?? '',
     serverMessageKey: '',
     updatedAt: importedAt,
 }));

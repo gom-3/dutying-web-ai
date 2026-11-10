@@ -1,0 +1,360 @@
+{
+    "feature": {
+        "account": {
+            "edit": {
+                "birthDateFailed": "無法儲存出生日期。"
+            }
+        }
+    },
+    "page": {
+        "login": {
+            "lineContinue": "繼續使用 LINE",
+            "lineStart": "開始使用 LINE"
+        },
+        "makeShift": {
+            "aiRefill": {
+                "adjust": {
+                    "title": "可以這樣說",
+                    "dialog": {
+                        "title": "要怎麼重新生成？",
+                        "description": "可以直接重新生成，也可以用一句話說出想調整的方向。\n說過的要求會保留到本月結束，下次生成時也會一起應用。",
+                        "regenerate": "重新生成",
+                        "close": "關閉"
+                    },
+                    "examplesMore": "更多示例",
+                    "examplesLess": "收起",
+                    "inputHint": "約束條件裡能寫的，這裡都能說。加上姓名、班次(D/E/N/O)和數字會更準確。",
+                    "examples": {
+                        "clusterOn": "把班排得連在一起，休息也連著兩天",
+                        "clusterOff": "減少連續上班，讓休息更分散一些",
+                        "offBalance": "讓每個人的休息天數更平均",
+                        "seniorityMix": "同一個班不要都是新人，把熟練度混一混",
+                        "maxConsecutiveDay": "白班最多連上4天",
+                        "maxConsecutiveNight": "夜班最多連上3天",
+                        "maxConsecutiveWork": "最多連上5天班，之後要休息",
+                        "offAfterNight": "夜班結束後休息兩天",
+                        "noIsolatedOff": "不要只休一天，至少連休兩天",
+                        "forbidNightThenDay": "夜班第二天不要排白班",
+                        "forbidEveningThenDay": "小夜第二天儘量不排白班",
+                        "monthlyNightCap": "每人每月夜班最多6次",
+                        "weekendCap": "每人週末班最多3次",
+                        "nurseAvoidShift": "○○這個月不要排小夜",
+                        "nurseForbidWeekend": "○○週末不要排班",
+                        "pairNotSameShift": "○○和△△不要排同一個班",
+                        "pairSameShift": "○○必須和△△同一天上同一個班",
+                        "nightKeeper": "○○本月固定夜班，夜班正好12次",
+                        "pregnancyWeekdayDay": "懷孕的○○本月只上工作日白班",
+                        "returnNoNight": "返崗的○○本月不上夜班，只上白班和小夜",
+                        "precepteeNotAlone": "夜班不要讓新護理師○○單獨值班",
+                        "chargeCoverage": "每天夜班至少安排1名責任護理師",
+                        "combined": "夜班後休兩天，白班最多連上4天"
+                    },
+                    "severity": {
+                        "SOFT": "建議",
+                        "HARD": "必須",
+                        "label": "{{label}} 強度"
+                    },
+                    "conditionStatus": {
+                        "WAITING_FOR_DATA": "等待運營資料",
+                        "INACTIVE_CONDITION": "當前條件未滿足"
+                    },
+                    "promote": {
+                        "title": "這些規則下個月還用嗎？",
+                        "description": "這是您這個月用句子設定的規則。只有選擇保留的會成為病房約束條件，其餘到本月為止。",
+                        "keep": "保留",
+                        "discard": "僅本月",
+                        "confirm": "確定",
+                        "cancel": "取消"
+                    },
+                    "monthRuleBadge": "本月規則",
+                    "remaining": "“{{label}}”還有{{count}}處沒滿足。",
+                    "remainingAction": "調整得更強",
+                    "downgraded": "“{{label}}”設成了必須，但這個月沒能完全滿足。",
+                    "useSuggestion": "用這句話",
+                    "applied": "已更改 {{count}} 個單元格。",
+                    "noChange": "本次執行未找到可應用的更改。",
+                    "failed": "無法調整，請稍後重試。",
+                    "notAllowed": "該功能尚未對此賬號開放。",
+                    "textInput": {
+                        "label": "調整請求",
+                        "placeholder": "例如：休息更均勻一些，班次集中安排",
+                        "submit": "調整",
+                        "interpreting": "理解中…"
+                    },
+                    "interpretFailed": "無法理解這句話，請稍後重試。",
+                    "lifetime": {
+                        "MONTH": "僅本月",
+                        "TEAM": "持續"
+                    },
+                    "card": {
+                        "title": "我們是這樣理解的",
+                        "empty": "無法轉換為調整方向。試試用休息、班次集中、資歷搭配來描述。",
+                        "lifetimeLabel": "{{label}} 期限",
+                        "teamHint": "看起來會持續使用",
+                        "assumedBadge": "預設值",
+                        "assumedTooltip": "您沒有給出數字，我們替您選了一個。不同的話請再說一次。",
+                        "cellApplied": "已在表格中設定並鎖定 {{count}} 格",
+                        "cellNotApplied": "在表格中找不到該單元格",
+                        "ruleNote": "可以設為規則 — 本次調整不會應用。",
+                        "apply": "應用",
+                        "cancel": "取消"
+                    },
+                    "requests": {
+                        "title": "本月請求 {{count}} 條",
+                        "empty": "還沒有請求。",
+                        "persistNote": "重新生成後這些請求仍會保留，並在每次自動填充和調整時一起應用。",
+                        "remove": "關閉 {{label}}",
+                        "carriedOver": "來自上月"
+                    },
+                    "carryOver": {
+                        "title": "上個月有這些請求",
+                        "description": "請選擇本月也要保留的請求。",
+                        "yes": "本月也要",
+                        "no": "不要",
+                        "apply": "應用",
+                        "skip": "跳過",
+                        "applied": "已將 {{count}} 條請求帶入本月。",
+                        "failed": "無法帶入，請稍後重試。"
+                    }
+                }
+            },
+            "calendar": {
+                "fixCell": "固定",
+                "unfixCell": "取消固定",
+                "fixCellSuccess": "已固定班次。",
+                "unfixCellSuccess": "已取消固定班次。",
+                "fixedStatusPin": "固定班次",
+                "requestStatusPin": "申請班次"
+            },
+            "constraints": {
+                "help": {
+                    "aria": "檢視{{constraint}}的說明",
+                    "title": "此條件將這樣應用",
+                    "goodExample": "按這樣排班",
+                    "avoidExample": "不要這樣排班",
+                    "preferredExample": "優先這樣排班",
+                    "alternativeExample": "也可以安排其他班次",
+                    "alternativePreferredExample": "優先安排其他班次",
+                    "avoidIfPossibleExample": "儘量不要這樣安排",
+                    "alternativeAssignmentExample": "也可以採用其他安排",
+                    "noteLabel": "參考",
+                    "fallbackDuty": {
+                        "day": "白班",
+                        "twoDay": "日班",
+                        "evening": "小夜班",
+                        "night": "夜班",
+                        "nightContinuation": "夜班結束日",
+                        "off": "休息"
+                    },
+                    "audience": {
+                        "allNurses": "所有護理師",
+                        "selectedTarget": "所選物件",
+                        "firstNurse": "第一位護理師",
+                        "secondNurse": "第二位護理師"
+                    },
+                    "value": {
+                        "everyday": "每天",
+                        "month": "一個月",
+                        "requested": "申請",
+                        "weekendHoliday": "週末·節假日",
+                        "people": "{{count}}人",
+                        "times": "{{count}}次",
+                        "withoutOff": "不休息",
+                        "configuredMode": "所選參與方式",
+                        "otherMode": "其他參與方式",
+                        "configuredComposition": "所選編制",
+                        "otherComposition": "其他編制",
+                        "lines": "{{count}}條班線",
+                        "twoShiftDuty": "兩班制班次",
+                        "perNurse": "按護理師",
+                        "restMinutes": "休息{{count}}分鐘",
+                        "workMinutes": "工作{{count}}分鐘",
+                        "workload": "工作負擔",
+                        "difference": "差值 {{count}}",
+                        "sameDate": "同一天",
+                        "allDuties": "全部班次"
+                    },
+                    "note": {
+                        "minimumNightIntervalOne": "設定為1天時，允許不同夜班段之間保留基本間隔。",
+                        "minimumContinuousNightOne": "設定為1天時，也可以只安排一天夜班。"
+                    },
+                    "description": {
+                        "STAFF_COUNT_BY_SHIFT": "在每個所選適用日，使該班次人數符合設定的最少、最多或準確人數。",
+                        "CORE_MAX_CONTINUOUS_WORK": "連續工作不得超過{{count}}天；遇到休息日後重新計算連續天數。",
+                        "MIN_OFF_AFTER_CONSECUTIVE_WORK": "連續工作{{workCount}}天后，緊接著至少安排{{offCount}}天休息。",
+                        "AVOID_ISOLATED_WORK_DAY": "避免在兩個休息日之間只安排一天工作。",
+                        "AVOID_ISOLATED_OFF_DAY": "避免在工作日之間只安排一天休息。",
+                        "CORE_MIN_NIGHT_INTERVAL": "一個{{nightName}}班段結束後，到下一個{{nightName}}開始前至少間隔{{count}}個非夜班日。",
+                        "CORE_MAX_CONTINUOUS_NIGHT": "{{nightName}}連續安排不得超過{{count}}天。",
+                        "CORE_MIN_CONTINUOUS_NIGHT": "每段{{nightName}}至少連續{{count}}天，以減少單獨或過短的夜班安排。",
+                        "CORE_MIN_OFF_AFTER_NIGHT": "連續{{nightName}}結束後，從第二天起至少安排{{count}}天{{offName}}。",
+                        "FORBID_N_THEN_D": "{{nightName}}後的下一個日曆日不安排{{dayName}}。",
+                        "FORBID_N_THEN_E": "{{nightName}}後的下一個日曆日不安排{{eveningName}}。",
+                        "FORBID_E_THEN_D": "{{eveningName}}後的下一個日曆日不安排{{dayName}}。",
+                        "FORBID_E_THEN_N": "{{eveningName}}後的下一個日曆日不安排{{nightName}}。",
+                        "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": "已批准並納入生成條件的申請休息日前一天不安排{{nightName}}。這並不表示所有普通休息日。",
+                        "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": "所選物件在週末·節假日的{{shiftName}}安排，在設定期間內不得超過{{count}}次。",
+                        "NURSE_FORBID_WEEKEND": "所選護理師在週末·節假日不安排工作。",
+                        "NURSE_PREFER_SHIFT": "為所選護理師排班時儘量優先安排{{shiftName}}。",
+                        "NURSE_AVOID_SHIFT": "為所選護理師排班時儘量不安排{{shiftName}}。",
+                        "NURSE_PAIR_NOT_SAME_SHIFT": "不要在同一天將所選兩位護理師安排到同一個班次。",
+                        "NURSE_PAIR_PREFER_SAME_SHIFT": "儘量在同一天將所選兩位護理師安排到同一個班次。",
+                        "TWO_SHIFT_NIGHT_THEN_CONTINUATION": "所有護理師在{{nightName}}後的顯示日安排{{continuationName}}，使兩個班次組成一組。",
+                        "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": "從{{continuationName}}後的顯示日起，至少安排{{count}}天{{offName}}。",
+                        "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": "{{nightName}}連續安排結束後，至少安排{{count}}天{{offName}}。",
+                        "MAX_MONTHLY_NIGHT_COUNT": "一個月內的{{nightName}}安排不得超過{{count}}次。",
+                        "MIXED_ROTATION_PARTICIPATION": "所選物件在每個適用日按指定的混合輪班參與方式工作。",
+                        "MIXED_DAILY_COMPOSITION": "在每個所選適用日保持指定的混合輪班編制。",
+                        "TWO_SHIFT_DAILY_LINES": "使所選適用日的兩班制班線數量符合設定值。",
+                        "TWO_SHIFT_ASSIGNMENT_COUNT": "使所選護理師的兩班制班次數量保持在設定期間和範圍內。",
+                        "TIME_WINDOW_STAFF_COUNT": "使所選時段內正在工作的人員數量符合設定值。",
+                        "MIN_REST_BETWEEN_SHIFTS": "確保所選物件在連續班次之間至少休息{{minutes}}分鐘。",
+                        "MAX_WORK_MINUTES_BY_PERIOD": "所選物件在每個期間內的總工作時間不得超過{{minutes}}分鐘。",
+                        "MIXED_SHIFT_WORKLOAD_BALANCE": "使所選護理師之間的工作負擔差異不超過{{difference}}。",
+                        "MAX_CONSECUTIVE_WORK_DAYS": "連續工作不得超過{{count}}天。",
+                        "OFF_AFTER_CONSECUTIVE_WORK": "連續工作{{count}}天后，緊接著安排一天休息。"
+                    }
+                }
+            },
+            "context": {
+                "switchToast": "已切換到 {{year}}年{{month}}月 · {{teamName}}。"
+            }
+        },
+        "member": {
+            "detail": {
+                "shiftRatio": "月度班次比例",
+                "shiftRatioHelpAria": "月度班次比例說明",
+                "shiftRatioHint": "僅按可排班的D/E/N/O班次調整月度目標天數",
+                "shiftRatioEmpty": "選擇可排班的D/E/N/O班次後即可設定比例",
+                "shiftRatioInputAria": "{{shiftName}}月度班次天數",
+                "shiftRatioReset": "展開月度班次比例"
+            }
+        },
+        "profile": {
+            "validation": {
+                "birthDateInvalid": "請輸入 1900-01-01 至今天之間的日期。"
+            },
+            "birthDate": "出生日期"
+        },
+        "notifications": {
+            "openAria": "開啟通知",
+            "panelAria": "通知列表",
+            "title": "通知",
+            "unreadCount": "{{count}} 條未讀通知",
+            "unreadShort": "未讀 {{count}}",
+            "justNow": "剛剛",
+            "minutesAgo": "{{count}} 分鐘前",
+            "hoursAgo": "{{count}} 小時前",
+            "loadFailed": "無法載入通知。",
+            "retry": "重試",
+            "empty": "沒有新通知。"
+        }
+    },
+    "widget": {
+        "wardChat": {
+            "toast": {
+                "imageUploadFailed": "照片上傳失敗，請重試。",
+                "maxImageCount": "最多可傳送 {{count}} 張照片。",
+                "maxImageSize": "圖片檔案必須小於 {{size}}MB。",
+                "imageOnly": "只能上傳圖片檔案。"
+            },
+            "enableAlertAria": "開啟病房聊天新訊息提醒",
+            "disableAlertAria": "關閉病房聊天新訊息提醒",
+            "alertOnTooltip": "新訊息提醒已開啟",
+            "alertOffTooltip": "新訊息提醒已關閉",
+            "previewOpenAria": "開啟來自 {{sender}} 的新訊息：{{text}}",
+            "unknownSender": "病房聊天",
+            "emptyPreview": "收到一條新訊息。",
+            "photoPreview": "傳送了一張照片。",
+            "addImageAria": "新增照片",
+            "addImageTitle": "新增照片",
+            "removeImageAria": "刪除 {{name}} 照片",
+            "removeImageTitle": "刪除照片",
+            "imageUploadingAria": "正在上傳照片",
+            "imagePreviewAria": "預覽照片 {{index}}/{{total}}",
+            "imagePreviewTitle": "照片預覽",
+            "closeImagePreviewAria": "關閉照片預覽",
+            "imageFallbackName": "照片"
+        }
+    },
+    "scheduleFinalValidation": {
+        "title": "確認前請檢查",
+        "summary": "有 {{emptyCount}} 個空白單元格和 {{violationCount}} 項排班條件違規。",
+        "description": "檢查詳情後，可按當前內容確認或返回修改。",
+        "edit": "返回修改",
+        "confirm": "按當前內容確認",
+        "failed": "未能完成確認前檢查，請重試。"
+    },
+    "requestCapacity": {
+        "help": "{{label}}幫助",
+        "limitLabel": "人數限制",
+        "groupSettings": "分組設定",
+        "capacityHelp": "每天使用相同名額。達到上限後，應用將停止接收新申請。0人表示不可新增申請。",
+        "groupHelp": "團隊和分組上限同時生效。留空表示不限。將團隊總人數留空可僅應用分組上限。",
+        "numberError": "請輸入0至10,000的整數。",
+        "dailyTitle": "每日申請名額",
+        "teamDailyMax": "整個團隊 · 每天最多",
+        "autoClose": "達到{{count}}人後，該日期的申請將關閉。",
+        "groupOnly": "僅應用分組名額，團隊總人數不限。",
+        "removeTeamLimit": "取消團隊總人數限制",
+        "clearGroups": "清除分組限制",
+        "appliedTeam": "已應用於{{team}}",
+        "title": "每日申請人數限制",
+        "description": "設定同一天可申請的人數。",
+        "enabled": "啟用人數限制",
+        "toggleDescription": "按班別限制每天的申請人數，達到上限後，應用將停止接收新申請。",
+        "team": "排班團隊",
+        "type": "班別型別",
+        "teamLimit": "團隊每日人數上限",
+        "unlimited": "不限",
+        "example": "例如：3",
+        "people": "人",
+        "allDates": "每天使用相同上限",
+        "groups": "設定分組人數",
+        "group": "分組",
+        "groupLimit": "分組每日人數上限",
+        "addGroup": "新增分組限制",
+        "addType": "新增其他班別",
+        "remove": "刪除",
+        "save": "儲存更改",
+        "saving": "儲存中…",
+        "saved": "已儲存申請人數限制。",
+        "error": "無法載入申請人數限制。",
+        "saveError": "儲存失敗，已保留輸入內容。",
+        "retry": "重新載入",
+        "loading": "正在載入申請人數限制…",
+        "emptyTeam": "請先建立排班團隊。",
+        "emptyType": "請先建立可申請的班別型別。",
+        "invalid": "請輸入0至10,000的整數並設定至少一項限制。0人表示不可新增申請。",
+        "overflow": "{{date}} · {{type}} · {{scope}}：已申請{{count}}人／上限{{limit}}人",
+        "overflowHint": "保留現有申請，人數低於上限前禁止新增申請。",
+        "unsaved": "存在未儲存的設定，是否放棄並切換團隊？",
+        "stale": "其他管理員已更改設定。輸入已保留，請重新載入後儲存。",
+        "changed": "有未儲存的更改。",
+        "dailyMax": "每天最多",
+        "groupHint": "分組人數留空表示該組不限人數。",
+        "groupBoth": "團隊總上限和分組上限同時生效。",
+        "groupSummary": "{{group}} {{count}}人",
+        "savedLabel": "已儲存",
+        "scope": "限制範圍",
+        "teamScope": "整個團隊",
+        "groupScope": "按分組",
+        "includeTeam": "同時限制團隊總人數",
+        "teamTotal": "團隊總人數",
+        "on": "已啟用",
+        "off": "未啟用",
+        "offHint": "不限制申請人數。",
+        "cancel": "取消",
+        "increase": "增加",
+        "decrease": "減少",
+        "enterCount": "輸入人數",
+        "countHint": "請輸入可申請的最多人數。",
+        "zeroHint": "設為0人將停止接收新申請。",
+        "firstCome": "前{{count}}人可以提交申請。",
+        "blankUnlimited": "留空表示不限",
+        "settingsTabs": "申請設定",
+        "periodTab": "接收時間",
+        "capacityTab": "申請人數",
+        "settingsDescription": "管理申請接收時間和人數。"
+    }
+}

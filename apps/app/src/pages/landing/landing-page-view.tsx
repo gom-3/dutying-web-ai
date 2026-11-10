@@ -1,4 +1,3 @@
-import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
 import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
 import {Suspense, lazy, useEffect, useRef, useState} from 'react';
@@ -6,18 +5,13 @@ import {Trans, useTranslation} from 'react-i18next';
 import {Link, useLocation} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
-import {SellerDetails} from '@/shared/business/profile';
+import {SELLER, SellerDetails} from '@/shared/business/profile';
+import {getPublishedLegalDocumentUrl} from '@/shared/legal/documents';
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
-import {
-    getMarketingAppStoreUrls,
-    getMarketingLanguageHref,
-    getNurseAppHref,
-    isNurseAppMarketingPath,
-    rememberMarketingLanguage,
-} from '@/shared/seo/marketing-locale';
+import {getLocaleForLanguage, normalizeWebLanguage, WEB_LANGUAGES, type TWebLanguage} from '@/shared/i18n/locale';
+import {getMarketingAppStoreUrls, getMarketingLanguageHref, getNurseAppHref, isNurseAppMarketingPath} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import {trackGrowthAction} from '@/shared/util/growth-analytics';
 import {LandingAdoption} from './landing-adoption';
@@ -36,64 +30,67 @@ const mobileWardBenefitIconSrc = '/img/mobile-ward-benefit-icon.webp';
 const mobileCommunityBenefitIconSrc = '/img/mobile-community-benefit-icon.webp';
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const ProfileContent = lazy(() => import('@/pages/profile').then((module) => ({default: module.ProfileContent})));
-const languageOptions = SUPPORTED_LANGUAGES;
-const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+const languageOptions = WEB_LANGUAGES;
+const landingHeroImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/landing-hero-kr.webp',
     ja: '/img/landing-hero-jp.webp',
     en: '/img/landing-hero-en.webp',
     zh: '/img/landing-hero-cn.webp',
+    'zh-TW': '/img/landing-hero-en.webp',
     th: '/img/landing-hero-en.webp',
     vi: '/img/landing-hero-en.webp',
 };
-const landingMobileHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+const landingMobileHeroImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/iPhone%2015_1.webp',
     ja: '/img/landing-mobile-hero-ja.png',
     en: '/img/landing-mobile-hero-en.png',
     zh: '/img/landing-mobile-hero-zh.png',
+    'zh-TW': '/img/landing-mobile-hero-en.png',
     th: '/img/landing-mobile-hero-en.png',
     vi: '/img/landing-mobile-hero-en.png',
 };
-const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
+const landingWorkScheduleImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/landing-work-schedule-2.webp',
     ja: '/img/landing-work-schedule-jp.webp',
     en: '/img/landing-work-schedule-en.webp',
     zh: '/img/landing-work-schedule-cn.webp',
+    'zh-TW': '/img/landing-work-schedule-en.webp',
     th: '/img/landing-work-schedule-th.webp',
     vi: '/img/landing-work-schedule-vn.webp',
 };
-const landingWebScheduleImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingWebScheduleImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-987-ja.webp',
     en: '/img/image-987-en.webp',
 };
-const landingAiFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAiFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/124-ja.webp',
     en: '/img/124-en.webp',
 };
-const landingWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingWardFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-1002-ja.webp',
     en: '/img/image-1002-en.webp',
 };
-const landingAppSectionImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppSectionImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/temp-ja.webp',
     en: '/img/temp-en.webp',
 };
-const landingAppHomeFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/213213123123-ja.webp',
     en: '/img/213213123123-en.webp',
 };
-const landingAppHomeWideImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeWideImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-992-ja.webp',
     en: '/img/image-992-en.webp',
 };
-const landingAppHomeSquareImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeSquareImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-991-ja.webp',
     en: '/img/image-991-en.webp',
 };
-const landingAppWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppWardFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/ward-schedule-ja.webp',
     en: '/img/ward-schedule-en.webp',
 };
-const landingAppCommunityFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppCommunityFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/12223-ja.webp',
     en: '/img/12223-en.webp',
 };
@@ -232,111 +229,93 @@ const mobileAppBenefitSpecs = [
 }[];
 
 function getLandingHeroImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingMobileHeroImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingMobileHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWorkScheduleImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingWorkScheduleImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWebScheduleImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-987.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-987.webp';
 
-    return landingWebScheduleImageByLanguage[normalizedLanguage] ?? '/img/image-987.webp';
+    return landingWebScheduleImageByLanguage[normalizedLanguage ?? 'en'] ?? landingWebScheduleImageByLanguage.en;
 }
 
 function getLandingAiFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/124.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/124.webp';
 
-    return landingAiFeatureImageByLanguage[normalizedLanguage] ?? '/img/124.webp';
+    return landingAiFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAiFeatureImageByLanguage.en;
 }
 
 function getLandingWardFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-1002.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-1002.webp';
 
-    return landingWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/image-1002.webp';
+    return landingWardFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingWardFeatureImageByLanguage.en;
 }
 
 function getLandingAppSectionImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/temp.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/temp.webp';
 
-    return landingAppSectionImageByLanguage[normalizedLanguage] ?? '/img/temp.webp';
+    return landingAppSectionImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppSectionImageByLanguage.en;
 }
 
 function getLandingAppHomeFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/213213123123.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/213213123123.webp';
 
-    return landingAppHomeFeatureImageByLanguage[normalizedLanguage] ?? '/img/213213123123.webp';
+    return landingAppHomeFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeFeatureImageByLanguage.en;
 }
 
 function getLandingAppHomeWideImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-992.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-992.webp';
 
-    return landingAppHomeWideImageByLanguage[normalizedLanguage] ?? '/img/image-992.webp';
+    return landingAppHomeWideImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeWideImageByLanguage.en;
 }
 
 function getLandingAppHomeSquareImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-991.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-991.webp';
 
-    return landingAppHomeSquareImageByLanguage[normalizedLanguage] ?? '/img/image-991.webp';
+    return landingAppHomeSquareImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeSquareImageByLanguage.en;
 }
 
 function getLandingAppWardFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/ward-schedule.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/ward-schedule.webp';
 
-    return landingAppWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/ward-schedule.webp';
+    return landingAppWardFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppWardFeatureImageByLanguage.en;
 }
 
 function getLandingAppCommunityFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/12223.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/12223.webp';
 
-    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage] ?? '/img/12223.webp';
+    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppCommunityFeatureImageByLanguage.en;
 }
 
 function useRevealOnScroll() {
@@ -574,7 +553,7 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
     );
 }
 
-function StoreButton({language}: {language?: TPreferredLanguage}) {
+function StoreButton({language}: {language?: TWebLanguage}) {
     const {i18n} = useTranslation();
     const languages = [i18n.resolvedLanguage ?? i18n.language];
     const {ios: appStoreLink, android: playStoreLink} = language
@@ -686,7 +665,7 @@ function HeaderLanguageMenu() {
     const isNurseAppPage = isNurseAppMarketingPath(useLocation().pathname);
     const [isOpen, setIsOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
-    const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+    const currentLanguage = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
 
     useEffect(() => {
         if (!isOpen) {
@@ -717,7 +696,7 @@ function HeaderLanguageMenu() {
         };
     }, [isOpen]);
 
-    const getLanguageLabel = (language: TPreferredLanguage) => {
+    const getLanguageLabel = (language: TWebLanguage) => {
         switch (language) {
             case 'ko':
                 return t('page.profile.language.ko');
@@ -727,6 +706,8 @@ function HeaderLanguageMenu() {
                 return t('page.profile.language.en');
             case 'zh':
                 return t('page.profile.language.zh');
+            case 'zh-TW':
+                return t('page.profile.language.zhTW');
             case 'th':
                 return t('page.profile.language.th');
             case 'vi':
@@ -1143,7 +1124,7 @@ function LandingHeroVisual({
     desktopImage: string;
     mobileImage: string;
     imageAlt: string;
-    language: TPreferredLanguage;
+    language: TWebLanguage;
 }) {
     return (
         <div className={`landing-hero-product ${language === 'ko' ? '' : 'landing-hero-product--international'}`}>
@@ -1163,7 +1144,7 @@ function LandingHeroVisual({
     );
 }
 
-function NurseAppSections({language}: {language: TPreferredLanguage}) {
+function NurseAppSections({language}: {language: TWebLanguage}) {
     const {t} = useTypedTranslation();
     const appSectionImageSrc = getLandingAppSectionImageSrc(language);
     const shouldCompactAppSectionImage = language === 'en' || language === 'ja';
@@ -1240,7 +1221,7 @@ function NurseAppSections({language}: {language: TPreferredLanguage}) {
     );
 }
 
-function ScheduleLandingSections({language, isAuth}: {language: TPreferredLanguage; isAuth: boolean}) {
+function ScheduleLandingSections({language, isAuth}: {language: TWebLanguage; isAuth: boolean}) {
     const {t} = useTypedTranslation();
     const webMakeLink = getWebMakeLink(isAuth);
     const nurseAppHref = getNurseAppHref(language);
@@ -1290,7 +1271,7 @@ function ScheduleLandingSections({language, isAuth}: {language: TPreferredLangua
                             {t('page.landing.mobileHero.description')}
                         </p>
                         <div className={`landing-mobile-only mt-7 grid gap-3 ${isKorean ? 'landing-hero-store-buttons' : ''}`}>
-                            <StoreButton />
+                            <StoreButton language={language} />
                         </div>
                     </div>
 
@@ -1389,8 +1370,9 @@ function ScheduleLandingSections({language, isAuth}: {language: TPreferredLangua
 function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestSession) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
-    const language = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+    const language = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
     const isNurseAppPage = isNurseAppMarketingPath(useLocation().pathname);
+    const isKorean = language === 'ko';
     const marketingHomeHref = getMarketingLanguageHref(language);
     const nurseAppHref = getNurseAppHref(language);
 
@@ -1432,9 +1414,15 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                         >
                             {t('page.landing.adoption.navLink')}
                         </a>
-                        <ChannelTalkLink className="transition-colors hover:text-main-1">
-                            {t('page.landing.header.customerSupport')}
-                        </ChannelTalkLink>
+                        {isKorean ? (
+                            <ChannelTalkLink className="transition-colors hover:text-main-1">
+                                {t('page.landing.header.customerSupport')}
+                            </ChannelTalkLink>
+                        ) : (
+                            <a href={`mailto:${SELLER.email}`} className="transition-colors hover:text-main-1">
+                                {t('page.landing.header.customerSupport')}
+                            </a>
+                        )}
                     </nav>
 
                     <div className="flex min-w-0 items-center gap-2">
@@ -1457,40 +1445,60 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
             <footer className={`${softPurpleBackground} px-5 py-10 text-sm font-medium text-[#777487] md:px-8`}>
                 <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
                     <div className="flex flex-wrap gap-5">
-                        <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a
+                            href={isKorean ? termsOfServiceLink : getPublishedLegalDocumentUrl('termsOfService', language)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-main-1"
+                        >
                             {t('page.login.termsOfService')}
                         </a>
-                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="font-bold hover:text-main-1">
+                        <a
+                            href={isKorean ? privacyPolicyLink : getPublishedLegalDocumentUrl('privacyPolicy', language)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold hover:text-main-1"
+                        >
                             {t('page.login.privacyPolicy')}
                         </a>
-                        <ChannelTalkLink className="hover:text-main-1">{t('page.landing.header.inquiry')}</ChannelTalkLink>
+                        {isKorean ? (
+                            <ChannelTalkLink className="hover:text-main-1">{t('page.landing.header.inquiry')}</ChannelTalkLink>
+                        ) : (
+                            <a href={`mailto:${SELLER.email}`} className="hover:text-main-1">
+                                {t('page.landing.header.inquiry')}
+                            </a>
+                        )}
                     </div>
-                    <div className="flex flex-wrap gap-5">
-                        <a href="https://docs.dutying.ai/guides/nurse-scheduling" hrefLang="ko" className="hover:text-main-1">
-                            {t('page.landing.common.guideLink')}
-                        </a>
-                        <a href="https://docs.dutying.ai/troubleshooting/faq" hrefLang="ko" className="hover:text-main-1">
-                            {t('page.landing.common.faqLink')}
-                        </a>
-                    </div>
-                    <div className="flex flex-wrap gap-5">
-                        <a href="/pricing">{t('page.landing.footer.plusPlan')}</a>
-                        <a href="/subscription-terms">{t('page.landing.footer.subscriptionTerms')}</a>
-                        <a href="/refund">{t('page.landing.footer.refundPolicy')}</a>
-                    </div>
-                    <SellerDetails
-                        collapsible
-                        labels={{
-                            brand: t('page.landing.footer.seller.brand'),
-                            pending: t('page.landing.footer.seller.pending'),
-                            representative: t('page.landing.footer.seller.representative'),
-                            registrationNumber: t('page.landing.footer.seller.registrationNumber'),
-                            address: t('page.landing.footer.seller.address'),
-                            phone: t('page.landing.footer.seller.phone'),
-                            email: t('page.landing.footer.seller.email'),
-                            ecommerceNumber: t('page.landing.footer.seller.ecommerceNumber'),
-                        }}
-                    />
+                    {isKorean && (
+                        <>
+                            <div className="flex flex-wrap gap-5">
+                                <a href="https://docs.dutying.ai/guides/nurse-scheduling" hrefLang="ko" className="hover:text-main-1">
+                                    {t('page.landing.common.guideLink')}
+                                </a>
+                                <a href="https://docs.dutying.ai/troubleshooting/faq" hrefLang="ko" className="hover:text-main-1">
+                                    {t('page.landing.common.faqLink')}
+                                </a>
+                            </div>
+                            <div className="flex flex-wrap gap-5">
+                                <a href="/pricing">{t('page.landing.footer.plusPlan')}</a>
+                                <a href="/subscription-terms">{t('page.landing.footer.subscriptionTerms')}</a>
+                                <a href="/refund">{t('page.landing.footer.refundPolicy')}</a>
+                            </div>
+                            <SellerDetails
+                                collapsible
+                                labels={{
+                                    brand: t('page.landing.footer.seller.brand'),
+                                    pending: t('page.landing.footer.seller.pending'),
+                                    representative: t('page.landing.footer.seller.representative'),
+                                    registrationNumber: t('page.landing.footer.seller.registrationNumber'),
+                                    address: t('page.landing.footer.seller.address'),
+                                    phone: t('page.landing.footer.seller.phone'),
+                                    email: t('page.landing.footer.seller.email'),
+                                    ecommerceNumber: t('page.landing.footer.seller.ecommerceNumber'),
+                                }}
+                            />
+                        </>
+                    )}
                     <p>{t('page.landing.common.copyright')}</p>
                 </div>
             </footer>
