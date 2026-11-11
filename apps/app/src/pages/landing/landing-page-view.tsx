@@ -6,12 +6,18 @@ import {Link, useLocation} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {SELLER, SellerDetails} from '@/shared/business/profile';
-import {getPublishedLegalDocumentUrl} from '@/shared/legal/documents';
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getLocaleForLanguage, normalizeWebLanguage, WEB_LANGUAGES, type TWebLanguage} from '@/shared/i18n/locale';
-import {getMarketingAppStoreUrls, getMarketingLanguageHref, getNurseAppHref, isNurseAppMarketingPath} from '@/shared/seo/marketing-locale';
+import {normalizeWebLanguage, WEB_LANGUAGES, type TWebLanguage} from '@/shared/i18n/locale';
+import {getPublishedLegalDocumentUrl} from '@/shared/legal/documents';
+import {
+    getMarketingAppStoreUrls,
+    getMarketingLanguageHref,
+    getNurseAppHref,
+    isNurseAppMarketingPath,
+    rememberMarketingLanguage,
+} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import {trackGrowthAction} from '@/shared/util/growth-analytics';
 import {LandingAdoption} from './landing-adoption';
