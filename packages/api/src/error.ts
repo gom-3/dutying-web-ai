@@ -1,3 +1,5 @@
+import type {TScheduleObservation} from './ward/contracts';
+
 export type TApiErrorDisplayPolicy = 'CLIENT_TRANSLATE' | 'SERVER_TEXT' | 'SERVER_TEXT_WITH_LANGUAGE' | 'DEBUG_ONLY';
 
 export type TApiValidationError = {
@@ -7,6 +9,7 @@ export type TApiValidationError = {
 };
 
 export type TApiErrorResponse = {
+    scheduleObservation?: TScheduleObservation;
     code?: string;
     message?: string;
     messageKey?: string;

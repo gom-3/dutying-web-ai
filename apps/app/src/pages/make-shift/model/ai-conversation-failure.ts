@@ -87,6 +87,14 @@ function waitMessage(message?: string): string | undefined {
 
 /** Keep server wait times, but do not describe access/allowance limits as draft conflicts. */
 export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjust.failed')): TAiConversationFailure {
+    const failure = conversationFailureMessage(error, fallback);
+    const source = error as {responseBody?: {scheduleObservation?: TScheduleObservation}} | null;
+    const observation = source?.responseBody?.scheduleObservation;
+
+    return observation ? {...failure, observation} : failure;
+}
+
+function conversationFailureMessage(error: unknown, fallback: string): TAiConversationFailure {
     if (error instanceof AiConversationInputError)
         return {
             message: i18n.t(`aiAdjust.localError.${error.reason}`),

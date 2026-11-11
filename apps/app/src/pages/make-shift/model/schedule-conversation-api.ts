@@ -3,6 +3,7 @@ import type {
     TAutofillResponse,
     TScheduleAdjustInterpretRes,
     TScheduleMonthRequestItem,
+    TScheduleObservation,
     TSnapshotCellDTO,
     TSnapshotRowOrderDTO,
 } from '@dutying/api/ward';
@@ -92,6 +93,7 @@ export type TSemanticPlan = {
     }[];
 };
 export type TConversationTurn = {
+    observation?: TScheduleObservation;
     eventId: number;
     sequence: number;
     actor: string;

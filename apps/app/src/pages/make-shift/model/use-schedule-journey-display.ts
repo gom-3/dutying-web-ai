@@ -10,10 +10,11 @@ export function useScheduleJourneyDisplay<T extends HTMLElement = HTMLDivElement
     useEffect(() => {
         if (!observation) return;
 
+        let intersecting = typeof IntersectionObserver === 'undefined';
         const report = () => {
             const node = ref.current;
 
-            if (!node || document.visibilityState === 'hidden' || !node.getClientRects().length) return;
+            if (!intersecting || !node || document.visibilityState === 'hidden' || !node.getClientRects().length) return;
 
             const style = getComputedStyle(node);
             const bounds = node.getBoundingClientRect();
@@ -43,7 +44,8 @@ export function useScheduleJourneyDisplay<T extends HTMLElement = HTMLDivElement
             typeof IntersectionObserver === 'undefined'
                 ? undefined
                 : new IntersectionObserver((entries) => {
-                      if (entries.some((entry) => entry.isIntersecting)) report();
+                      intersecting = entries[entries.length - 1]?.isIntersecting ?? false;
+                      if (intersecting) report();
                   });
         if (ref.current) observer?.observe(ref.current);
         document.addEventListener('visibilitychange', report);

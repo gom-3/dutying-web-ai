@@ -1,3 +1,4 @@
+import type {TScheduleObservation} from '@dutying/api/ward';
 import {ArrowRight, Redo2} from 'lucide-react';
 import {type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -284,6 +285,7 @@ export default function AiConversationSidebar({
     const discardedPreparationId = useRef<number | null>(null);
     const localSequence = useRef(Math.max(0, ...localEvents.map((event) => Number(event.id.slice(event.id.lastIndexOf(':') + 1)) || 0)));
     const textarea = useRef<HTMLTextAreaElement>(null);
+    const turnObservations = useRef(new Map<number, TScheduleObservation>());
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
@@ -1454,6 +1456,12 @@ export default function AiConversationSidebar({
                         }
                     });
 
+                    if (interpreted.observation) {
+                        turnObservations.current.set(interpreted.eventId, interpreted.observation);
+                        if (turnObservations.current.size > 50)
+                            turnObservations.current.delete(turnObservations.current.keys().next().value!);
+                    }
+
                     const failed = interpreted.semanticPlan?.state === 'FAILED';
 
                     if (!removeConditionId) setText(failed ? request : '');
@@ -2435,7 +2443,7 @@ export default function AiConversationSidebar({
                             <p>{t('aiAutofillUi.semanticReview.deferredRequests')}</p>
                             <ul className="list-disc space-y-1 pl-5">
                                 {turn.semanticPlan.deferredRequests.map((request, index) => (
-                                    <li key={index} className="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                                    <li key={index} className="[overflow-wrap:anywhere] whitespace-pre-wrap">
                                         {request}
                                     </li>
                                 ))}
@@ -2725,7 +2733,11 @@ export default function AiConversationSidebar({
                                                 createdAt={event.turn.createdAt}
                                                 align={event.turn.actor === 'USER' ? 'right' : 'left'}
                                             >
-                                                {renderTurn(event.turn)}
+                                                <JourneyObserved
+                                                    observation={event.turn.observation ?? turnObservations.current.get(event.turn.eventId)}
+                                                >
+                                                    {renderTurn(event.turn)}
+                                                </JourneyObserved>
                                             </AiConversationTimestamp>
                                         </div>
                                     ) : (
@@ -2910,7 +2922,21 @@ export default function AiConversationSidebar({
                                                                 count: operationAttempt(detail, event.operation.operationId),
                                                             })}
                                                             operationType={event.operation.operationType}
-                                                            failure={operationFailure(event.operation)!}
+                                                            failure={{
+                                                                ...operationFailure(event.operation)!,
+                                                                observation:
+                                                                    event.operation.result?.observation ??
+                                                                    (event.operation.executionStatus === 'FAILED'
+                                                                        ? {
+                                                                              flowId: `conversation:${detail.conversation.conversationId}`,
+                                                                              serverEventId: event.operation.operationId,
+                                                                              wardId,
+                                                                              shiftTeamId: teamId,
+                                                                              year,
+                                                                              month,
+                                                                          }
+                                                                        : undefined),
+                                                            }}
                                                             detailsInChildren={Boolean(event.operation.result?.conflictReview)}
                                                             confirmationAvailable={
                                                                 !invalidatedConflictIds.has(event.operation.operationId) &&
@@ -3236,6 +3262,7 @@ export default function AiConversationSidebar({
                         )}
                         {error && (
                             <AiFailureMessage
+                                observation={error.observation}
                                 message={conversationLoadFailure && error.message === t('aiAdjust.failed') ? '' : error.message}
                                 title={conversationLoadFailure ? t('aiConversationSidebar.conversationLoadFailed') : error.title}
                             >
