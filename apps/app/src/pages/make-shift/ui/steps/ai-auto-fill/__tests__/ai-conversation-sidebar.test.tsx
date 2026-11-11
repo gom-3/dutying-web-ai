@@ -4486,20 +4486,28 @@ describe('persistent schedule sidebar', () => {
         await act(async () => finishInterpretation(proposal));
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('shows which request is still blocking understood conditions and removes only that request', async () => {
+    it.each([false, true])('shows which request blocks understood conditions and removes only it (saved review: %s)', async (savedReview) => {
         const {proposal} = semanticRequest('NEEDS_CLARIFICATION');
-        const unresolved = {conditionId: 'old-request', text: '모든 간호사 OFF 9개씩', preview: {status: 'NEEDS_CLARIFICATION'}};
+        const unresolved = {
+            conditionId: 'old-request',
+            text: '모든 간호사 OFF 9개씩',
+            preview: {status: savedReview ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION'},
+        };
         const understood = {conditionId: 'new-request', text: '전체간호사 모든날에 OFF를 0개씩해줘', preview: {status: 'PREVIEW_READY'}};
         const genericSummary = '요청의 대상·기간·조건을 더 확인해야 해요.';
 
         proposal.semanticPlan!.summary = genericSummary;
+        if (savedReview) {
+            proposal.semanticPlan!.unresolvedStoredConditionIds = [unresolved.conditionId];
+            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        }
         current.conversationState = {
             version: 7,
             sourceVersionId: current.conversation.currentVersionId,
             contextHash: current.contextHash,
             expiresAt: null,
             conditions: [unresolved, understood],
-            pendingQuestion: {conditionId: unresolved.conditionId, question: genericSummary},
+            pendingQuestion: savedReview ? null : {conditionId: unresolved.conditionId, question: genericSummary},
         };
 
         const ready: TConversationTurn = {
@@ -4512,7 +4520,15 @@ describe('persistent schedule sidebar', () => {
                 planId: 'retained-plan',
                 state: 'PREVIEW_READY',
                 confirmationAllowed: true,
-                autoExecutable: false,
+                autoExecutable: savedReview,
+                ...(savedReview
+                    ? {
+                          authoringContractVersion: 'intent-first-v1',
+                          interactionId: 'retained-interaction',
+                          deadlineAt: new Date(Date.now() + 15000).toISOString(),
+                          planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+                      }
+                    : {}),
             },
         };
 
@@ -4531,14 +4547,23 @@ describe('persistent schedule sidebar', () => {
         expect(await screen.findByText(unresolved.text)).toBeVisible();
         expect(screen.getByRole('list', {name: 'AI가 이해한 조건'})).toBeVisible();
         await userEvent.click(screen.getByRole('button', {name: '이 요청만 빼기'}));
-        expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+        if (savedReview) {
+            await waitFor(() =>
+                expect(mocks.execute).toHaveBeenCalledWith(
+                    1,
+                    expect.objectContaining({operationType: 'ADJUST', interpretationId: ready.interpretationId}),
+                ),
+            );
+        } else {
+            expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+            expect(mocks.execute).not.toHaveBeenCalled();
+        }
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             expectedStateVersion: 7,
             change: 'REMOVE',
             targetConditionIds: [unresolved.conditionId],
         });
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('sends a cancellation as natural text without browser selected condition IDs', async () => {
         const {raw, proposal} = semanticRequest();
@@ -5147,7 +5172,10 @@ describe('intent-first sidebar integration', () => {
 
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();
-        installPlan();
+        const turn = autoTurn();
+        const deferred = '이전 요청: 미등록 N·S 근무 늘리기';
+        turn.semanticPlan!.deferredRequests = [deferred];
+        installPlan(turn);
 
         const unchanged = intentResponse({
             changedCells: [],
@@ -5183,6 +5211,9 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(await screen.findByText(deferred)).toBeVisible();
+        expect(screen.getByText('이전 요청은 확인이 필요해 이번 계산에서 보류했어요.')).toBeVisible();
+        expect(screen.queryByRole('button', {name: '이 요청만 빼기'})).not.toBeInTheDocument();
         await screen.findByText(i18n.t('aiConversationSidebar.authoring.NO_IMPROVEMENT'));
         rendered.rerender(sidebarElement({open: false}));
         rendered.rerender(sidebarElement());

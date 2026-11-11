@@ -1,3 +1,4 @@
+import type {TScheduleObservation} from '@dutying/api/ward';
 import {ArrowRight, Redo2} from 'lucide-react';
 import {type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -284,6 +285,7 @@ export default function AiConversationSidebar({
     const discardedPreparationId = useRef<number | null>(null);
     const localSequence = useRef(Math.max(0, ...localEvents.map((event) => Number(event.id.slice(event.id.lastIndexOf(':') + 1)) || 0)));
     const textarea = useRef<HTMLTextAreaElement>(null);
+    const turnObservations = useRef(new Map<number, TScheduleObservation>());
     const api = useMemo(() => conversationApi(wardId, teamId), [wardId, teamId]);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
@@ -1356,10 +1358,16 @@ export default function AiConversationSidebar({
                         )?.interpretationId;
                     const priorPlan = current.turns.find((turn) => turn.interpretationId === previous && turn.semanticPlan);
                     const state = current.conversationState;
+                    const currentPlan = current.turns.find(
+                        (turn) => turn.interpretationId === current.conversation.latestInterpretationId && turn.semanticPlan,
+                    )?.semanticPlan;
 
                     if (
                         (reviewedStateVersion !== undefined && state?.version !== reviewedStateVersion) ||
-                        (removeConditionId && state?.pendingQuestion?.conditionId !== removeConditionId)
+                        (removeConditionId &&
+                            (!state ||
+                                (state.pendingQuestion?.conditionId !== removeConditionId &&
+                                    !currentPlan?.unresolvedStoredConditionIds?.includes(removeConditionId))))
                     )
                         throw new Error(t('aiConversationSidebar.requestChanged'));
 
@@ -1447,6 +1455,12 @@ export default function AiConversationSidebar({
                             throw retryCause;
                         }
                     });
+
+                    if (interpreted.observation) {
+                        turnObservations.current.set(interpreted.eventId, interpreted.observation);
+                        if (turnObservations.current.size > 50)
+                            turnObservations.current.delete(turnObservations.current.keys().next().value!);
+                    }
 
                     const failed = interpreted.semanticPlan?.state === 'FAILED';
 
@@ -2036,11 +2050,6 @@ export default function AiConversationSidebar({
     const conversationState = detail?.conversationState;
     const pendingQuestion = conversationState?.pendingQuestion?.question.trim();
     const pendingConditionId = conversationState?.pendingQuestion?.conditionId;
-    const unresolvedRequest = conversationState?.conditions.some((condition) => condition.preview.status === 'PREVIEW_READY')
-        ? conversationState.conditions.find(
-              (condition) => condition.conditionId === pendingConditionId && condition.preview.status === 'NEEDS_CLARIFICATION',
-          )
-        : undefined;
     const clarificationId = useId();
     const clarificationTurn = activeTurns.find(
         (turn) =>
@@ -2051,6 +2060,16 @@ export default function AiConversationSidebar({
             turn.semanticPlan?.state === 'NEEDS_CLARIFICATION' &&
             !turn.semanticPlan.reasonCodes.includes('EMPTY_CONDITIONS'),
     );
+    const unresolvedStoredIds = clarificationTurn?.semanticPlan?.unresolvedStoredConditionIds ?? [];
+    const unresolvedRequest = conversationState?.conditions.some(
+        (condition) => condition.preview.status === 'PREVIEW_READY' && !unresolvedStoredIds.includes(condition.conditionId),
+    )
+        ? conversationState.conditions.find(
+              (condition) =>
+                  (condition.conditionId === pendingConditionId && condition.preview.status === 'NEEDS_CLARIFICATION') ||
+                  unresolvedStoredIds.includes(condition.conditionId),
+          )
+        : undefined;
     const answeringClarification = !editingRequest && (Boolean(pendingQuestion) || Boolean(clarificationTurn));
     const question = clarificationQuestion(pendingQuestion, clarificationTurn?.semanticPlan?.summary);
     const composerPlaceholder = answeringClarification
@@ -2419,13 +2438,25 @@ export default function AiConversationSidebar({
                                 : localizeConversationServerCopy(conversationTurnText(detail, turn), t)}
                         </p>
                     )}
-                    {turn.semanticPlan && (
+                    {!!turn.semanticPlan?.deferredRequests?.length && (
+                        <div className="space-y-1 text-[13px] leading-6 text-[#667085]">
+                            <p>{t('aiAutofillUi.semanticReview.deferredRequests')}</p>
+                            <ul className="list-disc space-y-1 pl-5">
+                                {turn.semanticPlan.deferredRequests.map((request, index) => (
+                                    <li key={index} className="[overflow-wrap:anywhere] whitespace-pre-wrap">
+                                        {request}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                    {turn.semanticPlan && !executedInterpretationIds.has(turn.interpretationId ?? '') && (
                         <AiSemanticReview
                             plan={turn.semanticPlan}
                             clarification={
-                                turn === clarificationTurn && pendingQuestion
+                                turn === clarificationTurn && (pendingQuestion || unresolvedRequest)
                                     ? {
-                                          text: pendingQuestion,
+                                          text: pendingQuestion ?? turn.semanticPlan.summary,
                                           id: clarificationId,
                                           unresolvedRequest: unresolvedRequest && {
                                               text: unresolvedRequest.text,
@@ -2657,6 +2688,7 @@ export default function AiConversationSidebar({
                                         event.kind !== 'turn' ||
                                         event.turn.actor !== 'ASSISTANT' ||
                                         !event.turn.interpretationId ||
+                                        Boolean(event.turn.semanticPlan?.deferredRequests?.length) ||
                                         !executedInterpretationIds.has(event.turn.interpretationId),
                                 )
                                 .map((event) =>
@@ -2701,7 +2733,11 @@ export default function AiConversationSidebar({
                                                 createdAt={event.turn.createdAt}
                                                 align={event.turn.actor === 'USER' ? 'right' : 'left'}
                                             >
-                                                {renderTurn(event.turn)}
+                                                <JourneyObserved
+                                                    observation={event.turn.observation ?? turnObservations.current.get(event.turn.eventId)}
+                                                >
+                                                    {renderTurn(event.turn)}
+                                                </JourneyObserved>
                                             </AiConversationTimestamp>
                                         </div>
                                     ) : (
@@ -2886,7 +2922,21 @@ export default function AiConversationSidebar({
                                                                 count: operationAttempt(detail, event.operation.operationId),
                                                             })}
                                                             operationType={event.operation.operationType}
-                                                            failure={operationFailure(event.operation)!}
+                                                            failure={{
+                                                                ...operationFailure(event.operation)!,
+                                                                observation:
+                                                                    event.operation.result?.observation ??
+                                                                    (event.operation.executionStatus === 'FAILED'
+                                                                        ? {
+                                                                              flowId: `conversation:${detail.conversation.conversationId}`,
+                                                                              serverEventId: event.operation.operationId,
+                                                                              wardId,
+                                                                              shiftTeamId: teamId,
+                                                                              year,
+                                                                              month,
+                                                                          }
+                                                                        : undefined),
+                                                            }}
                                                             detailsInChildren={Boolean(event.operation.result?.conflictReview)}
                                                             confirmationAvailable={
                                                                 !invalidatedConflictIds.has(event.operation.operationId) &&
@@ -3212,6 +3262,7 @@ export default function AiConversationSidebar({
                         )}
                         {error && (
                             <AiFailureMessage
+                                observation={error.observation}
                                 message={conversationLoadFailure && error.message === t('aiAdjust.failed') ? '' : error.message}
                                 title={conversationLoadFailure ? t('aiConversationSidebar.conversationLoadFailed') : error.title}
                             >

@@ -1,5 +1,5 @@
 import {type TWorkspaceScheduleResponse} from '@dutying/api/ward';
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {type TShift, type TWardShiftClassification, type TWardShiftType} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
@@ -23,6 +23,7 @@ import {
 import {mergePreviousShiftContext, mergePreviousShiftRow} from '@/features/shift-editor/model/previous-shift-context';
 import {onScheduleRosterChanged} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
+import {scheduleWorkspaceKey, takeBootstrapRead} from '../../../model/bootstrap-read-handoff';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {getCurrentTeamNurses, sortDutyDocByTeamNurseOrder} from '../../../model/nurse-order-sync';
 
@@ -273,14 +274,22 @@ export function useDutyEditorStep({
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentTeamNurses = useMemo(() => getCurrentTeamNurses(shiftTeams, currentShiftTeamId), [currentShiftTeamId, shiftTeams]);
     const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
+    const queryClient = useQueryClient();
+    const dutyOptions = wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month);
+    const workspaceKey = scheduleWorkspaceKey(wardId ?? -1, currentShiftTeamId ?? -1, year, month);
     const dutyQuery = useQuery({
-        ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
+        ...dutyOptions,
+        queryFn: () =>
+            takeBootstrapRead<TShift>(queryClient, dutyOptions.queryKey)?.data ??
+            WardAPI.getShift(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
         refetchOnMount: 'always',
     });
     const workspaceQuery = useQuery({
-        queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
-        queryFn: () => WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
+        queryKey: workspaceKey,
+        queryFn: () =>
+            takeBootstrapRead<TWorkspaceScheduleResponse>(queryClient, workspaceKey)?.data ??
+            WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
         // 확정 후 4단계로 돌아오면 캐시에는 확정 전 workspace가 남아 있을 수 있다.
         // 고정/신청근무 핀은 workspace가 최신 상태가 된 뒤에만 에디터에 반영한다.

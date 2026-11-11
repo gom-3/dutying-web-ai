@@ -4,6 +4,7 @@ import React, {type ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useShiftEditorStore} from '@/features/shift-editor/model';
+import {handoffBootstrapRead, scheduleWorkspaceKey} from '@/pages/make-shift/model/bootstrap-read-handoff';
 import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
 import {emitScheduleRosterChanged} from '@/shared/api/error';
 import {act, renderHook, waitFor} from '@/shared/util/test-utils';
@@ -155,6 +156,33 @@ describe('focusEditorWithoutScrolling', () => {
 });
 
 describe('useDutyEditorStep', () => {
+    it('uses the bootstrap response once, then reads live data on editor re-entry', async () => {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
+        const shift = makeShift();
+        const workspace = makeWorkspaceSchedule({fixed: true});
+
+        handoffBootstrapRead(client, ['ward', 'duty', 1, 10, 2026, 5], shift);
+        handoffBootstrapRead(client, scheduleWorkspaceKey(1, 10, 2026, 5), workspace);
+        wardApiMocks.getShift.mockResolvedValue(shift);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(workspace);
+
+        const mounted = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper(client)});
+
+        await waitFor(() => expect(mounted.result.current.isHydratingEditor).toBe(false));
+        expect(wardApiMocks.getShift).not.toHaveBeenCalled();
+        expect(wardApiMocks.getWorkspaceSchedule).not.toHaveBeenCalled();
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D']);
+        mounted.unmount();
+
+        const reentered = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper(client)});
+
+        await waitFor(() => expect(reentered.result.current.isHydratingEditor).toBe(false));
+        expect(wardApiMocks.getShift).toHaveBeenCalledTimes(1);
+        expect(wardApiMocks.getWorkspaceSchedule).toHaveBeenCalledTimes(1);
+        reentered.unmount();
+        client.clear();
+    });
+
     beforeEach(() => {
         window.localStorage.clear();
         wardApiMocks.getShift.mockReset();
@@ -190,7 +218,9 @@ describe('useDutyEditorStep', () => {
                 savedAt: Date.now(),
             }),
         );
+
         const shift = makeShift({wardShiftList: [null]});
+
         shift.previousConfirmedSnapshotId = 88;
         shift.divisionShiftNurses[0][0].lastWardShiftList = [10, null, 10, 10];
         wardApiMocks.getShift.mockResolvedValue(shift);
@@ -205,6 +235,7 @@ describe('useDutyEditorStep', () => {
     it('refreshes previous context after reconfirmation without resetting current-month editing', async () => {
         const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
         const shift = makeShift();
+
         shift.previousConfirmedSnapshotId = 88;
         shift.divisionShiftNurses[0][0].lastWardShiftList = [10, null, null, null];
         wardApiMocks.getShift.mockResolvedValue(shift);
@@ -213,8 +244,10 @@ describe('useDutyEditorStep', () => {
         await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual(['D', null, null, null]));
         act(() => {
             const store = useShiftEditorStore.getState();
+
             store.setDoc({...store.doc, rows: store.doc.rows.map((row) => ({...row, cells: [null]}))});
         });
+
         const refreshed = {
             ...shift,
             previousConfirmedSnapshotId: 89,
@@ -227,18 +260,22 @@ describe('useDutyEditorStep', () => {
                 ],
             ],
         };
+
         act(() => {
             queryClient.setQueryData(['ward', 'duty', 1, 10, 2026, 5], refreshed);
         });
         await waitFor(() => expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells).toEqual([null, 'D', 'D', 'D']));
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual([null]);
+
         const stored = JSON.parse(window.localStorage.getItem('shift-editor:draft:1:10:2026:5')!);
+
         expect(stored.doc.rows[0].cells).toEqual([null]);
         expect(stored.doc.rows[0].lastCells).toEqual([null, 'D', 'D', 'D']);
     });
 
     it('supports partially assigned confirmed schedules on older APIs using stable nurse IDs', async () => {
         const previous = makeShift({wardShiftList: [null, 10, 10, 10, 10]});
+
         previous.workflowStatus = 'CONFIRMED';
         previous.days = Array.from({length: 5}, (_, i) => ({day: i + 1, dayType: 'workday' as const}));
         previous.divisionShiftNurses[0][0].shiftNurse.shiftNurseId = 999;
@@ -253,13 +290,18 @@ describe('useDutyEditorStep', () => {
 
     it('reports failed previous-month lookup and retries instead of treating it as missing data', async () => {
         let fail = true;
+
         const previous = {...makeShift(), workflowStatus: 'CONFIRMED' as const};
+
         wardApiMocks.getShift.mockImplementation((_ward: number, _team: number, _year: number, month: number) => {
             if (month === 4 && fail) return Promise.reject(new Error('lookup failed'));
+
             return Promise.resolve(month === 4 ? previous : makeShift());
         });
         wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
         const {result} = renderHook(() => useDutyEditorStep({hydratePreviousLastShifts: true}), {wrapper: createQueryWrapper()});
+
         await waitFor(() => expect(result.current.hasEditorSourceError).toBe(true));
         expect(useShiftEditorStore.getState().doc.columns).toEqual([]);
         fail = false;
@@ -279,10 +321,12 @@ describe('useDutyEditorStep', () => {
             intentFirstAuthoringEnabled: enabled,
             authoringContractVersions: ['intent-first-v1'],
         });
+
         const {result} = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
 
         await waitFor(() => expect(result.current.isHydratingEditor).toBe(false));
         await waitFor(() => expect(useShiftEditorStore.getState().doc.rows).toHaveLength(1));
+
         const state = useShiftEditorStore.getState();
 
         expect(state.conversationEnabled).toBe(enabled);

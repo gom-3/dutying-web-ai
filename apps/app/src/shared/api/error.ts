@@ -34,10 +34,40 @@ function optionalString(value: unknown) {
     return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+function scheduleObservation(value: unknown): TApiErrorResponse['scheduleObservation'] {
+    if (!isRecord(value)) return undefined;
+    const {flowId, serverEventId, wardId, shiftTeamId, year, month} = value;
+
+    if (
+        typeof flowId !== 'string' ||
+        !/^(?:conversation:[0-9]+|[0-9a-fA-F-]{36})$/.test(flowId) ||
+        typeof serverEventId !== 'string' ||
+        !/^[0-9a-fA-F-]{36}$/.test(serverEventId) ||
+        typeof wardId !== 'number' ||
+        !Number.isSafeInteger(wardId) ||
+        wardId < 1 ||
+        typeof shiftTeamId !== 'number' ||
+        !Number.isSafeInteger(shiftTeamId) ||
+        shiftTeamId < 1 ||
+        typeof year !== 'number' ||
+        !Number.isInteger(year) ||
+        typeof month !== 'number' ||
+        !Number.isInteger(month) ||
+        month < 1 ||
+        month > 12
+    )
+        return undefined;
+
+    return {flowId, serverEventId, wardId, shiftTeamId, year, month};
+}
+
 export function normalizeApiErrorResponse(value: unknown): TApiErrorResponse | undefined {
     if (!isRecord(value)) return undefined;
 
+    const observation = scheduleObservation(value.scheduleObservation);
+
     return {
+        ...(observation ? {scheduleObservation: observation} : {}),
         code: optionalString(value.code),
         message: optionalString(value.message),
         messageKey: optionalString(value.messageKey),

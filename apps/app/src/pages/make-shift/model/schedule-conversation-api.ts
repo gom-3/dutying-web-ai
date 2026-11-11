@@ -3,6 +3,7 @@ import type {
     TAutofillResponse,
     TScheduleAdjustInterpretRes,
     TScheduleMonthRequestItem,
+    TScheduleObservation,
     TSnapshotCellDTO,
     TSnapshotRowOrderDTO,
 } from '@dutying/api/ward';
@@ -74,6 +75,8 @@ export type TSemanticPlan = {
     confirmationAllowed: boolean;
     modalityEditableIntentIds?: string[] | null;
     reasonCodes: string[];
+    unresolvedStoredConditionIds?: string[];
+    deferredRequests?: string[];
     conditions: {
         intentId: string;
         action: 'ASSIGN' | 'FORBID' | 'COUNT' | 'MAX_CONSECUTIVE_WORK' | 'CATALOG_RULE';
@@ -90,6 +93,7 @@ export type TSemanticPlan = {
     }[];
 };
 export type TConversationTurn = {
+    observation?: TScheduleObservation;
     eventId: number;
     sequence: number;
     actor: string;

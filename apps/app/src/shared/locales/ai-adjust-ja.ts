@@ -41,6 +41,8 @@ export const aiAdjustJa = {
     },
     executionFailure: {
         nightRunBoundsEvidence: '{{name}}：連続夜勤は最低{{minimum}}回／最大{{maximum}}回',
+        pairedNightStaffingEvidence:
+            '現在の人数条件では、{{date}}の{{night}}最低{{minimumNight}}人のうち、翌日（{{nextDate}}）の{{continuation}}に入れるのは最大{{maximumContinuation}}人です。そのため、少なくとも{{minimumRepeats}}人は{{night}}が連続します。',
         incomingNightEvidence: '{{start}} ～ {{end}}：前月から続く夜勤{{actual}}回',
         nightRunBoundsNext: 'この看護師の連続夜勤の最低・最大回数と前月末の配置を確認して修正してください。表と設定は変更されていません。',
         minimumNightEvidence: '{{name}}：連続夜勤{{actual}}回／最低{{expected}}回が必要です',

@@ -1,5 +1,12 @@
 # @dutying/api
 
+## 1.3.47
+
+### Patch Changes
+
+- 근무표 대화에서 이전의 보류 요청과 현재 실행을 구분하고, 야간 인원 충돌과 서버 실패 원인을 정확히 안내합니다.
+    - @dutying/domain@1.3.47
+
 ## 1.3.42
 
 ### Patch Changes

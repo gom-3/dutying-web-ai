@@ -6,6 +6,12 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.47 - 2026-11-11
+
+- `@dutying/app` (patch): 랜딩 페이지의 근무표 미리보기에서 모든 언어의 날짜와 메모가 잘리지 않도록 수정했습니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): 근무표 대화에서 이전의 보류 요청과 현재 실행을 구분하고, 야간 인원 충돌과 서버 실패 원인을 정확히 안내합니다.
+- `@dutying/app` (patch): 근무표 편집 화면에 바로 진입할 때 같은 근무표를 중복 조회하지 않도록 초기 조회 결과를 한 번 전달합니다. 재진입과 데이터 변경 후에는 새로 조회합니다.
+
 ## 1.3.46 - 2026-11-10
 
 - `@dutying/app` (patch): 한국어 외 랜딩에서 국내 전용 정보를 분리하고 대만 번체와 AI 자동채우기 채팅 번역을 지원합니다.

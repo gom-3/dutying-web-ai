@@ -1,7 +1,7 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
 import i18n from '@/i18n';
-import {aiExecutionFailure, nightRunConflictMessages} from '../ai-execution-failure';
+import {aiExecutionFailure, nightRunConflictMessages, pairedNightStaffingMessage} from '../ai-execution-failure';
 import {failureMessagePoints} from '../failure-message-points';
 import {response as authoringResponse, outcome as authoringOutcome} from './fixtures/intent-first';
 
@@ -28,6 +28,47 @@ it('shows consent proof from the public response without requiring hidden solver
     for (const detail of ['A', '14', '3', '1', '2026-10-31', '2026-11-01']) expect(messages[0]).toContain(detail);
     response.authoringOutcome!.draftState = 'APPLICABLE';
     expect(nightRunConflictMessages(response)).toEqual([]);
+});
+
+it('explains the paired-night headcount contradiction in Japanese from public evidence', async () => {
+    const previous = i18n.language;
+    try {
+        await i18n.changeLanguage('ja');
+        const response = authoringResponse({
+            applicable: false,
+            changedCells: [],
+            authoringOutcome: authoringOutcome({
+                solveState: 'INFEASIBLE_PROVEN',
+                requestState: 'UNSATISFIED',
+                draftState: 'NONE',
+                reasonCodes: ['PAIRED_NIGHT_STAFFING_CONFLICT'],
+            }),
+            engineResult: {
+                status: 'INFEASIBLE',
+                conflictEvidence: [
+                    {
+                        type: 'PAIRED_NIGHT_STAFFING_CONFLICT',
+                        date: '2026-12-04',
+                        nextDate: '2026-12-05',
+                        night: '準夜',
+                        continuation: '深夜',
+                        minimumNight: 4,
+                        maximumContinuation: 3,
+                        minimumRepeats: 1,
+                    },
+                ],
+            },
+        });
+        const failure = aiExecutionFailure(response);
+        expect(failure?.recovery).toBe('revise');
+        expect(failure?.message).toContain('2026-12-04の準夜最低4人');
+        expect(failure?.message).toContain('2026-12-05）の深夜に入れるのは最大3人');
+        expect(failure?.message).toContain('少なくとも1人は準夜が連続');
+        response.engineResult!.conflictEvidence![0].minimumRepeats = 2;
+        expect(pairedNightStaffingMessage(response)).toBeNull();
+    } finally {
+        await i18n.changeLanguage(previous);
+    }
 });
 
 describe('execution failure reasons', () => {
