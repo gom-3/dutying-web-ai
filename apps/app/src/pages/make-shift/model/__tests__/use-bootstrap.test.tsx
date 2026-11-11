@@ -1,3 +1,4 @@
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
@@ -6,6 +7,7 @@ import {useShiftEditorStore} from '@/features/shift-editor';
 import {emitScheduleRosterChanged} from '@/shared/api/error';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {act, renderHook, waitFor} from '@/shared/util/test-utils';
+import {scheduleWorkspaceKey, takeBootstrapRead} from '../bootstrap-read-handoff';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {useMakeShiftStore} from '../make-shift-store';
 import {useMakeShiftBootstrap} from '../use-bootstrap';
@@ -91,18 +93,49 @@ function makeFullyAssignedShift(): TShift {
     return shift;
 }
 
+let queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
+
 function wrapper({children}: {children: ReactNode}) {
-    return <MemoryRouter>{children}</MemoryRouter>;
+    return (
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter>{children}</MemoryRouter>
+        </QueryClientProvider>
+    );
 }
 
 function createWrapper(initialEntry: string) {
     return function TestWrapper({children}: {children: ReactNode}) {
-        return <MemoryRouter initialEntries={[initialEntry]}>{children}</MemoryRouter>;
+        return (
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[initialEntry]}>{children}</MemoryRouter>
+            </QueryClientProvider>
+        );
     };
 }
 
 describe('useMakeShiftBootstrap', () => {
+    it('hands the immediate step-4 entry to the editor and clears unused reads on exit', async () => {
+        const shift = makePartiallyAssignedShift();
+        const workspace = {workflowStatus: 'IN_PROGRESS', workflowStep: 4};
+
+        saveDraftStep(1, 10, 2026, 7, 4);
+        saveMaxReachedStep(1, 10, 2026, 7, 4);
+        wardApiMocks.getShift.mockResolvedValue(shift);
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(workspace);
+
+        const mounted = renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=7&shiftTeamId=10&step=4'),
+        });
+
+        await waitFor(() => expect(useMakeShiftStore.getState().currentStep).toBe(4));
+        expect(takeBootstrapRead(queryClient, ['ward', 'duty', 1, 10, 2026, 7])?.data).toEqual(shift);
+        mounted.unmount();
+        expect(takeBootstrapRead(queryClient, scheduleWorkspaceKey(1, 10, 2026, 7))).toBeUndefined();
+    });
+
     beforeEach(() => {
+        queryClient.clear();
+        queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
         window.localStorage.clear();
         wardApiMocks.getShiftTeams.mockReset();
         wardApiMocks.getShift.mockReset();
