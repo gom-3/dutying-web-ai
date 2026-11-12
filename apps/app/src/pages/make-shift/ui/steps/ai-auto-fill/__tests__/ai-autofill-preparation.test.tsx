@@ -38,11 +38,11 @@ describe('autofill recovery choices', () => {
         render(<AiAutofillPreparation step="fixed" fixableCount={1} onConfirm={vi.fn()} onCancel={vi.fn()} onFixAll={vi.fn()} />);
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.queryByText(/AI 변경 대상|고정·신청 근무는 유지/)).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '이대로 자동채우기'})).toBeVisible();
+        expect(screen.getByRole('button', {name: '이대로 AI 채우기'})).toBeVisible();
         expect(screen.getByRole('button', {name: '입력한 근무 모두 고정하기'})).toBeVisible();
     });
     it.each([
-        ['ko', '다시 자동채우기', '입력한 근무 모두 고정하기', '근무 조건 확인하기'],
+        ['ko', '다시 AI 채우기', '입력한 근무 모두 고정하기', '근무 조건 확인하기'],
         ['en', 'Try autofill again', 'Fix all entered shifts', 'Review shift conditions'],
         ['ja', 'もう一度自動入力', '入力済みの勤務をすべて固定', '勤務条件を確認'],
     ])('offers explicit recovery actions in %s', async (language, retry, fixAll, conditions) => {
@@ -82,11 +82,11 @@ describe('autofill recovery choices', () => {
         const view = render(<AiAutofillPreparation {...props} canAutofill={false} />);
 
         expect(screen.getByRole('status')).toHaveTextContent('AI가 바꿀 수 있는 칸이 없어요.');
-        expect(screen.getByRole('button', {name: '다시 자동채우기'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '다시 AI 채우기'})).toBeDisabled();
         expect(screen.queryByRole('button', {name: '입력한 근무 모두 고정하기'})).not.toBeInTheDocument();
         view.rerender(<AiAutofillPreparation {...props} canAutofill />);
         expect(screen.queryByRole('status')).not.toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', {name: '다시 자동채우기'}));
+        await userEvent.click(screen.getByRole('button', {name: '다시 AI 채우기'}));
         expect(onConfirm).toHaveBeenCalledOnce();
     });
 });

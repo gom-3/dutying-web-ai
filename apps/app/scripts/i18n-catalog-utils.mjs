@@ -130,6 +130,10 @@ export function readCsv(path) {
         }
     }
 
+    if (inQuotes) {
+        throw new Error(`${path}: unterminated quoted CSV field`);
+    }
+
     if (field.length > 0 || row.length > 0) {
         row.push(field);
         rows.push(row);
@@ -139,16 +143,19 @@ export function readCsv(path) {
 
     return dataRows
         .filter((dataRow) => dataRow.some((cell) => cell !== ''))
-        .map((dataRow) =>
-            Object.fromEntries(headers.map((header, index) => [header, dataRow[index] ?? ''])),
-        );
+        .map((dataRow, index) => {
+            if (dataRow.length !== headers.length) {
+                throw new Error(
+                    `${path}: record ${index + 2} (${dataRow[0]}) has ${dataRow.length} columns; expected ${headers.length}. Quote text containing commas.`,
+                );
+            }
+
+            return Object.fromEntries(headers.map((header, index) => [header, dataRow[index]]));
+        });
 }
 
 export function writeCsvRows(headers, rows) {
-    return [
-        headers.join(','),
-        ...rows.map((row) => headers.map((header) => csvEscape(row[header] ?? '')).join(',')),
-    ].join('\n');
+    return [headers.join(','), ...rows.map((row) => headers.map((header) => csvEscape(row[header] ?? '')).join(','))].join('\n');
 }
 
 export function csvEscape(value) {

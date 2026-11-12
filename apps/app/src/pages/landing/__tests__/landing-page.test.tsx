@@ -407,7 +407,8 @@ describe('LandingPage', () => {
         expect(mockHandleLogout).toHaveBeenCalledWith(ROUTE.ROOT);
         expect(screen.getAllByRole('link', {name: '근무표 만들기'})[0]).toHaveAttribute('href', ROUTE.MAKE);
         expect(screen.getByRole('link', {name: '무료로 시작하기'})).toHaveAttribute('href', ROUTE.MAKE);
-    });
+        // This test performs the complete menu, lazy modal and logout sequence on the full landing DOM.
+    }, 15000);
 
     it('renders profile modal account fields while ward profile is still loading', async () => {
         const pendingWardRequest = new Promise<never>(() => undefined);

@@ -74,7 +74,8 @@
             "unknown": "班表未能完成,準確原因未能找到.\n您的前班表未改變. 請再次嘗試。",
             "review": "審查班表",
             "summary": "班表沒有改變。",
-            "openChat": "開啟對話"
+            "openChat": "開啟對話",
+            "pairedNightStaffingEvidence": "依目前人數條件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 轉為 {{continuation}}。因此至少 {{minimumRepeats}} 人需要連續上 {{night}}。"
         },
         "title": "AI 自動排班",
         "allFixed": "所有更改都已固定,不修復更改,然後再試一次。",
@@ -130,8 +131,6 @@
             }
         },
         "preparation": {
-            "initialRequestLabel": "請求此日程 · 可選",
-            "initialRequestExample": "請減少本月的護理師金的週末班別。",
             "previous": "上個月的一些變更是白色的\n繼續如同它們一樣?",
             "previousHelp": "上個月的變化有助於檢查連續工作,並在本月初休息。",
             "continue": "繼續如同它們",
@@ -151,8 +150,6 @@
             "editingFixed": "選擇更改,以便修復或刪除它們。",
             "finishSelection": "選擇結束,繼續",
             "cancelSelection": "取消固定更換選項",
-            "selectionSummary": "{{fixed}}固定 ·{{requested}}要求 ·{{editable}}細胞 AI 可能發生變化",
-            "selectionHelp": "固定和要求的轉換留下。AI填寫了其他轉換和字串.請求的轉換不能在這裡解鎖。",
             "noEditableCells": "人工智慧沒有細胞可以更改. 在日程中不修復的變化,或者在請求管理中編輯所需的變化。",
             "fixedCellLabel": "{{name}}·{{date}}·{{shift}}·{{state}}",
             "fixedState": "固定",
@@ -751,7 +748,8 @@
             "editRequest": "編輯請求",
             "editInComposer": "在輸入框中編輯請求",
             "adjustingYourSchedule": "調整你的班表",
-            "reviewingYourRequest": "審查您的請求"
+            "reviewingYourRequest": "審查您的請求",
+            "deferredRequests": "這些先前的要求需要進一步確認，已在本次計算中暫緩處理。"
         },
         "conversationResult": {
             "completedTitle": "班表已生成！",

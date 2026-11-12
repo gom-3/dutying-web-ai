@@ -515,7 +515,7 @@ export function Review() {
                         className="min-h-11 rounded-xl bg-main-light px-4 text-sm font-medium text-main-1 hover:bg-main-1 hover:text-white"
                         onClick={() => setOpen(true)}
                     >
-                        AI 자동채우기
+                        AI 채우기
                     </button>
                 )}
             </header>

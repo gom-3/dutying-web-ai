@@ -74,7 +74,8 @@
             "unknown": "排班表未能完成,准确原因未能找到.\n您的前排班表未改变. 请再次尝试。",
             "review": "审查排班表",
             "summary": "排班表没有改变。",
-            "openChat": "打开对话"
+            "openChat": "打开对话",
+            "pairedNightStaffingEvidence": "按当前人数条件，{{date}} 的 {{night}} 至少需要 {{minimumNight}} 人，其中最多 {{maximumContinuation}} 人可在 {{nextDate}} 转为 {{continuation}}。因此至少 {{minimumRepeats}} 人需要连续上 {{night}}。"
         },
         "title": "AI 自动排班",
         "allFixed": "所有更改都已固定,不修复更改,然后再试一次。",
@@ -130,8 +131,6 @@
             }
         },
         "preparation": {
-            "initialRequestLabel": "请求此日程 · 可选",
-            "initialRequestExample": "请减少本月的护士金的周末班次。",
             "previous": "上个月的一些变更是白色的\n继续如同它们一样?",
             "previousHelp": "上个月的变化有助于检查连续工作,并在本月初休息。",
             "continue": "继续如同它们",
@@ -151,8 +150,6 @@
             "editingFixed": "选择更改,以便修复或删除它们。",
             "finishSelection": "选择结束,继续",
             "cancelSelection": "取消固定更换选项",
-            "selectionSummary": "{{fixed}}固定 ·{{requested}}要求 ·{{editable}}细胞 AI 可能发生变化",
-            "selectionHelp": "固定和要求的转换留下。AI填写了其他转换和字符串.请求的转换不能在这里解锁。",
             "noEditableCells": "人工智能没有细胞可以更改. 在日程中不修复的变化,或者在请求管理中编辑所需的变化。",
             "fixedCellLabel": "{{name}}·{{date}}·{{shift}}·{{state}}",
             "fixedState": "固定",
@@ -751,7 +748,8 @@
             "editRequest": "编辑请求",
             "editInComposer": "在输入框中编辑请求",
             "adjustingYourSchedule": "调整你的排班表",
-            "reviewingYourRequest": "审查您的请求"
+            "reviewingYourRequest": "审查您的请求",
+            "deferredRequests": "这些先前的请求需要进一步确认，已在本次计算中暂缓处理。"
         },
         "conversationResult": {
             "completedTitle": "排班表已生成！",

@@ -74,7 +74,8 @@
             "unknown": "Chương trình không thể hoàn thành, và nguyên nhân chính xác không có sẵn.\nChương trình trước của bạn không thay đổi.",
             "review": "Lập trình review",
             "summary": "Lập trình không thay đổi.",
-            "openChat": "Mở cuộc trò chuyện"
+            "openChat": "Mở cuộc trò chuyện",
+            "pairedNightStaffingEvidence": "Với yêu cầu nhân sự hiện tại, ca {{night}} ngày {{date}} cần ít nhất {{minimumNight}} người, nhưng tối đa {{maximumContinuation}} người có thể chuyển sang ca {{continuation}} ngày {{nextDate}}. Vì vậy, ít nhất {{minimumRepeats}} người phải làm ca {{night}} liên tiếp."
         },
         "title": "AI xếp lịch trực tự động",
         "allFixed": "Tất cả các thay đổi đều được cố định.Unfix một thay đổi và thử lại.",
@@ -130,8 +131,6 @@
             }
         },
         "preparation": {
-            "initialRequestLabel": "Yêu cầu cho lịch trực này · tùy chọn",
-            "initialRequestExample": "Vui lòng giảm các thay đổi cuối tuần của Nurses Kim trong tháng này.",
             "previous": "Một số thay đổi từ tháng trước là trắng.\nTiếp tục như họ là?",
             "previousHelp": "Những thay đổi của tháng trước giúp kiểm tra công việc liên tục và nghỉ ngơi vào đầu tháng này.",
             "continue": "Tiếp tục như họ",
@@ -151,8 +150,6 @@
             "editingFixed": "Chọn thay đổi để sửa hoặc xóa chúng.",
             "finishSelection": "Kết thúc sự lựa chọn và tiếp tục",
             "cancelSelection": "Hủy chọn Fixed-Shift",
-            "selectionSummary": "{{fixed}} cố định · {{requested}} yêu cầu · {{editable}} ô AI có thể thay đổi",
-            "selectionHelp": "Đặt và yêu cầu chuyển đổi ở lại. AI điền vào các chuyển đổi khác và các mảnh vỡ. chuyển đổi yêu cầu không thể được mở khóa ở đây.",
             "noEditableCells": "AI không có các ô để thay đổi. Unfix thay đổi trong lịch trực, hoặc chỉnh sửa thay đổi được yêu cầu trong quản lý yêu cầu.",
             "fixedCellLabel": "{{name}} · {{date}} · {{shift}} · {{state}}",
             "fixedState": "cố định",
@@ -751,7 +748,8 @@
             "editRequest": "Sửa yêu cầu",
             "editInComposer": "Edit request trong hộp nhập",
             "adjustingYourSchedule": "Điều chỉnh lịch trực của bạn",
-            "reviewingYourRequest": "Đánh giá yêu cầu của bạn"
+            "reviewingYourRequest": "Đánh giá yêu cầu của bạn",
+            "deferredRequests": "Các yêu cầu trước đó cần được làm rõ nên đang tạm hoãn trong lần tính này."
         },
         "conversationResult": {
             "completedTitle": "Lịch trực đã sẵn sàng!",

@@ -75,13 +75,13 @@ describe('ongoing autofill entry', () => {
         expect(screen.getByRole('status')).toHaveTextContent(
             executionStatus === 'SUCCEEDED' ? '근무표 수정 결과가 준비됐어요' : '근무표를 수정하지 못했어요.',
         );
-        expect(screen.getByRole('status')).not.toHaveTextContent('자동채우기');
+        expect(screen.getByRole('status')).not.toHaveTextContent('AI 채우기');
     });
     it.each([
-        ['SUCCEEDED', 'APPLIED', '자동채우기 결과가 준비됐어요'],
+        ['SUCCEEDED', 'APPLIED', 'AI 채우기 결과가 준비됐어요'],
         ['SUCCEEDED', 'NOT_APPLIED_SOURCE_CHANGED', '계산이 끝났어요. 수정한 근무표는 유지했어요.'],
         ['CANCELLED', 'NOT_APPLIED', '계산을 취소했어요. 근무표는 그대로예요.'],
-        ['FAILED', 'NOT_APPLIED', '자동채우기를 마치지 못했어요. 결과를 확인해 주세요.'],
+        ['FAILED', 'NOT_APPLIED', 'AI 채우기를 마치지 못했어요. 결과를 확인해 주세요.'],
     ] as const)('keeps %s results reachable after closing the loader', (executionStatus, applyStatus, label) => {
         render(
             <AiExecutionDock
