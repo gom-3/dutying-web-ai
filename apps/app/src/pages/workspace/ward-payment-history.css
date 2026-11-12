@@ -1,0 +1,202 @@
+.ward-payment-history__table {
+    min-width: 0;
+}
+.ward-payment-history__table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    line-height: 1.7;
+}
+.ward-payment-history__table :is(th, td) {
+    padding: 14px 10px;
+    text-align: left;
+    vertical-align: top;
+}
+.ward-payment-history__table th {
+    padding-top: 0;
+    padding-bottom: 10px;
+    color: var(--workspace-muted, #657084);
+    font-size: 12px;
+    font-weight: 500;
+}
+.ward-payment-history__table :is(th, td):first-child {
+    padding-left: 0;
+}
+.ward-payment-history__table :is(th, td):last-child {
+    padding-right: 0;
+    text-align: right;
+}
+.ward-payment-history__date {
+    color: var(--workspace-muted, #657084);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ward-payment-history__product {
+    color: var(--workspace-ink, #242428);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+.ward-payment-history__amount {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.ward-payment-history__amount strong {
+    display: block;
+    color: var(--workspace-ink, #242428);
+    font-size: 15px;
+    font-weight: 650;
+}
+.ward-payment-history__refund {
+    display: block;
+    margin-top: 3px;
+    color: var(--workspace-muted, #657084);
+    font-size: 12px;
+    font-weight: 400;
+}
+.ward-payment-history__status {
+    color: #18744a;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.ward-payment-history tr[data-status='partial-refund'] .ward-payment-history__status,
+.ward-payment-history tr[data-status='refunded'] .ward-payment-history__status {
+    color: var(--workspace-muted, #657084);
+}
+.workspace-app .ward-payment-history .ward-payment-history__detail a[href] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 10px;
+    margin-top: -10px;
+    border-radius: 6px;
+    color: var(--workspace-primary, #663dfa);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.workspace-app .ward-payment-history .ward-payment-history__detail a[href]:hover {
+    background: var(--workspace-secondary, #f0ecff);
+    color: var(--workspace-primary, #663dfa);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.ward-payment-history__pending {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: var(--workspace-control, #f7f9fb);
+    color: var(--workspace-ink, #242428);
+    font-size: 14px;
+    line-height: 1.7;
+}
+.ward-payment-history__pending > span {
+    min-width: 0;
+}
+.workspace-app .ward-payment-history__pending a[href] {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 6px;
+    color: var(--workspace-primary, #663dfa);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.workspace-app .ward-payment-history__pending a[href]:hover {
+    background: var(--workspace-secondary, #f0ecff);
+    color: var(--workspace-primary, #663dfa);
+}
+.workspace-app .ward-payment-history .ward-payment-history__detail a[href]:focus-visible,
+.workspace-app .ward-payment-history__pending a[href]:focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    outline: none;
+}
+@media (max-width: 640px) {
+    .ward-payment-history__table table,
+    .ward-payment-history__table tbody {
+        display: block;
+    }
+    .ward-payment-history__table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        clip-path: inset(50%);
+    }
+    .ward-payment-history__table tbody {
+        display: grid;
+        gap: 24px;
+    }
+    .ward-payment-history__table tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 4px 12px;
+    }
+    .ward-payment-history__table tbody td {
+        display: block;
+        min-width: 0;
+        padding: 0;
+    }
+    .ward-payment-history__date {
+        grid-column: 1;
+        grid-row: 1;
+        white-space: normal;
+    }
+    .ward-payment-history__product {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    .ward-payment-history__amount {
+        grid-column: 2;
+        grid-row: 1;
+        text-align: right;
+    }
+    .ward-payment-history__status {
+        grid-column: 2;
+        grid-row: 2;
+        text-align: right;
+    }
+    .ward-payment-history__detail {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        justify-self: end;
+    }
+    .workspace-app .ward-payment-history .ward-payment-history__detail a[href] {
+        margin-top: 0;
+    }
+    .ward-payment-history__pending {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+        padding: 14px 16px;
+    }
+    .workspace-app .ward-payment-history__pending a[href] {
+        margin-left: -10px;
+    }
+}
+@media (forced-colors: active) {
+    .workspace-app .ward-payment-history .ward-payment-history__detail a[href]:focus-visible,
+    .workspace-app .ward-payment-history__pending a[href]:focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

@@ -10,8 +10,6 @@ import type * as ApiClient from '@/shared/api/client';
 
 const locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')!;
 const originalLocation = window.location;
-const callback =
-    '/workspace/billing-return?orderId=order-fixture&registration=registration-fixture&authKey=authorization-fixture&customerKey=customer-fixture';
 const token = (accountId: number, version: string) =>
     `header.${btoa(JSON.stringify({principalType: 'WARD_ADMIN', wardAdminAccountId: accountId, version}))}.signature`;
 const expiredToken = token(7, 'expired');
@@ -35,59 +33,81 @@ const unauthorized = (config: InternalAxiosRequestConfig, status = 401) =>
     );
 const bearer = (config: InternalAxiosRequestConfig) => AxiosHeaders.from(config.headers).get('Authorization');
 const refreshRequest = (config: InternalAxiosRequestConfig) => config.url === '/auth/admin/token/refresh';
-const assertCallbackPrivate = () => {
-    expect(window.location.pathname + window.location.search).toBe('/workspace/billing-return?orderId=order-fixture');
-    expect(readBillingReturnPayload(window.location.search).get('authKey')).toBe('authorization-fixture');
-    expect(JSON.stringify({...localStorage, ...sessionStorage})).not.toMatch(/authorization-fixture|customer-fixture|registration-fixture/);
-    expect(replace).not.toHaveBeenCalled();
-};
 
-beforeEach(async () => {
-    vi.resetModules();
-    replace.mockClear();
-    localStorage.clear();
-    sessionStorage.clear();
-    window.history.replaceState(null, '', callback);
-    captureBillingReturnPayload();
-    Object.defineProperty(window, 'location', {
-        configurable: true,
-        value: {
-            ...originalLocation,
-            get pathname() {
-                return originalLocation.pathname;
+describe.each(['/workspace/billing-return', '/billing/billing-return'])('billing callback session recovery at %s', (callbackPath) => {
+    const callback = `${callbackPath}?orderId=order-fixture&registration=registration-fixture&authKey=authorization-fixture&customerKey=customer-fixture`;
+    const assertCallbackPrivate = (path = callbackPath) => {
+        expect(window.location.pathname + window.location.search).toBe(`${path}?orderId=order-fixture`);
+        expect(readBillingReturnPayload(window.location.search).get('authKey')).toBe('authorization-fixture');
+        expect(JSON.stringify({...localStorage, ...sessionStorage})).not.toMatch(
+            /authorization-fixture|customer-fixture|registration-fixture/,
+        );
+        expect(replace).not.toHaveBeenCalled();
+    };
+
+    beforeEach(async () => {
+        vi.resetModules();
+        replace.mockClear();
+        localStorage.clear();
+        sessionStorage.clear();
+        window.history.replaceState(null, '', callback);
+        captureBillingReturnPayload();
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                ...originalLocation,
+                get pathname() {
+                    return originalLocation.pathname;
+                },
+                get search() {
+                    return originalLocation.search;
+                },
+                replace,
             },
-            get search() {
-                return originalLocation.search;
-            },
-            replace,
-        },
+        });
+
+        const axios = await import('axios');
+
+        AxiosError = axios.AxiosError;
+        AxiosHeaders = axios.AxiosHeaders;
+        adapter = vi.fn(async (config) => {
+            if (refreshRequest(config)) return response(config, {accessToken: freshToken});
+
+            if (bearer(config) === `Bearer ${expiredToken}`) throw unauthorized(config);
+
+            return response(config, {ok: true});
+        });
+        axios.default.defaults.adapter = (config) => adapter(config);
+        client = await import('@/shared/api/client');
+        authStore = (await import('@/features/auth/model/store')).default;
+        authStore.setState({isAuth: true, accessToken: expiredToken, accountId: 7, wardId: 11, accountMeStatus: 'success'});
+    });
+    afterEach(() => {
+        clearBillingReturnPayload();
+        Object.defineProperty(window, 'location', locationDescriptor);
+        window.history.replaceState(null, '', '/');
+        localStorage.clear();
+        sessionStorage.clear();
     });
 
-    const axios = await import('axios');
+    it('preserves legacy callback memory and only refreshes the session after moving to the canonical callback', async () => {
+        window.history.replaceState(
+            null,
+            '',
+            '/workspace/billing-return?orderId=order-fixture&registration=registration-fixture&authKey=authorization-fixture&customerKey=customer-fixture',
+        );
+        captureBillingReturnPayload();
+        window.history.replaceState(null, '', '/billing/billing-return?orderId=order-fixture');
+        captureBillingReturnPayload();
+        await expect(client.adminAxiosInstance.get('/admin/accounts/me')).resolves.toMatchObject({data: {ok: true}});
 
-    AxiosError = axios.AxiosError;
-    AxiosHeaders = axios.AxiosHeaders;
-    adapter = vi.fn(async (config) => {
-        if (refreshRequest(config)) return response(config, {accessToken: freshToken});
+        const requests = vi.mocked(adapter).mock.calls.map(([config]) => config);
 
-        if (bearer(config) === `Bearer ${expiredToken}`) throw unauthorized(config);
-
-        return response(config, {ok: true});
+        expect(requests.filter(refreshRequest)).toHaveLength(1);
+        expect(requests.filter((config) => config.method === 'post' && !refreshRequest(config))).toEqual([]);
+        assertCallbackPrivate('/billing/billing-return');
     });
-    axios.default.defaults.adapter = (config) => adapter(config);
-    client = await import('@/shared/api/client');
-    authStore = (await import('@/features/auth/model/store')).default;
-    authStore.setState({isAuth: true, accessToken: expiredToken, accountId: 7, wardId: 11, accountMeStatus: 'success'});
-});
-afterEach(() => {
-    clearBillingReturnPayload();
-    Object.defineProperty(window, 'location', locationDescriptor);
-    window.history.replaceState(null, '', '/');
-    localStorage.clear();
-    sessionStorage.clear();
-});
 
-describe('billing callback session recovery', () => {
     it('refreshes an expired bootstrap token without reloading or losing the in-memory authorization', async () => {
         await expect(client.adminAxiosInstance.get('/admin/accounts/me')).resolves.toMatchObject({data: {ok: true}});
         expect(authStore.getState()).toMatchObject({

@@ -14,7 +14,7 @@ const offer = {
     adjust: 10,
     adminSeats: 10,
     maxChargeGross: 1000000,
-    termsVersion: 'plus-monthly-2026-10-11',
+    termsVersion: 'plus-ai-fill-monthly-2026-11-12',
     priceVersion: 'test-policy',
     ready: true,
 };
@@ -40,7 +40,8 @@ describe('public Plus review pages', () => {
         expect(await screen.findByText('월 19,900원')).toBeInTheDocument();
         fireEvent.change(screen.getByRole('spinbutton'), {target: {value: '1040'}});
         expect(screen.getByText('예상 월 이용료 1,000,000원')).toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '로그인하고 Plus 신청'})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '로그인하고 Plus 신청'})).toHaveAttribute('href', '/billing');
+        expect(screen.getByRole('link', {name: '구독 관리'})).toHaveAttribute('href', '/billing');
         fireEvent.change(screen.getByRole('spinbutton'), {target: {value: '1041'}});
         expect(screen.queryByRole('link', {name: '로그인하고 Plus 신청'})).not.toBeInTheDocument();
         expect(screen.getByText('카드 결제 상한을 초과합니다. 고객센터로 문의해 주세요.')).toBeInTheDocument();

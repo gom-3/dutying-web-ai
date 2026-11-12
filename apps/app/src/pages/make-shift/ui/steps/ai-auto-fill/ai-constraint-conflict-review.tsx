@@ -1,6 +1,7 @@
 import type {TAutofillResponse} from '@dutying/api/ward';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import {localizeConversationServerCopy} from '../../../model/conversation-presentation';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {AiConflictViolationList} from './ai-conflict-violation-list';
 
@@ -87,7 +88,7 @@ export function ConstraintConflictReview({
             {requestSummary && (
                 <div className="rounded-lg bg-white p-3 text-sm">
                     <p className="font-medium">{t('aiAutofillUi.conflictReview.understood')}</p>
-                    <p className="mt-1 whitespace-pre-wrap">{requestSummary}</p>
+                    <p className="mt-1 whitespace-pre-wrap">{localizeConversationServerCopy(requestSummary, t)}</p>
                     <p className="mt-2">{t('aiAutofillUi.conflictReview.reviseHint')}</p>
                 </div>
             )}

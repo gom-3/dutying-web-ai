@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>병동 단독 사용자 · 로컬 예시</title>
+        <style>
+            #root {
+                height: auto !important;
+                min-height: 100vh;
+            }
+            #root .workspace-shell {
+                height: auto;
+                min-height: 100vh;
+            }
+            #root .workspace-shell__content {
+                overflow: visible;
+            }
+            .ward-only-preview-notice {
+                padding: 10px 24px;
+                background: #f4f0fc;
+                color: #6941c6;
+                font-size: 12px;
+                line-height: 1.7;
+            }
+            .ward-only-preview-notice output {
+                display: block;
+                color: #636575;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/tests/integration/ward-only-preview.tsx"></script>
+    </body>
+</html>

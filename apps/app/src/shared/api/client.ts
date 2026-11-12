@@ -17,7 +17,7 @@ declare module 'axios' {
 
 const AUTH_REDIRECT_IGNORED_PATHS = new Set(['/demo/start', '/token/refresh', '/token/blacklist']);
 const AUTH_REDIRECT_IGNORED_PREFIXES = ['/auth/'];
-const BILLING_RETURN_PATH = '/workspace/billing-return';
+const isBillingReturnPath = (path: string) => path === '/workspace/billing-return' || path === '/billing/billing-return';
 
 let billingReturnRefresh: Promise<string> | undefined;
 
@@ -97,7 +97,7 @@ const refreshBillingReturnSession = () => {
         const previousToken = session.accessToken;
         const accountId = session.principalId;
 
-        if (!session.isAuth || !previousToken || accountId === null || window.location.pathname !== BILLING_RETURN_PATH)
+        if (!session.isAuth || !previousToken || accountId === null || !isBillingReturnPath(window.location.pathname))
             throw billingSessionChanged();
 
         const response = await billingRefreshInstance.post<{accessToken: string}>('/auth/admin/token/refresh', undefined, {timeout: 15000});
@@ -109,7 +109,7 @@ const refreshBillingReturnSession = () => {
             recovery.principalId(token) !== accountId ||
             !current.isAuth ||
             current.accessToken !== previousToken ||
-            window.location.pathname !== BILLING_RETURN_PATH
+            !isBillingReturnPath(window.location.pathname)
         )
             throw billingSessionChanged();
 
@@ -130,7 +130,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
         (response) => response,
         // Handle each response error by status.
         async (error) => {
-            const preserveDocument = window.location.pathname === BILLING_RETURN_PATH;
+            const preserveDocument = isBillingReturnPath(window.location.pathname);
 
             if (
                 preserveDocument &&
@@ -157,7 +157,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
                             current.principalId === null ||
                             recovery?.principalId(requestedToken) !== current.principalId ||
                             `Bearer ${current.accessToken}` !== currentBearer ||
-                            window.location.pathname !== BILLING_RETURN_PATH
+                            !isBillingReturnPath(window.location.pathname)
                         )
                             throw billingSessionChanged();
 

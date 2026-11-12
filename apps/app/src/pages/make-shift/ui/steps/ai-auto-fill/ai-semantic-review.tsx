@@ -1,7 +1,7 @@
 import {MinusCircle, PencilLine} from 'lucide-react';
 import {useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {clarificationQuestion, semanticRecovery} from '../../../model/conversation-presentation';
+import {clarificationQuestion, localizeConversationServerCopy, semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
 import {AiConversationLoading} from './ai-conversation-loading';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
@@ -34,7 +34,9 @@ type TIconKind = 'review' | 'confirmed' | 'clarify' | 'history' | 'warning' | 'f
 
 export function AiClarificationText({text, id}: {text?: string; id?: string}) {
     const {t} = useTypedTranslation();
-    const paragraphs = (text ?? t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions'))
+    const paragraphs = (
+        localizeConversationServerCopy(text, t) ?? t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions')
+    )
         // Keep dotted dates and initials together.
         .replace(/([가-힣]\.|[!?]+)[ \t]+/g, '$1\n')
         .replace(/([。！？]+[」』”’）)]*)[ \t]*/g, '$1\n')
@@ -249,7 +251,8 @@ export function AiSemanticReview({
                     ? t('aiAutofillUi.semanticReview.editYourRequestOrChangeTheScheduleDirectly')
                     : needsClarification
                       ? null
-                      : plan.summary || t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
+                      : localizeConversationServerCopy(plan.summary, t) ||
+                        t('aiAutofillUi.semanticReview.addALittleMoreDetailAboutThePeopleOrConditions');
     const question = clarificationQuestion(clarification?.text, needsClarification ? plan.summary : undefined);
     const unresolvedRequest = clarification?.unresolvedRequest;
     const listLabel =

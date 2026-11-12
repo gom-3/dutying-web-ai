@@ -7,6 +7,7 @@ import {
     getStoredServiceRegion,
     normalizePreferredLanguage,
     normalizeServiceRegion,
+    normalizeWebLanguage,
 } from '@/shared/i18n/locale';
 
 export const TERMS_OF_SERVICE_DOCUMENT_VERSION = '2026-06-20';
@@ -30,13 +31,13 @@ const createAgreementBase = (
 ) => {
     const preferredLanguage = normalizePreferredLanguage(language) ?? DEFAULT_PREFERRED_LANGUAGE;
     const resolvedServiceRegion =
-        normalizeServiceRegion(serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(preferredLanguage);
+        normalizeServiceRegion(serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(language);
 
     return {
         agreed: true,
         agreedAt,
         preferredLanguage,
-        locale: getLocaleForLanguage(preferredLanguage),
+        locale: getLocaleForLanguage(normalizeWebLanguage(language, resolvedServiceRegion)),
         serviceRegion: resolvedServiceRegion,
     } as const;
 };

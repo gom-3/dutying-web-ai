@@ -270,3 +270,440 @@
         transform: none;
     }
 }
+
+/* Use document scrolling for the landing and app guide anchors. */
+.landing-main--responsive {
+    height: auto;
+    overflow: clip visible;
+    scroll-snap-type: none;
+}
+
+#root:has(> .landing-main--responsive) {
+    height: auto;
+}
+
+html:has(.landing-main--responsive) {
+    scroll-padding-top: 3.75rem;
+}
+
+.landing-main--responsive .landing-section-nav {
+    gap: clamp(0.65rem, 2vw, 2.25rem);
+    white-space: nowrap;
+}
+
+.landing-section-nav a[aria-current='page'] {
+    color: #663dfa;
+}
+
+.landing-app-guide-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.875rem;
+    border-radius: 0.5rem;
+    background: #f0ecff;
+    color: #4c2ac7;
+    font-weight: 750;
+    text-align: center;
+}
+
+.landing-app-guide-link:hover {
+    background: #e9e1ff;
+    color: #382099;
+}
+
+.landing-app-guide-link:focus-visible {
+    background: #e9e1ff;
+    color: #382099;
+    text-decoration: underline;
+}
+
+.landing-app-home-visuals {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+.landing-app-home-visuals img {
+    width: 100%;
+    height: auto;
+    max-height: 9.875rem;
+}
+
+.landing-main--adoption .landing-hero-grid {
+    min-height: auto;
+    gap: 0.85rem;
+    padding-block: 1.5rem 0.65rem;
+}
+
+.landing-main--adoption .landing-hero-grid > div:first-child {
+    width: 100%;
+}
+
+.landing-main--adoption .landing-hero-grid + svg {
+    bottom: 0.75rem;
+}
+
+.landing-hero-offer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: clamp(0.7rem, 1.2vw, 1rem);
+    padding: 0.28rem 0.8rem 0.28rem 0.3rem;
+    border-radius: 999px;
+    background: #ede6ff;
+    color: #452a9b;
+    font-size: clamp(0.8rem, 1.12vw, 0.98rem);
+    font-weight: 650;
+    line-height: 1.35;
+}
+
+.landing-hero-offer__icon {
+    display: grid;
+    width: 1.45rem;
+    aspect-ratio: 1;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: #663dfa;
+    color: #fff;
+    font-size: 0.78rem;
+    line-height: 1;
+}
+
+.landing-hero-offer strong {
+    color: #4924bd;
+    font-weight: 850;
+}
+
+.landing-main--adoption .landing-hero-title {
+    font-size: clamp(1.75rem, 6.7vw, 2.25rem);
+}
+
+.landing-main--adoption .landing-hero-store-buttons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.landing-hero-store-buttons > a {
+    padding-inline: 0.4rem;
+    font-size: 0.85rem;
+}
+
+.landing-adoption-nav-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.45rem;
+    border-radius: 0.625rem;
+    color: #663dfa;
+    font-weight: 750;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.landing-adoption-nav-link:hover {
+    color: #5832e7;
+}
+
+.landing-adoption-nav-link:focus-visible {
+    outline: 2px solid #663dfa;
+    outline-offset: 3px;
+}
+
+.landing-hero-product {
+    position: relative;
+    width: min(100%, 19rem);
+    margin-inline: auto;
+    container-type: inline-size;
+}
+
+.landing-hero-product picture,
+.landing-hero-product img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.landing-calendar-preview {
+    position: relative;
+    container-type: inline-size;
+    overflow: hidden;
+    background: #fcfafc;
+    color: #383345;
+}
+
+.landing-calendar-preview::before {
+    position: absolute;
+    top: 2%;
+    left: 31%;
+    width: 38%;
+    height: 4%;
+    border-radius: 99px;
+    background: #101012;
+    content: '';
+}
+
+.landing-calendar-preview__content {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    padding: 17% 5% 7%;
+}
+
+.landing-calendar-preview__month {
+    margin-bottom: 8%;
+    color: #663dfa;
+    font-size: 9cqw;
+    font-weight: 750;
+}
+
+.landing-calendar-preview__grid {
+    display: grid;
+    flex: 1;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: auto repeat(5, 1fr);
+    gap: 2px;
+    font-size: 5.1cqw;
+}
+
+.landing-calendar-preview__weekday {
+    padding-bottom: 25%;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.landing-calendar-preview__day {
+    border-radius: 10%;
+    background: #f0edf5;
+}
+
+.landing-calendar-preview__day > span {
+    display: block;
+    padding: 0.18em;
+    border-radius: 10%;
+    background: #465b7a;
+    color: #fff;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.landing-calendar-preview__day small {
+    font-size: 0.7em;
+}
+
+.landing-calendar-preview__day [data-shift='D'] {
+    background: #288677;
+}
+
+.landing-calendar-preview__day [data-shift='E'] {
+    background: #bd4e70;
+}
+
+.landing-calendar-preview__day [data-shift='N'] {
+    background: #235ecc;
+}
+
+.landing-section-message {
+    max-width: 90rem;
+    margin-inline: auto;
+    padding: clamp(1.5rem, 4vw, 3.25rem) 1.25rem 0;
+    color: #150b3c;
+    font-size: clamp(1.4rem, 3vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
+    letter-spacing: -0.045em;
+    overflow-wrap: anywhere;
+}
+
+.landing-section-message:lang(ko) {
+    word-break: keep-all;
+}
+
+.landing-feature-copy {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    color: #5f557f;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.75;
+}
+
+.landing-feature-copy__lead {
+    color: #150b3c;
+    font-weight: 600;
+    white-space: pre-line;
+}
+
+.landing-main--adoption .landing-web-section__inner {
+    gap: 1.75rem;
+    padding-block: clamp(2rem, 5vw, 4.5rem) clamp(3rem, 7vw, 6rem);
+}
+
+.landing-main--adoption #integration .landing-feature-section__inner {
+    min-height: auto;
+    padding-top: clamp(2.5rem, 6vw, 5rem);
+}
+
+@media (max-width: 767px) {
+    .landing-hero-product--localized-calendar > picture {
+        display: none;
+    }
+
+    .landing-hero-product--localized-calendar {
+        justify-content: center;
+    }
+
+    .landing-calendar-preview {
+        width: min(100%, 11rem);
+        aspect-ratio: 1 / 2.04;
+        border: 0.35rem solid #111117;
+        border-radius: 1.6rem;
+    }
+
+    .landing-main--nurse-app .landing-app-section__inner {
+        min-height: auto;
+        gap: 1.5rem;
+        padding-block: 2.5rem 3.5rem;
+    }
+
+    .landing-main--nurse-app .landing-app-section__image {
+        width: 100%;
+    }
+
+    .landing-main--adoption .landing-hero-product picture {
+        max-height: clamp(9rem, 46vw, 12rem);
+        overflow: hidden;
+        mask-image: linear-gradient(to bottom, #000 82%, transparent);
+    }
+}
+
+@media (min-width: 768px) {
+    html:has(.landing-main--responsive) {
+        scroll-padding-top: 4.5rem;
+    }
+
+    .landing-feature-copy__lead {
+        font-size: 1.125rem;
+    }
+
+    .landing-main--adoption .landing-hero-grid {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        align-items: center;
+        gap: clamp(1rem, 3.2vw, 3rem);
+        padding-block: clamp(2rem, 4.7vw, 4.25rem) clamp(2rem, 3.5vw, 3.25rem);
+    }
+
+    .landing-main--adoption .landing-hero-title {
+        font-size: clamp(1.85rem, 3.55vw, 3.1875rem);
+    }
+
+    .landing-main--adoption .landing-hero-actions {
+        gap: 0.65rem;
+        margin-top: clamp(1.25rem, 3.6vw, 2.75rem);
+    }
+
+    .landing-hero-product {
+        width: 100%;
+    }
+
+    .landing-main--adoption .landing-hero-product {
+        width: 116%;
+        justify-self: end;
+        margin-inline: 0;
+    }
+
+    .landing-hero-product__screen {
+        position: absolute;
+        /* Leave the full date and memo toolbar visible in every localized mockup. */
+        inset: 9.8% 14% 19.5% 10.7%;
+        display: grid;
+        align-items: start;
+        padding: 0.9cqw 2.6cqw 2.4cqw;
+        background: white;
+    }
+
+    .landing-hero-product__screen .landing-schedule-preview {
+        width: 84%;
+    }
+
+    .landing-hero-product__screen .landing-schedule-preview__board {
+        gap: 0.95cqw;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    /* The original phone overlaps the screen in the product image. Keep it above the animation. */
+    .landing-hero-product__phone {
+        position: absolute;
+        inset: 0;
+        clip-path: polygon(73.8% 31%, 74.5% 28%, 77% 26.2%, 92% 26%, 94.2% 27.4%, 96% 31%, 96% 83%, 73.8% 83%);
+        background-size: 100% 100%;
+        pointer-events: none;
+    }
+
+    .landing-hero-product__month,
+    .landing-hero-product__memo {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        background: #fbf8fb;
+        font-size: 0.9cqw;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .landing-hero-product__month {
+        inset: 4.95% 66% 91.25% 10.95%;
+        padding-inline-start: 2.1cqw;
+        color: #663dfa;
+    }
+
+    .landing-hero-product__memo {
+        inset: 4.8% 14.15% 91.2% 74.6%;
+        justify-content: flex-end;
+        padding-inline-end: 0.65cqw;
+        color: #383345;
+    }
+
+    .landing-calendar-preview {
+        position: absolute;
+        z-index: 1;
+        inset: 27.8% 5.45% 4.35% 74.8%;
+        border-radius: 3cqw;
+    }
+
+    .landing-main--adoption .landing-web-section__inner {
+        gap: clamp(2.75rem, 6vw, 6rem);
+    }
+}
+
+/* Preserve the preexisting media size and placement on international landing pages. */
+@media (max-width: 767px) {
+    .landing-hero-product--international {
+        display: flex;
+        width: min(100%, 32.5rem);
+        min-height: 310px;
+        align-items: flex-end;
+        margin-top: auto;
+        padding-top: 2rem;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .landing-hero-product--international {
+        max-width: 45rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .landing-hero-product--international {
+        width: 131%;
+        margin-top: -4rem;
+        margin-left: -31%;
+        transform: translateX(3.5rem);
+    }
+}

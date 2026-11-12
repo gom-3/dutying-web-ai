@@ -4,6 +4,7 @@ import {Link, useLocation} from 'react-router';
 import logoWordmarkPurple from '@/shared/assets/images/logo-wordmark-purple.png';
 import {SellerDetails, sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
+import ROUTE from '@/shared/constant/path';
 import {CHANNEL_TALK_URL} from '@/shared/lib/channel-talk';
 import './subscription-info.css';
 
@@ -78,12 +79,12 @@ export function SubscriptionConditions() {
             </p>
             <p>
                 월 기본료와 승인한 추가 편성 인원 요금이 합산됩니다. 사용량이 늘었다는 이유만으로 동의 없이 추가 청구하지 않습니다. 기본 AI
-                횟수는 각 구독 주기 종료 시 만료되며 다음 주기로 이월하거나 전체 생성과 부분 조정 사이에 교환할 수 없습니다.
+                횟수는 각 구독 주기 종료 시 만료되며 다음 주기로 이월되지 않습니다. 채우기와 수정 요청은 같은 AI 채우기 횟수를 사용합니다.
             </p>
             <h2>해지와 결제 실패</h2>
             <p>
-                로그인 후 ‘내 관리 공간 → 해당 병동의 구독·결제 관리 → 구독 관리’에서 다음 결제를 해지할 수 있습니다. 해지 접수가 완료되면
-                다음 주기의 자동결제를 중단하고 이미 결제한 기간까지 이용할 수 있습니다. 해지는 환불 신청과 별개입니다.
+                로그인 후 사이트의 ‘요금제·결제 → 구독 관리’에서 다음 결제를 해지할 수 있습니다. 해지 접수가 완료되면 다음 주기의 자동결제를
+                중단하고 이미 결제한 기간까지 이용할 수 있습니다. 해지는 환불 신청과 별개입니다.
             </p>
             <p>
                 결제 실패나 확인 지연은 결제내역에서 안내합니다. 결제 확인 전에는 새 유료 이용기간을 부여하지 않습니다. 카드 등록만
@@ -113,9 +114,8 @@ export function RefundConditions() {
             </ul>
             <h2>신청 방법과 처리</h2>
             <p>
-                ‘내 관리 공간 → 해당 병동의 구독·결제 관리 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 하단 고객센터로 연락해 주세요.
-                접수 시각을 환불 기준으로 기록합니다. 환불 확정 시 해당 유료 이용기간이 종료됩니다. 처리 지연 때문에 공제 기간이 늘어나지
-                않습니다.
+                ‘요금제·결제 → 구독·결제 → 환불·정산 문의’에서 청구서를 선택해 접수하거나 하단 고객센터로 연락해 주세요. 접수 시각을 환불
+                기준으로 기록합니다. 환불 확정 시 해당 유료 이용기간이 종료됩니다. 처리 지연 때문에 공제 기간이 늘어나지 않습니다.
             </p>
             <p>
                 신청일로부터 3영업일 이내에 환불 또는 카드 승인취소에 필요한 조치를 진행합니다. 실제 카드 명세서 반영일은 카드사에 따라 다를
@@ -169,7 +169,7 @@ export default function SubscriptionInfoPage() {
                     <Link to="/pricing">요금제</Link>
                     <Link to="/subscription-terms">정기결제 안내</Link>
                     <Link to="/refund">환불정책</Link>
-                    <Link to="/workspace">구독 관리</Link>
+                    <Link to={ROUTE.BILLING}>구독 관리</Link>
                 </nav>
             </header>
             <main>
@@ -180,8 +180,8 @@ export default function SubscriptionInfoPage() {
                         <div className="product-intro">
                             <div>
                                 <p className="lead">
-                                    수간호사와 병동 관리자를 위한 AI 근무표 편성 서비스입니다. 간호사 명단·근무 조건을 관리하고 전체 생성,
-                                    부분 조정, 근무표 저장 기능을 이용합니다.
+                                    수간호사와 병동 관리자를 위한 AI 근무표 편성 서비스입니다. 간호사 명단·근무 조건을 관리하고 AI 채우기와
+                                    수정 요청, 근무표 저장 기능을 이용합니다.
                                 </p>
                                 <p>1개 병동 · 결제당 1개월 이용 · 매월 카드 자동결제</p>
                                 <p>PC 웹에서 이용하는 상품으로, 설치나 앱 다운로드가 필요하지 않습니다.</p>
@@ -213,9 +213,7 @@ export default function SubscriptionInfoPage() {
                                 <ul>
                                     <li>기본 편성 인원 {p.includedStaff}명</li>
                                     <li>OWNER 포함 관리자 {p.adminSeats}명</li>
-                                    <li>
-                                        구독 주기마다 전체 생성 {p.generate}회 · 부분 조정 {p.adjust}회
-                                    </li>
+                                    <li>구독 주기마다 AI 채우기 {p.generate}회</li>
                                     <li>추가 편성 인원 1명당 월 {won(p.extraStaffGross)} (VAT 포함)</li>
                                 </ul>
                                 <p>편성 인원은 근무표에 등록하는 간호사 수입니다. 일반 간호사는 웹에 가입하지 않아도 됩니다.</p>
@@ -236,7 +234,7 @@ export default function SubscriptionInfoPage() {
                                 </p>
                                 <p>카드 1회 결제 상한은 {won(p.maxChargeGross)}입니다. 실제 결제 전 최종 견적을 다시 확인합니다.</p>
                                 {canStart ? (
-                                    <Link className="primary" to="/workspace">
+                                    <Link className="primary" to={ROUTE.BILLING}>
                                         로그인하고 Plus 신청
                                     </Link>
                                 ) : (

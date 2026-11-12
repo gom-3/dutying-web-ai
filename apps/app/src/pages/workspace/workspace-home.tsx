@@ -62,6 +62,15 @@ export function WorkspaceHome({scopes, currentWardId, loading = false, error, on
                     <span>{roleLabel(scope.role)}</span>
                 </div>
                 <div className="workspace-home-actions">
+                    {scope.type === 'WARD' ? (
+                        <Link
+                            className="workspace-home-manage"
+                            to={scopePath(scope, 'usage')}
+                            aria-label={`${scope.name} ${copy('병동 관리', 'Ward management')}`}
+                        >
+                            {copy('병동 관리', 'Ward management')}
+                        </Link>
+                    ) : null}
                     {scope.type === 'WARD' && scope.role === 'OWNER' ? (
                         <Link
                             className="workspace-home-billing"

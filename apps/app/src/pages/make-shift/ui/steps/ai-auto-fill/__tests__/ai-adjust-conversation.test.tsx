@@ -319,7 +319,7 @@ describe('AI adjustment conversation', () => {
             goalNurses: nurses,
             onRegenerate: vi.fn(),
         };
-        const firstFlow = {id: 1, status: 'running' as const, messages: [{role: 'user' as const, text: '첫 자동채우기 선택'}]};
+        const firstFlow = {id: 1, status: 'running' as const, messages: [{role: 'user' as const, text: '첫 AI 채우기 선택'}]};
         const view = render(<AiAdjustTextInput {...props} autofillFlow={firstFlow} generationCompleted />);
 
         expect(textbox()).toBeVisible();
@@ -330,7 +330,7 @@ describe('AI adjustment conversation', () => {
 
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={nextFlow} preparation={<p>준비 선택지</p>} />);
 
-        expect(screen.getByText('첫 자동채우기 선택')).toBeVisible();
+        expect(screen.getByText('첫 AI 채우기 선택')).toBeVisible();
         expect(screen.queryByText('aiAdjust.chat.modify')).not.toBeInTheDocument();
         expect(screen.getByText('오프를 공평하게')).toBeVisible();
         expect(screen.getByText('다음 고정 확인')).toBeVisible();
@@ -338,7 +338,7 @@ describe('AI adjustment conversation', () => {
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.changeAnswer'})).not.toBeInTheDocument();
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.getByRole('log').textContent).toMatch(
-            /첫 자동채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
+            /첫 AI 채우기 선택[\s\S]*aiAdjust.generationCompleted[\s\S]*오프를 공평하게[\s\S]*다음 고정 확인/,
         );
         view.rerender(<AiAdjustTextInput {...props} autofillFlow={{...nextFlow, status: 'running'}} generationCompleted />);
         expect(screen.getAllByText('aiAdjust.generationCompleted')).toHaveLength(2);

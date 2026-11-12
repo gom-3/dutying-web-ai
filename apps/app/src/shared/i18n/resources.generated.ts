@@ -265,7 +265,7 @@ export const ko = {
                 "pending": "신청 근무 {{name}}가 아직 반영 전이에요."
             },
             "toolbar": {
-                "autofill": "자동 채우기",
+                "autofill": "AI 채우기",
                 "createNextMonth": "다음달 근무표 만들기",
                 "edit": "수정하기",
                 "layers": {
@@ -729,23 +729,28 @@ export const ko = {
                 "viewMobile": "모바일 버전으로 보기",
                 "webMakeSchedule": "웹에서 근무표 만들기",
                 "guideLink": "간호사 근무표 작성 가이드",
-                "faqLink": "듀팅 자주 묻는 질문"
+                "faqLink": "듀팅 자주 묻는 질문",
+                "startFree": "무료로 시작하기"
             },
             "feature": {
                 "ai": {
                     "description": "놓치기 쉬운 조건을\n단계별로 확인하고 반영할 수 있어요",
-                    "label": "AI 자동채우기",
-                    "title": "빈 근무표를\n처음부터 채우지 않아도 돼요"
+                    "label": "AI 채우기",
+                    "title": "빈 근무표를\n처음부터 채우지 않아도 돼요",
+                    "scheduleDetails": "필요 인원과 신청·고정근무를 반영해 빈칸을 채워요. 완성된 초안은 직접 검토하고 수정할 수 있어요."
                 },
                 "integration": {
                     "description": "신청근무를 앱에서 보낼 수 있어요.\n근무표가 확정되면 앱으로 즉시 전달돼요.",
                     "highlight": "연동",
                     "label": "연동",
-                    "title": "간호사와 병동을\n연동할 수 있어요"
+                    "title": "간호사와 병동을\n연동할 수 있어요",
+                    "leaveDetails": "간호사별 근무 현황과 사용·잔여 연차를 확인하고 휴무를 함께 관리해요.",
+                    "managementMessage": "휴가·연차부터 신청근무까지, 한곳에서 관리할 수 있어요.",
+                    "appGuide": "간호사 앱 안내"
                 },
                 "review": {
                     "description": "수정이 필요한 부분을\n바로 보고, 수정안까지 볼 수 있어요.",
-                    "label": "AI 자동채우기",
+                    "label": "AI 채우기",
                     "title": "잘못된 근무를\n바로 확인하고, 수정까지"
                 },
                 "ward": {
@@ -764,6 +769,7 @@ export const ko = {
             },
             "header": {
                 "app": "간호사 앱",
+                "customerSupport": "고객센터",
                 "homeAria": "듀팅 랜딩 홈",
                 "inquiry": "문의하기",
                 "sectionAria": "랜딩 섹션",
@@ -774,7 +780,8 @@ export const ko = {
                 "description": "AI로 근무표를 쉽고 빠르게 만들고,\n간호사와 연동해 병동 관리를 더 간편하게",
                 "phraseSchedule": "교대 근무표,",
                 "phraseWard": "병동 관리,",
-                "suffix": "듀팅으로 더 간편하게"
+                "suffix": "듀팅으로 더 간편하게",
+                "freeOffer": "지금 \u003cemphasis>무료로 시작해 보세요!\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AI가 자동으로 생성한 간호사 근무표 화면",
@@ -789,6 +796,9 @@ export const ko = {
                 "mobileHero": "듀팅 앱 근무 일정 화면",
                 "wardBoard": "병동 게시판 화면",
                 "webSchedule": "듀팅 웹 근무표 작성 화면"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}}일 연속 근무 · 최대 {{expected}}일"
             },
             "mobileBenefits": {
                 "community": {
@@ -831,7 +841,72 @@ export const ko = {
                 "titleHighlight": "AI로 1분",
                 "titleLine1": "복잡한 근무표,",
                 "titleLine2Prefix": "이제",
-                "titleLine2Suffix": "만에 만들기"
+                "titleLine2Suffix": "만에 만들기",
+                "importTitle": "기존 근무표 이미지·엑셀 가져오기",
+                "importDescription": "쓰던 근무표 이미지나 엑셀 파일을 올리면 병동 설정을 간편하게 마칠 수 있어요."
+            },
+            "workflow": {
+                "title": "다음 달 근무표, 이번에도 빈칸부터 채우시나요?",
+                "ai": {
+                    "problem": "빈칸을 일일이 채울 때",
+                    "solution": "AI로 1분 만에 근무표 만들기"
+                },
+                "ward-management": {
+                    "problem": "휴무·연차 관리가 힘들 때",
+                    "solution": "휴가·연차를 편하게 관리"
+                },
+                "integration": {
+                    "problem": "신청과 공유가 번거로울 때",
+                    "solution": "간호사 앱으로 OFF 신청·공지 공유"
+                },
+                "excel": {
+                    "problem": "기존 근무표가 있다면",
+                    "solution": "이미지·엑셀로 바로 시작하기"
+                }
+            },
+            "usage": {
+                "total": "누적 \u003ccount>1만 명\u003c/count> 이상의 간호사가 듀팅을 사용하고 있어요!"
+            },
+            "adoption": {
+                "title": "병원·병동 도입 문의",
+                "navLink": "병원·병동 도입 문의",
+                "formLegend": "병동 도입 신청 정보",
+                "fields": {
+                    "hospitalName": "병원명",
+                    "wardName": "병동명",
+                    "contact": "담당자 연락처"
+                },
+                "contactPlaceholder": "전화번호 또는 이메일",
+                "contactHint": "전화번호 또는 이메일을 입력해 주세요.",
+                "validation": {
+                    "hospitalName": "병원명을 입력해 주세요.",
+                    "wardName": "병동명을 입력해 주세요.",
+                    "contact": "전화번호 또는 이메일을 확인해 주세요."
+                },
+                "privacyConsent": "\u003cpolicy>개인정보 처리방침\u003c/policy>\u003cconsent>에 따라 위 정보를 도입 안내 목적으로 수집·이용하는 데 동의합니다. (필수)\u003c/consent>",
+                "sending": "접수 중…",
+                "acceptedTitle": "신청이 접수됐어요.",
+                "acceptedDescription": "입력하신 연락처로 병동 도입을 안내드릴게요.",
+                "submitError": "접수 여부를 확인하지 못했어요. 다시 시도하거나 이메일로 문의해 주세요.",
+                "emailLabel": "도입 문의",
+                "emailFallback": "이메일로 도입을 문의할 수 있어요.",
+                "emailSubject": "듀팅 병원·병동 도입 문의",
+                "emailConsent": "도입 안내를 위한 개인정보 수집·이용에 동의합니다."
+            },
+            "footer": {
+                "plusPlan": "Plus 요금제",
+                "subscriptionTerms": "정기결제 안내",
+                "refundPolicy": "환불정책",
+                "seller": {
+                    "brand": "듀팅(Dutying)",
+                    "pending": "사업자 상세정보를 준비하고 있습니다. 현재 온라인 구독 신청을 준비 중입니다.",
+                    "representative": "대표자",
+                    "registrationNumber": "사업자등록번호",
+                    "address": "사업장 주소",
+                    "phone": "고객센터",
+                    "email": "이메일",
+                    "ecommerceNumber": "통신판매업 신고번호"
+                }
             }
         },
         "login": {
@@ -944,10 +1019,10 @@ export const ko = {
                 "fixSelectionSuccess": "{{count}}칸을 고정했어요.",
                 "unfixSelectionSuccess": "{{count}}칸의 고정을 해제했어요.",
                 "prefillDecision": {
-                    "eyebrow": "AI 자동채우기 미리보기",
+                    "eyebrow": "AI 채우기 미리보기",
                     "title": "AI가 바꾸면 안 되는 근무가 있나요?",
                     "description": "고정한 근무와 신청 근무는 유지하고 나머지 근무를 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.",
-                    "calendarTitle": "AI 자동채우기 범위",
+                    "calendarTitle": "AI 채우기 범위",
                     "aiFillArea": "AI가 채울 영역",
                     "keepArea": "그대로 유지",
                     "checkArea": "확인 필요한 칸",
@@ -966,7 +1041,7 @@ export const ko = {
                 },
                 "regenerateDecision": {
                     "title": "다시 채우기 전에 고정할 근무가 있나요?",
-                    "description": "자동채우기 후 직접 수정했지만 고정하지 않은 근무가 {{count}}칸 있어요.\n유지할 근무는 고정해 주세요. 고정하지 않은 근무는 다시 채울 수 있어요.",
+                    "description": "AI 채우기 후 직접 수정했지만 고정하지 않은 근무가 {{count}}칸 있어요.\n유지할 근무는 고정해 주세요. 고정하지 않은 근무는 다시 채울 수 있어요.",
                     "confirm": "수정한 칸 고정",
                     "cancel": "진행하기",
                     "fix": "수정한 근무 고정하고 다시 채우기"
@@ -995,7 +1070,7 @@ export const ko = {
                 "lastShiftBlankDialog": {
                     "descriptionLead": "지난달 근무에 빈칸이 있어요.",
                     "descriptionHighlight": "월초의 연속 근무와 휴식을 함께 확인하려면 지난달 근무를 입력해 주세요.",
-                    "confirmAiFill": "이대로 자동채우기",
+                    "confirmAiFill": "이대로 AI 채우기",
                     "cancel": "입력 확인",
                     "confirm": "그대로 확정",
                     "description": "지난달 근무에 빈칸이 있어요.\n월초의 연속 근무와 휴식을 함께 확인하려면 지난달 근무를 입력해 주세요.",
@@ -1004,12 +1079,12 @@ export const ko = {
                 "exitGuard": {
                     "unsavedTitle": "저장되지 않은 편집 내용이 있어요",
                     "unsavedDescription": "편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
-                    "aiGeneratingTitle": "자동채우기 중에 화면을 나갈까요?",
+                    "aiGeneratingTitle": "AI 채우기 중에 화면을 나갈까요?",
                     "aiGeneratingDescription": "화면을 나가면 계산 결과가 근무표에 반영되지 않을 수 있어요.",
                     "leaveConfirm": "나가기",
                     "stayCancel": "계속 편집하기",
                     "unsavedMessage": "저장되지 않은 편집 내용이 있어요\n편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
-                    "aiGeneratingMessage": "AI 자동채우기 중이에요.\n나가면 결과가 반영되지 않을 수 있어요.\n그래도 나갈까요?"
+                    "aiGeneratingMessage": "AI 채우기 중이에요.\n나가면 결과가 반영되지 않을 수 있어요.\n그래도 나갈까요?"
                 },
                 "undo": "실행 취소",
                 "redo": "다시 실행",
@@ -1017,7 +1092,7 @@ export const ko = {
                 "confirm": "근무표 확정",
                 "description": {
                     "error": "요청을 완료하지 못했어요. 작성 중인 근무표는 유지했어요. 요청과 근무 조건을 확인해 주세요.",
-                    "idle": "이전 단계에서 정리한 조건으로 AI 자동채우기를 시작할 수 있어요.",
+                    "idle": "이전 단계에서 정리한 조건으로 AI 채우기를 시작할 수 있어요.",
                     "loading": "근무표를 계산하고 있어요. 계산 중에는 확정하거나 새 계산을 시작할 수 없어요.",
                     "success": "계산 결과를 근무표에 반영했어요. 내용을 검토하고 필요하면 수정한 뒤 확정해 주세요."
                 },
@@ -1027,7 +1102,7 @@ export const ko = {
                 },
                 "empty": "근무표 데이터를 불러오지 못했어요",
                 "error": "근무표를 불러오지 못했어요",
-                "firstFill": "자동채우기",
+                "firstFill": "AI 채우기",
                 "fixedOnly": "고정만 보기",
                 "fixedDisplay": "고정 표시",
                 "fixedDisplayHidden": "고정 근무 숨김",
@@ -1053,7 +1128,7 @@ export const ko = {
                 "publishSuccessConnectionDescription": "듀팅 앱에서 확정된 근무표를 자동으로 받아볼 수 있어요!",
                 "publishSuccessWithRecipients": "연동된 {{count}}명에게 근무표를 자동으로 전송했어요.",
                 "publishSuccessWithoutRecipients": "병동코드를 간호사에게 공유해 주세요.",
-                "requestFailed": "AI 자동채우기를 완료하지 못했어요.",
+                "requestFailed": "AI 채우기를 완료하지 못했어요.",
                 "resetAction": "초기화",
                 "retry": "다시 시도",
                 "saveFailed": "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
@@ -1072,7 +1147,7 @@ export const ko = {
                 "snapshotLimitReached": "근무표는 최대 10개까지 저장할 수 있어요.",
                 "snapshotSidebar": {
                     "close": "저장본 닫기",
-                    "defaultTitle": "자동채우기 저장본",
+                    "defaultTitle": "AI 채우기 저장본",
                     "delete": "기록 삭제",
                     "deleteCancel": "취소",
                     "deleteConfirm": "삭제하기",
@@ -1080,7 +1155,7 @@ export const ko = {
                     "deleteFailed": "기록를 삭제하지 못했어요.",
                     "deleteSuccess": "기록를 삭제했어요.",
                     "deleteTitle": "기록를 삭제할까요?",
-                    "description": "자동채우기 결과 기록",
+                    "description": "AI 채우기 결과 기록",
                     "empty": "아직 임시 저장한 근무표가 없어요.",
                     "emptyCells": "빈칸 {{count}}칸",
                     "error": "저장본 목록을 불러오지 못했어요.",
@@ -1106,13 +1181,13 @@ export const ko = {
                     "totalViolations": "확인할 조건 {{count}}개"
                 },
                 "title": {
-                    "error": "자동채우기를 마치지 못했어요",
-                    "idle": "자동채우기를 시작할 수 있어요",
+                    "error": "AI 채우기를 마치지 못했어요",
+                    "idle": "AI 채우기를 시작할 수 있어요",
                     "loading": "근무표 계산 중",
-                    "success": "자동채우기를 마쳤어요"
+                    "success": "AI 채우기를 마쳤어요"
                 },
                 "toolbarHint": "조건과 신청 근무를 기준으로 빈칸을 채워요",
-                "toolbarSubTitle": "AI 자동채우기로 빈칸을 한 번에 채워보세요.",
+                "toolbarSubTitle": "AI 채우기로 빈칸을 한 번에 채워보세요.",
                 "toolbarTitle": "근무표를 채우고 확정해 주세요",
                 "validationStatus": {
                     "checking": "근무 조건을 확인하고 있어요"
@@ -1764,8 +1839,8 @@ export const ko = {
             },
             "tutorial": {
                 "aiAutofill": {
-                    "info": "AI 자동 채우기를 여러 번 실행해 원하는 근무표에 빠르게 가까워질 수 있어요.\n결과는 관리자가 한 번 더 확인하고 수정해 주세요.",
-                    "title": "AI 자동 채우기"
+                    "info": "AI 채우기를 여러 번 실행해 원하는 근무표에 빠르게 가까워질 수 있어요.\n결과는 관리자가 한 번 더 확인하고 수정해 주세요.",
+                    "title": "AI 채우기"
                 },
                 "authoringFixed": {
                     "info": "AI는 고정근무와 신청근무를 제외한 빈칸을 채워요.\n바꾸면 안 되는 근무가 있다면 AI 실행 전에 먼저 고정해 주세요.",
@@ -2478,7 +2553,8 @@ export const ko = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "화면 언어 / Language",
             "loadingDescription": "내 계정과 병동 정보를 순서대로 확인하고 있어요.",
@@ -3146,6 +3222,30 @@ export const ko = {
             },
             "wardCodeLabel": "{{wardTitle}} 병동코드"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "의도와 규칙의 변환을 확인했어요. 실행 계획은 아직 생성하지 않았어요.",
+        "unsupported": "요청에 아직 처리할 수 없는 조건이 있어요.",
+        "choosePeople": "누구에게 적용할까요? 현재 근무표 전체인지, 특정 그룹인지, 간호사 이름을 알려 주세요.",
+        "clarify": "요청의 대상·기간·조건을 더 확인해야 해요.",
+        "checkPeople": "어느 간호사에게 적용할지 이름을 다시 확인해 주세요.",
+        "checkDates": "이번 달의 어느 날짜에 적용할지 확인해 주세요.",
+        "checkShifts": "어느 근무에 적용할지 근무 코드를 확인해 주세요.",
+        "checkCount": "횟수와 최소·최대·정확히 중 어느 조건인지 확인해 주세요.",
+        "checkAggregation": "각자 횟수인지 그룹 합계인지 확인해 주세요.",
+        "checkPriority": "반드시 지킬 조건인지, 가능하면 맞출 조건인지 확인해 주세요.",
+        "ready": "확인한 조건으로 계산할 준비가 됐어요.",
+        "review": "대상·기간·조건을 확인한 뒤 진행해 주세요.",
+        "locked": "고정된 배치와 요청이 충돌해요. 해당 배치를 확인해 주세요.",
+        "expired": "표 또는 요청이 바뀌어 다시 확인해야 해요.",
+        "removed": "조건을 삭제했어요. 새 요청을 입력해 주세요.",
+        "noChangesFound": "바꾸고 싶은 내용을 확인하지 못했어요. 근무표는 변경되지 않았어요. 요청 내용을 확인해 주세요.",
+        "runAndRoster": "이번 실행에만 적용할 요청과 이번 근무표에서 계속 유지할 조건을 함께 확인했어요. 기존에 저장한 조건도 계속 적용돼요.",
+        "rosterOnly": "이 조건은 이번 근무표의 활성 요청으로 유지돼요. 다음 달이나 팀의 상시 설정으로 저장하려면 조건 설정을 이용해 주세요. 기존에 저장한 조건도 계속 적용돼요.",
+        "runOnly": "이번 요청은 이번 실행에만 적용돼요. 이후 자동완성에서도 유지할 새 조건은 조건 설정에서 저장해 주세요. 기존에 저장한 조건은 계속 적용돼요.",
+        "selectedConditions": "선택한 조건만 적용하고 나머지 조건은 이번 실행에서 제외합니다.",
+        "shiftEligibility": "가능한 근무 종류를 바꾸려면 간호사 설정에서 수정해 주세요. 이번 달에 실제로 배정하려는 요청이라면 근무와 날짜 또는 횟수를 알려 주세요.",
+        "confirmSpelling": "말씀하신 간호사가 {{names}} 선생님인가요? 이름을 확인해 주시면 앞서 요청한 내용을 이어서 확인할게요."
     }
 };
 
@@ -3879,23 +3979,28 @@ export const en: TLocale = {
                 "viewMobile": "View mobile version",
                 "webMakeSchedule": "Create a schedule on web",
                 "guideLink": "Nurse scheduling guide (Korean)",
-                "faqLink": "Dutying FAQ (Korean)"
+                "faqLink": "Dutying FAQ (Korean)",
+                "startFree": "Start for free"
             },
             "feature": {
                 "ai": {
                     "description": "Review easy-to-miss conditions\nstep by step and apply them.",
-                    "label": "AI autofill",
-                    "title": "No need to fill\nblank schedules from scratch"
+                    "label": "AI fill",
+                    "title": "No need to fill\nblank schedules from scratch",
+                    "scheduleDetails": "Fill open slots based on staffing needs, shift requests, and fixed assignments. Review and edit the draft before finalizing."
                 },
                 "integration": {
                     "description": "Nurses can send requests in the app.\nConfirmed schedules are delivered instantly.",
                     "highlight": "Connect",
                     "label": "Connected workflow",
-                    "title": "Connect nurses\nwith the ward"
+                    "title": "Connect nurses\nwith the ward",
+                    "leaveDetails": "See each nurse’s shifts and annual leave used and remaining, and manage days off together.",
+                    "managementMessage": "Manage time off, annual leave, and shift requests in one place.",
+                    "appGuide": "Explore the nurse app"
                 },
                 "review": {
                     "description": "See what needs attention\nand review suggested fixes.",
-                    "label": "AI autofill",
+                    "label": "AI fill",
                     "title": "Find wrong shifts\nand fix them quickly"
                 },
                 "ward": {
@@ -3914,6 +4019,7 @@ export const en: TLocale = {
             },
             "header": {
                 "app": "Nurse app",
+                "customerSupport": "Customer support",
                 "homeAria": "Dutying landing home",
                 "inquiry": "Contact us",
                 "sectionAria": "Landing sections",
@@ -3924,7 +4030,8 @@ export const en: TLocale = {
                 "description": "Create schedules faster with AI,\nand connect nurses to simplify ward operations.",
                 "phraseSchedule": "Shift schedules,",
                 "phraseWard": "Ward operations,",
-                "suffix": "made easier with Dutying"
+                "suffix": "made easier with Dutying",
+                "freeOffer": "\u003cemphasis>Start for free\u003c/emphasis> today!"
             },
             "imageAlt": {
                 "aiSchedule": "AI-generated nurse shift schedule",
@@ -3939,6 +4046,9 @@ export const en: TLocale = {
                 "mobileHero": "Dutying app shift schedule screen",
                 "wardBoard": "Ward board screen",
                 "webSchedule": "Dutying web schedule editor screen"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}} days in a row · Max {{expected}}"
             },
             "mobileBenefits": {
                 "community": {
@@ -3981,7 +4091,72 @@ export const en: TLocale = {
                 "titleHighlight": "1 minute with AI",
                 "titleLine1": "Complex schedules,",
                 "titleLine2Prefix": "now built in",
-                "titleLine2Suffix": ""
+                "titleLine2Suffix": "",
+                "importTitle": "Import an existing schedule from an image or Excel",
+                "importDescription": "Upload an image or Excel file of your existing schedule to set up your ward quickly."
+            },
+            "workflow": {
+                "title": "Building next month’s schedule from scratch again?",
+                "ai": {
+                    "problem": "Filling each slot by hand?",
+                    "solution": "Build a schedule in one minute with AI"
+                },
+                "ward-management": {
+                    "problem": "Struggling to manage time off?",
+                    "solution": "Manage time off with ease"
+                },
+                "integration": {
+                    "problem": "Juggling requests and updates?",
+                    "solution": "Request days off and share notices in the nurse app"
+                },
+                "excel": {
+                    "problem": "Already have a schedule?",
+                    "solution": "Start with an image or Excel file"
+                }
+            },
+            "usage": {
+                "total": "\u003ccount>10,000+\u003c/count> nurses have used Dutying!"
+            },
+            "adoption": {
+                "title": "Hospital & ward onboarding",
+                "navLink": "Onboarding inquiry",
+                "formLegend": "Ward onboarding details",
+                "fields": {
+                    "hospitalName": "Hospital name",
+                    "wardName": "Ward name",
+                    "contact": "Contact details"
+                },
+                "contactPlaceholder": "Phone number or email",
+                "contactHint": "Enter a phone number or email address.",
+                "validation": {
+                    "hospitalName": "Enter the hospital name.",
+                    "wardName": "Enter the ward name.",
+                    "contact": "Check your phone number or email address."
+                },
+                "privacyConsent": "\u003cconsent>I agree to the collection and use of the information above for onboarding guidance in accordance with the \u003c/consent>\u003cpolicy>Privacy Policy\u003c/policy>. (Required)",
+                "sending": "Sending…",
+                "acceptedTitle": "We received your inquiry.",
+                "acceptedDescription": "We’ll contact you using the details you provided to help set up your ward.",
+                "submitError": "We couldn’t confirm receipt. Please try again or contact us by email.",
+                "emailLabel": "Onboarding inquiries",
+                "emailFallback": "You can also ask about onboarding by email.",
+                "emailSubject": "Dutying hospital and ward onboarding inquiry",
+                "emailConsent": "I agree to the collection and use of my personal information to respond to my onboarding inquiry."
+            },
+            "footer": {
+                "plusPlan": "Plus plan",
+                "subscriptionTerms": "Subscription terms",
+                "refundPolicy": "Refund policy",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "Business details and online subscription sign-ups are being prepared.",
+                    "representative": "Representative",
+                    "registrationNumber": "Business registration number",
+                    "address": "Business address",
+                    "phone": "Customer support",
+                    "email": "Email",
+                    "ecommerceNumber": "E-commerce registration number"
+                }
             }
         },
         "login": {
@@ -4094,7 +4269,7 @@ export const en: TLocale = {
                 "fixSelectionSuccess": "Fixed {{count}} cells.",
                 "unfixSelectionSuccess": "Unfixed {{count}} cells.",
                 "prefillDecision": {
-                    "eyebrow": "AI autofill preview",
+                    "eyebrow": "AI fill preview",
                     "title": "Are there shifts AI should not change?",
                     "description": "AI will refill every empty cell except fixed and requested shifts.\nFix any shifts that should not change before continuing.",
                     "calendarTitle": "AI fill scope",
@@ -4154,12 +4329,12 @@ export const en: TLocale = {
                 "exitGuard": {
                     "unsavedTitle": "You have unsaved edits",
                     "unsavedDescription": "Save a draft or confirm the schedule to keep your edits.",
-                    "aiGeneratingTitle": "Stop AI Autofill and leave?",
+                    "aiGeneratingTitle": "Stop AI Fill and leave?",
                     "aiGeneratingDescription": "Leaving may discard the autofill result.",
                     "leaveConfirm": "Leave",
                     "stayCancel": "Keep editing",
                     "unsavedMessage": "You have unsaved edits\nSave a draft or confirm the schedule to keep your edits.",
-                    "aiGeneratingMessage": "AI Autofill is running.\nLeaving may discard the result.\nLeave anyway?"
+                    "aiGeneratingMessage": "AI Fill is running.\nLeaving may discard the result.\nLeave anyway?"
                 },
                 "undo": "Undo",
                 "redo": "Redo",
@@ -4167,7 +4342,7 @@ export const en: TLocale = {
                 "confirm": "Confirm schedule",
                 "description": {
                     "error": "The AI request failed. The current schedule stays as-is, and you can retry immediately.",
-                    "idle": "You can start AI autofill with the conditions from the previous steps.",
+                    "idle": "You can start AI fill with the conditions from the previous steps.",
                     "loading": "While waiting for the response, confirm and retry are temporarily disabled.",
                     "success": "The AI result has been applied. Review it, edit it, or confirm it right away."
                 },
@@ -4203,7 +4378,7 @@ export const en: TLocale = {
                 "publishSuccessConnectionDescription": "You can automatically receive confirmed schedules in the Dutying app!",
                 "publishSuccessWithRecipients": "The schedule was sent automatically to {{count}} connected nurses.",
                 "publishSuccessWithoutRecipients": "Share the ward code with your nurses.",
-                "requestFailed": "Could not complete AI autofill.",
+                "requestFailed": "Could not complete AI fill.",
                 "resetAction": "Reset",
                 "retry": "Retry",
                 "saveFailed": "Failed to save. Please try again shortly.",
@@ -4262,7 +4437,7 @@ export const en: TLocale = {
                     "success": "Fill complete"
                 },
                 "toolbarHint": "Fill empty cells based on the rules and requested shifts.",
-                "toolbarSubTitle": "Use AI Autofill to fill empty cells in one go.",
+                "toolbarSubTitle": "Use AI Fill to fill empty cells in one go.",
                 "toolbarTitle": "Fill and confirm the schedule",
                 "validationStatus": {
                     "checking": "Checking constraints"
@@ -4914,8 +5089,8 @@ export const en: TLocale = {
             },
             "tutorial": {
                 "aiAutofill": {
-                    "info": "Run AI autofill multiple times to move quickly toward the schedule you want.\nAn admin should review and adjust the result.",
-                    "title": "AI autofill"
+                    "info": "Run AI fill multiple times to move quickly toward the schedule you want.\nAn admin should review and adjust the result.",
+                    "title": "AI fill"
                 },
                 "authoringFixed": {
                     "info": "AI fills blank cells except fixed and requested shifts.\nFix any shift that must not change before running AI.",
@@ -5628,7 +5803,8 @@ export const en: TLocale = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "Display language",
             "loadingDescription": "Checking your account and ward information.",
@@ -6296,6 +6472,30 @@ export const en: TLocale = {
             },
             "wardCodeLabel": "{{wardTitle}} ward code"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "I checked how your request maps to the rules. The calculation plan is still pending.",
+        "unsupported": "Some conditions in your request are currently unsupported.",
+        "choosePeople": "Who should this apply to? Specify everyone on the schedule, a group, or the names of individual nurses.",
+        "clarify": "Please provide more detail about the people, dates, or conditions in your request.",
+        "checkPeople": "Check the names of the nurses this should apply to.",
+        "checkDates": "Which dates this month should this apply to?",
+        "checkShifts": "Which shift codes should this apply to?",
+        "checkCount": "Confirm the count and whether it is a minimum, maximum, or exact number.",
+        "checkAggregation": "Does the count apply per person or to the group in total?",
+        "checkPriority": "Is this a required condition or a preference?",
+        "ready": "Ready to calculate with the confirmed conditions.",
+        "review": "Check the people, dates, and conditions before continuing.",
+        "locked": "The request conflicts with a fixed shift. Check that assignment.",
+        "expired": "The schedule or request changed. Please review it again.",
+        "removed": "Conditions removed. Enter a new request.",
+        "noChangesFound": "Couldn’t identify a change in your request. The schedule is unchanged. Please review your request.",
+        "runAndRoster": "Reviewed requests for this run and conditions that stay with this schedule. Saved conditions still apply.",
+        "rosterOnly": "This condition stays active on this schedule. Use condition settings to save it for next month or as a team rule. Saved conditions still apply.",
+        "runOnly": "This request applies only to this run. To reuse a new condition in future autofill runs, save it in condition settings. Saved conditions still apply.",
+        "selectedConditions": "Apply only the selected conditions in this run.",
+        "shiftEligibility": "To change which shifts a nurse can work, edit their nurse settings. To assign shifts this month, tell me the shift and dates or number of shifts.",
+        "confirmSpelling": "Did you mean {{names}}? Confirm the nurse’s name so I can continue with your request."
     }
 };
 
@@ -7027,19 +7227,24 @@ export const ja: TLocale = {
                 "viewMobile": "モバイル版で見る",
                 "webMakeSchedule": "Webで勤務表を作成",
                 "guideLink": "看護師勤務表の作成ガイド（韓国語）",
-                "faqLink": "Dutying よくある質問（韓国語）"
+                "faqLink": "Dutying よくある質問（韓国語）",
+                "startFree": "無料で始める"
             },
             "feature": {
                 "ai": {
                     "description": "見落としやすい条件を\n段階ごとに確認して反映できます",
                     "label": "AI自動入力",
-                    "title": "空の勤務表を\n一から埋める必要はありません"
+                    "title": "空の勤務表を\n一から埋める必要はありません",
+                    "scheduleDetails": "必要人数や希望勤務・固定勤務を反映して空欄を埋めます。作成された勤務表案は確認・編集できます。"
                 },
                 "integration": {
                     "description": "勤務希望をアプリから送れます。\n勤務表が確定するとアプリへすぐ届きます。",
                     "highlight": "連携",
                     "label": "連携",
-                    "title": "看護師と病棟を\n連携できます"
+                    "title": "看護師と病棟を\n連携できます",
+                    "leaveDetails": "看護師ごとの勤務状況と年休の取得・残日数を確認し、休日もまとめて管理できます。",
+                    "managementMessage": "休暇・年休から希望勤務まで、まとめて管理できます。",
+                    "appGuide": "看護師アプリを見る"
                 },
                 "review": {
                     "description": "修正が必要な箇所を\nすぐ確認し、修正案も確認できます。",
@@ -7062,6 +7267,7 @@ export const ja: TLocale = {
             },
             "header": {
                 "app": "看護師アプリ",
+                "customerSupport": "カスタマーサポート",
                 "homeAria": "Dutyingランディングホーム",
                 "inquiry": "お問い合わせ",
                 "sectionAria": "ランディングセクション",
@@ -7072,7 +7278,8 @@ export const ja: TLocale = {
                 "description": "AIで勤務表をすばやく作成し、\n看護師と連携して病棟管理をもっと簡単に。",
                 "phraseSchedule": "交代勤務表、",
                 "phraseWard": "病棟管理、",
-                "suffix": "Dutyingでもっと簡単に"
+                "suffix": "Dutyingでもっと簡単に",
+                "freeOffer": "今すぐ\u003cemphasis>無料で始めましょう！\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AIが自動生成した看護師の勤務表画面",
@@ -7087,6 +7294,9 @@ export const ja: TLocale = {
                 "mobileHero": "Dutyingアプリの勤務予定画面",
                 "wardBoard": "病棟掲示板画面",
                 "webSchedule": "Dutying Web勤務表作成画面"
+            },
+            "schedulePreview": {
+                "workStreak": "{{actual}}日連続勤務・上限{{expected}}日"
             },
             "mobileBenefits": {
                 "community": {
@@ -7129,7 +7339,72 @@ export const ja: TLocale = {
                 "titleHighlight": "AIで1分",
                 "titleLine1": "複雑な勤務表を、",
                 "titleLine2Prefix": "これからは",
-                "titleLine2Suffix": "で作成"
+                "titleLine2Suffix": "で作成",
+                "importTitle": "既存の勤務表を画像・Excelから取り込む",
+                "importDescription": "使っていた勤務表の画像やExcelファイルをアップロードするだけで、病棟の設定が簡単に完了します。"
+            },
+            "workflow": {
+                "title": "来月の勤務表も、また空欄から埋めますか？",
+                "ai": {
+                    "problem": "空欄を一つずつ埋めるとき",
+                    "solution": "AIで1分で勤務表を作成"
+                },
+                "ward-management": {
+                    "problem": "休日・年休の管理が大変なとき",
+                    "solution": "休暇・年休をかんたんに管理"
+                },
+                "integration": {
+                    "problem": "申請や共有に手間がかかるとき",
+                    "solution": "看護師アプリで休みを申請・お知らせを共有"
+                },
+                "excel": {
+                    "problem": "既存の勤務表があるとき",
+                    "solution": "画像・Excelですぐに始める"
+                }
+            },
+            "usage": {
+                "total": "これまでに\u003ccount>1万人\u003c/count>以上の看護師がDutyingを利用しています！"
+            },
+            "adoption": {
+                "title": "病院・病棟の導入相談",
+                "navLink": "導入相談",
+                "formLegend": "病棟導入のお申し込み情報",
+                "fields": {
+                    "hospitalName": "病院名",
+                    "wardName": "病棟名",
+                    "contact": "担当者の連絡先"
+                },
+                "contactPlaceholder": "電話番号またはメールアドレス",
+                "contactHint": "電話番号またはメールアドレスを入力してください。",
+                "validation": {
+                    "hospitalName": "病院名を入力してください。",
+                    "wardName": "病棟名を入力してください。",
+                    "contact": "電話番号またはメールアドレスを確認してください。"
+                },
+                "privacyConsent": "\u003cpolicy>プライバシーポリシー\u003c/policy>\u003cconsent>に基づき、導入のご案内のために上記の情報を取得・利用することに同意します。（必須）\u003c/consent>",
+                "sending": "送信中…",
+                "acceptedTitle": "お問い合わせを受け付けました。",
+                "acceptedDescription": "ご入力の連絡先に病棟導入についてご案内します。",
+                "submitError": "受け付けを確認できませんでした。もう一度お試しいただくか、メールでお問い合わせください。",
+                "emailLabel": "導入のお問い合わせ",
+                "emailFallback": "導入についてはメールでもお問い合わせいただけます。",
+                "emailSubject": "Dutying 病院・病棟の導入に関するお問い合わせ",
+                "emailConsent": "導入のご案内に必要な個人情報の取得・利用に同意します。"
+            },
+            "footer": {
+                "plusPlan": "Plusプラン",
+                "subscriptionTerms": "定期購入のご案内",
+                "refundPolicy": "返金ポリシー",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "事業者情報とオンラインでのお申し込みの準備を進めています。",
+                    "representative": "代表者",
+                    "registrationNumber": "事業者登録番号",
+                    "address": "事業所所在地",
+                    "phone": "カスタマーサポート",
+                    "email": "メール",
+                    "ecommerceNumber": "通信販売業届出番号"
+                }
             }
         },
         "login": {
@@ -8776,7 +9051,8 @@ export const ja: TLocale = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "画面言語 / Language",
             "loadingDescription": "アカウントと病棟情報を確認しています。",
@@ -9444,6 +9720,30 @@ export const ja: TLocale = {
             },
             "wardCodeLabel": "{{wardTitle}} 病棟コード"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "依頼内容とルールの対応を確認しました。計算計画はこれから作成します。",
+        "unsupported": "依頼に、現在対応できない条件が含まれています。",
+        "choosePeople": "誰に適用しますか？勤務表の全員、特定のグループ、または看護師の名前を教えてください。",
+        "clarify": "対象者、期間、条件についてもう少し詳しく教えてください。",
+        "checkPeople": "対象となる看護師の名前を確認してください。",
+        "checkDates": "今月のどの日に適用するか確認してください。",
+        "checkShifts": "対象の勤務コードを確認してください。",
+        "checkCount": "回数と、最小・最大・指定回数のどれかを確認してください。",
+        "checkAggregation": "一人あたりの回数か、グループ全体の合計か確認してください。",
+        "checkPriority": "必須条件か、できれば満たしたい希望か確認してください。",
+        "ready": "確認した条件で計算する準備ができました。",
+        "review": "対象者、期間、条件を確認してから進んでください。",
+        "locked": "固定シフトと依頼が矛盾しています。該当の勤務を確認してください。",
+        "expired": "勤務表または依頼が変わったため、もう一度確認してください。",
+        "removed": "条件を削除しました。新しい依頼を入力してください。",
+        "noChangesFound": "変更したい内容を確認できませんでした。勤務表はそのままです。依頼内容を確認してください。",
+        "runAndRoster": "今回だけの依頼と、この勤務表に残す条件を確認しました。保存済みの条件も引き続き適用されます。",
+        "rosterOnly": "この条件は現在の勤務表で有効です。来月やチームの常設ルールに保存するには条件設定を使ってください。保存済みの条件も引き続き適用されます。",
+        "runOnly": "この依頼は今回の計算だけに適用されます。今後の自動入力でも使う新しい条件は条件設定に保存してください。保存済みの条件は引き続き適用されます。",
+        "selectedConditions": "今回は選択した条件だけを適用します。",
+        "shiftEligibility": "勤務できるシフトを変更するには、看護師設定を編集してください。今月の勤務を割り当てる場合は、シフトと日付または回数を教えてください。",
+        "confirmSpelling": "{{names}}さんのことですか？名前を確認できたら、先ほどのリクエストを続けます。"
     }
 };
 
@@ -10175,19 +10475,24 @@ export const zh: TLocale = {
                 "viewMobile": "查看移动版",
                 "webMakeSchedule": "在 Web 上创建排班表",
                 "guideLink": "护士排班指南（韩语）",
-                "faqLink": "Dutying 常见问题（韩语）"
+                "faqLink": "Dutying 常见问题（韩语）",
+                "startFree": "免费开始"
             },
             "feature": {
                 "ai": {
                     "description": "容易遗漏的条件\n也可以按步骤检查并应用。",
                     "label": "AI 自动填充",
-                    "title": "空白排班表\n不必再从零填写"
+                    "title": "空白排班表\n不必再从零填写",
+                    "scheduleDetails": "根据所需人手、班次申请和固定班次填补空缺。生成的排班草稿可自行检查和修改。"
                 },
                 "integration": {
                     "description": "护士可以在 App 中提交班次申请。\n排班表确认后，会立即同步到 App。",
                     "highlight": "联动",
                     "label": "联动",
-                    "title": "护士和病区\n可以轻松联动"
+                    "title": "护士和病区\n可以轻松联动",
+                    "leaveDetails": "查看每位护士的排班、已休和剩余年假，并统一管理休息日。",
+                    "managementMessage": "从休假、年假到班次申请，都能集中管理。",
+                    "appGuide": "了解护士 App"
                 },
                 "review": {
                     "description": "需要调整的地方\n可以立即查看，也能看到修改建议。",
@@ -10210,6 +10515,7 @@ export const zh: TLocale = {
             },
             "header": {
                 "app": "护士 App",
+                "customerSupport": "客户支持",
                 "homeAria": "Dutying 落地页首页",
                 "inquiry": "联系我们",
                 "sectionAria": "落地页导航",
@@ -10220,7 +10526,8 @@ export const zh: TLocale = {
                 "description": "用 AI 轻松快速地创建排班表，\n并与护士联动，让病区管理更简单",
                 "phraseSchedule": "轮班排班，",
                 "phraseWard": "病区管理、",
-                "suffix": "用 Dutying 更轻松"
+                "suffix": "用 Dutying 更轻松",
+                "freeOffer": "现在就\u003cemphasis>免费开始吧！\u003c/emphasis>"
             },
             "imageAlt": {
                 "aiSchedule": "AI 自动生成的护士排班表界面",
@@ -10235,6 +10542,9 @@ export const zh: TLocale = {
                 "mobileHero": "Dutying App 排班日程画面",
                 "wardBoard": "病区公告栏屏幕",
                 "webSchedule": "Dutying Web 排班表编辑画面"
+            },
+            "schedulePreview": {
+                "workStreak": "连续工作 {{actual}} 天 · 上限 {{expected}} 天"
             },
             "mobileBenefits": {
                 "community": {
@@ -10277,7 +10587,72 @@ export const zh: TLocale = {
                 "titleHighlight": "AI 1 分钟",
                 "titleLine1": "复杂的排班表，",
                 "titleLine2Prefix": "用",
-                "titleLine2Suffix": "就能完成"
+                "titleLine2Suffix": "就能完成",
+                "importTitle": "从图片或 Excel 导入现有排班表",
+                "importDescription": "上传现有排班表的图片或 Excel 文件，即可轻松完成病区设置。"
+            },
+            "workflow": {
+                "title": "下个月的排班表，又要从空白开始填吗？",
+                "ai": {
+                    "problem": "需要逐一填写空班时",
+                    "solution": "用 AI 1 分钟生成排班表"
+                },
+                "ward-management": {
+                    "problem": "休息日和年假难以管理时",
+                    "solution": "轻松管理休假和年假"
+                },
+                "integration": {
+                    "problem": "申请和共享通知不方便时",
+                    "solution": "在护士 App 申请休息日、分享通知"
+                },
+                "excel": {
+                    "problem": "已有排班表时",
+                    "solution": "用图片或 Excel 直接开始"
+                }
+            },
+            "usage": {
+                "total": "累计已有\u003ccount>1 万名\u003c/count>以上的护士使用过 Dutying！"
+            },
+            "adoption": {
+                "title": "医院及病区导入咨询",
+                "navLink": "导入咨询",
+                "formLegend": "病区导入申请信息",
+                "fields": {
+                    "hospitalName": "医院名称",
+                    "wardName": "病区名称",
+                    "contact": "联系人联系方式"
+                },
+                "contactPlaceholder": "电话号码或电子邮箱",
+                "contactHint": "请输入电话号码或电子邮箱。",
+                "validation": {
+                    "hospitalName": "请输入医院名称。",
+                    "wardName": "请输入病区名称。",
+                    "contact": "请检查电话号码或电子邮箱。"
+                },
+                "privacyConsent": "我同意按照\u003cpolicy>隐私政策\u003c/policy>\u003cconsent>收集和使用上述信息，以便为我提供导入指导。（必选）\u003c/consent>",
+                "sending": "正在提交…",
+                "acceptedTitle": "已收到您的咨询。",
+                "acceptedDescription": "我们会通过您填写的联系方式介绍病区导入流程。",
+                "submitError": "暂时无法确认是否收到。请重试或通过电子邮件联系我们。",
+                "emailLabel": "导入咨询",
+                "emailFallback": "您也可以通过电子邮件咨询导入事宜。",
+                "emailSubject": "Dutying 医院及病区导入咨询",
+                "emailConsent": "我同意收集和使用个人信息以回复导入咨询。"
+            },
+            "footer": {
+                "plusPlan": "Plus 套餐",
+                "subscriptionTerms": "订阅条款",
+                "refundPolicy": "退款政策",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "经营者信息和在线订阅申请正在准备中。",
+                    "representative": "负责人",
+                    "registrationNumber": "营业登记号",
+                    "address": "经营地址",
+                    "phone": "客户支持",
+                    "email": "电子邮箱",
+                    "ecommerceNumber": "电子商务备案号"
+                }
             }
         },
         "login": {
@@ -11924,7 +12299,8 @@ export const zh: TLocale = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "画面语言/语言",
             "loadingDescription": "正在按顺序检查账号和病区信息。",
@@ -12592,6 +12968,3278 @@ export const zh: TLocale = {
             },
             "wardCodeLabel": "{{wardTitle}} 区号"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "已检查请求与排班规则的对应关系。计算方案尚未生成。",
+        "unsupported": "请求中有暂不支持的条件。",
+        "choosePeople": "要应用于哪些人？请指定排班表中的所有人、某个小组或具体护士的姓名。",
+        "clarify": "请进一步说明请求涉及的人员、日期或条件。",
+        "checkPeople": "请核对要应用此条件的护士姓名。",
+        "checkDates": "请确认要应用此条件的本月日期。",
+        "checkShifts": "请确认要应用此条件的班次代码。",
+        "checkCount": "请确认次数以及是最少、最多还是恰好该次数。",
+        "checkAggregation": "请确认是每人次数还是小组合计。",
+        "checkPriority": "请确认这是必须满足的条件，还是尽量满足的偏好。",
+        "ready": "已准备好按确认的条件计算。",
+        "review": "继续之前，请核对人员、日期和条件。",
+        "locked": "请求与固定班次冲突，请检查相应排班。",
+        "expired": "排班表或请求已变更，请重新确认。",
+        "removed": "条件已删除，请输入新请求。",
+        "noChangesFound": "未能识别要调整的内容，排班表未更改。请检查请求。",
+        "runAndRoster": "已确认仅用于本次计算的请求和保留在此排班表中的条件。已保存的条件仍会应用。",
+        "rosterOnly": "此条件会保留在当前排班表中。如需保存到下月或设为班组常用规则，请使用条件设置。已保存的条件仍会应用。",
+        "runOnly": "本次请求仅适用于本次计算。若要在之后的自动排班中沿用新条件，请在条件设置中保存。已保存的条件仍会应用。",
+        "selectedConditions": "本次仅应用选中的条件。",
+        "shiftEligibility": "如需更改护士可上的班次，请修改护士设置。如果要安排本月的班次，请告诉我班次以及日期或次数。",
+        "confirmSpelling": "您指的是 {{names}} 吗？确认护士姓名后，我会继续处理刚才的请求。"
+    }
+};
+
+export const zhTW: TLocale = {
+    "entity": {
+        "account": {
+            "profileImageAlt": "{{name}} 頭像",
+            "userFallback": "使用者"
+        },
+        "ward": {
+            "codeChecking": "檢查",
+            "codeFallback": "區號",
+            "displayInfo": "區資訊"
+        }
+    },
+    "feature": {
+        "account": {
+            "create": {
+                "exception": "建立帳戶時出現問題。請稍後重試。",
+                "loading": "儲存您的帳戶資訊。",
+                "success": "您的帳戶資訊已儲存。"
+            },
+            "edit": {
+                "basicFailed": "更新帳戶資訊失敗。",
+                "deleteAccountFailed": "無法刪除賬號。",
+                "profileFailed": "無法更新個人資料。",
+                "quitWardConfirm": "要離開病房嗎？",
+                "quitWardFailed": "無法離開病房。"
+            }
+        },
+        "auth": {
+            "demoSession": {
+                "badge": "試用帳戶",
+                "description": "該體驗是一個臨時會話，時間有限。要繼續使用它，請在試用結束前切換為會員資格。",
+                "descriptionExpiringSoon": "體驗很快結束。如果您想繼續使用它，您將需要更改您的會員資格。",
+                "documentTitle": "體驗{{countdown}} | Dutying",
+                "expiredDocumentTitle": "體驗結束| Dutying",
+                "expiredModal": {
+                    "badge": "審判結束",
+                    "description": "如果您現在註冊，您可以立即進行正式的帳戶註冊流程。試用賬戶轉換API正在準備中，因此在這一步中，正在引導您完成登入後的註冊過程。",
+                    "nextStepDescription": "註冊或登入後，即可進行病房連線流程。與DUT-948連線後，經驗資料的繼承將繼續。",
+                    "nextStepTitle": "現在可以採取下一步行動",
+                    "primaryAction": "註冊並繼續使用",
+                    "title": "體驗時間結束"
+                },
+                "expiringSoon": "即將到期",
+                "remainingApprox": "還剩大約 {{minutes}} 分鐘",
+                "remainingFallback": "體驗進行中",
+                "remainingLabel": "剩餘時間",
+                "remainingPrecise": "Dutying 配置 {{minutes}}:{{seconds}}",
+                "signupRequired": "需要會員轉換",
+                "title": "目前，正在使用臨時帳戶建立時間表以供體驗。",
+                "titleExpiringSoon": "距離體驗結束已經不遠了。"
+            },
+            "documentTitle": "護理師班表製作，AI 1分鐘自動生成 | Dutying",
+            "sessionExpired": "登入時間已結束。請重新登入。",
+            "state": {
+                "errorDescription": "會話可能已過期或網路連線可能不穩定。",
+                "errorTitle": "無法檢查登入狀態",
+                "loadingTitle": "檢查您的登入狀態",
+                "logout": "登出",
+                "retry": "再試一次"
+            }
+        },
+        "createShiftModal": {
+            "backgroundColor": "背景顏色",
+            "classification": {
+                "day": "白班",
+                "evening": "小夜班",
+                "label": "班次含義",
+                "night": "夜班",
+                "nightContinuation": "夜班後半段",
+                "off": "休息",
+                "annualLeave": "年假",
+                "otherLeave": "其他假期",
+                "otherWork": "其他工作"
+            },
+            "createTitle": "新增工作/假期",
+            "delete": "刪除",
+            "editTitle": "編輯工作/假期",
+            "leave": "假期",
+            "leaveNamePlaceholder": "請輸入您的假期名稱。",
+            "name": "作品名稱",
+            "save": "節省",
+            "shortName": "縮寫",
+            "shortNameHint": "* 您輸入的縮寫按原樣顯示在班表列中。",
+            "validation": {
+                "nameRequired": "請輸入您的工作名稱。",
+                "shortNameFirstKey": "首字元請輸入日文、英文字母、數字或符號（如 -、.、_）。",
+                "shortNameRequired": "請輸入您的工作縮寫。",
+                "timeRequired": "請輸入您的工作時間。"
+            },
+            "work": "在職的",
+            "workNamePlaceholder": "請輸入您的工作名稱。",
+            "workTime": "時間"
+        },
+        "editShiftTeam": {
+            "addNurseFailed": "新增護理師失敗。",
+            "addNurseSuccess": "新增了 {{name}}。",
+            "deleteNurseFailed": "刪除護理師失敗。",
+            "deleteNurseSuccess": "已刪除護理師",
+            "disconnectFailed": "無法斷開連線。",
+            "disconnectSuccess": "已斷開連線。",
+            "moveNurseFailed": "護理師無法移動。",
+            "newNursePrefix": "新護理師",
+            "updateNurseFailed": "護理師資訊無法修改。",
+            "updateNurseShiftFailed": "無法儲存可能的班次型別。"
+        },
+        "editWard": {
+            "approveWaitingNurseFailed": "新增團隊失敗。",
+            "approveWaitingNurseSuccess": "一名護理師已被新增到選定的團隊中。",
+            "connectWaitingNurseFailed": "無法連線到現有護理師賬號。",
+            "connectWaitingNurseSuccess": "已關聯現有護理師賬號。",
+            "editSettingFailed": "無法編輯班次設定。",
+            "rejectWaitingNurseFailed": "無法拒絕鏈路待機請求。",
+            "rejectWaitingNurseSuccess": "等待連結的請求被拒絕。"
+        },
+        "file": {
+            "profileImageUploadFailed": "上傳個人資料圖片失敗。"
+        },
+        "register": {
+            "accountStatusChangeFailed": "無法更改賬號狀態。"
+        },
+        "registerWard": {
+            "defaultShiftType": {
+                "day": "天",
+                "evening": "晚上",
+                "night": "騎士",
+                "off": "離開"
+            },
+            "shiftTeams": {
+                "addNamePlaceholder": "新增姓名",
+                "addNurseAria": "新增團隊護理師姓名 {{index}}",
+                "addTeam": "新增團隊",
+                "count": "{{count}}人",
+                "deleteNurseAria": "刪除{{name}}",
+                "deleteTeamAria": "刪除隊伍{{index}}",
+                "description": "輸入每個團隊的護理師姓名。本人會自動關聯。",
+                "excludeMe": "* 請排除您自己",
+                "teamName": "護理師{{index}}團隊",
+                "title": "病房裡的護理師"
+            },
+            "shiftTypes": {
+                "add": "新增",
+                "addAction": "新增工作/假期",
+                "colorLabel": "顏色",
+                "column": {
+                    "category": "類別",
+                    "color": "顏色",
+                    "edit": "更正",
+                    "name": "作品名稱",
+                    "shortName": "縮寫",
+                    "workTime": "時間"
+                },
+                "description": "已先填入預設班次。請對其進行修改以符合病房標準。",
+                "editAria": "編輯{{name}}",
+                "leave": "假期",
+                "noTimeLeave": "這是一種沒有工作時間的假期。",
+                "shortNameLabel": "縮寫",
+                "title": "班次型別",
+                "typeLabel": "類別",
+                "work": "在職的"
+            },
+            "validation": {
+                "nameRequired": "請輸入您的工作名稱。",
+                "shortNameRequired": "請輸入 {{name}} 班次的工作縮寫。",
+                "timeRequired": "{{name}} 請輸入您輪班的工作時間。"
+            }
+        },
+        "requestShift": {
+            "processFailed": "無法處理申請。"
+        },
+        "shiftEditor": {
+            "calendarDivision": {
+                "memberCount": "{{count}}人"
+            },
+            "calendarHeader": {
+                "carryOver": "結轉到",
+                "name": "姓名",
+                "previousShift": "送貨工作"
+            },
+            "editWard": {
+                "addShiftType": "新增新工作/假期",
+                "applied": "應用班表",
+                "background": "背景",
+                "color": "顏色",
+                "count": "數數",
+                "defaultOffDays": "預設關閉 {{count}} 天",
+                "edit": "更正",
+                "editSettings": "編輯設定",
+                "leave": "假期",
+                "monthLabel": "{{month}}月",
+                "notApplied": "未應用班表",
+                "shiftName": "縮寫",
+                "shiftTypeColorStyle": "Shift型顯示樣式",
+                "shortName": "縮寫",
+                "text": "信",
+                "type": "類別",
+                "weekendColor": "週六/週日背景顏色分類",
+                "work": "在職的",
+                "workTime": "時間"
+            },
+            "export": {
+                "excel": {
+                    "failure": "無法儲存班表 Excel 檔案。請再試一次。",
+                    "fileName": "{{month}} 月度班表.xlsx",
+                    "nameHeader": "姓名",
+                    "previousShiftHeader": "送貨工作",
+                    "sheetName": "{{month}}每月班表",
+                    "success": "已儲存班表 Excel 檔案。",
+                    "title": "{{month}}每月班表"
+                },
+                "image": {
+                    "failure": "無法儲存考勤表影象。請再試一次。",
+                    "fileName": "{{year}}年{{month}}月班表.png",
+                    "success": "已儲存班表影象。",
+                    "targetMissing": "找不到要儲存的時間表螢幕。",
+                    "teamFileName": "{{teamName}} {{year}} 年 {{month}} 月班表.png",
+                    "title": "{{year}}年{{month}}月班表",
+                    "titleWithWard": "年 {{year}} 月 {{month}} {{wardLabel}} 班表"
+                }
+            },
+            "grid": {
+                "clearSelection": "明確選擇",
+                "nameHeader": "姓名",
+                "setSelectionD": "輸入D進行選擇"
+            },
+            "nurseEdit": {
+                "availableShifts": "可用的工作",
+                "availableShiftsDescription": "* 請選擇所有可用職位。",
+                "close": "關閉",
+                "disabled": "不適用",
+                "dutyManager": "會寫班表的人",
+                "employmentDate": "加入年份",
+                "employmentDateDescription": "* 請輸入您入院的年份。",
+                "enabled": "適用的",
+                "gender": {
+                    "female": "女性",
+                    "male": "其他"
+                },
+                "memo": "備忘錄",
+                "phoneNumber": "電話號碼",
+                "phoneNumberDescription": "* 緊急聯絡網路",
+                "save": "節省",
+                "title": "由護理師管理",
+                "worker": "排班人員"
+            },
+            "panel": {
+                "expand": "擴張",
+                "faults": "問題",
+                "faultsEmpty": "如果您發現任何問題，請在此處指出。",
+                "fold": "關閉",
+                "histories": "記錄",
+                "history": {
+                    "defaultLabel": "編輯歷史記錄",
+                    "editedCells": "{{count}} 細胞用 {{source}} 輸入進行修改。",
+                    "empty": "如果您進行編輯，記錄將出現在此處。",
+                    "reordered": "已調整排班人員順序",
+                    "sourceAi": "AI",
+                    "sourceSystem": "系統",
+                    "sourceUser": "被動性"
+                }
+            },
+            "requestLayer": {
+                "pending": "所申請的工作{{name}}尚未體現。"
+            },
+            "toolbar": {
+                "autofill": "自動填充",
+                "createNextMonth": "建立下個月的班表",
+                "edit": "編輯",
+                "layers": {
+                    "check": "預班申請反思",
+                    "fault": "錯誤的轉變",
+                    "slash": "預班申請未得到體現"
+                },
+                "notReady": "此功能仍在準備中。",
+                "publish": "郵政",
+                "save": "節省",
+                "savedStatus": "儲存完成",
+                "saveExcel": "儲存Excel",
+                "saveImage": "儲存影象",
+                "savingExcel": "儲存Excel",
+                "savingImage": "儲存影象",
+                "savingStatus": "儲存",
+                "settings": {
+                    "constraint": "限制條件",
+                    "designTheme": "設計主題",
+                    "shiftType": "班次型別"
+                },
+                "shiftInfoTitle": "檢視班次型別"
+            },
+            "validation": {
+                "forbidNextShift": "{{nurseName}} 在 {{prevShift}} 的第二天不能工作 {{nextShift}}。",
+                "l1ConsecutiveWork": "連續工作{{actual}}天，超過了{{expected}}天限制。",
+                "l2MaxConsecutiveSameShift": "{{shift}} 連續工作了 {{actual}} 天，超過了 {{expected}} 天限制。",
+                "l2MinOffAfterNight": "由於晚上後還有 {{actual}} 天休息，因此少於 {{expected}} 天。",
+                "l3MinStaffShortage": "{{shift}} 人員不足。",
+                "legacy": {
+                    "excludeCertainWorkTypes": "最好避免使用 ND/ED/NE/NOD 格式。",
+                    "excludeNightBeforeReqOff": "塗抹前一天最好避免上夜班。",
+                    "maxContinuousNight": "夜班最多可以連續分配 {{count}} 天。",
+                    "maxContinuousWork": "最多可以連續分配 {{count}} 天的工作。",
+                    "minContinuousNight": "請分配至少 {{count}} 天的夜間工作。",
+                    "minNightInterval": "N 輪班之間必須至少有 {{count}} 天的間隔。",
+                    "minNightIntervalFallback": "N 請在輪班之間留出足夠的時間。",
+                    "minOffAssignAfterNight": "夜間工作後，建議關閉至少 {{count}} 天。"
+                },
+                "maxConsecutiveNight": "{{nurseName}}已連續工作N次{{actual}}。最多可能有 {{expected}} 次。",
+                "maxConsecutiveWork": "{{nurseName}} 已連續上班 {{actual}} 天，最多可連上 {{expected}} 天。",
+                "maxStaffByShift": "{{shift}} 有 {{actual}} 員工。最多可容納 {{expected}} 人。",
+                "minNightInterval": "{{nurseName}} N 個班次之間必須有至少 {{expected}} 天的間隔。",
+                "nightContinuationRequired": "{{nurseName}}連續{{nightShift}}班後需要{{nightContinuationShift}}。",
+                "minOffAfterNight": "{{nurseName}} 工作 N 後沒有足夠的 OFF 時間。至少需要 {{expected}} 天。",
+                "minStaffByShift": "{{shift}} 有 {{actual}} 員工。至少需要{{expected}}人。",
+                "nightBeforeRequestedOff": "{{nurseName}} 在申請關閉的前一天被分配到 N 班。",
+                "nurseForbidWeekend": "{{nurseName}} 不能在週末或公共假期工作。",
+                "pairForbidSameShift": "{{nurseAName}} 和 {{nurseBName}} 不能同班工作。",
+                "pairPreferSameShift": "建議{{nurseAName}}和{{nurseBName}}一起工作。",
+                "title": {
+                    "minOffAfterNight": "晚上之後沒有足夠的休息。",
+                    "minStaffShortage": "人手不足。"
+                },
+                "unknown": "請檢查限制條件。"
+            }
+        }
+    },
+    "page": {
+        "board": {
+            "comment": {
+                "cancelReply": "取消回覆",
+                "loading": "正在載入評論",
+                "placeholder": "請輸入評論",
+                "replyPlaceholder": "請輸入您的回覆",
+                "title": "回覆 {{count}}"
+            },
+            "common": {
+                "add": "新增",
+                "author": "作者",
+                "cancel": "消除",
+                "close": "關閉",
+                "count": "{{count}}槍",
+                "delete": "刪除",
+                "noContent": "沒有內容",
+                "none": "不存在",
+                "notice": "通知",
+                "personCount": "{{count}}人",
+                "removeNamed": "刪除{{name}}",
+                "reply": "回覆",
+                "submit": "登記",
+                "update": "更正",
+                "write": "寫作"
+            },
+            "composer": {
+                "addingImage": "附加",
+                "closeAria": "關閉寫作",
+                "content": "細節",
+                "contentPlaceholder": "請輸入您想分享的內容",
+                "image": "圖片",
+                "imageLimit": "最大{{count}}張數，每張{{size}}MB",
+                "imageOnly": "您只能附加影象檔案。",
+                "imageReadFailed": "無法載入照片。請重新選擇。",
+                "maxImageCount": "您最多可以附加 {{count}} 照片。",
+                "maxImageSize": "請附上每頁不大於 {{size}}MB 的照片。",
+                "newPost": "新帖子",
+                "shareTitle": "分享至病房",
+                "title": "標題",
+                "titlePlaceholder": "請輸入標題"
+            },
+            "confirm": {
+                "deleteComment": "要刪除我的評論嗎？",
+                "deletePost": "要刪除該帖子嗎？",
+                "deleteSchedule": "要刪除病房時間表嗎？"
+            },
+            "date": {
+                "allDay": "整天",
+                "compactMonthDay": "{{month}}.{{day}}",
+                "datePickerButtonAria": "{{label}} {{value}}",
+                "datePlaceholder": "選擇日期",
+                "justNow": "現在",
+                "monthDay": "{{month}} 月 {{day}} 日",
+                "monthTitle": "月 {{month}} 年 {{year}}",
+                "nextMonth": "下個月",
+                "prevMonth": "上個月",
+                "quick": {
+                    "inThreeDays": "3天后",
+                    "today": "今天",
+                    "tomorrow": "明天"
+                },
+                "selectAria": "選擇{{date}}",
+                "timeUnknown": "時間待定",
+                "weekdays": {
+                    "fri": "金子",
+                    "mon": "月",
+                    "sat": "週六",
+                    "sun": "天",
+                    "thu": "脖子",
+                    "tue": "憤怒",
+                    "wed": "數字"
+                }
+            },
+            "deadline": {
+                "closePicker": "關閉截止日期選擇",
+                "label": "最後期限",
+                "noSelection": "未選擇",
+                "overdue": "截止日期已過",
+                "pickerTitle": "選擇截止日期",
+                "selectedSuffix": "{{date}} 關閉",
+                "today": "今天截止"
+            },
+            "description": "您可以與同病房的護理師共享必要的資訊。",
+            "detail": {
+                "attachedImagePreview": "附圖{{index}}放大圖",
+                "check": "檢查完成情況",
+                "checkedPeople": "檢查 {{count}} 名稱",
+                "closeImage": "近距離照片",
+                "deletePost": "刪除帖子",
+                "imagePreview": "檢視放大照片",
+                "like": "偉大的",
+                "selectPost": "請選擇一個帖子",
+                "uncheck": "檢查取消",
+                "unlike": "喜歡 取消"
+            },
+            "list": {
+                "clearSearch": "清除搜尋詞",
+                "empty": "發表新帖子",
+                "loadFailed": "無法載入帖子",
+                "loading": "正在載入帖子",
+                "searchAria": "帖子搜尋",
+                "searchPlaceholder": "標題、內容搜尋",
+                "title": "郵政"
+            },
+            "schedule": {
+                "calendarTitle": "病房日曆",
+                "closeAria": "關閉病房時間表",
+                "createAria": "病房時間表登記",
+                "datePickerClose": "關閉日期選擇",
+                "datePickerHeader": "時間表 {{label}}",
+                "dateTime": "日期和時間",
+                "dayAria": "{{date}} 時間表 {{count}}{{selectedSuffix}}",
+                "editAria": "病房時間表修改",
+                "endDate": "結束日期",
+                "endTime": "結尾",
+                "memo": "備忘錄",
+                "memoPlaceholder": "請輸入所需資訊",
+                "modalAria": "病房 {{title}}",
+                "modalCreate": "安排登記",
+                "modalEdit": "修改時間表",
+                "modalView": "檢視時間表",
+                "monthEventsTitle": "本月計劃",
+                "noMemo": "沒有筆記",
+                "noMonthEvents": "如果您登記病房時間表，它將顯示在此處。",
+                "noSelectedDateEvents": "所選日期沒有活動。",
+                "periodRequired": "請選擇一個時間段。",
+                "postDeadline": "釋出截止日期",
+                "sectionTitle": "病房時間表",
+                "selectedDateTitle": "{{date}} 時間表",
+                "selectedSuffix": ", 選定的",
+                "startDate": "開始日期",
+                "startTime": "開始",
+                "time": "小時",
+                "timeInputAria": "{{label}}時間",
+                "timeMissing": "請輸入時間表的開始時間和結束時間。",
+                "timeRangeInvalid": "對於當天的活動，結束時間必須晚於開始時間。",
+                "title": "標題",
+                "titlePlaceholder": "請輸入標題",
+                "titleRequired": "請輸入標題。"
+            },
+            "state": {
+                "loadingDescription": "正在查病房資訊。",
+                "loadingTitle": "正在準備一個公告板。",
+                "noWardDescription": "連線到病房後即可使用公告板。",
+                "noWardTitle": "如果連線到病房，則可以使用公告板。",
+                "retry": "再試一次",
+                "retryDescription": "請稍後重試。",
+                "wardLoadFailedTitle": "載入病房資訊失敗"
+            },
+            "title": "佈告欄",
+            "tutorial": {
+                "composer": {
+                    "deadlineInfo": "如果您設定截止日期，它將顯示在 Dutying App和病房日曆上。\n嘗試將其用於您想要與病房人員共享的時間表。",
+                    "deadlineTitle": "您可以指定截止日期"
+                },
+                "detail": {
+                    "checkInfo": "護理師確認後，立即留下來作為支票。\n可以透過評論接收請求或更改。",
+                    "checkTitle": "透過檢查和評論來管理確認。"
+                },
+                "list": {
+                    "createInfo": "所有支會成員都可以看到您所寫的內容。\n寫下您想與病房人員分享的內容。",
+                    "createTitle": "在這裡寫一篇新文章",
+                    "postsInfo": "您可以點選文章檢視詳細資訊。",
+                    "postsTitle": "你可以看到帖子列表"
+                }
+            }
+        },
+        "duty": {
+            "bootstrapErrorDescription": "請再次檢查您的帳戶資訊。如果問題仍然存在，請重新登入。",
+            "bootstrapErrorTitle": "載入病房資訊失敗",
+            "bootstrapLoadingDescription": "檢查病房資訊後，正在準備確認的班表螢幕。",
+            "bootstrapLoadingTitle": "檢查您的帳戶資訊",
+            "cancel": "取消",
+            "confirmedShift": "確認的班表",
+            "createCurrentMonth": "制定本月的班表",
+            "createNextMonth": "建立下個月的班表",
+            "createShiftFlow": "建立班表",
+            "editShift": "編輯班表",
+            "emptyDescription": "您可以透過轉到 {{month}} 每月班表建立螢幕來開始計劃。",
+            "emptyScheduleDescription": "您可以從自動建立的流程建立班表。",
+            "emptyScheduleTitle": "{{teamName}} · {{month}} 該月還沒有班表。",
+            "emptyTitle": "{{teamName}} 的月份 {{month}} 沒有班表。",
+            "error": "無法載入班表。",
+            "exportExcel": "Excel匯出",
+            "exportExcelLoading": "儲存Excel",
+            "loading": "正在載入班表...",
+            "monthHeader": "月 {{month}} 年 {{year}}",
+            "nextMonth": "下個月",
+            "noTeamsDescription": "請建立工作組後再次檢查。",
+            "noTeamsLabel": "沒有工作團隊",
+            "noTeamsTitle": "如果您建立了工作團隊，您可以檢視班表。",
+            "pastEmptyScheduleTitle": "{{teamName}} · {{month}}沒有每月的班表。",
+            "prevMonth": "上個月",
+            "publish": "郵政",
+            "save": "節省",
+            "selectedTeamFallback": "選定的團隊",
+            "teamsError": "無法載入工作團隊。",
+            "title": "輪班管理",
+            "viewRangeDescription": "您只能建立和檢視下個月的班表。",
+            "viewRangeTitle": "無法檢視這段時間的班表。",
+            "wardCodeChecking": "檢查"
+        },
+        "dutying": {
+            "comingSoon": "準備",
+            "description": "Dutying 檢查使用該服務所需的資訊和策略。",
+            "items": {
+                "contact": {
+                    "description": "請留下您需要幫助的任何問題或資訊。",
+                    "title": "聯絡我們"
+                },
+                "notice": {
+                    "description": "檢查更新和服務資訊。",
+                    "title": "公告"
+                },
+                "privacy": {
+                    "description": "檢查處理個人資訊的標準。",
+                    "title": "隱私政策"
+                },
+                "terms": {
+                    "description": "檢查服務條款和條件。",
+                    "title": "使用條款"
+                }
+            },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "存貨",
+                "detailErrorDescription": "請稍後重試或從公告列表中重新選擇。",
+                "detailErrorTitle": "無法檢視通知",
+                "emptyDescription": "當新的通知釋出時，您可以在這裡檢視。",
+                "emptyTitle": "目前還沒有任何公告。",
+                "errorDescription": "請檢查網路狀態並重試。",
+                "errorTitle": "無法載入公告",
+                "invalidDescription": "請檢查您的地址或從列表中再次選擇。",
+                "invalidTitle": "找不到公告",
+                "listAria": "通知清單",
+                "loadingTitle": "通知正在載入中",
+                "loadMore": "檢視更多",
+                "pinned": "重要性",
+                "publishedAt": "暫存器 {{date}}",
+                "retry": "再試一次",
+                "updatedAt": "編輯{{date}}"
+            },
+            "title": "Dutying"
+        },
+        "error": {
+            "documentTitle": "{{title}} | Dutying",
+            "goBack": "上一螢幕",
+            "goHome": "去上班時間表",
+            "notFound": {
+                "code": "404",
+                "description": "地址可能已更改或不再提供螢幕。\n請從考勤表螢幕重新開始。",
+                "title": "找不到頁面"
+            },
+            "retry": "再試一次",
+            "unexpected": {
+                "code": "ERROR",
+                "description": "出現臨時問題。\n如果重試後仍繼續，請重新整理並檢查。",
+                "title": "螢幕載入失敗"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "整天",
+                "deadlineMeta": "截止日期·{{date}}",
+                "empty": "沒有即將舉行的活動",
+                "loading": "檢查日曆",
+                "openAll": "檢視所有日曆",
+                "overdue": "透過了",
+                "scheduleDateMeta": "時間表·{{date}}·{{time}}",
+                "scheduleMeta": "時間表·{{time}}",
+                "timeUnknown": "時間待定",
+                "today": "今天"
+            },
+            "emptyTeams": {
+                "description": "在排班人員管理中增加護理團隊。",
+                "title": "新增團隊就可以看到。"
+            },
+            "fallback": {
+                "manager": "經理",
+                "selectedTeam": "選定的團隊",
+                "ward": "病房"
+            },
+            "filter": {
+                "all": "全部的"
+            },
+            "header": {
+                "createNextMonth": "建立下個月的班表",
+                "todayAssigned": "{{managerName}} · {{count}} 今天工作的人"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}일 {{shift}}",
+                "descriptionAll": "{{month}} · 全部",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "編輯班表",
+                "emptyAllTitle": "這個月的班表是空的。",
+                "emptyDescription": "您可以透過建立班表來檢查它。",
+                "emptyTeamsTitle": "如果您新增團隊，您可以檢視時間表。",
+                "emptyTeamTitle": "{{teamName}} 班表為空。",
+                "nameHeader": "姓名"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 下個月的班表"
+            },
+            "queue": {
+                "pendingRequests": "待處理的預班申請",
+                "waitingNurses": "等待入場"
+            },
+            "sections": {
+                "calendar": "壓延機",
+                "monthly": "本月班表",
+                "tasks": "該怎麼辦",
+                "todayDuty": "今天的轉變"
+            },
+            "skeleton": {
+                "loadingAria": "載入首頁"
+            },
+            "sort": {
+                "default": "自定義順序",
+                "label": "考勤表排序標準",
+                "nameAsc": "按名字",
+                "openAria": "開啟時間表排序標準",
+                "todayShift": "今天的工單"
+            },
+            "state": {
+                "errorDescription": "請稍後重試。",
+                "errorTitle": "載入首頁失敗",
+                "noWardDescription": "如果連線病房，就可以看到家。",
+                "noWardTitle": "需要連線病房。",
+                "retry": "再試一次"
+            },
+            "status": {
+                "checking": "檢查",
+                "complete": "確認的",
+                "draft": "進行中",
+                "empty": "寫之前",
+                "error": "再次檢查"
+            },
+            "tasks": {
+                "checking": "正在檢查",
+                "nextScheduleAria": "下個月的班表進度狀況",
+                "overdueAction": "最後期限",
+                "overdueFallback": "從最近的截止日期開始檢查。",
+                "overdueTitle": "最後關閉 {{count}}",
+                "pendingRequestsAction": "應用",
+                "pendingRequestsDescription": "決定是否將其反映在您的工作日程中",
+                "pendingRequestsTitle": "待處理的預班申請 {{count}} 案例",
+                "todayAction": "今天",
+                "todayFallback": "這是一個直到今天才會處理的帖子。",
+                "todayTitle": "今天截止：{{count}}",
+                "unreadChatAction": "講話",
+                "unreadChatDescription": "檢查最近的對話",
+                "unreadChatTitle": "{{count}} 未讀病房談話",
+                "waitingNursesAction": "成員",
+                "waitingNursesDescription": "檢視要新增到病房的成員",
+                "waitingNursesTitle": "{{count}} 等待入場的人"
+            },
+            "today": {
+                "emptyShift": "今天的班次是空的。"
+            }
+        },
+        "landing": {
+            "appFeature": {
+                "community": {
+                    "description": "從實用資訊到難以開口的煩惱，都可以匿名分享。",
+                    "highlight": "真實故事",
+                    "label": "護理師社群",
+                    "title": "護理師的真實故事\n在這裡匯聚"
+                },
+                "home": {
+                    "description": "不用開啟 App，也能透過小元件一眼確認。",
+                    "highlightPersonal": "個人日程",
+                    "highlightSchedule": "排班安排",
+                    "label": "首頁",
+                    "title": "從排班安排到\n個人日程，一次掌握"
+                },
+                "ward": {
+                    "description": "讓輪班所需的日程確認和協調更輕鬆。",
+                    "highlight": "連線病房",
+                    "label": "病房",
+                    "title": "連線病房後\n一起檢視同事日程"
+                }
+            },
+            "appSection": {
+                "pill": "APP",
+                "titleLine1": "從排班日程管理到",
+                "titleLine2": "病房協作，一次完成"
+            },
+            "common": {
+                "appDownload": "下載 App",
+                "appSchedule": "在 App 中檢視班表",
+                "copyright": "ⓒ 2026 Dutying. All Rights Reserved",
+                "languageSelect": "選擇語言",
+                "login": "登入",
+                "logout": "退出登入",
+                "makeSchedule": "建立班表",
+                "profile": "個人中心",
+                "profileClose": "關閉個人中心",
+                "profileMenu": "個人資料選單",
+                "schedule": "班表",
+                "tryDemo": "體驗一下",
+                "viewDesktop": "檢視電腦版",
+                "viewMobile": "檢視移動版",
+                "webMakeSchedule": "在 Web 上建立班表",
+                "guideLink": "護理師排班指南（韓語）",
+                "faqLink": "Dutying 常見問題（韓語）",
+                "startFree": "免費開始"
+            },
+            "feature": {
+                "ai": {
+                    "description": "逐步檢查容易遺漏的條件，\n確認後再套用到班表。",
+                    "label": "AI 自動排班",
+                    "title": "不用再從空白班表\n開始排班",
+                    "scheduleDetails": "根據所需人手、預班申請和固定班次填補空缺。生成的排班草稿可自行檢查和修改。"
+                },
+                "integration": {
+                    "description": "護理師可在 App 送出預班申請。\n班表確認後會立即同步至 App。",
+                    "highlight": "串聯",
+                    "label": "聯動",
+                    "title": "串聯病房與護理師 App",
+                    "leaveDetails": "檢視每位護理師的排班、已休和剩餘年假，並統一管理休息日。",
+                    "managementMessage": "從休假、年假到預班申請，都能集中管理。",
+                    "appGuide": "瞭解護理師 App"
+                },
+                "review": {
+                    "description": "需要調整的地方\n可以立即檢視，也能看到修改建議。",
+                    "label": "AI 自動排班",
+                    "title": "異常排班\n立即檢查並修正"
+                },
+                "ward": {
+                    "description": "從必看公告到日常通知，\n都集中在一處，不怕遺漏。",
+                    "highlightNurse": "護理師",
+                    "highlightShare": "分享",
+                    "label": "公告欄",
+                    "title": "向病房護理師\n輕鬆分享需要知道的內容"
+                }
+            },
+            "finalCta": {
+                "download": "下載 App",
+                "eyebrow": "只需 1 分鐘",
+                "titleLine1": "連線 Web 和 App",
+                "titleLine2": "讓管理更輕鬆"
+            },
+            "header": {
+                "app": "護理師 App",
+                "customerSupport": "客服中心",
+                "homeAria": "Dutying 首頁",
+                "inquiry": "聯絡我們",
+                "sectionAria": "網站導覽",
+                "web": "班表管理網頁"
+            },
+            "hero": {
+                "ariaLabel": "Dutying 讓護理排班更輕鬆",
+                "description": "用 AI 快速排班，\n串聯護理師與病房，簡化日常管理。",
+                "phraseSchedule": "護理排班",
+                "phraseWard": "病房管理",
+                "suffix": "用 Dutying 更輕鬆",
+                "freeOffer": "現在就\u003cemphasis>免費開始吧！\u003c/emphasis>"
+            },
+            "imageAlt": {
+                "aiSchedule": "AI 自動生成的護理師班表介面",
+                "appCommunity": "Dutying App 護理師社群介面",
+                "appHome": "Dutying App 首頁排班日程介面",
+                "appHomeCalendar": "Dutying 個人日程日曆",
+                "appHomeWidget": "Dutying 排班日程小元件",
+                "appLogo": "Dutying App 標誌圖片",
+                "appScreen": "App 畫面",
+                "appWard": "Dutying App 病房同事排班介面",
+                "integration": "護理師在 App 中檢視預班申請的畫面",
+                "mobileHero": "Dutying App 排班日程畫面",
+                "wardBoard": "病房公告欄螢幕",
+                "webSchedule": "Dutying Web 班表編輯畫面"
+            },
+            "schedulePreview": {
+                "workStreak": "連續上班 {{actual}} 天，最多 {{expected}} 天"
+            },
+            "mobileBenefits": {
+                "community": {
+                    "description": "護理師之間輕鬆分享必要資訊和日常話題。",
+                    "title": "護理師社群"
+                },
+                "schedule": {
+                    "description": "在 App 中直接檢視我的班表和個人日程。",
+                    "title": "檢視排班安排"
+                },
+                "ward": {
+                    "description": "連線病房，輕鬆傳送班次和休假申請。",
+                    "title": "病房聯動"
+                }
+            },
+            "mobileHero": {
+                "benefitsLabel": "App 主要功能",
+                "benefitsTitleLine1": "把護理師必備功能",
+                "benefitsTitleLine2": "都裝進 Dutying",
+                "communityAria": "職業、臨床和煩惱，都在 Dutying 分享",
+                "communityLine1": "職業、臨床、煩惱",
+                "communityLine2": "都在 Dutying 分享",
+                "description": "從班次確認、班次/休假申請到病房訊息，都可以在 App 中處理。",
+                "downloadEyebrow": "下載 Dutying App",
+                "downloadTitleLine1": "我的班次和病房訊息",
+                "downloadTitleLine2": "用 App 不再錯過",
+                "requestAria": "更輕鬆地傳送班次和休假申請",
+                "requestLine1": "班次和休假申請",
+                "requestLine2": "輕鬆傳送",
+                "scheduleAria": "在 Dutying 立即檢視我的排班安排",
+                "scheduleLine1": "我的排班安排，",
+                "scheduleLine2": "在 Dutying 立即檢視",
+                "wardAria": "病房訊息也能透過 Dutying 立即接收",
+                "wardLine1": "病房訊息也能",
+                "wardLine2": "透過 Dutying 立即接收"
+            },
+            "title": "班表\n現在更輕鬆了！",
+            "webSection": {
+                "pill": "Web",
+                "titleHighlight": "1 分鐘",
+                "titleLine1": "複雜的護理班表，",
+                "titleLine2Prefix": "用 AI",
+                "titleLine2Suffix": "就能排好",
+                "importTitle": "從圖片或 Excel 匯入既有班表",
+                "importDescription": "上傳現有班表的圖片或 Excel 檔案，即可輕鬆完成病房設定。"
+            },
+            "workflow": {
+                "title": "下個月的班表，又要從空白開始填嗎？",
+                "ai": {
+                    "problem": "需要逐一填寫空班時",
+                    "solution": "用 AI 1 分鐘生成班表"
+                },
+                "ward-management": {
+                    "problem": "休息日和年假難以管理時",
+                    "solution": "輕鬆管理休假和年假"
+                },
+                "integration": {
+                    "problem": "申請和共享通知不方便時",
+                    "solution": "在護理師 App 申請休息日、分享通知"
+                },
+                "excel": {
+                    "problem": "已有班表時",
+                    "solution": "用圖片或 Excel 直接開始"
+                }
+            },
+            "usage": {
+                "total": "累計已有\u003ccount>1 萬名\u003c/count>以上的護理師使用過 Dutying！"
+            },
+            "adoption": {
+                "title": "醫院與病房導入諮詢",
+                "navLink": "醫院・病房導入諮詢",
+                "formLegend": "病房匯入申請資訊",
+                "fields": {
+                    "hospitalName": "醫院名稱",
+                    "wardName": "病房名稱",
+                    "contact": "聯絡人聯絡方式"
+                },
+                "contactPlaceholder": "電話號碼或電子郵箱",
+                "contactHint": "請輸入電話號碼或電子郵箱。",
+                "validation": {
+                    "hospitalName": "請輸入醫院名稱。",
+                    "wardName": "請輸入病房名稱。",
+                    "contact": "請檢查電話號碼或電子郵箱。"
+                },
+                "privacyConsent": "我同意按照\u003cpolicy>隱私政策\u003c/policy>\u003cconsent>收集和使用上述資訊，以便為我提供匯入指導。（必選）\u003c/consent>",
+                "sending": "正在提交…",
+                "acceptedTitle": "已收到您的諮詢。",
+                "acceptedDescription": "我們會透過您填寫的聯絡方式介紹病房匯入流程。",
+                "submitError": "暫時無法確認是否收到。請重試或透過電子郵件聯絡我們。",
+                "emailLabel": "導入諮詢",
+                "emailFallback": "您也可以透過電子郵件諮詢匯入事宜。",
+                "emailSubject": "Dutying 醫院與病房導入諮詢",
+                "emailConsent": "我同意收集和使用個人資訊以回覆匯入諮詢。"
+            },
+            "footer": {
+                "plusPlan": "Plus 套餐",
+                "subscriptionTerms": "訂閱條款",
+                "refundPolicy": "退款政策",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "經營者資訊和線上訂閱申請正在準備中。",
+                    "representative": "負責人",
+                    "registrationNumber": "營業登記號",
+                    "address": "經營地址",
+                    "phone": "客戶支援",
+                    "email": "電子郵箱",
+                    "ecommerceNumber": "電子商務備案號"
+                }
+            }
+        },
+        "login": {
+            "appleContinue": "繼續使用蘋果",
+            "appleCta": "開始使用您的 Apple 帳戶",
+            "appleStart": "開始使用蘋果",
+            "backToLogin": "返回登入",
+            "continuePrefix": "如果你繼續",
+            "demoExpired": {
+                "bannerDescription": "官方轉換API正在準備中，因此現階段正在在登入後連線到會員註冊流程。",
+                "bannerTitle": "試用結束後轉換的資訊",
+                "description": "試用期已結束，但如果您現在註冊，則可以立即開始公眾號註冊流程。",
+                "title": "註冊並繼續使用"
+            },
+            "demoSignupDescription": "建立帳戶後，您可以透過建立新病房來繼續管理您的資料。",
+            "demoSignupTitle": "將您的試用帳戶轉換為完整帳戶",
+            "description": "使用您的社交帳戶啟動 Dutying。",
+            "email": "電子郵件",
+            "emailPlaceholder": "請輸入您的電子郵件",
+            "emailSignupPlaceholder": "請輸入您的電子郵件",
+            "feedback": {
+                "emailVerified": "郵箱驗證已完成。",
+                "invalidCredentials": "您的電子郵件或密碼不正確。",
+                "legacyInvalidCredentialsServerText": "您的 ID 或密碼不正確。",
+                "loginFailed": "無法登入。請重試。",
+                "passwordResetFailed": "無法更改密碼。請再試一次。",
+                "passwordResetSuccess": "密碼已更改。請使用您的新密碼登入。",
+                "passwordResetTokenVerified": "驗證碼已確認。請輸入新密碼。",
+                "signupFailed": "無法完成註冊。請再試一次。",
+                "verificationFailed": "無法傳送驗證電子郵件。請再試一次。",
+                "verificationInvalid": "請檢查認證號碼。",
+                "verificationSent": "驗證電子郵件已傳送。請檢查您郵箱中的驗證碼並輸入。"
+            },
+            "forgotPassword": "查詢密碼",
+            "hasAccountPrompt": "已經有帳戶？",
+            "hidePassword": "隱藏您的密碼",
+            "googleContinue": "使用 Google 繼續",
+            "googleStart": "使用 Google 註冊",
+            "kakaoContinue": "繼續卡考",
+            "kakaoCta": "開始使用 Kakao 帳戶",
+            "kakaoStart": "從卡考開始",
+            "loginLink": "登入",
+            "loginVisualAria": "Dutying 登入介紹圖",
+            "marketingConsent": "我同意接收營銷資訊。",
+            "name": "姓名",
+            "namePlaceholder": "請輸入您的姓名",
+            "newPassword": "新密碼",
+            "newPasswordConfirm": "確認新密碼",
+            "newPasswordConfirmPlaceholder": "請重新輸入您的新密碼",
+            "newPasswordPlaceholder": "請輸入新密碼",
+            "nextImage": "下一張圖片",
+            "noAccountPrompt": "還沒有帳戶？",
+            "optionalConsentLabel": "[可選]",
+            "password": "密碼",
+            "passwordConfirm": "驗證密碼",
+            "passwordConfirmPlaceholder": "請重新輸入您的密碼",
+            "passwordPlaceholder": "請輸入您的密碼",
+            "passwordResetSubmit": "重置密碼",
+            "passwordResetTitle": "查詢密碼",
+            "passwordResetVerificationCodeAria": "密碼重置 驗證號碼",
+            "passwordSignupPlaceholder": "請輸入您的密碼",
+            "previousImage": "上一張圖片",
+            "privacyPolicy": "隱私政策",
+            "privacyNoticePrefix": "個人資訊將按照",
+            "privacyNoticeSuffix": "處理。",
+            "redirect": {
+                "adminTokenMissing": "未收到管理員登入令牌。請檢查您的社交登入設定。",
+                "errorTitle": "社交登入失敗",
+                "loading": "您正在登入。"
+            },
+            "requiredConsentLabel": "[必填]",
+            "showPassword": "檢視密碼",
+            "signupLink": "加入會員",
+            "signupTitle": "加入會員",
+            "sixDigitVerificationCodePlaceholder": "6位驗證碼",
+            "submitLogin": "登入",
+            "submitSignup": "建立一個帳戶",
+            "termsConnector": "和",
+            "termsAgreementSuffix": "。",
+            "termsOfService": "服務條款",
+            "termsPrefix": "當您按下按鈕時",
+            "termsSuffix": "。",
+            "termsSuffixStrict": "。",
+            "title": "登入",
+            "validation": {
+                "emailInvalid": "請輸入有效的電子郵件地址。",
+                "emailVerificationRequired": "請完成電子郵件驗證。",
+                "loginRequired": "請輸入您的電子郵件和密碼。",
+                "nameRequired": "請輸入您的姓名。",
+                "passwordConfirmRequired": "請重新輸入您的密碼。",
+                "passwordMinLength": "請輸入至少 {{count}} 個字元作為您的密碼。",
+                "passwordMismatch": "密碼不同。",
+                "termsRequired": "請同意服務條款。",
+                "verificationCodeRequired": "請輸入您的身份驗證號碼。",
+                "verificationConfirmRequired": "請完成身份驗證。"
+            },
+            "verificationCodeAria": "郵箱驗證碼",
+            "verificationCodePlaceholder": "請輸入您的驗證碼",
+            "verificationComplete": "驗證完成",
+            "verificationConfirm": "檢視",
+            "verificationResend": "重傳",
+            "verificationSend": "認證"
+        },
+        "makeShift": {
+            "aiRefill": {
+                "action": "補充裝",
+                "fixedSelectionTools": "選中班次固定工具",
+                "fixSelection": "固定選中的班次",
+                "unfixSelection": "取消選中班次的固定",
+                "fixSelectionSuccess": "已固定 {{count}} 個單元格。",
+                "unfixSelectionSuccess": "已取消 {{count}} 個單元格的固定。",
+                "prefillDecision": {
+                    "eyebrow": "AI 自動填充預覽",
+                    "title": "有 AI 不應更改的班次嗎？",
+                    "description": "AI 會自動填充除固定班次和申請班次以外的空白單元格。\n請先固定不應更改的班次。",
+                    "calendarTitle": "AI 填充範圍",
+                    "aiFillArea": "AI 將填充",
+                    "keepArea": "保持不變",
+                    "checkArea": "需要您確認",
+                    "cellCount": "{{count}}個單元格",
+                    "readonly": "只讀預覽",
+                    "previewDescription": "如果有，請在下方固定這些班次。AI 不會更改已固定的班次。",
+                    "previewHint": "如果有不應更改的班次，請先在表中固定該單元格。",
+                    "fix": "先固定班次",
+                    "fixAll": "全部固定",
+                    "fixAllDone": "已全部固定",
+                    "fixAllSuccess": "已固定全部 {{count}} 個單元格。",
+                    "edit": "繼續編輯",
+                    "confirm": "繼續",
+                    "cancel": "繼續編輯",
+                    "requestLocked": "申請班次無法更改。"
+                },
+                "regenerateDecision": {
+                    "title": "重新填充前有需要固定的班次嗎？",
+                    "description": "AI 結果生成後，有 {{count}} 個未固定的編輯單元格。\n如果要保留，請先固定後重新生成；如果要獲取全新結果，也可以重新生成這些修改的單元格。",
+                    "confirm": "固定已編輯單元格",
+                    "cancel": "也重新生成已編輯內容",
+                    "fix": "固定編輯單元格後重新生成"
+                },
+                "viewComplete": "顯示全部排班",
+                "viewBaseline": "僅顯示申請和固定班次",
+                "viewCompleteCompact": "全部",
+                "viewBaselineCompact": "申請/固定",
+                "viewCompleteTooltip": "正在顯示全部排班。點選後僅顯示申請和固定班次。",
+                "viewBaselineTooltip": "正在僅顯示申請和固定班次。點選後顯示全部排班。",
+                "baselineReadonlyToast": "切換回“全部”以編輯班表。",
+                "fixedDisplayHighlight": "強調顯示固定班次",
+                "requestDisplayHighlight": "強調顯示申請班次",
+                "statusHighlightTools": "申請和固定班次指示器",
+                "loadingOverlay": {
+                    "title": "AI 正在填充班表",
+                    "description": "保留申請和固定班次。\nAI 填充其餘單元格。",
+                    "elapsed": "已進行 {{seconds}} 秒",
+                    "ariaLabel": "AI 排班填充進度",
+                    "checkingRequests": "正在檢查申請和固定班次",
+                    "fillingBlanks": "正在為剩餘單元格分配班次",
+                    "finalReview": "正在仔細檢查最終條件",
+                    "almostDone": "請再稍等片刻"
+                },
+                "restCarryOverSyncFailed": "班表已確認，但無法更新下個月的順延休息。",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "上一個月的班次有空白單元格。",
+                    "descriptionHighlight": "如果需要參考上個月的班次，請補充填寫。",
+                    "confirmAiFill": "按原樣自動填充",
+                    "cancel": "確認輸入",
+                    "confirm": "確認原樣",
+                    "description": "上一個班次中有一個空格。\n如果您想繼續上個月的工作，請輸入。",
+                    "title": "您確認之前的班次了嗎？"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "有未儲存的編輯內容",
+                    "unsavedDescription": "要保留編輯內容，請儲存草稿或確認班表。",
+                    "aiGeneratingTitle": "要停止 AI 自動填充並退出嗎？",
+                    "aiGeneratingDescription": "離開後，自動填充結果可能不會被應用。",
+                    "leaveConfirm": "離開",
+                    "stayCancel": "繼續編輯",
+                    "unsavedMessage": "有未儲存的編輯內容\n要保留編輯內容，請儲存草稿或確認班表。",
+                    "aiGeneratingMessage": "AI 自動填充正在執行。\n離開後結果可能不會應用。\n仍要離開嗎？"
+                },
+                "undo": "撤銷",
+                "redo": "重做",
+                "cannotAutofillYet": "載入班表資訊。請稍後重試。",
+                "confirm": "確認班表",
+                "description": {
+                    "error": "AI請求無法完成。當前螢幕上的時間表將保持不變，您可以立即重試。",
+                    "idle": "您可以使用上一步中整理的條件啟動 AI 自動填充。",
+                    "loading": "在等待回覆期間，會暫時阻止確認和重新請求。",
+                    "success": "AI已經反映了新的班表。稽核後，您可以自行編輯或立即確認。"
+                },
+                "draft": {
+                    "none": "正在檢視基本時間表，尚未儲存任何編輯。",
+                    "saved": "當前編輯將被保留並自動儲存。"
+                },
+                "empty": "無法載入時間表資料",
+                "error": "無法載入時間表",
+                "firstFill": "AI 自動排班",
+                "fixedOnly": "僅檢視引腳",
+                "fixedDisplay": "顯示固定",
+                "fixedDisplayHidden": "已隱藏固定班次",
+                "fixedDisplayShown": "已顯示固定班次",
+                "requestDisplay": "顯示申請班次",
+                "requestDisplayHidden": "已隱藏申請班次",
+                "requestDisplayShown": "已顯示申請班次",
+                "generating": "填充...",
+                "hidingFaults": "錯誤隱藏",
+                "intro": "即使失敗，當前編輯的版本也會保留。\n您可以返回上一步並重新檢視條件，或在此處重試並確認。",
+                "loading": "正在載入班表。",
+                "previous": "之前的步驟",
+                "progressToast": "填寫班表表",
+                "publishConfirm": {
+                    "confirm": "確認併發布",
+                    "confirmWithoutRecipients": "確認",
+                    "description": "確認後已連線的 {{count}} 名護理師可在應用中檢視班表並會收到通知。",
+                    "noConnectedDescription": "班表會被確認但由於沒有已連線的護理師不會在應用中釋出也不會傳送通知。",
+                    "title": "確認這份班表嗎？"
+                },
+                "publishSuccess": "班表已確認",
+                "publishSuccessConfirm": "確定",
+                "publishSuccessConnectionDescription": "您可以在 Dutying 應用中自動接收已確認的班表！",
+                "publishSuccessWithRecipients": "已將班表自動傳送給 {{count}} 名已關聯的護理師。",
+                "publishSuccessWithoutRecipients": "請將病房程式碼分享給護理師。",
+                "requestFailed": "AI 自動填充無法完成。",
+                "resetAction": "重置",
+                "retry": "再試一次",
+                "saveFailed": "儲存失敗。請稍後重試。",
+                "saveSnapshot": "臨時儲存",
+                "saveSnapshotFailed": "暫時儲存失敗。",
+                "saveSnapshotSuccess": "就暫時儲存下來了。",
+                "savingSnapshot": "暫時儲存...",
+                "showViolations": "顯示違規",
+                "showingFaults": "顯示錯誤",
+                "snapshotLimitDialog": {
+                    "cancel": "消除",
+                    "confirm": "刪除後儲存",
+                    "description": "要儲存新歷史記錄，必須刪除最舊的歷史記錄“{{title}}”。要刪除並儲存它嗎？",
+                    "title": "最多隻能儲存 10 條歷史記錄。"
+                },
+                "snapshotLimitReached": "最多可儲存 10 條歷史記錄。",
+                "snapshotSidebar": {
+                    "close": "關閉儲存",
+                    "defaultTitle": "自動填充儲存的副本",
+                    "delete": "刪除歷史記錄",
+                    "deleteCancel": "消除",
+                    "deleteConfirm": "刪除",
+                    "deleteDescription": "刪除“{{title}}”歷史記錄。刪除的歷史記錄無法再次檢索。",
+                    "deleteFailed": "刪除歷史記錄失敗。",
+                    "deleteSuccess": "已刪除歷史記錄。",
+                    "deleteTitle": "要刪除這條歷史記錄嗎?",
+                    "description": "記錄自動填充結果",
+                    "empty": "目前還沒有臨時儲存的班表。",
+                    "emptyCells": "空格 {{count}} 空格",
+                    "error": "無法載入儲存列表。",
+                    "filledCells": "分配{{count}}空間",
+                    "hardViolations": "重大違規 {{count}}",
+                    "loadCancel": "消除",
+                    "loadConfirm": "載入",
+                    "loadDescription": "使用儲存的“{{title}}”版本更改當前班表。\n載入後，螢幕上當前正在編輯的內容消失。",
+                    "loadFailed": "無法載入儲存的內容。",
+                    "loading": "正在載入儲存的檔案...",
+                    "loadSuccess": "{{title}} 儲存的副本已載入。",
+                    "loadTitle": "要載入儲存的記錄嗎?",
+                    "renameFailed": "無法更改歷史標題。",
+                    "renameSuccess": "已更改歷史標題。",
+                    "renameTitleAria": "歷史標題",
+                    "restore": "載入",
+                    "savedCount": "{{count}} 儲存的副本",
+                    "selectedHistory": "選定的歷史",
+                    "softViolations": "一般違規 {{count}}",
+                    "title": "歷史",
+                    "todayAt": "今天{{time}}",
+                    "toggleDetails": "檢視詳情",
+                    "totalViolations": "全部 {{count}}"
+                },
+                "title": {
+                    "error": "停止填充",
+                    "idle": "準備好自動填充",
+                    "loading": "計算班表",
+                    "success": "填充完成"
+                },
+                "toolbarHint": "根據實際情況和所從事的工作填空。",
+                "toolbarSubTitle": "用 AI 自動排班，一次填好空白班別。",
+                "toolbarTitle": "填寫並確認班表",
+                "validationStatus": {
+                    "checking": "審查約束條件"
+                },
+                "viewAll": "檢視全部",
+                "viewOptions": "顯示選項",
+                "violationsHidden": "已隱藏約束違規",
+                "violationsShown": "已顯示約束違規"
+            },
+            "calendar": {
+                "carried": "結轉到",
+                "carriedDetail": "結轉 {{count}} 天",
+                "clearCell": "空的",
+                "closePopover": "關閉彈出視窗",
+                "dateOthers": "等{{count}}天",
+                "fullDayLabel": "{{day}}全天",
+                "name": "姓名",
+                "nurseDayLabel": "{{name}} · {{day}}일",
+                "previousShifts": "送貨工作",
+                "restCheck": "休假檢查",
+                "restCheckCompact": "休",
+                "restCheckDetail": "休假目標 {{target}} 天 · 已排 {{assigned}} 天 · 結轉 {{carried}} 天",
+                "shiftTypeDropdownAria": "選擇班次型別",
+                "violationCount": {
+                    "error": "重要{{count}}",
+                    "warning": "通用{{count}}"
+                },
+                "violationDialogAria": "{{count}} 項排班條件未符合",
+                "violationLevel": {
+                    "error": "重要性",
+                    "warning": "常見的"
+                },
+                "groupStatistics": "{{group}}排班統計"
+            },
+            "confirmedShifts": {
+                "editAction": "編輯",
+                "empty": "目前還沒有確定的班表。",
+                "error": "無法載入確認的時間表",
+                "fallbackTeamName": "選定的團隊",
+                "hint": "與病房關聯的護理師可以直接從App檢視他們確認的班表！",
+                "downloadAction": "下載",
+                "excelAction": "下載 Excel",
+                "imageAction": "圖片下載",
+                "imageActionLoading": "下載圖片",
+                "loading": "正在載入確認的時間表。",
+                "title": "這是{{teamName}}的{{month}}每月班表。",
+                "wardCodeGuideAction": "檢視病房程式碼資訊"
+            },
+            "constraints": {
+                "action": {
+                    "add": "新增約束",
+                    "reset": "重置"
+                },
+                "category": {
+                    "combination": "人員組合",
+                    "forbidden": "禁止圖案",
+                    "personal": "每人限制",
+                    "recommended": "受到推崇的",
+                    "staffing": "人數",
+                    "workRest": "連續工作/休息",
+                    "roleCoverage": "技能和角色",
+                    "twoShiftWorkRest": "連續工作和休息",
+                    "twoShiftNightTransition": "夜班和轉換",
+                    "nightTransition": "夜班與轉換",
+                    "workRestStreaks": "連續工作與休息",
+                    "mixedParticipation": "個人輪班參與"
+                },
+                "count": "{{count}}",
+                "dragHandleAria": "拖動以改變位置",
+                "empty": "如果您新增約束，您可以在此處看到它們。",
+                "exclude": "例外",
+                "excludeRuleAria": "關閉這個約束",
+                "import": {
+                    "cancel": "消除",
+                    "confirm": "載入",
+                    "currentTeam": "當前團隊：{{teamName}}",
+                    "disabledTitle": "當有兩個或更多團隊時可以使用",
+                    "loading": "載入中",
+                    "modalTitle": "匯入約束條件",
+                    "selectedTeamFallback": "選定的團隊",
+                    "sourceTeamFallback": "另一隊",
+                    "teamLabel": "要匯入的團隊",
+                    "title": "匯入其他團隊約束"
+                },
+                "important": {
+                    "ariaMark": "重要標誌",
+                    "ariaRemove": "取消標記重要",
+                    "label": "重要性",
+                    "recommendedTitle": "推薦重要注意事項"
+                },
+                "info": "請開啟重要標誌以瞭解必須遵守的條件。",
+                "infoTooltipAria": "約束重要標記指南",
+                "listTitle": "約束條件",
+                "modal": {
+                    "addAria": "新增約束",
+                    "addTitle": "新增",
+                    "close": "關閉",
+                    "description": "根據工作日程，某些條件可能無法反映。",
+                    "title": "新增約束",
+                    "added": "已新增"
+                },
+                "option": {
+                    "all": "每一個",
+                    "allDays": "所有日期",
+                    "allPeople": "所有護理師",
+                    "dayLabel": "{{day}}天",
+                    "transition": {
+                        "dayToNight": "白班到夜班",
+                        "nightToDay": "夜班到白班",
+                        "both": "雙向"
+                    },
+                    "period": {
+                        "day": "一天",
+                        "week": "一週",
+                        "rollingSevenDays": "連續7天",
+                        "month": "一個月"
+                    },
+                    "everyday": "每天",
+                    "holiday": "節假日",
+                    "monthlyDayLabel": "每月{{day}}日",
+                    "staffCountOperator": {
+                        "exact": "正好",
+                        "max": "最多",
+                        "min": "至少",
+                        "target": "目標"
+                    },
+                    "target": {
+                        "nightDedicated": "專職夜班護理師",
+                        "rotating": "普通三班制護理師"
+                    },
+                    "weekday": "工作日",
+                    "weekdayName": {
+                        "friday": "星期五",
+                        "monday": "星期一",
+                        "saturday": "星期六",
+                        "sunday": "星期日",
+                        "thursday": "星期四",
+                        "tuesday": "星期二",
+                        "wednesday": "星期三"
+                    },
+                    "weekend": "週末",
+                    "weekendOrHoliday": "週末/節假日"
+                },
+                "phrase": {
+                    "day": "天",
+                    "gte": "更多的",
+                    "lte": "以下",
+                    "max": "最大限度",
+                    "min": "最低限度"
+                },
+                "rule": {
+                    "excludeCertainWorkTypes": {
+                        "label": "避免 ND/ED/NE/NOD 工作模式"
+                    },
+                    "excludeNightBeforeReqOff": {
+                        "label": "避免申請休息日前一天排夜班"
+                    },
+                    "maxContinuousNight": {
+                        "label": "連續的夜晚"
+                    },
+                    "maxContinuousWork": {
+                        "label": "連續輪班數"
+                    },
+                    "minContinuousNight": {
+                        "label": "連續的夜晚"
+                    },
+                    "minNightInterval": {
+                        "label": "夜間間隔"
+                    },
+                    "minOffAssignAfterNight": {
+                        "label": "夜班後建議安排休息"
+                    }
+                },
+                "ruleAction": {
+                    "deleteAria": "刪除約束"
+                },
+                "section": {
+                    "strong": "硬性約束",
+                    "weak": "軟性約束"
+                },
+                "state": {
+                    "loadError": "無法載入約束。請稍後重試。",
+                    "loading": "正在載入約束條件",
+                    "teamRequired": "請先選擇您的工作團隊。"
+                },
+                "templates": {
+                    "IMPORTANT_FORBIDDEN_DUTY_PATTERNS": {
+                        "label": "重要基本條件",
+                        "sentence": "避免 ND/ED/NE/NOD 工作模式。"
+                    },
+                    "IMPORTANT_MAX_NIGHT_STREAK": {
+                        "label": "重要基本條件",
+                        "sentence": "連續N班最多允許{days}天"
+                    },
+                    "IMPORTANT_MAX_SAME_DUTY_STREAK": {
+                        "label": "重要基本條件",
+                        "sentence": "您最多可以連續 {days} 天進行相同的輪班工作。"
+                    },
+                    "IMPORTANT_MAX_WORK_STREAK": {
+                        "label": "重要基本條件",
+                        "sentence": "連續工作最多允許{days}天"
+                    },
+                    "IMPORTANT_MIN_NIGHT_INTERVAL": {
+                        "label": "重要基本條件",
+                        "sentence": "N 個輪班必須間隔至少 {days} 天"
+                    },
+                    "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
+                        "label": "重要基本條件",
+                        "sentence": "申請 OFF 避免在前一天工作 N。"
+                    },
+                    "IMPORTANT_OFF_AFTER_NIGHT": {
+                        "label": "重要基本條件",
+                        "sentence": "N 下班後您必須至少休息 {days} 天。"
+                    },
+                    "TWO_SHIFT_NIGHT_THEN_CONTINUATION": {
+                        "label": "兩班制夜班恢復條件",
+                        "sentence": "所有護理師的{nightShift}之後的顯示日需要{nightContinuationShift}。"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_AFTER_MIN_OFF": {
+                        "label": "兩班制夜班恢復條件",
+                        "sentence": "所有護理師的{nightContinuationShift}之後至少需要{count}天{offShift}。"
+                    },
+                    "TWO_SHIFT_NIGHT_CONTINUATION_MIN_OFF": {
+                        "label": "兩班制夜班恢復條件",
+                        "sentence": "所有護理師在連續{nightShift}班後，需要{nightContinuationShift}和至少{count}天{offShift}。"
+                    },
+                    "TWO_SHIFT_NIGHT_PAIR_MIN_OFF": {
+                        "label": "兩班制夜班恢復條件",
+                        "sentence": "所有護理師在連續{nightShift}班後，至少需要{count}天{offShift}。"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_N": {
+                        "label": "禁止模式規則",
+                        "sentence": "{target}連續N班最多{count}次"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_WORK": {
+                        "label": "連續工作/休息規則",
+                        "sentence": "{target}連續工作最多{days}天"
+                    },
+                    "SOFT_MAX_STAFF_BY_DUTY": {
+                        "label": "人數規則",
+                        "sentence": "{duty}班最多可安排{count}人"
+                    },
+                    "SOFT_MIN_STAFF_BY_DATE_DUTY": {
+                        "label": "人數規則",
+                        "sentence": "{date} 的 {duty} 至少需要 {count} 人"
+                    },
+                    "SOFT_MIN_STAFF_BY_DUTY": {
+                        "label": "人數規則",
+                        "sentence": "{duty}班至少需要{count}人"
+                    },
+                    "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
+                        "label": "人數規則",
+                        "sentence": "至少有 {count} 人需要在週末/節假日工作 {duty}。"
+                    },
+                    "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
+                        "label": "連續工作/休息規則",
+                        "sentence": "{target}連續工作{days}天后需要休息"
+                    },
+                    "SOFT_NEED_OFF_AFTER_N": {
+                        "label": "連續工作/休息規則",
+                        "sentence": "{target}在N班後至少需要{days}天休息"
+                    },
+                    "SOFT_NO_E_TO_D": {
+                        "label": "禁止模式規則",
+                        "sentence": "{target} 避免在 E 後的第二天工作 D"
+                    },
+                    "SOFT_NO_N_TO_D": {
+                        "label": "禁止模式規則",
+                        "sentence": "{target} 避免在 N 後的第二天工作 D。"
+                    },
+                    "TWO_SHIFT_NO_N_TO_D": {
+                        "sentence": "{target}不能在N班次日安排D班。"
+                    },
+                    "TWO_SHIFT_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}最多可連續安排{count}天N班。"
+                    },
+                    "TWO_SHIFT_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}連續N班後至少需要休息{count}天。"
+                    },
+                    "TWO_SHIFT_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}在申請休息日的前一天不能安排N班。"
+                    },
+                    "SOFT_NO_N_TO_E": {
+                        "label": "禁止模式規則",
+                        "sentence": "{target} 避免在 N 後的第二天工作 E。"
+                    },
+                    "SOFT_NO_SAME_DUTY_PAIR": {
+                        "label": "人員組合",
+                        "sentence": "{nurseA} 和 {nurseB} 避免同班"
+                    },
+                    "SOFT_NO_WEEKEND_FOR_NURSE": {
+                        "label": "每人工作限制",
+                        "sentence": "{nurse} 避免在週末或節假日工作"
+                    },
+                    "SOFT_PREFER_SAME_DUTY_PAIR": {
+                        "label": "人員組合",
+                        "sentence": "{nurseA}和{nurseB}儘量安排同班"
+                    },
+                    "AVOID_ISOLATED_OFF_DAY": {
+                        "label": "連續工作與休息條件",
+                        "sentence": "{target}避免在兩個工作日之間只休息一天"
+                    },
+                    "AVOID_ISOLATED_WORK_DAY": {
+                        "label": "連續工作與休息條件",
+                        "sentence": "{target}避免在兩個休息日之間只工作一天"
+                    },
+                    "CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "label": "重要基礎條件",
+                        "sentence": "{target}在申請休息日的前一天不能安排N班"
+                    },
+                    "CORE_MAX_CONTINUOUS_NIGHT": {
+                        "label": "重要基礎條件",
+                        "sentence": "{target}連續N班最多隻能安排{count}次"
+                    },
+                    "CORE_MAX_CONTINUOUS_WORK": {
+                        "label": "重要基礎條件",
+                        "sentence": "{target}最多可連續工作{count}天"
+                    },
+                    "CORE_MIN_CONTINUOUS_NIGHT": {
+                        "label": "夜班與轉換條件",
+                        "sentence": "{target}至少連續安排{count}天N班"
+                    },
+                    "CORE_MIN_NIGHT_INTERVAL": {
+                        "label": "重要基礎條件",
+                        "sentence": "{target}的N班之間至少需要間隔{count}天"
+                    },
+                    "CORE_MIN_OFF_AFTER_NIGHT": {
+                        "label": "重要基礎條件",
+                        "sentence": "{target}在N班後至少需要{count}天休息"
+                    },
+                    "MIXED_CORE_MIN_NIGHT_INTERVAL": {
+                        "sentence": "{target}的夜班之間至少需要間隔{count}天"
+                    },
+                    "MIXED_CORE_MAX_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}最多可連續安排{count}天夜班"
+                    },
+                    "MIXED_CORE_MIN_CONTINUOUS_NIGHT": {
+                        "sentence": "{target}至少連續安排{count}天夜班"
+                    },
+                    "MIXED_CORE_MIN_OFF_AFTER_NIGHT": {
+                        "sentence": "{target}連續夜班後至少需要{count}天休息"
+                    },
+                    "MIXED_FORBID_N_THEN_D": {
+                        "sentence": "{target}避免夜班次日安排日班"
+                    },
+                    "MIXED_FORBID_N_THEN_E": {
+                        "sentence": "{target}避免夜班次日安排{eveningShift}班"
+                    },
+                    "MIXED_FORBID_E_THEN_D": {
+                        "sentence": "{target}避免{eveningShift}班次日安排日班"
+                    },
+                    "MIXED_FORBID_E_THEN_N": {
+                        "sentence": "{target}避免{eveningShift}班次日安排夜班"
+                    },
+                    "MIXED_CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF": {
+                        "sentence": "{target}在申請休息日的前一天不能安排夜班"
+                    },
+                    "MAX_CONSECUTIVE_WORK_DAYS": {
+                        "label": "工作休息條件",
+                        "sentence": "{target}最多可連續工作{count}天"
+                    },
+                    "MAX_STAFF_BY_SHIFT": {
+                        "label": "人數條件",
+                        "sentence": "{shift}班最多可安排{count}人"
+                    },
+                    "MIN_OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "連續工作與休息條件",
+                        "sentence": "{target}連續工作至少{workCount}天后休息至少{offCount}天"
+                    },
+                    "MIN_OFF_AFTER_N": {
+                        "label": "工作休息條件",
+                        "sentence": "{target}在N班後至少需要{count}天休息"
+                    },
+                    "MIN_STAFF_BY_DATE_SHIFT": {
+                        "label": "人數條件",
+                        "sentence": "每月{date}日的{shift}班至少需要{count}人"
+                    },
+                    "MIN_STAFF_BY_SHIFT": {
+                        "label": "人數條件",
+                        "sentence": "{shift}班至少需要{count}人"
+                    },
+                    "MIN_STAFF_WEEKEND_HOLIDAY_SHIFT": {
+                        "label": "人數條件",
+                        "sentence": "週末和節假日的{shift}班至少需要{count}人"
+                    },
+                    "NURSE_AVOID_SHIFT": {
+                        "label": "個人條件",
+                        "sentence": "{nurse}希望避免{shift}班"
+                    },
+                    "NURSE_FORBID_WEEKEND": {
+                        "label": "個人條件",
+                        "sentence": "{nurse}不能在週末或節假日工作"
+                    },
+                    "NURSE_MAX_WEEKEND_HOLIDAY_SHIFTS": {
+                        "label": "個人限制",
+                        "sentence": "{target}在{period}內最多安排{count}次週末或節假日{shift}班"
+                    },
+                    "NURSE_PREFER_SHIFT": {
+                        "label": "個人條件",
+                        "sentence": "{nurse}偏好{shift}班"
+                    },
+                    "OFF_AFTER_CONSECUTIVE_WORK": {
+                        "label": "工作休息條件",
+                        "sentence": "{target}連續工作{count}天后需要休息"
+                    },
+                    "PRECEPTEE_NOT_ALONE_SHIFT": {
+                        "label": "技能與角色",
+                        "sentence": "{preceptee}上班時，在同一班次安排另一名護理師"
+                    },
+                    "PRECEPTOR_PRECEPTEE_SAME_SHIFT": {
+                        "label": "技能與角色",
+                        "sentence": "將{preceptor}和{preceptee}安排在同一班次"
+                    },
+                    "SOFT_NO_E_TO_N": {
+                        "label": "禁止模式條件",
+                        "sentence": "{target}避免E班次日安排N班"
+                    },
+                    "STAFF_COUNT_BY_SHIFT": {
+                        "label": "人數條件",
+                        "sentence": "{target}在{dateScope}的{shift}班人數必須{operator}{count}人"
+                    },
+                    "MIXED_OPERATION_POLICY": {
+                        "label": "混合輪班執行方式"
+                    },
+                    "MIXED_ROTATION_PARTICIPATION": {
+                        "label": "個人輪班參與",
+                        "sentence": "{target}在{dateScope}以{participationMode}方式參與"
+                    },
+                    "TIME_WINDOW_STAFF_COUNT": {
+                        "label": "按時間段需求人數",
+                        "sentence": "{dateScope}從{startTime}到{endTime}的人數設為{operator}{count}"
+                    }
+                },
+                "toast": {
+                    "added": "新增了約束條件。",
+                    "duplicateSkipped": "相同條件已存在。",
+                    "duplicatesRemoved": "已整理 {{count}} 重複約束。",
+                    "importantUnmarked": "未將其標記為重要。",
+                    "nurseShiftPreferenceImportantBlocked": "護理師個人班次偏好和迴避條件不能設為重要。",
+                    "imported": "{{teamName}} 約束按原樣載入。",
+                    "importFailed": "無法載入約束。請稍後重試。",
+                    "recommendedDeleted": "推薦的條件已被刪除。",
+                    "resetDefaults": "已初始化為推薦條件{{count}}。",
+                    "saveFailed": "無法儲存約束。請稍後重試。",
+                    "staffCountConflict": "相同適用日和班次的最少、最多和精確人數條件相互衝突。",
+                    "importSkippedAllNurseRules": "由於 {{count}} 條護理師專屬約束無法直接應用到其他小組因此未匯入。",
+                    "importedWithSkippedNurseRules": "已匯入 {{teamName}} 的約束並跳過 {{count}} 條護理師專屬約束。"
+                },
+                "violationCount": "{{count}}",
+                "warning": {
+                    "deleteConfirm": "刪除",
+                    "deleteDescription": "也要從列表中刪除嗎?",
+                    "deleteTitle": "您想刪除推薦條件嗎？",
+                    "description": "此條件是穩定班表的重要且推薦的基本要求。",
+                    "keep": "維持",
+                    "unmarkConfirm": "取出要點",
+                    "unmarkDescription": "也要取消重要標記嗎?",
+                    "unmarkTitle": "要重要的標記去掉嗎？"
+                },
+                "staffCountText": {
+                    "min": "{{target}}在{{dateScope}}的{{shift}}班次至少需要{{count}}名護理師。",
+                    "max": "{{target}}在{{dateScope}}的{{shift}}班次最多可安排{{count}}名護理師。",
+                    "exact": "{{target}}在{{dateScope}}的{{shift}}班次必須正好安排{{count}}名護理師。"
+                },
+                "savedWarnings": {
+                    "title": "已儲存，但有些約束條件需要確認"
+                },
+                "mixed": {
+                    "policyTitle": "混合輪班執行方式",
+                    "policyHelp": "選擇常規排班的生成方式。人員和日期可在下方約束中詳細設定。",
+                    "participationHelp": "可排班班次在成員設定中管理。此處選擇僅三班、僅兩班、計劃混合或人力不足時參與。",
+                    "strategy": {
+                        "threeBaseFallbackTwo": "三班優先·不足時使用兩班",
+                        "threeBaseFallbackTwoHelp": "先按三班排班，僅在無法滿足必要條件時最少使用兩班。",
+                        "plannedMixed": "計劃內兩班與三班混合",
+                        "plannedMixedHelp": "按計劃的人員和日期同時使用兩班與三班。",
+                        "plannedMixedWithFallback": "計劃混合·不足時額外兩班",
+                        "plannedMixedWithFallbackHelp": "保留計劃內兩班，僅在無法滿足必要條件時增加後備兩班。",
+                        "changeBlocked": "當前約束與所選執行策略衝突。請先修改相關約束。"
+                    },
+                    "participation": {
+                        "threeOnly": "僅三班",
+                        "twoOnly": "僅兩班",
+                        "flex": "按計劃安排兩班或三班",
+                        "fallbackTwo": "人力不足時可安排兩班"
+                    },
+                    "generatorPending": "現已支援儲存和驗證，自動生成支援正在準備。",
+                    "nurseUnavailable": {
+                        "threeShift": "未設定可三班工作。",
+                        "twoShift": "未設定可兩班工作。",
+                        "bothShifts": "需要同時設定可兩班和三班工作。",
+                        "notConfigured": "需要設定可排班次"
+                    },
+                    "validation": {
+                        "selectEligibleNurse": "請至少選擇兩名班次可用性符合的護理師。"
+                    }
+                },
+                "accessibility": {
+                    "fieldLabel": "{{constraint}}：{{field}}",
+                    "field": {
+                        "nurses": "選擇護理師",
+                        "count": "次數或人數",
+                        "workCount": "連續工作天數",
+                        "offCount": "休息天數",
+                        "unpairedMax": "未配對班組上限",
+                        "minRestMinutes": "最短休息時間（分鐘）",
+                        "maxMinutes": "最長工作時間（分鐘）",
+                        "maxDifference": "最大差異",
+                        "startTime": "開始時間",
+                        "endTime": "結束時間",
+                        "selection": "選擇項",
+                        "time": "時間",
+                        "number": "數值"
+                    }
+                },
+                "personalExclusionPreset": "按護理師及日期排除班次",
+                "personalExclusion": {
+                    "label": "按日期或星期限制排班",
+                    "sentence": "{target}在{dateScope}不安排{shift}班次。",
+                    "description": "僅限制所選班次，仍可安排其他班次或休息。星期每週重複，日期每月重複。"
+                }
+            },
+            "fixedShifts": {
+                "empty": "本月還沒有班表。",
+                "error": "無法載入固定班次資料",
+                "hint": "如果有已經設定或必須遵守的時間表，例如培訓、教育或公共服務，請修復它。",
+                "loading": "正在載入班表。",
+                "lockedToast": "固定班次需要先取消固定後才能修改。",
+                "saveFailed": "儲存失敗。請稍後重試。",
+                "title": "請輸入您想要固定的時間表"
+            },
+            "monthRangeDescription": "在Dutying中，您只能建立本月和下個月的班表。",
+            "monthRangeTitle": "在此期間無法建立班表。",
+            "navigation": {
+                "complete": "完全的",
+                "moving": "在移動中...",
+                "next": "下一個",
+                "previous": "前",
+                "saving": "儲存…",
+                "sequentialRequired": "請從前面的步驟中一一進行。",
+                "workerRequired": "班表至少需要一名護理師。"
+            },
+            "overview": {
+                "checking": "正在檢查班表狀態。",
+                "continueShift": "繼續製作",
+                "createShift": "{{month}}建立每月班表",
+                "error": "無法檢查班表的狀態。",
+                "fullyAssignedCantStart": "這個月的班表已經全部填寫完畢，所以無法繼續在這裡建立它。",
+                "loading": "正在載入班表...",
+                "noTeamsDescription": "請先建立工作組或檢查病房設定。",
+                "noTeamsLabel": "沒有工作團隊",
+                "noTeamsTitle": "您可以從建立一個工作團隊開始。",
+                "selectedTeamFallback": "選定的團隊",
+                "shiftDraft": "正在為 \u003cteam>{{teamName}}\u003c/team> 製作 \u003cmonth>{{month}}\u003c/month> 的班表",
+                "shiftDraftDescription": "它還沒有完成。您可以繼續建立以前儲存的內容。",
+                "shiftEmpty": "\u003cteam>{{teamName}}\u003c/team> 尚無 \u003cmonth>{{month}}\u003c/month> 的時間表。",
+                "shiftExists": "已有 {{month}} 月份 {{teamName}} 的時間表。",
+                "shiftPartialFill": "{{teamName}} 月份 {{month}} 的時間表上留有空白。",
+                "viewShift": "點選此處檢視{{month}}每月班表"
+            },
+            "progress": {
+                "ariaLabel": "建立班表的步驟",
+                "current": "{{current}}/{{total}}단계 · {{label}}",
+                "eyebrow": "建立班表",
+                "state": {
+                    "available": "活動",
+                    "current": "進行中",
+                    "done": "完全的",
+                    "locked": "鎖定"
+                }
+            },
+            "requests": {
+                "action": {
+                    "accept": "驗收",
+                    "hold": "抓住",
+                    "reject": "拒絕"
+                },
+                "badge": {
+                    "accepted": "已接受申請",
+                    "pending": "待申請",
+                    "rejected": "被拒絕的申請"
+                },
+                "count": "{{count}}",
+                "descriptionHighlight": "固定到班表",
+                "descriptionLine": "請接受反映的申請並拒絕排除的申請。",
+                "descriptionPrefix": "反映的時間表是",
+                "descriptionSuffix": "做。",
+                "empty": "這個月的班表還沒有確定。",
+                "emptyAccepted": "如果您有已接受的申請，您將在此處看到它。",
+                "emptyPending": "當有審查申請時，它會出現在這裡。",
+                "emptyRejected": "如果有被拒絕的申請，則會顯示在此處。",
+                "error": "無法載入App工作資料",
+                "itemLabel": "{{name}} / {{date}}일",
+                "loading": "載入App工作資料。",
+                "lockedToast": "請求的工作只能在已應用的工作選項卡中修改。",
+                "panelTitle": "申請審查",
+                "section": {
+                    "accepted": "已接受申請",
+                    "pending": "等待",
+                    "rejected": "被拒絕"
+                },
+                "summary": {
+                    "accepted": "驗收",
+                    "pending": "氣氛",
+                    "rejected": "拒絕"
+                },
+                "summaryCountsAria": "已接受、待處理和拒絕的申請數量摘要",
+                "table": {
+                    "name": "姓名"
+                },
+                "title": "請確認您的工作申請。",
+                "updateFailed": "無法更改申請狀態。請再試一次。"
+            },
+            "stepContent": {
+                "importantBadge": "重要性",
+                "importantPrefix": "必須遵守的條件是",
+                "importantSuffix": "請開啟按鈕。"
+            },
+            "stepLoadFailed": "無法載入進度步驟",
+            "steps": {
+                "aiAutofill": {
+                    "caption": "填寫剩餘的空白並做出最終決定。",
+                    "label": "製作班表"
+                },
+                "confirmedShifts": {
+                    "caption": "檢查已完成的班表",
+                    "label": "確認的班表"
+                },
+                "constraints": {
+                    "caption": "定義約束",
+                    "introDescription": "對於必須遵守的條件，請開啟重要按鈕。",
+                    "introTitle": "請設定限制條件",
+                    "label": "排班條件"
+                },
+                "fixedShifts": {
+                    "caption": "提前修復一些班次",
+                    "label": "固定班別"
+                },
+                "requests": {
+                    "caption": "接受或拒絕護理師傳送的工作請求。",
+                    "label": "確認預班申請"
+                },
+                "workers": {
+                    "caption": "檢查哪些護理師將值班",
+                    "introDescription": "請檢查是否有人失蹤。\n如果需要更改，可以在員工管理中更改。",
+                    "introTitle": "請檢查值班人數。",
+                    "label": "確認排班人員"
+                }
+            },
+            "tutorial": {
+                "aiAutofill": {
+                    "info": "您可以多次執行人工智慧自動填充，以快速接近您想要的班表。\n請管理員再次檢查結果並進行更正。",
+                    "title": "人工智慧自動填充"
+                },
+                "authoringFixed": {
+                    "info": "人工智慧會填充固定班次和申請班次以外的空白。\n執行人工智慧前，請先固定不應更改的班次。",
+                    "title": "在使用人工智慧前固定班次"
+                },
+                "constraints": {
+                    "info": "除了七個建議的約束之外，您還可以新增必要的條件。\n條件越多，任務就越困難。",
+                    "title": "新增約束"
+                },
+                "fixedShifts": {
+                    "info": "選擇一個單元格並使用鍵盤輸入工作縮寫。\n如果您點選該區使用的縮寫，例如 D、E、N 或 O，則會立即反映出來。",
+                    "title": "輸入固定時間"
+                },
+                "requests": {
+                    "info": "檢查剩餘的工作請求。\n如果您開啟“僅檢視等待”，您將僅看到尚未處理的請求。",
+                    "title": "確認工作申請"
+                },
+                "stepper": {
+                    "info": "一邊檢視進度線，一邊逐一執行這五個步驟。",
+                    "title": "建立班表"
+                },
+                "tools": {
+                    "info": "使用檢視選項和撤消/重做可以更輕鬆地最佳化您的時間表。",
+                    "title": "使用輔助工具"
+                }
+            },
+            "wardCodeLoading": "檢查病房程式碼",
+            "workers": {
+                "activeCount": "輸入{{count}}人",
+                "column": {
+                    "isWorker": "投入工作",
+                    "memo": "筆記",
+                    "name": "姓名",
+                    "preceptee": "戒律",
+                    "preceptor": "導師",
+                    "shiftTypes": "可用的工作"
+                },
+                "dragHandleAria": "透過拖動更改順序",
+                "restPolicy": {
+                    "adjustmentMinus": "減少 {{count}} 天",
+                    "adjustmentNone": "無額外調整",
+                    "adjustmentPlus": "增加 {{count}} 天",
+                    "dayUnit": "天",
+                    "decreaseTarget": "減少目標休息天數",
+                    "fixedTarget": "每月 {{count}} 天",
+                    "increaseTarget": "增加目標休息天數",
+                    "targetLabel": "目標休息天數",
+                    "weeklyTarget": "每週 {{days}} 天 · 按實際日曆共 {{count}} 天"
+                },
+                "emptyDescription": "請首先檢查分配工作的人數。",
+                "emptyTitle": "確認好人員後，就可以開始了。",
+                "goMemberManagement": "進入排班人員管理",
+                "noNurseDescription": "要建立班表，首先新增護理師。您可以立即開始排班人員管理。",
+                "noNurseTitle": "{{teamName}} 還沒有護理師。",
+                "preceptorActive": "相應的",
+                "sortByName": "按字母順序",
+                "sortBySavedOrder": "隨機順序",
+                "sortListMenuAria": "按排班人員開放排序",
+                "totalCount": "總計 {{count}} 人"
+            },
+            "monthlyMemo": {
+                "button": "備註",
+                "buttonAria": "開啟 {{year}} 年 {{month}} 月個人備註",
+                "buttonWithMemoAria": "開啟已有內容的 {{year}} 年 {{month}} 月個人備註",
+                "title": "{{year}} 年 {{month}} 月備註",
+                "closeAria": "關閉月度備註",
+                "loading": "正在載入備註",
+                "loadFailed": "無法載入備註。",
+                "retry": "重試",
+                "placeholder": "寫下本月需要記住的內容。",
+                "textareaAria": "{{year}} 年 {{month}} 月個人備註",
+                "saving": "正在儲存…",
+                "saved": "已儲存",
+                "saveFailed": "無法儲存備註。"
+            }
+        },
+        "member": {
+            "addFirstNurse": "新增您的第一位護理師",
+            "addingNurse": "增加護理師...",
+            "addNurse": "新增護理師",
+            "addTeam": "新增團隊",
+            "canMakeDuty": "寫一個班表",
+            "canMakeDutyTooltip": "只有選定的人才能填寫時間表。",
+            "common": {
+                "cancel": "消除",
+                "close": "關閉",
+                "complete": "完全的",
+                "deleteAction": "刪除",
+                "discard": "不儲存",
+                "disconnectAction": "斷開",
+                "nurseFallback": "護理師",
+                "previous": "前",
+                "previousStep": "之前的步驟",
+                "processing": "加工",
+                "processingEllipsis": "加工...",
+                "retry": "再試一次",
+                "saveAndLeave": "儲存並退出",
+                "selectedNurse": "選定的護理師",
+                "selectedTeam": "選定的團隊"
+            },
+            "confirmDeleteTeam": "要刪除團隊 {{teamName}} 嗎？該團隊的護理師也被刪除。",
+            "connectionManage": {
+                "complete": {
+                    "viewOtherRequests": "檢視其他請求"
+                },
+                "method": {
+                    "add": "新加入團隊",
+                    "link": "與現有護理師相關",
+                    "title": "請選擇聯動方式"
+                },
+                "result": {
+                    "failure": {
+                        "addDescription": "新增至 {{waitingNurseName}}{{objectParticle}} {{targetLabel}} 失敗。請重試或返回上一步。",
+                        "addTitle": "無法將您新增到團隊中",
+                        "linkDescription": "無法連線到帳戶 {{targetLabel}}。請再試一次。",
+                        "linkNoTargetDescription": "無法連線到所選護理師賬號。請再試一次。",
+                        "linkTeamDescription": "無法連線{{targetTeamName}}的賬戶{{targetNurseName}}。請再試一次。",
+                        "linkTitle": "無法連線到現有帳戶"
+                    },
+                    "loading": {
+                        "addDescription": "正在 {{waitingNurseName}} 新增到 {{targetLabel}} 團隊。請稍等片刻，以便您的團隊和關係變化得到反映。",
+                        "addTitle": "新增到選定的團隊",
+                        "linkDescription": "正在將 {{waitingNurseName}} 申請資訊關聯到 {{targetLabel}} 賬號。請稍候。",
+                        "linkTitle": "連線到現有帳戶"
+                    },
+                    "success": {
+                        "addTitle": "將 {{waitingNurseName}} 新增到 {{targetLabel}}",
+                        "linkDescription": "已將 {{waitingNurseName}} App 關聯到 {{targetLabel}} 賬號。稍後可以檢視。",
+                        "linkTitle": "已關聯現有賬號。"
+                    }
+                },
+                "target": {
+                    "addTitle": "請選擇{{nurseName}}所屬的隊伍",
+                    "all": "全部的",
+                    "emptySearch": "您可以透過更改搜尋詞來找到護理師。",
+                    "emptyTeam": "您可以選擇何時將護理師新增到您的團隊中。",
+                    "linkTitle": "請選擇一位現有護理師進行聯絡",
+                    "searchPlaceholder": "按姓名或電話號碼搜尋"
+                },
+                "waiting": {
+                    "accept": "驗收",
+                    "description": "如果您接受，您將在病房註冊為護理師。",
+                    "empty": "當收到連結請求時，它會出現在此處。",
+                    "reject": "拒絕",
+                    "title": "護理師要求病房聯動。"
+                }
+            },
+            "deleteTeam": "刪除團隊",
+            "description": "您可以在一個螢幕上管理每個團隊的排班人員和可用資訊。",
+            "detail": {
+                "cancel": "關閉",
+                "canMakeDuty": "可寫",
+                "cannotMakeDuty": "建立限制",
+                "close": "關閉人員面板",
+                "closeAction": "關閉",
+                "connected": "連結",
+                "connection": "蠕動",
+                "connectionStatusAria": "{{nurseName}}聯動狀態",
+                "delete": "護理師刪除",
+                "deleting": "正在刪除...",
+                "disconnected": "未連結",
+                "disconnectedTooltip": "連線不工作。",
+                "employmentDate": "加入年份",
+                "employmentDateHint": "用於記錄人員資訊。",
+                "emptyDescription": "如果您從左側列表中選擇一個人，您可以編輯其詳細資訊。",
+                "emptyPinnedDescription": "當您選擇護理師時，詳細資訊將顯示在此處。",
+                "emptyTitle": "請選擇一名排班人員",
+                "genderToggle": "性別改變",
+                "isDutyManager": "寫一個班表",
+                "isWorker": "工作承諾",
+                "isWorkerOff": "例外",
+                "isWorkerOn": "包括班表",
+                "memo": "筆記",
+                "memoHint": "請寫下該排班人員的特殊資訊。",
+                "moveTargetTeam": "團隊移動",
+                "moveTeam": "團隊運動",
+                "phone": "電話號碼",
+                "phoneHint": "它被用作緊急聯絡網路。",
+                "preceptee": "戒律",
+                "preceptor": "導師",
+                "rolesAndPermissions": "角色和許可權",
+                "save": "節省",
+                "saveAction": "節省",
+                "saving": "儲存…",
+                "shiftTypes": "可用的工作",
+                "shiftTypesHelpAria": "可用工作資訊",
+                "shiftTypesHint": "請選擇所有空缺職位",
+                "worker": "投入工作",
+                "nameRequired": "請輸入姓名。",
+                "nameInvalid": "姓名最多50個字元，可使用文字、數字、空格、“・”和“ー”。不能使用“_”等符號。"
+            },
+            "drawer": {
+                "deleteConfirm": "{{nurseName}} 要刪除護理師嗎？一旦刪除，就無法恢復。"
+            },
+            "emptyTeamDescription": "請新增護理師",
+            "emptyTeamsDescription": "建立團隊後，您可以新增護理師。",
+            "emptyTeamsTitle": "請先建立一個團隊",
+            "emptyTeamTitle": "沒有護理師",
+            "modal": {
+                "deleteNurseDescriptionSuffix": "一旦刪除，就無法恢復。",
+                "deleteNurseTitle": "要刪除護理師嗎？",
+                "deleteTeamDescriptionSuffix": "如果刪除團隊，註冊護理師 {{count}} 也會被刪除。",
+                "deleteTeamTitle": "要刪除團隊嗎？",
+                "disconnectDescriptionSuffix": "斷開與App的連線。",
+                "disconnectTitle": "要斷開連線嗎？",
+                "unsavedExitDescription": "如果不儲存，修改內容將會丟失。",
+                "unsavedExitTitle": "要退出而不儲存嗎？"
+            },
+            "nurseDrawerFeedback": {
+                "create": {
+                    "description": "請輸入您的姓名和聯絡資訊並儲存。",
+                    "title": "新增了一名新護理師"
+                },
+                "dirty": {
+                    "description": "如果您在未儲存的情況下關閉，您的更改將會丟失。",
+                    "title": "有變化"
+                },
+                "error": {
+                    "description": "您輸入的資訊將保持原樣。請檢查內容並再次儲存。",
+                    "title": "儲存失敗"
+                },
+                "idle": {
+                    "description": "進行更改後，“儲存”按鈕將被啟用。",
+                    "title": "請檢查需要修改的專案"
+                },
+                "saving": {
+                    "description": "您輸入的資訊將得到反映。請稍等片刻，直至儲存完成。",
+                    "title": "儲存"
+                },
+                "success": {
+                    "description": "已更新護理師資訊。如無需繼續編輯，可以關閉。",
+                    "title": "已儲存。"
+                }
+            },
+            "roleHelp": {
+                "aria": "{{label}} 說明",
+                "preceptee": {
+                    "description": "接受導師培訓和適應支援的新護理師或經驗不足的護理師。",
+                    "label": "戒律"
+                },
+                "preceptor": {
+                    "description": "這是一位負責幫助新護理師或經驗不足的護理師適應和培訓的護理師。",
+                    "label": "導師"
+                }
+            },
+            "row": {
+                "connectionStatusAria": "{{nurseName}} 聯動狀態資訊",
+                "dragAria": "透過拖動更改順序",
+                "precepteeAria": "{{nurseName}} 理念",
+                "preceptorAria": "{{nurseName}} 導師",
+                "workerAria": "{{nurseName}}投入使用"
+            },
+            "shiftTeamList": {
+                "addTeam": "新增團隊",
+                "card": {
+                    "addDividerAria": "在 {{nurseName}} 下面新增分隔線",
+                    "addNurse": "做一名護理師",
+                    "addNurseTooltip": "您可以建立和管理虛擬護理師，而無需邀請任何人。您可以隨時邀請和連結。",
+                    "deleteTeam": "刪除團隊",
+                    "divider": "輪廓",
+                    "editTeamNameAria": "{{teamName}} 編輯隊伍名稱",
+                    "empty": "如果您新增護理師，您可以在這裡看到。",
+                    "openMenuAria": "{{teamName}} 開啟團隊選單",
+                    "removeDividerAria": "去掉{{nurseName}}下面的分割線",
+                    "selectNurseAria": "{{nurseName}} 護理師選擇",
+                    "viewShift": "去看看班表",
+                    "virtualNurseTooltip": "這是一名尚未連結到該App的虛擬護理師。"
+                },
+                "subtitle": "每個團隊可以建立一個班表。",
+                "title": "團隊"
+            },
+            "sort": {
+                "manual": "隨機順序",
+                "name": "按字母順序"
+            },
+            "sortByPriorityOrder": "已儲存訂單",
+            "sortListMenuAria": "開啟列表排序依據",
+            "summary": {
+                "connected": "連結",
+                "connectionManage": "連結管理",
+                "copyWardCodeAria": "複製病房程式碼",
+                "totalNurses": "總人數",
+                "unconnected": "未連結",
+                "wardCode": "病房程式碼",
+                "wardCodeGuideAria": "病房程式碼 {{wardCode}} 檢視資訊"
+            },
+            "table": {
+                "connection": "蠕動",
+                "isDutyManager": "寫一個班表",
+                "isWorker": "工作承諾",
+                "memo": "筆記",
+                "name": "姓名",
+                "shiftTypes": "可用的工作"
+            },
+            "teamMenu": "開啟團隊選單",
+            "title": "排班人員管理",
+            "toast": {
+                "copyWardCode": "已複製病房程式碼。",
+                "createTeam": "新增護理師{{teamNumber}}團隊。",
+                "deleteTeam": "已刪除{{teamName}}團隊。",
+                "maxNursesPerTeam": "一支隊伍中最多可新增 {{count}} 名護理師。",
+                "maxTeams": "您最多可以新增 {{count}} 團隊。",
+                "moveNurse": "{{nurseName}} 被轉移到 {{teamName}} 團隊。",
+                "saveNurseInfo": "排班人員資訊已儲存。"
+            },
+            "tutorial": {
+                "add": {
+                    "info": "選擇一個團隊並單擊“新增護理師”以建立新護理師。\n新增後，您可以立即輸入您的姓名和工作資訊。",
+                    "title": "新增護理師"
+                },
+                "edit": {
+                    "info": "您可以在右側面板中直接編輯姓名、可用班次、角色/許可權和註釋。",
+                    "title": "編輯護理師資訊"
+                },
+                "team": {
+                    "info": "您可以一目瞭然地看到按工作組劃分的護理師名單。\n您還可以透過雙擊團隊名稱來更改團隊名稱。",
+                    "title": "按團隊檢視護理師"
+                }
+            },
+            "wardInfo": {
+                "connectionStatus": "連結狀態",
+                "copyError": "無法複製。",
+                "copying": "複製...",
+                "copySuccess": "複製完成！",
+                "hospital": "醫院",
+                "hospitalInfo": "醫院資訊",
+                "personUnit": "人數",
+                "ward": "病房"
+            }
+        },
+        "navigationBar": {
+            "ariaLabel": "主選單",
+            "expandAria": "展開側邊欄",
+            "foldAria": "摺疊側邊欄",
+            "home": "家",
+            "items": {
+                "account": "我的頁面",
+                "board": "佈告欄",
+                "dutying": "Dutying",
+                "make": "建立班表",
+                "member": "排班人員管理",
+                "request": "預班申請",
+                "wardAdmins": "病房經理",
+                "wardInfoSettings": "病房設定",
+                "wardSettings": "班次設定"
+            },
+            "landingAria": "前往登陸頁面",
+            "sections": {
+                "operations": "病房",
+                "schedule": "班表",
+                "settings": "環境"
+            },
+            "wardCodeGuideAria": "病房程式碼 {{wardCode}} 檢視資訊"
+        },
+        "onboardingJoinWard": {
+            "backToWardSelect": "按病房選擇",
+            "checkingPermission": "正在進入病房",
+            "codeDigitAria": "區號 {{index}} 數字",
+            "codeEntry": {
+                "description": "輸入與您共享的 6 位密碼即可進入病房。",
+                "title": "使用病房程式碼進入"
+            },
+            "codeHelp": "請輸入由字母和數字組成的 6 位病房程式碼。",
+            "codeInputAria": "輸入病房程式碼",
+            "description": "輸入與病房經理共享的 6 位密碼即可進入病房。",
+            "form": {
+                "submit": "使用程式碼輸入",
+                "submitting": "進入..."
+            },
+            "invalidCode": "這是一個不存在的病房程式碼。請再次檢查您的程式碼。",
+            "permission": {
+                "close": "關閉",
+                "confirm": "檢視",
+                "description": "病房程式碼正確，但當前賬戶郵箱未註冊為病房管理員。請讓病房主人註冊此帳戶的電子郵件地址。",
+                "descriptionWithWard": "要輸入 {{hospitalName}} {{wardName}}，您當前的帳戶電子郵件地址必須註冊為病房經理。請讓病房主人註冊此帳戶的電子郵件地址。",
+                "eyebrow": "需要註冊郵箱",
+                "title": "您無法使用此帳戶進入。",
+                "titleWithWard": "無法輸入 {{hospitalName}} {{wardName}}"
+            },
+            "registeredWards": {
+                "description": "如果您已將電子郵件註冊為病房管理員，則此處將顯示該電子郵件。",
+                "empty": "當前賬號郵箱還沒有註冊的病房。請使用病房程式碼進入。",
+                "enterAria": "輸入 {{hospitalName}} {{wardName}}",
+                "loadFailed": "無法檢索已登記的病房資訊。請使用病房程式碼進入。",
+                "loading": "正在載入註冊病房。",
+                "title": "用我的郵箱註冊的病房"
+            },
+            "state": {
+                "accountErrorDescription": "請稍後重試。如果問題仍然存在，請重新登入。",
+                "accountErrorTitle": "檢索賬戶資訊失敗",
+                "retry": "再試一次"
+            },
+            "title": "進入病房",
+            "toast": {
+                "joinFailed": "無法進入病房。請再試一次。"
+            },
+            "validation": {
+                "incomplete": "請輸入全部 6 位數字。",
+                "invalidCharacters": "只能使用英文字母和數字。"
+            }
+        },
+        "onboardingWardCreate": {
+            "action": {
+                "complete": "完全的",
+                "created": "建立完成",
+                "creating": "創造...",
+                "next": "下一個",
+                "previous": "前",
+                "saving": "儲存...",
+                "skip": "跳過"
+            },
+            "backToWardSelect": "按病房選擇",
+            "blocked": {
+                "default": "請檢查您輸入的資訊。",
+                "duplicateShiftType": "縮寫的第一個字母是重複的。",
+                "duplicateRequiredShiftTypes": "重複的必需班次型別請只保留一個：{{shiftTypes}}",
+                "emptyTeam": "您可以透過新增團隊來建立守衛。",
+                "emptyTeamNurses": "有些團隊沒有護理師。請新增護理師或刪除團隊。",
+                "invalidNurseName": "請檢查護理師的姓名。",
+                "invalidShiftTime": "請檢查班次時間。",
+                "invalidShiftType": "請檢查您的班次型別資訊。",
+                "unmappedShiftType": "請選擇排班程式碼“{{shiftCode}}”的班次含義。",
+                "invalidWardIdentity": "請輸入僅包含韓語、英語、數字和空格的 1 至 20 個字元。",
+                "missingHospitalName": "請輸入醫院名稱。",
+                "missingRequiredShiftTypes": "請新增以下班次型別：{{shiftTypes}}",
+                "scheduleMissingNurseName": "請在輸入班次的行中輸入護理師姓名。",
+                "submitting": "正在建立一個病房。請稍等。",
+                "success": "已完成病房的建立。"
+            },
+            "defaults": {
+                "newNurseName": "新護理師{{index}}",
+                "sampleNurse": {
+                    "first": "洪吉東",
+                    "off": "樸延宇",
+                    "second": "金荷娜",
+                    "skilled": "李瑞雲"
+                },
+                "annualLeave": "年假"
+            },
+            "deleteTeamAction": "刪除團隊",
+            "fallback": {
+                "newTeam": "新團隊",
+                "selectedTeam": "選定的團隊",
+                "wardName": "病房 Dutying"
+            },
+            "identity": {
+                "hospitalName": "醫院名稱",
+                "hospitalNamePlaceholder": "請輸入醫院名稱",
+                "wardName": "病房名稱",
+                "wardNameOptional": "（選填）病房名稱",
+                "wardNamePlaceholder": "請輸入病房名稱",
+                "hospitalSearchError": "無法載入醫院，請稍後重試。",
+                "hospitalSearchLoading": "搜尋中",
+                "hospitalFreeTextHint": "不在列表中的話，保留您輸入的名稱即可",
+                "hospitalMatched": "已匹配目錄中的醫院"
+            },
+            "modal": {
+                "deleteTeamDescription": "要刪除它嗎？",
+                "deleteTeamDescriptionSuffix": "如果刪除團隊，註冊護理師 {{count}} 也會被刪除。",
+                "deleteTeamDescriptionWithNurses": "註冊護理師{{nurseCount}}將一併刪除。",
+                "deleteTeamDescriptionWithNursesAndSchedule": "註冊護理師姓名 {{nurseCount}} 和輸入的班表一起刪除。",
+                "deleteTeamDescriptionWithSchedule": "輸入的班表將被一起刪除。",
+                "deleteTeamTitle": "要刪除團隊嗎？"
+            },
+            "nurse": {
+                "deleteNurseAria": "刪除{{nurseName}}",
+                "dragAria": "透過拖動更改順序",
+                "emptyTeamsDescription": "建立團隊後，您可以註冊護理師。",
+                "emptyTeamsTitle": "請先新增一個團隊。",
+                "selectedTeamCountAria": "{{teamName}} 護理師 {{count}}",
+                "sort": {
+                    "manual": "手動訂單",
+                    "name": "按字母順序"
+                },
+                "sortAria": "護理師分揀",
+                "sortOptionsAria": "護理師排序選項",
+                "tutorial": {
+                    "order": {
+                        "info": "AI 會參考組內順序來平衡各班次的熟練度。\n拖動左側點狀把手即可調整順序。",
+                        "title": "將熟練護理師放在上方"
+                    }
+                }
+            },
+            "progress": {
+                "ariaLabel": "病房建立進度",
+                "completeTitle": "病房建立已完成。",
+                "finalCheck": "快完成了。正在做最後檢查。",
+                "inputWardInfo": "正在整理進入的病房資訊。",
+                "navigateDuty": "正在轉到班表螢幕。",
+                "nurses": "正在連結護理師資訊。",
+                "settingTitle": "設定病房",
+                "shiftTypesAndTeams": "正在設定班次型別和團隊。"
+            },
+            "schedule": {
+                "addRow": "新增行",
+                "deleteRowAria": "刪除{{rowLabel}}",
+                "emptyTeamsDescription": "建立團隊後，您可以輸入初始班表。",
+                "emptyTeamsTitle": "請先新增一個團隊。",
+                "monthLabel": "月 {{month}} 年 {{year}}",
+                "nextMonth": "下個月",
+                "nurseNameAria": "護理師姓名為 {{rowNumber}}",
+                "previousMonth": "上個月",
+                "rowFallback": "至 {{rowNumber}}",
+                "shiftCellAria": "{{day}} 白班至 {{rowNumber}}",
+                "uploadFile": "上傳時間表檔案"
+            },
+            "scheduleUpload": {
+                "description": "從 Excel 檔案中按日期讀取姓名、團隊和輪班，並將其反映在初始病房設定中。",
+                "downloadTemplate": "下載表格",
+                "dropzoneTitle": "請選擇或拖放 Excel 檔案。",
+                "fileSupport": "支援 .xlsx 和 .xls 檔案。",
+                "submit": "申請檔案",
+                "submitting": "上傳中",
+                "template": {
+                    "fileName": "初始班表_{{year}}_{{month}}.xlsx",
+                    "guideRow1": "請在第一張表格中輸入護理師的姓名、團隊和輪班日期。",
+                    "guideRow2": "輪班可以輸入為 D、E、N、O 或病房中使用的輪班縮寫。",
+                    "guideRow3": "空欄位被視為關閉。",
+                    "guideRow4": "如果團隊名稱為空，則會分配給預設團隊。",
+                    "guideRow5": "上傳後，您可以再次在螢幕上檢視和編輯內容。",
+                    "guideSheetName": "寫作指導",
+                    "nameHeader": "姓名",
+                    "sampleFirstName": "金·杜蒂",
+                    "sampleFirstTeam": "1 隊",
+                    "sampleSecondName": "巴克廷吉",
+                    "sampleSecondTeam": "1 隊",
+                    "teamHeader": "團隊",
+                    "worksheetName": "班表"
+                },
+                "title": "上傳時間表檔案"
+            },
+            "section": {
+                "identity": {
+                    "description": "",
+                    "highlightHospitalName": "醫院名稱",
+                    "highlightWardName": "病房名稱",
+                    "title": "請輸入醫院名稱和病房名稱。"
+                },
+                "nurse": {
+                    "description": "您每月可以為每個團隊建立一張班表。您可以隨時編輯和新增",
+                    "highlight": "護理師",
+                    "title": "請註冊護理師"
+                },
+                "schedule": {
+                    "description": "",
+                    "highlight": "最近使用的班表",
+                    "title": "設定病房和班表\n請輸入最近使用的班表"
+                },
+                "shiftType": {
+                    "description": "您也可以稍後編輯",
+                    "highlight": "班次型別",
+                    "title": "請設定病房的班次型別"
+                },
+                "nightRecovery": {
+                    "description": "不同病房會將夜班結束後的早晨顯示為單獨班次或普通休息。",
+                    "highlight": "早晨下班的日期",
+                    "title": "夜班結束後早晨下班的日期\n如何顯示？"
+                },
+                "rotation": {
+                    "title": "採用哪種輪班制度？",
+                    "highlight": "輪班制度",
+                    "description": "我們會根據您選擇的輪班制度準備相應的班次型別。"
+                }
+            },
+            "shiftType": {
+                "add": "新增班次型別",
+                "dragAria": "拖動{{shiftName}}更改順序",
+                "color": "顏色",
+                "colorOptionAria": "選擇{{color}}",
+                "colorSelectAria": "{{shiftName}} 顏色選擇",
+                "classification": {
+                    "day": "白班",
+                    "unassigned": "未選擇",
+                    "evening": "小夜班",
+                    "night": "夜班",
+                    "nightContinuation": "夜班結束日",
+                    "off": "休息",
+                    "annualLeave": "年假",
+                    "otherLeave": "其他假期",
+                    "otherWork": "其他工作"
+                },
+                "mappingRequired": "請選擇班次型別。",
+                "mappingRecommendation": "建議：{{shiftType}}",
+                "classificationAria": "選擇{{shiftName}}的班次含義",
+                "deleteAria": "刪除{{shiftName}}",
+                "leave": "關閉",
+                "name": "作品名稱",
+                "requirements": {
+                    "description": "這些是所選輪班制度必需的班次型別。",
+                    "duplicate": "{{scope}}中有{{count}}個{{shiftType}}。請只保留一個。",
+                    "duplicateShort": "已設定{{count}}個 · 請只保留一個",
+                    "groupCommon": "通用",
+                    "liveSummary": "必需班次型別共{{total}}個，已準備{{ready}}個，{{issues}}個需要確認",
+                    "missing": "{{scope}}中需要{{shiftType}}。",
+                    "missingShort": "需要新增",
+                    "scopeDefault": "班次型別",
+                    "scopeThree": "三班制班次型別",
+                    "scopeTwo": "兩班制班次型別",
+                    "satisfied": "{{scope}}中已有{{shiftType}}。",
+                    "title": "必需班次型別",
+                    "titleMixed": "兩班制與三班制必需班次型別",
+                    "titleThree": "三班制必需班次型別",
+                    "titleTwo": "兩班制必需班次型別"
+                },
+                "shortName": "縮寫",
+                "type": "類別",
+                "validation": {
+                    "nameDuplicate": "請輸入不同的職位名稱。",
+                    "nameRequired": "請輸入您的工作名稱。",
+                    "shortNameDuplicate": "請輸入縮寫的第一個字母，不要重疊。",
+                    "shortNameFirstKey": "首字元請輸入日文、英文字母、數字或符號（如 -、.、_）。",
+                    "shortNameLength": "請輸入最多 2 個字元，不含空格。",
+                    "shortNameRequired": "請輸入縮寫。",
+                    "timeFormat": "請以 00:00 格式輸入時間。",
+                    "timeOrder": "請輸入不同的開始/結束時間。",
+                    "timeRequired": "請輸入時間。"
+                },
+                "work": "在職的",
+                "workTime": "時間",
+                "rotation": "Rotation",
+                "rotationAria": "Select rotation system for {{shiftName}}",
+                "rotationThree": "Three-shift",
+                "rotationTwo": "Two-shift",
+                "rotationNone": "Not applicable",
+                "twoDayLabel": "Two-shift day",
+                "twoNightLabel": "Two-shift night"
+            },
+            "teamTabs": {
+                "addTeam": "新增團隊"
+            },
+            "toast": {
+                "addNurseToTeam": "{{teamName}} 中新增了一名護理師。",
+                "addTeam": "新增了 {{teamName}}。",
+                "addTeamAndNurse": "已新增 {{teamName}} 並註冊了一名護理師。",
+                "previousScheduleDeleteLocked": "無法刪除之前的班次表中使用的班次型別。",
+                "previousScheduleShortNameLocked": "無法更改之前的班次表中使用的縮寫。",
+                "completeError": "無法建立病房。請再試一次。",
+                "completeSuccess": "病房建立已完成。",
+                "deleteNurse": "已刪除護理師",
+                "deleteTeamWithNurses": "已刪除團隊。該團隊中的護理師也已刪除。",
+                "maxNursesPerTeam": "一支隊伍中最多可新增 {{count}} 名護理師。",
+                "maxTeams": "您最多可以新增 {{count}} 團隊。",
+                "reloadDraftError": "無法載入儲存的病房建立資訊。",
+                "saveDraftError": "病房基本資訊無法儲存。請再試一次。",
+                "saveScheduleError": "無法儲存初始時間表。",
+                "uploadApplied": "反映了時間表檔案。",
+                "annualLeaveRequired": "至少需要保留一個年假班次型別。"
+            },
+            "upload": {
+                "dropHere": "請將您的時間表檔案放在這裡",
+                "failedRow": "某些行 ({{rowLabel}}) 被排除，因為它們無法被解釋。",
+                "failedSheet": "無法載入班表“{{sheetName}}”資料。",
+                "failedTitle": "檔案上傳失敗",
+                "networkFailed": "無法連線到解析伺服器。請稍後重試。",
+                "parseFailed": "無法解釋該檔案。請檢查Excel表格並重新上傳。",
+                "parsing": "正在解析檔案...",
+                "targetMonth": "月份根據班表",
+                "unsupportedFile": "您只能上傳 Excel 檔案（.xlsx、.xls）。",
+                "uploadFile": "檔案上傳"
+            },
+            "rotation": {
+                "threeTitle": "僅採用三班制",
+                "threeDescription": "使用 D · E · N 班次。",
+                "twoTitle": "僅採用兩班制",
+                "twoDescription": "使用日班 · 夜班。",
+                "mixedTitle": "同時採用三班制和兩班制",
+                "mixedDescription": "預設使用 D · E · N，並在需要時同時使用兩班制的日班 · 夜班。",
+                "nightRecoveryQuestion": "夜班結束後早晨下班的日期如何顯示？",
+                "nightContinuationTitle": "顯示為單獨的班次型別",
+                "nightContinuationExampleShift": "夜班結束日",
+                "nightContinuationDescription": "使用病房採用的名稱顯示並可在下一步設定實際班次名稱。",
+                "offRecoveryTitle": "顯示為普通休息",
+                "offRecoveryExampleShift": "休息",
+                "offRecoveryDescription": "夜班結束後的早晨也不使用單獨班次而顯示為普通休息。",
+                "nightExampleShift": "夜班",
+                "offExampleShift": "休息",
+                "exampleFirstDate": "8月12日",
+                "exampleLabel": "示例",
+                "exampleSecondDate": "8月13日",
+                "exampleThirdDate": "8月14日"
+            },
+            "video": {
+                "action": "說明影片",
+                "title": "如何輸入班表",
+                "close": "關閉影片",
+                "error": "無法載入影片，請重試。",
+                "retry": "重新播放",
+                "loading": "正在載入影片…",
+                "playbackSpeed": "播放速度"
+            }
+        },
+        "profile": {
+            "basicInfoDescription": "管理您帳戶中使用的資訊。",
+            "basicInfoTitle": "基本資訊",
+            "confirm": {
+                "deleteConfirm": "退訂",
+                "deleteDescription": "如果您取消，您的帳戶資訊將被刪除且無法恢復。",
+                "deleteTitle": "要登出賬號嗎?",
+                "logoutConfirm": "登出",
+                "logoutDescription": "登出當前帳戶並轉到主螢幕。",
+                "logoutTitle": "要退出嗎？"
+            },
+            "deleteAccount": "退出會員資格",
+            "errorDescription": "請稍後重試。如果問題仍然存在，請重新登入。",
+            "errorTitle": "無法載入個人資料資訊",
+            "imageFailed": "無法處理個人資料影象。",
+            "language": {
+                "en": "English",
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
+                "zh": "简体中文",
+                "zhTW": "繁體中文（台灣）"
+            },
+            "languageLabel": "畫面語言/語言",
+            "loadingDescription": "正在按順序檢查賬號和病房資訊。",
+            "loadingTitle": "準備個人資料資訊",
+            "logout": "登出",
+            "modalSave": "節省",
+            "name": "姓名",
+            "namePlaceholder": "請輸入您的姓名",
+            "phoneNum": "電話號碼",
+            "phoneNumPlaceholder": "請輸入您的電話號碼",
+            "preferencesDescription": "選擇螢幕上顯示的語言。",
+            "preferencesFailed": "無法儲存語言設定。",
+            "preferencesSaved": "已儲存語言。",
+            "preferencesTitle": "語言/語言",
+            "profileSection": "輪廓",
+            "quitWard": "離開病房",
+            "randomAvatar": "隨機頭像",
+            "retry": "再試一次",
+            "save": "儲存更改",
+            "savedDescription": "儲存最新資訊。",
+            "savePreferences": "儲存語言設定",
+            "savingPreferences": "儲存...",
+            "serviceRegion": {
+                "CN": "中國",
+                "EN": "全球 / 英語區",
+                "JP": "日本",
+                "KR": "韓國",
+                "TH": "泰國",
+                "VN": "越南"
+            },
+            "serviceRegionLabel": "服務區",
+            "title": "我的頁面",
+            "unknownName": "姓名未註冊",
+            "unsavedDescription": "更改未儲存。",
+            "uploadPhoto": "上傳照片",
+            "validation": {
+                "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                "nameRequired": "請輸入您的姓名。",
+                "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入電話號碼。",
+                "phoneRequired": "請輸入您的電話號碼。"
+            }
+        },
+        "refresh": {
+            "loading": "正在登入。"
+        },
+        "register": {
+            "createWard": {
+                "back": "按病房選擇",
+                "basicInfo": "基本資訊",
+                "description": "起初，您只會收到所需的資訊，稍後您可以更改詳細設定。",
+                "hospitalName": "醫院名稱",
+                "hospitalNamePlaceholder": "Dutying醫院",
+                "save": "儲存病房",
+                "title": "建立新病房",
+                "validation": {
+                    "wardName": "只能輸入 1 至 50 個韓語、英語、日語和數字字元。"
+                },
+                "wardName": "病房名稱"
+            },
+            "enterWard": {
+                "back": "按病房選擇",
+                "close": "關閉",
+                "codeCellAria": "區號 {{index}} 數字",
+                "codeInputAria": "輸入病房程式碼",
+                "confirmDescription": "如果是正確的病房，會向您傳送入院申請。",
+                "confirmEyebrow": "病房檢查",
+                "description": "您可以透過輸入管理員共享的6位程式碼來檢視您的病房。",
+                "error": "請再次檢查您的病房程式碼。",
+                "retry": "再次輸入",
+                "submit": "要求參賽",
+                "title": "輸入病房程式碼"
+            },
+            "nurse": {
+                "imageFailed": "無法處理個人資料影象。",
+                "name": "姓名",
+                "namePlaceholder": "請輸入您的姓名",
+                "next": "下一個",
+                "phoneNum": "接觸",
+                "phoneNumPlaceholder": "請輸入您的聯絡資訊",
+                "randomAvatar": "隨機頭像",
+                "saving": "儲存...",
+                "submitting": "加工...",
+                "title": "請輸入您的賬戶資訊",
+                "uploadPhoto": "上傳照片",
+                "validation": {
+                    "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                    "nameRequired": "請輸入您的姓名。",
+                    "phoneDuplicate": "該聯絡電話已被使用。請輸入另一個號碼。",
+                    "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入聯絡資訊。",
+                    "phoneRequired": "請輸入您的聯絡資訊。"
+                }
+            },
+            "pending": {
+                "cancelRequest": "取消參賽請求",
+                "description": "一旦管理員批准，您就可以立即使用該病房。",
+                "requestedWard": "請求病房",
+                "title": "等待入境批准"
+            },
+            "select": {
+                "back": "有賬戶資訊",
+                "createDescription": "依次設定醫院名稱、病房名稱、團隊資訊。",
+                "createTitle": "建立新病房",
+                "description": "如果您是第一次開始，請建立一個新病房，如果您收到邀請碼，請進入現有病房。",
+                "enterDescription": "當管理員給出 6 位程式碼時選擇它。",
+                "enterTitle": "進入現有病房",
+                "titleWithName": "{{name}}，連線病房。",
+                "titleWithoutName": "現在連線病房"
+            },
+            "shell": {
+                "homeAria": "Dutying 返回首頁"
+            },
+            "state": {
+                "accountErrorDescription": "請稍後重試。如果問題仍然存在，請重新登入。",
+                "accountErrorTitle": "檢索賬戶資訊失敗",
+                "statusErrorDescription": "重新載入您的帳戶資訊並繼續註冊過程。",
+                "statusErrorTitle": "無法確認賬號狀態"
+            }
+        },
+        "request": {
+            "availability": {
+                "editable": {
+                    "badgeLabel": "可編輯的",
+                    "description": "您可以在當前日曆範圍內修改請求的班表。"
+                },
+                "editablePeriodLabel": "可編輯範圍：上個月到下個月",
+                "lockedFuture": {
+                    "badgeLabel": "等待創作",
+                    "description": "您只能在下個月的申請期之前填寫表格。尚未開通的月份開通後即可修改。",
+                    "validationMessage": "兩個月後的工作申請還沒辦完。"
+                },
+                "lockedPast": {
+                    "badgeLabel": "僅供檢視",
+                    "description": "您只能檢視這個月。您只能檢視已提交的申請和當前的展示位置。",
+                    "validationMessage": "只能檢視兩個月前提出的職位請求。"
+                }
+            },
+            "calendar": {
+                "ariaLabel": "申請班表",
+                "linkColumn": "蠕動",
+                "nameColumn": "姓名",
+                "noNurseAction": "進入排班人員管理",
+                "noNurseDescription": "要確認所請求的輪班，首先在排班人員管理中新增團隊護理師。",
+                "noNurseTitleSuffix": "目前還沒有護理師",
+                "reorderAria": "{{name}} 更改訂單",
+                "status": {
+                    "accepted": "反映",
+                    "pending": "需要確認",
+                    "rejected": "排除"
+                },
+                "statusDescription": {
+                    "accepted": "反映了當前申請的工作。",
+                    "editable": "如果您單擊某個名稱，您可以轉到該日期並進行檢視。",
+                    "noFocus": "目前沒有連線到團隊的護理師資訊，因此您無法直接移動到日曆位置。",
+                    "readonly": "由於月份無法修改，因此只能確認申請的工作地點。",
+                    "rejected": "當前排班顯示為其他班次。"
+                }
+            },
+            "emptyGuide": {
+                "close": "關閉提示",
+                "description": "護理師在 App 中提交希望的班次後，您可以在此統一檢視。",
+                "directEntry": "如需自行安排，可在下一步直接錄入。",
+                "requestPageDirectEntry": "如需手動登記預班申請，可在“建立班表”的第 4 步固定所需班次。",
+                "title": "讓護理師透過 Dutying App 提交預班申請"
+            },
+            "changeEvent": {
+                "add": "新增 → {{shiftType}}",
+                "delete": "{{shiftType}} → 刪除",
+                "message": "{{nurseName}} / {{day}} | | {{changeLabel}}"
+            },
+            "faultOptions": {
+                "excludeCertainWorkTypes": {
+                    "label": "避免 ND/ED/NE/NOD 工作模式",
+                    "message": "最好避免使用 ND/ED/NE/NOD 格式。"
+                },
+                "excludeNightBeforeReqOff": {
+                    "label": "避免在下班前一天晚上使用",
+                    "message": "塗抹前一天最好避免上夜班。"
+                },
+                "maxContinuousNight": {
+                    "label": "連續的夜晚",
+                    "message": "夜班最多可以連續分配 {{count}} 天。"
+                },
+                "maxContinuousWork": {
+                    "label": "連續輪班數",
+                    "message": "最多可以連續分配 {{count}} 天的工作。"
+                },
+                "minContinuousNight": {
+                    "label": "連續的夜晚",
+                    "message": "請分配至少 {{count}} 天的夜間工作。"
+                },
+                "minNightInterval": {
+                    "label": "夜間間隔",
+                    "message": "請將夜間間隔設定為至少 {{count}} 天。"
+                },
+                "minOffAssignAfterNight": {
+                    "label": "夜班結束後分配任務",
+                    "message": "夜間工作後，建議關閉至少 {{count}} 天。"
+                }
+            },
+            "overview": {
+                "bootstrapErrorDescription": "請再次檢查您的帳戶資訊。如果問題仍然存在，請重新登入。",
+                "bootstrapErrorTitle": "載入病房資訊失敗",
+                "bootstrapLoadingDescription": "確認完病房資訊後，正在準備預班申請畫面。",
+                "bootstrapLoadingTitle": "檢查您的帳戶資訊",
+                "createNextMonth": "填寫下個月的工作申請",
+                "emptyDescription": "您可以先開啟並填寫下個月的申請時間表。",
+                "emptyTitle": "這個月的班表還沒有確定。",
+                "loadingDescription": "工作團隊和App班表正在按順序載入。",
+                "loadingTitle": "正在準備App工作螢幕。",
+                "noTeamsDescription": "要建立請求的輪班，請首先註冊您的輪班團隊。",
+                "noTeamsTitle": "還沒有註冊球隊",
+                "shiftErrorTitle": "無法檢索App班表。",
+                "shiftLoadingDescription": "正在為選定的團隊組織工作和申請細節。",
+                "shiftLoadingTitle": "正在載入申請時間表。",
+                "teamsErrorTitle": "無法載入工作團隊"
+            },
+            "panel": {
+                "accept": "驗收",
+                "acceptAll": "反映待機{{count}}",
+                "acceptAllAction": "全部反映",
+                "acceptedState": "反映",
+                "acceptedToast": "{{nurseName}} {{shiftType}} 預班申請已透過。",
+                "appliedCount": "反射{{count}}",
+                "appliedLabel": "反映",
+                "changeToAccept": "改變以反映",
+                "changeToReject": "更改為排除",
+                "dateLabel": "{{month}} 月 {{date}} 日",
+                "requestDateTimeLabel": "申請 {{date}}",
+                "dayShortLabel": "{{date}}天",
+                "dayType": {
+                    "holiday": "公眾假期",
+                    "saturday": "週六",
+                    "sunday": "星期日"
+                },
+                "editTitle": "預班申請",
+                "emptyDescriptionEdit": "提交的請求將顯示在此處，以便您可以立即檢視。",
+                "emptyDescriptionReadonly": "如果有App被反映，您可以立即在此面板上進行檢查。",
+                "emptyTitleEdit": "由護理師傳送\n沒有預班申請的要求。",
+                "emptyTitleReadonly": "尚未反映已申請的職位。",
+                "errorTitleEdit": "無法載入App詳細資訊",
+                "errorTitleReadonly": "無法檢索所反映的請求班次。",
+                "excludedCount": "不包括{{count}}",
+                "excludedLabel": "例外",
+                "groupDone": "稽核完成",
+                "groupPendingCount": "{{count}} 名稱需要稽核",
+                "groupRequestCaseCount": "{{count}}槍",
+                "groupRequestCount": "申請{{count}}名稱",
+                "loadingDescriptionEdit": "正在檢查提交的工作請求。",
+                "loadingDescriptionReadonly": "正在組織所反映的要求的輪班。",
+                "loadingTitleEdit": "正在載入App詳細資訊",
+                "loadingTitleReadonly": "正在檢索反映的請求班次。",
+                "monthShortLabel": "{{month}}月",
+                "notLinked": "沒有人員連結到表",
+                "nurseDateLabel": "{{nurseName}} / {{date}}일",
+                "overlapBadge": "同班{{count}}人",
+                "overlapSummary": "重疊 {{count}}",
+                "pendingCount": "備用{{count}}",
+                "pendingRequestCount": "待處理申請 {{count}}個",
+                "pendingEmptyDescription": "此處只能檢視未反映或排除的申請。",
+                "pendingEmptyTitle": "沒有待處理的申請",
+                "pendingLabel": "氣氛",
+                "processedEmptyTitle": "沒有已處理的申請",
+                "processedLabel": "已處理",
+                "readonlyTitle": "反映應用工作",
+                "reject": "拒絕",
+                "rejectAll": "不含備用{{count}}槍",
+                "rejectedState": "排除",
+                "rejectedToast": "{{nurseName}} {{shiftType}} 預班申請已拒絕。",
+                "showLess": "摺疊",
+                "showMore": "檢視更多{{count}} 槍",
+                "showNext": "下一個",
+                "showPrevious": "前",
+                "sortByDate": "按日期",
+                "sortByNurse": "按人物排序",
+                "sortByPending": "氣氛",
+                "sortByRequestOrder": "申請順序",
+                "sortOrder": "按日期",
+                "summaryLabel": "申請處理狀態",
+                "unresolvedCount": "{{count}} 待處理申請",
+                "viewModeLabel": "排序申請審查",
+                "viewOnCalendar": "檢視錶中的位置",
+                "weekday": {
+                    "friday": "星期五",
+                    "monday": "週一",
+                    "saturday": "週六",
+                    "sunday": "星期日",
+                    "thursday": "週四",
+                    "tuesday": "週二",
+                    "wednesday": "週三"
+                }
+            },
+            "toolbar": {
+                "editAction": "編輯",
+                "editingDescription": "單擊“應用”後，您將移至時間表位置。更改會自動儲存。",
+                "editTitle": "請確認您的工作申請。",
+                "noTeamsLabel": "如果你註冊了一個團隊，你就可以預班申請。",
+                "readonlyDescription": "如有必要，您可以透過編輯來重新調整請求的班表。",
+                "readonlyTitle": "{{month}} 月預班申請",
+                "settingsAction": "接收設定",
+                "saveAction": "節省",
+                "savedDescription": "您最近的更改已儲存。",
+                "saveError": "無法儲存您最近的更改。請再次儲存。",
+                "savingAction": "儲存...",
+                "savingDescription": "儲存最近的更改。"
+            }
+        },
+        "state": {
+            "emptyDescription": "請按照螢幕上的說明進行操作。",
+            "errorDescription": "請稍後重試。如果問題仍然存在，請重新整理並再次檢查。",
+            "loadingDescription": "請稍等。",
+            "loadingTitle": "準備螢幕",
+            "retry": "再試一次"
+        },
+        "wardAdmins": {
+            "accountFallback": "帳號#{{accountId}}",
+            "addAria": "新增管理員",
+            "emailPlaceholder": "電子郵件",
+            "emptyAdmins": "還沒有註冊管理員。",
+            "error": {
+                "emailInvalid": "請輸入有效的電子郵件。",
+                "emailRequired": "請輸入您的電子郵件。",
+                "maxAdmins": "病房管理員最多可以新增 {{count}} 人。"
+            },
+            "memberOnlyDescription": "只有註冊為病房成員的帳戶才能新增為管理員。",
+            "ownerOnlyDescription": "只有超級管理員才能更改管理員許可權。",
+            "registeredTitle": "註冊管理員",
+            "removeActiveAria": "刪除{{email}}管理員",
+            "removeReservedAria": "{{email}} 刪除預約管理器",
+            "role": {
+                "editor": "經理",
+                "owner": "超級管理員"
+            },
+            "state": {
+                "loadFailedTitle": "載入管理員列表失敗",
+                "noWardDescription": "建立新病房或進入已有病房後，您可以使用管理員管理。",
+                "noWardTitle": "沒有管理的病房。",
+                "retry": "再試一次",
+                "retryDescription": "請稍後重試。"
+            },
+            "title": "病房經理",
+            "toast": {
+                "createActive": "已新增管理員。",
+                "createFailed": "註冊管理員失敗。",
+                "createOwnerOnly": "只有超級管理員才能新增管理員。",
+                "createReserved": "已新增管理員。",
+                "duplicateEmail": "這是已註冊的管理員電子郵件。",
+                "ownerOnly": "只有最高管理員才能更改它。",
+                "removeActive": "已刪除管理員。",
+                "removeActiveFailed": "刪除管理員失敗。",
+                "removeReserved": "已刪除保留的管理員電子郵件。",
+                "removeReservedFailed": "無法刪除保留的管理員電子郵件。"
+            }
+        },
+        "wardInfoSettings": {
+            "hospitalName": "醫院名稱",
+            "hospitalNamePlaceholder": "請輸入醫院名稱",
+            "calendar": {
+                "birthdayDescription": "如果已輸入人員的出生日期，則會在病房日曆中顯示為全天生日日程。",
+                "birthdayInfoAria": "生日日曆說明",
+                "birthdaySwitchAria": "慶祝生日",
+                "birthdayTitle": "慶祝生日",
+                "sectionTitle": "附加功能",
+                "toast": {
+                    "saveSuccess": "日曆設定已儲存。",
+                    "updateFailed": "無法儲存日曆設定。"
+                }
+            },
+            "quitWard": "離開病房",
+            "save": "儲存更改",
+            "saving": "儲存...",
+            "sectionTitle": "區資訊",
+            "state": {
+                "loadFailedTitle": "載入病房資訊失敗",
+                "loadingTitle": "檢索病房資訊",
+                "noWardDescription": "進入病房或建立新病房後，您可以編輯病房設定。",
+                "noWardTitle": "需要連線病房。",
+                "retry": "再試一次",
+                "retryDescription": "請稍後重試。"
+            },
+            "title": "病房設定",
+            "toast": {
+                "saveFailed": "無法儲存病房資訊。",
+                "saveSuccess": "病房資訊已儲存。"
+            },
+            "validation": {
+                "invalid": "對於 {{label}}，只能輸入韓語/英語/日語/{{count}} 字元或更少的數字。",
+                "required": "請輸入{{label}}。"
+            },
+            "wardCode": "病房程式碼",
+            "wardName": "病房名稱",
+            "wardNamePlaceholder": "請輸入病房名稱"
+        },
+        "wardSettings": {
+            "addShiftType": "新增班次",
+            "constraints": {
+                "apply": "應用班表",
+                "column": {
+                    "rule": "限制條件",
+                    "status": "適用與否",
+                    "value": "標準"
+                },
+                "error": "載入約束失敗",
+                "exclude": "未應用班表",
+                "loading": "負載限制",
+                "noTeamsDescription": "要管理約束，首先建立一個工作團隊。",
+                "noTeamsTitle": "沒有註冊的工作團隊",
+                "teamDescription": "約束由每個工作團隊管理。",
+                "teamLabel": "目標團隊"
+            },
+            "description": {
+                "constraints": "管理工作規則。",
+                "shiftTypes": "管理班次型別。",
+                "restLeavePolicy": "管理目標休息天數和計入的班次型別。",
+                "requestReception": "管理申請班次的接收期間。"
+            },
+            "shiftTypes": {
+                "add": "新增班次型別",
+                "colorOptionAria": "選擇{{color}}",
+                "colorSelectAria": "{{name}} 顏色選擇",
+                "column": {
+                    "color": "顏色",
+                    "name": "作品名稱",
+                    "shortName": "縮寫",
+                    "type": "類別",
+                    "workTime": "時間",
+                    "rotation": "輪班制"
+                },
+                "deleteAria": "刪除{{name}}",
+                "editAria": "{{name}} 編輯班次型別",
+                "empty": "沒有註冊的班次型別",
+                "error": "無法載入班次型別",
+                "loading": "載入班次型別",
+                "newShiftName": "新的轉變",
+                "save": "節省",
+                "toast": {
+                    "addFailed": "新增班次型別失敗。",
+                    "deleteFailed": "刪除班次型別失敗。",
+                    "notFound": "這是已刪除或在最新列表中找不到的班次型別。",
+                    "saveSuccess": "您的工作設定已儲存。",
+                    "updateFailed": "無法編輯班次型別。",
+                    "usedTypeLocked": "在班次表中使用過的班次型別無法更改分類“其他工作”也無法更改縮寫。",
+                    "usedTypeDeleteLocked": "在班次表中使用過的班次型別無法刪除或停用。"
+                },
+                "validation": {
+                    "nameDuplicate": "請輸入不同的職位名稱。",
+                    "nameRequired": "請輸入您的工作名稱。",
+                    "shortNameDuplicate": "請輸入縮寫的第一個字母，不要重疊。",
+                    "shortNameFirstKey": "首字元請輸入日文、英文字母、數字或符號（如 -、.、_）。",
+                    "shortNameLength": "請輸入最多 2 個字元，不含空格。",
+                    "shortNameRequired": "請輸入縮寫。",
+                    "timeFormat": "請以 00:00 格式輸入時間。",
+                    "timeRequired": "請輸入時間。",
+                    "timeSame": "請輸入不同的開始/結束時間。",
+                    "rotationRequired": "請至少啟用兩班制或三班制中的一種。"
+                },
+                "rotation": {
+                    "modeTitle": "病房輪班制度",
+                    "modeDescription": "請選擇執行模式並配置所需班次型別。儲存時會檢查必需班次。",
+                    "threeTitle": "僅採用三班制",
+                    "threeDescription": "使用白班 · 小夜班 · 夜班。",
+                    "twoTitle": "僅採用兩班制",
+                    "twoDescription": "使用兩班制白班（07–19）· 夜班（19–07）。",
+                    "mixedTitle": "以三班制為主，必要時採用兩班制",
+                    "mixedDescription": "預設使用白班 · 小夜班 · 夜班，必要時也使用兩班制白班 · 夜班。",
+                    "threeBadge": "三班制",
+                    "twoBadge": "兩班制",
+                    "noneBadge": "不適用",
+                    "threeDay": "白班",
+                    "threeEvening": "小夜班",
+                    "threeNight": "夜班",
+                    "twoDay": "兩班制白班",
+                    "twoNight": "兩班制夜班",
+                    "twoItem": "兩班制{{classification}}"
+                }
+            },
+            "tabs": {
+                "constraints": "限制條件",
+                "shiftTypes": "班次型別",
+                "restLeavePolicy": "休息日規則",
+                "requestReception": "申請接收"
+            },
+            "title": "班次設定",
+            "type": {
+                "leave": "關閉",
+                "work": "在職的"
+            },
+            "requestReception": {
+                "loading": "正在載入申請接收設定",
+                "error": "無法載入申請接收設定。",
+                "sectionTitle": "下個月申請接收期間",
+                "toggleTitle": "限制申請接收期間",
+                "toggleDescription": "啟用後護理師只能在該期間內透過應用提交或編輯申請。",
+                "startDay": "開始日期",
+                "endDay": "結束日期",
+                "daySuffix": "日",
+                "notifyOnOpen": "開始通知",
+                "notifyOnOpenDescription": "接收開始時透過應用通知。",
+                "notifyBeforeDeadline": "截止前提醒",
+                "notifyBeforeDeadlineDescription": "截止前24小時透過應用通知。",
+                "notificationTitle": "通知設定",
+                "save": "儲存",
+                "summary": {
+                    "enabled": "每月從上月{{startDay}}日{{startTime}}到上月{{endDay}}日{{endTime}}接收。"
+                },
+                "validation": {
+                    "day": "請輸入1到31之間的日期。",
+                    "range": "結束時間必須晚於開始時間。"
+                },
+                "toast": {
+                    "saveSuccess": "已儲存申請接收設定。",
+                    "updateFailed": "無法儲存申請接收設定。"
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "是否使用休息日規則？"
+                },
+                "simpleSubtitle": "設定目標休息天數並選擇哪些休假型別計為休息日。",
+                "previewLabel": "{{month}}月目標休息天數",
+                "unit": {
+                    "day": "天"
+                },
+                "target": {
+                    "title": "目標休息天數",
+                    "weekly": {
+                        "title": "按周計算",
+                        "description": "按實際日曆計算每週休息日。",
+                        "stepperLabel": "每週休息天數"
+                    },
+                    "fixed": {
+                        "title": "按每月固定值計算",
+                        "description": "直接設定每月所需休息天數。",
+                        "stepperLabel": "每月目標休息天數"
+                    }
+                },
+                "holiday": {
+                    "title": "是否包含法定假日",
+                    "include": {
+                        "title": "包含假日",
+                        "description": "將法定假日計入每月休息目標。"
+                    },
+                    "exclude": {
+                        "title": "排除假日",
+                        "description": "僅將班表中的休假型別計為休息日。"
+                    },
+                    "country": "節假日所屬國家",
+                    "selectCountry": "選擇國家",
+                    "region": "節假日所屬地區",
+                    "selectRegion": "選擇地區",
+                    "national": "僅全國性節假日",
+                    "locationHint": "按所選國家和地區的公共假日計算。",
+                    "required": "請選擇節假日國家。英國還需選擇地區。",
+                    "previewDates": "{{month}}月計入{{count}}天節假日 · 節假日日期（未排除週休重疊）",
+                    "gb": {
+                        "ENG": "英格蘭",
+                        "WLS": "威爾士",
+                        "SCT": "蘇格蘭",
+                        "NIR": "北愛爾蘭",
+                        "ALD": "奧爾德尼"
+                    }
+                },
+                "carryOver": {
+                    "title": "結轉不足休息日",
+                    "toggle": "使用結轉",
+                    "toggleHint": "將本月不足的休息天數加入下月目標。",
+                    "offTitle": "不結轉",
+                    "offHint": "每個月獨立計算目標休息天數。"
+                },
+                "countedLeaves": {
+                    "sectionTitle": "計為休息日的專案",
+                    "hint": "只有選擇的休假型別會計為休息日。",
+                    "toggleAria": "切換{{name}}是否計入休息日規則",
+                    "empty": "還沒有休假型別。"
+                },
+                "save": "儲存",
+                "toast": {
+                    "saved": "已儲存休息日規則設定。"
+                },
+                "sync": {
+                    "loading": "正在載入病房共享設定。",
+                    "loadFailed": "無法載入設定，請重試。",
+                    "retry": "重試",
+                    "shared": "儲存的設定將由本病房所有管理員和裝置共享。",
+                    "legacyHint": "此瀏覽器中有舊設定。匯入後請確認節假日國家並儲存。",
+                    "importLegacy": "匯入舊設定",
+                    "conflict": "其他管理員已更改設定。請載入最新設定後重新編輯。您的更改尚未儲存。",
+                    "reload": "放棄編輯並載入最新設定",
+                    "saveFailed": "儲存失敗。編輯內容已保留，請重試。",
+                    "saving": "正在儲存…"
+                }
+            }
+        }
+    },
+    "shared": {
+        "api": {
+            "requestFailed": "有問題。請再試一次。",
+            "unknownError": "發生未知錯誤。"
+        },
+        "confirmActionDialog": {
+            "cancel": "消除",
+            "close": "關閉"
+        }
+    },
+    "widget": {
+        "requestTutorial": {
+            "listInfo": "您可以在這裡一目瞭然地看到護理師申請的輪班。",
+            "listTitle": "檢查右側的工作申請。",
+            "pendingInfo": "這裡一眼就能看到剩餘的空氣。",
+            "pendingTitle": "您只能檢視等待的申請。"
+        },
+        "tutorialInfoBox": {
+            "done": "完全的",
+            "next": "下一個",
+            "previous": "前"
+        },
+        "wardChat": {
+            "closeAria": "密切病房談話",
+            "conversationStart": "談話開始",
+            "deletedMessage": "此訊息已被刪除",
+            "inputPlaceholder": "輸入留言",
+            "loadOlder": "上一條訊息",
+            "openAria": "開放病房談話",
+            "openWithUnreadAria": "開啟病房談話，{{count}} 未讀訊息",
+            "sendAria": "傳送訊息",
+            "state": {
+                "emptyDescription": "留下您的第一條訊息。",
+                "emptyTitle": "還沒有對話。",
+                "loadFailed": "對話載入失敗。",
+                "retry": "再試一次"
+            },
+            "subtitle": "病房人員聊天",
+            "title": "病房談話",
+            "toast": {
+                "sendFailed": "訊息無法傳送。"
+            }
+        },
+        "wardCodeGuide": {
+            "benefits": {
+                "appApply": {
+                    "description": "當護理師透過 Dutying App傳送休假請求並請求工作請求時，\n護理師長在一個螢幕上檢查。",
+                    "title": "護理師直接從App申請"
+                },
+                "board": {
+                    "description": "您可以釋出公告、移交和指導帖子，檢視它們是否得到確認以及評論的流向。",
+                    "title": "還可以檢視公告欄通知。"
+                },
+                "chat": {
+                    "description": "直接與病房成員討論輪班變更、緊急公告和當日協調。",
+                    "title": "透過病房聊天快速調整"
+                },
+                "scheduleShare": {
+                    "description": "如果您釋出班表，聯網的護理師可以直接從App中檢查它。",
+                    "title": "立即分享您確認的班表。"
+                }
+            },
+            "closeAria": "關閉病房程式碼資訊",
+            "copyAria": "複製病房程式碼",
+            "description": "當護理師在 Dutying App中輸入此程式碼時，它會連結到病房。",
+            "participationGuide": "在 Dutying App中，點選加入病房\n只需輸入病房程式碼 Dutying 即可。",
+            "participationGuideAria": "檢視如何輸入 Dutying 病房程式碼",
+            "title": "請告知您的護理師病房程式碼。",
+            "toast": {
+                "copyFailed": "複製病房程式碼失敗。",
+                "copySuccess": "已複製病房程式碼。"
+            },
+            "wardCodeLabel": "{{wardTitle}} 區號"
+        }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "已確認需求與排班規則的對應關係。尚未建立計算方案。",
+        "unsupported": "需求中有部分條件目前尚未支援。",
+        "choosePeople": "要套用到誰？請指定班表中的所有人、特定小組，或護理師的姓名。",
+        "clarify": "請補充需求涉及的人員、日期或條件。",
+        "checkPeople": "請確認要套用此條件的護理師姓名。",
+        "checkDates": "請確認這個月要套用的日期。",
+        "checkShifts": "請確認要套用的班別代碼。",
+        "checkCount": "請確認次數，並指定為最少、最多或剛好該次數。",
+        "checkAggregation": "請確認是每人次數，還是小組總次數。",
+        "checkPriority": "請確認這是必要條件，還是可盡量滿足的偏好。",
+        "ready": "已準備好依確認的條件計算。",
+        "review": "繼續之前，請核對人員、日期與條件。",
+        "locked": "需求與固定班別衝突，請確認該筆排班。",
+        "expired": "班表或需求已變更，請重新確認。",
+        "removed": "已移除條件，請輸入新需求。",
+        "noChangesFound": "無法辨識要調整的內容，班表未變更。請確認需求。",
+        "runAndRoster": "已確認僅用於本次計算的需求及保留在此班表的條件。已儲存的條件仍會套用。",
+        "rosterOnly": "此條件會保留在目前班表中。如需儲存至下個月或設為小組常用規則，請使用條件設定。已儲存的條件仍會套用。",
+        "runOnly": "此次需求僅用於本次計算。若要在後續自動排班中沿用新條件，請在條件設定中儲存。已儲存的條件仍會套用。",
+        "selectedConditions": "本次只套用已選取的條件。",
+        "shiftEligibility": "若要變更護理師可排的班別，請到護理師設定修改。若要排本月的班，請告訴我班別和日期或次數。",
+        "confirmSpelling": "您指的是 {{names}} 嗎？確認護理師姓名後，我會繼續處理剛才的要求。"
     }
 };
 
@@ -13323,19 +16971,24 @@ export const th: TLocale = {
                 "viewMobile": "ดูเวอร์ชันมือถือ",
                 "webMakeSchedule": "สร้างตารางเวรบน Web",
                 "guideLink": "คู่มือจัดตารางเวรพยาบาล (ภาษาเกาหลี)",
-                "faqLink": "คำถามที่พบบ่อยของ Dutying (ภาษาเกาหลี)"
+                "faqLink": "คำถามที่พบบ่อยของ Dutying (ภาษาเกาหลี)",
+                "startFree": "เริ่มใช้งานฟรี"
             },
             "feature": {
                 "ai": {
                     "description": "เงื่อนไขที่มักพลาด\nตรวจและนำไปใช้ได้ทีละขั้นตอน",
                     "label": "เติมอัตโนมัติด้วย AI",
-                    "title": "ตารางเวรว่าง\nไม่ต้องเริ่มกรอกเองตั้งแต่ศูนย์"
+                    "title": "ตารางเวรว่าง\nไม่ต้องเริ่มกรอกเองตั้งแต่ศูนย์",
+                    "scheduleDetails": "เติมเวรที่ว่างตามจำนวนคนที่ต้องการ คำขอเวร และเวรที่กำหนดไว้ คุณตรวจสอบและแก้ไขร่างตารางได้"
                 },
                 "integration": {
                     "description": "พยาบาลส่งคำขอเวรผ่านแอปได้\nเมื่อยืนยันตารางแล้ว ระบบจะซิงก์ไปยังแอปทันที",
                     "highlight": "เชื่อมต่อ",
                     "label": "เชื่อมต่อ",
-                    "title": "เชื่อมต่อพยาบาล\nกับหอผู้ป่วยได้ง่ายขึ้น"
+                    "title": "เชื่อมต่อพยาบาล\nกับหอผู้ป่วยได้ง่ายขึ้น",
+                    "leaveDetails": "ดูตารางเวรและวันลาที่ใช้ไปหรือคงเหลือของพยาบาลแต่ละคน พร้อมจัดการวันหยุดในที่เดียว",
+                    "managementMessage": "จัดการวันหยุด วันลา และคำขอเวรได้ในที่เดียว",
+                    "appGuide": "ดูแอปสำหรับพยาบาล"
                 },
                 "review": {
                     "description": "จุดที่ต้องแก้\nดูได้ทันที พร้อมคำแนะนำในการปรับ",
@@ -13358,6 +17011,7 @@ export const th: TLocale = {
             },
             "header": {
                 "app": "App สำหรับพยาบาล",
+                "customerSupport": "ฝ่ายบริการลูกค้า",
                 "homeAria": "หน้าแรกของ Landing page Dutying",
                 "inquiry": "ติดต่อเรา",
                 "sectionAria": "เมนูนำทาง Landing page",
@@ -13368,7 +17022,8 @@ export const th: TLocale = {
                 "description": "สร้างตารางเวรได้ง่ายและรวดเร็วด้วย AI\nเชื่อมต่อกับพยาบาล เพื่อให้การจัดการหอผู้ป่วยง่ายขึ้น",
                 "phraseSchedule": "ตารางเวร,",
                 "phraseWard": "การจัดการหอผู้ป่วย,",
-                "suffix": "ง่ายขึ้นด้วย Dutying"
+                "suffix": "ง่ายขึ้นด้วย Dutying",
+                "freeOffer": "\u003cemphasis>เริ่มใช้งานฟรี\u003c/emphasis>ได้เลย!"
             },
             "imageAlt": {
                 "aiSchedule": "หน้าจอตารางเวรพยาบาลที่ AI สร้างอัตโนมัติ",
@@ -13383,6 +17038,9 @@ export const th: TLocale = {
                 "mobileHero": "หน้าจอตารางเวรในแอป Dutying",
                 "wardBoard": "หน้าจอบอร์ดประกาศของหอผู้ป่วย",
                 "webSchedule": "หน้าจอแก้ไขตารางเวรบน Dutying Web"
+            },
+            "schedulePreview": {
+                "workStreak": "ทำงานติดกัน {{actual}} วัน · สูงสุด {{expected}} วัน"
             },
             "mobileBenefits": {
                 "community": {
@@ -13425,7 +17083,72 @@ export const th: TLocale = {
                 "titleHighlight": "AI ใน 1 นาที",
                 "titleLine1": "ตารางเวรที่ซับซ้อน,",
                 "titleLine2Prefix": "ใช้",
-                "titleLine2Suffix": "ก็สร้างได้"
+                "titleLine2Suffix": "ก็สร้างได้",
+                "importTitle": "นำเข้าตารางเวรเดิมจากรูปภาพหรือ Excel",
+                "importDescription": "อัปโหลดรูปภาพหรือไฟล์ Excel ของตารางเวรเดิมเพื่อตั้งค่าหอผู้ป่วยได้ง่าย ๆ"
+            },
+            "workflow": {
+                "title": "ตารางเวรเดือนหน้า ต้องเริ่มกรอกใหม่ทีละช่องอีกไหม?",
+                "ai": {
+                    "problem": "เมื่อต้องกรอกเวรทีละช่อง",
+                    "solution": "สร้างตารางเวรใน 1 นาทีด้วย AI"
+                },
+                "ward-management": {
+                    "problem": "เมื่อจัดการวันหยุดและวันลาลำบาก",
+                    "solution": "จัดการวันหยุดและวันลาได้ง่าย"
+                },
+                "integration": {
+                    "problem": "เมื่อส่งคำขอและแชร์ประกาศได้ไม่สะดวก",
+                    "solution": "ขอวันหยุดและแชร์ประกาศผ่านแอปพยาบาล"
+                },
+                "excel": {
+                    "problem": "เมื่อมีตารางเวรเดิมอยู่แล้ว",
+                    "solution": "เริ่มได้ทันทีด้วยรูปภาพหรือไฟล์ Excel"
+                }
+            },
+            "usage": {
+                "total": "มีพยาบาล \u003ccount>10,000 คนขึ้นไป\u003c/count> ใช้ Dutying แล้ว!"
+            },
+            "adoption": {
+                "title": "สอบถามการเริ่มใช้งานในโรงพยาบาลและหอผู้ป่วย",
+                "navLink": "สอบถามการใช้งาน",
+                "formLegend": "ข้อมูลสำหรับขอเริ่มใช้งานในหอผู้ป่วย",
+                "fields": {
+                    "hospitalName": "ชื่อโรงพยาบาล",
+                    "wardName": "ชื่อหอผู้ป่วย",
+                    "contact": "ช่องทางติดต่อผู้รับผิดชอบ"
+                },
+                "contactPlaceholder": "เบอร์โทรศัพท์หรืออีเมล",
+                "contactHint": "กรุณากรอกเบอร์โทรศัพท์หรืออีเมล",
+                "validation": {
+                    "hospitalName": "กรุณากรอกชื่อโรงพยาบาล",
+                    "wardName": "กรุณากรอกชื่อหอผู้ป่วย",
+                    "contact": "กรุณาตรวจสอบเบอร์โทรศัพท์หรืออีเมล"
+                },
+                "privacyConsent": "\u003cconsent>ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลข้างต้นเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งานตาม\u003c/consent>\u003cpolicy>นโยบายความเป็นส่วนตัว\u003c/policy> (จำเป็น)",
+                "sending": "กำลังส่ง…",
+                "acceptedTitle": "เราได้รับคำถามของคุณแล้ว",
+                "acceptedDescription": "เราจะติดต่อกลับผ่านช่องทางที่คุณให้ไว้เพื่อแนะนำการเริ่มใช้งานในหอผู้ป่วย",
+                "submitError": "ยืนยันการรับคำขอไม่ได้ กรุณาลองอีกครั้งหรือติดต่อเราทางอีเมล",
+                "emailLabel": "สอบถามการเริ่มใช้งาน",
+                "emailFallback": "คุณสามารถสอบถามการเริ่มใช้งานทางอีเมลได้",
+                "emailSubject": "สอบถามการเริ่มใช้งาน Dutying ในโรงพยาบาลและหอผู้ป่วย",
+                "emailConsent": "ฉันยินยอมให้เก็บรวบรวมและใช้ข้อมูลส่วนบุคคลเพื่อให้คำแนะนำเกี่ยวกับการเริ่มใช้งาน"
+            },
+            "footer": {
+                "plusPlan": "แพ็กเกจ Plus",
+                "subscriptionTerms": "เงื่อนไขการสมัครสมาชิก",
+                "refundPolicy": "นโยบายการคืนเงิน",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "กำลังเตรียมข้อมูลผู้ประกอบการและการสมัครสมาชิกออนไลน์",
+                    "representative": "ผู้แทน",
+                    "registrationNumber": "เลขทะเบียนธุรกิจ",
+                    "address": "ที่อยู่ธุรกิจ",
+                    "phone": "ฝ่ายบริการลูกค้า",
+                    "email": "อีเมล",
+                    "ecommerceNumber": "เลขทะเบียนพาณิชย์อิเล็กทรอนิกส์"
+                }
             }
         },
         "login": {
@@ -15072,7 +18795,8 @@ export const th: TLocale = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "ภาษาที่แสดง",
             "loadingDescription": "ตรวจสอบข้อมูลบัญชีและวอร์ดของคุณ",
@@ -15740,6 +19464,30 @@ export const th: TLocale = {
             },
             "wardCodeLabel": "รหัสวอร์ด {{wardTitle}}"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "ตรวจแล้วว่าคำขอตรงกับเงื่อนไขใด ระบบยังไม่ได้สร้างแผนการคำนวณ",
+        "unsupported": "คำขอมีเงื่อนไขบางข้อที่ยังไม่รองรับ",
+        "choosePeople": "ต้องการใช้กับใครบ้าง โปรดระบุทุกคนในตารางเวร กลุ่มที่ต้องการ หรือชื่อพยาบาล",
+        "clarify": "โปรดระบุเพิ่มเติมว่าคำขอเกี่ยวข้องกับใคร ช่วงเวลาใด หรือมีเงื่อนไขอะไร",
+        "checkPeople": "โปรดตรวจสอบชื่อพยาบาลที่จะใช้เงื่อนไขนี้",
+        "checkDates": "โปรดยืนยันว่าจะใช้เงื่อนไขนี้กับวันที่ใดในเดือนนี้",
+        "checkShifts": "โปรดตรวจสอบรหัสเวรที่จะใช้เงื่อนไขนี้",
+        "checkCount": "โปรดยืนยันจำนวนครั้งและระบุว่าเป็นขั้นต่ำ ขั้นสูง หรือจำนวนที่แน่นอน",
+        "checkAggregation": "โปรดยืนยันว่าเป็นจำนวนต่อคนหรือยอดรวมของกลุ่ม",
+        "checkPriority": "โปรดยืนยันว่าเป็นเงื่อนไขบังคับหรือความต้องการที่ทำได้เมื่อเป็นไปได้",
+        "ready": "พร้อมคำนวณตามเงื่อนไขที่ยืนยันแล้ว",
+        "review": "ตรวจสอบบุคคล ช่วงเวลา และเงื่อนไขก่อนดำเนินการต่อ",
+        "locked": "คำขอขัดกับเวรที่ล็อกไว้ โปรดตรวจสอบเวรดังกล่าว",
+        "expired": "ตารางเวรหรือคำขอเปลี่ยนไป โปรดตรวจสอบอีกครั้ง",
+        "removed": "ลบเงื่อนไขแล้ว โปรดพิมพ์คำขอใหม่",
+        "noChangesFound": "ไม่พบสิ่งที่ต้องการปรับ ตารางเวรยังคงเดิม โปรดตรวจสอบคำขอ",
+        "runAndRoster": "ตรวจคำขอสำหรับรอบนี้และเงื่อนไขที่จะเก็บไว้ในตารางเวรนี้แล้ว เงื่อนไขที่บันทึกไว้ยังมีผล",
+        "rosterOnly": "เงื่อนไขนี้จะยังมีผลในตารางเวรนี้ หากต้องการใช้เดือนหน้าหรือตั้งเป็นกฎประจำทีม ให้บันทึกในการตั้งค่าเงื่อนไข เงื่อนไขที่บันทึกไว้ยังมีผล",
+        "runOnly": "คำขอนี้มีผลเฉพาะรอบนี้ หากต้องการใช้เงื่อนไขใหม่ในการจัดเวรอัตโนมัติครั้งต่อไป ให้บันทึกในการตั้งค่าเงื่อนไข เงื่อนไขที่บันทึกไว้ยังมีผล",
+        "selectedConditions": "ใช้เฉพาะเงื่อนไขที่เลือกในรอบนี้",
+        "shiftEligibility": "หากต้องการเปลี่ยนประเภทเวรที่พยาบาลขึ้นได้ ให้แก้ไขในการตั้งค่าพยาบาล หากต้องการจัดเวรเดือนนี้ โปรดระบุเวรและวันที่หรือจำนวนครั้ง",
+        "confirmSpelling": "คุณหมายถึง {{names}} ใช่ไหม ยืนยันชื่อพยาบาลเพื่อให้ฉันดำเนินการตามคำขอก่อนหน้าต่อได้"
     }
 };
 
@@ -16431,71 +20179,76 @@ export const vi: TLocale = {
             "appFeature": {
                 "community": {
                     "description": "Chia sẻ ẩn danh các câu hỏi, lời khuyên lâm sàng và những mối quan ngại khó nói ra.",
-                    "highlight": "Những câu chuyện có thật",
-                    "label": "Nói chuyện điều dưỡng",
-                    "title": "Những câu chuyện có thật từ các điều dưỡng,\nở một nơi"
+                    "highlight": "chia sẻ chuyện nghề",
+                    "label": "Cộng đồng điều dưỡng",
+                    "title": "Nơi điều dưỡng\nchia sẻ chuyện nghề"
                 },
                 "home": {
-                    "description": "Kiểm tra lịch trực tiếp từ các vật dụng mà không cần mở ứng dụng.",
-                    "highlightPersonal": "kế hoạch cá nhân",
-                    "highlightSchedule": "Ca làm việc",
+                    "description": "Xem nhanh lịch trực qua tiện ích trên màn hình chính, không cần mở ứng dụng.",
+                    "highlightPersonal": "lịch cá nhân",
+                    "highlightSchedule": "lịch trực",
                     "label": "Trang chủ",
-                    "title": "Ca làm việc và\nkế hoạch cá nhân cùng nhau"
+                    "title": "Xem lịch trực và lịch cá nhân\nở cùng một nơi"
                 },
                 "ward": {
-                    "description": "Phối hợp Lịch trực theo ca với ít việc phải qua lại hơn.",
-                    "highlight": "Kết nối với khoa của bạn",
+                    "description": "Dễ dàng xem lịch và phối hợp ca trực với đồng nghiệp.",
+                    "highlight": "Kết nối với khoa",
                     "label": "Khoa",
-                    "title": "Kết nối với khoa của bạn\nvà xem lịch của đội"
+                    "title": "Kết nối với khoa\nvà xem lịch trực của đồng nghiệp"
                 }
             },
             "appSection": {
                 "pill": "ứng dụng",
-                "titleLine1": "Lịch ca",
-                "titleLine2": "và cập nhật khoa cùng nhau"
+                "titleLine1": "Từ xem lịch trực",
+                "titleLine2": "đến phối hợp trong khoa"
             },
             "common": {
                 "appDownload": "Tải xuống ứng dụng",
                 "appSchedule": "Kiểm tra lịch trong ứng dụng",
-                "copyright": "ⓒ Nhiệm vụ 2026. Mọi quyền được bảo lưu",
+                "copyright": "ⓒ 2026 Dutying. Mọi quyền được bảo lưu.",
                 "languageSelect": "Chọn ngôn ngữ",
                 "login": "Đăng nhập",
                 "logout": "Đăng xuất",
-                "makeSchedule": "Tạo lịch",
+                "makeSchedule": "Tạo lịch trực",
                 "profile": "Tài khoản",
-                "profileClose": "Đóng tài khoản",
-                "profileMenu": "Trình đơn hồ sơ",
+                "profileClose": "Đóng menu tài khoản",
+                "profileMenu": "Menu tài khoản",
                 "schedule": "Lịch trực",
                 "tryDemo": "Hãy thử bản demo",
                 "viewDesktop": "Xem phiên bản máy tính để bàn",
                 "viewMobile": "Xem phiên bản di động",
-                "webMakeSchedule": "Tạo lịch trên web",
+                "webMakeSchedule": "Tạo lịch trực trên web",
                 "guideLink": "Hướng dẫn xếp lịch điều dưỡng (tiếng Hàn)",
-                "faqLink": "Câu hỏi thường gặp về Dutying (tiếng Hàn)"
+                "faqLink": "Câu hỏi thường gặp về Dutying (tiếng Hàn)",
+                "startFree": "Bắt đầu miễn phí"
             },
             "feature": {
                 "ai": {
-                    "description": "Xem lại các điều kiện dễ bỏ lỡ\ntừng bước và áp dụng chúng.",
-                    "label": "Tự động điền AI",
-                    "title": "Không cần phải điền\nlịch trống từ đầu"
+                    "description": "Kiểm tra và áp dụng từng điều kiện xếp lịch\nđể tránh bỏ sót.",
+                    "label": "Xếp lịch bằng AI",
+                    "title": "Không cần xếp lịch trực\ntừ đầu",
+                    "scheduleDetails": "Điền các ô trống theo nhu cầu nhân sự, yêu cầu ca và ca cố định. Bạn có thể xem lại và chỉnh sửa bản nháp."
                 },
                 "integration": {
-                    "description": "điều dưỡng có thể gửi yêu cầu trong ứng dụng.\nlịch đã được xác nhận sẽ được gửi ngay lập tức.",
+                    "description": "Điều dưỡng có thể gửi nguyện vọng ca trực qua ứng dụng.\nLịch trực sẽ được gửi ngay sau khi xác nhận.",
                     "highlight": "Kết nối",
-                    "label": "Quy trình làm việc được kết nối",
-                    "title": "Kết nối điều dưỡng\nvới khoa"
+                    "label": "Kết nối khoa",
+                    "title": "Kết nối điều dưỡng\nvới khoa",
+                    "leaveDetails": "Xem lịch trực, số ngày phép đã dùng và còn lại của từng điều dưỡng, đồng thời quản lý ngày nghỉ.",
+                    "managementMessage": "Quản lý ngày nghỉ, phép năm và yêu cầu ca trực ở một nơi.",
+                    "appGuide": "Khám phá ứng dụng điều dưỡng"
                 },
                 "review": {
-                    "description": "Xem những gì cần chú ý\nvà xem xét các bản sửa lỗi được đề xuất.",
-                    "label": "Tự động điền AI",
-                    "title": "Tìm ca sai\nvà sửa chúng một cách nhanh chóng"
+                    "description": "Xem ngay ca nào cần điều chỉnh\nvà tham khảo gợi ý sửa.",
+                    "label": "Kiểm tra lịch trực",
+                    "title": "Phát hiện và sửa ca trực\nkhông đúng điều kiện"
                 },
                 "ward": {
                     "description": "Từ những thông báo phải đọc đến những cập nhật nhanh chóng,\ngiữ mọi thứ ở một nơi.",
-                    "highlightNurse": "điều dưỡng khoa",
+                    "highlightNurse": "điều dưỡng trong khoa",
                     "highlightShare": "Chia sẻ",
-                    "label": "Ban",
-                    "title": "Chia sẻ điều điều dưỡng khoa\ncần biết"
+                    "label": "Bảng tin",
+                    "title": "Chia sẻ thông tin cần thiết\nvới điều dưỡng trong khoa"
                 }
             },
             "finalCta": {
@@ -16505,18 +20258,20 @@ export const vi: TLocale = {
                 "titleLine2": "để quản lý khoa của bạn"
             },
             "header": {
-                "app": "ứng dụng điều dưỡng",
+                "app": "Ứng dụng điều dưỡng",
+                "customerSupport": "Hỗ trợ khách hàng",
                 "homeAria": "Về trang chủ Dutying",
                 "inquiry": "Liên hệ với chúng tôi",
-                "sectionAria": "Đoạn hạ cánh",
-                "web": "web quản lý"
+                "sectionAria": "Điều hướng trang chủ",
+                "web": "Web quản lý lịch trực"
             },
             "hero": {
-                "ariaLabel": "Thay đổi lịch, thực hiện dễ dàng hơn với Dutying",
-                "description": "Tạo lịch nhanh hơn với AI,\nvà kết nối các điều dưỡng để đơn giản hóa hoạt động của khoa.",
-                "phraseSchedule": "lịch thay đổi,",
-                "phraseWard": "Hoạt động của khoa,",
-                "suffix": "trở nên dễ dàng hơn với Dutying"
+                "ariaLabel": "Xếp lịch trực và quản lý khoa dễ dàng hơn với Dutying",
+                "description": "Xếp lịch trực nhanh hơn với AI,\nkết nối với điều dưỡng để quản lý khoa dễ dàng hơn.",
+                "phraseSchedule": "Xếp lịch trực",
+                "phraseWard": "Quản lý khoa",
+                "suffix": "dễ dàng hơn với Dutying",
+                "freeOffer": "\u003cemphasis>Bắt đầu miễn phí\u003c/emphasis> ngay!"
             },
             "imageAlt": {
                 "aiSchedule": "Màn hình lịch trực điều dưỡng do AI tự động tạo",
@@ -16524,13 +20279,16 @@ export const vi: TLocale = {
                 "appHome": "Màn hình lịch trực trên trang chủ ứng dụng Dutying",
                 "appHomeCalendar": "Lịch cá nhân Dutying",
                 "appHomeWidget": "Tiện ích lịch trực Dutying",
-                "appLogo": "Hình ảnh logo ứng dụng nghĩa vụ",
+                "appLogo": "Logo ứng dụng Dutying",
                 "appScreen": "Màn hình ứng dụng",
                 "appWard": "Màn hình lịch trực đồng nghiệp trong khoa trên ứng dụng Dutying",
                 "integration": "Một điều dưỡng đang xem xét các Yêu cầu ca trực trong ứng dụng",
                 "mobileHero": "Màn hình lịch ca làm việc của ứng dụng trực",
                 "wardBoard": "Màn hình bảng khoa",
                 "webSchedule": "Màn hình soạn lịch web Dutying"
+            },
+            "schedulePreview": {
+                "workStreak": "Làm việc {{actual}} ngày liền · Tối đa {{expected}} ngày"
             },
             "mobileBenefits": {
                 "community": {
@@ -16551,29 +20309,94 @@ export const vi: TLocale = {
                 "benefitsTitleLine1": "Được xây dựng xung quanh những gì",
                 "benefitsTitleLine2": "điều dưỡng cần mỗi ngày",
                 "communityAria": "Chia sẻ mối quan tâm về nghề nghiệp, lâm sàng và hàng ngày trong Dutying",
-                "communityLine1": "Nói chuyện nghề nghiệp, phòng khám,",
-                "communityLine2": "và những mối quan tâm hàng ngày",
-                "description": "Giữ các ca làm việc, yêu cầu, ngày nghỉ và cập nhật khoa cùng nhau trong ứng dụng.",
+                "communityLine1": "Chuyện nghề và kinh nghiệm lâm sàng",
+                "communityLine2": "cùng chia sẻ trên Dutying",
+                "description": "Xem lịch trực, gửi nguyện vọng ca và ngày nghỉ, nhận thông báo từ khoa ngay trên ứng dụng.",
                 "downloadEyebrow": "Tải Dutying",
                 "downloadTitleLine1": "Đừng bỏ lỡ ca làm việc của bạn",
                 "downloadTitleLine2": "hoặc cập nhật khoa",
-                "requestAria": "Gửi yêu cầu ca và ngày nghỉ dễ dàng hơn",
-                "requestLine1": "Gửi ca và ngày nghỉ",
-                "requestLine2": "yêu cầu dễ dàng hơn",
-                "scheduleAria": "Kiểm tra ca làm việc của bạn ngay lập tức trong Dutying",
-                "scheduleLine1": "Kiểm tra ca làm việc của bạn",
-                "scheduleLine2": "ngay lập tức trong Dutying",
-                "wardAria": "Nhận cập nhật khoa ngay trong Dutying",
-                "wardLine1": "Nhận thông tin cập nhật về khoa",
-                "wardLine2": "ngay trong Dutying"
+                "requestAria": "Dễ dàng đăng ký ca trực và ngày nghỉ",
+                "requestLine1": "Đăng ký ca trực",
+                "requestLine2": "và ngày nghỉ",
+                "scheduleAria": "Kiểm tra ca làm việc của bạn ngay trên Dutying",
+                "scheduleLine1": "Xem lịch trực",
+                "scheduleLine2": "ngay trên Dutying",
+                "wardAria": "Nhận cập nhật khoa ngay trên Dutying",
+                "wardLine1": "Nhận thông báo từ khoa",
+                "wardLine2": "ngay trên Dutying"
             },
-            "title": "lịch trực\nBây giờ dễ dàng hơn!",
+            "title": "Xếp lịch trực\ndễ dàng hơn!",
             "webSection": {
                 "pill": "Web",
                 "titleHighlight": "1 phút với AI",
-                "titleLine1": "lịch phức tạp,",
-                "titleLine2Prefix": "bây giờ được xây dựng trong",
-                "titleLine2Suffix": "là xong"
+                "titleLine1": "Lịch trực phức tạp?",
+                "titleLine2Prefix": "Tạo lịch trong",
+                "titleLine2Suffix": "thật dễ dàng",
+                "importTitle": "Nhập lịch trực hiện có từ ảnh hoặc Excel",
+                "importDescription": "Tải ảnh hoặc tệp Excel của lịch trực đang dùng lên để thiết lập khoa nhanh chóng."
+            },
+            "workflow": {
+                "title": "Lịch trực tháng tới, bạn lại phải điền từ đầu?",
+                "ai": {
+                    "problem": "Khi phải điền từng ô trống",
+                    "solution": "Tạo lịch trực trong 1 phút với AI"
+                },
+                "ward-management": {
+                    "problem": "Khi khó quản lý ngày nghỉ và phép năm",
+                    "solution": "Quản lý ngày nghỉ và phép năm dễ dàng"
+                },
+                "integration": {
+                    "problem": "Khi việc gửi yêu cầu và chia sẻ còn bất tiện",
+                    "solution": "Xin nghỉ và chia sẻ thông báo qua ứng dụng điều dưỡng"
+                },
+                "excel": {
+                    "problem": "Khi đã có lịch trực",
+                    "solution": "Bắt đầu ngay với ảnh hoặc tệp Excel"
+                }
+            },
+            "usage": {
+                "total": "Đã có \u003ccount>10.000+\u003c/count> điều dưỡng sử dụng Dutying!"
+            },
+            "adoption": {
+                "title": "Tư vấn triển khai tại bệnh viện và khoa",
+                "navLink": "Tư vấn triển khai",
+                "formLegend": "Thông tin đăng ký triển khai tại khoa",
+                "fields": {
+                    "hospitalName": "Tên bệnh viện",
+                    "wardName": "Tên khoa",
+                    "contact": "Liên hệ người phụ trách"
+                },
+                "contactPlaceholder": "Số điện thoại hoặc email",
+                "contactHint": "Vui lòng nhập số điện thoại hoặc địa chỉ email.",
+                "validation": {
+                    "hospitalName": "Vui lòng nhập tên bệnh viện.",
+                    "wardName": "Vui lòng nhập tên khoa.",
+                    "contact": "Vui lòng kiểm tra số điện thoại hoặc địa chỉ email."
+                },
+                "privacyConsent": "\u003cconsent>Tôi đồng ý cho thu thập và sử dụng thông tin trên để tư vấn triển khai theo \u003c/consent>\u003cpolicy>Chính sách quyền riêng tư\u003c/policy>. (Bắt buộc)",
+                "sending": "Đang gửi…",
+                "acceptedTitle": "Chúng tôi đã nhận được yêu cầu của bạn.",
+                "acceptedDescription": "Chúng tôi sẽ liên hệ theo thông tin bạn cung cấp để hướng dẫn triển khai tại khoa.",
+                "submitError": "Chưa thể xác nhận đã nhận được yêu cầu. Vui lòng thử lại hoặc liên hệ qua email.",
+                "emailLabel": "Liên hệ tư vấn triển khai",
+                "emailFallback": "Bạn cũng có thể hỏi về việc triển khai qua email.",
+                "emailSubject": "Yêu cầu tư vấn triển khai Dutying tại bệnh viện và khoa",
+                "emailConsent": "Tôi đồng ý với việc thu thập và sử dụng thông tin cá nhân để tư vấn triển khai."
+            },
+            "footer": {
+                "plusPlan": "Gói Plus",
+                "subscriptionTerms": "Điều khoản đăng ký",
+                "refundPolicy": "Chính sách hoàn tiền",
+                "seller": {
+                    "brand": "Dutying",
+                    "pending": "Thông tin doanh nghiệp và đăng ký trực tuyến đang được chuẩn bị.",
+                    "representative": "Người đại diện",
+                    "registrationNumber": "Mã số đăng ký kinh doanh",
+                    "address": "Địa chỉ kinh doanh",
+                    "phone": "Hỗ trợ khách hàng",
+                    "email": "Email",
+                    "ecommerceNumber": "Số đăng ký thương mại điện tử"
+                }
             }
         },
         "login": {
@@ -16756,7 +20579,7 @@ export const vi: TLocale = {
                 "undo": "Hoàn tác",
                 "redo": "Làm lại",
                 "cannotAutofillYet": "Dữ liệu lịch vẫn đang tải. Vui lòng thử lại trong thời gian ngắn.",
-                "confirm": "Xác nhận lịch",
+                "confirm": "Xác nhận lịch trực",
                 "description": {
                     "error": "Yêu cầu AI không thành công. lịch hiện tại vẫn giữ nguyên và bạn có thể thử lại ngay lập tức.",
                     "idle": "Bạn có thể bắt đầu tự động điền AI với các điều kiện từ các bước trước đó.",
@@ -16769,7 +20592,7 @@ export const vi: TLocale = {
                 },
                 "empty": "Không thể tải dữ liệu lịch",
                 "error": "Không tải được lịch trực",
-                "firstFill": "Tự động điền",
+                "firstFill": "Xếp lịch bằng AI",
                 "fixedOnly": "Chỉ cố định",
                 "fixedDisplay": "Hiển thị cố định",
                 "fixedDisplayHidden": "Đã ẩn ca cố định",
@@ -16854,8 +20677,8 @@ export const vi: TLocale = {
                     "success": "Điền đầy đủ"
                 },
                 "toolbarHint": "Điền vào các ô trống dựa trên các quy tắc và ca được yêu cầu.",
-                "toolbarSubTitle": "Sử dụng tính năng Tự động điền AI để điền vào các ô trống chỉ trong một lần.",
-                "toolbarTitle": "Điền và xác nhận lịch",
+                "toolbarSubTitle": "Dùng AI để điền các ca còn trống trong một lần.",
+                "toolbarTitle": "Điền và xác nhận lịch trực",
                 "validationStatus": {
                     "checking": "Kiểm tra các ràng buộc"
                 },
@@ -16882,7 +20705,7 @@ export const vi: TLocale = {
                     "error": "Quan trọng {{count}}",
                     "warning": "Chung {{count}}"
                 },
-                "violationDialogAria": "Các vấn đề về ràng buộc: {{count}}",
+                "violationDialogAria": "{{count}} lỗi xếp lịch",
                 "violationLevel": {
                     "error": "Quan trọng",
                     "warning": "chung"
@@ -17477,7 +21300,7 @@ export const vi: TLocale = {
             "steps": {
                 "aiAutofill": {
                     "caption": "Điền vào các ô còn lại và xác nhận lịch",
-                    "label": "Tự động điền"
+                    "label": "Tạo lịch trực"
                 },
                 "confirmedShifts": {
                     "caption": "Xem lại lịch đã hoàn thành",
@@ -17487,21 +21310,21 @@ export const vi: TLocale = {
                     "caption": "Đặt quy tắc lập kế hoạch cứng và mềm",
                     "introDescription": "Quy tắc cứng phải được đáp ứng\nQuy tắc mềm được áp dụng khi có thể",
                     "introTitle": "Xem lại các quy tắc lập kế hoạch",
-                    "label": "Quy tắc"
+                    "label": "Điều kiện xếp lịch"
                 },
                 "fixedShifts": {
                     "caption": "Khóa ca không nên thay đổi",
-                    "label": "ca cố định"
+                    "label": "Ca cố định"
                 },
                 "requests": {
                     "caption": "Chấp nhận hoặc từ chối các yêu cầu mong muốn và nghỉ",
-                    "label": "Ca làm việc được yêu cầu"
+                    "label": "Xác nhận nguyện vọng"
                 },
                 "workers": {
                     "caption": "Xem lại ai sẽ được xếp và theo thứ tự nào",
                     "introDescription": "Kiểm tra xem không có ai bị thiếu\nThực hiện các thay đổi từ Quản lý nhân viên nếu cần",
                     "introTitle": "Đánh giá bao gồm công nhân",
-                    "label": "Công nhân"
+                    "label": "Xác nhận nhân sự"
                 }
             },
             "tutorial": {
@@ -18220,7 +22043,8 @@ export const vi: TLocale = {
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
                 "vi": "Tiếng Việt (Vietnamese)",
-                "zh": "简体中文 (Chinese)"
+                "zh": "简体中文 (Chinese)",
+                "zhTW": "繁體中文（台灣）"
             },
             "languageLabel": "Ngôn ngữ hiển thị",
             "loadingDescription": "Kiểm tra thông tin tài khoản và khoa của bạn.",
@@ -18888,6 +22712,30 @@ export const vi: TLocale = {
             },
             "wardCodeLabel": "{{wardTitle}} mã khoa"
         }
+    },
+    "aiChatServerCopy": {
+        "conditionsChecked": "Đã kiểm tra yêu cầu theo các quy tắc. Kế hoạch tính toán chưa được tạo.",
+        "unsupported": "Yêu cầu có một số điều kiện hiện chưa được hỗ trợ.",
+        "choosePeople": "Bạn muốn áp dụng cho ai? Hãy cho biết tất cả người trong lịch trực, một nhóm cụ thể hoặc tên điều dưỡng.",
+        "clarify": "Hãy cho biết thêm về người, thời gian hoặc điều kiện trong yêu cầu.",
+        "checkPeople": "Hãy kiểm tra tên điều dưỡng cần áp dụng điều kiện này.",
+        "checkDates": "Hãy xác nhận những ngày trong tháng này cần áp dụng.",
+        "checkShifts": "Hãy xác nhận mã ca trực cần áp dụng.",
+        "checkCount": "Hãy xác nhận số lần và cho biết đó là mức tối thiểu, tối đa hay chính xác.",
+        "checkAggregation": "Hãy xác nhận số lần tính cho mỗi người hay cả nhóm.",
+        "checkPriority": "Hãy xác nhận đây là điều kiện bắt buộc hay nguyện vọng.",
+        "ready": "Sẵn sàng tính toán theo các điều kiện đã xác nhận.",
+        "review": "Hãy kiểm tra người, thời gian và điều kiện trước khi tiếp tục.",
+        "locked": "Yêu cầu xung đột với một ca đã cố định. Hãy kiểm tra ca đó.",
+        "expired": "Lịch trực hoặc yêu cầu đã thay đổi. Vui lòng kiểm tra lại.",
+        "removed": "Đã xóa điều kiện. Hãy nhập yêu cầu mới.",
+        "noChangesFound": "Không xác định được nội dung cần điều chỉnh. Lịch trực vẫn giữ nguyên. Vui lòng kiểm tra yêu cầu.",
+        "runAndRoster": "Đã kiểm tra yêu cầu cho lần tính này và các điều kiện được giữ trong lịch trực này. Các điều kiện đã lưu vẫn được áp dụng.",
+        "rosterOnly": "Điều kiện này vẫn có hiệu lực trong lịch trực hiện tại. Để lưu cho tháng sau hoặc làm quy tắc của nhóm, hãy dùng phần cài đặt điều kiện. Các điều kiện đã lưu vẫn được áp dụng.",
+        "runOnly": "Yêu cầu này chỉ áp dụng cho lần tính này. Để dùng lại điều kiện mới ở lần xếp lịch tự động sau, hãy lưu trong cài đặt điều kiện. Các điều kiện đã lưu vẫn được áp dụng.",
+        "selectedConditions": "Lần này chỉ áp dụng các điều kiện đã chọn.",
+        "shiftEligibility": "Để đổi loại ca mà điều dưỡng có thể trực, hãy chỉnh trong phần cài đặt điều dưỡng. Nếu muốn phân ca trong tháng này, hãy cho biết ca trực và ngày hoặc số ca.",
+        "confirmSpelling": "Bạn muốn nói đến {{names}} phải không? Hãy xác nhận tên điều dưỡng để tôi tiếp tục xử lý yêu cầu trước đó."
     }
 };
 
@@ -18896,6 +22744,7 @@ export const resources = {
     en: {translation: en},
     ja: {translation: ja},
     zh: {translation: zh},
+    'zh-TW': {translation: zhTW},
     th: {translation: th},
     vi: {translation: vi},
 } as const;

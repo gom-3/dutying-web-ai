@@ -37,10 +37,11 @@ export function Section({
     );
 }
 
-export function Field({label, children, help}: {label: string; children: ReactNode; help?: ReactNode}) {
+export function Field({label, children, help, suffix}: {label: string; children: ReactNode; help?: ReactNode; suffix?: ReactNode}) {
     const generatedId = useId();
     const control = isValidElement<{id?: string}>(children) ? children : undefined;
     const id = control?.props.id ?? generatedId;
+    const input = control ? cloneElement(control as ReactElement<{id?: string}>, {id}) : children;
 
     return (
         <div className="workspace-field">
@@ -48,7 +49,16 @@ export function Field({label, children, help}: {label: string; children: ReactNo
                 <label htmlFor={id}>{label}</label>
                 {help ? <InfoTip label={`${label} 도움말`}>{help}</InfoTip> : null}
             </div>
-            {control ? cloneElement(control as ReactElement<{id?: string}>, {id}) : children}
+            {suffix != null ? (
+                <div className="workspace-input-with-suffix">
+                    {input}
+                    <span className="workspace-field-suffix" aria-hidden="true">
+                        {suffix}
+                    </span>
+                </div>
+            ) : (
+                input
+            )}
         </div>
     );
 }

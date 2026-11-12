@@ -1,10 +1,12 @@
-const billingPath = '/workspace/billing-return';
+export const isBillingReturnPath = (path: string) => path === '/workspace/billing-return' || path === '/billing/billing-return';
 
 let captured: URLSearchParams | undefined;
 
 /** Keep single-use authorization in memory, never in storage or a login return URL. */
 export function captureBillingReturnPayload() {
-    if (window.location.pathname !== billingPath || !window.location.search) return;
+    const billingPath = window.location.pathname;
+
+    if (!isBillingReturnPath(billingPath) || !window.location.search) return;
 
     const params = new URLSearchParams(window.location.search);
     const hasCallback = ['authKey', 'customerKey', 'registration', 'code', 'message'].some((key) => params.has(key));

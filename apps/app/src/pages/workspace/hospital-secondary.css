@@ -1,4 +1,4 @@
-.hospital-workspace .hospital-secondary-disclosure {
+.workspace-management .hospital-secondary-disclosure {
     margin: 14px 0;
     padding: 0;
     background: #f6f7f9;
@@ -45,7 +45,7 @@
 .hospital-secondary-content {
     padding: 0 22px 22px;
 }
-.hospital-workspace .hospital-secondary-content > .workspace-section {
+.workspace-management .hospital-secondary-content > .workspace-section {
     padding: 0;
     margin: 0;
 }

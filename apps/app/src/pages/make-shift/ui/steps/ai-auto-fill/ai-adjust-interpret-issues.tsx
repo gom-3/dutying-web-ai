@@ -1,3 +1,4 @@
+import {useTranslation} from 'react-i18next';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {hasNamedNurse, interpretIssueCode, readableIssueHint} from '../../../model/ai-interpret-issues';
 import type {TAdjustCard} from './ai-adjust-interpret-card';
@@ -12,9 +13,12 @@ export function AiAdjustInterpretIssues({
     partial: boolean;
 }) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const issues = card.unmapped.length ? card.unmapped : [{text: card.requestText}];
     const messages = issues.map((issue) => {
         const code = interpretIssueCode(issue);
+        const hint = readableIssueHint(issue.hint);
+        const localizedHint = i18n.language.startsWith('ko') || !/[가-힣]/.test(hint ?? '') ? hint : undefined;
         const message =
             code === 'NURSE_NOT_RESOLVED'
                 ? t(hasNamedNurse(card.requestText, nurses) ? 'aiAdjust.issue.nurseConnection' : 'aiAdjust.issue.nurse')
@@ -24,7 +28,7 @@ export function AiAdjustInterpretIssues({
                     ? t('aiAdjust.issue.retry')
                     : code === 'UNSUPPORTED_REQUEST'
                       ? t('aiAdjust.issue.unsupported')
-                      : (readableIssueHint(issue.hint) ??
+                      : (localizedHint ??
                         t(
                             code === 'INVALID_DATE'
                                 ? 'aiAdjust.issue.date'

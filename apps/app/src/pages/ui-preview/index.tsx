@@ -287,7 +287,7 @@ function UiPreviewPage() {
                             href="/__ui?aiAutofillLoading=true"
                             className="inline-flex h-11 items-center justify-center rounded-[14px] bg-main-1 px-5 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
                         >
-                            자동채우기 모달 보기
+                            AI 채우기 모달 보기
                         </a>
                         <a
                             href="/__ui"

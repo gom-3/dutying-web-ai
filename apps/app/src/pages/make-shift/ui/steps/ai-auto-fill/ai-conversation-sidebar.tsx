@@ -20,6 +20,7 @@ import {
     clarificationQuestion,
     conversationTurnText,
     currentConversationTurns,
+    localizeConversationServerCopy,
     operationAttempt,
     precedingCompletedOperation,
     requestTextForTurn,
@@ -89,6 +90,7 @@ type TProps = {
     spotlightSelector?: string;
     spotlightInteractive?: boolean;
     onPrepareGeneration?: () => void;
+    isGenerationReady?: () => boolean;
     getProtectedCellKeys?: () => string[];
     onEditSchedule?: () => void;
     onRecoverGeneration?: () => void;
@@ -152,6 +154,7 @@ export default function AiConversationSidebar({
     spotlightSelector,
     spotlightInteractive,
     onPrepareGeneration,
+    isGenerationReady,
     getProtectedCellKeys,
     onEditSchedule,
     onRecoverGeneration,
@@ -325,7 +328,9 @@ export default function AiConversationSidebar({
             storedTranscript?.conversationId === next.conversation.conversationId &&
             storedTranscript.composer?.editingEventId != null
         ) {
-            const previousRequest = next.turns.find((turn) => turn.eventId === storedTranscript.composer?.editingEventId);
+            const previousRequest = currentConversationTurns(next).find(
+                (turn) => turn.eventId === storedTranscript.composer?.editingEventId,
+            );
 
             setEditingRequest(previousRequest ?? null);
 
@@ -334,6 +339,7 @@ export default function AiConversationSidebar({
 
                 if (execution) setDismissedFailureId(execution.operationId);
             } else {
+                setEntryChoice(text.trim() ? 'modify' : null);
                 setPreviousId(undefined);
                 setChange('ADD');
             }
@@ -1949,6 +1955,39 @@ export default function AiConversationSidebar({
             detail &&
             isConversationConfirmationCurrent(detail, active, localDirty),
     );
+    const showNextActions = Boolean(
+        detail &&
+            canChooseNextAction &&
+            !pendingQuestion &&
+            !historicalRecovery &&
+            !editingRequest &&
+            !failureNeedsAction &&
+            (autofillFlow?.id === discardedPreparationId.current || autofillFlow?.status !== 'paused') &&
+            !preparing &&
+            !entryChoice &&
+            !awaitingAdjustment &&
+            !running &&
+            !busy &&
+            !error,
+    );
+    const hasEditableAssignments = doc.rows.some((row) =>
+        row.cells.some(
+            (cell, column) =>
+                cell != null &&
+                !doc.fixedCells[`${row.workerId}|${doc.columns[column]}`] &&
+                !doc.requestCells[`${row.workerId}|${doc.columns[column]}`],
+        ),
+    );
+    const showScheduleChoice =
+        showNextActions &&
+        adjustEnabled &&
+        hasEditableAssignments &&
+        !activeTurns.length &&
+        !currentOperations.length &&
+        !text.trim() &&
+        !rebuild &&
+        !pendingBranch &&
+        !reviewingPlan;
     const composerHidden =
         busy ||
         executionBusy ||
@@ -1956,8 +1995,11 @@ export default function AiConversationSidebar({
         preparing ||
         !detail ||
         failureNeedsAction ||
+        showScheduleChoice ||
         entryChoice === 'regenerate' ||
         (reviewingPlan && !editingRequest && active?.semanticPlan?.state !== 'NEEDS_CLARIFICATION');
+    const showComposerPrompt =
+        !composerHidden && !answeringClarification && (editingRequest !== null || (entryChoice === 'modify' && timeline.length === 0));
     const canSendRequest = open && !composerHidden && adjustEnabled && Boolean(text.trim());
     const showRequestExamples = Boolean(
         open &&
@@ -2054,7 +2096,7 @@ export default function AiConversationSidebar({
     }
 
     const historyMessageCount = visibleLocalEvents.reduce(
-        (count, event) => count + event.messages.length,
+        (count, event) => count + (event.id.startsWith('choice:') ? 1 : event.messages.length),
         currentOperations.length + (segmentStart === 0 ? earlierConversations.length : 0),
     );
 
@@ -2077,34 +2119,14 @@ export default function AiConversationSidebar({
             isConversationConfirmationCurrent(detail, active, localDirty) &&
             !incomplete,
     );
-    const showNextActions = Boolean(
-        detail &&
-            canChooseNextAction &&
-            !pendingQuestion &&
-            !historicalRecovery &&
-            !editingRequest &&
-            !failureNeedsAction &&
-            (autofillFlow?.id === discardedPreparationId.current || autofillFlow?.status !== 'paused') &&
-            !preparing &&
-            !entryChoice &&
-            !awaitingAdjustment &&
-            !running &&
-            !busy &&
-            !error,
-    );
     const attachNextActions = showNextActions && executionSucceeded;
     const hasConversationMessages = Boolean(activeTurns.length || currentOperations.length || localEvents.length);
-    const hasGeneratedAssignments = Boolean(
-        detail?.operations.some((operation) => operation.applyStatus === 'APPLIED' && !operationFailure(operation)) &&
-            doc.rows.some((row) =>
-                row.cells.some(
-                    (cell, column) =>
-                        cell != null &&
-                        !doc.fixedCells[`${row.workerId}|${doc.columns[column]}`] &&
-                        !doc.requestCells[`${row.workerId}|${doc.columns[column]}`],
-                ),
-            ),
-    );
+    const hasGeneratedAssignments =
+        hasEditableAssignments &&
+        detail?.operations.some((operation) => operation.applyStatus === 'APPLIED' && !operationFailure(operation));
+    const showInitialGeneration = showNextActions && !showScheduleChoice && !attachNextActions && !hasGeneratedAssignments;
+    const showEntryQuestion = showScheduleChoice || (showNextActions && !attachNextActions && !hasConversationMessages);
+    const entryQuestion = t(showScheduleChoice ? 'aiConversationSidebar.entry.question' : 'aiAdjust.chat.welcome');
     const chooseNextAction = (choice: TConversationEntryChoice) => {
         if (!detail || busy || running || awaitingAdjustment || preparing) return;
 
@@ -2119,9 +2141,19 @@ export default function AiConversationSidebar({
 
         if (choice === 'modify' && !adjustEnabled) return;
 
+        const regenerateWithCurrentConditions = choice === 'regenerate' && showScheduleChoice;
+
+        if (regenerateWithCurrentConditions && isGenerationReady && !isGenerationReady()) return;
+
+        const reply = t(
+            choice === 'modify' || regenerateWithCurrentConditions ? `aiConversationSidebar.entry.${choice}` : 'aiAdjust.chat.regenerate',
+        );
+        const createdAt = new Date().toISOString();
+
         if (choice === 'regenerate') preserveGenerationComposer.current = entryChoice === 'modify';
 
-        setEntryChoice(choice);
+        if (!regenerateWithCurrentConditions) setEntryChoice(choice);
+
         setLocalEvents((current) => [
             ...current,
             {
@@ -2131,10 +2163,9 @@ export default function AiConversationSidebar({
                     Math.max(0, ...conversationEvents(detail).map((event) => event.sequence), ...current.map((event) => event.sequence)) +
                     0.001,
                 messages: [
-                    {role: 'user', text: t(`aiAdjust.chat.${choice}`), createdAt: new Date().toISOString()},
-                    ...(choice === 'modify'
-                        ? [{role: 'assistant' as const, text: t('aiAdjust.chat.askChanges'), createdAt: new Date().toISOString()}]
-                        : []),
+                    ...(showEntryQuestion ? [{role: 'assistant' as const, text: entryQuestion, createdAt}] : []),
+                    {role: 'user', text: reply, createdAt},
+                    ...(choice === 'modify' ? [{role: 'assistant' as const, text: t('aiAdjust.chat.welcome'), createdAt}] : []),
                 ],
             },
         ]);
@@ -2142,7 +2173,8 @@ export default function AiConversationSidebar({
         if (choice === 'regenerate') {
             trackScheduleSignal('regeneration_selected');
 
-            if (onPrepareGeneration) onPrepareGeneration();
+            if (regenerateWithCurrentConditions) void execute('GENERATE', 'REBUILD_UNLOCKED');
+            else if (onPrepareGeneration) onPrepareGeneration();
             else setRebuild(true);
         } else textarea.current?.focus();
     };
@@ -2268,7 +2300,13 @@ export default function AiConversationSidebar({
                     </div>
                 )}
                 <Message {...(turn.actor !== 'USER' && turn.semanticPlan ? {fullWidth: true} : {})}>
-                    {turn.text && detail && <p className="whitespace-pre-wrap">{conversationTurnText(detail, turn)}</p>}
+                    {turn.text && detail && (
+                        <p className="whitespace-pre-wrap">
+                            {turn.actor === 'USER' && turn.type !== 'CONDITION_SELECTION'
+                                ? conversationTurnText(detail, turn)
+                                : localizeConversationServerCopy(conversationTurnText(detail, turn), t)}
+                        </p>
+                    )}
                     {turn.semanticPlan && (
                         <AiSemanticReview
                             plan={turn.semanticPlan}
@@ -2485,7 +2523,7 @@ export default function AiConversationSidebar({
                         historyKey={chatKey && detail ? `${chatKey}:scroll:${detail.conversation.conversationId}:${segmentStart}` : null}
                         ready={Boolean(detail)}
                         open={open}
-                        composerHidden={composerHidden}
+                        composerHidden={composerHidden && !showScheduleChoice}
                         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-[12px] pb-2"
                         contentClassName="space-y-3"
                     >
@@ -3038,22 +3076,8 @@ export default function AiConversationSidebar({
                             </AssistantMessage>
                         )}
                         {preparation && <div aria-live="polite">{preparation}</div>}
-                        {showNextActions &&
-                            !attachNextActions &&
-                            (hasGeneratedAssignments ? (
-                                !hasConversationMessages && (
-                                    <AssistantMessage showTime>
-                                        <span className="whitespace-pre-line">{t('aiAdjust.chat.welcome')}</span>
-                                    </AssistantMessage>
-                                )
-                            ) : (
-                                <AiConversationEntry
-                                    choice={null}
-                                    hideIntro={hasConversationMessages}
-                                    disabled={busy || running || isAutofillBlocked || Boolean(text.trim())}
-                                    onChoose={chooseNextAction}
-                                />
-                            ))}
+                        {showEntryQuestion && <AssistantMessage showTime>{entryQuestion}</AssistantMessage>}
+                        {showComposerPrompt && <AssistantMessage>{t('aiAdjust.chat.welcome')}</AssistantMessage>}
                         {detail && (busy || awaitingAdjustment) && !executionBusy && !preparing && (
                             <AssistantMessage>
                                 <AiConversationLoading
@@ -3198,6 +3222,16 @@ export default function AiConversationSidebar({
                         />
                     )}
                     <footer className={preparing ? 'hidden' : 'shrink-0 space-y-[6px] pt-[8px]'} inert={preparing}>
+                        {(showScheduleChoice || showInitialGeneration) && (
+                            <AiConversationEntry
+                                choice={null}
+                                hideIntro
+                                inComposer
+                                offerScheduleChoices={showScheduleChoice}
+                                disabled={isAutofillBlocked || Boolean(text.trim())}
+                                onChoose={chooseNextAction}
+                            />
+                        )}
                         {pendingBranch && (
                             <button
                                 className={buttonClass}

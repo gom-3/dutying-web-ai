@@ -58,8 +58,7 @@ function PlanCard({
             <p className="mt-5 text-xl font-bold text-sub-1">{formatPrice(plan.monthlyPrice)}</p>
             <ul className="text-gray-2 mt-6 space-y-3 text-sm">
                 <li>근무자 {plan.includedStaff}명 포함</li>
-                <li>AI 전체 생성 월 {plan.fullGenerateLimit}회</li>
-                <li>AI 부분 조정 월 {plan.partialAdjustLimit}회</li>
+                <li>AI 채우기 월 {plan.fullGenerateLimit}회</li>
             </ul>
             <Button type="button" className="mt-auto w-full" disabled={current || changing} onClick={() => onSelect(plan.planCode)}>
                 {current ? '사용 중' : changing ? '변경 중…' : '개발 환경에서 적용'}
@@ -137,8 +136,11 @@ export default function CommercialPage() {
                         <p className="text-sm text-gray-3">기준 월 {usage.usageMonth}</p>
                     </div>
                     <div className="grid gap-5 md:grid-cols-2">
-                        <UsageBar label="AI 전체 생성" used={usage.fullGenerateUsed} limit={usage.fullGenerateLimit} />
-                        <UsageBar label="AI 부분 조정" used={usage.partialAdjustUsed} limit={usage.partialAdjustLimit} />
+                        <UsageBar
+                            label="AI 채우기"
+                            used={usage.fullGenerateUsed + usage.partialAdjustUsed}
+                            limit={usage.fullGenerateLimit}
+                        />
                     </div>
                 </section>
 

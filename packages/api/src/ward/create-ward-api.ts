@@ -490,7 +490,7 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         autofillSchedule: async (wardId, shiftTeamId, autofillDTO, options) =>
             (
                 await client.post<TAutofillResponse>(
-                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`),
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/v2/autofill`),
                     autofillDTO,
                     options,
                 )

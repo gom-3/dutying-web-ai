@@ -69,21 +69,24 @@ describe('AuthLayout', () => {
         vi.useRealTimers();
     });
 
-    it('lets an authenticated account open profile before joining a ward', async () => {
-        render(
-            <MemoryRouter initialEntries={[ROUTE.PROFILE]}>
-                <Routes>
-                    <Route element={<AuthLayout />}>
-                        <Route path={ROUTE.PROFILE} element={<div>personal profile</div>} />
-                        <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
-                    </Route>
-                </Routes>
-            </MemoryRouter>,
-        );
+    it.each([ROUTE.PROFILE, ROUTE.BILLING, `${ROUTE.BILLING}/billing-return`])(
+        'lets an authenticated account open %s before joining a ward',
+        async (path) => {
+            render(
+                <MemoryRouter initialEntries={[path]}>
+                    <Routes>
+                        <Route element={<AuthLayout />}>
+                            <Route path={path} element={<div>personal profile</div>} />
+                            <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
+                        </Route>
+                    </Routes>
+                </MemoryRouter>,
+            );
 
-        await waitFor(() => expect(screen.getByText('personal profile')).toBeInTheDocument());
-        expect(screen.queryByText('register page')).not.toBeInTheDocument();
-    });
+            await waitFor(() => expect(screen.getByText('personal profile')).toBeInTheDocument());
+            expect(screen.queryByText('register page')).not.toBeInTheDocument();
+        },
+    );
 
     it.each([
         ['ko', '듀팅 | 간호사 근무표 자동 생성·교대근무 관리'],

@@ -1,0 +1,380 @@
+.workspace-app .hospital-secondary-disclosure.plus-addons {
+    min-width: 0;
+    padding: 20px 28px;
+    border-radius: 20px;
+    background: #fff;
+}
+
+.workspace-app .plus-addons > summary {
+    min-height: 44px;
+    padding: 0;
+    color: #242428;
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-addons > summary:hover {
+    background: transparent;
+    color: #242428;
+}
+
+.workspace-app .plus-addons > summary:focus-visible {
+    border-radius: 8px;
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-addons > .hospital-secondary-content {
+    padding: 24px 0 4px;
+}
+
+.workspace-app .plus-addons__panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+    min-width: 0;
+}
+
+.workspace-app .plus-addons__choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.workspace-app .plus-addons__choices > label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: #f7f8fa;
+    color: #525d70;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.6;
+    cursor: pointer;
+}
+
+.workspace-app .plus-addons__choices > label[data-selected='true'] {
+    background: #f0ecff;
+    color: #5530ce;
+    font-weight: 600;
+}
+
+.workspace-app .plus-addons__choices input {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #663dfa;
+}
+
+.workspace-app .plus-addons__choices span {
+    min-width: 0;
+}
+
+.workspace-app .plus-addons__choices > label:has(input:focus-visible) {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-addons__context {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 16px;
+    min-width: 0;
+    color: #657084;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.workspace-app .plus-addons__context strong {
+    color: #242428;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .plus-addons__form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    align-items: start;
+    gap: 20px;
+    width: 100%;
+    max-width: 640px;
+    min-width: 0;
+}
+
+.workspace-app .plus-addons__form > :is(.plus-addons__context, .plus-addons__caption, .plus-addons__review-button) {
+    grid-column: 1 / -1;
+}
+
+.workspace-app .plus-addons__form > .plus-addons__review-button {
+    justify-self: start;
+}
+
+.workspace-app .plus-addons__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    max-width: 320px;
+    min-width: 0;
+}
+
+.workspace-app .plus-addons .plus-addons__form .workspace-field {
+    width: 100%;
+    max-width: 320px;
+    min-width: 0;
+    margin: 0;
+    color: #525d70;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.workspace-app .plus-addons__form .workspace-field input {
+    min-width: 0;
+    min-height: 48px;
+    background: #f7f8fa;
+    color: #242428;
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .plus-addons .workspace-input-with-suffix {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.workspace-app .plus-addons .workspace-input-with-suffix input {
+    display: block;
+    padding-right: 55px;
+}
+
+.workspace-app .plus-addons .workspace-field-suffix {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    color: #657084;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.workspace-app .plus-addons .workspace-input-with-suffix:focus-within .workspace-field-suffix {
+    color: #4224b6;
+}
+
+.workspace-app .plus-addons__form .workspace-field input:focus-visible {
+    background: #f0ecff;
+    color: #4224b6;
+}
+
+.workspace-app .plus-addons__form .workspace-field:focus-within > span {
+    color: #4224b6;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-addons .plus-addons__pack-rate,
+.workspace-app .plus-addons .plus-addons__caption {
+    margin: 0;
+    color: #657084;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+}
+
+.workspace-app .plus-addons button.plus-addons__review-button {
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px 18px;
+    border-radius: 10px;
+    background: #f0ecff;
+    color: #5530ce;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-addons button.plus-addons__review-button:hover:not(:disabled) {
+    background: #e5ddff;
+    color: #4224b6;
+}
+
+.workspace-app .plus-addons button.plus-addons__review-button:focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-addons__quote {
+    width: 100%;
+    max-width: 640px;
+    min-width: 0;
+    padding: 24px;
+    border-radius: 12px;
+    background: #f7f8fa;
+}
+
+.workspace-app .plus-addons__amount {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.workspace-app .plus-addons__amount strong {
+    color: #242428;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.035em;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .plus-addons__amount span {
+    color: #657084;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.workspace-app .plus-addons__facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 10px 20px;
+    margin: 24px 0;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.workspace-app .plus-addons__facts dt {
+    color: #657084;
+    font-weight: 400;
+}
+
+.workspace-app .plus-addons__facts dd {
+    min-width: 0;
+    margin: 0;
+    color: #42434b;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.workspace-app .plus-addons button.plus-addons__request-primary {
+    min-height: 48px;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px 20px;
+    border-radius: 10px;
+    background: #663dfa;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-addons button.plus-addons__request-primary:hover:not(:disabled) {
+    background: #5832e7;
+    color: #fff;
+}
+
+.workspace-app .plus-addons button.plus-addons__request-primary:focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-addons button:is(.plus-addons__review-button, .plus-addons__request-primary):disabled {
+    background: #e8eaf0;
+    color: #777f90;
+    opacity: 1;
+}
+
+.workspace-app .plus-addons__success {
+    color: #287653;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.workspace-app .plus-addons .plus-addons__panel > .workspace-feedback {
+    max-width: 640px;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #287653;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+@media (max-width: 640px) {
+    .workspace-app .hospital-secondary-disclosure.plus-addons {
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+    .workspace-app .plus-addons > .hospital-secondary-content {
+        padding-top: 20px;
+    }
+
+    .workspace-app .plus-addons__choices {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+    }
+
+    .workspace-app .plus-addons__form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workspace-app .plus-addons__field,
+    .workspace-app .plus-addons .plus-addons__form .workspace-field {
+        max-width: none;
+    }
+
+    .workspace-app .plus-addons__quote {
+        padding: 20px 16px;
+    }
+
+    .workspace-app .plus-addons__facts {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+
+    .workspace-app .plus-addons__facts dd:not(:last-child) {
+        margin-bottom: 12px;
+    }
+
+    .workspace-app .plus-addons button:is(.plus-addons__review-button, .plus-addons__request-primary) {
+        width: 100%;
+    }
+}
+
+@media (forced-colors: active) {
+    .workspace-app .plus-addons :is(summary, button, input):focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

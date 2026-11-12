@@ -71,6 +71,7 @@ describe('workspace home', () => {
         expect(within(hospitals).getByText('병원 관리자')).toBeInTheDocument();
         expect(within(wards).getByText('3병동')).toBeInTheDocument();
         expect(within(wards).getByText('병동 관리자')).toBeInTheDocument();
+        expect(within(wards).getByRole('link', {name: '3병동 병동 관리'})).toHaveAttribute('href', '/workspace/WARD/42/usage');
         expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
         expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();

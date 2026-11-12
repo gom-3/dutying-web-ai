@@ -1,0 +1,617 @@
+.workspace-app .workspace-section.plus-subscription {
+    padding: 28px;
+    border-radius: 20px;
+    background: #fff;
+}
+
+.workspace-app .plus-subscription__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.workspace-app .plus-subscription .plus-subscription__header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.035em;
+}
+
+.workspace-app .plus-subscription__status {
+    color: #287653;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-subscription__status.is-canceling,
+.workspace-app .plus-subscription.is-canceling .plus-subscription__status {
+    color: #657084;
+}
+
+.workspace-app .plus-subscription__price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 20px;
+    color: #657084;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.workspace-app .plus-subscription__price strong {
+    color: #242428;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-app .plus-subscription__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 32px;
+    margin: 28px 0;
+}
+
+.workspace-app .plus-subscription__facts > div {
+    min-width: 0;
+}
+
+.workspace-app .plus-subscription__facts > div:nth-child(n + 3) {
+    grid-column: 1 / -1;
+}
+
+.workspace-app .plus-subscription__facts dt {
+    color: #657084;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.7;
+}
+
+.workspace-app .plus-subscription__facts dd {
+    margin: 4px 0 0;
+    color: #242428;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.workspace-app .plus-subscription__card {
+    margin-top: 24px;
+}
+
+.workspace-app .plus-subscription__card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background: #f7f8fa;
+}
+
+.workspace-app .plus-subscription__card-row > div {
+    min-width: 0;
+}
+
+.workspace-app .plus-subscription .plus-subscription__card-row p {
+    margin: 0 0 4px;
+    color: #657084;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-subscription__card-row strong {
+    color: #242428;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.workspace-app :is(button, a).plus-subscription__text-button:not(.hospital-info-tip) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: transparent;
+    color: #657084;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.6;
+    text-decoration: none;
+}
+
+.workspace-app :is(button, a).plus-subscription__text-button:not(.hospital-info-tip):hover:not(:disabled) {
+    background: #eeeaf9;
+    color: #5530ce;
+}
+
+.workspace-app :is(button, a).plus-subscription__text-button:not(.hospital-info-tip):active:not(:disabled) {
+    background: #e6dfff;
+    color: #4224b6;
+}
+
+.workspace-app :is(button, a).plus-subscription__text-button:not(.hospital-info-tip):focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__editor {
+    margin-top: 16px;
+    padding: 20px;
+    border-radius: 12px;
+    background: #f7f8fa;
+    font-size: 14px;
+}
+
+.workspace-app .plus-subscription .plus-subscription__editor > p {
+    margin: 0 0 16px;
+    color: #657084;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.workspace-app .plus-subscription__editor .workspace-check {
+    align-items: flex-start;
+    gap: 10px;
+    margin: 12px 0;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.workspace-app .plus-subscription__editor .workspace-notice {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #657084;
+    font-size: 13px;
+}
+
+.workspace-app .plus-subscription__card[data-editing='true'] {
+    border-radius: 12px;
+    background: #f7f8fa;
+}
+
+.workspace-app .plus-subscription__card[data-editing='true'] > .plus-subscription__card-row {
+    padding-bottom: 16px;
+    border-radius: 0;
+    background: transparent;
+}
+
+.workspace-app .plus-subscription__card[data-editing='true'] > .plus-subscription__editor {
+    margin-top: 0;
+    padding: 8px 20px 24px;
+    border-radius: 0;
+    background: transparent;
+}
+
+.workspace-app .plus-subscription .plus-subscription__editor-heading h3 {
+    margin: 0 0 16px;
+    color: #242428;
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-subscription__editor label.plus-subscription__card-consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 44px;
+    margin: 0;
+    padding: 12px 0;
+    color: #42434b;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.7;
+    cursor: pointer;
+}
+
+.workspace-app .plus-subscription__card-consent > input {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    margin: 2px 0 0;
+    accent-color: #663dfa;
+}
+
+.workspace-app .plus-subscription__card-consent > span {
+    min-width: 0;
+}
+
+.workspace-app .plus-subscription__editor label.plus-subscription__card-consent:has(input:focus-visible) {
+    border-radius: 8px;
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary {
+    min-width: 200px;
+    min-height: 48px;
+    max-width: 100%;
+    margin: 0;
+    padding: 12px 24px;
+    border-radius: 10px;
+    background: #663dfa;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary:hover:not(:disabled) {
+    background: #5832e7;
+    color: #fff;
+}
+
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary:active:not(:disabled),
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary:focus-visible {
+    background: #4724c2;
+    color: #fff;
+}
+
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__editor button.plus-subscription__card-primary:disabled {
+    background: #e8eaf0;
+    color: #777f90;
+    opacity: 1;
+}
+
+.workspace-app .plus-subscription__card-secondary {
+    margin-top: 12px;
+}
+
+.workspace-app .plus-subscription__card-secondary > button.plus-subscription__text-button {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.workspace-app .plus-subscription__card-secondary > button.plus-subscription__text-button:hover:not(:disabled):not(:focus-visible) {
+    background: transparent;
+}
+
+.workspace-app .plus-subscription__editor .plus-subscription__card-removal {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.workspace-app .plus-subscription__card-removal .plus-subscription__confirmation-actions {
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.workspace-app .plus-subscription__card-removal .plus-subscription__confirmation-actions > button:not(.hospital-info-tip) {
+    min-height: 44px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.workspace-app .plus-subscription__card-removal button.secondary {
+    background: #e9ebf0;
+    color: #515b6c;
+}
+
+.workspace-app .plus-subscription__card-removal button.secondary:hover:not(:disabled) {
+    background: #dde1e8;
+    color: #303b4c;
+}
+
+.workspace-app .plus-subscription__card-removal button.secondary:focus-visible {
+    background: #515b6c;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete {
+    background: #bf3347;
+    color: #fff;
+}
+
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete:hover:not(:disabled) {
+    background: #a9293c;
+    color: #fff;
+}
+
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete:active:not(:disabled),
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete:focus-visible {
+    background: #8a2031;
+    color: #fff;
+}
+
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__card-removal button.plus-subscription__card-delete:disabled {
+    background: #e8eaf0;
+    color: #777f90;
+    opacity: 1;
+}
+
+.workspace-app .plus-subscription__settings {
+    margin-top: 12px;
+    color: #657084;
+    font-size: 14px;
+}
+
+.workspace-app .plus-subscription__settings > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+    padding: 10px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 500;
+    line-height: 1.7;
+}
+
+.workspace-app .plus-subscription__settings > summary::-webkit-details-marker {
+    display: none;
+}
+
+.workspace-app .plus-subscription__settings > summary::after {
+    content: '+';
+    flex-shrink: 0;
+    padding: 0 12px;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.workspace-app .plus-subscription__settings[open] > summary::after {
+    content: '−';
+}
+
+.workspace-app .plus-subscription__settings > summary:hover {
+    color: #5530ce;
+}
+
+.workspace-app .plus-subscription__settings > summary:focus-visible {
+    padding-left: 12px;
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__settings > div {
+    padding: 12px 0 4px;
+}
+
+.workspace-app .plus-subscription__footer {
+    min-width: 0;
+    padding: 0 12px;
+    color: #657084;
+    font-size: 13px;
+}
+
+.workspace-app .plus-subscription__footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px 16px;
+    min-width: 0;
+    padding: 0 12px;
+}
+
+.workspace-app .plus-subscription__footer-row > .plus-subscription__footer {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0;
+}
+
+.workspace-app .plus-subscription__footer-row > .plus-subscription__support[open],
+.workspace-app .plus-subscription__footer-row > .plus-subscription__footer:has(> .plus-subscription__confirmation) {
+    flex-basis: 100%;
+    width: 100%;
+}
+
+.workspace-app .plus-subscription__support {
+    margin: 0;
+    background: transparent;
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    max-width: 100%;
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: transparent;
+    color: #657084;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.6;
+    list-style: none;
+    cursor: pointer;
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button::-webkit-details-marker {
+    display: none;
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button::marker {
+    content: '';
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button:hover {
+    background: #eeeaf9;
+    color: #5530ce;
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button:active {
+    background: #e6dfff;
+    color: #4224b6;
+}
+
+.workspace-app .plus-subscription__support > summary.plus-subscription__text-button:focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.workspace-app .plus-subscription__support-content {
+    min-width: 0;
+    margin-top: 12px;
+}
+
+.workspace-app .plus-subscription__support-content > .workspace-section {
+    margin: 0;
+    padding: 24px;
+    border-radius: 16px;
+    background: #fff;
+}
+
+.workspace-app .plus-subscription__confirmation {
+    padding: 20px;
+    border-radius: 12px;
+    background: #fff;
+    color: #242428;
+    font-size: 14px;
+}
+
+.workspace-app :is(.plus-subscription, .plus-subscription__footer) .plus-subscription__confirmation h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.6;
+}
+
+.workspace-app :is(.plus-subscription, .plus-subscription__footer) .plus-subscription__confirmation p {
+    margin: 0;
+    color: #657084;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.workspace-app .plus-subscription__confirmation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.workspace-app .plus-subscription__confirmation-actions > button:not(.hospital-info-tip) {
+    min-height: 44px;
+    margin: 0;
+}
+
+@media (max-width: 640px) {
+    .workspace-app .workspace-section.plus-subscription {
+        padding: 22px 18px;
+        border-radius: 16px;
+    }
+
+    .workspace-app .plus-subscription .plus-subscription__header h2 {
+        font-size: 20px;
+    }
+
+    .workspace-app .plus-subscription__price {
+        margin-top: 16px;
+    }
+
+    .workspace-app .plus-subscription__price strong {
+        font-size: 28px;
+    }
+
+    .workspace-app .plus-subscription__facts {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+        margin: 24px 0;
+    }
+
+    .workspace-app .plus-subscription__card-row {
+        gap: 8px;
+        padding: 16px;
+    }
+
+    .workspace-app .plus-subscription__editor {
+        padding: 16px;
+    }
+
+    .workspace-app .plus-subscription__card[data-editing='true'] > .plus-subscription__editor {
+        padding: 8px 16px 20px;
+    }
+
+    .workspace-app .plus-subscription__card-actions {
+        flex-direction: column;
+    }
+
+    .workspace-app .plus-subscription__editor button.plus-subscription__card-primary {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .workspace-app .plus-subscription__card-removal .plus-subscription__confirmation-actions {
+        flex-direction: column;
+    }
+
+    .workspace-app .plus-subscription__card-removal .plus-subscription__confirmation-actions > button:not(.hospital-info-tip) {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .workspace-app .plus-subscription__footer {
+        padding: 0 6px;
+    }
+
+    .workspace-app .plus-subscription__footer-row {
+        padding: 0 6px;
+    }
+
+    .workspace-app .plus-subscription__support-content > .workspace-section {
+        padding: 20px 16px;
+    }
+
+    .workspace-app .plus-subscription__confirmation {
+        padding: 18px;
+    }
+
+    .workspace-app .plus-subscription__confirmation-actions > button:not(.hospital-info-tip) {
+        flex: 1 1 110px;
+    }
+}
+
+@media (forced-colors: active) {
+    .workspace-app :is(.plus-subscription__text-button, .plus-subscription__settings > summary):focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+}

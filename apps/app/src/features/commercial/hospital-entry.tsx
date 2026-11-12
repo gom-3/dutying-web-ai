@@ -32,14 +32,14 @@ export function useWorkspaceNavigation() {
     } = useAuth();
     const navigate = useNavigate();
 
-    return async (scope: Pick<Scope, 'type' | 'ref'>, openWard = false) => {
+    return async (scope: Pick<Scope, 'type' | 'ref'>, openWard = false, destination?: string) => {
         await commercialPost(`/scopes/${scope.type}/${scope.ref}/select`);
         // Preserve account-scoped commercial queries while dropping the old scheduling workspace.
         await client.cancelQueries({predicate: (query) => query.queryKey[0] !== 'commercial'});
         client.removeQueries({predicate: (query) => query.queryKey[0] !== 'commercial'});
         await handleGetAccountMe();
         await client.invalidateQueries({queryKey: commercialQueryKey(accountId, 'context')});
-        navigate(openWard ? ROUTE.HOME : scopePath(scope, scope.type === 'HOSPITAL' ? 'overview' : 'usage'));
+        navigate(destination ?? (openWard ? ROUTE.HOME : scopePath(scope, scope.type === 'HOSPITAL' ? 'overview' : 'usage')));
     };
 }
 

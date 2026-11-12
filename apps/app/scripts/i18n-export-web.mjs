@@ -2,7 +2,7 @@ import {writeFileSync} from 'node:fs';
 import {dirname} from 'node:path';
 import {ensureDir, generatedResourcesPath, readCatalogRows, unflattenMessages} from './i18n-catalog-utils.mjs';
 
-const LOCALES = ['ko', 'en', 'ja', 'zh', 'th', 'vi'];
+const LOCALES = ['ko', 'en', 'ja', 'zh', 'th', 'vi', 'zh-TW'];
 const WEB_PLATFORMS = new Set(['shared', 'web']);
 
 function stringifyMessages(value) {
@@ -57,6 +57,8 @@ export const ja: TLocale = ${stringifyMessages(messagesByLocale.ja)};
 
 export const zh: TLocale = ${stringifyMessages(messagesByLocale.zh)};
 
+export const zhTW: TLocale = ${stringifyMessages(messagesByLocale['zh-TW'])};
+
 export const th: TLocale = ${stringifyMessages(messagesByLocale.th)};
 
 export const vi: TLocale = ${stringifyMessages(messagesByLocale.vi)};
@@ -66,6 +68,7 @@ export const resources = {
     en: {translation: en},
     ja: {translation: ja},
     zh: {translation: zh},
+    'zh-TW': {translation: zhTW},
     th: {translation: th},
     vi: {translation: vi},
 } as const;

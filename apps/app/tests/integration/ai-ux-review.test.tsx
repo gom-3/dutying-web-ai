@@ -49,8 +49,7 @@ describe('local UI review', () => {
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
             const before = structuredClone(useShiftEditorStore.getState().doc);
             failNextReviewExecution('TIME_LIMIT', 'TIME_LIMIT_NO_SOLUTION');
-            await userEvent.click(await chat().findByRole('button', {name: '한 번 더 채워볼게요'}));
-            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            await userEvent.click(await chat().findByRole('button', {name: '같은 조건으로 다시 만들고 싶어요'}));
             const failure = await chat().findByRole('alert');
             expect(failure).toHaveTextContent('자동채우기를 마치지 못했어요.');
             expect(failure).toHaveTextContent('시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
@@ -85,8 +84,7 @@ describe('local UI review', () => {
             const page = render(<Review />);
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
             const originalCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
-            await userEvent.click(await chat().findByRole('button', {name: '한 번 더 채워볼게요'}));
-            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
+            await userEvent.click(await chat().findByRole('button', {name: '같은 조건으로 다시 만들고 싶어요'}));
             expect(await chat().findByText(/근무표가 완성되었어요!/)).toBeVisible();
             const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
             expect(generatedCells).not.toEqual(originalCells);
@@ -113,21 +111,21 @@ describe('local UI review', () => {
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
             expect(screen.queryByRole('navigation', {name: '검토 화면 선택'})).not.toBeInTheDocument();
             expect(screen.queryByRole('link', {name: '시작'})).not.toBeInTheDocument();
-            const regenerate = await chat().findByRole('button', {name: '한 번 더 채워볼게요'});
+            const regenerate = await chat().findByRole('button', {name: '같은 조건으로 다시 만들고 싶어요'});
 
-            expect(chat().getByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
+            expect(chat().queryByRole('textbox', {name: '바꾸고 싶은 내용'})).not.toBeInTheDocument();
             expect(chat().queryByRole('button', {name: '서버 작업표 불러오기'})).not.toBeInTheDocument();
             expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
             expect(chat().queryByText(/대상·기간·조건을 모두 포함/)).not.toBeInTheDocument();
             await userEvent.click(regenerate);
             expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
-            await userEvent.click(chat().getByRole('button', {name: '다시 자동채우기'}));
             expect(await chat().findByText(/근무표가 완성되었어요!/)).toBeInTheDocument();
             expect(screen.getByRole('heading', {name: '2026년 11월 근무표', level: 1})).toBeVisible();
             const generatedCells = structuredClone(useShiftEditorStore.getState().doc.rows.map((row) => row.cells));
             await userEvent.click(chat().getByRole('button', {name: '새 요청'}));
             expect(chat().queryByText(/^근무표가 완성되었어요!$/)).not.toBeInTheDocument();
             expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual(generatedCells);
+            await userEvent.click(await chat().findByRole('button', {name: '지금 근무표에서 바꾸고 싶은 부분이 있어요'}));
             expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
             expect(chat().queryByRole('button', {name: '요청 저장'})).not.toBeInTheDocument();
             const examples = chat().getByRole('region', {name: '이렇게 요청해 보세요'});
@@ -160,6 +158,7 @@ describe('local UI review', () => {
         async () => {
             render(<Review />);
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            await userEvent.click(await chat().findByRole('button', {name: '지금 근무표에서 바꾸고 싶은 부분이 있어요'}));
             expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
             const before = structuredClone(useShiftEditorStore.getState().doc);
 
@@ -191,6 +190,7 @@ describe('local UI review', () => {
         async () => {
             render(<Review />);
             const chat = () => within(screen.getByLabelText('AI 자동채우기'));
+            await userEvent.click(await chat().findByRole('button', {name: '지금 근무표에서 바꾸고 싶은 부분이 있어요'}));
             expect(await chat().findByRole('textbox', {name: '바꾸고 싶은 내용'})).toBeVisible();
             const ambiguous = '간호사 1에 1~5일 근무를 없애줘.';
             const question = '간호사 1의 1~5일을 빈칸으로 지울까요, O 근무를 배정할까요?';

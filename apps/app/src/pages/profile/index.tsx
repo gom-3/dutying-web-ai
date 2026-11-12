@@ -1,4 +1,3 @@
-import type {TPreferredLanguage} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown, Languages, UserRound} from 'lucide-react';
@@ -22,7 +21,10 @@ import {
     getDefaultServiceRegionForLanguage,
     normalizePreferredLanguage,
     setStoredServiceRegion,
-    SUPPORTED_LANGUAGES,
+    normalizeWebLanguage,
+    normalizeServiceRegion,
+    WEB_LANGUAGES,
+    type TWebLanguage,
 } from '@/shared/i18n/locale';
 import {formatBirthDateInput, getTodayDateKey, isValidBirthDate, normalizeBirthDateForStorage} from '@/shared/lib/birth-date';
 import {
@@ -50,7 +52,7 @@ const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
-const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
+const LANGUAGE_OPTIONS = WEB_LANGUAGES;
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const requestName = normalizeNurseNameForRequest(value);
 
@@ -81,10 +83,10 @@ const validatePhoneNum = (
 type TLanguageSelectProps = {
     id: string;
     labelId: string;
-    value: TPreferredLanguage;
-    options: readonly TPreferredLanguage[];
-    getOptionLabel: (language: TPreferredLanguage) => string;
-    onChange: (language: TPreferredLanguage) => void;
+    value: TWebLanguage;
+    options: readonly TWebLanguage[];
+    getOptionLabel: (language: TWebLanguage) => string;
+    onChange: (language: TWebLanguage) => void;
     className?: string;
     buttonClassName?: string;
 };
@@ -187,7 +189,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const [draftName, setDraftName] = useState('');
     const [draftPhoneNum, setDraftPhoneNum] = useState('');
     const [draftBirthDate, setDraftBirthDate] = useState('');
-    const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
+    const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TWebLanguage>('ko');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const savingRef = useRef(false);
@@ -219,10 +221,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             ? (writeNurse.phoneNum ?? '')
             : getProfilePhoneNum(writeNurse, accountMe)
         : draftPhoneNum;
+    const savedRegion = normalizeServiceRegion(accountMe?.serviceRegion ?? accountMe?.resolvedRegion);
     const savedPreferredLanguage =
-        normalizePreferredLanguage(accountMe?.preferredLanguage) ??
-        normalizePreferredLanguage(accountMe?.resolvedLanguage) ??
-        normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
+        normalizeWebLanguage(accountMe?.preferredLanguage, savedRegion) ??
+        normalizeWebLanguage(accountMe?.resolvedLanguage, savedRegion) ??
+        normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language) ??
         DEFAULT_PREFERRED_LANGUAGE;
     const phoneValidationRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
@@ -321,7 +324,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
             const nextServiceRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
             const isSaved = await updateAccountPreferences({
-                preferredLanguage: draftPreferredLanguage,
+                preferredLanguage: normalizePreferredLanguage(draftPreferredLanguage),
                 serviceRegion: nextServiceRegion,
             });
 
@@ -590,7 +593,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             {isSaving ? t('page.profile.savingPreferences') : isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
         </Button>
     );
-    const getLanguageLabel = (language: TPreferredLanguage) => {
+    const getLanguageLabel = (language: TWebLanguage) => {
         switch (language) {
             case 'ko':
                 return t('page.profile.language.ko');
@@ -600,6 +603,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 return t('page.profile.language.en');
             case 'zh':
                 return t('page.profile.language.zh');
+            case 'zh-TW':
+                return t('page.profile.language.zhTW');
             case 'th':
                 return t('page.profile.language.th');
             case 'vi':
@@ -789,9 +794,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 value={draftPreferredLanguage}
                                 options={LANGUAGE_OPTIONS}
                                 getOptionLabel={getLanguageLabel}
-                                onChange={(language) =>
-                                    setDraftPreferredLanguage(normalizePreferredLanguage(language) ?? savedPreferredLanguage)
-                                }
+                                onChange={(language) => setDraftPreferredLanguage(normalizeWebLanguage(language) ?? savedPreferredLanguage)}
                             />
                         </div>
                     </div>

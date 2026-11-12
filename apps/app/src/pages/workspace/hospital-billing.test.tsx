@@ -92,9 +92,13 @@ describe('hospital usage and contract', () => {
         expect(await screen.findAllByText('149,000원')).toHaveLength(2);
         expect(screen.getByText('249,000원')).toBeInTheDocument();
         expect(screen.getByText('계좌이체 · 후불')).toBeInTheDocument();
-        expect(screen.getByText('23')).toBeInTheDocument();
-        expect(screen.getByText('제한 해제')).toBeInTheDocument();
-        expect(screen.getByText('사용 5 · 처리 중 2')).toBeInTheDocument();
+        expect(screen.getByText('20')).toBeInTheDocument();
+        expect(screen.queryByText('제한 해제')).not.toBeInTheDocument();
+        expect(screen.getByText('사용 8 · 처리 중 2')).toBeInTheDocument();
+        expect(screen.getByRole('meter', {name: '편성 인원 사용 비율'})).toHaveAttribute('value', '40');
+        expect(screen.getByRole('meter', {name: 'AI 채우기 사용·처리 중'})).toHaveAttribute('max', '30');
+        expect(screen.getByRole('meter', {name: 'AI 채우기 사용·처리 중'})).toHaveAttribute('value', '10');
+        expect(screen.queryByRole('meter', {name: 'AI 부분 조정 사용·처리 중'})).not.toBeInTheDocument();
         expect(screen.getByText('일부 납부')).toBeInTheDocument();
         expect(screen.getByText('환불 10,000원')).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '문의하기'})).toBeInTheDocument();
@@ -169,6 +173,8 @@ describe('hospital usage and contract', () => {
 
         const button = await screen.findByRole('button', {name: '초기 세팅 확인 완료'});
 
+        expect(screen.getByText('초기 세팅 확인').closest('li')).toHaveAttribute('aria-current', 'step');
+        expect(screen.getByText('계약 조건 확인·동의').closest('li')).toHaveAttribute('data-complete', 'true');
         await userEvent.click(button);
         expect(mocks.post).toHaveBeenCalledWith('/organizations/h1/accept/SETUP', {contractHash: 'hash-v2'});
         expect(screen.queryByRole('button', {name: '계약 조건에 동의'})).not.toBeInTheDocument();
@@ -210,9 +216,11 @@ describe('hospital usage and contract', () => {
 
     it('does not render missing AI metrics as zero or unlimited', () => {
         mount({...entitlement, usage: []}, {...scope, role: 'MANAGER'});
-        expect(screen.getAllByText('제공량 확인 대기')).toHaveLength(2);
+        expect(screen.getAllByText('제공량 확인 대기')).toHaveLength(1);
         expect(screen.queryByText('제한 해제')).not.toBeInTheDocument();
         expect(screen.queryByText('0회 남음')).not.toBeInTheDocument();
+        expect(screen.queryByRole('meter', {name: 'AI 채우기 사용·처리 중'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('meter', {name: 'AI 부분 조정 사용·처리 중'})).not.toBeInTheDocument();
     });
 
     it('shows empty records and retries each failing query independently', async () => {

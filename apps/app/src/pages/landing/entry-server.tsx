@@ -7,6 +7,8 @@ import LandingPageView, {guestSession} from './landing-page-view';
 
 export function renderLanding(language: string, path: string) {
     const full = i18n.getResourceBundle(language, 'translation');
+    const {aiRefill, calendar, steps} = full.page.makeShift;
+    const {grid, validation} = full.feature.shiftEditor;
     // Send only public-page copy; the scheduler and other locales stay out of the entry bundle.
     const translation = {
         page: {
@@ -19,7 +21,25 @@ export function renderLanding(language: string, path: string) {
             profile: {language: full.page.profile.language},
             navigationBar: {items: {account: full.page.navigationBar.items.account}},
             state: {loadingTitle: full.page.state.loadingTitle},
+            makeShift: {
+                calendar: {violationDialogAria: calendar.violationDialogAria},
+                aiRefill: {
+                    toolbarTitle: aiRefill.toolbarTitle,
+                    toolbarSubTitle: aiRefill.toolbarSubTitle,
+                    firstFill: aiRefill.firstFill,
+                    confirm: aiRefill.confirm,
+                },
+                steps: {
+                    workers: {label: steps.workers.label},
+                    constraints: {label: steps.constraints.label},
+                    requests: {label: steps.requests.label},
+                    fixedShifts: {label: steps.fixedShifts.label},
+                    aiAutofill: {label: steps.aiAutofill.label},
+                },
+                workers: {column: {memo: full.page.makeShift.workers.column.memo}},
+            },
         },
+        feature: {shiftEditor: {grid: {nameHeader: grid.nameHeader}, validation: {maxConsecutiveWork: validation.maxConsecutiveWork}}},
         entity: {account: full.entity.account},
     };
     const instance = createLandingI18n(language, translation);

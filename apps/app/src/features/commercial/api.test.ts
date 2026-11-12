@@ -1,15 +1,32 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {CommercialAPI, getCommercialContext, isPlanEnforcementEnabled} from './api';
+import {CommercialAPI, commercialGet, commercialPost, getCommercialContext, isPlanEnforcementEnabled} from './api';
 
-const {get, put} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn()}));
+const {get, put, post} = vi.hoisted(() => ({get: vi.fn(), put: vi.fn(), post: vi.fn()}));
 
 vi.mock('@/shared/api/client', () => ({
     registerAdminSessionRecovery: vi.fn(),
-    adminAxiosInstance: {get, put},
+    adminAxiosInstance: {get, put, post},
 }));
 
 describe('CommercialAPI', () => {
     beforeEach(() => vi.clearAllMocks());
+
+    it('uses unified allowance and batch routes while preserving the caller idempotency key', async () => {
+        get.mockResolvedValue({data: {}});
+        post.mockResolvedValue({data: {}});
+        await commercialGet('/scopes/WARD/12/entitlements');
+        expect(get).toHaveBeenLastCalledWith('/admin/commercial/v2/scopes/WARD/12/entitlements', {suppressErrorToast: true});
+        await commercialGet('/wards/12/ai-batches/existing-key');
+        expect(get).toHaveBeenLastCalledWith('/admin/commercial/v2/wards/12/ai-batches/existing-key', {suppressErrorToast: true});
+
+        const request = {items: []};
+
+        await commercialPost('/wards/12/ai-batches', request, 'batch-key');
+        expect(post).toHaveBeenLastCalledWith('/admin/commercial/v2/wards/12/ai-batches', request, {
+            headers: {'Idempotency-Key': 'batch-key'},
+            suppressErrorToast: true,
+        });
+    });
 
     it('uses only the minimal plan and usage endpoints', async () => {
         get.mockResolvedValueOnce({data: [{planCode: 'FREE'}]}).mockResolvedValueOnce({data: {planCode: 'FREE'}});

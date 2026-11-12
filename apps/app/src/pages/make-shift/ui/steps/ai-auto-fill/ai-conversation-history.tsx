@@ -1,7 +1,12 @@
 import {useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {conversationOperationFailure} from '../../../model/ai-execution-failure';
-import {conversationTurnText, operationAttempt, visibleConversationTurns} from '../../../model/conversation-presentation';
+import {
+    conversationTurnText,
+    localizeConversationServerCopy,
+    operationAttempt,
+    visibleConversationTurns,
+} from '../../../model/conversation-presentation';
 import {
     conversationEvents,
     type TConversation,
@@ -72,7 +77,12 @@ export function AiConversationHistory({conversation, load, onView}: TProps) {
                                     >
                                         <div className="group/bubble relative">
                                             <p className="text-sm whitespace-pre-wrap">
-                                                {conversationTurnText(detail, event.turn) ?? event.turn.semanticPlan?.summary}
+                                                {event.turn.actor === 'USER' && event.turn.type !== 'CONDITION_SELECTION'
+                                                    ? conversationTurnText(detail, event.turn)
+                                                    : localizeConversationServerCopy(
+                                                          conversationTurnText(detail, event.turn) ?? event.turn.semanticPlan?.summary,
+                                                          t,
+                                                      )}
                                             </p>
                                             <AiMessageTimestamp inline />
                                         </div>

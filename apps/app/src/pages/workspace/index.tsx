@@ -1,8 +1,9 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {useEffect, useRef, useState, type ReactNode} from 'react';
+import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {Link, Navigate, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import useAuthStore from '@/features/auth/model/store';
+import {aiFillUsage} from '@/features/commercial/ai-fill-usage';
 import {
     isAdminSeatLimitReached,
     commercialGet,
@@ -13,6 +14,7 @@ import {
     legacyPost,
     legacyDelete,
     commercialQueryKey,
+    getOnlyWardScope,
     scopePath,
     useCommercialContext,
     type Scope,
@@ -32,10 +34,10 @@ import {clearBillingReturnPayload, readBillingReturnPayload} from '@/features/co
 import {HospitalChooser, useWorkspaceNavigation, workspaceRoleLabel} from '@/features/commercial/hospital-entry';
 import {parseQuoteTerms, parseSubscriptionSummary, quoteTimestamp} from '@/features/commercial/quote-terms';
 import {loadToss, openTossBilling} from '@/features/commercial/toss-sdk';
+import {wardBillingPath} from '@/features/commercial/ward-billing-path';
 import {getOwnedWardLinkScope} from '@/features/commercial/ward-links';
 import {RefundConditions, SubscriptionConditions, fetchPublicOffer} from '@/pages/subscription-info';
 import {WardAPI} from '@/shared/api';
-import logoWordmarkPurple from '@/shared/assets/images/logo-wordmark-purple.png';
 import {sellerReady, SUBSCRIPTION_TERMS_VERSION} from '@/shared/business/profile';
 import ROUTE from '@/shared/constant/path';
 import {HospitalBilling} from './hospital-billing';
@@ -43,17 +45,29 @@ import {HospitalMembersPanel} from './hospital-members';
 import {HospitalOverview} from './hospital-overview';
 import {HospitalWorkspaceShell} from './hospital-workspace-shell';
 import {InfoTip} from './info-tip';
-import {PlusCheckoutPlan, PlusCheckoutProgress} from './plus-checkout';
+import {PlusAddons} from './plus-addons';
+import {
+    PlusCheckoutConsent,
+    PlusCheckoutPlan,
+    PlusCheckoutPolicyChevron,
+    PlusCheckoutProgress,
+    PlusCheckoutReviewSummary,
+    PlusCheckoutTermsLinks,
+} from './plus-checkout';
+import {PlusSubscriptionCancellation, PlusSubscriptionOverview} from './plus-subscription';
 import {Reauthenticate} from './reauthentication';
 import {WardLinksPanel} from './ward-links-panel';
+import {WardPaymentHistory} from './ward-payment-history';
 import {WorkspaceActivity, countWorkspaceRequests} from './workspace-activity';
 import {WorkspaceHome} from './workspace-home';
 import {WorkspacePersonalShell, type TPersonalWorkspacePage} from './workspace-personal-shell';
 import {Plans} from './workspace-plans';
 import {Receipts} from './workspace-receipts';
+import {WorkspaceShell} from './workspace-shell';
 import {Section, Field, Notice, ErrorView, useAction, ActionsFeedback, useCopy} from './workspace-ui';
-import './hospital-workspace.css';
+import './workspace-management.css';
 import './hospital-secondary.css';
+import './ward-workspace.css';
 
 const money = (n: number) => new Intl.NumberFormat('ko-KR', {style: 'currency', currency: 'KRW', maximumFractionDigits: 0}).format(n);
 const date = (s?: string | null) =>
@@ -79,6 +93,9 @@ const paymentStatusLabel = (status: string, t: ReturnType<typeof useCopy>) =>
         APPLIED: t('결제·이용권 적용 완료', 'Payment and activation complete'),
         FAILED: t('결제 미완료', 'Payment incomplete'),
     })[status] ?? t('상태 확인 필요', 'Review required');
+const isPendingPayment = (order: Order) => ['AWAITING_PAYMENT', 'PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(order.status);
+const isUnsubmittedPayment = (order: Order) =>
+    order.status === 'AWAITING_PAYMENT' && !order.provider && !order.providerReference && !order.verifiedAt;
 
 function RequestForm({
     scope,
@@ -173,7 +190,7 @@ function HospitalDisclosure({active, title, help, children}: {active: boolean; t
     );
 }
 
-function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
+export function UsagePanel({scope, e, billingPath}: {scope: Scope; e: Entitlement; billingPath?: string}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
@@ -189,38 +206,35 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
     return (
         <>
             <Section
-                title={
-                    scope.type === 'HOSPITAL'
-                        ? t('현재 이용 현황', 'Current usage')
-                        : `${e.plan}${e.entitlementSource === 'EVENT' ? t(' · 무료 이벤트', ' · Trial') : ''}`
-                }
-                help={
-                    scope.type === 'HOSPITAL'
-                        ? t(
-                              '편성 인원과 관리자 정원은 별도로 집계합니다. 부분 조정은 전체 생성과 별도로 사용하며, 결과가 없거나 확정된 실패에는 횟수를 차감하지 않습니다.',
-                              'Staff capacity and administrator seats are counted separately. Partial adjustment has its own allowance. No result or a confirmed failure does not consume a use.',
-                          )
-                        : undefined
-                }
+                title={t('현재 요금제와 한도', 'Current plan and limits')}
                 actions={
-                    scope.type === 'HOSPITAL' ? (
-                        <span className="hospital-current-plan">{t('병원 요금제', 'Hospital plan')}</span>
-                    ) : undefined
+                    <span className="hospital-current-plan">
+                        {e.plan === 'HOSPITAL' ? t('병원 계약', 'Hospital contract') : e.plan}
+                        {e.entitlementSource === 'EVENT' ? t(' · 무료 이벤트', ' · Trial') : ''}
+                    </span>
                 }
             >
+                {e.plan === 'HOSPITAL' ? (
+                    <p>
+                        {t(
+                            '편성 인원과 AI 횟수는 병원에 연결된 병동이 함께 사용해요.',
+                            'Linked wards share the hospital’s staff capacity and AI allowance.',
+                        )}
+                    </p>
+                ) : null}
                 <div className="workspace-stats">
                     <div>
                         <strong>
                             {e.capacity.used} / {e.capacity.purchased}
                         </strong>
-                        <span>{t('활성 편성 인원', 'Active scheduling staff')}</span>
+                        <span>{t('활성 편성 인원 / 한도', 'Active scheduling staff / limit')}</span>
                     </div>
                     <div>
                         <strong>
                             {e.adminSeats.active} + {e.adminSeats.reserved} /{' '}
                             {e.restrictionStates?.ADMIN_SEATS === false ? t('제한 해제', 'No plan limit') : e.adminSeats.limit}
                         </strong>
-                        <span>{t('활성 관리자 + 대기 초대', 'Active admins + pending invitations')}</span>
+                        <span>{t('관리자 + 대기 초대 / 정원', 'Admins + pending invitations / seats')}</span>
                     </div>
                 </div>
                 {e.capacity.overLimit ? (
@@ -232,57 +246,60 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
                     </Notice>
                 ) : null}
                 <div className="workspace-grid">
-                    {e.usage.map((u) => (
-                        <article className="workspace-usage" key={u.meter}>
-                            <div className="workspace-heading-label">
-                                <h3>
-                                    {u.meter === 'FULL_GENERATE' ? t('전체 생성', 'Full generation') : t('부분 조정', 'Partial adjustment')}
-                                </h3>
-                                {scope.type === 'HOSPITAL' && u.lots.length ? (
-                                    <InfoTip
-                                        label={`${u.meter === 'FULL_GENERATE' ? t('전체 생성', 'Full generation') : t('부분 조정', 'Partial adjustment')} ${t('제공량 내역', 'allowance details')}`}
-                                    >
+                    {[aiFillUsage(e)]
+                        .filter((u) => u !== undefined)
+                        .map((u) => (
+                            <article className="workspace-usage" key={u.meter}>
+                                <div className="workspace-heading-label">
+                                    <h3>{t('AI 채우기', 'AI fill')}</h3>
+                                    {scope.type === 'HOSPITAL' && u.lots.length ? (
+                                        <InfoTip label={`${t('AI 채우기', 'AI fill')} ${t('제공량 내역', 'allowance details')}`}>
+                                            {u.lots.map((l) => (
+                                                <div key={l.id}>
+                                                    {l.source === 'PURCHASE' ? t('추가 구매', 'Purchased') : t('기본 제공', 'Included')}{' '}
+                                                    {l.available}
+                                                    {t('회', ' uses')} · {l.expiresAt ? date(l.expiresAt) : t('만료 없음', 'No expiration')}
+                                                </div>
+                                            ))}
+                                        </InfoTip>
+                                    ) : null}
+                                </div>
+                                <strong>
+                                    {u.enforced === false
+                                        ? t('요금제 횟수 제한 해제', 'Plan usage limit disabled')
+                                        : `${u.remaining}${t('회 남음', ' remaining')}`}
+                                </strong>
+                                <p>
+                                    {t('사용', 'Used')} {u.used} · {t('처리 중 예약', 'Reserved')} {u.reserved}
+                                </p>
+                                {u.enforced !== false ? (
+                                    <meter
+                                        min={0}
+                                        max={Math.max(u.granted, 1)}
+                                        value={u.remaining}
+                                        aria-label={t('남은 AI 채우기 횟수', 'AI fill uses remaining')}
+                                    />
+                                ) : null}
+                                {scope.type === 'WARD' ? (
+                                    <ul>
                                         {u.lots.map((l) => (
-                                            <div key={l.id}>
+                                            <li key={l.id}>
                                                 {l.source === 'PURCHASE' ? t('추가 구매', 'Purchased') : t('기본 제공', 'Included')}{' '}
                                                 {l.available}
-                                                {t('회', ' uses')} · {l.expiresAt ? date(l.expiresAt) : t('만료 없음', 'No expiration')}
-                                            </div>
+                                                {t('회', ' uses')} ·{' '}
+                                                {l.expiresAt ? date(l.expiresAt) : t('최초 제공·만료 없음', 'Lifetime allocation')}
+                                            </li>
                                         ))}
-                                    </InfoTip>
+                                    </ul>
                                 ) : null}
-                            </div>
-                            <strong>
-                                {u.enforced === false
-                                    ? t('요금제 횟수 제한 해제', 'Plan usage limit disabled')
-                                    : `${u.remaining}${t('회 남음', ' remaining')}`}
-                            </strong>
-                            <p>
-                                {t('사용', 'Used')} {u.used} · {t('처리 중 예약', 'Reserved')} {u.reserved}
-                            </p>
-                            {u.enforced !== false ? (
-                                <meter min={0} max={Math.max(u.granted, 1)} value={u.remaining} aria-label={u.meter} />
-                            ) : null}
-                            {scope.type === 'WARD' ? (
-                                <ul>
-                                    {u.lots.map((l) => (
-                                        <li key={l.id}>
-                                            {l.source === 'PURCHASE' ? t('추가 구매', 'Purchased') : t('기본 제공', 'Included')}{' '}
-                                            {l.available}
-                                            {t('회', ' uses')} ·{' '}
-                                            {l.expiresAt ? date(l.expiresAt) : t('최초 제공·만료 없음', 'Lifetime allocation')}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : null}
-                        </article>
-                    ))}
+                            </article>
+                        ))}
                 </div>
                 {scope.type === 'WARD' ? (
                     <p>
                         {t(
-                            '부분 조정은 전체 생성과 별도로 사용합니다. 결과가 없거나 확정된 실패에는 횟수를 차감하지 않습니다.',
-                            'Partial adjustment has its own allowance. No result or a confirmed failure does not consume a use.',
+                            '채우기와 수정 요청은 같은 AI 채우기 횟수를 사용합니다. 적용할 결과가 없거나 확정된 실패에는 차감하지 않습니다.',
+                            'Filling and revision requests share one AI fill allowance. No applicable result or a confirmed failure does not consume a use.',
                         )}
                     </p>
                 ) : null}
@@ -297,7 +314,7 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
                 ) : null}
                 <Link
                     className="workspace-button"
-                    to={scopePath(scope, scope.type === 'HOSPITAL' && !e.canManageBilling ? 'support' : 'billing')}
+                    to={billingPath ?? scopePath(scope, scope.type === 'HOSPITAL' && !e.canManageBilling ? 'support' : 'billing')}
                 >
                     {e.canManageBilling
                         ? t('요금제·추가 횟수 보기', 'Plans & additional uses')
@@ -312,7 +329,8 @@ function UsagePanel({scope, e}: {scope: Scope; e: Entitlement}) {
                         {c.days}
                         {t('일 동안', ' days')} · {c.capacity}
                         {t('명', ' staff')} · {c.windowDays}
-                        {t('일마다 전체', ' days: full')} {c.generate} / {t('부분', 'partial')} {c.adjust}
+                        {t('일마다 AI 채우기', ' days: AI fill')} {c.generate}
+                        {t('회', ' uses')}
                     </p>
                     <Notice>
                         {t(
@@ -414,9 +432,10 @@ function HospitalCalculator({e}: {scope: Scope; e: Entitlement}) {
                     </div>
                     <div>
                         <strong>
-                            {result.estimate.generate} / {result.estimate.adjust}
+                            {result.estimate.generate}
+                            {t('회', ' uses')}
                         </strong>
-                        <span>{t('매월 전체 생성 / 부분 조정', 'Monthly full / partial uses')}</span>
+                        <span>{t('매월 AI 채우기', 'Monthly AI fill uses')}</span>
                     </div>
                     <div>
                         <strong>
@@ -433,7 +452,19 @@ function HospitalCalculator({e}: {scope: Scope; e: Entitlement}) {
     );
 }
 
-function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e: Entitlement; cardRegistrationVersion?: number}) {
+export function BillingPanel({
+    scope,
+    e,
+    cardRegistrationVersion = 1,
+    paymentReturnPath = '/workspace/payment-return',
+    embedded = false,
+}: {
+    scope: Scope;
+    e: Entitlement;
+    cardRegistrationVersion?: number;
+    paymentReturnPath?: string;
+    embedded?: boolean;
+}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
@@ -442,6 +473,10 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
         queryFn: () => commercialGet<Billing>(`/billing-scopes/${scope.scopeId}`),
         enabled: e.canManageBilling,
     });
+    const refundableInvoices =
+        data.data?.invoices.filter((invoice) => invoice.status !== 'VOID' && invoice.allocated > invoice.refundedGross) ?? [];
+    const canRequestRefund = scope.type === 'HOSPITAL' || refundableInvoices.length > 0;
+    const refundRequests = data.data?.requests.filter((request) => scope.type === 'HOSPITAL' || request.kind === 'REFUND') ?? [];
     const plans = useQuery({
         queryKey: commercialQueryKey(accountId, 'plans'),
         queryFn: () => commercialGet<{id: string; config: Policy | null; configured?: boolean}[]>('/plans'),
@@ -449,6 +484,7 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
         refetchOnWindowFocus: 'always',
     });
     const publicOffer = useQuery({queryKey: ['public-plus-offer'], queryFn: fetchPublicOffer, retry: false});
+    const activeSubscription = scope.type === 'WARD' && e.plan === 'PLUS' && e.entitlementSource === 'SUBSCRIPTION';
     const targetPlan = scope.type === 'HOSPITAL' ? 'HOSPITAL' : 'PLUS';
     const planPolicy =
         e.plan === targetPlan && (e.entitlementSource === 'SUBSCRIPTION' || scope.type === 'HOSPITAL')
@@ -460,24 +496,129 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
     const planPricing =
         planPolicy ?? (scope.type === 'WARD' && ['FREE', 'EVENT'].includes(e.entitlementSource) ? publishedPlusOffer : undefined);
     const [purpose, setPurpose] = useState<QuoteRequest['purpose']>(e.entitlementSource === 'SUBSCRIPTION' ? 'USAGE_PACK' : 'SUBSCRIPTION');
+    const cardSubscription = scope.type === 'WARD' && purpose === 'SUBSCRIPTION';
     const [capacity, setCapacity] = useState<number>();
     const minimumCapacity = Math.max(1, planPricing?.includedStaff ?? 1, e.capacity.used);
+    const currentContractCapacity = data.data?.customer?.capacity ?? e.capacity.purchased;
+    const [renewalCapacity, setRenewalCapacity] = useState<string>();
+    const renewalCapacityText =
+        renewalCapacity ?? String(data.data?.scope.nextCapacity ?? data.data?.customer?.capacity ?? e.capacity.purchased);
+    const validRenewalCapacity =
+        /^\d+$/.test(renewalCapacityText) &&
+        Number.isSafeInteger(Number(renewalCapacityText)) &&
+        Number(renewalCapacityText) >= minimumCapacity &&
+        Number(renewalCapacityText) < currentContractCapacity &&
+        Number(renewalCapacityText) <= 10000;
+    const [subscriptionCapacity, setSubscriptionCapacity] = useState<string>();
+    const capacityErrorId = useId();
     const draftCapacity = capacity ?? Math.max(minimumCapacity, e.capacity.purchased);
-    const quoteCapacity = Math.max(minimumCapacity, draftCapacity);
+    const subscriptionCapacityText = subscriptionCapacity ?? String(draftCapacity);
+    const subscriptionCapacityValue = Number(subscriptionCapacityText);
+    const validSubscriptionCapacity =
+        /^\d+$/.test(subscriptionCapacityText) &&
+        Number.isSafeInteger(subscriptionCapacityValue) &&
+        subscriptionCapacityValue <= 10000 &&
+        minimumCapacity <= 10000;
+    const invalidSubscriptionCapacity = cardSubscription && subscriptionCapacityText !== '' && !validSubscriptionCapacity;
+    const quoteCapacity = Math.max(minimumCapacity, cardSubscription ? subscriptionCapacityValue : draftCapacity);
     const subscriptionUnavailable = purpose === 'SUBSCRIPTION' && !planPricing;
     const [full, setFull] = useState(0);
-    const [partial, setPartial] = useState(0);
     const [setup, setSetup] = useState(50);
-    const [quote, setQuote] = useState<Quote>();
-    const reviewHeading = useRef<HTMLHeadingElement>(null);
-    const [consent, setConsent] = useState(false);
+    const [manualQuote, setQuote] = useState<Quote>();
+    const [pendingPayment, setPendingPayment] = useState<Order>();
+    const unresolvedPayment =
+        data.data?.orders.find((order) => isPendingPayment(order) && !isUnsubmittedPayment(order)) ??
+        (pendingPayment && !isUnsubmittedPayment(pendingPayment) ? pendingPayment : undefined);
+    const [acceptedConsent, setConsent] = useState(false);
+    const [consentQuote, setConsentQuote] = useState<string>();
     const [trialLoss, setTrialLoss] = useState(false);
+    const [trialQuote, setTrialQuote] = useState<string>();
     const [billingProof, setBillingProof] = useState('');
     const emailVerificationRequired = !(cardRegistrationVersion >= 2);
+    const [debouncedCapacityText, setDebouncedCapacityText] = useState(subscriptionCapacityText);
+    const debouncedCapacity = Math.max(minimumCapacity, Number(debouncedCapacityText));
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedCapacityText(subscriptionCapacityText), 300);
+
+        return () => clearTimeout(timer);
+    }, [subscriptionCapacityText]);
+
+    const automaticQuote = useQuery({
+        queryKey: commercialQueryKey(
+            accountId,
+            scope.type,
+            scope.ref,
+            'subscription-quote',
+            debouncedCapacity,
+            planPricing,
+            data.data?.scope.version,
+        ),
+        queryFn: async () => {
+            const q = await commercialPost<Quote>(`/billing-scopes/${scope.scopeId}/quotes`, {
+                purpose: 'SUBSCRIPTION',
+                plan: 'PLUS',
+                capacity: debouncedCapacity,
+                setupStaff: 0,
+                fullPacks: 0,
+                partialPacks: 0,
+            });
+            const snapshot = parseQuoteTerms(q.snapshot);
+
+            if (
+                !snapshot ||
+                typeof q.id !== 'string' ||
+                !q.id.trim() ||
+                typeof q.contentHash !== 'string' ||
+                !q.contentHash.trim() ||
+                q.scopeId !== scope.scopeId ||
+                snapshot.request?.purpose !== 'SUBSCRIPTION' ||
+                snapshot.request?.plan !== 'PLUS' ||
+                snapshot.request?.capacity !== debouncedCapacity
+            )
+                throw new Error(t('견적 정보를 확인하지 못했습니다. 다시 불러와 주세요.', 'Unable to verify the quote. Please try again.'));
+
+            if (typeof q.expiresAt !== 'string' || !(quoteTimestamp(q.expiresAt) > Date.now()))
+                throw new Error(t('금액 확인 유효시간이 지났습니다. 다시 불러와 주세요.', 'This quote has expired. Please try again.'));
+
+            return q;
+        },
+        enabled:
+            cardSubscription &&
+            !activeSubscription &&
+            e.canManageBilling &&
+            !!planPricing &&
+            data.isSuccess &&
+            !!data.data &&
+            validSubscriptionCapacity &&
+            debouncedCapacityText === subscriptionCapacityText &&
+            debouncedCapacity === quoteCapacity &&
+            !action.busy,
+        retry: false,
+        staleTime: 0,
+        gcTime: 0,
+        refetchOnWindowFocus: false,
+        refetchInterval: (query) =>
+            query.state.status === 'success' && query.state.data
+                ? Math.max(1000, Math.min(quoteTimestamp(query.state.data.expiresAt) - Date.now() + 100, 2147483647))
+                : false,
+    });
+    const quote = cardSubscription
+        ? validSubscriptionCapacity &&
+          debouncedCapacityText === subscriptionCapacityText &&
+          debouncedCapacity === quoteCapacity &&
+          !automaticQuote.isFetching &&
+          !automaticQuote.isError &&
+          !data.isError
+            ? automaticQuote.data
+            : undefined
+        : manualQuote;
+    const quoteIdentity = quote ? `${quote.id}:${quote.contentHash}` : undefined;
+    const consent = cardSubscription ? acceptedConsent && !!quoteIdentity && consentQuote === quoteIdentity : acceptedConsent;
+    const trialLossAccepted = trialLoss && (!cardSubscription || (!!quoteIdentity && trialQuote === quoteIdentity));
     const [now, setNow] = useState(Date.now);
     const terms: QuoteTerms | undefined = quote ? parseQuoteTerms(quote.snapshot) : undefined;
     const quoteExpired = !!quote && !(quoteTimestamp(quote.expiresAt) > now);
-    const cardSubscription = scope.type === 'WARD' && purpose === 'SUBSCRIPTION';
     const cardReady =
         cardSubscription &&
         publicOffer.data?.ready &&
@@ -497,48 +638,123 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
         return () => clearInterval(timer);
     }, [quote]);
 
-    useEffect(() => {
-        if (quote && cardSubscription) reviewHeading.current?.focus();
-    }, [quote, cardSubscription]);
+    const refreshPendingPayment = async () => {
+        const refreshed = await data.refetch();
 
+        if (refreshed.isSuccess) {
+            const pending = refreshed.data.orders.filter(isPendingPayment);
+
+            setPendingPayment(pending.find((order) => !isUnsubmittedPayment(order)) ?? pending[0]);
+        }
+    };
+    const prepareCardRegistration = async () => {
+        let attemptedAbandon = false;
+
+        setPendingPayment(undefined);
+
+        try {
+            const currentBilling = await data.refetch({throwOnError: true});
+
+            if (!currentBilling.data) throw new Error(t('결제 내역을 다시 확인해 주세요.', 'Please check your payment history again.'));
+
+            const pending = currentBilling.data.orders.filter(isPendingPayment);
+            const reconciling = pending.find((order) => !isUnsubmittedPayment(order));
+
+            if (reconciling) {
+                setPendingPayment(reconciling);
+                throw new Error(
+                    t(
+                        '결제 결과를 확인 중입니다. 기존 결제 상태를 확인해 주세요.',
+                        'A payment result is still pending. Check the existing payment status.',
+                    ),
+                );
+            }
+
+            for (const order of pending) {
+                setPendingPayment(order);
+                attemptedAbandon = true;
+
+                // The server rechecks the payment state under its ledger lock.
+                const abandoned = await commercialPost<Order>(`/orders/${encodeURIComponent(order.id)}/abandon`);
+
+                if (abandoned.status !== 'FAILED')
+                    throw new Error(t('기존 결제 상태를 확인해 주세요.', 'Check the existing payment status.'));
+            }
+
+            setPendingPayment(undefined);
+        } finally {
+            if (attemptedAbandon) await refreshPendingPayment();
+        }
+    };
     const review = async () => {
         if (subscriptionUnavailable) return;
 
-        const payload: QuoteRequest = {
-            purpose,
-            plan: targetPlan,
-            capacity: purpose === 'USAGE_PACK' || purpose === 'SETUP' ? e.capacity.purchased : quoteCapacity,
-            setupStaff: purpose === 'SETUP' ? setup : 0,
-            fullPacks: purpose === 'USAGE_PACK' ? full : 0,
-            partialPacks: purpose === 'USAGE_PACK' ? partial : 0,
-        };
-        const q = await commercialPost<Quote>(`/billing-scopes/${scope.scopeId}/quotes`, payload);
-
-        if (!parseQuoteTerms(q.snapshot)) {
-            setQuote(undefined);
-            throw new Error(
-                t('견적 정보를 확인하지 못했습니다. 정확한 금액을 다시 확인해 주세요.', 'Unable to verify the quote. Request a new quote.'),
-            );
-        }
-
-        setQuote(q);
         setConsent(false);
+        setTrialLoss(false);
 
-        return q;
+        try {
+            const payload: QuoteRequest = {
+                purpose,
+                plan: targetPlan,
+                capacity: purpose === 'USAGE_PACK' || purpose === 'SETUP' ? e.capacity.purchased : quoteCapacity,
+                setupStaff: purpose === 'SETUP' ? setup : 0,
+                fullPacks: purpose === 'USAGE_PACK' ? full : 0,
+                partialPacks: 0,
+            };
+            const q = await commercialPost<Quote>(`/billing-scopes/${scope.scopeId}/quotes`, payload);
+
+            if (!parseQuoteTerms(q.snapshot))
+                throw new Error(
+                    t(
+                        '견적 정보를 확인하지 못했습니다. 정확한 금액을 다시 확인해 주세요.',
+                        'Unable to verify the quote. Request a new quote.',
+                    ),
+                );
+
+            setQuote(q);
+
+            return q;
+        } catch (error) {
+            setQuote(undefined);
+            throw error;
+        }
     };
 
     if (!e.canManageBilling)
         return (
             <Section title={t('최고 관리자에게 요청하기', 'Request from your owner')}>
                 <Notice>
-                    {t(
-                        '계약과 결제는 최고 관리자가 관리합니다. 병원에 연결된 병동은 병원 최고 관리자가 계약 인원을 관리합니다.',
-                        'Ward editors and hospital managers cannot pay. Hospital owners manage the shared capacity of linked wards.',
-                    )}
+                    {e.plan === 'HOSPITAL' && e.billingScopeId !== scope.scopeId
+                        ? t(
+                              '이 병동은 병원 계약을 사용하고 있어요. 편성 인원을 늘리려면 병원 최고 관리자에게 요청하세요.',
+                              'This ward uses the hospital contract. Ask the hospital owner to increase the scheduling capacity.',
+                          )
+                        : t(
+                              '병동 최고 관리자가 구독과 결제를 관리해요. 편성 인원을 늘려야 한다면 아래에서 요청하세요.',
+                              'The ward owner manages the subscription and payments. Request more scheduling capacity below.',
+                          )}
                 </Notice>
                 <RequestForm scope={scope} />
             </Section>
         );
+
+    const refundSupport =
+        data.data && (canRequestRefund || refundRequests.length > 0) ? (
+            <Section title={t('환불·정산 문의', 'Refund & billing support')}>
+                {canRequestRefund ? (
+                    <RequestForm
+                        scope={scope}
+                        kind="REFUND"
+                        invoices={scope.type === 'HOSPITAL' ? data.data.invoices : refundableInvoices}
+                    />
+                ) : null}
+                {refundRequests.map((r) => (
+                    <p key={r.id}>
+                        {r.kind} · {r.status} · {r.resolution ?? date(r.createdAt)}
+                    </p>
+                ))}
+            </Section>
+        ) : null;
 
     return (
         <>
@@ -587,29 +803,69 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
                     )}
                     {data.data.orders.map((o) => (
                         <p key={o.id}>
-                            <Link to={`/workspace/payment-return?orderId=${o.id}`}>
-                                {money(o.gross)} · {o.status}
+                            <Link to={`${paymentReturnPath}?orderId=${encodeURIComponent(o.id)}`}>
+                                {money(o.gross)} · {paymentStatusLabel(o.status, t)}
                             </Link>
                         </p>
                     ))}
                 </Section>
             ) : null}
-            {scope.type === 'WARD' && e.plan === 'PLUS' && e.entitlementSource === 'SUBSCRIPTION' ? (
-                <PaymentMethodPanel scope={scope} emailVerificationRequired={emailVerificationRequired} />
+            {activeSubscription && data.data ? (
+                <PlusSubscriptionOverview billing={data.data} entitlement={e}>
+                    <PaymentMethodPanel
+                        scope={scope}
+                        emailVerificationRequired={emailVerificationRequired}
+                        cancelAtPeriodEnd={data.data.scope.cancelAtPeriodEnd}
+                    />
+                    {currentContractCapacity > minimumCapacity ? (
+                        <details className="plus-subscription__settings">
+                            <summary>{t('인원 줄이기', 'Reduce staff capacity')}</summary>
+                            <div>
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+
+                                        if (!validRenewalCapacity) return;
+
+                                        void action.run(() =>
+                                            commercialPost(`/billing-scopes/${scope.scopeId}/capacity-reservation`, {
+                                                capacity: Number(renewalCapacityText),
+                                                expectedVersion: data.data!.scope.version,
+                                            }),
+                                        );
+                                    }}
+                                >
+                                    <Field
+                                        label={t('다음 갱신 때 줄일 총 인원', 'Lower capacity at next renewal')}
+                                        suffix={t('명', 'staff')}
+                                    >
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]+"
+                                            required
+                                            value={renewalCapacityText}
+                                            onChange={(event) => setRenewalCapacity(event.target.value)}
+                                        />
+                                    </Field>
+                                    <button className="secondary" disabled={action.busy || !validRenewalCapacity}>
+                                        {t('다음 주기 감원 예약', 'Schedule decrease')}
+                                    </button>
+                                </form>
+                                <ActionsFeedback action={action} />
+                            </div>
+                        </details>
+                    ) : null}
+                </PlusSubscriptionOverview>
             ) : null}
-            <HospitalDisclosure
-                active={scope.type === 'HOSPITAL'}
-                title={t('요금제와 추가 구매', 'Plan & add-ons')}
-                help={t(
-                    'Hospital은 계약 병원의 여러 병동을 함께 관리합니다. 관리자 정원과 편성 인원은 별도로 계산합니다.',
-                    'Hospital covers multiple contracted wards. Administrator seats and scheduling staff are counted separately.',
-                )}
-            >
-                <Section
+            {activeSubscription ? (
+                <PlusAddons scope={scope} entitlement={e} billing={data.data} />
+            ) : (
+                <HospitalDisclosure
+                    active={scope.type === 'HOSPITAL' || activeSubscription}
                     title={
-                        cardSubscription ? t('Plus 구독 시작', 'Start your Plus subscription') : t('요금제와 추가 구매', 'Plan & add-ons')
+                        embedded && activeSubscription ? t('추가 이용 문의', 'Additional usage') : t('요금제와 추가 구매', 'Plan & add-ons')
                     }
-                    className={cardSubscription ? 'plus-checkout' : ''}
                     help={
                         scope.type === 'HOSPITAL'
                             ? t(
@@ -619,403 +875,503 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
                             : undefined
                     }
                 >
-                    {cardSubscription ? (
-                        <PlusCheckoutProgress reviewing={!!quote} emailVerificationRequired={emailVerificationRequired} />
-                    ) : null}
-                    {!cardSubscription && scope.type === 'WARD' ? (
-                        <p>
-                            {t(
-                                'Plus는 병동 하나, Hospital은 계약 병원의 여러 병동을 함께 관리합니다. 로그인 관리자 수와 편성 인원은 서로 다릅니다.',
-                                'Plus covers one ward. Hospital coordinates multiple contracted wards. Administrator seats and scheduling staff are separate.',
-                            )}
-                        </p>
-                    ) : null}
-                    {!cardSubscription ? (
-                        <div className="workspace-plan-summary">
-                            <strong>{scope.type === 'HOSPITAL' ? 'Hospital' : 'Plus'}</strong>
-                            {planPricing ? (
-                                <>
-                                    <span>
-                                        {t('기본', 'Base')} {money(planPricing.baseGross)} /{' '}
-                                        {t('월 · 기본 편성 인원', 'month · included staff')} {planPricing.includedStaff}
-                                    </span>
-                                    <span>
-                                        {t('추가 1명', 'Each extra staff')} {money(planPricing.extraStaffGross)} / {t('월', 'month')}
-                                    </span>
-                                </>
-                            ) : (
-                                <span>
-                                    {plans.isPending
-                                        ? t('요금제를 불러오는 중입니다.', 'Loading plans…')
-                                        : t('요금제 설정 중', 'Plan being configured')}
-                                </span>
-                            )}
-                        </div>
-                    ) : null}
-                    {subscriptionUnavailable && !plans.isPending ? (
-                        <Notice>
-                            {plans.isError
+                    <Section
+                        title={cardSubscription ? t('Plus 요금제', 'Plus plan') : t('요금제와 추가 구매', 'Plan & add-ons')}
+                        className={cardSubscription ? 'plus-checkout' : ''}
+                        help={
+                            scope.type === 'HOSPITAL'
                                 ? t(
-                                      '요금제를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.',
-                                      'Unable to load plans. Please try again shortly.',
+                                      'Hospital은 계약 병원의 여러 병동을 함께 관리합니다. 관리자 정원과 편성 인원은 별도로 계산합니다.',
+                                      'Hospital covers multiple contracted wards. Administrator seats and scheduling staff are counted separately.',
                                   )
-                                : t(
-                                      '요금제 설정이 완료되면 견적을 확인할 수 있습니다.',
-                                      'Quotes will be available when this plan is configured.',
-                                  )}
-                        </Notice>
-                    ) : null}
-                    {!e.checkoutEnabled ? (
-                        <Notice>
-                            {t(
-                                '현재 결제 오픈을 준비 중입니다. 견적과 도입 문의는 이용할 수 있습니다.',
-                                'Payments are being prepared. Estimates and rollout inquiries remain available.',
-                            )}
-                        </Notice>
-                    ) : null}
-                    {!cardSubscription ? (
-                        <Notice>
-                            {scope.type === 'HOSPITAL'
-                                ? t('Hospital은 개별 계약·계좌이체로 진행합니다.', 'Hospital uses individual contracts and bank transfers.')
-                                : t(
-                                      '현재 카드 결제는 Plus 월 구독만 지원합니다. Hospital은 개별 계약·계좌이체로 진행하며, 추가 횟수·중도 증원은 고객센터에 문의해 주세요.',
-                                      'Card billing currently supports Plus monthly subscriptions. Contact support for Hospital contracts, add-ons or mid-cycle capacity changes.',
-                                  )}
-                        </Notice>
-                    ) : null}
-                    <div className={cardSubscription ? ['plus-checkout-start', quote ? 'is-reviewing' : ''].join(' ') : undefined}>
-                        {cardSubscription ? <PlusCheckoutPlan pricing={planPricing} scopeName={scope.name} /> : null}
-                        <form
-                            onSubmit={(event) => {
-                                event.preventDefault();
-                                void action.run(review);
-                            }}
-                            className={cardSubscription ? 'plus-checkout-form' : 'workspace-form-grid'}
-                        >
-                            {!cardSubscription ? (
-                                <Field label={t('이용할 상품', 'Product')}>
-                                    <select
-                                        value={purpose}
-                                        onChange={(event) => {
-                                            setPurpose(event.target.value as QuoteRequest['purpose']);
-                                            setQuote(undefined);
-                                        }}
-                                    >
-                                        {e.entitlementSource !== 'SUBSCRIPTION' ? (
-                                            <option value="SUBSCRIPTION">{t('유료 구독 시작', 'Start paid subscription')}</option>
-                                        ) : (
-                                            <>
-                                                <option value="USAGE_PACK">{t('AI 횟수 추가', 'Additional AI uses')}</option>
-                                                <option value="CAPACITY">{t('편성 인원 증설', 'Increase capacity')}</option>
-                                                {scope.type === 'HOSPITAL' ? (
-                                                    <option value="SETUP">{t('초기 도입 세팅', 'Initial setup')}</option>
-                                                ) : null}
-                                            </>
-                                        )}
-                                    </select>
-                                </Field>
-                            ) : null}
-                            {purpose === 'USAGE_PACK' ? (
-                                <>
-                                    <Field
-                                        label={`${t('전체 생성', 'Full generation')} ${e.policy.generatePackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.generatePackGross)}`}
-                                    >
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            max={100}
-                                            value={full}
-                                            onChange={(event) => {
-                                                setFull(Number(event.target.value));
-                                                setQuote(undefined);
-                                            }}
-                                        />
-                                    </Field>
-                                    <Field
-                                        label={`${t('부분 조정', 'Partial adjustment')} ${e.policy.adjustPackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.adjustPackGross)}`}
-                                    >
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            max={100}
-                                            value={partial}
-                                            onChange={(event) => {
-                                                setPartial(Number(event.target.value));
-                                                setQuote(undefined);
-                                            }}
-                                        />
-                                    </Field>
-                                </>
-                            ) : purpose === 'SETUP' ? (
-                                <Field label={t('세팅할 인원 S', 'Setup staff S')}>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        max={10000}
-                                        value={setup}
-                                        onChange={(event) => {
-                                            setSetup(Number(event.target.value));
-                                            setQuote(undefined);
-                                        }}
-                                    />
-                                </Field>
-                            ) : (
-                                <Field label={t('변경 후 총 편성 인원', 'Total staff after change')}>
-                                    <input
-                                        type="number"
-                                        min={minimumCapacity}
-                                        max={10000}
-                                        value={draftCapacity}
-                                        onChange={(event) => {
-                                            setCapacity(Number(event.target.value));
-                                            setQuote(undefined);
-                                        }}
-                                    />
-                                </Field>
-                            )}
-                            {cardSubscription ? (
-                                <p className="plus-checkout-caption">
-                                    {t(
-                                        '전체 편성 인원을 입력하세요. 기본 인원보다 적어도 기본료가 적용됩니다.',
-                                        'Enter your total scheduling staff. The base fee applies below the included capacity.',
-                                    )}
-                                </p>
-                            ) : null}
-                            <button
-                                className={cardSubscription ? 'plus-checkout-primary' : undefined}
-                                disabled={action.busy || subscriptionUnavailable}
-                            >
-                                {action.busy
-                                    ? t('확인 중…', 'Checking…')
-                                    : cardSubscription
-                                      ? quote
-                                          ? t('결제 금액 다시 확인', 'Refresh payment amount')
-                                          : t('Plus 구독 시작', 'Start Plus subscription')
-                                      : t('정확한 금액 확인', 'Review exact quote')}
-                            </button>
-                            {cardSubscription ? (
-                                <p className="plus-checkout-caption">
-                                    {t(
-                                        '다음 단계에서 금액을 확인하고 카드를 등록합니다. 지금은 결제되지 않습니다.',
-                                        'Review the amount and register a card next. You will not be charged yet.',
-                                    )}
-                                </p>
-                            ) : null}
-                        </form>
-                    </div>
-                    {quote && terms ? (
-                        <div className="workspace-review" aria-live="polite">
-                            <h3 ref={reviewHeading} tabIndex={-1}>
-                                {scope.name} · {t('결제 전 확인', 'Review before paying')}
-                            </h3>
-                            <div className="workspace-stats">
-                                <div>
-                                    <strong>{money(terms.totalAmount)}</strong>
-                                    <span>{t('이번 결제 총액 · 부가세 포함', 'Due now · VAT included')}</span>
-                                </div>
-                                <div>
-                                    <strong>{money(terms.recurring.monthlyGross)}</strong>
-                                    <span>{t('변경 후 월 구독료', 'Monthly subscription after change')}</span>
-                                </div>
-                            </div>
-                            <dl className={cardSubscription ? 'plus-checkout-review-facts' : undefined}>
-                                <dt>{t('부가세 내역', 'Tax breakdown')}</dt>
-                                <dd>
-                                    {t('공급가액', 'Net')} {money(terms.supplyAmount)} + VAT {money(terms.taxAmount)}
-                                </dd>
-                                <dt>{t('이용기간', 'Service period')}</dt>
-                                <dd>
-                                    {date(terms.periodStart)} ~ {date(terms.periodEnd)} (KST)
-                                </dd>
-                                {cardSubscription ? (
-                                    <>
-                                        <dt>{t('다음 자동결제일', 'Next automatic payment')}</dt>
-                                        <dd>{date(terms.periodEnd)} (KST)</dd>
-                                    </>
-                                ) : null}
-                                <dt>{t('이번 제공량', 'Included uses')}</dt>
-                                <dd>
-                                    {t('전체 생성', 'Full generation')} {terms.fullUnits} / {t('부분 조정', 'Partial adjustment')}{' '}
-                                    {terms.partialUnits}
-                                </dd>
-                                <dt>{t('금액 확인 유효시간', 'Amount valid until')}</dt>
-                                <dd>{date(quote.expiresAt)}</dd>
-                            </dl>
-                            {quoteExpired ? (
-                                <p className="workspace-error" role="alert">
-                                    {t(
-                                        '확인한 금액의 유효시간이 지났습니다. 위의 ‘결제 금액 다시 확인’을 눌러 주세요.',
-                                        'This quote has expired. Request a new quote.',
-                                    )}
-                                </p>
-                            ) : null}
-                            <Notice>
-                                {cardSubscription
-                                    ? t(
-                                          '기본 AI 횟수는 해당 이용기간까지 사용할 수 있습니다. 구독 해지는 기간 말에 적용하며 기존 자료는 유지됩니다.',
-                                          'Included AI uses expire at the period end. Cancellation takes effect at period end; existing data is preserved.',
-                                      )
-                                    : t(
-                                          '기본 횟수는 해당 주기까지, 추가 구매 횟수는 구매일부터 365일입니다. 두 종류의 횟수는 서로 전환되지 않습니다. 구독 해지는 기간 말에 적용하며 기존 자료는 유지됩니다.',
-                                          'Included uses expire at the cycle end. Purchased uses last 365 days and cannot be converted between meters. Cancellation takes effect at period end; existing data is preserved.',
-                                      )}
-                            </Notice>
-                            {cardSubscription && (
-                                <>
-                                    <details>
-                                        <summary>{t('월 자동결제·해지·환불 안내', 'Monthly billing, cancellation & refunds')}</summary>
-                                        <SubscriptionConditions />
-                                        <RefundConditions />
-                                    </details>
-                                    <p>
-                                        {t(
-                                            '카드 등록을 마치면 결제 확인 화면으로 이동합니다. 그 화면에서 첫 결제를 확정하면 구독이 시작되고, 이후 매월 이용기간 종료일에 자동 갱신합니다.',
-                                            'After card registration, review and confirm the first charge on the next screen. Monthly renewals follow at each period end.',
-                                        )}
-                                    </p>
-                                    {emailVerificationRequired ? <Reauthenticate onVerified={setBillingProof} /> : null}
-                                </>
-                            )}
-                            {scope.type === 'WARD' ? (
-                                <>
-                                    <label className="workspace-check">
-                                        <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
-                                        <span>
-                                            {t('금액·대상·기간 및', 'I agree to the amount, scope, period and')}{' '}
-                                            <Link to="/subscription-terms" target="_blank">
-                                                {t('정기결제 약관', 'subscription terms')}
-                                            </Link>{' '}
-                                            ·{' '}
-                                            <Link to="/refund" target="_blank">
-                                                {t('환불 조건', 'refund policy')}
-                                            </Link>
-                                            {t('에 동의하며 매월 자동결제를 신청합니다.', ' and authorize monthly automatic payments.')}
-                                        </span>
-                                    </label>
-                                    {e.entitlementSource === 'EVENT' ? (
-                                        <label className="workspace-check">
-                                            <input
-                                                type="checkbox"
-                                                checked={trialLoss}
-                                                onChange={(event) => setTrialLoss(event.target.checked)}
-                                            />
-                                            <span>
-                                                {t(
-                                                    '남은 무료 이벤트 기간·제공량이 종료되고 지금 첫 결제가 이루어지는 것에 동의합니다.',
-                                                    'I agree to end the remaining trial and make the first payment now.',
-                                                )}
-                                            </span>
-                                        </label>
-                                    ) : null}
-                                    <button
-                                        className={cardSubscription ? 'plus-checkout-primary' : undefined}
-                                        disabled={
-                                            !consent ||
-                                            (emailVerificationRequired && !billingProof) ||
-                                            !cardReady ||
-                                            action.busy ||
-                                            !e.checkoutEnabled ||
-                                            (e.entitlementSource === 'EVENT' && !trialLoss)
-                                        }
-                                        onClick={() =>
-                                            void action.run(async () => {
-                                                if (!(quoteTimestamp(quote.expiresAt) > Date.now())) {
-                                                    setNow(Date.now());
-                                                    throw new Error(
-                                                        t(
-                                                            '확인한 금액의 유효시간이 지났습니다. 위의 ‘결제 금액 다시 확인’을 눌러 주세요.',
-                                                            'This quote has expired. Request a new quote.',
-                                                        ),
-                                                    );
-                                                }
-
-                                                await loadToss();
-
-                                                const payload = {
-                                                    quoteId: quote.id,
-                                                    contentHash: quote.contentHash,
-                                                    termsVersion: terms.termsVersion,
-                                                    trialLossAccepted: trialLoss,
-                                                };
-                                                const keyName = `dutying:checkout:${quote.id}`;
-                                                const key = sessionStorage.getItem(keyName) ?? crypto.randomUUID();
-
-                                                sessionStorage.setItem(keyName, key);
-
-                                                const registration = await commercialPost<{
-                                                    id: string;
-                                                    orderId: string;
-                                                    clientKey: string;
-                                                    customerKey: string;
-                                                    returnUrl: string;
-                                                }>(
-                                                    `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/subscription-checkout`,
-                                                    emailVerificationRequired
-                                                        ? {checkout: payload, reauthenticationToken: billingProof}
-                                                        : {checkout: payload},
-                                                    key,
-                                                );
-
-                                                await openTossBilling(registration);
-
-                                                return registration;
-                                            })
-                                        }
-                                    >
-                                        {t('동의하고 정기결제 카드 등록', 'Agree & register subscription card')}
-                                    </button>
-                                    {cardSubscription ? (
-                                        <p className="plus-checkout-next" role="status">
-                                            {emailVerificationRequired && !billingProof
-                                                ? t(
-                                                      '이메일 본인 확인을 완료한 후 약관에 동의해 주세요.',
-                                                      'Verify your email, then agree to the terms.',
-                                                  )
-                                                : !consent
-                                                  ? t(
-                                                        '약관에 동의하면 카드 등록을 진행할 수 있습니다.',
-                                                        'Agree to the terms to register your card.',
-                                                    )
-                                                  : t(
-                                                        '카드 등록 후 다음 화면에서 첫 결제를 확정합니다.',
-                                                        'Confirm the first payment on the next screen after registering your card.',
-                                                    )}
-                                        </p>
-                                    ) : null}
-                                </>
-                            ) : null}
-                            {!cardReady && (
-                                <Notice>
-                                    {cardSubscription
-                                        ? t(
-                                              '상품 안내 준비 상태 또는 1회 최대 100만 원의 결제 한도를 확인해 주세요.',
-                                              'Review sales availability and the KRW 1,000,000 charge limit.',
-                                          )
-                                        : t(
-                                              '이 견적은 상담용입니다. 고객센터를 통해 진행해 주세요.',
-                                              'This estimate is for consultation. Please contact support.',
-                                          )}
-                                </Notice>
-                            )}
-                        </div>
-                    ) : null}
-                    {cardSubscription ? (
-                        <details className="plus-checkout-disclosure">
-                            <summary>{t('다른 상품·추가 구매 안내', 'Other plans & add-ons')}</summary>
+                                : undefined
+                        }
+                    >
+                        {cardSubscription ? <PlusCheckoutProgress emailVerificationRequired={emailVerificationRequired} /> : null}
+                        {!cardSubscription && scope.type === 'WARD' && !activeSubscription ? (
                             <p>
                                 {t(
-                                    'Hospital은 개별 계약·계좌이체로 진행합니다. 추가 AI 횟수와 중도 증원은 고객센터에 문의해 주세요.',
-                                    'Hospital uses individual contracts and bank transfers. Contact support for extra AI uses or mid-cycle capacity changes.',
+                                    'Plus는 병동 하나, Hospital은 계약 병원의 여러 병동을 함께 관리합니다. 로그인 관리자 수와 편성 인원은 서로 다릅니다.',
+                                    'Plus covers one ward. Hospital coordinates multiple contracted wards. Administrator seats and scheduling staff are separate.',
                                 )}
                             </p>
-                        </details>
-                    ) : null}
-                    <ActionsFeedback action={action} />
-                </Section>
-            </HospitalDisclosure>
+                        ) : null}
+                        {!cardSubscription ? (
+                            <div className="workspace-plan-summary">
+                                <strong>{scope.type === 'HOSPITAL' ? 'Hospital' : 'Plus'}</strong>
+                                {planPricing ? (
+                                    <>
+                                        <span>
+                                            {t('기본', 'Base')} {money(planPricing.baseGross)} /{' '}
+                                            {t('월 · 기본 편성 인원', 'month · included staff')} {planPricing.includedStaff}
+                                        </span>
+                                        <span>
+                                            {t('추가 1명', 'Each extra staff')} {money(planPricing.extraStaffGross)} / {t('월', 'month')}
+                                        </span>
+                                    </>
+                                ) : (
+                                    <span>
+                                        {plans.isPending
+                                            ? t('요금제를 불러오는 중입니다.', 'Loading plans…')
+                                            : t('요금제 설정 중', 'Plan being configured')}
+                                    </span>
+                                )}
+                            </div>
+                        ) : null}
+                        {subscriptionUnavailable && !plans.isPending ? (
+                            <Notice>
+                                {plans.isError
+                                    ? t(
+                                          '요금제를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.',
+                                          'Unable to load plans. Please try again shortly.',
+                                      )
+                                    : t(
+                                          '요금제 설정이 완료되면 견적을 확인할 수 있습니다.',
+                                          'Quotes will be available when this plan is configured.',
+                                      )}
+                            </Notice>
+                        ) : null}
+                        {!e.checkoutEnabled ? (
+                            <Notice>
+                                {t(
+                                    '현재 결제 오픈을 준비 중입니다. 견적과 도입 문의는 이용할 수 있습니다.',
+                                    'Payments are being prepared. Estimates and rollout inquiries remain available.',
+                                )}
+                            </Notice>
+                        ) : null}
+                        {!cardSubscription ? (
+                            <Notice>
+                                {scope.type === 'HOSPITAL'
+                                    ? t(
+                                          'Hospital은 개별 계약·계좌이체로 진행합니다.',
+                                          'Hospital uses individual contracts and bank transfers.',
+                                      )
+                                    : t(
+                                          '현재 카드 결제는 Plus 월 구독만 지원합니다. Hospital은 개별 계약·계좌이체로 진행하며, 추가 횟수·중도 증원은 고객센터에 문의해 주세요.',
+                                          'Card billing currently supports Plus monthly subscriptions. Contact support for Hospital contracts, add-ons or mid-cycle capacity changes.',
+                                      )}
+                            </Notice>
+                        ) : null}
+                        <div className={cardSubscription ? 'plus-checkout-start is-combined' : undefined}>
+                            {cardSubscription ? <PlusCheckoutPlan compact pricing={planPricing} scopeName={scope.name} /> : null}
+                            <form
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+
+                                    if (!cardSubscription) void action.run(review);
+                                }}
+                                className={cardSubscription ? 'plus-checkout-form' : 'workspace-form-grid'}
+                            >
+                                {!cardSubscription ? (
+                                    <Field label={t('이용할 상품', 'Product')}>
+                                        <select
+                                            value={purpose}
+                                            onChange={(event) => {
+                                                setPurpose(event.target.value as QuoteRequest['purpose']);
+                                                setQuote(undefined);
+                                            }}
+                                        >
+                                            {e.entitlementSource !== 'SUBSCRIPTION' ? (
+                                                <option value="SUBSCRIPTION">{t('유료 구독 시작', 'Start paid subscription')}</option>
+                                            ) : (
+                                                <>
+                                                    <option value="USAGE_PACK">{t('AI 횟수 추가', 'Additional AI uses')}</option>
+                                                    <option value="CAPACITY">{t('편성 인원 증설', 'Increase capacity')}</option>
+                                                    {scope.type === 'HOSPITAL' ? (
+                                                        <option value="SETUP">{t('초기 도입 세팅', 'Initial setup')}</option>
+                                                    ) : null}
+                                                </>
+                                            )}
+                                        </select>
+                                    </Field>
+                                ) : null}
+                                {purpose === 'USAGE_PACK' ? (
+                                    <>
+                                        <Field
+                                            label={`${t('AI 채우기', 'AI fill')} ${e.policy.generatePackSize}${t('회 묶음', '-use pack')} · ${money(e.policy.generatePackGross)}`}
+                                        >
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                max={100}
+                                                value={full}
+                                                onChange={(event) => {
+                                                    setFull(Number(event.target.value));
+                                                    setQuote(undefined);
+                                                }}
+                                            />
+                                        </Field>
+                                    </>
+                                ) : purpose === 'SETUP' ? (
+                                    <Field label={t('세팅할 인원 S', 'Setup staff S')}>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={10000}
+                                            value={setup}
+                                            onChange={(event) => {
+                                                setSetup(Number(event.target.value));
+                                                setQuote(undefined);
+                                            }}
+                                        />
+                                    </Field>
+                                ) : (
+                                    <>
+                                        <Field
+                                            label={
+                                                cardSubscription
+                                                    ? t(
+                                                          '근무표에 포함할 인원을 입력하세요',
+                                                          'Enter the number of staff to include in the schedule',
+                                                      )
+                                                    : t('변경 후 총 편성 인원', 'Total staff after change')
+                                            }
+                                            suffix={cardSubscription ? t('명', 'staff') : undefined}
+                                        >
+                                            <input
+                                                type={cardSubscription ? 'text' : 'number'}
+                                                inputMode={cardSubscription ? 'numeric' : undefined}
+                                                placeholder={cardSubscription ? t('인원수를 입력하세요', 'Enter staff count') : undefined}
+                                                pattern={cardSubscription ? '[0-9]*' : undefined}
+                                                required={cardSubscription}
+                                                maxLength={cardSubscription ? 5 : undefined}
+                                                min={cardSubscription ? undefined : minimumCapacity}
+                                                max={cardSubscription ? undefined : 10000}
+                                                value={cardSubscription ? subscriptionCapacityText : draftCapacity}
+                                                disabled={cardSubscription && action.busy}
+                                                aria-invalid={invalidSubscriptionCapacity || undefined}
+                                                aria-describedby={invalidSubscriptionCapacity ? capacityErrorId : undefined}
+                                                onChange={(event) => {
+                                                    if (cardSubscription) setSubscriptionCapacity(event.target.value);
+                                                    else setCapacity(Number(event.target.value));
+
+                                                    setQuote(undefined);
+                                                    setConsent(false);
+                                                    setTrialLoss(false);
+                                                }}
+                                            />
+                                        </Field>
+                                        {invalidSubscriptionCapacity ? (
+                                            <p id={capacityErrorId} className="workspace-error" role="alert">
+                                                {t('0~10,000 사이의 숫자만 입력해 주세요.', 'Enter a whole number from 0 to 10,000.')}
+                                            </p>
+                                        ) : null}
+                                    </>
+                                )}
+                                {!cardSubscription ? (
+                                    <button disabled={action.busy || subscriptionUnavailable}>
+                                        {action.busy ? t('확인 중…', 'Checking…') : t('정확한 금액 확인', 'Review exact quote')}
+                                    </button>
+                                ) : null}
+                            </form>
+                        </div>
+                        {cardSubscription || (quote && terms) ? (
+                            <div
+                                className={cardSubscription ? 'workspace-review plus-checkout-review' : 'workspace-review'}
+                                aria-live={cardSubscription ? undefined : 'polite'}
+                            >
+                                {!cardSubscription ? (
+                                    <h3>
+                                        {scope.name} · {t('결제 전 확인', 'Review before paying')}
+                                    </h3>
+                                ) : null}
+                                {cardSubscription ? (
+                                    quote && terms ? (
+                                        <div aria-live="polite">
+                                            <PlusCheckoutReviewSummary terms={terms} expiresAt={quote.expiresAt} />
+                                        </div>
+                                    ) : automaticQuote.isError || data.isError ? (
+                                        <div>
+                                            <ErrorView
+                                                error={
+                                                    (automaticQuote.error ?? data.error) === action.error
+                                                        ? undefined
+                                                        : (automaticQuote.error ?? data.error)
+                                                }
+                                            />
+                                            <button
+                                                type="button"
+                                                className="secondary"
+                                                disabled={
+                                                    action.busy ||
+                                                    (!data.isError &&
+                                                        (!validSubscriptionCapacity ||
+                                                            debouncedCapacityText !== subscriptionCapacityText ||
+                                                            subscriptionUnavailable))
+                                                }
+                                                onClick={() => {
+                                                    if (data.isError) void action.run(() => data.refetch({throwOnError: true}));
+                                                    else if (
+                                                        validSubscriptionCapacity &&
+                                                        debouncedCapacityText === subscriptionCapacityText &&
+                                                        !subscriptionUnavailable &&
+                                                        !action.busy
+                                                    )
+                                                        void automaticQuote.refetch();
+                                                }}
+                                            >
+                                                {t('다시 불러오기', 'Try again')}
+                                            </button>
+                                        </div>
+                                    ) : !subscriptionUnavailable && validSubscriptionCapacity ? (
+                                        <p className="plus-checkout-caption" role="status">
+                                            {t('금액 확인 중…', 'Checking amount…')}
+                                        </p>
+                                    ) : null
+                                ) : quote && terms ? (
+                                    <>
+                                        <div className="workspace-stats">
+                                            <div>
+                                                <strong>{money(terms.totalAmount)}</strong>
+                                                <span>{t('이번 결제 총액 · 부가세 포함', 'Due now · VAT included')}</span>
+                                            </div>
+                                            <div>
+                                                <strong>{money(terms.recurring.monthlyGross)}</strong>
+                                                <span>{t('변경 후 월 구독료', 'Monthly subscription after change')}</span>
+                                            </div>
+                                        </div>
+                                        <dl>
+                                            <dt>{t('부가세 내역', 'Tax breakdown')}</dt>
+                                            <dd>
+                                                {t('공급가액', 'Net')} {money(terms.supplyAmount)} + VAT {money(terms.taxAmount)}
+                                            </dd>
+                                            <dt>{t('이용기간', 'Service period')}</dt>
+                                            <dd>
+                                                {date(terms.periodStart)} ~ {date(terms.periodEnd)} (KST)
+                                            </dd>
+                                            <dt>{t('이번 제공량', 'Included uses')}</dt>
+                                            <dd>
+                                                {t('AI 채우기', 'AI fill')} {terms.fullUnits}
+                                            </dd>
+                                            <dt>{t('금액 확인 유효시간', 'Amount valid until')}</dt>
+                                            <dd>{date(quote.expiresAt)}</dd>
+                                        </dl>
+                                    </>
+                                ) : null}
+                                {quoteExpired ? (
+                                    <p className="workspace-error" role="alert">
+                                        {cardSubscription
+                                            ? t('금액을 갱신하고 있습니다.', 'Updating the amount.')
+                                            : t(
+                                                  '확인한 금액의 유효시간이 지났습니다. 위의 ‘결제 금액 다시 확인’을 눌러 주세요.',
+                                                  'This quote has expired. Request a new quote.',
+                                              )}
+                                    </p>
+                                ) : null}
+                                {!cardSubscription ? (
+                                    <Notice>
+                                        {t(
+                                            '기본 횟수는 해당 주기까지, 추가 구매 횟수는 구매일부터 365일입니다. 두 종류의 횟수는 서로 전환되지 않습니다. 구독 해지는 기간 말에 적용하며 기존 자료는 유지됩니다.',
+                                            'Included uses expire at the cycle end. Purchased uses last 365 days and cannot be converted between meters. Cancellation takes effect at period end; existing data is preserved.',
+                                        )}
+                                    </Notice>
+                                ) : (
+                                    <>
+                                        <div className="plus-checkout-policies">
+                                            <details className="plus-checkout-legal">
+                                                <summary className="plus-checkout-policy-row">
+                                                    <span>{t('정기결제·해지 안내', 'Subscription and cancellation terms')}</span>
+                                                    <PlusCheckoutPolicyChevron />
+                                                </summary>
+                                                <div>
+                                                    <SubscriptionConditions />
+                                                </div>
+                                            </details>
+                                            <details className="plus-checkout-legal">
+                                                <summary className="plus-checkout-policy-row">
+                                                    <span>{t('환불정책', 'Refund policy')}</span>
+                                                    <PlusCheckoutPolicyChevron />
+                                                </summary>
+                                                <div>
+                                                    <RefundConditions />
+                                                </div>
+                                            </details>
+                                            <PlusCheckoutTermsLinks />
+                                        </div>
+                                        {emailVerificationRequired ? <Reauthenticate onVerified={setBillingProof} /> : null}
+                                    </>
+                                )}
+                                {scope.type === 'WARD' ? (
+                                    <>
+                                        {cardSubscription ? (
+                                            <PlusCheckoutConsent
+                                                checked={consent}
+                                                disabled={!quote || quoteExpired || action.busy}
+                                                onChange={(checked) => {
+                                                    setConsent(checked);
+                                                    setConsentQuote(checked ? quoteIdentity : undefined);
+                                                }}
+                                            />
+                                        ) : (
+                                            <label className="workspace-check">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={consent}
+                                                    onChange={(event) => setConsent(event.target.checked)}
+                                                />
+                                                <span>
+                                                    {t('금액·대상·기간 및', 'I agree to the amount, scope, period and')}{' '}
+                                                    <Link to="/subscription-terms" target="_blank">
+                                                        {t('정기결제 약관', 'subscription terms')}
+                                                    </Link>{' '}
+                                                    ·{' '}
+                                                    <Link to="/refund" target="_blank">
+                                                        {t('환불 조건', 'refund policy')}
+                                                    </Link>
+                                                    {t(
+                                                        '에 동의하며 매월 자동결제를 신청합니다.',
+                                                        ' and authorize monthly automatic payments.',
+                                                    )}
+                                                </span>
+                                            </label>
+                                        )}
+                                        {e.entitlementSource === 'EVENT' ? (
+                                            <label className="workspace-check">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={trialLossAccepted}
+                                                    disabled={cardSubscription && (!quote || quoteExpired || action.busy)}
+                                                    onChange={(event) => {
+                                                        setTrialLoss(event.target.checked);
+                                                        setTrialQuote(event.target.checked ? quoteIdentity : undefined);
+                                                    }}
+                                                />
+                                                <span>
+                                                    {t(
+                                                        '첫 결제 확정 시 남은 무료 이벤트 기간·제공량이 종료되는 데 동의합니다.',
+                                                        'I agree that confirming the first payment ends the remaining trial period and allowances.',
+                                                    )}
+                                                </span>
+                                            </label>
+                                        ) : null}
+                                        <button
+                                            className={cardSubscription ? 'plus-checkout-primary' : undefined}
+                                            disabled={
+                                                !consent ||
+                                                !quote ||
+                                                !terms ||
+                                                (emailVerificationRequired && !billingProof) ||
+                                                !cardReady ||
+                                                (cardSubscription && !!unresolvedPayment) ||
+                                                action.busy ||
+                                                !e.checkoutEnabled ||
+                                                (e.entitlementSource === 'EVENT' && !trialLossAccepted)
+                                            }
+                                            onClick={() =>
+                                                void action.run(async () => {
+                                                    if (!quote || !terms || !consent) return;
+
+                                                    let attemptedRegistration = false;
+
+                                                    try {
+                                                        if (cardSubscription) await prepareCardRegistration();
+
+                                                        if (!(quoteTimestamp(quote.expiresAt) > Date.now())) {
+                                                            setNow(Date.now());
+
+                                                            if (cardSubscription) void automaticQuote.refetch();
+
+                                                            throw new Error(
+                                                                t(
+                                                                    '금액을 다시 확인하고 동의해 주세요.',
+                                                                    'Review the updated amount and agree again.',
+                                                                ),
+                                                            );
+                                                        }
+
+                                                        await loadToss();
+
+                                                        if (!(quoteTimestamp(quote.expiresAt) > Date.now())) {
+                                                            if (cardSubscription) void automaticQuote.refetch();
+
+                                                            throw new Error(
+                                                                t(
+                                                                    '금액을 다시 확인하고 동의해 주세요.',
+                                                                    'Review the updated amount and agree again.',
+                                                                ),
+                                                            );
+                                                        }
+
+                                                        const payload = {
+                                                            quoteId: quote.id,
+                                                            contentHash: quote.contentHash,
+                                                            termsVersion: terms.termsVersion,
+                                                            trialLossAccepted,
+                                                        };
+                                                        const keyName = `dutying:checkout:${quote.id}`;
+                                                        const key = sessionStorage.getItem(keyName) ?? crypto.randomUUID();
+
+                                                        sessionStorage.setItem(keyName, key);
+
+                                                        attemptedRegistration = true;
+
+                                                        const registration = await commercialPost<{
+                                                            id: string;
+                                                            orderId: string;
+                                                            clientKey: string;
+                                                            customerKey: string;
+                                                            returnUrl: string;
+                                                        }>(
+                                                            `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/subscription-checkout`,
+                                                            emailVerificationRequired
+                                                                ? {checkout: payload, reauthenticationToken: billingProof}
+                                                                : {checkout: payload},
+                                                            key,
+                                                        );
+
+                                                        await openTossBilling(registration);
+
+                                                        return registration;
+                                                    } catch (error) {
+                                                        setQuote(undefined);
+                                                        setConsent(false);
+                                                        setTrialLoss(false);
+
+                                                        if (cardSubscription && attemptedRegistration) await automaticQuote.refetch();
+
+                                                        throw error;
+                                                    } finally {
+                                                        await refreshPendingPayment();
+                                                    }
+                                                })
+                                            }
+                                        >
+                                            {t('동의하고 진행하기', 'Agree & continue')}
+                                        </button>
+                                        {cardSubscription && emailVerificationRequired && !billingProof ? (
+                                            <p className="plus-checkout-next" role="status">
+                                                {t(
+                                                    '이메일 본인 확인을 완료한 후 약관에 동의해 주세요.',
+                                                    'Verify your email, then agree to the terms.',
+                                                )}
+                                            </p>
+                                        ) : null}
+                                    </>
+                                ) : null}
+                                {!cardReady && (!cardSubscription || (quote && terms)) && (
+                                    <Notice>
+                                        {cardSubscription
+                                            ? t(
+                                                  '상품 안내 준비 상태 또는 1회 최대 100만 원의 결제 한도를 확인해 주세요.',
+                                                  'Review sales availability and the KRW 1,000,000 charge limit.',
+                                              )
+                                            : t(
+                                                  '이 견적은 상담용입니다. 고객센터를 통해 진행해 주세요.',
+                                                  'This estimate is for consultation. Please contact support.',
+                                              )}
+                                    </Notice>
+                                )}
+                            </div>
+                        ) : null}
+                        <ActionsFeedback
+                            action={{...action, error: scope.type === 'WARD' && unresolvedPayment ? undefined : action.error}}
+                        />
+                    </Section>
+                </HospitalDisclosure>
+            )}
             {data.data ? (
                 <>
-                    {scope.type === 'HOSPITAL' || data.data.scope.periodEnd ? (
+                    {scope.type === 'HOSPITAL' || (!activeSubscription && data.data.scope.periodEnd) ? (
                         <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('구독 관리', 'Subscription management')}>
                             <Section title={t('구독 관리', 'Subscription management')}>
                                 <p>
@@ -1070,64 +1426,16 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
                         </HospitalDisclosure>
                     ) : null}
                     {scope.type === 'WARD' ? (
-                        <Section title={t('청구·결제 내역', 'Invoices & payments')}>
-                            {data.data.invoices.length === 0 ? (
-                                <p className="plus-checkout-caption">
-                                    {t(
-                                        '첫 결제 후 청구·결제 내역이 여기에 표시됩니다.',
-                                        'Your invoices and payments will appear here after the first payment.',
-                                    )}
-                                </p>
-                            ) : (
-                                <div className="workspace-table-wrap">
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>{t('기간', 'Period')}</th>
-                                                <th>{t('청구 금액', 'Invoiced')}</th>
-                                                <th>{t('수납', 'Collected')}</th>
-                                                <th>{t('환불', 'Refunded')}</th>
-                                                <th>{t('상태', 'Status')}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {data.data.invoices.map((i) => (
-                                                <tr key={i.id}>
-                                                    <td>{date(i.periodStart)}</td>
-                                                    <td>{money(i.gross)}</td>
-                                                    <td>{money(i.allocated)}</td>
-                                                    <td>{money(i.refundedGross)}</td>
-                                                    <td>{i.status}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
-                            {data.data.orders.map((o) => (
-                                <p key={o.id}>
-                                    <Link to={`/workspace/payment-return?orderId=${o.id}`}>
-                                        {money(o.gross)} · {o.status}
-                                    </Link>
-                                </p>
-                            ))}
-                        </Section>
+                        <WardPaymentHistory billing={data.data} pendingOrder={unresolvedPayment} paymentReturnPath={paymentReturnPath} />
                     ) : null}
-                    {scope.type === 'HOSPITAL' || data.data.invoices.length > 0 || data.data.requests.length > 0 ? (
+                    {!activeSubscription && refundSupport ? (
                         <HospitalDisclosure active={scope.type === 'HOSPITAL'} title={t('환불·정산 문의', 'Refund & billing support')}>
-                            <Section title={t('환불·정산 문의', 'Refund & billing support')}>
-                                <RequestForm scope={scope} kind="REFUND" invoices={data.data.invoices} />
-                                {data.data.requests.map((r) => (
-                                    <p key={r.id}>
-                                        {r.kind} · {r.status} · {r.resolution ?? date(r.createdAt)}
-                                    </p>
-                                ))}
-                            </Section>
+                            {refundSupport}
                         </HospitalDisclosure>
                     ) : null}
                 </>
             ) : (
-                <ErrorView error={data.error} />
+                <ErrorView error={cardSubscription ? undefined : data.error} />
             )}
             <HospitalDisclosure
                 active={scope.type === 'HOSPITAL'}
@@ -1139,132 +1447,126 @@ function BillingPanel({scope, e, cardRegistrationVersion = 1}: {scope: Scope; e:
             >
                 {scope.type === 'HOSPITAL' ? <HospitalCalculator scope={scope} e={e} /> : null}
             </HospitalDisclosure>
+            {activeSubscription && data.data ? (
+                <div className="plus-subscription__footer-row">
+                    {refundSupport ? (
+                        <details className="plus-subscription__footer plus-subscription__support">
+                            <summary className="plus-subscription__text-button">{t('환불·정산 문의', 'Refund & billing support')}</summary>
+                            <div className="plus-subscription__support-content">{refundSupport}</div>
+                        </details>
+                    ) : null}
+                    <PlusSubscriptionCancellation scope={scope} billing={data.data} />
+                </div>
+            ) : null}
         </>
     );
 }
 
 function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
     const t = useCopy();
-    const action = useAction();
+    const memberAction = useAction();
+    const invitationAction = useAction();
+    const transferAction = useAction();
     const accountId = useAuthStore((s) => s.accountId);
     const [email, setEmail] = useState('');
-    const [inviteUrl, setInviteUrl] = useState('');
     const [reauth, setReauth] = useState('');
     const [target, setTarget] = useState('');
     const [leave, setLeave] = useState(false);
+    const adminPath = `/admin/wards/${scope.ref}`;
     const data = useQuery({
         queryKey: commercialQueryKey(accountId, scope.type, scope.ref, 'members'),
-        queryFn: () =>
-            scope.type === 'WARD'
-                ? legacyGet<Members>(`/admin/wards/${scope.ref}/admins`)
-                : commercialGet<Members>(`/organizations/${scope.ref}/members`),
+        queryFn: () => legacyGet<Members>(`${adminPath}/admins`),
     });
-    const canInvite =
-        scope.role === 'OWNER' && e.allowedActions.includes(scope.type === 'WARD' ? 'WARD_INVITE_CREATE' : 'ORG_INVITE_CREATE');
+    const isOwner = scope.role === 'OWNER';
+    const canInvite = isOwner && e.allowedActions.includes('WARD_INVITE_CREATE');
+    const seatsFull = isAdminSeatLimitReached(e);
+    const members = data.data?.members ?? [];
+    const invitations = data.data?.invitations ?? [];
+    const busy = memberAction.busy || invitationAction.busy || transferAction.busy;
 
     return (
         <>
-            {scope.type === 'HOSPITAL' ? <HospitalMembersPanel scope={scope} entitlement={e} /> : null}
-            <details className="workspace-member-secondary" open={scope.type === 'WARD' ? true : undefined}>
-                <summary className="workspace-member-secondary-title">
-                    {scope.type === 'HOSPITAL'
-                        ? t('초대 및 권한 인계', 'Invitations & ownership')
-                        : t('초대·참여 및 최고 관리자 인계', 'Invitations, membership & ownership transfer')}
-                </summary>
-                <Section
-                    title={scope.type === 'HOSPITAL' ? t('초대 관리', 'Invitations') : t('관리자와 초대', 'Administrators & invitations')}
-                    help={
-                        scope.type === 'HOSPITAL'
-                            ? t(
-                                  '한 사람당 개인 계정 하나를 사용합니다. 편성 대상 간호사는 여기 초대하지 않습니다.',
-                                  'Each administrator uses their own account. Scheduling staff do not need invitations here.',
-                              )
-                            : undefined
-                    }
-                >
-                    {scope.type === 'WARD' ? (
+            <Section title={t('관리자 목록', 'Administrators')}>
+                <p>
+                    {t(
+                        '이 병동의 근무표와 설정을 관리할 수 있는 계정이에요.',
+                        'These accounts can manage schedules and settings for this ward.',
+                    )}
+                </p>
+                <p className="ward-workspace__seat-summary">
+                    {t(
+                        `참여 ${e.adminSeats.active}명 · 초대 대기 ${e.adminSeats.reserved}명`,
+                        `${e.adminSeats.active} active · ${e.adminSeats.reserved} invited`,
+                    )}
+                    {e.restrictionStates?.ADMIN_SEATS === false
+                        ? t(' · 정원 제한 해제', ' · No seat limit')
+                        : t(` · 정원 ${e.adminSeats.limit}명`, ` · ${e.adminSeats.limit} seats`)}
+                </p>
+                {data.isPending ? <p role="status">{t('관리자 목록을 불러오는 중입니다.', 'Loading administrators…')}</p> : null}
+                {data.isError ? (
+                    <>
+                        <ErrorView error={data.error} />
+                        <button type="button" className="secondary" onClick={() => void data.refetch()}>
+                            {t('다시 불러오기', 'Try again')}
+                        </button>
+                    </>
+                ) : null}
+                {data.isSuccess && !members.length ? <p>{t('표시할 관리자가 없습니다.', 'No administrators to display.')}</p> : null}
+                {members.length ? (
+                    <ul className="ward-workspace__member-list">
+                        {members.map((m) => (
+                            <li className="workspace-row" key={memberId(m)}>
+                                <div>
+                                    <strong>{m.name}</strong>
+                                    <p>{[workspaceRoleLabel(m.role, t('ko', 'en') === 'ko'), m.email].filter(Boolean).join(' · ')}</p>
+                                </div>
+                                {isOwner && m.role !== 'OWNER' ? (
+                                    <button
+                                        type="button"
+                                        className="secondary danger"
+                                        disabled={busy}
+                                        onClick={() => {
+                                            if (
+                                                window.confirm(
+                                                    t(
+                                                        '이 관리자의 접근 권한을 제거할까요? 계정과 근무표는 유지됩니다.',
+                                                        'Remove this administrator’s access? Their account and schedules are preserved.',
+                                                    ),
+                                                )
+                                            )
+                                                void memberAction.run(() => legacyDelete(`${adminPath}/admins/${memberId(m)}`));
+                                        }}
+                                    >
+                                        {t('권한 제거', 'Remove access')}
+                                    </button>
+                                ) : null}
+                            </li>
+                        ))}
+                    </ul>
+                ) : null}
+                <ActionsFeedback action={memberAction} />
+            </Section>
+            <Section title={t('관리자 초대', 'Administrator invitations')}>
+                {canInvite ? (
+                    <>
                         <p>
                             {t(
-                                '한 사람당 개인 계정 하나를 사용합니다. 편성 대상 간호사는 여기 초대하지 않습니다.',
-                                'Each administrator uses their own account. Scheduling staff do not need invitations here.',
+                                '근무표를 함께 관리할 동료에게 초대 메일을 보내세요.',
+                                'Send an email invitation to a colleague who will manage schedules with you.',
                             )}
                         </p>
-                    ) : null}
-                    {scope.type === 'HOSPITAL' ? (
-                        <p className="hospital-secondary-caption">
-                            {t('대기 중인 초대', 'Pending invitations')} {e.adminSeats.reserved}
-                            {t('명', ' people')}
-                        </p>
-                    ) : (
-                        <p>
-                            {e.adminSeats.active}
-                            {t('명 참여', ' active')} + {e.adminSeats.reserved}
-                            {t('명 대기', ' pending')} /{' '}
-                            {e.restrictionStates?.ADMIN_SEATS === false ? t('제한 해제', 'No plan limit') : e.adminSeats.limit}
-                            {t('명', ' seats')}
-                        </p>
-                    )}
-                    <ErrorView error={data.error} />
-                    {scope.type === 'WARD'
-                        ? data.data?.members.map((m) => (
-                              <div className="workspace-row" key={memberId(m)}>
-                                  <div>
-                                      <strong>{m.name}</strong>
-                                      <p>
-                                          {workspaceRoleLabel(m.role, t('ko', 'en') === 'ko')} · {m.email ?? ''}
-                                      </p>
-                                  </div>
-                                  {scope.role === 'OWNER' && m.role !== 'OWNER' ? (
-                                      <button
-                                          className="secondary danger"
-                                          disabled={action.busy}
-                                          onClick={() =>
-                                              void action.run(() => {
-                                                  if (
-                                                      !window.confirm(
-                                                          t(
-                                                              '이 관리자의 접근 권한을 제거할까요? 계정과 근무표는 유지됩니다.',
-                                                              'Remove this administrator’s access? Their account and schedules are preserved.',
-                                                          ),
-                                                      )
-                                                  )
-                                                      return Promise.resolve();
-
-                                                  return scope.type === 'WARD'
-                                                      ? legacyDelete(`/admin/wards/${scope.ref}/admins/${memberId(m)}`)
-                                                      : commercialPost(`/organizations/${scope.ref}/members/${memberId(m)}/REMOVE`, {
-                                                            expectedVersion: m.version,
-                                                        });
-                                              })
-                                          }
-                                      >
-                                          {t('이 범위에서 제거', 'Remove from scope')}
-                                      </button>
-                                  ) : null}
-                              </div>
-                          ))
-                        : null}
-                    {canInvite ? (
                         <form
+                            className="ward-workspace__invite"
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                void action.run(async () => {
-                                    if (scope.type === 'WARD') {
-                                        await legacyPost(`/admin/wards/${scope.ref}/admin-emails`, {email, role: 'EDITOR'});
-                                        action.setNotice(
-                                            t(
-                                                '초대 메일을 발송 요청했습니다. 수락 후 참여합니다.',
-                                                'Invitation requested. They join after accepting.',
-                                            ),
-                                        );
-                                    } else {
-                                        const r = await commercialPost<{invitationUrl: string}>(`/organizations/${scope.ref}/invitations`, {
-                                            email,
-                                        });
-
-                                        setInviteUrl(r.invitationUrl);
-                                    }
-
+                                void invitationAction.run(async () => {
+                                    await legacyPost(`${adminPath}/admin-emails`, {email, role: 'EDITOR'});
+                                    invitationAction.setNotice(
+                                        t(
+                                            '초대 메일을 발송 요청했습니다. 수락 후 참여합니다.',
+                                            'Invitation requested. They join after accepting.',
+                                        ),
+                                    );
                                     setEmail('');
                                 });
                             }}
@@ -1278,145 +1580,92 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                     onChange={(event) => setEmail(event.target.value)}
                                 />
                             </Field>
-                            <button disabled={action.busy || isAdminSeatLimitReached(e)}>{t('관리자 초대', 'Invite administrator')}</button>
+                            <button disabled={busy || seatsFull}>{t('초대 보내기', 'Send invitation')}</button>
                         </form>
-                    ) : null}
-                    {inviteUrl ? (
-                        <Notice>
-                            {scope.type === 'HOSPITAL'
-                                ? t('초대 이메일의 계정으로 수락해야 합니다.', 'Accept using the invited email account.')
-                                : t(
-                                      '초대받은 이메일 계정으로 수락해야 합니다. 초대 링크를 전달하세요.',
-                                      'The invited email account must accept. Share this invitation link.',
-                                  )}{' '}
-                            <button className="secondary" onClick={() => void navigator.clipboard.writeText(inviteUrl)}>
-                                {t('링크 복사', 'Copy link')}
-                            </button>
-                        </Notice>
-                    ) : null}
-                    {scope.type === 'WARD' && data.data?.reservedEmails?.length ? (
+                        {seatsFull ? (
+                            <Notice>
+                                {t(
+                                    '관리자 정원이 찼어요. 대기 중인 초대도 정원에 포함돼요.',
+                                    'All administrator seats are in use, including pending invitations.',
+                                )}
+                            </Notice>
+                        ) : null}
+                    </>
+                ) : null}
+                {data.isSuccess ? <h3>{t('대기 중인 초대', 'Pending invitations')}</h3> : null}
+                {data.isSuccess && !invitations.length ? <p>{t('대기 중인 초대가 없어요.', 'There are no pending invitations.')}</p> : null}
+                {data.data?.reservedEmails?.length ? (
+                    <p className="workspace-muted">
+                        {t('예약된 이메일', 'Reserved email addresses')} · {data.data.reservedEmails.map((r) => r.email).join(', ')}
+                    </p>
+                ) : null}
+                {invitations.length ? (
+                    <ul className="ward-workspace__member-list">
+                        {invitations.map((i) => {
+                            const id = i.id ?? i.invitationId;
+
+                            return (
+                                <li className="workspace-row" key={id}>
+                                    <div>
+                                        <strong>{i.email ?? i.invitedEmailNormalized ?? i.invitedEmail}</strong>
+                                        <p>
+                                            {t('만료', 'Expires')} {date(i.expiresAt)}
+                                        </p>
+                                    </div>
+                                    {isOwner ? (
+                                        <div className="workspace-actions">
+                                            <button
+                                                type="button"
+                                                className="secondary"
+                                                disabled={busy}
+                                                onClick={() =>
+                                                    void invitationAction.run(() =>
+                                                        legacyPost(`${adminPath}/admin-invitations/${id}/resend`, {}),
+                                                    )
+                                                }
+                                            >
+                                                {t('재발송', 'Resend')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="secondary"
+                                                disabled={busy}
+                                                onClick={() =>
+                                                    void invitationAction.run(() => legacyDelete(`${adminPath}/admin-invitations/${id}`))
+                                                }
+                                            >
+                                                {t('초대 취소', 'Cancel invitation')}
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                ) : null}
+                <ActionsFeedback action={invitationAction} />
+            </Section>
+            {isOwner ? (
+                <HospitalDisclosure active title={t('최고 관리자 인계', 'Transfer ownership')}>
+                    <Section title={t('최고 관리자 인계', 'Transfer ownership')}>
                         <Notice>
                             {t(
-                                '예약된 이메일은 아래 초대 목록에서 관리합니다.',
-                                'Reserved emails are managed in the invitation list below.',
-                            )}{' '}
-                            {data.data.reservedEmails.map((r) => r.email).join(', ')}
-                        </Notice>
-                    ) : null}
-                    {data.data?.invitations.map((i) => (
-                        <div className="workspace-row" key={i.id ?? i.invitationId}>
-                            <div>
-                                {i.email ?? i.invitedEmailNormalized ?? i.invitedEmail}
-                                <p>
-                                    {t('만료', 'Expires')} {date(i.expiresAt)}
-                                </p>
-                            </div>
-                            {scope.role === 'OWNER' ? (
-                                <div className="workspace-actions">
-                                    <button
-                                        className="secondary"
-                                        disabled={action.busy}
-                                        onClick={() =>
-                                            void action.run(async () => {
-                                                if (scope.type === 'WARD')
-                                                    return legacyPost(
-                                                        `/admin/wards/${scope.ref}/admin-invitations/${i.id ?? i.invitationId}/resend`,
-                                                        {},
-                                                    );
-
-                                                const r = await commercialPost<{invitationUrl: string}>(`/invitations/${i.id}/RESEND`, {
-                                                    expectedVersion: i.version,
-                                                });
-
-                                                setInviteUrl(r.invitationUrl);
-
-                                                return r;
-                                            })
-                                        }
-                                    >
-                                        {t('재발송', 'Resend')}
-                                    </button>
-                                    <button
-                                        className="secondary"
-                                        disabled={action.busy}
-                                        onClick={() =>
-                                            void action.run(() =>
-                                                scope.type === 'WARD'
-                                                    ? legacyDelete(`/admin/wards/${scope.ref}/admin-invitations/${i.id ?? i.invitationId}`)
-                                                    : commercialPost(`/invitations/${i.id}/CANCEL`, {expectedVersion: i.version}),
-                                            )
-                                        }
-                                    >
-                                        {t('취소', 'Cancel')}
-                                    </button>
-                                </div>
-                            ) : null}
-                        </div>
-                    ))}
-                    {scope.role !== 'OWNER' && !(scope.type === 'WARD' && scope.accessSource === 'HOSPITAL') ? (
-                        <button
-                            className="secondary danger"
-                            disabled={action.busy}
-                            onClick={() =>
-                                void action.run(() => {
-                                    if (
-                                        !window.confirm(
-                                            t(
-                                                '이 범위에서 나갈까요? 다시 참여하려면 초대가 필요합니다.',
-                                                'Leave this scope? You will need an invitation to return.',
-                                            ),
-                                        )
-                                    )
-                                        return Promise.resolve();
-
-                                    return scope.type === 'WARD'
-                                        ? legacyDelete(`/admin/wards/${scope.ref}/quit`)
-                                        : commercialPost(
-                                              `/organizations/${scope.ref}/members/${memberId(data.data!.members.find((m) => accountIdOf(m) === accountId)!)}/LEAVE`,
-                                          );
-                                })
-                            }
-                        >
-                            {t('이 범위에서 나가기', 'Leave this scope')}
-                        </button>
-                    ) : null}
-                    <ActionsFeedback action={action} />
-                </Section>
-                {scope.role === 'OWNER' ? (
-                    <Section
-                        title={t('최고 관리자 인계', 'Transfer ownership')}
-                        help={
-                            scope.type === 'HOSPITAL'
-                                ? t(
-                                      '기존 병원 관리자에게 요청할 수 있습니다. 대상자가 이메일로 본인 확인 후 수락해야 역할이 변경됩니다.',
-                                      'Request a transfer to an existing hospital administrator. Roles change after the recipient verifies their email and accepts.',
-                                  )
-                                : undefined
-                        }
-                    >
-                        <Notice>
-                            {scope.type === 'HOSPITAL'
-                                ? t(
-                                      '상대방 수락 후 인계됩니다. 결제 카드는 인계되지 않습니다.',
-                                      'Ownership changes after acceptance. Payment methods are not transferred.',
-                                  )
-                                : t(
-                                      '같은 범위의 기존 관리자에게 요청합니다. 대상자가 재인증하고 수락하기 전까지 역할은 바뀌지 않습니다. 결제 카드는 인계되지 않습니다.',
-                                      'Request a transfer to an existing administrator in this scope. Roles change only after they verify and accept. Payment methods are not transferred.',
-                                  )}
+                                '기존 관리자가 이메일로 본인 확인을 하고 수락하면 권한이 넘어가요. 결제 카드는 인계 대상에서 제외돼요.',
+                                'Ownership changes when an existing administrator verifies their email and accepts. Payment cards are excluded from the transfer.',
+                            )}
                         </Notice>
                         <Reauthenticate onVerified={setReauth} />
                         <form
                             onSubmit={(event) => {
                                 event.preventDefault();
-                                void action.run(async () => {
-                                    const r = await commercialPost(`/scopes/${scope.type}/${scope.ref}/owner-transfers`, {
+                                void transferAction.run(async () => {
+                                    const r = await commercialPost(`/scopes/WARD/${scope.ref}/owner-transfers`, {
                                         targetAccountId: Number(target),
                                         leaveAfter: leave,
                                         reauthenticationToken: reauth,
                                     });
 
-                                    action.setNotice(
+                                    transferAction.setNotice(
                                         t(
                                             '인계 요청을 보냈습니다. 7일 이내 대상자의 수락이 필요합니다.',
                                             'Transfer requested. Recipient must accept within 7 days.',
@@ -1430,7 +1679,7 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                             <Field label={t('새 최고 관리자가 될 관리자', 'New owner')}>
                                 <select required value={target} onChange={(event) => setTarget(event.target.value)}>
                                     <option value="">{t('선택하세요', 'Select')}</option>
-                                    {data.data?.members
+                                    {members
                                         .filter((m) => m.role !== 'OWNER' && accountIdOf(m) != null)
                                         .map((m) => (
                                             <option key={memberId(m)} value={accountIdOf(m)}>
@@ -1443,11 +1692,31 @@ function MembersPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                                 <input type="checkbox" checked={leave} onChange={(event) => setLeave(event.target.checked)} />
                                 <span>{t('인계 완료 후 이 범위에서 나가기', 'Leave this scope after transfer')}</span>
                             </label>
-                            <button disabled={!reauth || action.busy}>{t('인계 요청', 'Request transfer')}</button>
+                            <button disabled={!reauth || busy}>{t('인계 요청', 'Request transfer')}</button>
                         </form>
+                        <ActionsFeedback action={transferAction} />
                     </Section>
-                ) : null}
-            </details>
+                </HospitalDisclosure>
+            ) : scope.accessSource !== 'HOSPITAL' ? (
+                <button
+                    type="button"
+                    className="secondary danger"
+                    disabled={busy}
+                    onClick={() => {
+                        if (
+                            window.confirm(
+                                t(
+                                    '이 병동에서 나갈까요? 다시 참여하려면 초대가 필요합니다.',
+                                    'Leave this ward? You will need an invitation to return.',
+                                ),
+                            )
+                        )
+                            void memberAction.run(() => legacyDelete(`${adminPath}/quit`));
+                    }}
+                >
+                    {t('이 범위에서 나가기', 'Leave this scope')}
+                </button>
+            ) : null}
         </>
     );
 }
@@ -1584,19 +1853,20 @@ function HospitalContractPanel({scope}: {scope: Scope}) {
     );
 }
 
-function PaymentReturn() {
+export function PaymentReturn({backPath = '/workspace'}: {backPath?: string} = {}) {
     const t = useCopy();
     const action = useAction();
     const location = useLocation();
     const accountId = useAuthStore((s) => s.accountId);
+    const context = useCommercialContext();
     const params = new URLSearchParams(location.search);
     const id = params.get('orderId');
     const paymentKey = useRef(params.get('paymentKey'));
     const query = useQuery({
         queryKey: commercialQueryKey(accountId, 'order', id),
-        queryFn: () => commercialGet<Order>(`/orders/${id}`),
+        queryFn: () => commercialGet<Order>(`/orders/${encodeURIComponent(id!)}`),
         enabled: !!id,
-        refetchInterval: (q) => (['PROCESSING', 'UNKNOWN', 'PAID_PENDING_APPLICATION'].includes(q.state.data?.status ?? '') ? 5000 : false),
+        refetchInterval: (q) => (q.state.data && isPendingPayment(q.state.data) && !isUnsubmittedPayment(q.state.data) ? 5000 : false),
     });
 
     useEffect(() => {
@@ -1609,62 +1879,71 @@ function PaymentReturn() {
         }
     }, []);
 
-    const order = query.data;
+    const order = query.isSuccess ? query.data : undefined;
+    const unsubmitted = !!order && isUnsubmittedPayment(order);
+    const failed = order?.status === 'FAILED';
+    const completed = !!order && ['APPLIED', 'PAID'].includes(order.status);
+    const checking = !!order && isPendingPayment(order) && !unsubmitted;
+    const restartScope =
+        !context.isError && context.data?.enabled
+            ? context.data.scopes.find((scope) => scope.type === 'WARD' && scope.scopeId === order?.scopeId && scope.role === 'OWNER')
+            : undefined;
+    const restart = (unsubmitted || failed) && restartScope ? wardBillingPath(restartScope.ref) : undefined;
+    const title = unsubmitted
+        ? t('아직 결제되지 않았어요', 'You have not been charged')
+        : failed
+          ? t('결제가 완료되지 않았어요', 'Payment did not complete')
+          : completed
+            ? t('결제가 완료됐어요', 'Payment complete')
+            : checking
+              ? order?.status === 'PAID_PENDING_APPLICATION'
+                  ? t('이용권 적용 중이에요', 'Activating your subscription')
+                  : t('결제 결과를 확인하고 있어요', 'Checking your payment')
+              : t('결제 내역', 'Payment details');
 
     return (
-        <Section title={t('결제 상태 확인', 'Payment status')}>
-            <Notice>
-                {t(
-                    'PG 승인과 서비스 적용을 각각 확인합니다. 확인 중에는 새 결제를 만들지 마세요.',
-                    'Provider approval and service activation are checked separately. Do not create another payment while reconciliation is pending.',
-                )}
-            </Notice>
+        <Section title={title}>
+            {id && query.isPending ? <p role="status">{t('불러오는 중…', 'Loading…')}</p> : null}
+            {!id ? <p>{t('결제 내역을 찾을 수 없어요.', 'Payment details could not be found.')}</p> : null}
             {order ? (
                 <>
-                    <div className="workspace-stats">
-                        <div>
-                            <strong>{money(order.gross)}</strong>
-                            <span>{paymentStatusLabel(order.status, t)}</span>
+                    {!unsubmitted && !failed && Number.isSafeInteger(order.gross) && order.gross >= 0 ? (
+                        <div className="flex items-baseline gap-4 py-4">
+                            <span className="workspace-muted">{t('결제 금액', 'Payment amount')}</span>
+                            <strong className="text-xl font-bold tabular-nums">{money(order.gross)}</strong>
                         </div>
-                    </div>
-                    <p>
-                        {t('PG 검증', 'Provider verified')}: {date(order.verifiedAt)}
-                    </p>
-                    <p>
-                        {t('서비스 적용', 'Service applied')}: {date(order.appliedAt)}
-                    </p>
-                    {order.failureCode ? <Notice>{order.failureCode}</Notice> : null}
-                    {order.status === 'AWAITING_PAYMENT' && !order.provider && (
-                        <Notice>
-                            {t(
-                                '아직 청구되지 않은 주문입니다. 카드 등록을 완료하지 못했다면 아래에서 주문을 취소한 후 병동 결제 화면에서 다시 시작하세요.',
-                                'No charge has been submitted. Cancel this order below and restart from ward billing if card registration was not completed.',
-                            )}
-                        </Notice>
-                    )}
-                    {order.provider && !['APPLIED', 'FAILED'].includes(order.status) ? (
+                    ) : null}
+                    {unsubmitted && restart ? (
+                        <p>{t('새 금액을 확인하고 다시 진행해 주세요.', 'Review the current amount and try again.')}</p>
+                    ) : null}
+                    {order.status === 'PAID_PENDING_APPLICATION' ? <p>{t('결제는 완료됐어요.', 'Your payment is complete.')}</p> : null}
+                    {checking ? (
                         <button
-                            className="secondary"
-                            disabled={action.busy}
-                            onClick={() => void action.run(() => commercialPost(`/orders/${id}/INQUIRE`))}
+                            disabled={action.busy || query.isFetching}
+                            onClick={() =>
+                                void action.run(async () => {
+                                    if (order.provider) await commercialPost(`/orders/${encodeURIComponent(order.id)}/INQUIRE`);
+                                    else await query.refetch({throwOnError: true});
+                                })
+                            }
                         >
-                            {t('PG 거래 재조회', 'Recheck payment provider')}
+                            {t('결제 상태 다시 확인', 'Recheck payment status')}
                         </button>
                     ) : null}
-                    {order.status === 'AWAITING_PAYMENT' && !order.provider ? (
-                        <button
-                            className="secondary"
-                            disabled={action.busy}
-                            onClick={() => void action.run(() => commercialPost(`/orders/${id}/abandon`))}
-                        >
-                            {t('결제 전 주문 취소', 'Cancel unsubmitted order')}
-                        </button>
-                    ) : null}
-                    <Link className="workspace-button secondary" to="/workspace">
-                        {t('관리 화면으로', 'Back to workspaces')}
-                    </Link>
                 </>
             ) : null}
+            {query.isError ? (
+                <button type="button" className="secondary" disabled={query.isFetching} onClick={() => void query.refetch()}>
+                    {t('다시 불러오기', 'Try again')}
+                </button>
+            ) : null}
+            <Link className={restart ? 'workspace-button' : 'workspace-button secondary'} to={restart ?? backPath}>
+                {restart
+                    ? t('다시 진행하기', 'Try again')
+                    : backPath.startsWith('/billing')
+                      ? t('요금제·결제로', 'Back to billing')
+                      : t('관리 화면으로', 'Back to workspaces')}
+            </Link>
             <ErrorView error={query.error} />
             <ActionsFeedback action={action} />
         </Section>
@@ -1767,12 +2046,29 @@ function SupportConsentPanel({scope}: {scope: Scope}) {
     );
 }
 
-function PaymentMethodPanel({scope, emailVerificationRequired}: {scope: Scope; emailVerificationRequired: boolean}) {
+function PaymentMethodPanel({
+    scope,
+    emailVerificationRequired,
+    cancelAtPeriodEnd,
+}: {
+    scope: Scope;
+    emailVerificationRequired: boolean;
+    cancelAtPeriodEnd: boolean;
+}) {
     const t = useCopy();
     const action = useAction();
     const accountId = useAuthStore((s) => s.accountId);
     const [consent, setConsent] = useState(false);
     const [proof, setProof] = useState('');
+    const [editing, setEditing] = useState(false);
+    const [removing, setRemoving] = useState(false);
+    const removeButton = useRef<HTMLButtonElement>(null);
+    const backButton = useRef<HTMLButtonElement>(null);
+    const editorButton = useRef<HTMLButtonElement>(null);
+    const retryButton = useRef<HTMLButtonElement>(null);
+    const pendingFocus = useRef<'back' | 'remove' | 'header' | undefined>(undefined);
+    const editorId = useId();
+    const removalTitleId = useId();
     const q = useQuery({
         queryKey: commercialQueryKey(accountId, scope.type, scope.ref, 'payment-method'),
         queryFn: () =>
@@ -1781,65 +2077,207 @@ function PaymentMethodPanel({scope, emailVerificationRequired}: {scope: Scope; e
             ),
     });
 
+    useEffect(() => {
+        if (action.busy || !pendingFocus.current) return;
+
+        const target =
+            pendingFocus.current === 'back'
+                ? backButton
+                : pendingFocus.current === 'remove'
+                  ? removeButton
+                  : q.isError
+                    ? retryButton
+                    : editorButton;
+
+        if (!target.current || target.current.disabled) return;
+
+        target.current.focus();
+        pendingFocus.current = undefined;
+    }, [editing, removing, action.busy, q.isError, q.isPending]);
+
     return (
-        <Section title={t('자동 갱신 결제수단', 'Automatic renewal payment method')}>
-            <p>
-                {q.isPending
-                    ? t('결제수단을 확인하고 있습니다.', 'Checking your payment method…')
-                    : q.isError
-                      ? t('결제수단 정보를 확인하지 못했습니다.', 'Unable to check your payment method.')
-                      : q.data?.registered
-                        ? q.data.maskedCard
-                        : t('등록된 자동결제 수단이 없습니다.', 'No automatic renewal method is registered.')}
-            </p>
-            <Notice>
-                {t(
-                    '매월 갱신일에 현재 계약 인원과 계약 요금으로 청구합니다. 카드 정보는 결제사 화면에서 입력하며, 최고 관리자 인계 시 기존 카드로 갱신하지 않습니다.',
-                    'Each renewal charges your contracted capacity and pricing. Enter card details on the payment provider’s screen. Ownership transfer stops renewal on the previous owner’s card.',
-                )}
-            </Notice>
-            {emailVerificationRequired ? <Reauthenticate onVerified={setProof} /> : null}
-            <label className="workspace-check">
-                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-                {t('현재 계약 조건의 매월 자동 갱신에 동의합니다.', 'I consent to monthly renewal under the current contract terms.')}
-            </label>
-            <button
-                disabled={
-                    (emailVerificationRequired && !proof) || !consent || action.busy || q.isPending || q.isError || !q.data?.termsVersion
-                }
-                onClick={() =>
-                    void action.run(async () => {
-                        await loadToss();
-
-                        const d = await commercialPost<{id: string; clientKey: string; customerKey: string; returnUrl: string}>(
-                            `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/payment-method`,
-                            emailVerificationRequired
-                                ? {termsVersion: q.data?.termsVersion, reauthenticationToken: proof}
-                                : {termsVersion: q.data?.termsVersion},
-                        );
-
-                        await openTossBilling(d);
-                    })
-                }
-            >
-                {t('카드 등록·변경', 'Register or replace card')}
-            </button>
-            {q.data?.registered ? (
+        <div className="plus-subscription__card" id="plus-subscription-card" data-editing={editing}>
+            <div className="plus-subscription__card-row">
+                <div>
+                    <p>{t('결제수단', 'Payment method')}</p>
+                    <strong>
+                        {q.isPending
+                            ? t('확인 중', 'Checking…')
+                            : q.isError
+                              ? t('결제수단을 불러오지 못했어요', 'Unable to load payment method')
+                              : q.data?.registered
+                                ? (q.data.maskedCard ?? t('등록된 카드', 'Registered card'))
+                                : t('등록된 카드 없음', 'No registered card')}
+                    </strong>
+                </div>
                 <button
-                    className="secondary"
-                    disabled={action.busy}
-                    onClick={() => void action.run(() => commercialDelete(`/billing-scopes/${scope.scopeId}/payment-method`))}
+                    ref={editorButton}
+                    type="button"
+                    className="plus-subscription__text-button"
+                    aria-expanded={editing}
+                    aria-controls={editorId}
+                    disabled={q.isPending || q.isError || action.busy || !q.data?.termsVersion}
+                    onClick={() => {
+                        setEditing(!editing);
+                        setConsent(false);
+                        setProof('');
+                        setRemoving(false);
+                    }}
                 >
-                    {t('자동 갱신 해제 및 카드 등록 삭제', 'Stop renewal and remove card')}
+                    {editing ? t('닫기', 'Close') : q.data?.registered ? t('변경', 'Change') : t('카드 등록', 'Register card')}
                 </button>
+            </div>
+            {editing ? (
+                <div className="plus-subscription__editor" id={editorId}>
+                    {removing ? (
+                        <div
+                            className="plus-subscription__confirmation plus-subscription__card-removal"
+                            role="group"
+                            aria-labelledby={removalTitleId}
+                        >
+                            <h3 id={removalTitleId}>{t('등록된 카드를 삭제할까요?', 'Remove your registered card?')}</h3>
+                            <p>
+                                {t(
+                                    '카드를 삭제하면 다음 자동결제가 중단됩니다. 현재 이용기간은 유지됩니다.',
+                                    'Removing the card stops future automatic payments. Your current service period is retained.',
+                                )}
+                            </p>
+                            <div className="plus-subscription__confirmation-actions">
+                                <button
+                                    ref={backButton}
+                                    type="button"
+                                    className="secondary"
+                                    disabled={action.busy}
+                                    onClick={() => {
+                                        pendingFocus.current = 'remove';
+                                        setRemoving(false);
+                                    }}
+                                >
+                                    {t('돌아가기', 'Go back')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="plus-subscription__card-delete"
+                                    disabled={action.busy}
+                                    onClick={() =>
+                                        void action.run(async () => {
+                                            const result = await commercialDelete(`/billing-scopes/${scope.scopeId}/payment-method`);
+
+                                            pendingFocus.current = 'header';
+                                            setEditing(false);
+                                            setRemoving(false);
+                                            setConsent(false);
+                                            setProof('');
+
+                                            return result;
+                                        })
+                                    }
+                                >
+                                    {t('카드 삭제', 'Remove card')}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="plus-subscription__editor-heading">
+                                <h3>{q.data?.registered ? t('카드 변경', 'Change card') : t('카드 등록', 'Register card')}</h3>
+                            </div>
+                            {cancelAtPeriodEnd ? (
+                                <p>
+                                    {t(
+                                        '카드 등록을 완료하면 해지 예약이 취소되고 매월 자동결제가 재개됩니다.',
+                                        'Registering a card cancels the scheduled cancellation and resumes monthly payments.',
+                                    )}
+                                </p>
+                            ) : null}
+                            {emailVerificationRequired ? <Reauthenticate onVerified={setProof} /> : null}
+                            <label className="workspace-check plus-subscription__card-consent">
+                                <input
+                                    type="checkbox"
+                                    checked={consent}
+                                    disabled={action.busy}
+                                    onChange={(e) => setConsent(e.target.checked)}
+                                />
+                                <span>
+                                    {t(
+                                        '현재 계약 조건의 매월 자동 갱신에 동의합니다.',
+                                        'I consent to monthly renewal under the current contract terms.',
+                                    )}
+                                </span>
+                            </label>
+                            <div className="plus-subscription__card-actions">
+                                <button
+                                    type="button"
+                                    className="plus-subscription__card-primary"
+                                    disabled={
+                                        (emailVerificationRequired && !proof) ||
+                                        !consent ||
+                                        action.busy ||
+                                        q.isPending ||
+                                        q.isError ||
+                                        !q.data?.termsVersion
+                                    }
+                                    onClick={() =>
+                                        void action.run(async () => {
+                                            await loadToss();
+
+                                            const d = await commercialPost<{
+                                                id: string;
+                                                clientKey: string;
+                                                customerKey: string;
+                                                returnUrl: string;
+                                            }>(
+                                                `${emailVerificationRequired ? '' : '/v2'}/billing-scopes/${scope.scopeId}/payment-method`,
+                                                emailVerificationRequired
+                                                    ? {termsVersion: q.data?.termsVersion, reauthenticationToken: proof}
+                                                    : {termsVersion: q.data?.termsVersion},
+                                            );
+
+                                            await openTossBilling(d);
+                                        })
+                                    }
+                                >
+                                    {t('카드 등록·변경', 'Register or replace card')}
+                                </button>
+                            </div>
+
+                            {q.data?.registered ? (
+                                <div className="plus-subscription__card-secondary">
+                                    <button
+                                        ref={removeButton}
+                                        type="button"
+                                        className="plus-subscription__text-button"
+                                        disabled={action.busy}
+                                        onClick={() => {
+                                            pendingFocus.current = 'back';
+                                            setConsent(false);
+                                            setProof('');
+                                            setRemoving(true);
+                                        }}
+                                    >
+                                        {t('등록 카드 삭제', 'Remove registered card')}
+                                    </button>
+                                </div>
+                            ) : null}
+                        </>
+                    )}
+                </div>
             ) : null}
             <ActionsFeedback action={action} />
             <ErrorView error={q.error} />
-        </Section>
+            {q.isError ? (
+                <button ref={retryButton} type="button" className="plus-subscription__text-button" onClick={() => void q.refetch()}>
+                    {t('다시 확인', 'Retry')}
+                </button>
+            ) : null}
+        </div>
     );
 }
 
-function BillingReturn() {
+export function BillingReturn({
+    backPath = '/workspace',
+    paymentReturnPath = '/workspace/payment-return',
+}: {backPath?: string; paymentReturnPath?: string} = {}) {
     const t = useCopy();
     const action = useAction();
     const client = useQueryClient();
@@ -1875,6 +2313,7 @@ function BillingReturn() {
         <Section
             title={id ? t('Plus 첫 결제 확인', 'Confirm first Plus payment') : t('자동결제 등록 확인', 'Confirm renewal registration')}
         >
+            {id ? <PlusCheckoutProgress payment /> : null}
             <Notice>
                 {id
                     ? applied
@@ -1901,7 +2340,7 @@ function BillingReturn() {
             </Notice>
             {current && (
                 <p>
-                    {t('이번 결제금액', 'Due now')}: {money(current.gross)} · {t('상태', 'Status')}: {paymentStatusLabel(current.status, t)}
+                    {t('이번 결제금액', 'Due now')}: {money(current.gross)}
                 </p>
             )}
             {summary ? (
@@ -1917,7 +2356,7 @@ function BillingReturn() {
                         </dd>
                     </div>
                     <div>
-                        <dt>{t('다음 자동결제일', 'Next automatic payment')}</dt>
+                        <dt>{t('다음 결제일', 'Next payment date')}</dt>
                         <dd>{date(summary.periodEnd)} (KST)</dd>
                     </div>
                     <div>
@@ -2020,12 +2459,12 @@ function BillingReturn() {
                         }
                     >
                         {id
-                            ? `${current ? money(current.gross) : ''} ${t('첫 결제하고 구독 시작', 'Pay & start subscription')}`
+                            ? `${current && Number.isSafeInteger(current.gross) ? t(`${current.gross.toLocaleString('ko-KR')}원`, money(current.gross)) : ''} ${t('결제하고 Plus 시작', 'Pay & start Plus')}`
                             : t('확인하고 등록 완료', 'Verify & finish registration')}
                     </button>
                 )}
             {id && (
-                <Link className="workspace-button secondary" to={`/workspace/payment-return?orderId=${encodeURIComponent(id)}`}>
+                <Link className="workspace-button secondary" to={`${paymentReturnPath}?orderId=${encodeURIComponent(id)}`}>
                     {t('결제 결과 재조회·미결제 주문 취소', 'Check payment status or cancel an unsubmitted order')}
                 </Link>
             )}
@@ -2044,7 +2483,9 @@ function BillingReturn() {
                 </button>
             ) : null}
             <ActionsFeedback action={action} />
-            <Link to="/workspace">{t('관리 공간으로', 'Back to workspaces')}</Link>
+            <Link to={backPath}>
+                {backPath.startsWith('/billing') ? t('요금제·결제로', 'Back to billing') : t('관리 공간으로', 'Back to workspaces')}
+            </Link>
         </Section>
     );
 }
@@ -2184,11 +2625,11 @@ function AiBatchPanel({scope, e}: {scope: Scope; e: Entitlement}) {
         queryKey: commercialQueryKey(accountId, scope.scopeId, 'teams'),
         queryFn: () => WardAPI.getShiftTeams(Number(scope.ref)),
     });
-    const fullUsage = e.usage.find((u) => u.meter === 'FULL_GENERATE');
+    const fullUsage = aiFillUsage(e);
     const remaining = fullUsage?.remaining ?? 0;
 
     return (
-        <Section title={t('여러 팀 전체 생성', 'Generate schedules for multiple teams')}>
+        <Section title={t('여러 팀 AI 채우기', 'AI fill for multiple teams')}>
             {fullUsage?.enforced === false ? (
                 <Notice>
                     {t(
@@ -2199,32 +2640,59 @@ function AiBatchPanel({scope, e}: {scope: Scope; e: Entitlement}) {
             ) : null}
             <Notice>
                 {t(
-                    '서버에 저장된 팀별 명단·설정으로 실행합니다. 전체 생성은 팀당 1회이며 필요한 횟수를 함께 예약합니다. 결과를 검토한 뒤 저장·확정해 주세요.',
+                    '서버에 저장된 팀별 명단·설정으로 실행합니다. AI 채우기는 팀당 1회이며 필요한 횟수를 함께 예약합니다. 결과를 검토한 뒤 저장·확정해 주세요.',
                     'Uses each team’s roster and settings saved on the server. One full use is reserved per team before execution. Review results before saving or confirming.',
                 )}
             </Notice>
-            <Field label={t('편성 월', 'Schedule month')}>
-                <input type="month" required min="2020-01" max="2100-12" value={month} onChange={(x) => setMonth(x.target.value)} />
-            </Field>
-            {teams.data?.map((team) => (
-                <label className="workspace-check" key={team.shiftTeamId}>
-                    <input
-                        type="checkbox"
-                        checked={selected.includes(team.shiftTeamId)}
-                        onChange={(x) =>
-                            setSelected((p) => (x.target.checked ? [...p, team.shiftTeamId] : p.filter((id) => id !== team.shiftTeamId)))
-                        }
-                    />
-                    {team.name}
-                </label>
-            ))}
+            <div className="ward-workspace__month">
+                <Field label={t('편성 월', 'Schedule month')}>
+                    <input type="month" required min="2020-01" max="2100-12" value={month} onChange={(x) => setMonth(x.target.value)} />
+                </Field>
+            </div>
+            <fieldset className="ward-workspace__teams">
+                <legend>{t('근무표를 만들 팀', 'Teams to schedule')}</legend>
+                {teams.isPending ? <p role="status">{t('팀 목록을 불러오는 중입니다.', 'Loading teams…')}</p> : null}
+                {teams.isError ? (
+                    <>
+                        <ErrorView error={teams.error} />
+                        <button type="button" className="secondary" onClick={() => void teams.refetch()}>
+                            {t('다시 불러오기', 'Try again')}
+                        </button>
+                    </>
+                ) : null}
+                {teams.isSuccess && !teams.data.length ? (
+                    <p>
+                        {t(
+                            '등록된 팀이 없어요. 근무표 화면에서 팀을 먼저 만들어 주세요.',
+                            'Create a team in the scheduling workspace to get started.',
+                        )}
+                    </p>
+                ) : null}
+                {teams.data?.map((team) => (
+                    <label className="workspace-check" key={team.shiftTeamId}>
+                        <input
+                            type="checkbox"
+                            checked={selected.includes(team.shiftTeamId)}
+                            onChange={(x) =>
+                                setSelected((p) =>
+                                    x.target.checked ? [...p, team.shiftTeamId] : p.filter((id) => id !== team.shiftTeamId),
+                                )
+                            }
+                        />
+                        {team.name}
+                    </label>
+                ))}
+            </fieldset>
             <p>
-                {t('필요한 전체 생성', 'Full uses needed')}: {selected.length} / {t('남음', 'Available')} {remaining}
+                {t('필요한 AI 채우기', 'AI fill uses needed')}: {selected.length} / {t('남음', 'Available')} {remaining}
             </p>
             <button
                 disabled={
                     action.busy ||
                     fullUsage?.enforced === false ||
+                    !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) ||
+                    month < '2020-01' ||
+                    month > '2100-12' ||
                     !selected.length ||
                     selected.length > remaining ||
                     selected.length > 20 ||
@@ -2262,7 +2730,7 @@ function AiBatchPanel({scope, e}: {scope: Scope; e: Entitlement}) {
                     })
                 }
             >
-                {t('필요 횟수 확인하고 전체 생성', 'Reserve uses & generate')}
+                {t('필요 횟수 확인하고 AI 채우기', 'Reserve uses & generate')}
             </button>
             <button
                 className="secondary"
@@ -2332,7 +2800,8 @@ export default function WorkspacePage() {
     } = useAuth();
     const isWardLinkRoute = mode === 'WARD' && tab === 'links';
     const ownedWardLinkScope = isWardLinkRoute ? getOwnedWardLinkScope(context.data, accountMe, ref) : undefined;
-    const scope = ownedWardLinkScope ?? context.data?.scopes.find((s) => s.type === mode && String(s.ref) === ref);
+    const listedScope = context.data?.scopes.find((s) => s.type === mode && String(s.ref) === ref);
+    const scope = ownedWardLinkScope ?? listedScope;
     const entitlement = useQuery({
         queryKey: commercialQueryKey(accountId, scope?.type, scope?.ref, 'entitlements'),
         queryFn: () => commercialGet<Entitlement>(`/scopes/${scope!.type}/${scope!.ref}/entitlements`),
@@ -2342,6 +2811,7 @@ export default function WorkspacePage() {
         retry: false,
     });
     const switchScope = useWorkspaceNavigation();
+    const scopes = context.data?.enabled && !context.isError ? context.data.scopes : [];
     const pendingCount = context.data?.enabled && !context.isError ? countWorkspaceRequests(context.data, accountId) : 0;
 
     useEffect(() => {
@@ -2355,20 +2825,27 @@ export default function WorkspacePage() {
 
     if (mode === 'invitations') return <Navigate to={`/workspace/notices${location.search}`} replace />;
 
+    if (mode === 'adoption') return <Navigate to="/workspace/hospitals" replace />;
+
     if (scope?.type === 'HOSPITAL' && !['overview', 'members', 'billing'].includes(tab))
         return <Navigate to={scopePath(scope, tab === 'usage' || tab === 'support' ? 'billing' : 'overview')} replace />;
 
     if (!mode) {
+        const singleWard = context.data?.configurationReady !== false ? getOnlyWardScope(scopes) : undefined;
+
+        if (singleWard && new URLSearchParams(location.search).get('choose') !== '1')
+            return <Navigate to={scopePath(singleWard)} replace />;
+
         return (
             <WorkspacePersonalShell
                 page="workspaces"
-                scopes={context.data?.enabled && !context.isError ? context.data.scopes : []}
+                scopes={scopes}
                 accountId={accountId}
                 accountName={accountMe?.name ?? ''}
                 pendingCount={pendingCount}
             >
                 <WorkspaceHome
-                    scopes={context.data?.enabled && !context.isError ? context.data.scopes : []}
+                    scopes={scopes}
                     currentWardId={accountMe?.wardId}
                     loading={context.isPending}
                     error={context.error}
@@ -2441,46 +2918,22 @@ export default function WorkspacePage() {
             </WorkspacePersonalShell>
         );
 
-    const ContentTag = scope?.type === 'HOSPITAL' ? 'div' : 'main';
+    const wardPage = tab === 'members' || tab === 'ai-batch' || tab === 'billing' || tab === 'links' || tab === 'support' ? tab : 'usage';
+    const wardLinksOnly = isWardLinkRoute && (context.data?.configurationReady === false || !listedScope);
+    const isWardBilling = scope?.type === 'WARD' && (wardPage === 'usage' || wardPage === 'billing');
     const content = (
-        <ContentTag className="workspace-main">
-            {scope?.type !== 'HOSPITAL' ? (
-                <>
-                    <div className="workspace-title">
-                        <div>
-                            <p>{t('병동과 병원을 위한 관리 공간', 'Your ward and hospital workspaces')}</p>
-                            <h1>
-                                {scope?.name?.length
-                                    ? scope.name
-                                    : isWardLinkRoute
-                                      ? t('병원 연결 관리', 'Hospital connections')
-                                      : t('내 관리 공간', 'My workspaces')}
-                            </h1>
-                        </div>
-                        {context.data?.scopes.length && !(isWardLinkRoute && context.data.configurationReady === false) ? (
-                            <Field label={t('관리 범위 바꾸기', 'Switch workspace')}>
-                                <select
-                                    value={scope?.scopeId ?? ''}
-                                    onChange={(event) => {
-                                        const next = context.data?.scopes.find((s) => s.scopeId === event.target.value);
-
-                                        if (next) void action.run(() => switchScope(next));
-                                    }}
-                                >
-                                    <option value="">{t('선택하세요', 'Select')}</option>
-                                    {context.data.scopes.map((s) => (
-                                        <option key={s.scopeId} value={s.scopeId}>
-                                            {s.type === 'HOSPITAL' ? t('병원', 'Hospital') : t('병동', 'Ward')} · {s.name} ·{' '}
-                                            {workspaceRoleLabel(s.role, t('ko', 'en') === 'ko')}
-                                        </option>
-                                    ))}
-                                </select>
-                            </Field>
-                        ) : null}
-                    </div>
-                </>
-            ) : null}
+        <div className="workspace-main">
             <ActionsFeedback action={action} />
+            {isWardBilling ? (
+                <nav className="ward-workspace__views" aria-label={t('이용·결제 메뉴', 'Usage and billing navigation')}>
+                    <Link to={scopePath(scope, 'usage')} aria-current={wardPage === 'usage' ? 'page' : undefined}>
+                        {t('이용 현황', 'Usage overview')}
+                    </Link>
+                    <Link to={scopePath(scope, 'billing')} aria-current={wardPage === 'billing' ? 'page' : undefined}>
+                        {t('구독·결제', 'Subscription & billing')}
+                    </Link>
+                </nav>
+            ) : null}
             {entitlement.data?.billingHold ? (
                 <Notice>
                     {t(
@@ -2492,166 +2945,136 @@ export default function WorkspacePage() {
             {context.isPending ? (
                 <p role="status">{t('관리 정보를 불러오는 중입니다.', 'Loading your workspaces…')}</p>
             ) : context.isError ? (
-                <ErrorView error={context.error} />
+                <div>
+                    <ErrorView error={context.error} />
+                    <button type="button" className="secondary" onClick={() => void context.refetch()}>
+                        {t('다시 불러오기', 'Try again')}
+                    </button>
+                </div>
             ) : !context.data?.enabled ? (
                 <Notice>
                     {t('요금제·병원 관리 기능을 준비하고 있습니다.', 'Plans and hospital administration are being prepared.')}{' '}
                     <Link to={ROUTE.HOME}>{t('기존 서비스 열기', 'Open current service')}</Link>
                 </Notice>
-            ) : mode === 'plans' ? (
-                <Plans />
-            ) : mode === 'adoption' ? (
-                <Navigate to="/workspace/hospitals" replace />
-            ) : mode === 'hospitals' ? (
-                <HospitalChooser />
-            ) : mode === 'billing-return' ? (
-                <BillingReturn />
-            ) : mode === 'notices' ? (
-                <WorkspaceActivity context={context.data} />
-            ) : mode === 'payment-return' ? (
-                <PaymentReturn />
-            ) : mode === 'receipts' ? (
-                <Receipts />
-            ) : scope ? (
-                <>
-                    {scope.type !== 'HOSPITAL' ? (
-                        <nav className="workspace-tabs" aria-label={t('범위별 메뉴', 'Scope menus')}>
-                            {(isWardLinkRoute && context.data.configurationReady === false
-                                ? [['links', t('병원 연결', 'Hospital linking')]]
-                                : [
-                                      ['usage', t('요금제·사용량', 'Plan & usage')],
-                                      ['members', t('병동 관리자', 'Ward admins')],
-                                      ['ai-batch', t('여러 팀 생성', 'Generate multiple teams')],
-                                      ['billing', t('결제·증설', 'Billing')],
-                                      ...(scope.role === 'OWNER' ? [['links', t('병원 연결', 'Hospital linking')]] : []),
-                                      ['support', t('지원', 'Support')],
-                                  ]
-                            ).map(([key, label]) => (
-                                <Link aria-current={tab === key ? 'page' : undefined} key={key} to={scopePath(scope, key)}>
-                                    {label}
-                                </Link>
-                            ))}
-                            {scope.type === 'WARD' ? (
-                                <button
-                                    className="secondary"
-                                    disabled={action.busy}
-                                    onClick={() => void action.run(() => switchScope(scope, true))}
-                                >
-                                    {t('근무표 서비스 열기', 'Open scheduling')}
-                                </button>
-                            ) : null}
-                        </nav>
-                    ) : null}
-                    {isWardLinkRoute ? (
-                        ownedWardLinkScope ? (
-                            <WardLinksPanel scope={ownedWardLinkScope} />
-                        ) : (
-                            <Section title={t('병원 연결', 'Hospital connections')}>
-                                <Notice>
-                                    {t(
-                                        '이 병동의 최고 관리자만 연결 요청을 확인할 수 있습니다.',
-                                        'Only this ward’s owner can review connection requests.',
-                                    )}
-                                </Notice>
-                            </Section>
-                        )
-                    ) : entitlement.data ? (
-                        scope.type === 'HOSPITAL' && tab === 'billing' ? (
-                            <HospitalBilling key={scope.scopeId} scope={scope} e={entitlement.data} />
-                        ) : tab === 'ai-batch' && scope.type === 'WARD' ? (
-                            <AiBatchPanel scope={scope} e={entitlement.data} />
-                        ) : tab === 'members' ? (
-                            scope.type === 'HOSPITAL' ? (
-                                <HospitalMembersPanel key={scope.scopeId} scope={scope} entitlement={entitlement.data} />
-                            ) : (
-                                <MembersPanel key={scope.scopeId} scope={scope} e={entitlement.data} />
-                            )
-                        ) : tab === 'billing' && (scope.type === 'WARD' || scope.role === 'OWNER') ? (
-                            <BillingPanel
-                                key={scope.scopeId}
-                                scope={scope}
-                                e={entitlement.data}
-                                cardRegistrationVersion={context.data?.cardRegistrationVersion}
-                            />
-                        ) : tab === 'overview' && scope.type === 'HOSPITAL' ? (
-                            <HospitalOverview scope={scope} />
-                        ) : tab === 'support' ? (
-                            <>
-                                <Section title={t('도입·운영 지원 요청', 'Implementation & support')}>
-                                    <RequestForm scope={scope} kind="SUPPORT" />
-                                    {scope.role === 'OWNER' ? <SupportBillingPanel scope={scope} /> : null}
-                                    {scope.type === 'WARD' && scope.role === 'OWNER' ? <SupportConsentPanel scope={scope} /> : null}
-                                </Section>
-                                {scope.role === 'OWNER' ? (
-                                    <HospitalDisclosure
-                                        active={scope.type === 'HOSPITAL'}
-                                        title={t('병원 이용 종료', 'Close hospital workspace')}
-                                    >
-                                        <Section title={t('범위 종료·보관 요청', 'Request closure & archive')}>
-                                            <Notice>
-                                                {t(
-                                                    '종료 시 미수·환불·연결을 확인한 뒤 보관합니다. 기존 자료를 즉시 삭제하지 않습니다.',
-                                                    'Outstanding invoices, refunds and links are reviewed before archiving. Existing data is preserved.',
-                                                )}
-                                            </Notice>
-                                            <RequestForm scope={scope} kind="CLOSURE" />
-                                        </Section>
-                                    </HospitalDisclosure>
-                                ) : null}
-                            </>
-                        ) : (
-                            <UsagePanel scope={scope} e={entitlement.data} />
-                        )
-                    ) : entitlement.isPending ? (
-                        <p role="status">{t('관리 정보를 불러오는 중입니다.', 'Loading workspace…')}</p>
-                    ) : (
-                        <ErrorView error={entitlement.error} />
-                    )}
-                </>
             ) : isWardLinkRoute ? (
-                <Section title={t('병원 연결', 'Hospital connections')}>
-                    <Notice>
-                        {t(
-                            '이 병동의 최고 관리자만 연결 요청을 확인할 수 있습니다.',
-                            'Only this ward’s owner can review connection requests.',
-                        )}
-                    </Notice>
-                </Section>
-            ) : mode === 'HOSPITAL' ? (
-                <HospitalChooser />
-            ) : (
+                ownedWardLinkScope ? (
+                    <WardLinksPanel scope={ownedWardLinkScope} />
+                ) : (
+                    <Section title={t('병원 연결', 'Hospital connections')}>
+                        <Notice>
+                            {t(
+                                '이 병동의 최고 관리자만 연결 요청을 확인할 수 있습니다.',
+                                'Only this ward’s owner can review connection requests.',
+                            )}
+                        </Notice>
+                    </Section>
+                )
+            ) : !scope ? (
                 <Navigate to="/workspace" replace />
+            ) : entitlement.data ? (
+                scope.type === 'HOSPITAL' && tab === 'billing' ? (
+                    <HospitalBilling key={scope.scopeId} scope={scope} e={entitlement.data} />
+                ) : tab === 'ai-batch' && scope.type === 'WARD' ? (
+                    <AiBatchPanel key={scope.scopeId} scope={scope} e={entitlement.data} />
+                ) : tab === 'members' ? (
+                    scope.type === 'HOSPITAL' ? (
+                        <HospitalMembersPanel key={scope.scopeId} scope={scope} entitlement={entitlement.data} />
+                    ) : (
+                        <MembersPanel key={scope.scopeId} scope={scope} e={entitlement.data} />
+                    )
+                ) : tab === 'billing' ? (
+                    <BillingPanel
+                        key={scope.scopeId}
+                        scope={scope}
+                        e={entitlement.data}
+                        cardRegistrationVersion={context.data?.cardRegistrationVersion}
+                    />
+                ) : tab === 'overview' && scope.type === 'HOSPITAL' ? (
+                    <HospitalOverview scope={scope} />
+                ) : tab === 'support' ? (
+                    <>
+                        <Section title={t('도입·운영 지원 요청', 'Implementation & support')}>
+                            <RequestForm scope={scope} kind="SUPPORT" />
+                        </Section>
+                        {scope.role === 'OWNER' ? (
+                            <>
+                                <SupportBillingPanel scope={scope} />
+                                <HospitalDisclosure active title={t('직원 지원 접근 권한', 'Staff support access')}>
+                                    <SupportConsentPanel scope={scope} />
+                                </HospitalDisclosure>
+                                <HospitalDisclosure active title={t('병동 이용 종료', 'Close ward workspace')}>
+                                    <Section title={t('범위 종료·보관 요청', 'Request closure & archive')}>
+                                        <Notice>
+                                            {t(
+                                                '종료 시 미수·환불·연결을 확인한 뒤 보관합니다. 기존 자료를 즉시 삭제하지 않습니다.',
+                                                'Outstanding invoices, refunds and links are reviewed before archiving. Existing data is preserved.',
+                                            )}
+                                        </Notice>
+                                        <RequestForm scope={scope} kind="CLOSURE" />
+                                    </Section>
+                                </HospitalDisclosure>
+                            </>
+                        ) : null}
+                    </>
+                ) : (
+                    <UsagePanel scope={scope} e={entitlement.data} />
+                )
+            ) : entitlement.isPending ? (
+                <p role="status">{t('관리 정보를 불러오는 중입니다.', 'Loading workspace…')}</p>
+            ) : (
+                <div>
+                    <ErrorView error={entitlement.error} />
+                    <button type="button" className="secondary" onClick={() => void entitlement.refetch()}>
+                        {t('다시 불러오기', 'Try again')}
+                    </button>
+                </div>
             )}
-        </ContentTag>
+        </div>
     );
 
-    return scope?.type === 'HOSPITAL' ? (
-        <HospitalWorkspaceShell
-            scope={scope}
-            scopes={context.data?.enabled && !context.isError ? context.data.scopes : []}
-            tab={tab}
+    if (scope?.type === 'HOSPITAL')
+        return (
+            <HospitalWorkspaceShell
+                scope={scope}
+                scopes={scopes}
+                tab={tab}
+                accountId={accountId}
+                accountName={accountMe?.name ?? ''}
+                pendingCount={pendingCount}
+                busy={action.busy}
+                onSwitch={(next) => void action.run(() => switchScope(next))}
+            >
+                {content}
+            </HospitalWorkspaceShell>
+        );
+
+    if (scope?.type === 'WARD')
+        return (
+            <WorkspaceShell
+                page={wardPage}
+                scope={scope}
+                scopes={scopes}
+                accountId={accountId}
+                accountName={accountMe?.name ?? ''}
+                pendingCount={pendingCount}
+                busy={action.busy}
+                wardLinksOnly={wardLinksOnly}
+                onOpenSchedule={wardLinksOnly ? undefined : () => void action.run(() => switchScope(scope, true))}
+                className="ward-workspace"
+            >
+                {content}
+            </WorkspaceShell>
+        );
+
+    return (
+        <WorkspacePersonalShell
+            page="workspaces"
+            scopes={scopes}
             accountId={accountId}
             accountName={accountMe?.name ?? ''}
             pendingCount={pendingCount}
-            busy={action.busy}
-            onSwitch={(next) => void action.run(() => switchScope(next))}
         >
             {content}
-        </HospitalWorkspaceShell>
-    ) : (
-        <div className="workspace-app">
-            <header className="workspace-header">
-                <Link to="/workspace" className="workspace-brand">
-                    <img src={logoWordmarkPurple} alt="dutying" width="119" height="33" />
-                </Link>
-                <nav aria-label={t('관리 메뉴', 'Workspace navigation')}>
-                    <Link to="/workspace/plans">{t('요금제 비교', 'Compare plans')}</Link>
-                    <Link to="/workspace/notices">{t('알림', 'Notices')}</Link>
-                    <Link to={ROUTE.PROFILE}>{t('내 계정', 'My account')}</Link>
-                    <Link to="/workspace">{t('병원·병동 전환', 'Switch workspace')}</Link>
-                </nav>
-            </header>
-            {content}
-        </div>
+        </WorkspacePersonalShell>
     );
 }

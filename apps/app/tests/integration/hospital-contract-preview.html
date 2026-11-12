@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>테스트병원 계약 예시</title>
+        <style>
+            #root {
+                min-height: 100vh;
+                height: auto !important;
+            }
+            #root .workspace-shell {
+                height: auto;
+                min-height: 100vh;
+            }
+            #root .workspace-shell__content {
+                overflow: visible;
+            }
+            .contract-preview-notice {
+                margin: 0 0 24px;
+                padding: 10px 14px;
+                border-radius: 6px;
+                background: #f4f0fc;
+                color: #6941c6;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body style="display: block; background: white">
+        <div id="root" style="width: 100%"></div>
+        <script type="module" src="/tests/integration/hospital-contract-preview.tsx"></script>
+    </body>
+</html>

@@ -320,12 +320,12 @@ export const en: TLocale = {
             },
             feature: {
                 ai: {
-                    label: 'AI autofill',
+                    label: 'AI fill',
                     title: 'No need to fill\nblank schedules from scratch',
                     description: 'Review easy-to-miss conditions\nstep by step and apply them.',
                 },
                 review: {
-                    label: 'AI autofill',
+                    label: 'AI fill',
                     title: 'Find wrong shifts\nand fix them quickly',
                     description: 'See what needs attention\nand review suggested fixes.',
                 },
@@ -692,8 +692,8 @@ export const en: TLocale = {
                     info: 'AI fills blank cells except fixed and requested shifts.\nFix any shift that must not change before running AI.',
                 },
                 aiAutofill: {
-                    title: 'AI autofill',
-                    info: 'Run AI autofill multiple times to move quickly toward the schedule you want.\nAn admin should review and adjust the result.',
+                    title: 'AI fill',
+                    info: 'Run AI fill multiple times to move quickly toward the schedule you want.\nAn admin should review and adjust the result.',
                 },
                 tools: {
                     title: 'Use helper tools',
@@ -1232,7 +1232,7 @@ export const en: TLocale = {
                 saveFailed: 'Failed to save. Please try again shortly.',
             },
             aiRefill: {
-                requestFailed: 'Could not complete AI autofill.',
+                requestFailed: 'Could not complete AI fill.',
                 action: 'Regenerate',
                 firstFill: 'Autofill',
                 toolbarTitle: 'Fill and confirm the schedule',
@@ -1359,7 +1359,7 @@ export const en: TLocale = {
                     cancel: 'Cancel',
                 },
                 prefillDecision: {
-                    eyebrow: 'AI autofill preview',
+                    eyebrow: 'AI fill preview',
                     title: 'Are there shifts AI should not change?',
                     description:
                         'AI will refill every cell except fixed and requested shifts.\nFix any shifts that should not change before continuing.',
@@ -1489,12 +1489,12 @@ export const en: TLocale = {
                 exitGuard: {
                     unsavedTitle: 'You have unsaved edits',
                     unsavedDescription: 'Save a draft or confirm the schedule to keep your edits.',
-                    aiGeneratingTitle: 'Stop AI Autofill and leave?',
+                    aiGeneratingTitle: 'Stop AI Fill and leave?',
                     aiGeneratingDescription: 'Leaving may discard the autofill result.',
                     leaveConfirm: 'Leave',
                     stayCancel: 'Keep editing',
                     unsavedMessage: 'You have unsaved edits\nSave a draft or confirm the schedule to keep your edits.',
-                    aiGeneratingMessage: 'AI Autofill is running.\nLeaving may discard the result.\nLeave anyway?',
+                    aiGeneratingMessage: 'AI Fill is running.\nLeaving may discard the result.\nLeave anyway?',
                 },
                 cannotAutofillYet: 'Schedule data is still loading. Please try again shortly.',
                 publishSuccess: 'Schedule confirmed and published.',
@@ -1505,7 +1505,7 @@ export const en: TLocale = {
                     error: 'Fill failed',
                 },
                 description: {
-                    idle: 'You can start AI autofill with the conditions from the previous steps.',
+                    idle: 'You can start AI fill with the conditions from the previous steps.',
                     loading: 'While waiting for the response, confirm and retry are temporarily disabled.',
                     success: 'The AI result has been applied. Review it, edit it, or confirm it right away.',
                     error: 'The AI request failed. The current schedule stays as-is, and you can retry immediately.',

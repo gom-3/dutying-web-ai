@@ -1,0 +1,683 @@
+.ward-billing-page.workspace-app {
+    --workspace-primary: #663dfa;
+    --workspace-primary-hover: #5832e7;
+    --workspace-ink: #242428;
+    --workspace-muted: #657084;
+    --workspace-control: #f7f9fb;
+    --workspace-secondary: #f0ecff;
+    --plus-accent: #663dfa;
+    --plus-muted: #657084;
+    width: 100%;
+    max-width: 1040px;
+    height: auto;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 32px 32px 64px;
+    overflow: visible;
+    background: transparent;
+    color: var(--workspace-ink);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+.ward-billing-page__header {
+    margin-bottom: 24px;
+    padding-right: 52px;
+}
+.ward-billing-page__header > p {
+    margin: 0 0 4px;
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page__header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: -0.04em;
+}
+.ward-billing-page__header h1 + p {
+    margin-top: 8px;
+    font-size: 14px;
+}
+.ward-billing-page__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    width: fit-content;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    border-radius: 14px;
+    background: #fff;
+}
+.ward-billing-page__tabs a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    color: var(--workspace-muted);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.ward-billing-page__tabs a[aria-current='page'] {
+    background: #f0ecff;
+    color: var(--workspace-primary);
+}
+.ward-billing-page__body {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 20px;
+}
+.ward-billing-page .hospital-secondary-disclosure {
+    min-width: 0;
+    padding: 20px 28px;
+    border: 0;
+    border-radius: 24px;
+    background: #fff;
+}
+.ward-billing-page .hospital-secondary-disclosure > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+    font-size: 16px;
+    font-weight: 650;
+}
+.ward-billing-page .hospital-secondary-disclosure > summary::-webkit-details-marker {
+    display: none;
+}
+.ward-billing-page .hospital-secondary-disclosure > summary:hover:not(:focus-visible) {
+    background: transparent;
+}
+.ward-billing-page .hospital-secondary-label {
+    display: inline-flex;
+    align-items: center;
+}
+.ward-billing-page .hospital-secondary-content > .workspace-section {
+    margin: 0;
+    padding: 16px 0 0;
+}
+.ward-billing-page .workspace-section {
+    min-width: 0;
+    margin: 0;
+    padding: 28px;
+    border: 0;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: none;
+}
+.ward-billing-page .workspace-section-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.ward-billing-page .workspace-heading-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+}
+.ward-billing-page .workspace-section h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: -0.035em;
+}
+.ward-billing-page .workspace-section h3 {
+    margin: 0 0 16px;
+    font-size: 17px;
+    font-weight: 650;
+    line-height: 1.6;
+    letter-spacing: -0.025em;
+}
+.ward-billing-page .workspace-section p {
+    margin: 12px 0;
+}
+.ward-billing-page .hospital-current-plan {
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: #f0ecff;
+    color: var(--workspace-primary);
+    font-size: 12px;
+    font-weight: 650;
+}
+.ward-billing-page .workspace-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+.ward-billing-page .workspace-stats > div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 20px;
+    border-radius: 16px;
+    background: var(--workspace-control);
+}
+.ward-billing-page .workspace-stats strong,
+.ward-billing-page .workspace-usage > strong {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+}
+.ward-billing-page .workspace-stats span {
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page .workspace-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0;
+}
+.ward-billing-page .workspace-usage {
+    min-width: 0;
+    padding: 20px;
+    border-radius: 16px;
+    background: var(--workspace-control);
+    color: var(--workspace-ink);
+}
+.ward-billing-page .workspace-grid > .workspace-usage:only-child {
+    grid-column: 1 / -1;
+}
+.ward-billing-page .workspace-usage h3 {
+    margin: 0 0 16px;
+    font-size: 15px;
+}
+.ward-billing-page .workspace-usage > strong {
+    display: block;
+}
+.ward-billing-page .workspace-usage p,
+.ward-billing-page .workspace-usage ul {
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page .workspace-usage ul:empty {
+    display: none;
+}
+.ward-billing-page .workspace-usage meter {
+    display: block;
+    width: 100%;
+    height: 6px;
+    margin: 16px 0 0;
+    border: 0;
+    border-radius: 4px;
+    background: #e8e3f5;
+    appearance: none;
+}
+.ward-billing-page .workspace-usage meter::-webkit-meter-bar {
+    height: 6px;
+    border: 0;
+    border-radius: 4px;
+    background: #e8e3f5;
+    box-shadow: none;
+}
+.ward-billing-page .workspace-usage meter::-webkit-meter-optimum-value {
+    border-radius: 4px;
+    background: #8b6cde;
+}
+.ward-billing-page .workspace-usage meter::-moz-meter-bar {
+    border-radius: 4px;
+    background: #8b6cde;
+}
+.ward-billing-page .workspace-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    align-items: end;
+    gap: 8px 20px;
+}
+.ward-billing-page .workspace-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    margin: 16px 0;
+    color: #595961;
+    font-size: 14px;
+    font-weight: 600;
+}
+.ward-billing-page .workspace-field :is(input, select, textarea) {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--workspace-control);
+    color: var(--workspace-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+.ward-billing-page .workspace-field textarea {
+    min-height: 104px;
+    resize: vertical;
+}
+.ward-billing-page .workspace-field :is(input, select, textarea):focus-visible {
+    background: #f0ecff;
+    color: #4224b6;
+    text-decoration: none;
+}
+.ward-billing-page .workspace-field:focus-within > span {
+    color: #4224b6;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.ward-billing-page button:not(.hospital-info-tip),
+.ward-billing-page .workspace-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    margin: 6px 8px 6px 0;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 12px;
+    background: var(--workspace-primary);
+    color: #fff;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+    text-decoration: none;
+}
+.ward-billing-page button.secondary,
+.ward-billing-page .workspace-button.secondary {
+    background: #f0ecff;
+    color: #5530ce;
+}
+.ward-billing-page button.danger {
+    background: #fff0f3;
+    color: #ad2752;
+}
+.ward-billing-page button:not(.hospital-info-tip):hover:not(:disabled),
+.ward-billing-page .workspace-button:hover {
+    background: var(--workspace-primary-hover);
+    color: #fff;
+}
+.ward-billing-page button:not(.hospital-info-tip):active:not(:disabled),
+.ward-billing-page .workspace-button:active {
+    background: #4724c2;
+    color: #fff;
+}
+.ward-billing-page button:not(.hospital-info-tip):disabled {
+    background: #f2f2f7;
+    color: #697184;
+    opacity: 1;
+    cursor: not-allowed;
+}
+.ward-billing-page :is(a, button, summary):focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    outline: none;
+}
+.ward-billing-page a:not(.workspace-button):hover {
+    color: #5530ce;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.ward-billing-page .workspace-notice,
+.ward-billing-page .workspace-feedback {
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: #f0ecff;
+    color: #4d3f77;
+    font-size: 13px;
+    line-height: 1.8;
+}
+.ward-billing-page .workspace-error {
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: #fff0f3;
+    color: #ad2752;
+    font-size: 13px;
+    line-height: 1.8;
+}
+.ward-billing-page .workspace-review {
+    padding: 24px;
+    margin: 24px 0;
+    border-radius: 18px;
+    background: var(--workspace-control);
+}
+.ward-billing-page .workspace-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-height: 44px;
+    margin: 16px 0;
+    padding: 12px 0;
+    font-size: 14px;
+    line-height: 1.8;
+}
+.ward-billing-page .workspace-check input {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
+    accent-color: var(--workspace-primary);
+}
+.ward-billing-page .workspace-check:has(input:focus-visible) {
+    border-radius: 8px;
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.ward-billing-page .workspace-check a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.ward-billing-page .workspace-payment-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin: 24px 0;
+    padding: 24px;
+    border-radius: 18px;
+    background: var(--workspace-control);
+}
+.ward-billing-page .workspace-payment-summary > div {
+    min-width: 0;
+}
+.ward-billing-page .workspace-payment-summary dt {
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page .workspace-payment-summary dd {
+    margin: 4px 0 0;
+    color: var(--workspace-ink);
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1.7;
+}
+.ward-billing-page .workspace-table-wrap {
+    margin: 20px 0;
+    overflow-x: auto;
+}
+.ward-billing-page .workspace-table-wrap table {
+    width: 100%;
+    border: 0;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+    font-size: 13px;
+}
+.ward-billing-page .workspace-table-wrap :is(th, td) {
+    padding: 12px 14px;
+    border: 0;
+    text-align: left;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+.ward-billing-page .workspace-table-wrap th {
+    background: transparent;
+    color: var(--workspace-muted);
+    font-weight: 500;
+}
+.ward-billing-page .workspace-table-wrap tbody tr {
+    background: var(--workspace-control);
+}
+.ward-billing-page .workspace-table-wrap td:first-child {
+    border-radius: 10px 0 0 10px;
+}
+.ward-billing-page .workspace-table-wrap td:last-child {
+    border-radius: 0 10px 10px 0;
+}
+.ward-billing-page .workspace-section.plus-checkout {
+    --plus-accent: var(--workspace-primary);
+    --plus-muted: var(--workspace-muted);
+}
+.ward-billing-page .plus-checkout-steps {
+    gap: 16px 24px;
+    margin: 0 0 28px;
+}
+.ward-billing-page .plus-checkout-steps li {
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page .plus-checkout-steps li[aria-current] {
+    color: var(--workspace-primary);
+}
+.ward-billing-page .plus-checkout-steps li > span {
+    background: var(--workspace-control);
+}
+.ward-billing-page .plus-checkout-steps li[aria-current] > span {
+    background: var(--workspace-primary);
+}
+.ward-billing-page .plus-checkout-start {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+}
+.ward-billing-page .plus-checkout-start.is-combined {
+    grid-template-columns: minmax(0, 1.4fr) minmax(200px, 1fr);
+    gap: 32px;
+    margin-bottom: 24px;
+}
+.ward-billing-page .plus-checkout-price > strong {
+    color: var(--workspace-primary);
+    font-size: 34px;
+}
+.ward-billing-page .plus-checkout-benefits {
+    gap: 24px 16px;
+    margin-top: 24px;
+}
+.ward-billing-page .plus-checkout-benefits li {
+    font-size: 13px;
+    line-height: 1.8;
+}
+.ward-billing-page .plus-checkout-benefits strong {
+    color: var(--workspace-ink);
+}
+.ward-billing-page .plus-checkout-form {
+    min-width: 0;
+    padding: 24px;
+    border-radius: 18px;
+    background: var(--workspace-control);
+}
+.ward-billing-page .plus-checkout-form .workspace-field input {
+    background: #fff;
+}
+.ward-billing-page .plus-checkout-form .workspace-field input:focus-visible {
+    background: #f0ecff;
+    color: #4224b6;
+}
+.ward-billing-page .plus-checkout-start.is-combined .plus-checkout-form {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.ward-billing-page .plus-checkout-start.is-combined .plus-checkout-form .workspace-field input {
+    background: var(--workspace-control);
+}
+.ward-billing-page .plus-checkout-start.is-combined .plus-checkout-form .workspace-field input:focus-visible {
+    background: #f0ecff;
+    color: #4224b6;
+}
+.ward-billing-page .plus-checkout button.plus-checkout-primary {
+    width: 100%;
+    min-height: 48px;
+    margin: 16px 0 0;
+    border-radius: 12px;
+    background: var(--workspace-primary);
+}
+.ward-billing-page .plus-checkout button.plus-checkout-primary:disabled {
+    background: #f2f2f7;
+    color: #697184;
+}
+.ward-billing-page .plus-checkout button.plus-checkout-primary:focus-visible {
+    background: #4724c2;
+    color: #fff;
+    text-decoration: underline;
+}
+.ward-billing-page .plus-checkout .workspace-review {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+.ward-billing-page .plus-checkout .workspace-review .workspace-stats {
+    margin: 0 0 24px;
+    padding: 0;
+    background: transparent;
+}
+.ward-billing-page .plus-checkout .workspace-review .workspace-stats > div {
+    padding: 24px;
+    background: #f0ecff;
+}
+.ward-billing-page .plus-checkout .workspace-review .workspace-stats strong {
+    color: #5530ce;
+}
+.ward-billing-page .plus-checkout-review-facts {
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 12px 20px;
+    margin: 24px 0;
+}
+.ward-billing-page .plus-checkout-review-facts :is(dt, dd) {
+    font-size: 13px;
+    line-height: 1.8;
+}
+.ward-billing-page .plus-checkout-review-facts dd {
+    min-width: 0;
+}
+.ward-billing-page .plus-checkout .workspace-inbox-reauth {
+    margin: 24px 0;
+    padding: 20px;
+    border-radius: 18px;
+    background: var(--workspace-control);
+}
+.ward-billing-page .plus-checkout-disclosure {
+    color: var(--workspace-muted);
+    font-size: 13px;
+}
+.ward-billing-page .plus-checkout-disclosure summary,
+.ward-billing-page .workspace-details summary {
+    min-height: 44px;
+    padding: 8px 0;
+    cursor: pointer;
+    line-height: 1.8;
+}
+.ward-billing-page .workspace-section .plus-checkout-caption,
+.ward-billing-page .workspace-section .plus-checkout-next,
+.ward-billing-page .workspace-muted {
+    color: var(--workspace-muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+@media (max-width: 960px) {
+    .ward-billing-page.workspace-app {
+        padding: 28px 24px 48px;
+    }
+    .ward-billing-page .plus-checkout-start {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
+    }
+    .ward-billing-page .plus-checkout-start.is-combined {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+}
+@media (max-width: 640px) {
+    .ward-billing-page.workspace-app {
+        padding: 24px 16px 40px;
+    }
+    .ward-billing-page__header {
+        margin-bottom: 20px;
+        padding-right: 36px;
+    }
+    .ward-billing-page__header h1 {
+        font-size: 24px;
+    }
+    .ward-billing-page__tabs {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    .ward-billing-page__tabs a {
+        flex: 1;
+        padding: 10px 12px;
+    }
+    .ward-billing-page .workspace-section {
+        padding: 22px 18px;
+        border-radius: 20px;
+    }
+    .ward-billing-page .workspace-section h2 {
+        font-size: 18px;
+    }
+    .ward-billing-page .workspace-stats,
+    .ward-billing-page .workspace-grid,
+    .ward-billing-page .workspace-payment-summary {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 12px;
+    }
+    .ward-billing-page .workspace-stats > div,
+    .ward-billing-page .workspace-usage {
+        padding: 18px;
+    }
+    .ward-billing-page .workspace-stats strong,
+    .ward-billing-page .workspace-usage > strong {
+        font-size: 25px;
+    }
+    .ward-billing-page .plus-checkout-steps {
+        gap: 10px 14px;
+        margin-bottom: 24px;
+    }
+    .ward-billing-page .plus-checkout-steps li {
+        font-size: 12px;
+    }
+    .ward-billing-page .plus-checkout-price > strong {
+        font-size: 30px;
+    }
+    .ward-billing-page .plus-checkout-form,
+    .ward-billing-page .workspace-review,
+    .ward-billing-page .workspace-payment-summary {
+        padding: 18px;
+    }
+    .ward-billing-page .plus-checkout-review-facts {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .ward-billing-page .plus-checkout-review-facts {
+        gap: 4px;
+    }
+    .ward-billing-page .plus-checkout-review-facts dd {
+        margin-bottom: 10px;
+    }
+    .ward-billing-page .workspace-section .plus-checkout-form .workspace-field {
+        margin: 0;
+    }
+    .ward-billing-page .workspace-review .workspace-stats > div {
+        padding: 18px;
+    }
+    .ward-billing-page .workspace-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+@media (forced-colors: active) {
+    .ward-billing-page :is(a, button, summary, input, select, textarea):focus-visible {
+        outline: 2px solid Highlight;
+        outline-offset: 2px;
+    }
+    .ward-billing-page .workspace-usage meter {
+        appearance: auto;
+    }
+}

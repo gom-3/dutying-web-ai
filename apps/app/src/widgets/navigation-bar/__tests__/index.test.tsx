@@ -89,13 +89,27 @@ describe('NavigationBar', () => {
         expect(footer).toContainElement(screen.getByRole('button', {name: '병원으로 들어가기'}));
 
         const connections = screen.getByRole('link', {name: '병원 연결 요청'});
-        const workspace = screen.getByRole('link', {name: '요금제·관리 공간'});
+        const workspace = screen.getByRole('link', {name: '요금제·결제'});
 
         expect(footer).toContainElement(connections);
         expect(footer).toContainElement(workspace);
         expect(connections).toHaveAttribute('href', '/workspace/WARD/557/links');
-        expect(workspace).toHaveAttribute('href', '/workspace');
+        expect(workspace).toHaveAttribute('href', '/billing/557/subscription');
         act(() => useAuthStore.setState({wardId: previousWardId}));
+    });
+
+    it('opens in-site billing directly from the footer for a single ward account', () => {
+        commercialMocks.data = {
+            enabled: true,
+            scopes: [{type: 'WARD', ref: '557', scopeId: 'ward-557', name: '병동', role: 'EDITOR', status: 'ACTIVE'}],
+        };
+        render(
+            <MemoryRouter>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('link', {name: '요금제·결제'})).toHaveAttribute('href', '/billing/557/subscription');
     });
 
     it('근무 설정을 펼쳐 하위 메뉴로 이동하고 선택 상태를 표시한다', async () => {

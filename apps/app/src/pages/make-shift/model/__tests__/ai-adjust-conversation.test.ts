@@ -54,7 +54,16 @@ describe('staged adjustment cells', () => {
 });
 
 describe('standalone autofill commands', () => {
-    it.each(['자동완성 해줘', '다시 자동채우기 해주세요.', '자동완성', ' 자동 채우기 해 줘! '])('recognizes %s', (text) => {
+    it.each([
+        'AI 채우기',
+        'ai 채우기 해줘',
+        '다시 채우기 해주세요.',
+        'AI 채우기 해줘',
+        '자동완성 해줘',
+        '다시 자동채우기 해주세요.',
+        '자동완성',
+        ' 자동 채우기 해 줘! ',
+    ])('recognizes %s', (text) => {
         expect(isPlainAutofillCommand(text)).toBe(true);
     });
     it.each(['자동완성 하지마', '자동완성 해줘. OFF는 10개', '김간호사 야간 줄이고 자동완성 해줘', '아니요', '다시', ''])(

@@ -21,9 +21,9 @@ describe('personal workspace navigation', () => {
         await userEvent.click(screen.getByRole('button', {name: '내 계정'}));
         expect(screen.getByRole('link', {name: '내 계정'})).toHaveAttribute('href', '/profile');
         expect(screen.getByRole('link', {name: '요금제 안내'})).toHaveAttribute('href', '/workspace/plans');
-        expect(screen.getAllByRole('link', {name: '병원·병동 전환'}).every((link) => link.getAttribute('href') === '/workspace')).toBe(
-            true,
-        );
+        expect(
+            screen.getAllByRole('link', {name: '병원·병동 전환'}).every((link) => link.getAttribute('href') === '/workspace?choose=1'),
+        ).toBe(true);
     });
 
     it('supports mobile menu closing by Escape and returns focus to its trigger', async () => {

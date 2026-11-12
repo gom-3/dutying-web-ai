@@ -1,6 +1,6 @@
 import {useEffect, useId, useRef, useState, type ReactNode} from 'react';
 import {Link, useLocation} from 'react-router';
-import {scopePath, type Scope} from '@/features/commercial/api';
+import {getOnlyWardScope, scopePath, WORKSPACE_CHOOSER_PATH, type Scope} from '@/features/commercial/api';
 import {workspaceRoleLabel} from '@/features/commercial/hospital-entry';
 import logoWordmarkPurple from '@/shared/assets/images/logo-wordmark-purple.png';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
@@ -14,6 +14,8 @@ export type TWorkspacePage =
     | 'members'
     | 'usage'
     | 'billing'
+    | 'ai-batch'
+    | 'links'
     | 'support'
     | 'invitations'
     | 'notices'
@@ -28,6 +30,8 @@ const iconPaths: Record<TWorkspacePage, string> = {
     members: 'M9 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM1 21v-3a8 8 0 0 1 16 0v3H1zM17 3a4 4 0 0 1 0 8 6 6 0 0 0 0-8zM19 13a7 7 0 0 1 4 6v2h-4v-8z',
     usage: 'M3 13h4v8H3zM10 8h4v13h-4zM17 3h4v18h-4z',
     billing: 'M3 4h18v16H3V4zm2 4v3h14V8H5zm1 7v2h5v-2H6z',
+    'ai-batch': 'M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM16 13h2v3h3v2h-3v3h-2v-3h-3v-2h3z',
+    links: 'M9 2h11v7h-3V5h-5v4H9zM4 11h7v10H4zM13 11h7v10h-7zM6 14v2h3v-2zm9 0v2h3v-2z',
     support:
         'M12 2A10 10 0 0 0 2 12v5a3 3 0 0 0 3 3h3V10H5a7 7 0 0 1 14 0h-3v10h3v1h-7v2h7a2 2 0 0 0 2-2v-1a3 3 0 0 0 3-3v-5A10 10 0 0 0 12 2z',
     invitations: 'M3 4h18v16H3V4zm2 3v2l7 5 7-5V7l-7 5-7-5z',
@@ -48,6 +52,8 @@ export function WorkspaceShell({
     busy = false,
     pendingCount = 0,
     onSwitchHospital,
+    onOpenSchedule,
+    wardLinksOnly = false,
     className = '',
     children,
 }: {
@@ -60,6 +66,8 @@ export function WorkspaceShell({
     busy?: boolean;
     pendingCount?: number;
     onSwitchHospital?: (scope: Scope) => void;
+    onOpenSchedule?: () => void;
+    wardLinksOnly?: boolean;
     className?: string;
     children: ReactNode;
 }) {
@@ -77,12 +85,16 @@ export function WorkspaceShell({
         scopes: managementEnabled ? scopes : [],
         currentScope: scope,
     });
+    const ward = scope?.type === 'WARD' ? scope : undefined;
+    const singleWard = getOnlyWardScope(scopes);
     const labels: Record<TWorkspacePage, string> = {
         overview: t('병동 관리', 'Ward management'),
         members: t('관리자 관리', 'Administrators'),
-        usage: t('이용·계약', 'Usage & contract'),
-        billing: t('이용·계약', 'Usage & contract'),
-        support: t('문의하기', 'Contact us'),
+        usage: ward ? t('이용·결제', 'Usage & billing') : t('이용·계약', 'Usage & contract'),
+        billing: ward ? t('이용·결제', 'Usage & billing') : t('이용·계약', 'Usage & contract'),
+        'ai-batch': t('AI 일괄 생성', 'Batch schedule generation'),
+        links: t('병원 연결', 'Hospital connection'),
+        support: ward ? t('운영 지원', 'Operational support') : t('문의하기', 'Contact us'),
         invitations: t('알림', 'Notifications'),
         notices: t('알림', 'Notifications'),
         receipts: t('내 결제 내역', 'My payments'),
@@ -90,13 +102,14 @@ export function WorkspaceShell({
         profile: t('내 계정', 'My account'),
         workspaces: t('병원·병동 선택', 'Choose a workspace'),
     };
-    const activePage = page === 'usage' ? 'billing' : page === 'invitations' ? 'notices' : page;
+    const activePage =
+        ward && page === 'billing' ? 'usage' : !ward && page === 'usage' ? 'billing' : page === 'invitations' ? 'notices' : page;
     const hospitalItems: TWorkspacePage[] = ['overview', 'members', 'billing'];
     const accountItems: TWorkspacePage[] = managementEnabled
         ? ['profile', 'receipts', ...(!hospitals.length ? ['plans' as const] : []), 'workspaces']
         : ['profile'];
     const personalPath = (key: TWorkspacePage) =>
-        key === 'profile' ? '/profile' : key === 'workspaces' ? '/workspace' : `/workspace/${key}`;
+        key === 'profile' ? '/profile' : key === 'workspaces' ? WORKSPACE_CHOOSER_PATH : `/workspace/${key}`;
     const closeMenus = () => {
         setMenuOpen(false);
         setAccountOpen(false);
@@ -106,7 +119,13 @@ export function WorkspaceShell({
             <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d={iconPaths[key]} />
             </svg>
-            <span>{key === 'workspaces' ? t('병원·병동 전환', 'Switch workspace') : labels[key]}</span>
+            <span>
+                {key === 'workspaces'
+                    ? singleWard
+                        ? t('병동 추가·참여', 'Add or join a ward')
+                        : t('병원·병동 전환', 'Switch workspace')
+                    : labels[key]}
+            </span>
         </Link>
     );
 
@@ -143,7 +162,7 @@ export function WorkspaceShell({
     }, [menuOpen, accountOpen]);
 
     return (
-        <div className={`workspace-app workspace-shell ${className}`}>
+        <div className={`workspace-app workspace-shell ${scope ? 'workspace-management' : ''} ${className}`}>
             <a className="workspace-shell__skip" href="#workspace-shell-content">
                 {t('본문으로 이동', 'Skip to content')}
             </a>
@@ -168,7 +187,12 @@ export function WorkspaceShell({
                     </button>
                 </div>
                 <div className="workspace-shell__navigation" id="workspace-navigation">
-                    {managementEnabled && hospitals.length ? (
+                    {ward ? (
+                        <div className="workspace-shell__context">
+                            <strong>{ward.name || t('병동', 'Ward')}</strong>
+                            <span className="workspace-shell__role">{workspaceRoleLabel(ward.role, t('ko', 'en') === 'ko')}</span>
+                        </div>
+                    ) : managementEnabled && hospitals.length ? (
                         <div className="workspace-shell__context">
                             {hospitals.length > 1 ? (
                                 <label>
@@ -204,7 +228,27 @@ export function WorkspaceShell({
                             ) : null}
                         </div>
                     ) : null}
-                    {hospital ? (
+                    {ward ? (
+                        <>
+                            {!wardLinksOnly ? (
+                                <div className="workspace-shell__group">
+                                    <p>{t('병동 관리', 'Ward management')}</p>
+                                    <nav aria-label={t('병동 관리 메뉴', 'Ward navigation')}>
+                                        {renderLink('usage', scopePath(ward, 'usage'))}
+                                        {renderLink('members', scopePath(ward, 'members'))}
+                                        {renderLink('ai-batch', scopePath(ward, 'ai-batch'))}
+                                    </nav>
+                                </div>
+                            ) : null}
+                            <div className="workspace-shell__group">
+                                <p>{t('병동 설정', 'Ward settings')}</p>
+                                <nav aria-label={t('병동 설정 메뉴', 'Ward settings')}>
+                                    {ward.role === 'OWNER' ? renderLink('links', scopePath(ward, 'links')) : null}
+                                    {!wardLinksOnly ? renderLink('support', scopePath(ward, 'support')) : null}
+                                </nav>
+                            </div>
+                        </>
+                    ) : hospital ? (
                         <div className="workspace-shell__group">
                             <p>{t('병원 관리', 'Hospital management')}</p>
                             <nav aria-label={t('병원 관리 메뉴', 'Hospital navigation')}>
@@ -212,9 +256,13 @@ export function WorkspaceShell({
                             </nav>
                         </div>
                     ) : null}
-                    {!hospital && managementEnabled ? (
+                    {!ward && !hospital && managementEnabled ? (
                         <div className="workspace-shell__group">
-                            <nav aria-label={t('관리 공간 메뉴', 'Workspace navigation')}>{renderLink('workspaces', '/workspace')}</nav>
+                            <nav aria-label={t('관리 공간 메뉴', 'Workspace navigation')}>
+                                {singleWard
+                                    ? renderLink('overview', scopePath(singleWard))
+                                    : renderLink('workspaces', WORKSPACE_CHOOSER_PATH)}
+                            </nav>
                         </div>
                     ) : null}
                     {!managementEnabled ? (
@@ -236,9 +284,11 @@ export function WorkspaceShell({
                 <header className="workspace-shell__heading">
                     <div className="workspace-shell__title">
                         <p>
-                            {hospitalPages.includes(page)
-                                ? (hospital?.name ?? t('병원 관리', 'Hospital management'))
-                                : t('내 계정·활동', 'My account & activity')}
+                            {ward
+                                ? ward.name || t('병동 관리', 'Ward management')
+                                : hospitalPages.includes(page)
+                                  ? (hospital?.name ?? t('병원 관리', 'Hospital management'))
+                                  : t('내 계정·활동', 'My account & activity')}
                         </p>
                         <h1>{labels[page]}</h1>
                     </div>
@@ -300,6 +350,13 @@ export function WorkspaceShell({
                         </div>
                     </div>
                 </header>
+                {onOpenSchedule ? (
+                    <div className="workspace-shell__page-action">
+                        <button type="button" disabled={busy} onClick={onOpenSchedule}>
+                            {busy ? t('근무표 여는 중…', 'Opening schedule…') : t('근무표 열기', 'Open schedule')}
+                        </button>
+                    </div>
+                ) : null}
                 <div className="workspace-shell__body">{children}</div>
             </main>
         </div>

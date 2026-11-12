@@ -10,48 +10,10 @@
 .workspace-app * {
     box-sizing: border-box;
 }
-.workspace-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    padding: 22px max(24px, calc((100% - 1120px) / 2));
-    background: white;
-}
-.workspace-brand {
-    font-size: 25px;
-    font-weight: 750;
-    letter-spacing: -1px;
-    color: #8054cf;
-}
-.workspace-header nav {
-    display: flex;
-    gap: 22px;
-    flex-wrap: wrap;
-}
 .workspace-main {
     max-width: 1170px;
     margin: auto;
     padding: 40px 24px 80px;
-}
-.workspace-title {
-    display: flex;
-    gap: 24px;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 28px;
-}
-.workspace-title h1 {
-    font-size: 30px;
-    line-height: 1.25;
-    font-weight: 720;
-    margin: 8px 0;
-}
-.workspace-title p {
-    color: #667080;
-}
-.workspace-title .workspace-field {
-    min-width: 230px;
 }
 .workspace-section {
     background: #fff;
@@ -257,23 +219,6 @@
     color: #687081;
     font-size: 13px;
 }
-.workspace-tabs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin: 18px 0;
-}
-.workspace-tabs a {
-    padding: 10px 15px;
-    border-radius: 10px;
-    color: #5f6774;
-}
-.workspace-tabs a[aria-current='page'] {
-    background: #eae1f6;
-    color: #643bab;
-    font-weight: 650;
-}
 .workspace-table-wrap {
     overflow: auto;
     margin: 18px 0;
@@ -375,12 +320,6 @@
 .workspace-details form {
     max-width: 560px;
 }
-.workspace-member-secondary-title {
-    cursor: pointer;
-    padding: 16px 0;
-    min-height: 44px;
-    font-weight: 650;
-}
 .workspace-muted {
     color: #657080;
     font-size: 14px;
@@ -427,23 +366,8 @@
     }
 }
 @media (max-width: 640px) {
-    .workspace-header {
-        padding: 18px 20px;
-        align-items: flex-start;
-    }
-    .workspace-header nav {
-        gap: 10px;
-        font-size: 12px;
-        justify-content: flex-end;
-    }
     .workspace-main {
         padding: 24px 16px 60px;
-    }
-    .workspace-title {
-        display: block;
-    }
-    .workspace-title h1 {
-        font-size: 25px;
     }
     .workspace-section {
         padding: 22px 18px;
@@ -461,13 +385,6 @@
     .workspace-app button:not(.hospital-info-tip) {
         max-width: 100%;
         white-space: normal;
-    }
-    .workspace-tabs {
-        gap: 2px;
-        font-size: 13px;
-    }
-    .workspace-tabs a {
-        padding: 9px 12px;
     }
     .workspace-hospital-wards {
         overflow: visible;

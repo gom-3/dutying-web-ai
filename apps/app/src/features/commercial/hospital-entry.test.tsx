@@ -1,11 +1,12 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as CommercialApi from './api';
 import type {AccessContext, Scope} from './api';
-import {activeHospitalScopes, HospitalChooser, HospitalEntry} from './hospital-entry';
+import {activeHospitalScopes, HospitalChooser, HospitalEntry, useWorkspaceNavigation} from './hospital-entry';
+import {wardBillingPath} from './ward-billing-path';
 
 const mocks = vi.hoisted(() => ({
     post: vi.fn(),
@@ -35,6 +36,12 @@ function Location() {
     return <output aria-label="current route">{useLocation().pathname}</output>;
 }
 
+function OpenWardBilling() {
+    const select = useWorkspaceNavigation();
+
+    return <button onClick={() => void select({type: 'WARD', ref: '42'}, false, wardBillingPath('42'))}>요금제·결제</button>;
+}
+
 function mount(content: React.ReactNode) {
     const client = new QueryClient({defaultOptions: {queries: {retry: false}}});
 
@@ -60,6 +67,23 @@ beforeEach(() => {
 });
 
 describe('hospital entry', () => {
+    it('selects the requested ward and refreshes its account before navigating to in-site billing', async () => {
+        let finishSelection: () => void = () => {};
+
+        mocks.post.mockReturnValue(
+            new Promise<void>((resolve) => {
+                finishSelection = resolve;
+            }),
+        );
+        mount(<OpenWardBilling />);
+        await userEvent.click(screen.getByRole('button', {name: '요금제·결제'}));
+        expect(mocks.post).toHaveBeenCalledExactlyOnceWith('/scopes/WARD/42/select');
+        expect(mocks.refresh).not.toHaveBeenCalled();
+        expect(screen.getByLabelText('current route')).toHaveTextContent('/register');
+        await act(async () => finishSelection());
+        await waitFor(() => expect(screen.getByLabelText('current route')).toHaveTextContent('/billing/42/subscription'));
+        expect(mocks.refresh).toHaveBeenCalledOnce();
+    });
     it('hides the hospital action for ward-only accounts', () => {
         mocks.context.scopes = [{...hospital('w1'), type: 'WARD'}];
         mount(<HospitalEntry card />);

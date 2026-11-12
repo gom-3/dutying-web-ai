@@ -94,7 +94,7 @@ describe('simplified workspace navigation', () => {
                     .getAllByRole('link')
                     .map((link) => link.textContent),
             ).toEqual(['내 계정', '내 결제 내역', '병원·병동 전환']);
-            expect(within(account).getByRole('link', {name: '병원·병동 전환'})).toHaveAttribute('href', '/workspace');
+            expect(within(account).getByRole('link', {name: '병원·병동 전환'})).toHaveAttribute('href', '/workspace?choose=1');
             expect(screen.queryByRole('link', {name: '요금제 안내'})).not.toBeInTheDocument();
         },
     );
@@ -168,9 +168,9 @@ describe('simplified workspace navigation', () => {
         expect(screen.queryByText(hospital.name)).not.toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', {name: '내 계정'}));
         expect(screen.getByRole('link', {name: '요금제 안내'})).toHaveAttribute('href', '/workspace/plans');
-        expect(within(screen.getByRole('navigation', {name: '계정 메뉴'})).getByRole('link', {name: '병원·병동 전환'})).toHaveAttribute(
+        expect(within(screen.getByRole('navigation', {name: '계정 메뉴'})).getByRole('link', {name: '병동 추가·참여'})).toHaveAttribute(
             'href',
-            '/workspace',
+            '/workspace?choose=1',
         );
     });
 

@@ -2005,7 +2005,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
                     journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
                     text,
-                    language: (i18n.resolvedLanguage ?? i18n.language ?? 'ko').split('-')[0],
+                    language: language === 'zh-TW' ? language : language?.split('-')[0] ?? 'ko',
                     year,
                     month,
                 }),
@@ -3287,6 +3287,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                         return adjustLockedCellKeys(doc, getEditedFilledCellsSinceBaseline(doc, lastAiGeneratedDocRef.current));
                     }}
                     onPrepareGeneration={handleAiFill}
+                    isGenerationReady={() => getAiFillReadyContext() !== null}
                     onEditSchedule={handleEditSchedule}
                     onRecoverGeneration={() => beginAutofillPreparation('generation', true)}
                     onPrepareAdjustment={prepareAdjustment}

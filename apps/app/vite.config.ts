@@ -14,12 +14,19 @@ const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 const defaultAppSiteUrl = 'https://www.dutying.ai';
 const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 
-type TMarketingPage = (typeof marketingPageData.pages)[number];
+type TMarketingPage = Omit<(typeof marketingPageData.pages)[number], 'nurseApp'>;
+type TMarketingPageGroup = {kind: 'home' | 'nurseApp'; pages: TMarketingPage[]};
+type TMarketingEntry = {page: TMarketingPage; group: TMarketingPageGroup};
 
-const marketingPages = marketingPageData.pages;
-const englishMarketingPage = marketingPages.find((page) => page.language === 'en') as TMarketingPage;
+const marketingPageGroups: TMarketingPageGroup[] = [
+    {kind: 'home', pages: marketingPageData.pages},
+    {kind: 'nurseApp', pages: marketingPageData.pages.map(({nurseApp, ...page}) => ({...page, ...nurseApp}))},
+];
+const marketingPagesByPath = new Map<string, TMarketingEntry>(
+    marketingPageGroups.flatMap((group) => group.pages.map((page) => [page.path, {page, group}] as const)),
+);
+const getDefaultMarketingPage = ({pages}: TMarketingPageGroup) => pages.find((page) => page.language === 'en') ?? pages[0];
 const appStaticRoutes = [
-    ...marketingPages.filter((page) => page.path !== '/').map((page) => page.path),
     '/pricing',
     '/refund',
     '/subscription-terms',
@@ -71,7 +78,13 @@ const normalizeMarketingPath = (value: string) => {
     return pathname.replace(/\/+$/, '');
 };
 const getCanonicalUrl = (appSiteUrl: string, path: string) => (path === '/' ? `${appSiteUrl}/` : `${appSiteUrl}${path}`);
-const getOgImageMetadata = (page: TMarketingPage) => {
+const getOgImageMetadata = ({page, group}: TMarketingEntry) => {
+    if (group.kind === 'nurseApp') {
+        const suffix = page.language === 'ko' ? '' : page.language === 'ja' ? '-ja' : '-en';
+
+        return {path: `/img/temp${suffix}.png`, width: 1430, height: 925};
+    }
+
     if (page.language === 'ko') {
         return {
             path: '/img/og-image-preview222.png',
@@ -115,7 +128,7 @@ const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
                 name: '듀팅',
                 alternateName: 'Dutying',
                 url: `${appSiteUrl}/`,
-                inLanguage: marketingPages.map((item) => item.schemaLanguage),
+                inLanguage: marketingPageData.pages.map((item) => item.schemaLanguage),
                 publisher: {'@id': `${appSiteUrl}/#organization`},
             },
             {
@@ -145,10 +158,11 @@ const createStructuredData = (page: TMarketingPage, appSiteUrl: string) => {
         ],
     };
 };
-const createMarketingSeoBlock = (page: TMarketingPage, appSiteUrl: string, robots: string) => {
+const createMarketingSeoBlock = (entry: TMarketingEntry, appSiteUrl: string, robots: string) => {
+    const {page, group} = entry;
     const canonicalUrl = getCanonicalUrl(appSiteUrl, page.path);
-    const alternatePages = marketingPages.filter((alternatePage) => alternatePage.language !== page.language);
-    const ogImage = getOgImageMetadata(page);
+    const alternatePages = group.pages.filter((alternatePage) => alternatePage.language !== page.language);
+    const ogImage = getOgImageMetadata(entry);
     const ogImageUrl = `${appSiteUrl}${ogImage.path}`;
     const structuredData = JSON.stringify(createStructuredData(page, appSiteUrl)).replace(/</g, '\\u003c');
 
@@ -158,13 +172,13 @@ const createMarketingSeoBlock = (page: TMarketingPage, appSiteUrl: string, robot
         <meta name="description" content="${escapeHtml(page.description)}" />
         <meta name="robots" content="${robots}" />
         <link rel="canonical" href="${canonicalUrl}" />
-${marketingPages
+${group.pages
     .map(
         (alternatePage) =>
             `        <link rel="alternate" hreflang="${alternatePage.language}" href="${getCanonicalUrl(appSiteUrl, alternatePage.path)}" />`,
     )
     .join('\n')}
-        <link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, englishMarketingPage.path)}" />
+        <link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, getDefaultMarketingPage(group).path)}" />
 
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="듀팅 · Dutying" />
@@ -186,10 +200,10 @@ ${alternatePages.map((alternatePage) => `        <meta property="og:locale:alter
         <script type="application/ld+json">${structuredData}</script>
         <!-- MARKETING_SEO_END -->`;
 };
-const renderMarketingSeoHtml = (html: string, page: TMarketingPage, appSiteUrl: string, robots: string) =>
+const renderMarketingSeoHtml = (html: string, entry: TMarketingEntry, appSiteUrl: string, robots: string) =>
     html
-        .replace(/<html lang="[^"]*">/, `<html lang="${page.language}">`)
-        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(page, appSiteUrl, robots));
+        .replace(/<html lang="[^"]*">/, `<html lang="${entry.page.language}">`)
+        .replace(marketingSeoBlockPattern, createMarketingSeoBlock(entry, appSiteUrl, robots));
 // Authenticated tools and SPA shells have no public landing content. Do not copy
 // home-page hreflang or product markup onto them, or advertise them in the sitemap.
 const renderAppSeoHtml = (html: string, appSiteUrl: string, path?: string) =>
@@ -202,16 +216,21 @@ const renderAppSeoHtml = (html: string, appSiteUrl: string, path?: string) =>
         <!-- MARKETING_SEO_END -->`,
     );
 const createSitemap = (appSiteUrl: string) => {
-    const localizedUrls = marketingPages
-        .map((page) => {
-            const alternates = marketingPages
+    const localizedUrls = marketingPageGroups
+        .flatMap((group) => {
+            const alternates = group.pages
                 .map(
                     (alternatePage) =>
                         `    <xhtml:link rel="alternate" hreflang="${alternatePage.language}" href="${getCanonicalUrl(appSiteUrl, alternatePage.path)}" />`,
                 )
                 .join('\n');
 
-            return `  <url>\n    <loc>${getCanonicalUrl(appSiteUrl, page.path)}</loc>\n${alternates}\n    <xhtml:link rel="alternate" hreflang="x-default" href="${getCanonicalUrl(appSiteUrl, englishMarketingPage.path)}" />\n  </url>`;
+            const defaultUrl = getCanonicalUrl(appSiteUrl, getDefaultMarketingPage(group).path);
+
+            return group.pages.map(
+                (page) =>
+                    `  <url>\n    <loc>${getCanonicalUrl(appSiteUrl, page.path)}</loc>\n${alternates}\n    <xhtml:link rel="alternate" hreflang="x-default" href="${defaultUrl}" />\n  </url>`,
+            );
         })
         .join('\n');
 
@@ -284,7 +303,7 @@ export default defineConfig(({mode}) => {
                     // 개발 서버의 SPA fallback은 context.path를 /index.html로 바꾼다.
                     // 원래 요청 주소를 우선해야 언어별 랜딩에서도 올바른 메타데이터가 나온다.
                     const path = normalizeMarketingPath(context.originalUrl ?? context.path);
-                    const page = marketingPages.find((item) => item.path === path);
+                    const page = marketingPagesByPath.get(path);
 
                     return page
                         ? renderMarketingSeoHtml(html, page, appSiteUrl, isProductionSite ? 'index, follow' : 'noindex, nofollow')
@@ -320,18 +339,8 @@ export default defineConfig(({mode}) => {
                     // 나머지 URL은 플랫폼의 실제 404 응답으로 보낸다.
                     appStaticRoutes.forEach((route) => {
                         const routeFile = resolve(resolvedOutDir, `${route.slice(1)}.html`);
-                        const marketingPage = marketingPages.find((page) => page.path === route);
-                        const routeHtml = marketingPage
-                            ? renderMarketingSeoHtml(
-                                  indexHtml,
-                                  marketingPage,
-                                  appSiteUrl,
-                                  isProductionSite ? 'index, follow' : 'noindex, nofollow',
-                              )
-                            : renderAppSeoHtml(indexHtml, appSiteUrl, route);
-
                         mkdirSync(dirname(routeFile), {recursive: true});
-                        writeFileSync(routeFile, routeHtml);
+                        writeFileSync(routeFile, renderAppSeoHtml(indexHtml, appSiteUrl, route));
                     });
 
                     // Render the real responsive landing with the same React component used
@@ -400,12 +409,13 @@ export default defineConfig(({mode}) => {
                             .map((file) => `<link rel="stylesheet" crossorigin href="/${file}" />`)
                             .join('\n');
 
-                        for (const page of marketingPages) {
+                        for (const entry of marketingPagesByPath.values()) {
+                            const {page} = entry;
                             const {html, data} = renderLanding(page.language, page.path);
                             const routeFile = resolve(resolvedOutDir, page.path === '/' ? 'index.html' : `${page.path.slice(1)}.html`);
                             const document = renderMarketingSeoHtml(
                                 indexHtml,
-                                page,
+                                entry,
                                 appSiteUrl,
                                 isProductionSite ? 'index, follow' : 'noindex, nofollow',
                             )
@@ -413,6 +423,7 @@ export default defineConfig(({mode}) => {
                                 .replace('</head>', `${stylesheetLinks}\n</head>`)
                                 .replace('</body>', `<script id="landing-data" type="application/json">${data}</script>\n</body>`);
 
+                            mkdirSync(dirname(routeFile), {recursive: true});
                             writeFileSync(routeFile, document);
                         }
                     } finally {

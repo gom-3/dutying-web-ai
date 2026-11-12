@@ -39,7 +39,10 @@ window.addEventListener('dutying:scope-access-revoked', () => {
     void queryClient.cancelQueries();
     queryClient.clear();
 
-    if (!window.location.pathname.startsWith('/workspace')) window.location.replace('/workspace');
+    if (window.location.pathname.startsWith('/billing')) return;
+
+    if (!window.location.pathname.startsWith('/workspace'))
+        window.location.replace(useAuthStore.getState().wardId != null ? '/billing' : '/register');
 });
 window.addEventListener('dutying:commercial-usage-changed', () => {
     void queryClient.invalidateQueries({queryKey: ['commercial']});

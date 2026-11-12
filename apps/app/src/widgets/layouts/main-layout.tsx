@@ -64,6 +64,11 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
         innerClassName: 'mx-auto flex w-full max-w-[960px] justify-end pl-4 pr-8',
     },
     {
+        route: ROUTE.BILLING,
+        topClassName: 'top-8',
+        innerClassName: 'mx-auto flex w-full max-w-[1040px] justify-end px-4 sm:px-8',
+    },
+    {
         route: ROUTE.PROFILE,
         topClassName: 'top-8',
         innerClassName: 'mx-auto flex w-full max-w-[480px] justify-end px-4 md:px-0',

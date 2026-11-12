@@ -1,7 +1,7 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {MemoryRouter, useLocation} from 'react-router';
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as CommercialApi from '@/features/commercial/api';
 import type {AccessContext, Entitlement, Organization, Policy, Scope} from '@/features/commercial/api';
@@ -116,7 +116,15 @@ const wardEntitlement = (overrides: Partial<Entitlement> = {}): Entitlement => (
 function mockWardBilling(e: Entitlement, catalog: unknown) {
     mocks.context = {enabled: true, scopes: [wardScope]};
     mocks.get.mockImplementation((path: string) =>
-        path === '/plans' ? Promise.resolve(catalog) : Promise.resolve(path.includes('/entitlements') ? e : null),
+        path === '/plans'
+            ? Promise.resolve(catalog)
+            : Promise.resolve(
+                  path.includes('/entitlements')
+                      ? e
+                      : path === `/billing-scopes/${e.billingScopeId}`
+                        ? {scope: {version: 1, cancelAtPeriodEnd: false}, invoices: [], orders: [], requests: []}
+                        : null,
+              ),
     );
     // Hold the response so these request assertions do not fabricate a payment quote.
     mocks.post.mockReturnValue(new Promise(() => {}));
@@ -133,7 +141,10 @@ function mount(path = '/workspace/HOSPITAL/h1/overview') {
     const element = () => (
         <QueryClientProvider client={client}>
             <MemoryRouter initialEntries={[path]}>
-                <WorkspacePage />
+                <Routes>
+                    <Route path="/home" element={<p>근무표 화면</p>} />
+                    <Route path="*" element={<WorkspacePage />} />
+                </Routes>
                 <Location />
             </MemoryRouter>
         </QueryClientProvider>
@@ -156,13 +167,82 @@ beforeEach(() => {
     );
 });
 
-describe('ward membership resignation', () => {
+describe('ward management workspace', () => {
+    it('opens the only accessible ward directly and keeps the add or join flow reachable', async () => {
+        mockWardBilling(wardEntitlement(), []);
+        mount('/workspace');
+
+        await waitFor(() => expect(screen.getByLabelText('current route')).toHaveTextContent('/workspace/WARD/11/usage'));
+        expect(screen.getByRole('heading', {level: 1, name: '이용·결제'})).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '새 병동 만들기'})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '구독·결제'})).toHaveAttribute('href', '/workspace/WARD/11/billing');
+
+        await userEvent.click(screen.getByRole('button', {name: '내 계정'}));
+        await userEvent.click(screen.getByRole('link', {name: '병동 추가·참여'}));
+
+        expect(screen.getByLabelText('current route')).toHaveTextContent('/workspace?choose=1');
+        expect(screen.getByRole('link', {name: '새 병동 만들기'})).toHaveAttribute('href', '/onboarding/ward-create');
+        expect(screen.getByRole('link', {name: '초대 코드로 병동 참여'})).toHaveAttribute('href', '/enter-ward');
+        expect(mocks.post).not.toHaveBeenCalled();
+    });
+
+    it('keeps the chooser for accounts with two wards and no hospital', () => {
+        mocks.context = {
+            enabled: true,
+            scopes: [wardScope, {...wardScope, ref: '12', scopeId: 'ward-scope-12', name: '응급실'}],
+        };
+        mount('/workspace');
+
+        expect(screen.getByRole('link', {name: '중환자실 병동 관리'})).toHaveAttribute('href', '/workspace/WARD/11/usage');
+        expect(screen.getByRole('link', {name: '응급실 병동 관리'})).toHaveAttribute('href', '/workspace/WARD/12/usage');
+    });
+
+    it('keeps the original billing URL in the shared ward navigation and switches to usage', async () => {
+        mockWardBilling(wardEntitlement(), []);
+        mount('/workspace/WARD/11/billing');
+
+        const wardMenu = screen.getByRole('navigation', {name: '병동 관리 메뉴'});
+        const billingMenu = screen.getByRole('navigation', {name: '이용·결제 메뉴'});
+
+        expect(screen.getByRole('heading', {level: 1, name: '이용·결제'})).toBeInTheDocument();
+        expect(within(wardMenu).getByRole('link', {name: '이용·결제'})).toHaveAttribute('aria-current', 'page');
+        expect(within(billingMenu).getByRole('link', {name: '구독·결제'})).toHaveAttribute('aria-current', 'page');
+        expect(within(wardMenu).getByRole('link', {name: 'AI 일괄 생성'})).toHaveAttribute('href', '/workspace/WARD/11/ai-batch');
+        expect(screen.getByRole('link', {name: '병원 연결'})).toHaveAttribute('href', '/workspace/WARD/11/links');
+        expect(screen.getByRole('link', {name: '운영 지원'})).toHaveAttribute('href', '/workspace/WARD/11/support');
+
+        await userEvent.click(within(billingMenu).getByRole('link', {name: '이용 현황'}));
+        expect(screen.getByLabelText('current route')).toHaveTextContent('/workspace/WARD/11/usage');
+        expect(within(billingMenu).getByRole('link', {name: '이용 현황'})).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('selects the current ward before opening its schedule', async () => {
+        mocks.context = {enabled: true, scopes: [wardScope]};
+        mocks.get.mockResolvedValue(wardEntitlement());
+        mount('/workspace/WARD/11/members');
+
+        await userEvent.click(screen.getByRole('button', {name: '근무표 열기'}));
+        await waitFor(() => expect(screen.getByLabelText('current route')).toHaveTextContent('/home'));
+        expect(mocks.post).toHaveBeenCalledExactlyOnceWith('/scopes/WARD/11/select');
+        expect(mocks.refresh).toHaveBeenCalledOnce();
+    });
+
+    it('keeps hospital-funded wards on the request path', async () => {
+        mockWardBilling(wardEntitlement({plan: 'HOSPITAL', billingScopeId: scope.scopeId, canManageBilling: false}), []);
+        mount('/workspace/WARD/11/billing');
+
+        expect(await screen.findByRole('heading', {name: '최고 관리자에게 요청하기'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '요청 보내기'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '결제 금액 확인'})).not.toBeInTheDocument();
+    });
+
     it('does not offer a membership resignation for an inherited hospital ward', async () => {
         mocks.context = {enabled: true, scopes: [{...wardScope, role: 'EDITOR', accessSource: 'HOSPITAL'}]};
         mocks.get.mockResolvedValue(wardEntitlement());
         mount('/workspace/WARD/11/members');
-        expect(await screen.findByRole('heading', {name: '관리자와 초대'})).toBeInTheDocument();
+        expect(await screen.findByRole('heading', {name: '관리자 목록'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '이 범위에서 나가기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '병원 연결'})).not.toBeInTheDocument();
         expect(mocks.legacyDelete).not.toHaveBeenCalled();
     });
 
@@ -188,7 +268,7 @@ describe('hospital management workspace', () => {
                 .getAllByRole('link')
                 .map((link) => link.textContent),
         ).toEqual(['병동 관리', '관리자 관리', '이용·계약']);
-        expect(screen.queryByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^(결제 금액 확인|정확한 금액 확인|결제 금액 다시 확인)$/})).not.toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: '지원 시간'})).not.toBeInTheDocument();
         expect(screen.queryByRole('heading', {name: '환불·정산 문의'})).not.toBeInTheDocument();
         expect(mocks.get.mock.calls.some(([path]) => path === '/plans' || String(path).endsWith('/support'))).toBe(false);
@@ -297,7 +377,8 @@ describe('hospital management workspace', () => {
         expect(screen.getByRole('button', {name: '동의하고 연결 진행'})).toBeDisabled();
         expect(mocks.get).toHaveBeenCalledWith('/wards/11/links');
         expect(mocks.get.mock.calls.some(([path]) => path.includes('/entitlements'))).toBe(false);
-        expect(screen.queryByRole('link', {name: '결제·증설'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('navigation', {name: '병동 관리 메뉴'})).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '병원 연결'})).toHaveAttribute('aria-current', 'page');
     });
     it('keeps management available without presenting billing controls before policies are configured', async () => {
         mocks.get.mockImplementation((path: string) =>
@@ -490,7 +571,7 @@ describe('ward billing policy readiness', () => {
 
         expect(await screen.findByText('요금제 설정 중')).toBeInTheDocument();
         expect(await screen.findByText('요금제 설정이 완료되면 견적을 확인할 수 있습니다.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
+        expect(screen.queryByRole('button', {name: /^(결제 금액 확인|결제 금액 다시 확인)$/})).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
@@ -499,19 +580,18 @@ describe('ward billing policy readiness', () => {
         mount('/workspace/WARD/11/billing');
 
         expect(await screen.findByText('요금제 설정 중')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
+        expect(screen.queryByRole('button', {name: /^(결제 금액 확인|결제 금액 다시 확인)$/})).not.toBeInTheDocument();
         expect(mocks.post).not.toHaveBeenCalled();
     });
 
-    it('uses the administrator’s included staff as the initial subscription capacity and minimum', async () => {
+    it('uses the administrator’s included staff as the initial subscription capacity', async () => {
         mockWardBilling(wardEntitlement(), [{id: 'plus-policy', config: completePolicy('PLUS', {includedStaff: 80}), configured: true}]);
         mount('/workspace/WARD/11/billing');
 
-        const input = await screen.findByRole('spinbutton', {name: '변경 후 총 편성 인원'});
+        const input = await screen.findByRole('textbox', {name: '근무표에 포함할 인원을 입력하세요'});
 
-        await waitFor(() => expect(input).toHaveValue(80));
-        expect(input).toHaveAttribute('min', '80');
-        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
+        await waitFor(() => expect(input).toHaveValue('80'));
+        expect(input).not.toHaveAttribute('min');
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', {
                 purpose: 'SUBSCRIPTION',
@@ -534,18 +614,14 @@ describe('ward billing policy readiness', () => {
         mockWardBilling(wardEntitlement(), pendingCatalog);
         mount('/workspace/WARD/11/billing');
 
-        const input = await screen.findByRole('spinbutton', {name: '변경 후 총 편성 인원'});
+        const input = await screen.findByRole('textbox', {name: '근무표에 포함할 인원을 입력하세요'});
 
-        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeDisabled();
+        expect(mocks.post).not.toHaveBeenCalled();
         await userEvent.clear(input);
         await userEvent.type(input, '120');
         resolveCatalog([{id: 'plus-policy', config: completePolicy('PLUS', {includedStaff: 80}), configured: true}]);
-        await waitFor(() =>
-            expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeEnabled(),
-        );
-        expect(input).toHaveValue(120);
-        expect(input).toHaveAttribute('min', '80');
-        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
+        expect(input).toHaveValue('120');
+        expect(input).not.toHaveAttribute('min');
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith('/billing-scopes/ward-scope/quotes', expect.objectContaining({capacity: 120})),
         );
@@ -563,13 +639,16 @@ describe('ward billing policy readiness', () => {
         );
         mount('/workspace/WARD/11/billing');
 
-        const fullPacks = await screen.findByRole('spinbutton', {name: /전체 생성.*묶음/});
+        await userEvent.click(await screen.findByText('추가 이용 문의'));
+        await userEvent.click(screen.getByRole('radio', {name: 'AI 채우기 추가'}));
 
-        expect(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/})).toBeEnabled();
+        const fullPacks = screen.getByRole('textbox', {name: 'AI 채우기 묶음 수'});
+
+        expect(screen.getByRole('button', {name: '추가 금액 확인'})).toBeDisabled();
         expect(screen.queryByText('요금제 설정 중')).not.toBeInTheDocument();
         await userEvent.clear(fullPacks);
         await userEvent.type(fullPacks, '1');
-        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
+        await userEvent.click(screen.getByRole('button', {name: '추가 금액 확인'}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith(
                 '/billing-scopes/ward-scope/quotes',
@@ -589,17 +668,18 @@ describe('ward billing policy readiness', () => {
             [{id: 'new-plus-policy', config: completePolicy('PLUS', {includedStaff: 80}), configured: true}],
         );
         mount('/workspace/WARD/11/billing');
-        await userEvent.selectOptions(await screen.findByRole('combobox', {name: '이용할 상품'}), 'CAPACITY');
+        await userEvent.click(await screen.findByText('추가 이용 문의'));
+        await userEvent.click(screen.getByRole('radio', {name: '인원 추가'}));
 
-        const input = screen.getByRole('spinbutton', {name: '변경 후 총 편성 인원'});
+        const input = screen.getByRole('textbox', {name: '늘린 뒤 총 근무 인원'});
 
-        expect(input).toHaveValue(50);
-        expect(input).toHaveAttribute('min', '40');
-        await userEvent.click(screen.getByRole('button', {name: /^(Plus 구독 시작|정확한 금액 확인|결제 금액 다시 확인)$/}));
+        expect(input).toHaveValue('');
+        await userEvent.type(input, '60');
+        await userEvent.click(screen.getByRole('button', {name: '증원 금액 확인'}));
         await waitFor(() =>
             expect(mocks.post).toHaveBeenCalledWith(
                 '/billing-scopes/ward-scope/quotes',
-                expect.objectContaining({purpose: 'CAPACITY', capacity: 50}),
+                expect.objectContaining({purpose: 'CAPACITY', capacity: 60}),
             ),
         );
     });

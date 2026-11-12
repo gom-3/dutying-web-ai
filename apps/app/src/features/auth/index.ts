@@ -9,7 +9,7 @@ import i18n from '@/i18n';
 import {AdminAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
-import {normalizePreferredLanguage, normalizeServiceRegion, setStoredServiceRegion} from '@/shared/i18n/locale';
+import {normalizeWebLanguage, normalizeServiceRegion, setStoredServiceRegion} from '@/shared/i18n/locale';
 import {getIndexedMarketingLanguageFromPath} from '@/shared/seo/marketing-locale';
 import {withTimeout} from '@/shared/util/with-timeout';
 import {toAccountCompatibleAdminMe} from './model/admin-account';
@@ -40,7 +40,7 @@ const clearAccountMeRequest = () => {
 const getExplicitLanguageFromQuery = () => {
     if (typeof window === 'undefined') return undefined;
 
-    return normalizePreferredLanguage(new URLSearchParams(window.location.search).get(LANGUAGE_QUERY_PARAM));
+    return normalizeWebLanguage(new URLSearchParams(window.location.search).get(LANGUAGE_QUERY_PARAM));
 };
 const syncAccountLocalePreferences = (account: TAccount) => {
     const nextServiceRegion = normalizeServiceRegion(account.serviceRegion) ?? normalizeServiceRegion(account.resolvedRegion);
@@ -51,11 +51,13 @@ const syncAccountLocalePreferences = (account: TAccount) => {
 
     if (getExplicitLanguageFromQuery() || getIndexedMarketingLanguageFromPath(window.location.pathname)) return;
 
-    const nextLanguage = normalizePreferredLanguage(account.preferredLanguage) ?? normalizePreferredLanguage(account.resolvedLanguage);
+    const nextLanguage =
+        normalizeWebLanguage(account.preferredLanguage, nextServiceRegion) ??
+        normalizeWebLanguage(account.resolvedLanguage, nextServiceRegion);
 
     if (!nextLanguage) return;
 
-    const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const currentLanguage = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language);
 
     if (currentLanguage !== nextLanguage) {
         void i18n.changeLanguage(nextLanguage);

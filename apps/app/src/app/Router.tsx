@@ -3,10 +3,12 @@ import {Navigate, Route, Routes, useLocation} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path.ts';
 import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {nurseAppMarketingPaths} from '@/shared/seo/marketing-locale';
 import PageState from '@/shared/ui/PageState';
 
 const SubscriptionInfoPage = lazy(() => import('@/pages/subscription-info'));
-const WorkspacePage = lazy(() => import('@/pages/workspace'));
+const WorkspacePage = lazy(() => import('@/pages/ward-billing').then((module) => ({default: module.LegacyWorkspaceRoute})));
+const WardBillingPage = lazy(() => import('@/pages/ward-billing'));
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const OAuthErrorPage = lazy(() => import('@/pages/login/oauth-error-page.tsx'));
@@ -52,9 +54,18 @@ export const Router = () => {
 
     if (
         isPhoneDevice &&
-        !['/workspace', '/login', '/signup', '/legacy-roster', '/oauth2/redirect', '/redirect', '/refresh', '/register', '/profile'].some(
-            (prefix) => location.pathname.startsWith(prefix),
-        )
+        ![
+            '/billing',
+            '/workspace',
+            '/login',
+            '/signup',
+            '/legacy-roster',
+            '/oauth2/redirect',
+            '/redirect',
+            '/refresh',
+            '/register',
+            '/profile',
+        ].some((prefix) => location.pathname.startsWith(prefix))
     ) {
         return (
             <Suspense
@@ -72,8 +83,12 @@ export const Router = () => {
                     <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                    <Route path={ROUTE.LANDING_ZH_TW} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                     <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                    {nurseAppMarketingPaths.map((path) => (
+                        <Route key={path} path={path} element={<LandingPage />} />
+                    ))}
                     <Route path="/pricing" element={<SubscriptionInfoPage />} />
                     <Route path="/refund" element={<SubscriptionInfoPage />} />
                     <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />
@@ -108,8 +123,12 @@ export const Router = () => {
                 <Route path={ROUTE.LANDING_EN} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_JA} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_ZH} element={<LandingPage />} />
+                <Route path={ROUTE.LANDING_ZH_TW} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_TH} element={<LandingPage />} />
                 <Route path={ROUTE.LANDING_VI} element={<LandingPage />} />
+                {nurseAppMarketingPaths.map((path) => (
+                    <Route key={path} path={path} element={<LandingPage />} />
+                ))}
                 <Route path="/pricing" element={<SubscriptionInfoPage />} />
                 <Route path="/refund" element={<SubscriptionInfoPage />} />
                 <Route path="/subscription-terms" element={<SubscriptionInfoPage />} />
@@ -144,6 +163,7 @@ export const Router = () => {
                     <Route path={ROUTE.ONBOARDING} element={<OnboardingPage />} />
                     <Route path={ROUTE.ONBOARDING_WARD_CREATE} element={<OnboardingWardCreatePage />} />
                     <Route element={<MainLayout />}>
+                        <Route path={`${ROUTE.BILLING}/*`} element={<WardBillingPage />} />
                         <Route path={ROUTE.HOME} element={<HomePage />} />
                         <Route path={ROUTE.MAKE} element={<MakeShiftPage />} />
                         <Route path={ROUTE.DUTY} element={<DutyPage />} />

@@ -1,19 +1,24 @@
-import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
 import {ChevronDown, Globe, X, type LucideIcon} from 'lucide-react';
 import {Suspense, lazy, useEffect, useRef, useState} from 'react';
-import {useTranslation} from 'react-i18next';
-import {Link} from 'react-router';
+import {Trans, useTranslation} from 'react-i18next';
+import {Link, useLocation} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
-import {SellerDetails} from '@/shared/business/profile';
+import {SELLER, SellerDetails} from '@/shared/business/profile';
+import {getPublishedLegalDocumentUrl} from '@/shared/legal/documents';
 import {resolveAndroidPlayStoreUrl, resolveIosAppStoreUrl} from '@/shared/config/invite';
 import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
-import {getMarketingLanguageHref} from '@/shared/seo/marketing-locale';
+import {getLocaleForLanguage, normalizeWebLanguage, WEB_LANGUAGES, type TWebLanguage} from '@/shared/i18n/locale';
+import {getMarketingAppStoreUrls, getMarketingLanguageHref, getNurseAppHref, isNurseAppMarketingPath} from '@/shared/seo/marketing-locale';
 import {ChannelTalkLink} from '@/shared/ui/channel-talk-link';
 import {trackGrowthAction} from '@/shared/util/growth-analytics';
+import {LandingAdoption} from './landing-adoption';
+import {trackLandingAdoption} from './landing-adoption-analytics';
+import {LandingAdoptionEvidence, LandingHospitalRotation, LandingNurseUsage, LandingWorkflowSummary} from './landing-adoption-overview';
+import {LandingCalendarPreview} from './landing-calendar-preview';
+import {LandingSchedulePreview} from './landing-schedule-preview';
 import './landing-page.css';
 
 const termsOfServiceLink = ROUTE.TERMS;
@@ -21,70 +26,72 @@ const privacyPolicyLink = ROUTE.PRIVACY;
 const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';
-const appCtaIconSrc = '/img/app.png';
 const mobileScheduleBenefitIconSrc = '/img/mobile-schedule-benefit-icon.webp';
 const mobileWardBenefitIconSrc = '/img/mobile-ward-benefit-icon.webp';
 const mobileCommunityBenefitIconSrc = '/img/mobile-community-benefit-icon.webp';
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const ProfileContent = lazy(() => import('@/pages/profile').then((module) => ({default: module.ProfileContent})));
-const languageOptions = SUPPORTED_LANGUAGES;
-const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+const languageOptions = WEB_LANGUAGES;
+const landingHeroImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/landing-hero-kr.webp',
     ja: '/img/landing-hero-jp.webp',
     en: '/img/landing-hero-en.webp',
     zh: '/img/landing-hero-cn.webp',
+    'zh-TW': '/img/landing-hero-en.webp',
     th: '/img/landing-hero-en.webp',
     vi: '/img/landing-hero-en.webp',
 };
-const landingMobileHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+const landingMobileHeroImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/iPhone%2015_1.webp',
     ja: '/img/landing-mobile-hero-ja.png',
     en: '/img/landing-mobile-hero-en.png',
     zh: '/img/landing-mobile-hero-zh.png',
+    'zh-TW': '/img/landing-mobile-hero-en.png',
     th: '/img/landing-mobile-hero-en.png',
     vi: '/img/landing-mobile-hero-en.png',
 };
-const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
+const landingWorkScheduleImageByLanguage: Record<TWebLanguage, string> = {
     ko: '/img/landing-work-schedule-2.webp',
     ja: '/img/landing-work-schedule-jp.webp',
     en: '/img/landing-work-schedule-en.webp',
     zh: '/img/landing-work-schedule-cn.webp',
+    'zh-TW': '/img/landing-work-schedule-en.webp',
     th: '/img/landing-work-schedule-th.webp',
     vi: '/img/landing-work-schedule-vn.webp',
 };
-const landingWebScheduleImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingWebScheduleImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-987-ja.webp',
     en: '/img/image-987-en.webp',
 };
-const landingAiFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAiFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/124-ja.webp',
     en: '/img/124-en.webp',
 };
-const landingWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingWardFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-1002-ja.webp',
     en: '/img/image-1002-en.webp',
 };
-const landingAppSectionImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppSectionImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/temp-ja.webp',
     en: '/img/temp-en.webp',
 };
-const landingAppHomeFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/213213123123-ja.webp',
     en: '/img/213213123123-en.webp',
 };
-const landingAppHomeWideImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeWideImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-992-ja.webp',
     en: '/img/image-992-en.webp',
 };
-const landingAppHomeSquareImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppHomeSquareImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/image-991-ja.webp',
     en: '/img/image-991-en.webp',
 };
-const landingAppWardFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppWardFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/ward-schedule-ja.webp',
     en: '/img/ward-schedule-en.webp',
 };
-const landingAppCommunityFeatureImageByLanguage: Partial<Record<TPreferredLanguage, string>> = {
+const landingAppCommunityFeatureImageByLanguage: Partial<Record<TWebLanguage, string>> & Record<'en', string> = {
     ja: '/img/12223-ja.webp',
     en: '/img/12223-en.webp',
 };
@@ -223,111 +230,93 @@ const mobileAppBenefitSpecs = [
 }[];
 
 function getLandingHeroImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingMobileHeroImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingMobileHeroImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWorkScheduleImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+    const normalizedLanguage = normalizeWebLanguage(language) ?? 'en';
 
     return landingWorkScheduleImageByLanguage[normalizedLanguage];
 }
 
 function getLandingWebScheduleImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-987.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-987.webp';
 
-    return landingWebScheduleImageByLanguage[normalizedLanguage] ?? '/img/image-987.webp';
+    return landingWebScheduleImageByLanguage[normalizedLanguage ?? 'en'] ?? landingWebScheduleImageByLanguage.en;
 }
 
 function getLandingAiFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/124.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/124.webp';
 
-    return landingAiFeatureImageByLanguage[normalizedLanguage] ?? '/img/124.webp';
+    return landingAiFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAiFeatureImageByLanguage.en;
 }
 
 function getLandingWardFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-1002.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-1002.webp';
 
-    return landingWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/image-1002.webp';
+    return landingWardFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingWardFeatureImageByLanguage.en;
 }
 
 function getLandingAppSectionImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/temp.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/temp.webp';
 
-    return landingAppSectionImageByLanguage[normalizedLanguage] ?? '/img/temp.webp';
+    return landingAppSectionImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppSectionImageByLanguage.en;
 }
 
 function getLandingAppHomeFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/213213123123.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/213213123123.webp';
 
-    return landingAppHomeFeatureImageByLanguage[normalizedLanguage] ?? '/img/213213123123.webp';
+    return landingAppHomeFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeFeatureImageByLanguage.en;
 }
 
 function getLandingAppHomeWideImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-992.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-992.webp';
 
-    return landingAppHomeWideImageByLanguage[normalizedLanguage] ?? '/img/image-992.webp';
+    return landingAppHomeWideImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeWideImageByLanguage.en;
 }
 
 function getLandingAppHomeSquareImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/image-991.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/image-991.webp';
 
-    return landingAppHomeSquareImageByLanguage[normalizedLanguage] ?? '/img/image-991.webp';
+    return landingAppHomeSquareImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppHomeSquareImageByLanguage.en;
 }
 
 function getLandingAppWardFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/ward-schedule.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/ward-schedule.webp';
 
-    return landingAppWardFeatureImageByLanguage[normalizedLanguage] ?? '/img/ward-schedule.webp';
+    return landingAppWardFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppWardFeatureImageByLanguage.en;
 }
 
 function getLandingAppCommunityFeatureImageSrc(language?: string | null) {
-    const normalizedLanguage = normalizePreferredLanguage(language);
+    const normalizedLanguage = normalizeWebLanguage(language);
 
-    if (!normalizedLanguage) {
-        return '/img/12223.webp';
-    }
+    if (normalizedLanguage === 'ko') return '/img/12223.webp';
 
-    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage] ?? '/img/12223.webp';
+    return landingAppCommunityFeatureImageByLanguage[normalizedLanguage ?? 'en'] ?? landingAppCommunityFeatureImageByLanguage.en;
 }
 
 function useRevealOnScroll() {
@@ -565,11 +554,12 @@ function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhras
     );
 }
 
-function StoreButton() {
+function StoreButton({language}: {language?: TWebLanguage}) {
     const {i18n} = useTranslation();
     const languages = [i18n.resolvedLanguage ?? i18n.language];
-    const appStoreLink = resolveIosAppStoreUrl(languages);
-    const playStoreLink = resolveAndroidPlayStoreUrl(languages);
+    const {ios: appStoreLink, android: playStoreLink} = language
+        ? getMarketingAppStoreUrls(language)
+        : {ios: resolveIosAppStoreUrl(languages), android: resolveAndroidPlayStoreUrl(languages)};
 
     return (
         <>
@@ -673,9 +663,10 @@ function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => v
 function HeaderLanguageMenu() {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
+    const isNurseAppPage = isNurseAppMarketingPath(useLocation().pathname);
     const [isOpen, setIsOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
-    const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+    const currentLanguage = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
 
     useEffect(() => {
         if (!isOpen) {
@@ -706,7 +697,7 @@ function HeaderLanguageMenu() {
         };
     }, [isOpen]);
 
-    const getLanguageLabel = (language: TPreferredLanguage) => {
+    const getLanguageLabel = (language: TWebLanguage) => {
         switch (language) {
             case 'ko':
                 return t('page.profile.language.ko');
@@ -716,6 +707,8 @@ function HeaderLanguageMenu() {
                 return t('page.profile.language.en');
             case 'zh':
                 return t('page.profile.language.zh');
+            case 'zh-TW':
+                return t('page.profile.language.zhTW');
             case 'th':
                 return t('page.profile.language.th');
             case 'vi':
@@ -749,7 +742,7 @@ function HeaderLanguageMenu() {
                             <Link
                                 reloadDocument
                                 key={language}
-                                to={getMarketingLanguageHref(language)}
+                                to={isNurseAppPage ? getNurseAppHref(language) : getMarketingLanguageHref(language)}
                                 role="option"
                                 aria-selected={isSelected}
                                 onClick={() => setIsOpen(false)}
@@ -813,23 +806,20 @@ function HeaderActions({
 
     if (!isAuth) {
         return (
-            <>
-                <nav
-                    aria-label={t('page.navigationBar.items.account')}
-                    className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]"
-                >
-                    <Link reloadDocument to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
-                        {t('page.landing.common.login')}
-                    </Link>
-                    <span aria-hidden="true" className="text-[#A29BB7]">
-                        |
-                    </span>
-                    <Link reloadDocument to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
-                        {t('page.login.signupLink')}
-                    </Link>
-                </nav>
-                <HeaderLanguageMenu />
-            </>
+            <nav
+                aria-label={t('page.navigationBar.items.account')}
+                className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]"
+            >
+                <Link reloadDocument to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
+                    {t('page.landing.common.login')}
+                </Link>
+                <span aria-hidden="true" className="text-[#A29BB7]">
+                    |
+                </span>
+                <Link reloadDocument to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
+                    {t('page.login.signupLink')}
+                </Link>
+            </nav>
         );
     }
 
@@ -891,43 +881,25 @@ function HeaderActions({
                     </div>
                 )}
             </div>
-            <HeaderLanguageMenu />
             {isProfileSettingsOpen && <ProfileSettingsDialog open onClose={() => setIsProfileSettingsOpen(false)} />}
         </>
     );
 }
 
-function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean}) {
+function StartFreeButton({href}: {href: string}) {
     const {t} = useTypedTranslation();
-    const isWeb = type === 'web';
-    const iconSrc = isWeb ? webCtaIconSrc : appCtaIconSrc;
-    const label = isWeb
-        ? isAuth
-            ? t('page.landing.common.makeSchedule')
-            : t('page.landing.common.webMakeSchedule')
-        : t('page.landing.common.appSchedule');
-    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : '#app';
     const className =
         'landing-dark-action-button inline-flex min-h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-5 py-3 text-[15px] leading-none font-bold whitespace-nowrap text-white transition-transform hover:-translate-y-0.5';
 
-    if (isWeb) {
-        return (
-            <Link reloadDocument to={href} className={className} onClick={() => trackGrowthAction('web_cta_click', 'web')}>
-                <CtaIcon src={iconSrc} />
-                {label}
-            </Link>
-        );
-    }
-
     return (
-        <a href={href} className={className}>
-            <CtaIcon src={iconSrc} />
-            {label}
-        </a>
+        <Link reloadDocument to={href} className={className} onClick={() => trackGrowthAction('web_cta_click', 'web')}>
+            <CtaIcon src={webCtaIconSrc} />
+            {t('page.landing.common.startFree')}
+        </Link>
     );
 }
 
-function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
+function BackgroundFeatureSection({section, nurseAppHref}: {section: TFeatureSection; nurseAppHref: string}) {
     const {t} = useTypedTranslation();
     const isAiSection = section.id === 'ai';
     const isIntegrationSection = section.id === 'integration';
@@ -938,7 +910,18 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
             <h2 className="mt-6 text-[34px] leading-[1.35] font-extrabold text-[#11131A] md:text-[42px]">
                 <TextLines highlights={'titleHighlights' in section ? section.titleHighlights : undefined}>{section.title}</TextLines>
             </h2>
-            <p className="mt-12 text-lg leading-8 font-medium whitespace-pre-line text-[#777487]">{section.description}</p>
+            <div className="landing-feature-copy">
+                <p className="landing-feature-copy__lead">{section.description}</p>
+                {isAiSection && <p>{t('page.landing.feature.ai.scheduleDetails')}</p>}
+                {isIntegrationSection && <p id="ward-management">{t('page.landing.feature.integration.leaveDetails')}</p>}
+            </div>
+            {isIntegrationSection && (
+                <div id="app" className="mt-6">
+                    <Link id="mobile-app-download" reloadDocument to={nurseAppHref} className="landing-app-guide-link">
+                        {t('page.landing.feature.integration.appGuide')}
+                    </Link>
+                </div>
+            )}
         </article>
     );
 
@@ -965,6 +948,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
     if (isIntegrationSection) {
         return (
             <section id={section.id} className={section.background}>
+                <p className="landing-section-message">{t('page.landing.feature.integration.managementMessage')}</p>
                 <div className="landing-feature-section__inner mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
                     <div className="mr-auto w-full max-w-[470px] md:mx-0">{copy}</div>
 
@@ -1050,20 +1034,20 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
                         </TextLines>
                     </h2>
                     {isHomeSection && (
-                        <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
+                        <div className="landing-app-home-visuals mt-14 items-center gap-3 md:mt-16 md:gap-4">
                             <img
                                 src={section.secondaryImages?.wide ?? '/img/image-992.webp'}
                                 alt={t('page.landing.imageAlt.appHomeWidget')}
                                 loading="lazy"
                                 decoding="async"
-                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                                className="rounded-[8px] object-contain"
                             />
                             <img
                                 src={section.secondaryImages?.square ?? '/img/image-991.webp'}
                                 alt={t('page.landing.imageAlt.appHomeCalendar')}
                                 loading="lazy"
                                 decoding="async"
-                                className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]"
+                                className="rounded-[8px] object-contain"
                             />
                         </div>
                     )}
@@ -1076,7 +1060,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     );
 }
 
-function MobileAppSections() {
+function MobileAppBenefits() {
     const {t} = useTypedTranslation();
     const mobileAppBenefits = mobileAppBenefitSpecs.map((benefit) => ({
         ...benefit,
@@ -1085,57 +1069,39 @@ function MobileAppSections() {
     }));
 
     return (
-        <>
-            <section className="landing-mobile-only bg-white px-5 py-14">
-                <div className="mx-auto max-w-[520px]">
-                    <Pill>{t('page.landing.mobileHero.benefitsLabel')}</Pill>
-                    <h2 className="reveal-on-scroll mt-5 text-[26px] leading-[1.36] font-extrabold text-[#11131A]">
-                        {t('page.landing.mobileHero.benefitsTitleLine1')}
-                        <br />
-                        {t('page.landing.mobileHero.benefitsTitleLine2')}
-                    </h2>
+        <section className="landing-mobile-only bg-white px-5 py-14">
+            <div className="mx-auto max-w-[520px]">
+                <Pill>{t('page.landing.mobileHero.benefitsLabel')}</Pill>
+                <h2 className="reveal-on-scroll mt-5 text-[26px] leading-[1.36] font-extrabold text-[#11131A]">
+                    {t('page.landing.mobileHero.benefitsTitleLine1')}
+                    <br />
+                    {t('page.landing.mobileHero.benefitsTitleLine2')}
+                </h2>
 
-                    <div className="mt-8 grid gap-3">
-                        {mobileAppBenefits.map((benefit) => {
-                            return (
-                                <article
-                                    key={benefit.title}
-                                    className="reveal-on-scroll flex items-center gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
+                <div className="mt-8 grid grid-cols-1 gap-3">
+                    {mobileAppBenefits.map((benefit) => {
+                        return (
+                            <article
+                                key={benefit.title}
+                                className="reveal-on-scroll flex items-center gap-4 rounded-[8px] border border-[#EEEAF8] bg-white p-4 shadow-[0_14px_34px_rgba(37,22,91,0.06)]"
+                            >
+                                <span
+                                    className={`flex size-10 shrink-0 items-center justify-center text-main-1 ${
+                                        benefit.icon.type === 'image' ? '' : 'rounded-[8px] bg-main-light'
+                                    }`}
                                 >
-                                    <span
-                                        className={`flex size-10 shrink-0 items-center justify-center text-main-1 ${
-                                            benefit.icon.type === 'image' ? '' : 'rounded-[8px] bg-main-light'
-                                        }`}
-                                    >
-                                        <MobileBenefitIcon icon={benefit.icon} />
-                                    </span>
-                                    <div className="min-w-0">
-                                        <h3 className="text-base font-extrabold text-[#11131A]">{benefit.title}</h3>
-                                        <p className="mt-2 truncate text-[12px] leading-5 font-medium whitespace-nowrap text-[#777487]">
-                                            {benefit.description}
-                                        </p>
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
+                                    <MobileBenefitIcon icon={benefit.icon} />
+                                </span>
+                                <div className="min-w-0">
+                                    <h3 className="text-base font-extrabold text-[#11131A]">{benefit.title}</h3>
+                                    <p className="mt-2 text-[12px] leading-5 font-medium text-[#777487]">{benefit.description}</p>
+                                </div>
+                            </article>
+                        );
+                    })}
                 </div>
-            </section>
-
-            <section id="mobile-app-download" className="landing-mobile-only bg-[#070D18] px-5 py-14 text-white">
-                <div className="mx-auto max-w-[520px]">
-                    <p className="text-sm font-extrabold text-[#D9CCFF]">{t('page.landing.mobileHero.downloadEyebrow')}</p>
-                    <h2 className="mt-3 text-[26px] leading-[1.36] font-extrabold">
-                        {t('page.landing.mobileHero.downloadTitleLine1')}
-                        <br />
-                        {t('page.landing.mobileHero.downloadTitleLine2')}
-                    </h2>
-                    <div className="mt-8 grid gap-3">
-                        <StoreButton />
-                    </div>
-                </div>
-            </section>
-        </>
+            </div>
+        </section>
     );
 }
 
@@ -1147,68 +1113,159 @@ export type TLandingSession = {
 
 const guestSession: TLandingSession = {accountMe: null, isAuth: false, onLogout: () => undefined};
 
-function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestSession) {
+function LandingHeroVisual({
+    desktopImage,
+    mobileImage,
+    imageAlt,
+    language,
+}: {
+    desktopImage: string;
+    mobileImage: string;
+    imageAlt: string;
+    language: TWebLanguage;
+}) {
     const {t} = useTypedTranslation();
-    const {i18n} = useTranslation();
-    const webMakeLink = getWebMakeLink(isAuth);
-    const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
-    const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
-    const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
-    const mobileHeroImageSrc = getLandingMobileHeroImageSrc(currentLanguage);
-    const webScheduleImageSrc = getLandingWebScheduleImageSrc(currentLanguage);
-    const appSectionImageSrc = getLandingAppSectionImageSrc(currentLanguage);
-    const normalizedCurrentLanguage = normalizePreferredLanguage(currentLanguage) ?? 'en';
-    const shouldCompactAppSectionImage = normalizedCurrentLanguage === 'en' || normalizedCurrentLanguage === 'ja';
-    const featureSections = buildFeatureSections(t, currentLanguage);
-    const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
-    const appFeatureSections = buildAppFeatureSections(t, currentLanguage);
-    const mobileHeroPhrases = buildMobileHeroPhrases(t);
-
-    useRevealOnScroll();
+    const useLocalizedCalendar = language === 'th' || language === 'vi' || language === 'zh-TW';
+    const month = useLocalizedCalendar
+        ? new Intl.DateTimeFormat(getLocaleForLanguage(language), {year: 'numeric', month: 'long', timeZone: 'UTC'}).format(
+              new Date(Date.UTC(2026, 6, 1)),
+          )
+        : '';
 
     return (
-        <main className="landing-main landing-main--responsive min-h-screen bg-white font-apple text-[#150B3C]">
-            <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/95 backdrop-blur">
-                <div className="landing-header-inner mx-auto flex h-15 max-w-[1440px] items-center justify-between px-5 md:h-18 md:px-8">
-                    <Link
-                        reloadDocument
-                        to={ROUTE.ROOT}
-                        aria-label={t('page.landing.header.homeAria')}
-                        className="flex shrink-0 items-center"
-                    >
-                        <img src="/img/group-19.png" alt="dutying" className="h-[28px] w-auto md:h-[32px]" />
-                    </Link>
+        <div
+            className={`landing-hero-product ${language === 'ko' ? '' : 'landing-hero-product--international'} ${useLocalizedCalendar ? 'landing-hero-product--localized-calendar' : ''}`}
+        >
+            <picture>
+                <source media="(max-width: 767px)" srcSet={mobileImage} width="1343" height="1171" />
+                <img src={desktopImage} width="1800" height="1127" fetchPriority="high" alt={imageAlt} decoding="async" />
+            </picture>
+            <div className="landing-hero-product__screen landing-desktop-only">
+                <LandingSchedulePreview language={language} />
+            </div>
+            <div
+                className="landing-hero-product__phone landing-desktop-only"
+                aria-hidden="true"
+                style={{backgroundImage: `url("${desktopImage}")`}}
+            />
+            {useLocalizedCalendar && (
+                <>
+                    <span className="landing-hero-product__month landing-desktop-only" aria-hidden="true">
+                        {month}
+                    </span>
+                    <span className="landing-hero-product__memo landing-desktop-only" aria-hidden="true">
+                        {t('page.makeShift.workers.column.memo')}
+                    </span>
+                    <LandingCalendarPreview language={language} />
+                </>
+            )}
+        </div>
+    );
+}
 
-                    <nav
-                        className="landing-section-nav hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex"
-                        aria-label={t('page.landing.header.sectionAria')}
-                    >
-                        <a href="#web" className="transition-colors hover:text-main-1">
-                            {t('page.landing.header.web')}
-                        </a>
-                        <a href="#app" className="transition-colors hover:text-main-1">
-                            {t('page.landing.header.app')}
-                        </a>
-                        <ChannelTalkLink className="transition-colors hover:text-main-1">
-                            {t('page.landing.header.inquiry')}
-                        </ChannelTalkLink>
-                    </nav>
+function NurseAppSections({language}: {language: TWebLanguage}) {
+    const {t} = useTypedTranslation();
+    const appSectionImageSrc = getLandingAppSectionImageSrc(language);
+    const shouldCompactAppSectionImage = language === 'en' || language === 'ja';
+    const appFeatureSections = buildAppFeatureSections(t, language);
 
-                    <div className="landing-desktop-only flex items-center gap-2 sm:gap-3">
-                        <HeaderActions accountMe={accountMe} isAuth={isAuth} onLogout={onLogout} />
-                    </div>
-                    <a
-                        href="#mobile-app-download"
-                        className="landing-mobile-only inline-flex h-9 items-center justify-center rounded-[8px] bg-main-1 px-4 text-sm font-bold text-white"
-                    >
-                        {t('page.landing.common.appDownload')}
-                    </a>
+    return (
+        <>
+            <section id="app" className="relative overflow-hidden bg-[#070D18]">
+                <div className="absolute inset-y-0 left-0 hidden w-[46%] bg-[#070D18] md:block" aria-hidden="true" />
+
+                <div className="landing-app-section__inner relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
+                    <article className="reveal-on-scroll max-w-[500px] text-white">
+                        <Pill>{t('page.landing.header.app')}</Pill>
+                        <h1 className="mt-6 text-[34px] leading-[1.36] font-extrabold md:text-[42px]">
+                            {t('page.landing.appSection.titleLine1')}
+                            <br />
+                            {t('page.landing.appSection.titleLine2')}
+                        </h1>
+                        <div id="mobile-app-download" className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
+                            <StoreButton language={language} />
+                        </div>
+                    </article>
+
+                    <img
+                        fetchPriority="high"
+                        src={appSectionImageSrc}
+                        alt={t('page.landing.imageAlt.appScreen')}
+                        decoding="async"
+                        className={`landing-app-section__image reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14 ${
+                            shouldCompactAppSectionImage ? 'landing-app-section__image--compact' : ''
+                        }`}
+                    />
                 </div>
-            </header>
 
+                <ChevronDown
+                    className="reveal-on-scroll reveal-on-scroll--delay-1 absolute bottom-8 left-1/2 size-8 -translate-x-1/2 text-white/55"
+                    aria-hidden="true"
+                />
+            </section>
+
+            <MobileAppBenefits />
+
+            {appFeatureSections.map((section) => (
+                <AppFeatureSection key={section.id} section={section} />
+            ))}
+
+            <section className="relative overflow-hidden bg-black">
+                <div className="landing-final-cta__inner mx-auto grid min-h-[442px] max-w-[1440px] grid-cols-1 items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] md:px-8 md:pt-[95px] md:pb-[32px]">
+                    <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
+                        <p className="text-lg font-extrabold text-[#F4EDFF]">{t('page.landing.finalCta.eyebrow')}</p>
+                        <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-white md:text-[42px]">
+                            {t('page.landing.finalCta.titleLine1')}
+                            <br />
+                            {t('page.landing.finalCta.titleLine2')}
+                        </h2>
+                        <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
+                        <div className="landing-cta-row mt-5 flex flex-col gap-4 sm:flex-row">
+                            <StoreButton language={language} />
+                        </div>
+                    </article>
+
+                    <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
+                        <img
+                            src="/img/temp24222.webp"
+                            alt={t('page.landing.imageAlt.appLogo')}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full max-w-[765px] rounded-[12px] object-contain xl:translate-x-12"
+                        />
+                    </div>
+                </div>
+            </section>
+        </>
+    );
+}
+
+function ScheduleLandingSections({language, isAuth}: {language: TWebLanguage; isAuth: boolean}) {
+    const {t} = useTypedTranslation();
+    const webMakeLink = getWebMakeLink(isAuth);
+    const nurseAppHref = getNurseAppHref(language);
+    const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
+    const heroImageSrc = getLandingHeroImageSrc(language);
+    const mobileHeroImageSrc = getLandingMobileHeroImageSrc(language);
+    const webScheduleImageSrc = getLandingWebScheduleImageSrc(language);
+    const isKorean = language === 'ko';
+    const featureSections = buildFeatureSections(t, language);
+    const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
+    const mobileHeroPhrases = buildMobileHeroPhrases(t);
+
+    return (
+        <>
             <section className={`relative overflow-hidden ${softPurpleBackground}`}>
                 <div className="landing-hero-grid relative mx-auto grid max-w-[1440px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:px-8 md:pt-32 md:pb-6 lg:gap-20">
                     <div className="relative z-10 min-w-0">
+                        <p className="landing-hero-offer">
+                            <span className="landing-hero-offer__icon" aria-hidden="true">
+                                ✦
+                            </span>
+                            <span>
+                                <Trans i18nKey="page.landing.hero.freeOffer" components={{emphasis: <strong />}} />
+                            </span>
+                        </p>
                         <h1 className="landing-hero-title reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold md:text-[51px]">
                             <span className="landing-desktop-only">
                                 <span className="sr-only">{t('page.landing.hero.ariaLabel')}</span>
@@ -1226,30 +1283,23 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                             <TextLines>{t('page.landing.hero.description')}</TextLines>
                         </p>
 
-                        <div className="landing-desktop-only landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[680px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
-                            <DarkActionButton type="web" isAuth={isAuth} />
-                            <DarkActionButton type="app" />
+                        <div className="landing-desktop-only landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[680px] flex-col flex-wrap gap-4 sm:mt-16 sm:flex-row md:mt-28">
+                            <StartFreeButton href={webMakeLink} />
                         </div>
                         <p className="landing-mobile-only mt-3 text-base leading-7 font-medium text-[#6F6B7A]">
                             {t('page.landing.mobileHero.description')}
                         </p>
-                        <div className="landing-mobile-only mt-7 grid gap-3">
-                            <StoreButton />
+                        <div className={`landing-mobile-only mt-7 grid gap-3 ${isKorean ? 'landing-hero-store-buttons' : ''}`}>
+                            <StoreButton language={language} />
                         </div>
                     </div>
 
-                    <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none relative z-0 flex justify-center md:-mt-16 md:justify-end">
-                        <source media="(max-width: 767px)" srcSet={mobileHeroImageSrc} width="1343" height="1171" />
-                        <img
-                            src={heroImageSrc}
-                            width="1800"
-                            height="1127"
-                            fetchPriority="high"
-                            alt={t('page.landing.imageAlt.webSchedule')}
-                            decoding="async"
-                            className="w-[92vw] max-w-[520px] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
-                        />
-                    </picture>
+                    <LandingHeroVisual
+                        desktopImage={heroImageSrc}
+                        mobileImage={mobileHeroImageSrc}
+                        imageAlt={t('page.landing.imageAlt.webSchedule')}
+                        language={language}
+                    />
                 </div>
 
                 <ChevronDown
@@ -1258,11 +1308,16 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                 />
             </section>
 
-            <MobileAppSections />
+            {isKorean ? <LandingHospitalRotation /> : <LandingNurseUsage />}
+            <LandingWorkflowSummary />
+            {isKorean && <LandingAdoptionEvidence />}
 
             <section id="web" className={softPurpleBackground}>
                 <div className="landing-web-section__inner mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
-                    <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
+                    <div className="landing-mobile-only">
+                        <LandingSchedulePreview language={language} />
+                    </div>
+                    <div className="landing-desktop-only reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
                             src={webScheduleImageSrc}
@@ -1282,6 +1337,10 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
                             <span className="text-highlight-soft">{t('page.landing.webSection.titleHighlight')}</span>{' '}
                             {t('page.landing.webSection.titleLine2Suffix')}
                         </h2>
+                        <div id="excel" className="landing-feature-copy">
+                            <p className="landing-feature-copy__lead">{t('page.landing.webSection.importTitle')}</p>
+                            <p>{t('page.landing.webSection.importDescription')}</p>
+                        </div>
                         <div className="landing-desktop-only landing-web-actions mt-10 flex flex-col gap-3 sm:flex-row">
                             {isAuth ? (
                                 <Link
@@ -1319,97 +1378,146 @@ function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestS
             </section>
 
             {visibleFeatureSections.map((section) => (
-                <BackgroundFeatureSection key={section.id} section={section} />
+                <BackgroundFeatureSection key={section.id} section={section} nurseAppHref={nurseAppHref} />
             ))}
 
-            <section id="app" className="relative overflow-hidden bg-[#070D18]">
-                <div className="absolute inset-y-0 left-0 hidden w-[46%] bg-[#070D18] md:block" aria-hidden="true" />
+            <LandingAdoption />
+        </>
+    );
+}
 
-                <div className="landing-app-section__inner relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
-                    <article className="reveal-on-scroll max-w-[500px] text-white">
-                        <Pill>{t('page.landing.appSection.pill')}</Pill>
-                        <h2 className="mt-6 text-[34px] leading-[1.36] font-extrabold md:text-[42px]">
-                            {t('page.landing.appSection.titleLine1')}
-                            <br />
-                            {t('page.landing.appSection.titleLine2')}
-                        </h2>
-                        <div className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton />
+function LandingPageView({accountMe, isAuth, onLogout}: TLandingSession = guestSession) {
+    const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const language = normalizeWebLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+    const isNurseAppPage = isNurseAppMarketingPath(useLocation().pathname);
+    const isKorean = language === 'ko';
+    const marketingHomeHref = getMarketingLanguageHref(language);
+    const nurseAppHref = getNurseAppHref(language);
+
+    useRevealOnScroll();
+
+    return (
+        <main
+            className={`landing-main landing-main--responsive min-h-screen bg-white font-apple text-[#150B3C] ${language === 'ko' ? 'landing-main--adoption' : ''} ${isNurseAppPage ? 'landing-main--nurse-app' : ''}`}
+        >
+            <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/95 backdrop-blur">
+                <div className="landing-header-inner mx-auto flex h-15 max-w-[1440px] items-center justify-between px-5 md:h-18 md:px-8">
+                    <Link
+                        reloadDocument
+                        to={marketingHomeHref}
+                        aria-label={t('page.landing.header.homeAria')}
+                        className="flex shrink-0 items-center"
+                    >
+                        <img src="/img/group-19.png" alt="dutying" className="h-[28px] w-auto md:h-[32px]" />
+                    </Link>
+
+                    <nav
+                        className="landing-section-nav hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex"
+                        aria-label={t('page.landing.header.sectionAria')}
+                    >
+                        <a href={isNurseAppPage ? `${marketingHomeHref}#web` : '#web'} className="transition-colors hover:text-main-1">
+                            {t('page.landing.header.web')}
+                        </a>
+                        <a
+                            href={nurseAppHref}
+                            aria-current={isNurseAppPage ? 'page' : undefined}
+                            className="transition-colors hover:text-main-1"
+                        >
+                            {t('page.landing.header.app')}
+                        </a>
+                        <a
+                            href={isNurseAppPage ? `${marketingHomeHref}#adoption` : '#adoption'}
+                            className="landing-adoption-nav-link"
+                            onClick={() => trackLandingAdoption('cta_click', 'header')}
+                        >
+                            {t('page.landing.adoption.navLink')}
+                        </a>
+                        {isKorean ? (
+                            <ChannelTalkLink className="transition-colors hover:text-main-1">
+                                {t('page.landing.header.customerSupport')}
+                            </ChannelTalkLink>
+                        ) : (
+                            <a href={`mailto:${SELLER.email}`} className="transition-colors hover:text-main-1">
+                                {t('page.landing.header.customerSupport')}
+                            </a>
+                        )}
+                    </nav>
+
+                    <div className="flex min-w-0 items-center gap-2">
+                        <div className="landing-desktop-only flex items-center gap-2 sm:gap-3">
+                            <HeaderActions accountMe={accountMe} isAuth={isAuth} onLogout={onLogout} />
                         </div>
-                    </article>
-
-                    <img
-                        src={appSectionImageSrc}
-                        alt={t('page.landing.imageAlt.appScreen')}
-                        loading="lazy"
-                        decoding="async"
-                        className={`landing-app-section__image reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14 ${
-                            shouldCompactAppSectionImage ? 'landing-app-section__image--compact' : ''
-                        }`}
-                    />
-                </div>
-
-                <ChevronDown
-                    className="reveal-on-scroll reveal-on-scroll--delay-1 absolute bottom-8 left-1/2 size-8 -translate-x-1/2 text-white/55"
-                    aria-hidden="true"
-                />
-            </section>
-
-            {appFeatureSections.map((section) => (
-                <AppFeatureSection key={section.id} section={section} />
-            ))}
-
-            <section className="relative overflow-hidden bg-black">
-                <div className="landing-final-cta__inner mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:pt-[95px] md:pb-[32px]">
-                    <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
-                        <p className="text-lg font-extrabold text-[#F4EDFF]">{t('page.landing.finalCta.eyebrow')}</p>
-                        <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-white md:text-[42px]">
-                            {t('page.landing.finalCta.titleLine1')}
-                            <br />
-                            {t('page.landing.finalCta.titleLine2')}
-                        </h2>
-                        <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
-                        <div className="landing-cta-row mt-5 flex flex-col gap-4 sm:flex-row">
-                            <StoreButton />
-                        </div>
-                    </article>
-
-                    <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
-                        <img
-                            src="/img/temp24222.webp"
-                            alt={t('page.landing.imageAlt.appLogo')}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-[min(765px,127.5vw)] max-w-none rounded-[12px] object-contain md:w-[646px] lg:w-[765px] xl:translate-x-12"
-                        />
+                        <a
+                            href={isNurseAppPage ? '#mobile-app-download' : `${nurseAppHref}#mobile-app-download`}
+                            className="landing-mobile-only inline-flex min-h-9 items-center justify-center rounded-[8px] bg-main-1 px-3 py-1 text-center text-sm leading-tight font-bold text-white"
+                        >
+                            {t('page.landing.common.appDownload')}
+                        </a>
+                        <HeaderLanguageMenu />
                     </div>
                 </div>
-            </section>
+            </header>
+
+            {isNurseAppPage ? <NurseAppSections language={language} /> : <ScheduleLandingSections language={language} isAuth={isAuth} />}
 
             <footer className={`${softPurpleBackground} px-5 py-10 text-sm font-medium text-[#777487] md:px-8`}>
                 <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
                     <div className="flex flex-wrap gap-5">
-                        <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a
+                            href={isKorean ? termsOfServiceLink : getPublishedLegalDocumentUrl('termsOfService', language)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:text-main-1"
+                        >
                             {t('page.login.termsOfService')}
                         </a>
-                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="font-bold hover:text-main-1">
+                        <a
+                            href={isKorean ? privacyPolicyLink : getPublishedLegalDocumentUrl('privacyPolicy', language)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-bold hover:text-main-1"
+                        >
                             {t('page.login.privacyPolicy')}
                         </a>
+                        {isKorean ? (
+                            <ChannelTalkLink className="hover:text-main-1">{t('page.landing.header.inquiry')}</ChannelTalkLink>
+                        ) : (
+                            <a href={`mailto:${SELLER.email}`} className="hover:text-main-1">
+                                {t('page.landing.header.inquiry')}
+                            </a>
+                        )}
                     </div>
-                    <div className="flex flex-wrap gap-5">
-                        <a href="https://docs.dutying.ai/guides/nurse-scheduling" hrefLang="ko" className="hover:text-main-1">
-                            {t('page.landing.common.guideLink')}
-                        </a>
-                        <a href="https://docs.dutying.ai/troubleshooting/faq" hrefLang="ko" className="hover:text-main-1">
-                            {t('page.landing.common.faqLink')}
-                        </a>
-                    </div>
-                    <div className="flex flex-wrap gap-5">
-                        <a href="/pricing">Plus 요금제</a>
-                        <a href="/subscription-terms">정기결제 안내</a>
-                        <a href="/refund">환불정책</a>
-                    </div>
-                    <SellerDetails />
+                    {isKorean && (
+                        <>
+                            <div className="flex flex-wrap gap-5">
+                                <a href="https://docs.dutying.ai/guides/nurse-scheduling" hrefLang="ko" className="hover:text-main-1">
+                                    {t('page.landing.common.guideLink')}
+                                </a>
+                                <a href="https://docs.dutying.ai/troubleshooting/faq" hrefLang="ko" className="hover:text-main-1">
+                                    {t('page.landing.common.faqLink')}
+                                </a>
+                            </div>
+                            <div className="flex flex-wrap gap-5">
+                                <a href="/pricing">{t('page.landing.footer.plusPlan')}</a>
+                                <a href="/subscription-terms">{t('page.landing.footer.subscriptionTerms')}</a>
+                                <a href="/refund">{t('page.landing.footer.refundPolicy')}</a>
+                            </div>
+                            <SellerDetails
+                                collapsible
+                                labels={{
+                                    brand: t('page.landing.footer.seller.brand'),
+                                    pending: t('page.landing.footer.seller.pending'),
+                                    representative: t('page.landing.footer.seller.representative'),
+                                    registrationNumber: t('page.landing.footer.seller.registrationNumber'),
+                                    address: t('page.landing.footer.seller.address'),
+                                    phone: t('page.landing.footer.seller.phone'),
+                                    email: t('page.landing.footer.seller.email'),
+                                    ecommerceNumber: t('page.landing.footer.seller.ecommerceNumber'),
+                                }}
+                            />
+                        </>
+                    )}
                     <p>{t('page.landing.common.copyright')}</p>
                 </div>
             </footer>

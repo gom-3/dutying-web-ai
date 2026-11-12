@@ -1,0 +1,171 @@
+.ward-workspace__views {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: var(--workspace-section);
+}
+
+.ward-workspace__views a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    color: var(--workspace-muted);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.ward-workspace__views a:hover {
+    background: var(--workspace-secondary);
+    color: var(--workspace-ink);
+}
+
+.ward-workspace__views a[aria-current='page'] {
+    background: var(--workspace-secondary);
+    color: var(--workspace-ink);
+    font-weight: 750;
+}
+
+.ward-workspace__views a:focus-visible {
+    background: var(--workspace-primary);
+    color: #fff;
+    text-decoration: underline;
+}
+
+.ward-workspace .workspace-section-heading:has(.hospital-current-plan) {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.ward-workspace .hospital-current-plan {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--workspace-secondary);
+}
+
+.ward-workspace .workspace-usage meter {
+    appearance: none;
+    display: block;
+    height: 6px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--workspace-secondary);
+}
+
+.ward-workspace .workspace-usage meter::-webkit-meter-bar {
+    border: 0;
+    background: var(--workspace-secondary);
+}
+
+.ward-workspace .workspace-usage meter::-webkit-meter-optimum-value {
+    background: var(--workspace-primary);
+}
+
+.ward-workspace .workspace-usage meter::-moz-meter-bar {
+    background: var(--workspace-primary);
+}
+
+.ward-workspace .ward-workspace__seat-summary {
+    color: var(--workspace-ink);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+}
+
+.ward-workspace__member-list {
+    display: grid;
+    gap: 8px;
+    padding: 0;
+    margin: 16px 0 0;
+    list-style: none;
+}
+
+.ward-workspace .ward-workspace__member-list > li {
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: var(--workspace-section);
+}
+
+.ward-workspace__invite {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px 12px;
+    max-width: 600px;
+    margin: 16px 0 24px;
+}
+
+.ward-workspace .ward-workspace__invite .workspace-field {
+    flex: 1 1 230px;
+    margin: 0;
+}
+
+.ward-workspace__month {
+    max-width: 280px;
+}
+
+.ward-workspace__teams {
+    min-width: 0;
+    max-width: 480px;
+    padding: 0;
+    margin: 24px 0;
+    border: 0;
+}
+
+.ward-workspace__teams legend {
+    margin-bottom: 8px;
+    font-weight: 650;
+}
+
+.ward-workspace__teams .workspace-check {
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    margin: 4px 0;
+    border-radius: 6px;
+    background: var(--workspace-section);
+    cursor: pointer;
+}
+
+.ward-workspace__teams .workspace-check:has(input:checked) {
+    background: var(--workspace-secondary);
+    font-weight: 650;
+}
+
+.ward-workspace__teams .workspace-check:has(input:focus-visible) {
+    background: var(--workspace-primary);
+}
+
+@media (max-width: 760px) {
+    .ward-workspace .workspace-shell__heading {
+        position: relative;
+        flex-wrap: wrap;
+    }
+
+    .ward-workspace .workspace-shell__title {
+        flex-basis: min(9rem, 100%);
+    }
+
+    .ward-workspace .workspace-shell__utilities {
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+
+    .ward-workspace .workspace-shell__account-panel {
+        position: static;
+    }
+
+    .ward-workspace .workspace-shell__account-menu {
+        max-width: 100%;
+    }
+}
+
+@media (forced-colors: active) {
+    .ward-workspace__views a[aria-current='page'] {
+        text-decoration: underline;
+    }
+}

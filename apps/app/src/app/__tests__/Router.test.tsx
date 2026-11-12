@@ -28,6 +28,27 @@ vi.mock('@/widgets/layouts/not-auth-layout', async () => {
     return {NotAuthLayout: () => <Outlet />};
 });
 vi.mock('@/pages/login', () => ({default: () => <div>commercial login route</div>}));
+vi.mock('@/widgets/layouts/auth-layout', async () => {
+    const {Outlet} = await import('react-router-dom');
+
+    return {AuthLayout: () => <Outlet />};
+});
+vi.mock('@/widgets/layouts/main-layout', async () => {
+    const {Outlet} = await import('react-router-dom');
+
+    return {
+        MainLayout: () => (
+            <main data-testid="main-site-layout">
+                <Outlet />
+            </main>
+        ),
+        ProfileLayout: () => <Outlet />,
+    };
+});
+vi.mock('@/pages/ward-billing', () => ({
+    default: () => <p>ward billing route</p>,
+    LegacyWorkspaceRoute: () => <p>legacy workspace route</p>,
+}));
 
 vi.mock('@/pages/landing', () => ({
     default: () => <div>renewed landing route</div>,
@@ -99,6 +120,23 @@ describe('Router', () => {
         },
     );
 
+    it.each([
+        {path: '/nurse-app', phone: false},
+        {path: '/en/nurse-app', phone: true},
+    ])('keeps the public nurse app route $path on direct entry', async ({path, phone}) => {
+        setPhoneDevice(phone);
+
+        render(
+            <MemoryRouter initialEntries={[path]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByText('renewed landing route')).toBeInTheDocument();
+        expect(screen.getByTestId('location')).toHaveTextContent(path);
+    });
+
     it('keeps authentication available for phone billing and invitation flows', async () => {
         setPhoneDevice(true);
 
@@ -113,6 +151,22 @@ describe('Router', () => {
 
         expect(await screen.findByText('commercial login route')).toBeInTheDocument();
     });
+
+    it.each(['/billing/11/subscription', '/billing/billing-return?orderId=existing-order'])(
+        'keeps the in-site billing route %s inside the main site layout on phones',
+        async (path) => {
+            setPhoneDevice(true);
+            render(
+                <MemoryRouter initialEntries={[path]}>
+                    <Router />
+                    <LocationProbe />
+                </MemoryRouter>,
+            );
+            expect(await screen.findByText('ward billing route')).toBeInTheDocument();
+            expect(screen.getByTestId('main-site-layout')).toBeInTheDocument();
+            expect(screen.getByTestId('location')).toHaveTextContent(path.split('?')[0]);
+        },
+    );
 
     it('keeps the privacy route and redirects desktop visitors to the matching published document', async () => {
         const replace = mockLocationReplace();

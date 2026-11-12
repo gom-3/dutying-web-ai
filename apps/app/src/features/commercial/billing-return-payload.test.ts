@@ -6,17 +6,17 @@ afterEach(() => {
     window.history.replaceState(null, '', '/');
 });
 
-describe('billing callback secret handling', () => {
+describe.each(['/workspace/billing-return', '/billing/billing-return'])('billing callback secret handling at %s', (callbackPath) => {
     it('removes authorization from the URL before application initialization and keeps only an order ID', () => {
         const state = {existing: 'router-state'};
 
         window.history.replaceState(
             state,
             '',
-            '/workspace/billing-return?orderId=order-1&registration=mandate-1&authKey=single-use-fixture&customerKey=customer-fixture',
+            `${callbackPath}?orderId=order-1&registration=mandate-1&authKey=single-use-fixture&customerKey=customer-fixture`,
         );
         captureBillingReturnPayload();
-        expect(window.location.pathname + window.location.search).toBe('/workspace/billing-return?orderId=order-1');
+        expect(window.location.pathname + window.location.search).toBe(`${callbackPath}?orderId=order-1`);
         expect(window.history.state).toEqual(state);
 
         const saved = readBillingReturnPayload(window.location.search);
@@ -27,7 +27,7 @@ describe('billing callback secret handling', () => {
     });
 
     it('never attaches authorization from one order to another', () => {
-        window.history.replaceState(null, '', '/workspace/billing-return?orderId=order-1&authKey=fixture');
+        window.history.replaceState(null, '', `${callbackPath}?orderId=order-1&authKey=fixture`);
         captureBillingReturnPayload();
         expect(readBillingReturnPayload('?orderId=order-2').get('authKey')).toBeNull();
         clearBillingReturnPayload();
@@ -35,7 +35,7 @@ describe('billing callback secret handling', () => {
     });
 
     it('prefers a newly received failure callback over earlier authorization', () => {
-        window.history.replaceState(null, '', '/workspace/billing-return?orderId=order-1&authKey=fixture');
+        window.history.replaceState(null, '', `${callbackPath}?orderId=order-1&authKey=fixture`);
         captureBillingReturnPayload();
 
         const fresh = readBillingReturnPayload('?orderId=order-1&code=PAY_PROCESS_CANCELED');
@@ -45,7 +45,7 @@ describe('billing callback secret handling', () => {
     });
 
     it('retains an in-memory card-change callback without an order', () => {
-        window.history.replaceState(null, '', '/workspace/billing-return?registration=mandate-1&authKey=fixture&customerKey=customer');
+        window.history.replaceState(null, '', `${callbackPath}?registration=mandate-1&authKey=fixture&customerKey=customer`);
         captureBillingReturnPayload();
         expect(window.location.search).toBe('');
         expect(readBillingReturnPayload('').get('registration')).toBe('mandate-1');
@@ -56,4 +56,25 @@ describe('billing callback secret handling', () => {
         captureBillingReturnPayload();
         expect(window.location.pathname + window.location.search).toBe('/profile?code=normal-query');
     });
+});
+
+it('preserves a captured legacy authorization after a same-document move to the canonical callback', () => {
+    window.history.replaceState(
+        null,
+        '',
+        '/workspace/billing-return?orderId=order-1&registration=mandate-1&authKey=single-use-fixture&customerKey=customer-fixture',
+    );
+    captureBillingReturnPayload();
+    window.history.replaceState(null, '', '/billing/billing-return?orderId=order-1');
+    captureBillingReturnPayload();
+
+    const saved = readBillingReturnPayload(window.location.search);
+
+    expect(saved.get('orderId')).toBe('order-1');
+    expect(saved.get('authKey')).toBe('single-use-fixture');
+    expect(saved.get('registration')).toBe('mandate-1');
+    expect(saved.get('customerKey')).toBe('customer-fixture');
+    expect(window.location.pathname + window.location.search).toBe('/billing/billing-return?orderId=order-1');
+    expect(JSON.stringify({...localStorage, ...sessionStorage})).not.toContain('single-use-fixture');
+    expect(readBillingReturnPayload('?orderId=order-2').get('authKey')).toBeNull();
 });

@@ -99,16 +99,9 @@ function PlanCard({policy, displayName}: {policy: Policy; displayName?: string})
                     <dd>{period}</dd>
                 </div>
                 <div>
-                    <dt>{t('전체 생성', 'Full generation')}</dt>
+                    <dt>{t('AI 채우기', 'AI fill')}</dt>
                     <dd>
                         {quantity(policy.generate, t)}
-                        {t('회', ' uses')}
-                    </dd>
-                </div>
-                <div>
-                    <dt>{t('부분 조정', 'Partial adjustment')}</dt>
-                    <dd>
-                        {quantity(policy.adjust, t)}
                         {t('회', ' uses')}
                     </dd>
                 </div>

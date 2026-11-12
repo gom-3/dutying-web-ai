@@ -1,0 +1,376 @@
+.landing-workflow-summary {
+    padding-block: clamp(2.4rem, 4.1vw, 4rem);
+    background: #fff;
+    overflow-wrap: anywhere;
+}
+
+.landing-workflow-summary:lang(ko) {
+    word-break: keep-all;
+}
+
+.landing-workflow-summary__heading {
+    margin-bottom: clamp(1.1rem, 2vw, 1.7rem);
+}
+
+.landing-workflow-summary__heading h2 {
+    color: #150b3c;
+    font-size: clamp(1.48rem, 2.75vw, 2.55rem);
+    font-weight: 850;
+    letter-spacing: -0.055em;
+    line-height: 1.3;
+}
+
+.landing-workflow-summary__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.65rem, 1.4vw, 1.25rem);
+}
+
+.landing-workflow-summary__link {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    gap: clamp(0.65rem, 1.6vw, 1.2rem);
+    padding: clamp(0.85rem, 1.75vw, 1.5rem);
+    border-radius: clamp(0.85rem, 1.4vw, 1.25rem);
+    background: #f7f3ff;
+    color: #150b3c;
+    text-decoration: none;
+}
+
+.landing-workflow-summary__link:hover {
+    background: #f0eaff;
+}
+
+.landing-workflow-summary__link:hover strong {
+    color: #4f29c8;
+}
+
+.landing-workflow-summary__link:focus-visible {
+    outline: none;
+    background: #eee8fb;
+    color: #43239f;
+}
+
+.landing-workflow-summary__link:focus-visible strong {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+
+.landing-workflow-summary__visual {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.35rem;
+}
+
+.landing-workflow-summary__visual img {
+    width: clamp(3.25rem, 5.1vw, 4.65rem);
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+}
+
+.landing-workflow-summary__number {
+    flex: none;
+    padding-top: 0.15rem;
+    color: #6548ad;
+    font-size: 0.8rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+
+.landing-workflow-summary__copy {
+    display: grid;
+    min-width: 0;
+    gap: 0.3rem;
+    line-height: 1.35;
+}
+
+.landing-workflow-summary__problem {
+    color: #635c72;
+    font-size: clamp(0.76rem, 1.15vw, 0.96rem);
+}
+
+.landing-workflow-summary__copy > strong {
+    font-size: clamp(0.96rem, 1.5vw, 1.25rem);
+    font-weight: 820;
+    letter-spacing: -0.035em;
+}
+
+.landing-usage-layout {
+    --usage-gutter: clamp(0.5rem, 2.5vw, 2rem);
+
+    width: min(100% - 2 * var(--usage-gutter), 68rem);
+    margin-inline: auto;
+    padding-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.landing-hospital-rotation {
+    scroll-margin-top: 5rem;
+}
+
+:is(.landing-hospital-rotation, .landing-nurse-usage) + .landing-workflow-summary {
+    padding-top: clamp(1.75rem, 3vw, 2.75rem);
+}
+
+.landing-nurse-usage > p {
+    padding: 1rem;
+    border-radius: 1rem;
+    background: #f7f6f9;
+    color: #514a62;
+    font-size: clamp(0.95rem, 2vw, 1.2rem);
+    font-weight: 600;
+    text-align: center;
+    text-wrap: balance;
+}
+
+.landing-usage-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.5rem, 1vw, 0.875rem);
+    margin: 0 0 clamp(0.5rem, 1vw, 0.875rem);
+    text-align: center;
+}
+
+.landing-usage-metrics > div {
+    display: grid;
+    grid-template-areas: 'value' 'label';
+    align-content: start;
+    gap: 0.5rem;
+    padding: clamp(1rem, 2.4vw, 1.75rem) clamp(0.625rem, 2vw, 1.5rem);
+    border-radius: 1rem;
+    background: #f4f1fa;
+    color: #221839;
+}
+
+.landing-usage-metrics > div:first-child {
+    background: #eee7fd;
+    color: #4b28b6;
+}
+
+.landing-usage-metrics dt {
+    grid-area: label;
+    color: #50465f;
+    font-size: clamp(0.8125rem, 1.5vw, 1.0625rem);
+    font-weight: 700;
+    line-height: 1.4;
+    text-wrap: balance;
+    word-break: keep-all;
+}
+
+.landing-usage-metrics dd {
+    grid-area: value;
+    margin: 0;
+    font-size: clamp(2rem, 5.25vw, 3.75rem);
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.05em;
+}
+
+.landing-usage-metrics__plus {
+    margin-inline-start: 0.13em;
+    color: #6742c1;
+    font-size: 0.55em;
+    vertical-align: 0.3em;
+}
+
+.landing-hospital-rotation__surface {
+    display: grid;
+    min-height: 6rem;
+    grid-template-columns: auto minmax(0, max-content);
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.75rem, 2vw, 1.75rem);
+    padding: 0.75rem clamp(1rem, 3vw, 2.5rem);
+    border-radius: 1rem;
+    background: #f7f6f9;
+}
+
+.landing-hospital-rotation__rail {
+    --hospital-icon-size: clamp(2.75rem, 5.5vw, 3.75rem);
+    --hospital-icon-stride: calc(var(--hospital-icon-size) * 0.78);
+
+    position: relative;
+    width: calc(var(--hospital-icon-size) + 4 * var(--hospital-icon-stride));
+    height: var(--hospital-icon-size);
+    overflow: hidden;
+    isolation: isolate;
+}
+
+.landing-hospital-rotation__icon {
+    position: absolute;
+    inset: 0 auto auto 0;
+    z-index: calc(var(--hospital-icon-slot) + 1);
+    display: grid;
+    width: var(--hospital-icon-size);
+    aspect-ratio: 1;
+    place-items: center;
+    border-radius: 50%;
+    transform: translateX(calc(var(--hospital-icon-slot) * var(--hospital-icon-stride))) scale(0.88);
+}
+
+.landing-hospital-rotation__icon[data-active='true'] {
+    transform: translateX(calc(var(--hospital-icon-slot) * var(--hospital-icon-stride)));
+}
+
+.landing-hospital-rotation__icon[data-buffer='true'] {
+    opacity: 0;
+}
+
+.landing-hospital-rotation__icon img {
+    width: 72%;
+    height: auto;
+    filter: hue-rotate(var(--hospital-icon-hue));
+}
+
+.landing-hospital-rotation__copy {
+    display: flex;
+    max-width: 100%;
+    align-items: baseline;
+    justify-content: safe center;
+    gap: 0.25em;
+    overflow-x: auto;
+    color: #514a62;
+    font-size: clamp(0.9rem, 1.55vw, 1.2rem);
+    font-weight: 600;
+    line-height: 1.45;
+    white-space: nowrap;
+}
+
+.landing-hospital-rotation__copy strong {
+    font-size: clamp(1.04rem, 1.8vw, 1.4rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+
+.landing-nurse-usage__count {
+    color: #5b35dc;
+    font-size: 1.45em;
+    font-weight: 850;
+    white-space: nowrap;
+}
+
+.landing-hospital-rotation__caption--compact {
+    display: none;
+}
+
+.landing-hospital-rotation__note {
+    margin-top: 0.375rem;
+    color: #6f6b7a;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    text-align: end;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .landing-hospital-rotation__icon {
+        transition:
+            transform 360ms ease-out,
+            opacity 300ms ease-out;
+    }
+
+    .landing-hospital-rotation__copy strong {
+        animation: landing-hospital-name-in 280ms ease-out;
+    }
+}
+
+@keyframes landing-hospital-name-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.landing-overview-evidence {
+    padding-block: clamp(1.5rem, 3vw, 2.75rem);
+    background: #fbf9ff;
+}
+
+.landing-overview-evidence h2 {
+    margin-bottom: 0.65rem;
+    color: #150b3c;
+    font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.4;
+}
+
+.landing-overview-evidence__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem clamp(2rem, 8vw, 6rem);
+}
+
+.landing-overview-evidence__stats dd {
+    color: #5738a1;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 850;
+    font-variant-numeric: tabular-nums;
+}
+
+.landing-overview-evidence p,
+.landing-overview-evidence figcaption {
+    color: #6f6b7a;
+    font-size: 0.875rem;
+}
+
+.landing-overview-evidence figure {
+    margin-block: 1rem;
+}
+
+.landing-overview-evidence blockquote {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+@media (min-width: 900px) {
+    .landing-workflow-summary__grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .landing-workflow-summary__inner {
+        max-width: 520px;
+    }
+}
+
+@media (max-width: 879px) {
+    .landing-hospital-rotation__surface {
+        min-height: 7rem;
+        grid-template-columns: minmax(0, 1fr);
+        align-content: center;
+        justify-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+@media (max-width: 599px) {
+    .landing-hospital-rotation__surface {
+        padding-inline: 0.375rem;
+    }
+
+    .landing-hospital-rotation__copy {
+        font-size: clamp(0.7rem, 3.25vw, 0.9rem);
+    }
+
+    .landing-hospital-rotation__copy strong {
+        font-size: clamp(0.75rem, 3.6vw, 1.04rem);
+    }
+
+    .landing-hospital-rotation__caption--wide {
+        display: none;
+    }
+
+    .landing-hospital-rotation__caption--compact {
+        display: inline;
+    }
+}
+
+@media (forced-colors: active) {
+    .landing-workflow-summary__link:focus-visible {
+        outline: 2px solid Highlight;
+    }
+}

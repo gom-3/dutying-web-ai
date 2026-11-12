@@ -80,7 +80,8 @@ describe('workspace plans', () => {
         expect(within(articles[0]).getByText('27명')).toBeInTheDocument();
         expect(within(articles[0]).getByText('처음 한 번 제공')).toBeInTheDocument();
         expect(within(articles[1]).getByText('37회')).toBeInTheDocument();
-        expect(within(articles[1]).getByText('12회')).toBeInTheDocument();
+        expect(within(articles[1]).queryByText('12회')).not.toBeInTheDocument();
+        expect(within(articles[1]).getByText('AI 채우기')).toBeInTheDocument();
         expect(mocks.get).toHaveBeenCalledExactlyOnceWith('/plans');
         expect(client.getQueryData(['commercial', 7, 'plans'])).toEqual(catalog);
         expect(screen.getByRole('link', {name: 'Plus 사용할 병동 선택'})).toHaveAttribute('href', '/workspace');

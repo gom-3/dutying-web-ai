@@ -52,6 +52,7 @@ export type AccessContext = {
             | 'CYCLE_CREATE'
             | 'ADMIN_SEATS'
             | 'EDITOR_INVITE'
+            | 'AI_FILL'
             | 'AI_FULL'
             | 'AI_PARTIAL',
             boolean
@@ -72,7 +73,7 @@ export type UsageLot = {
     expiresAt: string | null;
 };
 export type Usage = {
-    meter: 'FULL_GENERATE' | 'PARTIAL_ADJUST';
+    meter: 'AI_FILL' | 'FULL_GENERATE' | 'PARTIAL_ADJUST';
     enforced?: boolean;
     granted: number;
     used: number;
@@ -172,6 +173,7 @@ export type Quote = {
 };
 export type Order = {
     provider?: string;
+    providerReference?: string;
     id: string;
     scopeId: string;
     status: string;
@@ -289,10 +291,13 @@ export type Organization = {
 };
 
 const ROOT = '/admin/commercial';
+const unifiedPath = (path: string) =>
+    /^\/scopes\/[^/]+\/[^/]+\/entitlements$/.test(path) || /^\/wards\/[^/]+\/ai-batches(?:\/|$)/.test(path) ? `/v2${path}` : path;
 
-export const commercialGet = async <T>(path: string) => (await adminAxiosInstance.get<T>(ROOT + path, {suppressErrorToast: true})).data;
+export const commercialGet = async <T>(path: string) =>
+    (await adminAxiosInstance.get<T>(ROOT + unifiedPath(path), {suppressErrorToast: true})).data;
 export const commercialPost = async <T>(path: string, data: unknown = {}, key: string = crypto.randomUUID()) =>
-    (await adminAxiosInstance.post<T>(ROOT + path, data, {headers: {'Idempotency-Key': key}, suppressErrorToast: true})).data;
+    (await adminAxiosInstance.post<T>(ROOT + unifiedPath(path), data, {headers: {'Idempotency-Key': key}, suppressErrorToast: true})).data;
 export const commercialPut = async <T>(path: string, data: unknown) =>
     (await adminAxiosInstance.put<T>(ROOT + path, data, {suppressErrorToast: true})).data;
 export const legacyGet = async <T>(path: string) => (await adminAxiosInstance.get<T>(path, {suppressErrorToast: true})).data;
@@ -360,7 +365,10 @@ export function applyRestrictionStates(entitlement: Entitlement, states: NonNull
         capacity: {...entitlement.capacity, overLimit: states.STAFF_CAPACITY === false ? false : entitlement.capacity.overLimit},
         usage: entitlement.usage.map((usage) => ({
             ...usage,
-            enforced: states[usage.meter === 'FULL_GENERATE' ? 'AI_FULL' : 'AI_PARTIAL'] ?? usage.enforced,
+            enforced:
+                (usage.meter === 'AI_FILL'
+                    ? (states.AI_FILL ?? states.AI_FULL)
+                    : states[usage.meter === 'FULL_GENERATE' ? 'AI_FULL' : 'AI_PARTIAL']) ?? usage.enforced,
         })),
     };
 }
@@ -379,6 +387,8 @@ export function usageRemainingLabel(usage: Usage | undefined, ko: boolean) {
     return usage?.enforced === false ? (ko ? '제한 해제' : 'No plan limit') : String(usage?.remaining ?? 0);
 }
 export const scopePath = (scope: Pick<Scope, 'type' | 'ref'>, tab = 'usage') => `/workspace/${scope.type}/${scope.ref}/${tab}`;
+export const WORKSPACE_CHOOSER_PATH = '/workspace?choose=1';
+export const getOnlyWardScope = (scopes: Scope[] = []) => (scopes.length === 1 && scopes[0].type === 'WARD' ? scopes[0] : undefined);
 export function commercialError(error: unknown) {
     return error instanceof Error ? error.message : '요청을 처리하지 못했습니다. 다시 확인해 주세요.';
 }

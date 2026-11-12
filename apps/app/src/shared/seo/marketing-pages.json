@@ -9,7 +9,13 @@
             "ogLocale": "ko_KR",
             "imageAlt": "간호사 근무표 작성과 일정 관리를 지원하는 듀팅",
             "iosStoreUrl": "https://apps.apple.com/kr/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ko&gl=KR"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ko&gl=KR",
+            "nurseApp": {
+                "path": "/nurse-app",
+                "title": "간호사 앱 | 듀팅",
+                "description": "듀팅 간호사 앱에서 근무 일정과 병동 소식을 확인하고, 신청근무를 보내거나 개인 일정을 관리해 보세요.",
+                "imageAlt": "듀팅 간호사 앱의 근무 일정 화면"
+            }
         },
         {
             "language": "en",
@@ -20,7 +26,13 @@
             "ogLocale": "en_US",
             "imageAlt": "Dutying AI nurse shift schedule maker and calendar",
             "iosStoreUrl": "https://apps.apple.com/us/app/dutying-nurse-shift-calendar/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=en&gl=US"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=en&gl=US",
+            "nurseApp": {
+                "path": "/en/nurse-app",
+                "title": "Nurse Shift Calendar App | Dutying",
+                "description": "Check your shifts and ward updates, send shift requests, and manage your personal calendar in the Dutying nurse app.",
+                "imageAlt": "Shift calendar in the Dutying nurse app"
+            }
         },
         {
             "language": "ja",
@@ -31,7 +43,13 @@
             "ogLocale": "ja_JP",
             "imageAlt": "看護師の勤務表作成とシフト管理を支援するDutying",
             "iosStoreUrl": "https://apps.apple.com/jp/app/dutying-%E7%9C%8B%E8%AD%B7%E5%B8%AB%E3%82%B7%E3%83%95%E3%83%88%E7%AE%A1%E7%90%86/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ja&gl=JP"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=ja&gl=JP",
+            "nurseApp": {
+                "path": "/ja/nurse-app",
+                "title": "看護師向け勤務表アプリ | Dutying",
+                "description": "Dutyingの看護師向けアプリで勤務予定や病棟のお知らせを確認し、希望勤務の提出や個人の予定管理ができます。",
+                "imageAlt": "Dutyingの看護師向けアプリの勤務予定画面"
+            }
         },
         {
             "language": "zh",
@@ -42,7 +60,30 @@
             "ogLocale": "zh_CN",
             "imageAlt": "Dutying AI护士排班表制作和轮班管理界面",
             "iosStoreUrl": "https://apps.apple.com/cn/app/dutying-nurse-shift-calendar/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=zh-CN&gl=CN"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=zh-CN&gl=CN",
+            "nurseApp": {
+                "path": "/zh/nurse-app",
+                "title": "护士排班日历 App | Dutying",
+                "description": "使用 Dutying 护士 App 查看排班和病区动态、提交班次申请并管理个人日程。",
+                "imageAlt": "Dutying 护士 App 的排班日历"
+            }
+        },
+        {
+            "language": "zh-TW",
+            "path": "/zh-tw",
+            "title": "護理師班表製作，AI 1分鐘自動生成 | Dutying",
+            "description": "手動建立護理人員班表，或使用 AI 快速自動排班。用 Dutying 管理病房排班規則、預班需求與輪班行程。",
+            "schemaLanguage": "zh-TW",
+            "ogLocale": "zh_TW",
+            "imageAlt": "Dutying AI 護理排班表與班表管理畫面",
+            "iosStoreUrl": "https://apps.apple.com/tw/app/dutying-nurse-shift-calendar/id6804144827",
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=zh-TW&gl=TW",
+            "nurseApp": {
+                "path": "/zh-tw/nurse-app",
+                "title": "護理人員班表日曆 App | Dutying",
+                "description": "使用 Dutying 護理人員 App 查看班表與病房公告、提出預班申請，並管理個人行程。",
+                "imageAlt": "Dutying 護理人員 App 的班表日曆"
+            }
         },
         {
             "language": "th",
@@ -53,7 +94,13 @@
             "ogLocale": "th_TH",
             "imageAlt": "หน้าจอสร้างตารางเวรพยาบาลและจัดการกะด้วย AI ของ Dutying",
             "iosStoreUrl": "https://apps.apple.com/th/app/dutying-nurse-shift-calendar/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=th&gl=TH"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=th&gl=TH",
+            "nurseApp": {
+                "path": "/th/nurse-app",
+                "title": "แอปตารางเวรพยาบาล | Dutying",
+                "description": "ดูตารางเวรและข่าวสารในหอผู้ป่วย ส่งคำขอเวร และจัดการปฏิทินส่วนตัวในแอป Dutying",
+                "imageAlt": "ตารางเวรในแอป Dutying สำหรับพยาบาล"
+            }
         },
         {
             "language": "vi",
@@ -64,7 +111,13 @@
             "ogLocale": "vi_VN",
             "imageAlt": "Giao diện tạo lịch trực điều dưỡng và quản lý ca bằng AI của Dutying",
             "iosStoreUrl": "https://apps.apple.com/vn/app/dutying-nurse-shift-calendar/id6804144827",
-            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=vi&gl=VN"
+            "androidStoreUrl": "https://play.google.com/store/apps/details?id=ai.dutying.app&hl=vi&gl=VN",
+            "nurseApp": {
+                "path": "/vi/nurse-app",
+                "title": "Ứng dụng lịch trực điều dưỡng | Dutying",
+                "description": "Xem lịch trực và thông báo của khoa, gửi nguyện vọng ca trực và quản lý lịch cá nhân trong ứng dụng Dutying.",
+                "imageAlt": "Màn hình lịch trực trên ứng dụng Dutying"
+            }
         }
     ]
 }

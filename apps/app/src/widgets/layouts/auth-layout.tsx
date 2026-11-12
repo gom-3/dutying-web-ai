@@ -43,7 +43,13 @@ export const AuthLayout = () => {
          * WARD_SELECT_PENDING is neither LINKED nor DEMO, so keep onboarding/register routes
          * explicitly allowed here to avoid bouncing back to /register.
          */
-        if (pathname.startsWith('/workspace') || pathname === ROUTE.PROFILE) return;
+        if (
+            pathname.startsWith('/workspace') ||
+            pathname.startsWith(ROUTE.BILLING + '/') ||
+            pathname === ROUTE.BILLING ||
+            pathname === ROUTE.PROFILE
+        )
+            return;
 
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
             if ([ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname)) return;

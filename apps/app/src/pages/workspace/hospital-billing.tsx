@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import useAuthStore from '@/features/auth/model/store';
+import {aiFillUsage} from '@/features/commercial/ai-fill-usage';
 import {
     commercialGet,
     commercialPost,
@@ -27,6 +28,29 @@ const validNumber = (value: unknown): value is number => typeof value === 'numbe
 const count = (value: unknown) => (validNumber(value) ? value.toLocaleString() : '—');
 const money = (value: unknown, currency = 'KRW') =>
     validNumber(value) ? `${value.toLocaleString()}${currency === 'KRW' ? '원' : ` ${currency}`}` : '—';
+const iconPaths = {
+    contract: 'M5 2h9l5 5v15H5V2zm9 2v4h4l-4-4zM8 11v2h8v-2H8zm0 5v2h6v-2H8z',
+    staff: 'M9 2a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM1 21v-3a8 8 0 0 1 16 0v3H1zM17 3a4 4 0 0 1 0 8 6 6 0 0 0 0-8zM19 13a7 7 0 0 1 4 6v2h-4v-8z',
+    generate: 'm12 2 2.7 7.3L22 12l-7.3 2.7L12 22l-2.7-7.3L2 12l7.3-2.7L12 2zM20 1l.8 2.2L23 4l-2.2.8L20 7l-.8-2.2L17 4l2.2-.8L20 1z',
+    adjust: 'M3 5h10V3h3v2h5v3h-5v2h-3V8H3V5zm0 11h5v-2h3v2h10v3H11v2H8v-2H3v-3z',
+    receipt: 'M5 2h14v20l-3-2-4 2-4-2-3 2V2zm3 5v2h8V7H8zm0 5v2h8v-2H8z',
+    check: 'm9 18-6-6 2-2 4 4L19 4l2 2L9 18z',
+    support: 'M4 3h16v14H9l-5 4V3zm4 5v2h8V8H8zm0 5v2h5v-2H8z',
+};
+
+function BillingIcon({name}: {name: keyof typeof iconPaths}) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path fillRule="evenodd" d={iconPaths[name]} />
+        </svg>
+    );
+}
+
+function UsageMeter({value, total, label}: {value?: number; total?: number; label: string}) {
+    if (!validNumber(value) || !validNumber(total) || total <= 0) return null;
+
+    return <meter className="hospital-billing-meter" min={0} max={total} value={Math.min(value, total)} aria-label={label} />;
+}
 
 function calendarDate(value?: string) {
     if (!value) return '—';
@@ -88,6 +112,7 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
     const details = organization.data?.organization;
     const contract = readContract(details?.quoteSnapshot);
     const estimate = organization.data?.contractEstimate;
+    const setupReady = details?.adoptionStage === 'READY' && !!details.contractAcceptedAt && !details.setupAcceptedAt;
     const completeContract =
         contract &&
         validNumber(contract.capacity) &&
@@ -141,24 +166,230 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
                     )}
                 </p>
             ) : null}
-            <section aria-labelledby="hospital-billing-usage-title">
-                <div className="hospital-billing-heading">
-                    <h2 id="hospital-billing-usage-title">{t('이용 현황', 'Usage')}</h2>
-                    <InfoTip label={t('이용 현황 안내', 'About usage')}>
-                        {t(
-                            '병원에 소속된 병동의 편성 인원과 AI 사용량을 합산합니다. 처리 중인 AI 요청은 완료될 때까지 횟수가 예약됩니다.',
-                            'Scheduling staff and AI usage are shared across hospital wards. In-progress AI requests reserve uses until completion.',
-                        )}
-                    </InfoTip>
+            {canReadBilling ? (
+                <section className="hospital-billing-contract" aria-labelledby="hospital-billing-contract-title">
+                    <div className="hospital-billing-heading">
+                        <h2 id="hospital-billing-contract-title">{t('계약 정보', 'Contract')}</h2>
+                        <InfoTip label={t('계약·납부 안내', 'About contract and payment')}>
+                            {t(
+                                '병원은 개별 계약에 따라 계좌이체로 납부합니다. 계약 변경이나 입금 확인은 문의해 주세요. 아래 금액은 부가세 포함입니다.',
+                                'Hospitals pay by bank transfer under their individual contract. Contact us for changes or payment confirmation. Amounts include VAT.',
+                            )}
+                        </InfoTip>
+                        {contract && !organization.isError ? (
+                            <span className="hospital-billing-contract-status" data-complete={!!details?.contractAcceptedAt}>
+                                {details?.contractAcceptedAt
+                                    ? t('동의 완료', 'Accepted')
+                                    : completeContract
+                                      ? t('동의 대기', 'Awaiting acceptance')
+                                      : t('확인 필요', 'Needs review')}
+                            </span>
+                        ) : null}
+                    </div>
+                    {organization.isPending ? (
+                        <p role="status" className="hospital-billing-empty">
+                            {t('계약을 불러오는 중입니다.', 'Loading contract…')}
+                        </p>
+                    ) : organization.isError ? (
+                        <div className="hospital-billing-load-error">
+                            <ErrorView error={organization.error} />
+                            <button
+                                type="button"
+                                className="secondary"
+                                disabled={organization.isFetching}
+                                onClick={() => void organization.refetch()}
+                            >
+                                {t('다시 불러오기', 'Retry')}
+                            </button>
+                        </div>
+                    ) : contract ? (
+                        <div className="hospital-billing-contract-layout">
+                            <div className="hospital-billing-contract-summary">
+                                <div className="hospital-billing-plan">
+                                    <span className="hospital-billing-plan-icon">
+                                        <BillingIcon name="contract" />
+                                    </span>
+                                    <div>
+                                        <strong>Hospital</strong>
+                                        <span>{t('병원 단위 이용 계약', 'Hospital service agreement')}</span>
+                                    </div>
+                                </div>
+                                <dl className="hospital-billing-prices">
+                                    <div>
+                                        <dt>{t('월 이용료', 'Monthly fee')}</dt>
+                                        <dd>{money(estimate?.monthlyGross)}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>{t('초기 도입비 · 1회', 'One-time setup')}</dt>
+                                        <dd>{money(estimate?.setupGross)}</dd>
+                                    </div>
+                                </dl>
+                                <p className="hospital-billing-tax-note">{t('부가세 포함', 'VAT included')}</p>
+                                <dl className="hospital-billing-facts">
+                                    <div className="hospital-billing-period">
+                                        <dt>{t('계약 기간', 'Contract period')}</dt>
+                                        <dd>
+                                            {calendarDate(contract.startsAt)} ~ {calendarDate(contract.endsAt)} (KST)
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>{t('계약 인원', 'Contracted capacity')}</dt>
+                                        <dd>
+                                            {count(contract.capacity)}
+                                            {t('명', ' staff')}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>{t('초기 세팅 인원', 'Setup staff')}</dt>
+                                        <dd>
+                                            {count(contract.setupStaff)}
+                                            {t('명', ' staff')}
+                                        </dd>
+                                    </div>
+                                    <div>
+                                        <dt>{t('납부 방식', 'Payment method')}</dt>
+                                        <dd>
+                                            {contract.paymentMode === 'PREPAID'
+                                                ? t('계좌이체 · 선불', 'Bank transfer · prepaid')
+                                                : contract.paymentMode === 'POSTPAID'
+                                                  ? t('계좌이체 · 후불', 'Bank transfer · postpaid')
+                                                  : t('확인 필요', 'To be confirmed')}
+                                        </dd>
+                                    </div>
+                                    <div className="hospital-billing-document">
+                                        <dt>{t('계약 문서', 'Contract reference')}</dt>
+                                        <dd>{contract.termsRef?.trim() ? contract.termsRef : '—'}</dd>
+                                    </div>
+                                </dl>
+                                {!completeContract ? (
+                                    <p className="hospital-billing-message">
+                                        {t(
+                                            '계약 정보를 확인 중입니다. 누락된 내용은 담당자에게 문의해 주세요.',
+                                            'Contract details need review. Contact your representative about missing information.',
+                                        )}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <div className="hospital-billing-next-step">
+                                <p className="hospital-billing-eyebrow">{t('계약 진행', 'Agreement progress')}</p>
+                                <h3>
+                                    {setupReady
+                                        ? t('초기 세팅을 확인해 주세요', 'Review your initial setup')
+                                        : details?.contractAcceptedAt
+                                          ? t('계약 동의를 완료했어요', 'Your agreement is accepted')
+                                          : t('계약 내용을 확인해 주세요', 'Review your agreement')}
+                                </h3>
+                                <ol className="hospital-billing-steps" aria-label={t('계약 확인 절차', 'Agreement checklist')}>
+                                    <li
+                                        data-complete={!!details?.contractAcceptedAt}
+                                        aria-current={!details?.contractAcceptedAt ? 'step' : undefined}
+                                    >
+                                        <span className="hospital-billing-step-number" aria-hidden="true">
+                                            {details?.contractAcceptedAt ? <BillingIcon name="check" /> : '1'}
+                                        </span>
+                                        <span>{t('계약 조건 확인·동의', 'Review and accept terms')}</span>
+                                    </li>
+                                    <li data-complete={!!details?.setupAcceptedAt} aria-current={setupReady ? 'step' : undefined}>
+                                        <span className="hospital-billing-step-number" aria-hidden="true">
+                                            {details?.setupAcceptedAt ? <BillingIcon name="check" /> : '2'}
+                                        </span>
+                                        <span>{t('초기 세팅 확인', 'Review initial setup')}</span>
+                                    </li>
+                                </ol>
+                                <p className="hospital-billing-next-description">
+                                    {setupReady
+                                        ? t('병원에 적용된 세팅을 확인한 뒤 완료해 주세요.', 'Check the hospital setup before confirming.')
+                                        : details?.contractAcceptedAt
+                                          ? t(
+                                                '담당자가 계약 조건에 따라 도입을 진행해요.',
+                                                'Your representative will proceed under the agreed terms.',
+                                            )
+                                          : t(
+                                                '금액과 이용 조건을 확인한 뒤 동의해 주세요.',
+                                                'Check the fees and service terms before accepting.',
+                                            )}
+                                </p>
+                                <div className="hospital-billing-acceptance">
+                                    {details?.contractAcceptedAt ? (
+                                        <p>
+                                            <BillingIcon name="check" />
+                                            {t('계약 동의 완료', 'Contract accepted')} · {calendarDate(details.contractAcceptedAt)}
+                                        </p>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            disabled={action.busy || !completeContract}
+                                            onClick={() => accept('CONTRACT')}
+                                        >
+                                            {t('계약 조건에 동의', 'Accept contract terms')}
+                                        </button>
+                                    )}
+                                    {setupReady ? (
+                                        <button type="button" disabled={action.busy || !completeContract} onClick={() => accept('SETUP')}>
+                                            {t('초기 세팅 확인 완료', 'Confirm initial setup')}
+                                        </button>
+                                    ) : null}
+                                    {details?.setupAcceptedAt ? (
+                                        <p>
+                                            <BillingIcon name="check" />
+                                            {t('초기 세팅 확인 완료', 'Setup accepted')} · {calendarDate(details.setupAcceptedAt)}
+                                        </p>
+                                    ) : null}
+                                </div>
+                                <ActionsFeedback action={action} />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="hospital-billing-empty-state">
+                            <span className="hospital-billing-empty-icon">
+                                <BillingIcon name="contract" />
+                            </span>
+                            <div>
+                                <p>
+                                    {details?.quoteSnapshot
+                                        ? t(
+                                              '계약 정보를 읽을 수 없습니다. 담당자에게 문의해 주세요.',
+                                              'Contract details could not be read. Contact your representative.',
+                                          )
+                                        : t('아직 등록된 계약이 없습니다.', 'No contract registered yet.')}
+                                </p>
+                                <span>
+                                    {t(
+                                        '담당자가 견적을 등록하면 이곳에서 조건을 확인하고 동의할 수 있어요.',
+                                        'Once your representative registers a quote, you can review and accept it here.',
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </section>
+            ) : null}
+
+            <section className="hospital-billing-usage-section" aria-labelledby="hospital-billing-usage-title">
+                <div className="hospital-billing-section-heading">
+                    <div className="hospital-billing-heading">
+                        <h2 id="hospital-billing-usage-title">{t('이용 현황', 'Usage')}</h2>
+                        <InfoTip label={t('이용 현황 안내', 'About usage')}>
+                            {t(
+                                '병원에 소속된 병동의 편성 인원과 AI 사용량을 합산합니다. 처리 중인 AI 요청은 완료될 때까지 횟수가 예약됩니다.',
+                                'Scheduling staff and AI usage are shared across hospital wards. In-progress AI requests reserve uses until completion.',
+                            )}
+                        </InfoTip>
+                    </div>
+                    {ready && (e.scope?.periodStart || e.scope?.periodEnd) ? (
+                        <p className="hospital-billing-caption">
+                            {calendarDate(e.scope.periodStart)} ~ {calendarDate(e.scope.periodEnd)} (KST)
+                        </p>
+                    ) : null}
                 </div>
-                {ready && (e.scope?.periodStart || e.scope?.periodEnd) ? (
-                    <p className="hospital-billing-caption">
-                        {calendarDate(e.scope.periodStart)} ~ {calendarDate(e.scope.periodEnd)} (KST)
-                    </p>
-                ) : null}
                 <dl className="hospital-billing-usage">
                     <div>
-                        <dt>{t('편성 인원', 'Scheduling staff')}</dt>
+                        <dt>
+                            <span className="hospital-billing-metric-icon">
+                                <BillingIcon name="staff" />
+                            </span>
+                            {t('편성 인원', 'Scheduling staff')}
+                        </dt>
                         <dd>
                             {count(e.capacity?.used)}
                             <span>
@@ -172,17 +403,31 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
                                 ? t('현재 인원 / 계약 인원', 'Active / contracted')
                                 : t('계약 인원 설정 중', 'Capacity being configured')}
                         </dd>
+                        <dd className="hospital-billing-usage-visual" data-warning={e.capacity?.overLimit}>
+                            <UsageMeter
+                                value={e.capacity?.used}
+                                total={ready ? e.capacity?.purchased : undefined}
+                                label={t('편성 인원 사용 비율', 'Scheduling capacity used')}
+                            />
+                        </dd>
                     </div>
-                    {(['FULL_GENERATE', 'PARTIAL_ADJUST'] as const).map((meter) => {
-                        const usage = ready ? e.usage?.find((item) => item.meter === meter) : undefined;
+                    {[aiFillUsage(e)].map((item) => {
+                        const meter = 'AI_FILL';
+                        const usage = ready ? item : undefined;
                         const disabled = usage?.enforced === false;
+                        const label = t('AI 채우기', 'AI fill');
+                        const total =
+                            usage && validNumber(usage.remaining) && validNumber(usage.used) && validNumber(usage.reserved)
+                                ? usage.remaining + usage.used + usage.reserved
+                                : undefined;
 
                         return (
                             <div key={meter}>
                                 <dt>
-                                    {meter === 'FULL_GENERATE'
-                                        ? t('AI 전체 생성', 'AI full generation')
-                                        : t('AI 부분 조정', 'AI adjustment')}
+                                    <span className="hospital-billing-metric-icon">
+                                        <BillingIcon name="generate" />
+                                    </span>
+                                    {label}
                                 </dt>
                                 <dd>
                                     {disabled ? (
@@ -205,6 +450,15 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
                                         t('제공량 확인 대기', 'Allowance pending')
                                     )}
                                 </dd>
+                                <dd className="hospital-billing-usage-visual">
+                                    {!disabled && usage ? (
+                                        <UsageMeter
+                                            value={usage.used + usage.reserved}
+                                            total={total}
+                                            label={`${label} ${t('사용·처리 중', 'used and in progress')}`}
+                                        />
+                                    ) : null}
+                                </dd>
                             </div>
                         );
                     })}
@@ -218,125 +472,6 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
                     </p>
                 ) : null}
             </section>
-
-            {canReadBilling ? (
-                <section aria-labelledby="hospital-billing-contract-title">
-                    <div className="hospital-billing-heading">
-                        <h2 id="hospital-billing-contract-title">{t('계약 정보', 'Contract')}</h2>
-                        <InfoTip label={t('계약·납부 안내', 'About contract and payment')}>
-                            {t(
-                                '병원은 개별 계약에 따라 계좌이체로 납부합니다. 계약 변경이나 입금 확인은 문의해 주세요. 아래 금액은 부가세 포함입니다.',
-                                'Hospitals pay by bank transfer under their individual contract. Contact us for changes or payment confirmation. Amounts include VAT.',
-                            )}
-                        </InfoTip>
-                    </div>
-                    {organization.isPending ? (
-                        <p role="status" className="hospital-billing-empty">
-                            {t('계약을 불러오는 중입니다.', 'Loading contract…')}
-                        </p>
-                    ) : organization.isError ? (
-                        <div className="hospital-billing-load-error">
-                            <ErrorView error={organization.error} />
-                            <button
-                                type="button"
-                                className="secondary"
-                                disabled={organization.isFetching}
-                                onClick={() => void organization.refetch()}
-                            >
-                                {t('다시 불러오기', 'Retry')}
-                            </button>
-                        </div>
-                    ) : contract ? (
-                        <>
-                            <dl className="hospital-billing-prices">
-                                <div>
-                                    <dt>{t('월 이용료', 'Monthly fee')}</dt>
-                                    <dd>{money(estimate?.monthlyGross)}</dd>
-                                </div>
-                                <div>
-                                    <dt>{t('초기 도입비 · 1회', 'One-time setup')}</dt>
-                                    <dd>{money(estimate?.setupGross)}</dd>
-                                </div>
-                            </dl>
-                            <dl className="hospital-billing-facts">
-                                <div>
-                                    <dt>{t('계약 인원', 'Contracted capacity')}</dt>
-                                    <dd>
-                                        {count(contract.capacity)}
-                                        {t('명', ' staff')}
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt>{t('초기 세팅 인원', 'Setup staff')}</dt>
-                                    <dd>
-                                        {count(contract.setupStaff)}
-                                        {t('명', ' staff')}
-                                    </dd>
-                                </div>
-                                <div className="hospital-billing-period">
-                                    <dt>{t('계약 기간', 'Contract period')}</dt>
-                                    <dd>
-                                        {calendarDate(contract.startsAt)} ~ {calendarDate(contract.endsAt)} (KST)
-                                    </dd>
-                                </div>
-                                <div>
-                                    <dt>{t('납부 방식', 'Payment method')}</dt>
-                                    <dd>
-                                        {contract.paymentMode === 'PREPAID'
-                                            ? t('계좌이체 · 선불', 'Bank transfer · prepaid')
-                                            : contract.paymentMode === 'POSTPAID'
-                                              ? t('계좌이체 · 후불', 'Bank transfer · postpaid')
-                                              : t('확인 필요', 'To be confirmed')}
-                                    </dd>
-                                </div>
-                                <div className="hospital-billing-document">
-                                    <dt>{t('계약 문서', 'Contract reference')}</dt>
-                                    <dd>{contract.termsRef?.trim() ? contract.termsRef : '—'}</dd>
-                                </div>
-                            </dl>
-                            {!completeContract ? (
-                                <p className="hospital-billing-message">
-                                    {t(
-                                        '계약 정보를 확인 중입니다. 누락된 내용은 담당자에게 문의해 주세요.',
-                                        'Contract details need review. Contact your representative about missing information.',
-                                    )}
-                                </p>
-                            ) : null}
-                            <div className="hospital-billing-acceptance">
-                                {details?.contractAcceptedAt ? (
-                                    <p>
-                                        {t('계약 동의 완료', 'Contract accepted')} · {calendarDate(details.contractAcceptedAt)}
-                                    </p>
-                                ) : (
-                                    <button type="button" disabled={action.busy || !completeContract} onClick={() => accept('CONTRACT')}>
-                                        {t('계약 조건에 동의', 'Accept contract terms')}
-                                    </button>
-                                )}
-                                {details?.adoptionStage === 'READY' && details.contractAcceptedAt && !details.setupAcceptedAt ? (
-                                    <button type="button" disabled={action.busy || !completeContract} onClick={() => accept('SETUP')}>
-                                        {t('초기 세팅 확인 완료', 'Confirm initial setup')}
-                                    </button>
-                                ) : null}
-                                {details?.setupAcceptedAt ? (
-                                    <p>
-                                        {t('초기 세팅 확인 완료', 'Setup accepted')} · {calendarDate(details.setupAcceptedAt)}
-                                    </p>
-                                ) : null}
-                            </div>
-                            <ActionsFeedback action={action} />
-                        </>
-                    ) : (
-                        <p className="hospital-billing-empty">
-                            {details?.quoteSnapshot
-                                ? t(
-                                      '계약 정보를 읽을 수 없습니다. 담당자에게 문의해 주세요.',
-                                      'Contract details could not be read. Contact your representative.',
-                                  )
-                                : t('아직 등록된 계약이 없습니다.', 'No contract registered yet.')}
-                        </p>
-                    )}
-                </section>
-            ) : null}
 
             {canReadBilling ? (
                 <section aria-labelledby="hospital-billing-invoices-title">
@@ -390,13 +525,30 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
                                                         </span>
                                                     ) : null}
                                                 </td>
-                                                <td data-label={t('상태', 'Status')}>{statusLabel(invoice.status)}</td>
+                                                <td data-label={t('상태', 'Status')}>
+                                                    <span className="hospital-billing-invoice-status" data-status={invoice.status}>
+                                                        {statusLabel(invoice.status)}
+                                                    </span>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             ) : (
-                                <p className="hospital-billing-empty">{t('아직 청구 내역이 없습니다.', 'No invoices yet.')}</p>
+                                <div className="hospital-billing-empty-state">
+                                    <span className="hospital-billing-empty-icon">
+                                        <BillingIcon name="receipt" />
+                                    </span>
+                                    <div>
+                                        <p>{t('아직 청구 내역이 없습니다.', 'No invoices yet.')}</p>
+                                        <span>
+                                            {t(
+                                                '청구서가 등록되면 이용 기간과 납부 상태를 확인할 수 있어요.',
+                                                'Service periods and payment status will appear when invoices are issued.',
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
                             )}
                             {billing.data?.orders?.length ? (
                                 <details className="hospital-billing-payment-records">
@@ -429,6 +581,9 @@ export function HospitalBilling({scope, e}: {scope: Scope; e: Entitlement}) {
             ) : null}
 
             <div className="hospital-billing-contact">
+                <span className="hospital-billing-contact-icon">
+                    <BillingIcon name="support" />
+                </span>
                 <span>
                     {owner
                         ? t('계약 변경이나 납부 확인이 필요하세요?', 'Need a contract change or payment confirmation?')

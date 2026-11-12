@@ -103,7 +103,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const serviceRegion =
         normalizeServiceRegion(accountMe?.serviceRegion) ??
         normalizeServiceRegion(accountMe?.resolvedRegion) ??
-        getDefaultServiceRegionForLanguage(preferredLanguage);
+        getDefaultServiceRegionForLanguage(i18n.resolvedLanguage ?? i18n.language ?? preferredLanguage);
     const schema = useMemo(() => createSchema(serviceRegion), [serviceRegion]);
     const {
         formState: {errors},

@@ -3,8 +3,11 @@ import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
 import useAuth from '@/features/auth';
 import useAuthStore from '@/features/auth/model/store';
-import {scopePath, useCommercialContext, useWardEntitlement, usageRemainingLabel} from './api';
+import ROUTE from '@/shared/constant/path';
+import {aiFillRemainingLabel, aiFillUsage} from './ai-fill-usage';
+import {getOnlyWardScope, scopePath, useCommercialContext, useWardEntitlement} from './api';
 import {HospitalEntry} from './hospital-entry';
+import {wardBillingPath} from './ward-billing-path';
 import {getOwnedWardLinkScope} from './ward-links';
 
 export function CommercialEntry({compact = false}: {compact?: boolean}) {
@@ -19,6 +22,12 @@ export function CommercialEntry({compact = false}: {compact?: boolean}) {
     if (!context.data?.enabled) return null;
 
     const ko = i18n.language.startsWith('ko');
+    const billingWard = context.isError
+        ? undefined
+        : (context.data.scopes.find((scope) => scope.type === 'WARD' && String(scope.ref) === String(wardId)) ??
+          getOnlyWardScope(context.data.scopes));
+    const hasWard = context.data.scopes.some((scope) => scope.type === 'WARD');
+    const workspaceLabel = hasWard ? (ko ? '요금제·결제' : 'Plans & billing') : ko ? '요금제·관리 공간' : 'Plans & workspaces';
 
     return (
         <div className="flex flex-wrap items-center justify-center gap-x-1">
@@ -35,12 +44,12 @@ export function CommercialEntry({compact = false}: {compact?: boolean}) {
             ) : null}
             {context.data.configurationReady !== false ? (
                 <Link
-                    to="/workspace"
+                    to={billingWard ? wardBillingPath(billingWard.ref) : hasWard ? ROUTE.BILLING : '/workspace'}
                     className="flex min-h-8 items-center rounded px-1 text-center text-xs font-medium text-gray-3 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:bg-main-light focus-visible:text-main-1 focus-visible:outline-none"
-                    aria-label={ko ? '요금제·관리 공간' : 'Plans & workspaces'}
-                    title={ko ? '요금제·관리 공간' : 'Plans & workspaces'}
+                    aria-label={workspaceLabel}
+                    title={workspaceLabel}
                 >
-                    {compact ? (ko ? '관리' : 'Plans') : ko ? '요금제·관리 공간' : 'Plans & workspaces'}
+                    {compact ? (ko ? '관리' : 'Manage') : workspaceLabel}
                 </Link>
             ) : null}
         </div>
@@ -57,23 +66,11 @@ export function WardUsageSummary() {
     const ko = i18n.language.startsWith('ko');
 
     return (
-        <Link
-            to={scopePath({type: 'WARD', ref: String(wardId)})}
-            className="mx-3 my-2 block rounded-xl bg-main-light p-3 text-xs leading-6 text-sub-1"
-        >
+        <Link to={wardBillingPath(wardId, 'usage')} className="mx-3 my-2 block rounded-xl bg-main-light p-3 text-xs leading-6 text-sub-1">
             {e.plan}
             {e.entitlementSource === 'EVENT' ? (ko ? ' · 무료 이벤트' : ' · Trial') : ''}
             <br />
-            {ko ? '전체' : 'Full'}{' '}
-            {usageRemainingLabel(
-                e.usage.find((usage) => usage.meter === 'FULL_GENERATE'),
-                ko,
-            )}{' '}
-            · {ko ? '부분' : 'Partial'}{' '}
-            {usageRemainingLabel(
-                e.usage.find((usage) => usage.meter === 'PARTIAL_ADJUST'),
-                ko,
-            )}
+            {ko ? 'AI 채우기' : 'AI fill'} {aiFillRemainingLabel(aiFillUsage(e), ko)}
             {e.capacity.overLimit ? <span className="block">{ko ? '편성 인원 조정이 필요합니다' : 'Review staff capacity'}</span> : null}
         </Link>
     );
@@ -89,8 +86,7 @@ export function AiPlanNotice({hasResult = false}: {hasResult?: boolean}) {
     if (!q.data || !ward) return null;
 
     const e = q.data;
-    const full = e.usage.find((u) => u.meter === 'FULL_GENERATE');
-    const partial = e.usage.find((u) => u.meter === 'PARTIAL_ADJUST');
+    const usage = aiFillUsage(e);
 
     return (
         <aside
@@ -98,18 +94,17 @@ export function AiPlanNotice({hasResult = false}: {hasResult?: boolean}) {
             aria-label={ko ? 'AI 사용량' : 'AI allowance'}
         >
             <span>
-                {e.plan} · {ko ? '전체' : 'Full'} {usageRemainingLabel(full, ko)} · {ko ? '부분' : 'Partial'}{' '}
-                {usageRemainingLabel(partial, ko)}
+                {e.plan} · {ko ? 'AI 채우기' : 'AI fill'} {aiFillRemainingLabel(usage, ko)}
             </span>
             {e.capacity.overLimit ? (
                 <span>
                     {ko ? '편성 인원을 조정하면 새 월과 AI를 이용할 수 있습니다.' : 'Review staff capacity to start a new month or use AI.'}
                 </span>
             ) : null}
-            <Link to={scopePath({type: 'WARD', ref: String(ward)}, 'billing')}>
+            <Link to={wardBillingPath(ward)}>
                 {e.canManageBilling ? (ko ? '요금제·추가 횟수' : 'Plan & additional uses') : ko ? 'OWNER에게 요청' : 'Request from owner'}
             </Link>
-            {hasResult && e.plan === 'FREE' && (full?.enforced !== false || partial?.enforced !== false) && !dismissed ? (
+            {hasResult && e.plan === 'FREE' && usage?.enforced !== false && !dismissed ? (
                 <span>
                     {ko ? '다음 달 편성도 Plus로 이어가세요.' : 'Continue next month’s scheduling with Plus.'}{' '}
                     <button onClick={() => setDismissed(true)}>{ko ? '나중에' : 'Later'}</button>
@@ -136,7 +131,7 @@ export function PlanFeatureNotice({action}: {action: 'BOARD_CREATE' | 'REQUEST_S
                 : ko
                   ? '새 신청과 신청 변경은 Plus부터 사용할 수 있습니다. 이미 접수한 신청의 승인·거절·반영은 계속할 수 있습니다.'
                   : 'New or edited requests require Plus. Previously submitted requests can still be approved, rejected or applied.'}{' '}
-            <Link className="underline" to={scopePath({type: 'WARD', ref: String(ward)}, 'billing')}>
+            <Link className="underline" to={wardBillingPath(ward)}>
                 {query.data.canManageBilling ? (ko ? '요금제 보기' : 'View plans') : ko ? 'OWNER에게 요청' : 'Request from owner'}
             </Link>
         </aside>
