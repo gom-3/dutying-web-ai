@@ -1,6 +1,6 @@
 import {waitFor, within} from '@testing-library/react';
 import {MemoryRouter} from 'react-router';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
 import i18n from '@/i18n';
 import {WardAPI} from '@/shared/api';
@@ -40,6 +40,11 @@ const mockUseAuthState = (isAuth: boolean, accountMe: ReturnType<typeof useAuth>
 };
 
 describe('LandingPage', () => {
+    // UI behavior is tested independently of Vite's cold lazy-module transformation time on CI.
+    beforeAll(async () => {
+        await import('@/pages/profile');
+    }, 30000);
+
     beforeEach(async () => {
         document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1.0" />';
         window.history.replaceState(null, '', '/');

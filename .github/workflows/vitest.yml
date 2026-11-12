@@ -33,7 +33,7 @@ jobs:
       - name: npm ci
         run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
       - name: Check translation catalog structure
-        run: node --test apps/app/scripts/i18n-catalog-utils.test.mjs && node apps/app/scripts/i18n-check-catalog.mjs
+        run: node --test apps/app/scripts/i18n-catalog-utils.node-test.mjs && node apps/app/scripts/i18n-check-catalog.mjs
       - name: Run tests including autofill and adjustment scenarios
         run: pnpm --dir apps/app exec vitest run --reporter=default --reporter=junit --outputFile.junit=../../artifacts/tests.xml
       - name: Build app
