@@ -59,6 +59,7 @@ describe('AI adjustment conversation', () => {
         });
         const apply = vi.fn();
         const regenerate = vi.fn();
+
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} onRegenerate={regenerate} />);
         expect(textbox()).toBeVisible();
         await submit(text, false);
@@ -85,7 +86,7 @@ describe('AI adjustment conversation', () => {
         expect(apply).not.toHaveBeenCalled();
         await submit('다시 오프 균형을 맞춰줘', false);
         expect(interpret).toHaveBeenCalledTimes(2);
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
         expect(apply).not.toHaveBeenCalled();
     });
 
@@ -124,7 +125,7 @@ describe('AI adjustment conversation', () => {
         expect(screen.getByRole('button', {name: 'aiAdjust.send'})).toBeDisabled();
 
         await act(async () => resolveNew(interpreted));
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'})).toBeVisible();
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeVisible();
         expect(interpret).toHaveBeenCalledTimes(2);
         expect(apply).not.toHaveBeenCalled();
     });
@@ -160,7 +161,7 @@ describe('AI adjustment conversation', () => {
         expect(interpret).toHaveBeenCalledTimes(2);
     });
 
-    it('accepts a typed period answer without another interpretation and waits for an explicit apply reply', async () => {
+    it('keeps a recurring hint in the current month and waits for an explicit apply reply', async () => {
         const interpret = vi.fn().mockResolvedValue(interpreted);
         const apply = vi.fn();
 
@@ -168,33 +169,17 @@ describe('AI adjustment conversation', () => {
         await submit('오프를 공평하게', false);
         expect(textbox()).toBeEnabled();
         expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'})).toBeVisible();
-        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
-        fireEvent.change(textbox(), {target: {value: '네'}});
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
+        expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.severity'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
         expect(apply).not.toHaveBeenCalled();
-        expect(interpret).toHaveBeenCalledTimes(1);
-        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).toBeVisible();
-
-        const month = screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.MONTH'});
-        const team = screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'});
-
-        expect(month.parentElement).toBe(team.parentElement);
-        expect(month.parentElement).toHaveClass('flex-col', 'items-end');
-        expect(month.parentElement).not.toHaveClass('bg-main-light');
-        fireEvent.change(textbox(), {target: {value: '이번 달만'}});
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
-        expect(screen.getByText('aiAdjust.savedRequests.lifetime.MONTH')).toBeVisible();
-        expect(interpret).toHaveBeenCalledTimes(1);
-        expect(apply).not.toHaveBeenCalled();
-        fireEvent.change(textbox(), {target: {value: '반영해 주세요'}});
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.send'}));
-        await waitFor(() => expect(apply).toHaveBeenCalledTimes(1));
-        expect(apply.mock.calls[0]![0][0].lifetime).toBe('MONTH');
+        await submit('반영해 주세요', false);
+        await waitFor(() => expect(apply).toHaveBeenCalledOnce());
+        expect(interpret).toHaveBeenCalledOnce();
+        expect(apply.mock.calls[0]![0][0]).toMatchObject({lifetime: 'MONTH', severity: 'SOFT'});
     });
 
     it.each(['button', 'typed'])('keeps a declined proposal in history and reviews the revised request again (%s)', async (method) => {
-        const interpret = vi.fn().mockResolvedValue(interpreted);
+        const interpret = vi.fn().mockResolvedValue({items: [{kind: 'GOAL', goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS'}], unmapped: []});
         const apply = vi.fn();
 
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
@@ -216,31 +201,38 @@ describe('AI adjustment conversation', () => {
         expect(apply).not.toHaveBeenCalled();
     });
 
-    it('reopens an earlier answer and clears later answers before allowing application', async () => {
+    it('reopens a goal answer and clears later answers before allowing application', async () => {
         const apply = vi.fn();
 
         render(
             <AiAdjustTextInput
                 disabled={false}
-                interpret={vi.fn().mockResolvedValue({
-                    items: [{kind: 'RULE', templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {count: 4}, displayLabel: '데이 4일 제한'}],
-                    unmapped: [],
-                })}
+                interpret={vi.fn().mockResolvedValue({items: [{kind: 'GOAL', goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS'}], unmapped: []})}
                 onApply={apply}
                 goalNurses={nurses}
             />,
         );
-        await submit('데이는 4일까지만', false);
+        await submit('단독 나이트를 줄여줘', false);
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'}));
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.MONTH'}));
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.required'}));
+        await submit('3일 이내', false);
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmPeople'}));
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmPeople'}));
+        expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
         fireEvent.click(screen.getAllByRole('button', {name: 'aiAdjust.chat.changeAnswer'})[1]!);
         expect(screen.queryByRole('button', {name: 'aiAdjust.chat.applyReply'})).not.toBeInTheDocument();
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'}));
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.preferred'}));
+        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.offDifference'})).toBeVisible();
+        expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.comparisonNurses'})).not.toBeInTheDocument();
+        expect(apply).not.toHaveBeenCalled();
+        await submit('1일 이내', false);
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmPeople'}));
+        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmPeople'}));
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
-        await waitFor(() => expect(apply).toHaveBeenCalledTimes(1));
-        expect(apply.mock.calls[0]![0][0]).toMatchObject({lifetime: 'TEAM', severity: 'SOFT'});
+        await waitFor(() => expect(apply).toHaveBeenCalledOnce());
+        expect(apply.mock.calls[0]![0][0]).toMatchObject({
+            lifetime: 'MONTH',
+            severity: 'SOFT',
+            item: {maxOffDifference: 1, targetNurseIds: [1, 2], comparisonNurseIds: [1, 2]},
+        });
     });
 
     it('collects a goal tolerance and nurse groups in sequence, then starts over without applying', async () => {
@@ -441,7 +433,7 @@ describe('AI adjustment conversation', () => {
             textbox().compareDocumentPosition(screen.getByRole('button', {name: 'aiAdjust.offExample'})) & Node.DOCUMENT_POSITION_PRECEDING,
         ).toBeTruthy();
     });
-    it('shows nurse names for rule targets and preserves the rule when period and priority are changed', async () => {
+    it('shows nurse names for rule targets and preserves the interpreted rule without promoting period or priority', async () => {
         const apply = vi.fn();
         const rule = {
             kind: 'RULE' as const,
@@ -460,7 +452,6 @@ describe('AI adjustment conversation', () => {
             />,
         );
         await submit('데이 근무를 줄여줘', false);
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.confirmProposal'}));
 
         const card = screen.getByRole('region', {name: 'aiAdjust.understood'});
 
@@ -470,12 +461,12 @@ describe('AI adjustment conversation', () => {
         expect(within(card).getByText(/aiAdjust.review.patientCount · 20/)).toBeVisible();
         expect(textbox()).toBeEnabled();
         expect(apply).not.toHaveBeenCalled();
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'}));
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.required'}));
+        expect(screen.queryByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.required'})).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         await waitFor(() =>
             expect(apply).toHaveBeenCalledWith(
-                [{item: rule, lifetime: 'TEAM', severity: 'HARD'}],
+                [{item: rule, lifetime: 'MONTH', severity: 'SOFT'}],
                 '데이 근무를 줄여줘',
                 'NORMAL',
                 undefined,
@@ -512,11 +503,10 @@ describe('AI adjustment conversation', () => {
         expect(screen.getByText('2026.10')).toBeVisible();
         expect(screen.getByText('aiAdjust.RECURRING_SCOPE')).toBeVisible();
         expect(screen.getByText('aiAdjust.review.suggestion {"field":"aiAdjust.review.value","value":"1"}')).toBeVisible();
-        fireEvent.click(screen.getAllByRole('button', {name: 'aiAdjust.chat.changeAnswer'})[1]!);
-        fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'}));
+        expect(screen.queryByRole('button', {name: 'aiAdjust.chat.changeAnswer'})).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'}));
         expect(apply).toHaveBeenCalledWith(
-            [expect.objectContaining({lifetime: 'TEAM'})],
+            [expect.objectContaining({lifetime: 'MONTH', severity: 'SOFT'})],
             '오프를 공평하게',
             'LIGHT',
             undefined,
@@ -884,36 +874,29 @@ describe('AI adjustment conversation', () => {
         expect(keydown).not.toHaveBeenCalled();
     });
 
-    it.each([
-        ['今月のみ', 'MONTH'],
-        ['今後も', 'TEAM'],
-    ] as const)('collects Japanese confirmation, scope (%s), and priority before an explicit apply reply', async (scope, lifetime) => {
+    it.each(['SOFT', 'HARD'] as const)('preserves interpreted Japanese priority %s until explicit acceptance', async (severity) => {
         const interpret = vi.fn().mockResolvedValue({
-            items: [{kind: 'RULE', templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {count: 4}, displayLabel: 'D勤務は連続4日まで'}],
+            items: [
+                {kind: 'RULE', templateCode: 'MAX_CONSECUTIVE_SHIFT', params: {count: 4}, displayLabel: 'D勤務は連続4日まで', severity},
+            ],
             unmapped: [],
         });
         const apply = vi.fn();
 
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
         await submit('D勤務は連続4日までにしてください', false);
-        await submit('はい、この内容で大丈夫です', false);
-        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).toBeVisible();
-        await submit(scope, false);
-        expect(screen.getByRole('group', {name: 'aiAdjust.chat.question.severity'})).toBeVisible();
-        await submit('はい', false);
-        expect(screen.getByText('aiAdjust.chat.chooseAnswer')).toBeVisible();
-        expect(apply).not.toHaveBeenCalled();
-        await submit('必ず守ってください', false);
+        expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.lifetime'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('group', {name: 'aiAdjust.chat.question.severity'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'aiAdjust.chat.applyReply'})).toBeEnabled();
         expect(apply).not.toHaveBeenCalled();
-        await submit('反映してください', false);
+        await submit('はい、この内容で大丈夫です', false);
         await waitFor(() => expect(apply).toHaveBeenCalledOnce());
-        expect(apply.mock.calls[0]![0][0]).toMatchObject({lifetime, severity: 'HARD'});
+        expect(apply.mock.calls[0]![0][0]).toMatchObject({lifetime: 'MONTH', severity});
         expect(interpret).toHaveBeenCalledOnce();
     });
 
     it('handles an exact Japanese decline without applying or reinterpreting the proposal', async () => {
-        const interpret = vi.fn().mockResolvedValue(interpreted);
+        const interpret = vi.fn().mockResolvedValue({items: [{kind: 'GOAL', goalType: 'MINIMIZE_SINGLE_NIGHT_RUNS'}], unmapped: []});
         const apply = vi.fn();
 
         render(<AiAdjustTextInput disabled={false} interpret={interpret} onApply={apply} goalNurses={nurses} />);
