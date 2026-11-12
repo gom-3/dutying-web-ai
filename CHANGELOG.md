@@ -6,6 +6,56 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.47 - 2026-11-11
+
+- `@dutying/app` (patch): 랜딩 페이지의 근무표 미리보기에서 모든 언어의 날짜와 메모가 잘리지 않도록 수정했습니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): 근무표 대화에서 이전의 보류 요청과 현재 실행을 구분하고, 야간 인원 충돌과 서버 실패 원인을 정확히 안내합니다.
+- `@dutying/app` (patch): 근무표 편집 화면에 바로 진입할 때 같은 근무표를 중복 조회하지 않도록 초기 조회 결과를 한 번 전달합니다. 재진입과 데이터 변경 후에는 새로 조회합니다.
+
+## 1.3.46 - 2026-11-10
+
+- `@dutying/app` (patch): 한국어 외 랜딩에서 국내 전용 정보를 분리하고 대만 번체와 AI 자동채우기 채팅 번역을 지원합니다.
+
+## 1.3.45 - 2026-11-09
+
+- `@dutying/app` (patch): 랜딩 이용 현황의 숫자를 강조하고 병원 목록과 좌우 폭을 맞춥니다.
+
+## 1.3.44 - 2026-11-09
+
+- `@dutying/app` (patch): 랜딩의 병원·병동 도입 문의를 로그인 없이 제출하고 기존 어드민에서 받을 수 있게 합니다.
+
+## 1.3.43 - 2026-11-09
+
+- `@dutying/app` (patch): 랜딩의 병원·병동 도입 문의를 기존 듀팅 앱 고객문의로 접수하고, 앱 계정 로그인 후 입력을 이어갈 수 있게 합니다.
+
+## 1.3.42 - 2026-11-08
+
+- `@dutying/app` (patch): 자동완성의 준비·확인과 오래된 초안 복구를 개선하고 병동 온보딩에서 근무표 이미지 입력을 지원합니다.
+
+## 1.3.41 - 2026-11-08
+
+- `@dutying/app` (patch): Route first direct home visits from China, Thailand, and Vietnam to the corresponding language page while preserving saved preferences and search behavior.
+
+## 1.3.40 - 2026-11-08
+
+- `@dutying/app` (patch): 홈에 직접 접속하면 국가와 저장된 언어에 맞는 랜딩을 보여줍니다. 메뉴에서 선택한 언어는 이후 방문에도 유지합니다.
+
+## 1.3.39 - 2026-11-08
+
+- `@dutying/app` (patch): 근무표의 목표 OFF 스위치와 병동의 휴무일 계산 설정을 동기화하고, 저장된 설정이 없는 병동은 기본으로 켭니다.
+
+## 1.3.38 - 2026-11-08
+
+- `@dutying/app` (patch): 자동채우기 대화에서 진행 상태, 요청 복구, 변경 내역을 보기 쉽게 다듬고 병동 추가 안내를 간결하게 정리했습니다.
+
+## 1.3.37 - 2026-11-07
+
+- `@dutying/api` (patch), `@dutying/app` (patch): 근무형태의 저장된 순서와 순서 변경을 유지하고 근무표에서 설정으로 바로 이동할 수 있게 합니다. 작성 중에는 실제 위반만 표시하며, 확정 전에는 최신 근무표의 부족·빈칸과 전체 검증 결과를 확인합니다.
+
+## 1.3.36 - 2026-11-06
+
+- `@dutying/app` (patch): 후속 요청과 실패한 대화 메시지의 복구를 개선하고, 기존 앱 계정의 가입 전환 중복 집계를 방지하며 회사 소유 측정 자산을 연결합니다.
+
 ## 1.3.35 - 2026-11-05
 
 - `@dutying/app` (patch): 간호사 근무 선호를 해석한 뒤 대상·기간·강도를 불필요하게 반복 질문하지 않고, 조건 카드에 간호사 이름을 표시합니다.

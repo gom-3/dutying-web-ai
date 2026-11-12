@@ -391,7 +391,9 @@
             "pendingExecution": "Kiểm tra yêu cầu trước khi bắt đầu yêu cầu khác. Sử dụng Kiểm tra kết quả bên dưới.",
             "expiredPlan": "Kế hoạch được xem xét đã hết hạn trong quá trình chuẩn bị. xem lại yêu cầu của bạn. lịch trực của bạn không thay đổi.",
             "staleRequest": "Thời gian hoặc điều kiện đã thay đổi. xem lại yêu cầu mới nhất trước khi chỉnh sửa. văn bản của bạn đã được giữ lại.",
-            "requestTooLong": "Giữ yêu cầu và trả lời trong vòng 500 ký tự."
+            "requestTooLong": "Giữ yêu cầu và trả lời trong vòng 500 ký tự.",
+            "viewSavedDraft": "Xem lịch trực đã lưu",
+            "draftConflict": "Lịch trực đã lưu khác với nội dung bạn chỉnh sửa. Thay đổi của bạn vẫn còn trên trang này. Hãy so sánh với lịch trực mới nhất rồi thử lại."
         },
         "polling": {
             "connection": "Kết quả không thể được tải lên. chúng tôi sẽ kiểm tra lại khi kết nối trở lại.",

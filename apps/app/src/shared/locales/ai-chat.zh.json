@@ -391,7 +391,9 @@
             "pendingExecution": "在开始另一个之前,请检查之前的请求。",
             "expiredPlan": "审查的计划在准备期间结束了,请求重新审查,排班表未改变。",
             "staleRequest": "排班表或条件改变了. 编辑前查看最新请求. 您的文本已保存。",
-            "requestTooLong": "保持请求,并在500个字符内回复。"
+            "requestTooLong": "保持请求,并在500个字符内回复。",
+            "viewSavedDraft": "查看已保存的排班表",
+            "draftConflict": "已保存的排班表和你的修改不一致。你的修改仍保留在此页面。请与最新排班表对照后重试。"
         },
         "polling": {
             "connection": "结果无法加载,我们将再次检查连接回来时。",

@@ -1,6 +1,8 @@
+import {useQueryClient} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
 import toast from 'react-hot-toast';
 import {useSearchParams} from 'react-router';
+import {wardQueryKeys} from '@/entities/ward/model/queries';
 import {
     isDutyShiftFullyAssigned,
     isDutyShiftWithoutAssignments,
@@ -11,6 +13,7 @@ import {onScheduleRosterChanged} from '@/shared/api/error';
 import WardAPI from '@/shared/api/ward';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
+import {handoffBootstrapRead, scheduleWorkspaceKey} from './bootstrap-read-handoff';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 import {
     isMakeShiftTeamReadyForWard,
@@ -58,6 +61,7 @@ function isInitialScheduleTarget(targets: TInitialScheduleTarget[], year: number
 }
 
 export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeShiftBootstrapOptions = {}) {
+    const queryClient = useQueryClient();
     const [searchParams] = useSearchParams();
     const {initialScheduleTarget = null, initialScheduleTargets = null} = options;
     const onboardingScheduleTargets = useMemo(() => {
@@ -239,6 +243,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     useEffect(() => {
         let cancelled = false;
 
+        const releaseReads: Array<() => void> = [];
         const run = async () => {
             if (!wardId || !currentShiftTeamId || !isCurrentShiftTeamReady) {
                 setShiftStatus('idle');
@@ -339,6 +344,25 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                     setCurrentShiftTeamId(currentShiftTeamId);
                 }
 
+                const entryStep = initialQueryStepRef.current;
+
+                if (
+                    !didApplyInitialQueryStepRef.current &&
+                    (entryStep === 3 || entryStep === 4) &&
+                    entryStep <= useMakeShiftStore.getState().maxReachedStep &&
+                    !nextShiftFullyAssigned
+                ) {
+                    releaseReads.push(
+                        handoffBootstrapRead(queryClient, wardQueryKeys.duty(wardId, currentShiftTeamId, year, month), shift),
+                    );
+
+                    if (workspace) {
+                        releaseReads.push(
+                            handoffBootstrapRead(queryClient, scheduleWorkspaceKey(wardId, currentShiftTeamId, year, month), workspace),
+                        );
+                    }
+                }
+
                 setShiftExists(nextShiftExists);
                 setShiftFullyAssigned(nextShiftFullyAssigned);
                 setShiftStatus('success');
@@ -354,12 +378,14 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         return () => {
             cancelled = true;
+            releaseReads.forEach((release) => release());
         };
     }, [
         currentShiftTeamId,
         isCurrentShiftTeamReady,
         month,
         onboardingScheduleTargetsKey,
+        queryClient,
         reloadToken,
         setCurrentShiftTeamId,
         setShiftExists,

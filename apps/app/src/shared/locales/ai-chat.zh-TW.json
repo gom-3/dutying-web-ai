@@ -391,7 +391,9 @@
             "pendingExecution": "在開始另一個之前,請檢查之前的請求。",
             "expiredPlan": "審查的計劃在準備期間結束了,請求重新審查,班表未改變。",
             "staleRequest": "班表或條件改變了. 編輯前檢視最新請求. 您的文字已儲存。",
-            "requestTooLong": "保持請求,並在500個字元內回覆。"
+            "requestTooLong": "保持請求,並在500個字元內回覆。",
+            "viewSavedDraft": "查看已儲存的班表",
+            "draftConflict": "已儲存的班表與你的修改不同。你的修改仍保留在此頁面。請與最新班表比對後再試一次。"
         },
         "polling": {
             "connection": "結果無法載入,我們將再次檢查連線回來時。",

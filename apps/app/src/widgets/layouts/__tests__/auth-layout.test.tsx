@@ -89,7 +89,7 @@ describe('AuthLayout', () => {
     );
 
     it.each([
-        ['ko', '듀팅 | 간호사 근무표 자동 생성·교대근무 관리'],
+        ['ko', '듀팅 | 간호사 근무표 만들기, AI로 1분 만에'],
         ['en', 'AI Nurse Shift Schedule Maker in 1 Minute | Dutying'],
         ['ja', '看護師の勤務表作成、AIでわずか1分 | Dutying'],
         ['zh', '护士排班表制作，AI 1分钟自动生成 | Dutying'],

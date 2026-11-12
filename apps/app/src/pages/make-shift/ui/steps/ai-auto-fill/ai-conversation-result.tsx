@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {isGenerateReviewDraft} from '../../../model/ai-execution-failure';
+import {isGenerateReviewDraft, pairedNightStaffingMessage} from '../../../model/ai-execution-failure';
 import {authoringExplanationKey, authoringMessageKey, authoringOutcome} from '../../../model/intent-first-authoring';
 import type {TConversationOperation} from '../../../model/schedule-conversation-api';
 import {AiRequestOutcome} from './ai-request-outcome';
@@ -36,6 +36,8 @@ export function AiConversationResult({
     const requestState = authoring?.requestState;
     const messageKey = result ? authoringMessageKey(result) : undefined;
     const explanationKey = result ? authoringExplanationKey(result) : undefined;
+    const staffingFloor =
+        result && authoring?.reasonCodes?.includes('PAIRED_NIGHT_STAFFING_FLOOR') ? pairedNightStaffingMessage(result) : null;
     const review = result ? isGenerateReviewDraft(result) : false;
     const saved = operation.applyStatus === 'APPLIED' || appliedLocally;
     const savedForLater = operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED' && !appliedLocally && Boolean(operation.resultVersionId);
@@ -166,6 +168,7 @@ export function AiConversationResult({
             actions={historical && undone ? undefined : actions}
             secondaryActions={secondaryActions}
         >
+            {!historical && staffingFloor && <p className="mt-3 text-[13px] leading-6">{staffingFloor}</p>}
             {showPartialCoverage && (
                 <p role="status" className="mt-3 text-[13px] leading-6">
                     {t('aiConversationSidebar.authoring.partialCoverage')}

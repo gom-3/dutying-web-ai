@@ -1,5 +1,81 @@
 # @dutying/app
 
+## 1.3.47
+
+### Patch Changes
+
+- 4c4e1d0: 랜딩 페이지의 근무표 미리보기에서 모든 언어의 날짜와 메모가 잘리지 않도록 수정했습니다.
+- 근무표 대화에서 이전의 보류 요청과 현재 실행을 구분하고, 야간 인원 충돌과 서버 실패 원인을 정확히 안내합니다.
+- 근무표 편집 화면에 바로 진입할 때 같은 근무표를 중복 조회하지 않도록 초기 조회 결과를 한 번 전달합니다. 재진입과 데이터 변경 후에는 새로 조회합니다.
+- Updated dependencies
+    - @dutying/api@1.3.47
+    - @dutying/domain@1.3.47
+    - @dutying/utils@1.3.47
+
+## 1.3.42
+
+### Patch Changes
+
+- 자동완성의 준비·확인과 오래된 초안 복구를 개선하고 병동 온보딩에서 근무표 이미지 입력을 지원합니다.
+    - @dutying/api@1.3.42
+    - @dutying/domain@1.3.42
+    - @dutying/utils@1.3.42
+
+## 1.3.41
+
+### Patch Changes
+
+- 94373ce: Route first direct home visits from China, Thailand, and Vietnam to the corresponding language page while preserving saved preferences and search behavior.
+    - @dutying/api@1.3.41
+    - @dutying/domain@1.3.41
+    - @dutying/utils@1.3.41
+
+## 1.3.40
+
+### Patch Changes
+
+- 홈에 직접 접속하면 국가와 저장된 언어에 맞는 랜딩을 보여줍니다. 메뉴에서 선택한 언어는 이후 방문에도 유지합니다.
+    - @dutying/api@1.3.40
+    - @dutying/domain@1.3.40
+    - @dutying/utils@1.3.40
+
+## 1.3.39
+
+### Patch Changes
+
+- 69aa961: 근무표의 목표 OFF 스위치와 병동의 휴무일 계산 설정을 동기화하고, 저장된 설정이 없는 병동은 기본으로 켭니다.
+    - @dutying/api@1.3.39
+    - @dutying/domain@1.3.39
+    - @dutying/utils@1.3.39
+
+## 1.3.38
+
+### Patch Changes
+
+- eb9c2ab: 자동채우기 대화에서 진행 상태, 요청 복구, 변경 내역을 보기 쉽게 다듬고 병동 추가 안내를 간결하게 정리했습니다.
+    - @dutying/api@1.3.38
+    - @dutying/domain@1.3.38
+    - @dutying/utils@1.3.38
+
+## 1.3.37
+
+### Patch Changes
+
+- 근무형태의 저장된 순서와 순서 변경을 유지하고 근무표에서 설정으로 바로 이동할 수 있게 합니다. 작성 중에는 실제 위반만 표시하며, 확정 전에는 최신 근무표의 부족·빈칸과 전체 검증 결과를 확인합니다.
+- Updated dependencies
+    - @dutying/api@1.3.37
+    - @dutying/domain@1.3.37
+    - @dutying/utils@1.3.37
+
+## 1.3.36
+
+### Patch Changes
+
+- 후속 요청과 실패한 대화 메시지의 복구를 개선하고, 기존 앱 계정의 가입 전환 중복 집계를 방지하며 회사 소유 측정 자산을 연결합니다.
+    - @dutying/api@1.3.36
+    - @dutying/domain@1.3.36
+    - @dutying/utils@1.3.36
+
 ## 1.3.35
 
 ### Patch Changes

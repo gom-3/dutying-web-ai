@@ -1083,6 +1083,9 @@ describe('AiAutofill adjust panel', () => {
         await user.click(await screen.findByRole('button', {name: 'aiAdjust.preparation.editSchedule'}));
         expect(mocks.conversationProps?.open).toBe(false);
         expect(screen.getByRole('region', {name: 'aiAdjust.preparation.editSchedule'})).toBeVisible();
+        expect(screen.getByText('aiAdjust.preparation.editingFixed')).toBeVisible();
+        expect(screen.queryByText('aiAdjust.preparation.selectionSummary')).not.toBeInTheDocument();
+        expect(screen.queryByText('aiAdjust.preparation.selectionHelp')).not.toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: 'toggle first fixed shift'}));
         expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-01']).not.toBe(true);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.preparation.finishSelection'}));
@@ -2324,7 +2327,7 @@ describe('AiAutofill adjust panel', () => {
         expect(useShiftEditorStore.getState().doc).toBe(originalDoc);
     });
 
-    it('interprets a sentence and applies the card as TEXT requests with the chosen lifetime', async () => {
+    it('applies the supported parts of a sentence as monthly TEXT requests before promotion', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
@@ -2363,13 +2366,11 @@ describe('AiAutofill adjust panel', () => {
         await user.click(screen.getByText('aiAdjust.review.details'));
         expect(screen.getByText('aiAdjust.review.consecutiveDays')).toBeVisible();
 
-        // 해석이 "계속"으로 제안한 TEAM을 카드에서 확인할 수 있다.
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.issue.partialConfirm'}));
-        await user.click(screen.getByRole('button', {name: 'aiAdjust.savedRequests.lifetime.TEAM'}));
+        // TEAM 제안은 우선 이번 달에 적용하고 확정 후 병동 규칙으로 승격할 수 있다.
+        expect(screen.queryByRole('button', {name: 'aiAdjust.issue.partialConfirm'})).not.toBeInTheDocument();
 
         mocks.requestAiSchedule.mockImplementation(adjustResultSavingRequests([cell(11, '2026-07-01', 'D')]));
 
-        await answerDefaultQuestions(user);
         await user.click(screen.getByRole('button', {name: 'aiAdjust.issue.partialApply'}));
         await finishAdjustmentPreparation(user);
 
@@ -2382,7 +2383,7 @@ describe('AiAutofill adjust panel', () => {
                     knob: 'CLUSTERING',
                     value: 1,
                     displayLabel: 'fair off',
-                    lifetime: 'TEAM',
+                    lifetime: 'MONTH',
                     origin: 'TEXT',
                     requestText: 'fair off please',
                 },

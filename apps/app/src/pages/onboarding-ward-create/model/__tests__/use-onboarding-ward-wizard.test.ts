@@ -45,6 +45,7 @@ vi.mock('@/shared/api', async () => {
         FileAPI: {
             ...actual.FileAPI,
             parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+            recordBrowserExcelImport: vi.fn().mockResolvedValue(undefined),
         },
     };
 });
@@ -816,6 +817,23 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(toastError).not.toHaveBeenCalled();
     });
 
+    it('prefills readable image cells in the selected month and leaves unreadable cells empty', async () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const file = new File(['mock image'], 'roster.PNG', {type: 'image/png'});
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurses: [{name: '홍길동', assignments: {'2026-11-01': 'D', '2026-11-04': 'N'}}],
+            quality_report: {warnings: ['Review the image result']},
+        });
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 11});
+
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {targetYear: 2026, targetMonth: 11});
+        const team = result.current.draft.teams[0];
+        const roster = result.current.draft.scheduleInputs[team.id]?.[getScheduleMonthKey(2026, 11)];
+        expect(roster?.rows[0]).toMatchObject({name: '홍길동', shifts: {'1': 'D', '4': 'N'}});
+        expect(result.current.uploadStatus).toBe('warning');
+    });
+
     it('passes target month options to onboarding upload parsing', async () => {
         mockParseOnboardingWardExcel.mockResolvedValue({
             nurse_candidates: [],
@@ -1257,10 +1275,10 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         expect(mockParseOnboardingWardExcel).not.toHaveBeenCalled();
         expect(result.current.uploadStatus).toBe('error');
-        expect(result.current.uploadError).toBe('엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.');
+        expect(result.current.uploadError).toBe('엑셀(.xlsx, .xls)이나 JPG, PNG 이미지를 올려 주세요.');
         expect(result.current.uploadWarnings).toEqual([]);
         expect(result.current.draft).toEqual(initialDraft);
-        expect(toastError).toHaveBeenCalledWith('엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.');
+        expect(toastError).toHaveBeenCalledWith('엑셀(.xlsx, .xls)이나 JPG, PNG 이미지를 올려 주세요.');
         expect(toastSuccess).not.toHaveBeenCalled();
     });
 });

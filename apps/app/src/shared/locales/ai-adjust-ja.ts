@@ -41,6 +41,8 @@ export const aiAdjustJa = {
     },
     executionFailure: {
         nightRunBoundsEvidence: '{{name}}：連続夜勤は最低{{minimum}}回／最大{{maximum}}回',
+        pairedNightStaffingEvidence:
+            '現在の人数条件では、{{date}}の{{night}}最低{{minimumNight}}人のうち、翌日（{{nextDate}}）の{{continuation}}に入れるのは最大{{maximumContinuation}}人です。そのため、少なくとも{{minimumRepeats}}人は{{night}}が連続します。',
         incomingNightEvidence: '{{start}} ～ {{end}}：前月から続く夜勤{{actual}}回',
         nightRunBoundsNext: 'この看護師の連続夜勤の最低・最大回数と前月末の配置を確認して修正してください。表と設定は変更されていません。',
         minimumNightEvidence: '{{name}}：連続夜勤{{actual}}回／最低{{expected}}回が必要です',
@@ -159,8 +161,6 @@ export const aiAdjustJa = {
         },
     },
     preparation: {
-        initialRequestLabel: '今回の勤務表に反映する内容 · 任意',
-        initialRequestExample: '今月はキム看護師の週末勤務を減らしてください。',
         previous: '先月の勤務に空欄があります。\nこのまま進めますか？',
         previousHelp: '先月の勤務を入力すると、月初の\n連続勤務と休息も確認できます。',
         continue: 'このまま進む',
@@ -177,11 +177,9 @@ export const aiAdjustJa = {
         reviewFixed: '固定した勤務を再確認',
         editConditions: '勤務条件を確認',
         editSchedule: '勤務表で固定を編集',
-        editingFixed: '勤務を押して固定・解除してください。',
+        editingFixed: '固定する勤務を選択してください。',
         finishSelection: '選択を完了して続ける',
         cancelSelection: '固定の選択を取り消す',
-        selectionSummary: '固定 {{fixed}}マス · 申請勤務 {{requested}}マス · AI変更対象 {{editable}}マス',
-        selectionHelp: '固定・申請勤務を維持し、その他の勤務と空欄を埋めます。申請勤務はここでは解除できません。',
         noEditableCells: 'AIが変更できるマスがありません。勤務表で固定を解除するか、申請管理で申請勤務を編集してください。',
         fixedCellLabel: '{{name}} · {{date}} · {{shift}} · {{state}}',
         fixedState: '固定済み',
@@ -383,6 +381,9 @@ export const aiAdjustJa = {
     value: '値',
     localError: {
         draftChanged: '勤務表が変更されたため、前の結果に戻しませんでした。編集中の内容を確認してから、もう一度押してください。',
+        viewSavedDraft: '保存済みの勤務表を見る',
+        draftConflict:
+            '保存済みの勤務表とこの画面の編集内容が異なります。編集内容はこの画面に残っています。最新の勤務表と比較してから、もう一度お試しください。',
         expiredSuggestion: '勤務表や条件が変更されたか、提案の有効期限が切れました。最新の内容でもう一度リクエストしてください。',
         loading: '前のチャットを読み込んでいます。しばらくお待ちください。',
         pendingExecution: '先に前のリクエストの結果を確認してください。下から結果を再確認できます。',

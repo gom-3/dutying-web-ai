@@ -45,12 +45,26 @@ export class AiConversationInputError extends Error {
             | 'requestTooLong'
             | 'expiredSuggestion'
             | 'draftChanged'
+            | 'draftConflict'
             | 'expiredPlan',
         readonly unsentOperation?: 'GENERATE' | 'ADJUST',
         readonly canRetryGeneration = false,
     ) {
         super(reason);
     }
+}
+
+/** Only a definitive rejection from the draft revision check is safe to replay. */
+export function isDraftRevisionConflict(error: unknown): boolean {
+    const source = error as {code?: number; serverCode?: string; responseBody?: {message?: string}} | null;
+
+    return (
+        source?.serverCode === 'SCHEDULE_STALE_DRAFT_REVISION' ||
+        // Older Spring builds return the exact revision guard message as server text.
+        (source?.code === 400 &&
+            source.serverCode === 'INVALID_PARAMETER' &&
+            source.responseBody?.message === '작업표가 변경되었습니다. 최신 작업표를 불러와 주세요.')
+    );
 }
 
 // Local, translated UI explanations may be shown; arbitrary API/exception text may not.
@@ -73,6 +87,14 @@ function waitMessage(message?: string): string | undefined {
 
 /** Keep server wait times, but do not describe access/allowance limits as draft conflicts. */
 export function aiConversationFailure(error: unknown, fallback = i18n.t('aiAdjust.failed')): TAiConversationFailure {
+    const failure = conversationFailureMessage(error, fallback);
+    const source = error as {responseBody?: {scheduleObservation?: TScheduleObservation}} | null;
+    const observation = source?.responseBody?.scheduleObservation;
+
+    return observation ? {...failure, observation} : failure;
+}
+
+function conversationFailureMessage(error: unknown, fallback: string): TAiConversationFailure {
     if (error instanceof AiConversationInputError)
         return {
             message: i18n.t(`aiAdjust.localError.${error.reason}`),

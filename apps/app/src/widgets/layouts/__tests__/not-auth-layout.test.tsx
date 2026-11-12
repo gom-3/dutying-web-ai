@@ -30,7 +30,7 @@ describe('NotAuthLayout', () => {
             </MemoryRouter>,
         );
 
-        await waitFor(() => expect(document.title).toBe('듀팅 | 간호사 근무표 자동 생성·교대근무 관리'));
+        await waitFor(() => expect(document.title).toBe('듀팅 | 간호사 근무표 만들기, AI로 1분 만에'));
 
         await act(async () => {
             await i18n.changeLanguage('en');

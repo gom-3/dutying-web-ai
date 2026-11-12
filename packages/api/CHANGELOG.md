@@ -1,5 +1,55 @@
 # @dutying/api
 
+## 1.3.47
+
+### Patch Changes
+
+- 근무표 대화에서 이전의 보류 요청과 현재 실행을 구분하고, 야간 인원 충돌과 서버 실패 원인을 정확히 안내합니다.
+    - @dutying/domain@1.3.47
+
+## 1.3.42
+
+### Patch Changes
+
+- @dutying/domain@1.3.42
+
+## 1.3.41
+
+### Patch Changes
+
+- @dutying/domain@1.3.41
+
+## 1.3.40
+
+### Patch Changes
+
+- @dutying/domain@1.3.40
+
+## 1.3.39
+
+### Patch Changes
+
+- @dutying/domain@1.3.39
+
+## 1.3.38
+
+### Patch Changes
+
+- @dutying/domain@1.3.38
+
+## 1.3.37
+
+### Patch Changes
+
+- 근무형태의 저장된 순서와 순서 변경을 유지하고 근무표에서 설정으로 바로 이동할 수 있게 합니다. 작성 중에는 실제 위반만 표시하며, 확정 전에는 최신 근무표의 부족·빈칸과 전체 검증 결과를 확인합니다.
+    - @dutying/domain@1.3.37
+
+## 1.3.36
+
+### Patch Changes
+
+- @dutying/domain@1.3.36
+
 ## 1.3.35
 
 ### Patch Changes

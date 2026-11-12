@@ -1,3 +1,4 @@
+import {captureRosterImportEvent} from '@/shared/util/abto';
 ﻿import type {
     TOnboardingScheduleInputPreviewDTO,
     TOnboardingScheduleInputPreviewResponse,
@@ -18,6 +19,7 @@ import {
     restoreParsedNursePossibleShiftTypes,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
+    isOnboardingImageFile,
     isSupportedOnboardingUploadFile,
     type TOnboardingParsedShiftType,
 } from './adapter';
@@ -1577,9 +1579,12 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         setUploadError(null);
         setUploadWarnings([]);
 
+        let serverImportFormat: 'PHOTO' | 'EXCEL' | undefined;
+
         try {
-            const fileForParsing = await normalizeOnboardingScheduleFile(file);
-            const scheduleTemplate = await parseScheduleTemplateSafely(fileForParsing, options);
+            const image = isOnboardingImageFile(file.name);
+            const fileForParsing = image ? file : await normalizeOnboardingScheduleFile(file);
+            const scheduleTemplate = image ? [] : await parseScheduleTemplateSafely(fileForParsing, options);
             const targetYear = options?.targetYear;
             const targetMonth = options?.targetMonth;
 
@@ -1607,12 +1612,17 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                     setSelectedTeamId(nextActiveTeamId);
                 }
 
+                void FileAPI.recordBrowserExcelImport(file, targetYear, targetMonth).catch(() => {
+                    // Browser parsing succeeded. A diagnostics request must not block the draft.
+                });
                 setUploadStatus('success');
                 toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
 
                 return;
             }
 
+            serverImportFormat = image ? 'PHOTO' : 'EXCEL';
+            captureRosterImportEvent('roster_import_requested', serverImportFormat);
             const response = await FileAPI.parseOnboardingWardExcel(fileForParsing, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
@@ -1661,8 +1671,12 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-            toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
+            toast.success(t(image
+                ? 'page.onboardingWardCreate.upload.reviewImage'
+                : 'page.onboardingWardCreate.toast.uploadApplied'));
+            captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
         } catch (error) {
+            if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
             const message = getOnboardingUploadFailureMessage(error, {
                 defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),
                 networkMessage: t('page.onboardingWardCreate.upload.networkFailed'),

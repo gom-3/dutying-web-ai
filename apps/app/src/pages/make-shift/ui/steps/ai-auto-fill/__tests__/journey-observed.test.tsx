@@ -20,6 +20,7 @@ beforeEach(() => {
 afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 });
 it('reports committed UI text, not a server message inferred during fetch', async () => {
     const {rerender} = render(<JourneyObserved observation={observation}>사용자에게 보이는 안내</JourneyObserved>);
@@ -45,4 +46,23 @@ it('does not report an element hidden by the layout', async () => {
         vi.runOnlyPendingTimers();
     });
     expect(report).not.toHaveBeenCalled();
+});
+
+it('waits for the sidebar scroll viewport before reporting text', async () => {
+    let changeIntersection: IntersectionObserverCallback | undefined;
+    class Observer {
+        constructor(callback: IntersectionObserverCallback) {
+            changeIntersection = callback;
+        }
+        observe() {}
+        disconnect() {}
+    }
+    vi.stubGlobal('IntersectionObserver', Observer);
+    render(<JourneyObserved observation={observation}>스크롤 아래의 안내</JourneyObserved>);
+    await act(async () => {
+        vi.runOnlyPendingTimers();
+    });
+    expect(report).not.toHaveBeenCalled();
+    changeIntersection?.([{isIntersecting: true} as IntersectionObserverEntry], {} as IntersectionObserver);
+    expect(report).toHaveBeenCalledWith(observation, expect.objectContaining({displayedText: '스크롤 아래의 안내'}));
 });

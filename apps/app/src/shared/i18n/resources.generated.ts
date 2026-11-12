@@ -52,7 +52,7 @@ export const ko = {
                 "title": "지금은 체험용 임시 계정으로 근무표를 작성 중이에요.",
                 "titleExpiringSoon": "체험 종료가 얼마 남지 않았어요."
             },
-            "documentTitle": "듀팅 | 간호사 근무표 자동 생성·교대근무 관리",
+            "documentTitle": "듀팅 | 간호사 근무표 만들기",
             "sessionExpired": "로그인 시간이 끝났어요. 다시 로그인해 주세요.",
             "state": {
                 "errorDescription": "세션이 만료되었거나 네트워크 연결이 불안정할 수 있어요.",
@@ -3302,7 +3302,7 @@ export const en: TLocale = {
                 "title": "You are currently editing with a temporary trial account.",
                 "titleExpiringSoon": "Your trial session is about to end."
             },
-            "documentTitle": "AI Nurse Shift Schedule Maker in 1 Minute | Dutying",
+            "documentTitle": " AI로 1분 만에",
             "sessionExpired": "Your login has expired. Please sign in again.",
             "state": {
                 "errorDescription": "Your session may have expired, or the network connection may be unstable.",
@@ -6550,7 +6550,7 @@ export const ja: TLocale = {
                 "title": "現在は体験用の一時アカウントで勤務表を作成しています。",
                 "titleExpiringSoon": "体験終了まで残りわずかです。"
             },
-            "documentTitle": "看護師の勤務表作成、AIでわずか1分 | Dutying",
+            "documentTitle": "AI Nurse Shift Schedule Maker in 1 Minute | Dutying",
             "sessionExpired": "ログイン時間が終了しました。もう一度ログインしてください。",
             "state": {
                 "errorDescription": "セッションが期限切れになったか、ネットワーク接続が不安定な可能性があります。",
@@ -9798,7 +9798,7 @@ export const zh: TLocale = {
                 "title": "目前，正在使用临时帐户创建时间表以供体验。",
                 "titleExpiringSoon": "距离体验结束已经不远了。"
             },
-            "documentTitle": "护士排班表制作，AI 1分钟自动生成 | Dutying",
+            "documentTitle": "看護師の勤務表作成、AIでわずか1分 | Dutying",
             "sessionExpired": "登录时间已结束。请重新登录。",
             "state": {
                 "errorDescription": "会话可能已过期或网络连接可能不稳定。",
@@ -13046,7 +13046,7 @@ export const zhTW: TLocale = {
                 "title": "目前，正在使用臨時帳戶建立時間表以供體驗。",
                 "titleExpiringSoon": "距離體驗結束已經不遠了。"
             },
-            "documentTitle": "護理師班表製作，AI 1分鐘自動生成 | Dutying",
+            "documentTitle": "2026-11-03",
             "sessionExpired": "登入時間已結束。請重新登入。",
             "state": {
                 "errorDescription": "會話可能已過期或網路連線可能不穩定。",
@@ -16294,7 +16294,7 @@ export const th: TLocale = {
                 "title": "ขณะนี้คุณกำลังแก้ไขด้วยบัญชีทดลองชั่วคราว",
                 "titleExpiringSoon": "เซสชั่นทดลองใช้งานของคุณกำลังจะสิ้นสุดลง"
             },
-            "documentTitle": "สร้างตารางเวรพยาบาลด้วย AI ใน 1 นาที | Dutying",
+            "documentTitle": "护士排班表制作，AI 1分钟自动生成 | Dutying",
             "sessionExpired": "การเข้าสู่ระบบของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้ง",
             "state": {
                 "errorDescription": "เซสชันของคุณอาจหมดอายุหรือการเชื่อมต่อเครือข่ายอาจไม่เสถียร",
@@ -19542,7 +19542,7 @@ export const vi: TLocale = {
                 "title": "Bạn hiện đang chỉnh sửa bằng tài khoản dùng thử tạm thời.",
                 "titleExpiringSoon": "Phiên dùng thử của bạn sắp kết thúc."
             },
-            "documentTitle": "Tạo lịch trực điều dưỡng bằng AI trong 1 phút | Dutying",
+            "documentTitle": "สร้างตารางเวรพยาบาลด้วย AI ใน 1 นาที | Dutying",
             "sessionExpired": "Đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
             "state": {
                 "errorDescription": "Phiên của bạn có thể đã hết hạn hoặc kết nối mạng có thể không ổn định.",

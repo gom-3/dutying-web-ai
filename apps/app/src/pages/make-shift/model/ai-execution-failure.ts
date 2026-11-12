@@ -8,6 +8,37 @@ import type {TConversationOperation} from './schedule-conversation-api';
 const validCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 100000;
 const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
+export function pairedNightStaffingMessage(response: TAutofillResponse): string | null {
+    const evidence = response.engineResult?.conflictEvidence;
+    const issue = evidence?.find((entry) => entry?.type === 'PAIRED_NIGHT_STAFFING_CONFLICT');
+    if (!issue) return null;
+    const {date, nextDate, night, continuation, minimumNight, maximumContinuation, minimumRepeats} = issue;
+    if (
+        !validDate(date) ||
+        !validDate(nextDate) ||
+        typeof night !== 'string' ||
+        !night.trim() ||
+        typeof continuation !== 'string' ||
+        !continuation.trim() ||
+        !validCount(minimumNight) ||
+        !validCount(maximumContinuation) ||
+        !validCount(minimumRepeats) ||
+        minimumRepeats === 0 ||
+        minimumNight - maximumContinuation !== minimumRepeats
+    )
+        return null;
+
+    return i18n.t('aiAdjust.executionFailure.pairedNightStaffingEvidence', {
+        date,
+        nextDate,
+        night: night.slice(0, 80),
+        continuation: continuation.slice(0, 80),
+        minimumNight,
+        maximumContinuation,
+        minimumRepeats,
+    });
+}
+
 function nightRunBoundsMessage(issue: Record<string, unknown>): string | null {
     if (
         issue.type !== 'NIGHT_RUN_BOUNDS_CONFLICT' ||
@@ -80,6 +111,12 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
     const outcome = authoringOutcome(response);
 
     if (outcome) {
+        const pairedConflict = outcome.reasonCodes?.includes('PAIRED_NIGHT_STAFFING_CONFLICT')
+            ? pairedNightStaffingMessage(response)
+            : null;
+        if (outcome.solveState === 'INFEASIBLE_PROVEN' && pairedConflict)
+            return {message: pairedConflict, blocked: false, conditionConflict: true, recovery: 'revise'};
+
         // A solver candidate is not a successful result when verification withheld the draft.
         if (
             outcome.solveState === 'FEASIBLE' &&
@@ -103,11 +140,13 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             return null;
 
         const messageKey = authoringMessageKey(response) ?? 'UNKNOWN';
+        const message = ['SATISFIED', 'IMPROVED'].includes(messageKey)
+            ? i18n.t('aiAdjust.executionFailure.summary')
+            : i18n.t(`aiConversationSidebar.authoring.${messageKey}`);
+        const staffingFloor = outcome.reasonCodes?.includes('PAIRED_NIGHT_STAFFING_FLOOR') ? pairedNightStaffingMessage(response) : null;
 
         return {
-            message: ['SATISFIED', 'IMPROVED'].includes(messageKey)
-                ? i18n.t('aiAdjust.executionFailure.summary')
-                : i18n.t(`aiConversationSidebar.authoring.${messageKey}`),
+            message: staffingFloor ? `${message}\n${staffingFloor}` : message,
             blocked: false,
             recovery: ['BUSY', 'UNKNOWN', 'ERROR'].includes(outcome.solveState) ? 'retry' : 'revise',
         };

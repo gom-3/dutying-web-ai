@@ -69,6 +69,7 @@ const mocks = vi.hoisted(() => ({
     draftRowOrder: [] as {shiftNurseId: number; displayOrder: number; priority?: number; divisionNum: number}[],
     draftFixed: false,
     draftShiftTypeId: 4,
+    readDraftFromEditor: false,
 }));
 
 vi.mock('../../constraints', async () => {
@@ -162,10 +163,17 @@ vi.mock('@/features/shift-editor', async (original) => ({
     }),
 }));
 vi.mock('@/features/shift-editor/model/schedule-authoring', () => ({
-    buildAutofillDTO: () => ({
+    buildAutofillDTO: ({doc}: {doc: {rows: {cells: (string | null)[]}[]}}) => ({
         year: 2026,
         month: 11,
-        cells: [{shiftNurseId: 1, date: '2026-11-01', wardShiftTypeId: mocks.draftShiftTypeId, fixed: mocks.draftFixed}],
+        cells: [
+            {
+                shiftNurseId: 1,
+                date: '2026-11-01',
+                wardShiftTypeId: mocks.readDraftFromEditor && doc.rows[0]?.cells[0] === 'D' ? 1 : mocks.draftShiftTypeId,
+                fixed: mocks.draftFixed,
+            },
+        ],
         rowOrder: mocks.draftRowOrder,
         carryOverCells: [],
     }),
@@ -358,6 +366,7 @@ beforeEach(() => {
     mocks.draftRowOrder = [];
     mocks.draftFixed = false;
     mocks.draftShiftTypeId = 4;
+    mocks.readDraftFromEditor = false;
     sessionStorage.clear();
     current = {
         contextHash: 'rules:1',
@@ -452,6 +461,134 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.interpret.mock.calls[1]![1]).not.toHaveProperty('change');
         expect(mocks.reportClientFailure).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
+    it('replays an interpretation once with the refreshed revision after the production stale-draft response', async () => {
+        const request = '연속 근무를 줄여줘';
+        mocks.interpret
+            .mockImplementationOnce(async () => {
+                current = {...current, conversation: {...current.conversation, revision: 1}};
+                throw {
+                    code: 400,
+                    serverCode: 'INVALID_PARAMETER',
+                    responseBody: {message: '작업표가 변경되었습니다. 최신 작업표를 불러와 주세요.'},
+                };
+            })
+            .mockResolvedValueOnce({interpretationId: 'retry:1'});
+        renderSidebar();
+        const textbox = await screen.findByRole('textbox');
+        await userEvent.type(textbox, request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+
+        await waitFor(() => expect(textbox).toHaveValue(''));
+        expect(mocks.interpret).toHaveBeenCalledTimes(2);
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({expectedRevision: 0, text: request});
+        expect(mocks.interpret.mock.calls[1][1]).toEqual({...mocks.interpret.mock.calls[0][1], expectedRevision: 1});
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(mocks.reportClientFailure).not.toHaveBeenCalled();
+        expect(screen.getAllByText(request)).toHaveLength(1);
+    });
+
+    it('loads a server-only edit into the grid and replays the request against that draft', async () => {
+        mocks.readDraftFromEditor = true;
+        mocks.applyAdjustedDoc.mockImplementationOnce((doc) => useShiftEditorStore.getState().setDoc(doc));
+        mocks.interpret
+            .mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, revision: 1},
+                    draft: {...source, cells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]},
+                };
+                throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
+            })
+            .mockResolvedValueOnce({interpretationId: 'retry:1'});
+        const onApplied = vi.fn();
+        renderSidebar({onApplied});
+        const textbox = await screen.findByRole('textbox');
+        await userEvent.type(textbox, '연속 근무를 줄여줘');
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+
+        await waitFor(() => expect(textbox).toHaveValue(''));
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+        expect(mocks.applyAdjustedDoc).toHaveBeenCalledTimes(1);
+        expect(onApplied).not.toHaveBeenCalled();
+        expect(mocks.interpret).toHaveBeenCalledTimes(2);
+        expect(mocks.interpret.mock.calls[1][1]).toMatchObject({expectedRevision: 1});
+        expect(mocks.sync).not.toHaveBeenCalled();
+    });
+
+    it('preserves and saves local-only edits when draft sync detects a revision conflict', async () => {
+        const request = '연속 근무를 줄여줘';
+        mocks.sync
+            .mockImplementationOnce(async () => {
+                current = {...current, conversation: {...current.conversation, revision: 1}};
+                throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
+            })
+            .mockImplementationOnce(async (_id, draft) => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, revision: 2},
+                    draft: {...current.draft, cells: draft.cells},
+                };
+                return current;
+            });
+        mocks.interpret.mockResolvedValueOnce({interpretationId: 'retry:1'});
+        renderSidebar();
+        const textbox = await screen.findByRole('textbox');
+        await userEvent.type(textbox, request);
+        mocks.draftShiftTypeId = 1;
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+
+        await waitFor(() => expect(textbox).toHaveValue(''));
+        expect(mocks.sync).toHaveBeenCalledTimes(2);
+        expect(mocks.sync.mock.calls[1][1]).toEqual({...mocks.sync.mock.calls[0][1], expectedRevision: 1});
+        expect(mocks.interpret).toHaveBeenCalledTimes(1);
+        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({expectedRevision: 2, text: request});
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('keeps concurrent server and local edits intact and leaves the request ready for review', async () => {
+        const request = '연속 근무를 줄여줘';
+        mocks.interpret.mockImplementationOnce(async () => {
+            mocks.draftShiftTypeId = 1;
+            current = {
+                ...current,
+                conversation: {...current.conversation, revision: 1},
+                draft: {...source, cells: [{...cell, wardShiftTypeId: 2, shiftCode: 'E'}]},
+            };
+            throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
+        });
+        renderSidebar();
+        const textbox = await screen.findByRole('textbox');
+        await userEvent.type(textbox, request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+
+        await screen.findByText('수정 내용은 이 화면에 남겨 두었어요.');
+        expect(screen.getByRole('button', {name: '저장된 근무표 보기'})).toBeEnabled();
+        expect(textbox).toHaveValue(request);
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 450));
+        });
+        expect(mocks.interpret).toHaveBeenCalledTimes(1);
+        expect(mocks.sync).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
+    it('stops after a second definitive revision rejection', async () => {
+        const request = '연속 근무를 줄여줘';
+        mocks.interpret.mockImplementation(async () => {
+            current = {...current, conversation: {...current.conversation, revision: current.conversation.revision + 1}};
+            throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
+        });
+        renderSidebar();
+        const textbox = await screen.findByRole('textbox');
+        await userEvent.type(textbox, request);
+        await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
+
+        await screen.findByText('입력한 요청은 남아 있어요.');
+        expect(mocks.interpret).toHaveBeenCalledTimes(2);
+        expect(textbox).toHaveValue(request);
+        expect(mocks.sync).not.toHaveBeenCalled();
     });
 
     it('keeps a locally blocked request visible across remount and reports the guard stage', async () => {
@@ -1349,6 +1486,52 @@ describe('persistent schedule sidebar', () => {
         expect(statusMessage).toHaveTextContent('Requested and fixed shifts stay in place.');
         expect(statusMessage).toHaveTextContent(i18n.t('aiAutofillUi.conversationOperationStatus.refillingYourSchedule'));
         expect(statusMessage).not.toHaveTextContent('2026-11');
+    });
+
+    it.each([
+        {scenario: 'an older execution', createdAt: '2026-10-03T09:59:00', hasReceipt: false, status: 'SUCCEEDED', warns: true},
+        {scenario: 'a matching legacy execution', createdAt: '2026-10-03T10:00:08', hasReceipt: false, status: 'SUCCEEDED', warns: false},
+        {scenario: 'a matching recorded execution', createdAt: '2026-10-03T09:59:00', hasReceipt: true, status: 'SUCCEEDED', warns: false},
+        {scenario: 'an execution still running', createdAt: '2026-10-03T10:00:08', hasReceipt: false, status: 'RUNNING', warns: false},
+    ] as const)('checks $scenario before displaying a restored interruption warning', async ({createdAt, hasReceipt, status, warns}) => {
+        if (status === 'SUCCEEDED') current.conversation.currentVersionId = 'result:1';
+
+        current.operations = [
+            {
+                ...operation,
+                createdAt,
+                executionStatus: status,
+                ...(status === 'RUNNING'
+                    ? {applyStatus: 'PENDING', resultVersionId: null}
+                    : {result: {...successfulResult, changedCells: [{...cell, wardShiftTypeId: 1, shiftCode: 'D'}]}}),
+            },
+        ];
+
+        const warning = i18n.t('aiAdjust.preparation.interruptedHistory');
+        const warningTitle = warning.split('\n')[0]!;
+
+        renderSidebar({
+            autofillFlow: {
+                id: 1,
+                kind: 'generation',
+                status: 'completed',
+                execution: hasReceipt
+                    ? {conversationId: 1, afterSequence: 0, operationType: 'GENERATE', baseRevision: 0, interpretationId: null}
+                    : undefined,
+                messages: [
+                    {role: 'user', text: '이대로 진행할게요', createdAt: '2026-10-03T01:00:00Z'},
+                    {role: 'assistant', text: warning, createdAt: '2026-10-03T01:00:54Z'},
+                ],
+            },
+        });
+
+        expect(screen.queryByText(warningTitle)).not.toBeInTheDocument();
+        expect(await screen.findByText('이대로 진행할게요')).toBeVisible();
+
+        if (warns) expect(screen.getByText(warningTitle)).toBeVisible();
+        else expect(screen.queryByText(warningTitle)).not.toBeInTheDocument();
+
+        if (status === 'SUCCEEDED') expect(await screen.findByText('근무표가 완성되었어요!')).toBeVisible();
     });
 
     it('keeps the bubble compact and opens changes and result actions in one dialog', async () => {
@@ -4174,6 +4357,97 @@ describe('persistent schedule sidebar', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.execute).not.toHaveBeenCalled();
     });
+    it('keeps a failed clarification answer editable and resends it with the refreshed state', async () => {
+        const {raw, proposal} = semanticRequest('NEEDS_CLARIFICATION');
+        const question = '전체 간호사에게 적용할까요?';
+        const answer = '전체간호사';
+        const state = {
+            version: 7,
+            sourceVersionId: current.conversation.currentVersionId,
+            contextHash: current.contextHash,
+            expiresAt: null,
+            conditions: [],
+            pendingQuestion: {conditionId: '', question, originalText: raw},
+        };
+
+        proposal.semanticPlan!.summary = question;
+        current.conversationState = state;
+
+        const reply: TConversationTurn = {
+            ...current.turns[0],
+            eventId: 3,
+            sequence: 3,
+            text: answer,
+        };
+        const failed: TConversationTurn = {
+            ...proposal,
+            eventId: 4,
+            sequence: 4,
+            interpretationId: 'proposal:failed',
+            semanticPlan: {
+                ...proposal.semanticPlan!,
+                state: 'FAILED',
+                reasonCodes: ['INVALID_CONDITION_EDIT'],
+                conditions: [],
+            },
+        };
+        const ready: TConversationTurn = {
+            ...proposal,
+            eventId: 6,
+            sequence: 6,
+            interpretationId: 'proposal:ready',
+            semanticPlan: {...proposal.semanticPlan!, state: 'PREVIEW_READY', confirmationAllowed: true},
+        };
+
+        mocks.interpret
+            .mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, latestInterpretationId: failed.interpretationId},
+                    turns: [...current.turns, reply, failed],
+                    conversationState: {...state, version: 8},
+                };
+
+                return failed;
+            })
+            .mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, latestInterpretationId: ready.interpretationId},
+                    turns: [...current.turns, {...reply, eventId: 5, sequence: 5}, ready],
+                    conversationState: {...state, version: 9, pendingQuestion: null},
+                };
+
+                return ready;
+            });
+
+        renderSidebar();
+        await userEvent.type(await screen.findByRole('textbox'), answer);
+        await userEvent.click(screen.getByRole('button', {name: '요청 보내기'}));
+
+        const restoredInput = await screen.findByRole('textbox');
+
+        expect(restoredInput).toBeVisible();
+        expect(restoredInput).toBeEnabled();
+        expect(restoredInput).toHaveValue(answer);
+        expect(restoredInput).toHaveAccessibleDescription(question);
+
+        const send = screen.getByRole('button', {name: '요청 보내기'});
+
+        expect(send).toBeEnabled();
+        await userEvent.click(send);
+        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledTimes(2));
+        expect(mocks.interpret.mock.calls[1][1]).toMatchObject({
+            text: answer,
+            expectedStateVersion: 8,
+            change: 'AUTO',
+            clientContext: {inputMode: 'clarification', typedText: answer},
+        });
+        expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+        expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+    });
+
     it('lets the server distinguish a separate request while a question is waiting', async () => {
         const {raw, proposal} = semanticRequest();
 
@@ -4215,20 +4489,28 @@ describe('persistent schedule sidebar', () => {
         await act(async () => finishInterpretation(proposal));
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it('shows which request is still blocking understood conditions and removes only that request', async () => {
+    it.each([false, true])('shows which request blocks understood conditions and removes only it (saved review: %s)', async (savedReview) => {
         const {proposal} = semanticRequest('NEEDS_CLARIFICATION');
-        const unresolved = {conditionId: 'old-request', text: '모든 간호사 OFF 9개씩', preview: {status: 'NEEDS_CLARIFICATION'}};
+        const unresolved = {
+            conditionId: 'old-request',
+            text: '모든 간호사 OFF 9개씩',
+            preview: {status: savedReview ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION'},
+        };
         const understood = {conditionId: 'new-request', text: '전체간호사 모든날에 OFF를 0개씩해줘', preview: {status: 'PREVIEW_READY'}};
         const genericSummary = '요청의 대상·기간·조건을 더 확인해야 해요.';
 
         proposal.semanticPlan!.summary = genericSummary;
+        if (savedReview) {
+            proposal.semanticPlan!.unresolvedStoredConditionIds = [unresolved.conditionId];
+            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+        }
         current.conversationState = {
             version: 7,
             sourceVersionId: current.conversation.currentVersionId,
             contextHash: current.contextHash,
             expiresAt: null,
             conditions: [unresolved, understood],
-            pendingQuestion: {conditionId: unresolved.conditionId, question: genericSummary},
+            pendingQuestion: savedReview ? null : {conditionId: unresolved.conditionId, question: genericSummary},
         };
 
         const ready: TConversationTurn = {
@@ -4241,7 +4523,15 @@ describe('persistent schedule sidebar', () => {
                 planId: 'retained-plan',
                 state: 'PREVIEW_READY',
                 confirmationAllowed: true,
-                autoExecutable: false,
+                autoExecutable: savedReview,
+                ...(savedReview
+                    ? {
+                          authoringContractVersion: 'intent-first-v1',
+                          interactionId: 'retained-interaction',
+                          deadlineAt: new Date(Date.now() + 15000).toISOString(),
+                          planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+                      }
+                    : {}),
             },
         };
 
@@ -4260,14 +4550,23 @@ describe('persistent schedule sidebar', () => {
         expect(await screen.findByText(unresolved.text)).toBeVisible();
         expect(screen.getByRole('list', {name: 'AI가 이해한 조건'})).toBeVisible();
         await userEvent.click(screen.getByRole('button', {name: '이 요청만 빼기'}));
-        expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+        if (savedReview) {
+            await waitFor(() =>
+                expect(mocks.execute).toHaveBeenCalledWith(
+                    1,
+                    expect.objectContaining({operationType: 'ADJUST', interpretationId: ready.interpretationId}),
+                ),
+            );
+        } else {
+            expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+            expect(mocks.execute).not.toHaveBeenCalled();
+        }
         expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
             expectedStateVersion: 7,
             change: 'REMOVE',
             targetConditionIds: [unresolved.conditionId],
         });
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
-        expect(mocks.execute).not.toHaveBeenCalled();
     });
     it('sends a cancellation as natural text without browser selected condition IDs', async () => {
         const {raw, proposal} = semanticRequest();
@@ -4586,84 +4885,6 @@ describe('intent-first sidebar integration', () => {
         };
     };
 
-    it('interprets a first-generation request once and runs its plan as GENERATE', async () => {
-        enable();
-
-        const text = '이번 달은 김 간호사의 주말 근무를 줄여주세요.';
-        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN'};
-
-        current = {...current, operations: []};
-        mocks.interpret.mockImplementationOnce(async () => {
-            current = {
-                ...current,
-                turns: [turn],
-                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
-            };
-
-            return turn;
-        });
-        renderSidebar({generationRequest: 1, generationText: text, generationFillPolicy: 'REBUILD_UNLOCKED'});
-        await waitFor(() => expect(mocks.interpret).toHaveBeenCalledOnce());
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        expect(mocks.interpret.mock.calls[0]![1]).toMatchObject({text, authoringContractVersion: 'intent-first-v1'});
-        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
-            operationType: 'GENERATE',
-            fillPolicy: 'REBUILD_UNLOCKED',
-            rebuildConfirmed: true,
-            interpretationId: turn.interpretationId,
-            planHash: turn.semanticPlan!.planHash,
-        });
-    });
-
-    it('keeps a reviewed first request on GENERATE after semantic confirmation', async () => {
-        enable();
-
-        const turn = {...autoTurn(), type: 'SEMANTIC_PLAN', semanticPlan: {...autoTurn().semanticPlan!, autoExecutable: false}};
-        const prepare = vi.fn().mockResolvedValue(undefined);
-
-        mocks.interpret.mockImplementationOnce(async () => {
-            current = {
-                ...current,
-                turns: [turn],
-                conversation: {...current.conversation, latestInterpretationId: turn.interpretationId},
-            };
-
-            return turn;
-        });
-        mocks.confirmPlan.mockImplementationOnce(async () => {
-            const confirmed = {
-                ...turn,
-                eventId: 201,
-                sequence: 3,
-                type: 'SEMANTIC_PLAN_CONFIRMED',
-                interpretationId: 'intent:confirmed',
-                semanticPlan: {...turn.semanticPlan!, state: 'CONFIRMED', confirmationAllowed: false},
-            };
-
-            current = {
-                ...current,
-                turns: [...current.turns, confirmed],
-                conversation: {...current.conversation, latestInterpretationId: confirmed.interpretationId},
-            };
-
-            return confirmed;
-        });
-        renderSidebar({
-            generationRequest: 1,
-            generationText: '이번 달은 김 간호사의 주말 근무를 줄여주세요.',
-            generationFillPolicy: 'REBUILD_UNLOCKED',
-            onPrepareAdjustment: prepare,
-        });
-        await userEvent.click(await screen.findByRole('button', {name: '이대로 수정하기'}));
-        await waitFor(() => expect(mocks.execute).toHaveBeenCalledOnce());
-        expect(prepare).toHaveBeenCalledExactlyOnceWith('generation');
-        expect(mocks.execute.mock.calls[0]![1]).toMatchObject({
-            operationType: 'GENERATE',
-            fillPolicy: 'REBUILD_UNLOCKED',
-            interpretationId: 'intent:confirmed',
-        });
-    });
-
     it('routes an explicit rewrite through existing preparation and confirmed GENERATE, once', async () => {
         enable();
 
@@ -4954,7 +5175,10 @@ describe('intent-first sidebar integration', () => {
 
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();
-        installPlan();
+        const turn = autoTurn();
+        const deferred = '이전 요청: 미등록 N·S 근무 늘리기';
+        turn.semanticPlan!.deferredRequests = [deferred];
+        installPlan(turn);
 
         const unchanged = intentResponse({
             changedCells: [],
@@ -4990,6 +5214,9 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.confirmPlan).not.toHaveBeenCalled();
         expect(mocks.confirm).not.toHaveBeenCalled();
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        expect(await screen.findByText(deferred)).toBeVisible();
+        expect(screen.getByText('이전 요청은 확인이 필요해 이번 계산에서 보류했어요.')).toBeVisible();
+        expect(screen.queryByRole('button', {name: '이 요청만 빼기'})).not.toBeInTheDocument();
         await screen.findByText(i18n.t('aiConversationSidebar.authoring.NO_IMPROVEMENT'));
         rendered.rerender(sidebarElement({open: false}));
         rendered.rerender(sidebarElement());

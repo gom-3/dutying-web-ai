@@ -1,6 +1,8 @@
+import type {TScheduleObservation} from '@dutying/api/ward';
 import {Children, type ReactNode} from 'react';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
 import {failureMessagePoints} from '../../../model/failure-message-points';
 import {AssistantMessage} from './ai-adjust-review-conversation';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
@@ -12,14 +14,17 @@ export function AiFailureMessage({
     title,
     headerAction,
     announce = true,
+    observation,
 }: {
     message: string;
     children?: ReactNode;
     title?: string;
     headerAction?: ReactNode;
     announce?: boolean;
+    observation?: TScheduleObservation;
 }) {
     const {t} = useTypedTranslation();
+    const displayRef = useScheduleJourneyDisplay<HTMLElement>(observation);
     const defaultTitle = t('aiAdjust.failure.title');
     const resolvedTitle = title ?? defaultTitle;
     const points = [...new Set(failureMessagePoints(message))].filter((point) => point !== resolvedTitle && point !== defaultTitle);
@@ -38,7 +43,7 @@ export function AiFailureMessage({
 
     return (
         <AssistantMessage tone={announce ? 'error' : 'default'} fullWidth>
-            <section aria-label={resolvedTitle} className="min-w-0">
+            <section ref={displayRef} aria-label={resolvedTitle} className="min-w-0">
                 <div className="relative min-w-0">
                     <div role={announce ? 'alert' : undefined} className="min-w-0">
                         <div className={`flex items-start gap-2 ${headerAction ? 'min-h-[44px] pr-[52px]' : ''}`}>

@@ -40,6 +40,16 @@ export const getMarketingLanguageHref = (language: TWebLanguage) => {
     return `/?lng=${language}`;
 };
 
+export const rememberMarketingLanguage = (language: TWebLanguage) => {
+    const {cookieName, maxAge} = marketingPages.homeLanguagePreference;
+
+    try {
+        document.cookie = `${cookieName}=${language}; Max-Age=${maxAge}; Path=/; Secure; SameSite=Lax`;
+    } catch {
+        // The language link still works when the browser does not allow cookies.
+    }
+};
+
 export const getMarketingAppStoreUrls = (language: TWebLanguage) => {
     const page = marketingPages.pages.find((page) => page.language === language)!;
 

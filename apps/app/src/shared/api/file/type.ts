@@ -120,5 +120,6 @@ export interface IPresignedUrlResponse {
 export interface IFileAPI {
     // POST
     getPresignedUrl: (fileType: TPresignedUrlRequest, fileExtension: string) => Promise<IPresignedUrlResponse>;
+    recordBrowserExcelImport: (file: File, year: number, month: number) => Promise<void>;
     parseOnboardingWardExcel: (file: File, options?: TOnboardingWardParseOptions) => Promise<TOnboardingWardParseApiResponse>;
 }
