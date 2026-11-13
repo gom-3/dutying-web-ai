@@ -1301,7 +1301,18 @@ export type TCreateWardShiftTeamDTO = {
     constraintRules?: TCreateWardConstraintRuleDTO[];
 };
 
+export type TOnboardingSignals = {
+    version: 1;
+    coverageComplete: boolean;
+    excelImported: boolean;
+    photoImported: boolean;
+    shiftTypesEdited: boolean;
+    possibleShiftsEdited: boolean;
+    constraintsEdited: boolean;
+};
+
 export type TCreateWardDTO = {
+    onboardingSignals?: TOnboardingSignals;
     name: string;
     /**
      * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.

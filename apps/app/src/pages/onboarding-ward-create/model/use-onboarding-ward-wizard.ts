@@ -1,5 +1,4 @@
-import {captureRosterImportEvent} from '@/shared/util/abto';
-﻿import type {
+import type {
     TOnboardingScheduleInputPreviewDTO,
     TOnboardingScheduleInputPreviewResponse,
     TOnboardingWardDraftResponse,
@@ -12,6 +11,7 @@ import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {captureRosterImportEvent} from '@/shared/util/abto';
 import {
     applyParsedWardData,
     buildUploadedMonthlySchedulesFromParsedWardData,
@@ -67,6 +67,7 @@ import {
     updateTeamDivisionNameDraft,
     updateTeamNameDraft,
 } from './draft';
+import {withOnboardingEdit, withOnboardingImport, normalizeOnboardingSignals} from './onboarding-measurement';
 import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from './schedule-template-parser';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
@@ -277,6 +278,7 @@ const normalizeRestoredConstraintCandidates = (
 const normalizePersistedDraft = (draft: TOnboardingWardDraft, labels?: TOnboardingDraftLabels): TOnboardingWardDraft =>
     ensureOnboardingAnnualLeave(
         {
+            onboardingSignals: normalizeOnboardingSignals(draft.onboardingSignals),
             currentStep: draft.currentStep,
             uploadedFileName: draft.uploadedFileName,
             wardName: draft.wardName,
@@ -1252,6 +1254,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             if (prev.currentStep === 4 && shiftTypeStepEntryDraft) {
                 return {
                     ...shiftTypeStepEntryDraft,
+                    onboardingSignals: prev.onboardingSignals,
                     currentStep: previousDraft.currentStep,
                 };
             }
@@ -1269,19 +1272,21 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     };
     const updateTwoShiftNightRecoveryDisplay = (display: NonNullable<TOnboardingWardDraft['twoShiftNightRecoveryDisplay']>) => {
         markDraftTouched();
-        setDraft((prev) => updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels));
+        setDraft((prev) =>
+            withOnboardingEdit(prev, updateTwoShiftNightRecoveryDisplayDraft(prev, display, onboardingDraftLabels), 'constraintsEdited'),
+        );
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
         markDraftTouched();
-        setDraft((prev) => updateShiftTypeDraft(prev, shiftTypeId, updater));
+        setDraft((prev) => withOnboardingEdit(prev, updateShiftTypeDraft(prev, shiftTypeId, updater), 'shiftTypesEdited'));
     };
     const addShiftType = () => {
         markDraftTouched();
-        setDraft((prev) => addShiftTypeDraft(prev));
+        setDraft((prev) => withOnboardingEdit(prev, addShiftTypeDraft(prev), 'shiftTypesEdited'));
     };
     const deleteShiftType = (shiftTypeId: string) => {
         markDraftTouched();
-        setDraft((prev) => deleteShiftTypeDraft(prev, shiftTypeId));
+        setDraft((prev) => withOnboardingEdit(prev, deleteShiftTypeDraft(prev, shiftTypeId), 'shiftTypesEdited'));
     };
     const updateNurse = (nurseId: string, updater: Parameters<typeof updateNurseDraft>[2]) => {
         markDraftTouched();
@@ -1297,14 +1302,18 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 typeof updater.isWorker === 'boolean' && targetNurse.isWorker !== updater.isWorker && sortMode === 'manual';
 
             if (!isWorkerToggled) {
-                return updateNurseDraft(prev, nurseId, updater);
+                return withOnboardingEdit(prev, updateNurseDraft(prev, nurseId, updater), 'possibleShiftsEdited');
             }
 
             const teamNurses = prev.nurses.filter((nurse) => nurse.teamId === targetNurse.teamId);
             const nextTeamNurses = teamNurses.filter((nurse) => nurse.id !== nurseId);
             const reorderedTeamNurses = insertAtWorkerBoundary(nextTeamNurses, nextNurse);
 
-            return replaceTeamNurses(prev, targetNurse.teamId, enforceWorkerGroupOrder(reorderedTeamNurses));
+            return withOnboardingEdit(
+                prev,
+                replaceTeamNurses(prev, targetNurse.teamId, enforceWorkerGroupOrder(reorderedTeamNurses)),
+                'possibleShiftsEdited',
+            );
         });
     };
     const addTeam = () => {
@@ -1434,11 +1443,11 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     };
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
         markDraftTouched();
-        setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {selected}));
+        setDraft((prev) => withOnboardingEdit(prev, updateConstraintCandidateDraft(prev, constraintId, {selected}), 'constraintsEdited'));
     };
     const updateConstraintCandidateSeverity = (constraintId: string, severity: TOnboardingConstraintDraft['severity']) => {
         markDraftTouched();
-        setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {severity}));
+        setDraft((prev) => withOnboardingEdit(prev, updateConstraintCandidateDraft(prev, constraintId, {severity}), 'constraintsEdited'));
     };
     const updateConstraintCandidateCount = (constraintId: string, count: number) => {
         markDraftTouched();
@@ -1449,7 +1458,11 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 return prev;
             }
 
-            return updateConstraintCandidateDraft(prev, constraintId, {params: updateConstraintParamsCount(constraint, count)});
+            return withOnboardingEdit(
+                prev,
+                updateConstraintCandidateDraft(prev, constraintId, {params: updateConstraintParamsCount(constraint, count)}),
+                'constraintsEdited',
+            );
         });
     };
     const updateConstraintCandidateStaffingCount = (constraintId: string, staffingIndex: number, count: number) => {
@@ -1461,9 +1474,13 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
                 return prev;
             }
 
-            return updateConstraintCandidateDraft(prev, constraintId, {
-                params: updateConstraintParamsStaffingCount(constraint, staffingIndex, count),
-            });
+            return withOnboardingEdit(
+                prev,
+                updateConstraintCandidateDraft(prev, constraintId, {
+                    params: updateConstraintParamsStaffingCount(constraint, staffingIndex, count),
+                }),
+                'constraintsEdited',
+            );
         });
     };
     const handleNurseDragEnd = ({destination, source}: DropResult) => {
@@ -1559,7 +1576,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
         }
 
         markDraftTouched();
-        setDraft((prev) => reorderShiftTypes(prev, {destination, source}));
+        setDraft((prev) => withOnboardingEdit(prev, reorderShiftTypes(prev, {destination, source}), 'shiftTypesEdited'));
     };
     const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
         markDraftTouched();
@@ -1605,7 +1622,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
                     nextActiveTeamId = result.activeTeamId;
 
-                    return result.draft;
+                    return withOnboardingImport(result.draft, 'EXCEL');
                 });
 
                 if (nextActiveTeamId) {
@@ -1623,6 +1640,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             serverImportFormat = image ? 'PHOTO' : 'EXCEL';
             captureRosterImportEvent('roster_import_requested', serverImportFormat);
+
             const response = await FileAPI.parseOnboardingWardExcel(fileForParsing, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
@@ -1662,7 +1680,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
                 nextActiveTeamId = result.activeTeamId;
 
-                return restoreParsedNursePossibleShiftTypes(result.draft, parsedWardData);
+                return withOnboardingImport(restoreParsedNursePossibleShiftTypes(result.draft, parsedWardData), image ? 'PHOTO' : 'EXCEL');
             });
 
             if (nextActiveTeamId) {
@@ -1671,12 +1689,11 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
 
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-            toast.success(t(image
-                ? 'page.onboardingWardCreate.upload.reviewImage'
-                : 'page.onboardingWardCreate.toast.uploadApplied'));
+            toast.success(t(image ? 'page.onboardingWardCreate.upload.reviewImage' : 'page.onboardingWardCreate.toast.uploadApplied'));
             captureRosterImportEvent('roster_import_draft_ready', serverImportFormat);
         } catch (error) {
             if (serverImportFormat) captureRosterImportEvent('roster_import_failed', serverImportFormat);
+
             const message = getOnboardingUploadFailureMessage(error, {
                 defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),
                 networkMessage: t('page.onboardingWardCreate.upload.networkFailed'),

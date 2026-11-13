@@ -98,7 +98,9 @@ export type TOnboardingUploadFailureCopy = {
 
 const ONBOARDING_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg'];
 const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls', ...ONBOARDING_IMAGE_EXTENSIONS];
+
 export const ONBOARDING_UPLOAD_ACCEPT = SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.map((extension) => `.${extension}`).join(',');
+
 const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'MIN_STAFF_BY_SHIFT',
     'MAX_CONSECUTIVE_WORK_DAYS',
@@ -1424,6 +1426,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
     const constraintRules = buildConstraintRulePayloads(draft);
 
     return {
+        ...(draft.onboardingSignals ? {onboardingSignals: draft.onboardingSignals} : {}),
         name: normalizedWardName || normalizedHospitalName || fallbackName,
         // 카탈로그에서 고른 병원이면 id 도 함께 보낸다. 서버가 이름을 카탈로그 기준으로 확정한다.
         ...(typeof draft.hospitalId === 'number' ? {hospitalId: draft.hospitalId} : {}),

@@ -153,6 +153,7 @@ const toCreateWardShiftTypeRequest = (shiftType: TCreateWardShiftTypeDTO): TCrea
 };
 
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
+    ...(createWardDTO.onboardingSignals ? {onboardingSignals: createWardDTO.onboardingSignals} : {}),
     name: createWardDTO.name,
     ...(typeof createWardDTO.hospitalId === 'number' ? {hospitalId: createWardDTO.hospitalId} : {}),
     hospitalName: createWardDTO.hospitalName,
