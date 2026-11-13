@@ -1,6 +1,6 @@
 {
     "checkedAt": "2026-11-13",
-    "method": "공식 홈페이지의 로고 이미지·CSS·렌더링 결과를 대조했다. 원본 색상과 비율을 유지한 WebP로 최적화했다. 흰색 로고는 어두운 배경에 표시한다. 공식 로고 미확보는 로고 자체가 없다는 뜻이 아니며 동명이거나 검증하지 못한 이미지는 사용하지 않는다. 파일 번호는 수집 당시 식별자이며 화면 순서와 무관하게 병원명으로 매핑한다.",
+    "method": "구글 이미지 검색으로 미확보 병원을 재검색한 뒤 공식 홈페이지·공식 SNS 또는 병원이 공개한 채용정보·협력병원 소개와 대조했다. 홈페이지 자산과 공개자료 검증 로고를 status/sourceKind로 구분한다. 인라인 SVG와 CSS 스프라이트는 공식 페이지에 표시되는 로고만 추출했다. 원본 색상·비율을 유지하고 흰색 로고는 어두운 배경에 표시한다. 기관 식별 또는 로고 검증이 불가능한 경우 기존 아이콘을 유지한다.",
     "hospitals": [
         {
             "name": "충북대학교병원",
@@ -326,9 +326,15 @@
         {
             "name": "송추정신병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.songchumh.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-033.webp",
+            "sourceUrl": "http://www.songchumh.co.kr/images/logo_main.png",
+            "sourcePage": "http://www.songchumh.co.kr/main.asp",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "fbb303d52345e48a2df602fc99720ffb874ee9c53430cf78b4ce33519e8c0ae5"
         },
         {
             "name": "순천향대학교부속부천병원",
@@ -343,23 +349,42 @@
         {
             "name": "대청병원",
             "checkedAt": "2026-11-13",
-            "website": "http://www.dch.or.kr/main/main.html",
-            "status": "fallback",
-            "reason": "접속한 사이트의 기관이 달라 제외"
+            "website": "https://www.dchp.or.kr/",
+            "status": "official-logo",
+            "reason": "접속한 사이트의 기관이 달라 제외",
+            "src": "/img/hospitals/hospital-035.webp",
+            "sourceUrl": "https://www.dchp.or.kr/_nuxt/img/logo_cert.73b7f99.svg",
+            "sourcePage": "https://www.dchp.or.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "89d3e1b33c46b557180d2dae14c9e1d550fb14196a768b32d19ef2311de39d6e"
         },
         {
             "name": "의료법인우리의료재단김포우리병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.gwhospital.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.gwhospital.co.kr/clinic/center.php?q_center=PCTR_104",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-036.webp",
+            "sourceUrl": "https://www.gwhospital.co.kr/images/sub/lab/clogo.jpg",
+            "sourcePage": "https://www.gwhospital.co.kr/clinic/center.php?q_center=PCTR_104",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "85a80883b4708e3dc8801a1836c65393eec81d601c6fe2c63a2e65687ad7035a"
         },
         {
             "name": "경희대학교병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.khmc.or.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://med.khmc.or.kr/kr/introduction-notice/view.do?articleNo=18024",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-037.webp",
+            "sourceUrl": "https://med.khmc.or.kr/resources/KR/university/images/common/logo_top01.png",
+            "sourcePage": "https://med.khmc.or.kr/kr/introduction-notice/view.do?articleNo=18024",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "f8b4d49028111c2c2b54c55c26509b8f65022ae47b95d7ce76a6eed34677b284",
+            "background": "dark"
         },
         {
             "name": "울산병원",
@@ -406,9 +431,15 @@
         {
             "name": "근로복지공단 순천병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.comwel.or.kr/sc/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.comwel.or.kr/suncheon",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-042.webp",
+            "sourceUrl": "https://www.comwel.or.kr/_res/suncheon/img/common/logo.png",
+            "sourcePage": "https://www.comwel.or.kr/suncheon/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "79d38edef81ee30613a70d9e2bb8d96be09c363632d969d85d6ed8ca1d61e798"
         },
         {
             "name": "강릉아산병원",
@@ -503,9 +534,15 @@
         {
             "name": "의료법인 정빈의료재단 아산병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.asanmh.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-052.webp",
+            "sourceUrl": "http://www.asanmh.co.kr/img/as_main_logo.jpg",
+            "sourcePage": "http://www.asanmh.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "71dfe697b51458316737f824ccb848dae3bc1d0eca5991b8879a2a253605b053"
         },
         {
             "name": "가톨릭대학교 은평성모병원",
@@ -520,23 +557,42 @@
         {
             "name": "하워드힐병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.howardhill.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.xn--hy1by4m7sisa017pp7c.com/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-054.webp",
+            "sourceUrl": "https://www.xn--hy1by4m7sisa017pp7c.com/image/common/logo.png",
+            "sourcePage": "https://www.xn--hy1by4m7sisa017pp7c.com/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "424fc7dc34a0059ed4f86223981eef28a3d5fa93ea2f8165408731ceaa0c0359",
+            "background": "dark"
         },
         {
             "name": "의료법인 박애의료재단 박애병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.pha.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.bagaehospital.com/main/main.html",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-055.webp",
+            "sourceUrl": "https://www.bagaehospital.com/user/saveDir/awd/P/0/image_132788.png?itemTime=1780558394",
+            "sourcePage": "https://www.bagaehospital.com/main/main.html",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "af58a14f8cc96af0f10c9f23b7a2c9164b698b6c3ce9fd1f0500ee41ead0fe42"
         },
         {
             "name": "익산병원",
             "checkedAt": "2026-11-13",
             "website": "https://www.iksanhp.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "status": "verified-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-056.webp",
+            "sourceUrl": "https://www.hanagh.com/theme/bs4/img/partner_iksanhp.png",
+            "sourcePage": "https://www.hanagh.com/content/partner",
+            "sourceKind": "partner-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "3086004b20a4491f72dd2be8d1c9a952e59442526601ac1c03e224c654360dce"
         },
         {
             "name": "의료법인 청구성심병원",
@@ -571,9 +627,15 @@
         {
             "name": "동래봉생병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.bongseng.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.drbs.or.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-060.webp",
+            "sourceUrl": "http://www.drbs.or.kr/page/img/common/logo@2x.png",
+            "sourcePage": "http://www.drbs.or.kr/page/main/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "a822e4135519e4e10d0ebe138fd6e0b42f47745046df73974b2d9dd50879efa8"
         },
         {
             "name": "에스포항병원",
@@ -598,16 +660,23 @@
         {
             "name": "부산성모병원(재단법인 천주교부산교구유지재단)",
             "checkedAt": "2026-11-13",
-            "website": "https://www.bsm.or.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.bsm.or.kr/00main/main.asp",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-063.webp",
+            "sourceUrl": "https://www.bsm.or.kr/images/common/t_main_logo.svg",
+            "sourcePage": "https://www.bsm.or.kr/00main/main.asp",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "2cce5949227024418333349c5b2aa58425909502d4f138f7701de14520015421"
         },
         {
             "name": "M병원",
             "checkedAt": "2026-11-13",
             "website": null,
             "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "notes": "대구 북구 팔달로147의 M병원. 검색 결과의 일반 M 기본이미지와 다른 지역 M병원 로고는 사용하지 않음."
         },
         {
             "name": "재단법인아산사회복지재단 서울아산병원",
@@ -632,9 +701,15 @@
         {
             "name": "의료법인영경의료재단전주병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.jjhospital.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.jjhospital.co.kr/myboard/nonsalary/3347565",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-067.webp",
+            "sourceUrl": "https://www.jjhospital.co.kr/img_up/shop_pds/jjhospital/farm/main_logo1779928922.png",
+            "sourcePage": "https://www.jjhospital.co.kr/myboard/nonsalary/3347565",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "e9dc2d9fb28826ac2a705bad0affb8fa16f7096a0d18a537bfb83434c692dd0b"
         },
         {
             "name": "청주성모병원",
@@ -689,9 +764,15 @@
         {
             "name": "그린재활의학과병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.greenhosp.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-073.webp",
+            "sourceUrl": "http://www.greenhosp.co.kr/green/img/common/logo.gif",
+            "sourcePage": "http://www.greenhosp.co.kr/green/page/index.php",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "693cc8fdcf7f54d979b98fb021ee581e4d1d07e7e199a0d184792c29f9bd658b"
         },
         {
             "name": "녹색병원",
@@ -758,21 +839,34 @@
             "checkedAt": "2026-11-13",
             "website": "https://www.koreanh.co.kr/",
             "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "notes": "인제고려병원. 공식 홈페이지 자산과 현행 로고 원본을 확인하지 못함."
         },
         {
             "name": "힘내라정형외과병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.fightingos.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-081.webp",
+            "sourceUrl": "https://cdn.imweb.me/upload/S202103219839514128f0e/0990428e40287.png",
+            "sourcePage": "https://www.fightingos.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "fdb744efd9b1a69c8d3c1ca5d73d424435f664487f15b05b2c0ba193afc66b08"
         },
         {
             "name": "오정본병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.ojbonhospital.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.ojbonhospital.com/home",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-082.webp",
+            "sourceUrl": "https://cdn.imweb.me/thumbnail/20261110/ecb68ab5f917a.png",
+            "sourcePage": "https://www.ojbonhospital.com/home",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "d24a7f917652e745850487b9145dee22b0cc661cd2c29d20296e4a337fa9408f"
         },
         {
             "name": "화순전남대학교병원",
@@ -787,16 +881,28 @@
         {
             "name": "퍼스트병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://xn--om3bn0iuzdksp71a.com/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-084.webp",
+            "sourceUrl": "https://cdn.imweb.me/thumbnail/20261109/4c16dde8b2227.png",
+            "sourcePage": "http://xn--om3bn0iuzdksp71a.com/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "fb4ce65df31651190ebab207e8c409b8e2fb1d2eceb4d6b0ad94a32c40ecee13"
         },
         {
             "name": "대구예스병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://dgyes.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-085.webp",
+            "sourceUrl": "http://dgyes.co.kr/theme/hy/img/m-logo.png",
+            "sourcePage": "http://dgyes.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "37b614950b61a77aa46a4b002ab4af8c2059ce0925bd9f3f6caa10807d9b200f"
         },
         {
             "name": "강원대학교병원",
@@ -811,9 +917,16 @@
         {
             "name": "연세명인병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.ysmi.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-087.webp",
+            "sourceUrl": "http://www.ysmi.co.kr/skin/basic/images/logo_ysmi.png",
+            "sourcePage": "http://www.ysmi.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "4fb11f3326f0be4703e84595b11596c11c777faed8e2f512dbeba08d9ed849b6",
+            "background": "dark"
         },
         {
             "name": "연세대학교의과대학 강남세브란스병원",
@@ -828,9 +941,15 @@
         {
             "name": "해오름 한방병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://haeorummedi.com/theme/websre36/page/index.php",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-089.webp",
+            "sourceUrl": "http://haeorummedi.com/theme/websre36/img/logo-w.png",
+            "sourcePage": "http://haeorummedi.com/theme/websre36/page/index.php",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "9e905d1b1c37080b2df9baec562c9cdcb10c2a504b486fc11125db2ae31b5d3b"
         },
         {
             "name": "영광종합병원",
@@ -895,23 +1014,41 @@
         {
             "name": "국민요양병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "",
+            "status": "verified-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-096.webp",
+            "sourceUrl": "https://api.nurse-link.co.kr/attachments/81506",
+            "sourcePage": "https://nurse-link.co.kr/jobs/33384",
+            "sourceKind": "published-recruiting-logo",
+            "discovery": "Google Image Search",
+            "sha256": "999fec4a4a0d2f72d8bc9517a0f5696f3e28e18704057d02c8cd4ffa93141f9d"
         },
         {
             "name": "동해이레요양병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://ilehos.com/main/main.php",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-097.webp",
+            "sourceUrl": "http://ilehos.com/img/logo.jpg",
+            "sourcePage": "http://ilehos.com/main/main.php",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "90e5f5efe30d4e31ed5f02a46fcc1df5a34d0014466624a3a98bd4b5d8c6f6c2"
         },
         {
             "name": "남양주백병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.nyjh.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.baekhospital.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-098.webp",
+            "sourceUrl": "https://www.baekhospital.co.kr/assets/img/common/h_logo.png",
+            "sourcePage": "https://www.baekhospital.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "e4fc10243247fa71aff9a36b9832d006a9d686277543600c6d1acad4efa7839e"
         },
         {
             "name": "현대유비스병원",
@@ -926,23 +1063,41 @@
         {
             "name": "포그니병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.pognyhospital.com/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-100.webp",
+            "sourceUrl": "https://www.pognyhospital.com/kr/images/svg/logo.svg",
+            "sourcePage": "https://www.pognyhospital.com/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "41d121522ae64b349d22cf56b82ae528a3e7d859131d7ca1ce39b013d63c6ce1"
         },
         {
             "name": "광주병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.gwangjuhosp.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-101.webp",
+            "sourceUrl": "https://scontent-gmp1-1.cdninstagram.com/v/t51.2885-19/338449534_1315272875719972_7191176964938070454_n.jpg?_nc_cat=109&_nc_map=urlgen_bucketless&ig_cache_key=GH5ULBQkPYrUO6wEALb5GmBZMcxjbkULAAAB0j-ccb7-5&ccb=7-5&_nc_sid=669407&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=1WPdVqvyT7IQ7kNvwE04eEJ&_nc_oc=AdoVmLLG4imakZuYX-hAP3TIQExz8dv91iWRgeVz2ULhRW8hsAoyOgHUe7I2R5SClQI&_nc_zt=24&_nc_ht=scontent-gmp1-1.cdninstagram.com&_nc_ss=7b6a8&_nc_ct=RQosPBUCFQIAAAA&oh=00_AQQRGTpH0Rq4qrFuRSGl_R7Bg_2wOF-vNUAB7MbQcUI_3A&oe=6AFC4B3E",
+            "sourcePage": "https://www.instagram.com/gwangju_hosp/",
+            "sourceKind": "official-social-logo",
+            "discovery": "Google Image Search",
+            "sha256": "58ee7849a8453ecf1c60781ae512ba5c783bef777c6be86c3542f0cecf9c324f"
         },
         {
             "name": "마리아성모요양병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://mariasm.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-102.webp",
+            "sourceUrl": "http://mariasm.co.kr/files/attach/images/106/a31677964210b4cc1d23765a8f2c6f07.png",
+            "sourcePage": "http://mariasm.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "14ce348a1956f2a819fc63016d5c0265ea71f4adcd50691360ab7e34c4445473"
         },
         {
             "name": "의료법인 영서의료재단 천안충무병원",
@@ -1017,9 +1172,15 @@
         {
             "name": "효다움요양병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.hyodaoom.kr/actphp",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-110.webp",
+            "sourceUrl": "http://www.hyodaoom.kr/actphp/theme/actstyle/html/image/top_logo.png",
+            "sourcePage": "http://www.hyodaoom.kr/actphp/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "8b8776798bc3c5272b4f7135afe4175fda9d0ce7a1b197ba203b9b4ae738deca"
         },
         {
             "name": "솔담한방병원",
@@ -1054,9 +1215,16 @@
         {
             "name": "서울적십자병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.rch.or.kr/web/seoul/main.do",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.rch.or.kr/web/rchseoul/main",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-114.webp",
+            "sourceUrl": "https://www.rch.or.kr/web/rchseoul/main#header",
+            "sourcePage": "https://www.rch.or.kr/web/rchseoul/main",
+            "sourceKind": "official-inline-svg",
+            "discovery": "Google Image Search",
+            "sha256": "61309debfda91af05729dc34b292b19c162417d6804632c3bc888d294a4cfc8e",
+            "processing": "공식 헤더의 서울적십자병원 인라인 SVG 추출"
         },
         {
             "name": "일어나병원",
@@ -1101,9 +1269,15 @@
         {
             "name": "담양사랑병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "",
+            "status": "verified-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-119.webp",
+            "sourceUrl": "https://api.nurse-link.co.kr/attachments/60439",
+            "sourcePage": "https://nurse-link.co.kr/jobs/24885",
+            "sourceKind": "published-recruiting-logo",
+            "discovery": "Google Image Search",
+            "sha256": "83562ba975d9752e132d64651ce2911218b0ad682a3068c206f4c2afdbeabfdd"
         },
         {
             "name": "인제대학교 해운대백병원",
@@ -1138,9 +1312,15 @@
         {
             "name": "의료법인 성원의료재단 영도참편한 요양병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.ydchampyonhan.com/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-123.webp",
+            "sourceUrl": "http://www.ydchampyonhan.com/ko/images/logo.png",
+            "sourcePage": "http://www.ydchampyonhan.com/ko/index.html",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "71381fb23d72d804984ccbf7660a2d3e9786e5fce38bd24d7f96138630786104"
         },
         {
             "name": "인천힘찬종합병원",
@@ -1157,7 +1337,8 @@
             "checkedAt": "2026-11-13",
             "website": null,
             "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "notes": "연천군 이정의료재단 효사랑병원. 전주 효사랑가족요양병원 등 동명 기관의 로고는 사용하지 않음."
         },
         {
             "name": "의료법인 서명의료재단 세명종합병원",
@@ -1172,9 +1353,15 @@
         {
             "name": "센트럴아동병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.centralchild.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-127.webp",
+            "sourceUrl": "http://www.centralchild.co.kr/images/main_logo.png",
+            "sourcePage": "http://www.centralchild.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "0d694c252357e38aaa6f7c59bf01ec933a4c3011789ed6c3e5619aa88ce77351"
         },
         {
             "name": "의료법인 양진의료재단 평택성모병원",
@@ -1189,30 +1376,55 @@
         {
             "name": "의료법인 송암의료재단 마이크로병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.micromedical.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://micromedicalcenter.com/main.html",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-129.webp",
+            "sourceUrl": "https://micromedicalcenter.com/public/images/icon-pack.png",
+            "sourcePage": "https://micromedicalcenter.com/main.html",
+            "sourceKind": "official-css-sprite",
+            "discovery": "Google Image Search",
+            "sha256": "fc284bf4c869e72638bdd8534d94d490caa56cd2034491fc4e878089a7a90066",
+            "processing": "공식 CSS .ip-icon-header-logo:before의 검은색 로고 영역(120,0,122,48) 추출"
         },
         {
             "name": "스마튼병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://m.smartonhosp.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-130.webp",
+            "sourceUrl": "https://m.smartonhosp.co.kr/img/logo.png",
+            "sourcePage": "https://m.smartonhosp.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "a2aeafe1176002daa7a3d9168dc6f990dace2fb647f69b2e1bd608c6ea1f9131"
         },
         {
             "name": "아름제일병원",
             "checkedAt": "2026-11-13",
-            "website": "http://www.areumcheil.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.areumcheil.com/ab-1302",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-131.webp",
+            "sourceUrl": "http://www.areumcheil.com/images/logo001_1218_로고수정_영문없음.png",
+            "sourcePage": "http://www.areumcheil.com/ab-1302",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "48781787ae62ab1ceeea5ac182a3e4a35018cf94c62888c1fca80bcf253dc9a8"
         },
         {
             "name": "의료법인 영제 의료재단 엔케이세종병원",
             "checkedAt": "2026-11-13",
-            "website": "https://www.nksejonghospital.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://nksjhsp.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-132.webp",
+            "sourceUrl": "http://nksjhsp.co.kr/img/logo.png",
+            "sourcePage": "http://nksjhsp.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "702931425fd26a768924faeab290a8322557c17f6469f09e22ce9d2cdb6635fe"
         },
         {
             "name": "노원을지대학교병원",
@@ -1268,9 +1480,15 @@
         {
             "name": "진주굿모닝병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://jinjugoodmh.com/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-138.webp",
+            "sourceUrl": "https://jinjugoodmh.com/res/logo.png?241028",
+            "sourcePage": "https://jinjugoodmh.com/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "f57e2f1339faf4c528be0b34aecf4fe5eeb404c81d0e344ed1a12d37b5a9724b"
         },
         {
             "name": "두발로병원",
@@ -1286,8 +1504,14 @@
             "name": "광주수완병원",
             "checkedAt": "2026-11-13",
             "website": "http://www.suwanhospital.com/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "status": "verified-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-140.webp",
+            "sourceUrl": "https://api.nurse-link.co.kr/attachments/62353",
+            "sourcePage": "https://nurse-link.co.kr/jobs/25626",
+            "sourceKind": "published-recruiting-logo",
+            "discovery": "Google Image Search",
+            "sha256": "fba94dd3efea40b1ebfee7d108cb681249505530b2eb038e55a711d6598af23f"
         },
         {
             "name": "가톨릭대학교 성빈센트병원",
@@ -1303,8 +1527,14 @@
             "name": "원주연세병원",
             "checkedAt": "2026-11-13",
             "website": "https://www.wjys.co.kr/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "status": "verified-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-142.webp",
+            "sourceUrl": "https://clogo.saramin.co.kr/company/logo/202204/13/ra9ohx_5jgy-uj3r4d_logo.jpg",
+            "sourcePage": "https://www.saramin.co.kr/zf_user/company-info/view/csn/bWtjN2FGblFmQ1NGdnpQdWUzeW5uUT09/company_nm/%EC%9B%90%EC%A3%BC%EC%97%B0%EC%84%B8%EB%B3%91%EC%9B%90",
+            "sourceKind": "published-employer-logo",
+            "discovery": "Google Image Search",
+            "sha256": "1a5e387c64fa6e79d6942a1efc62def0e82e74d1218eca8838f2913a0e0a0353"
         },
         {
             "name": "순천중앙병원",
@@ -1330,9 +1560,15 @@
         {
             "name": "흥케이병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "https://www.heung-k.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-145.webp",
+            "sourceUrl": "https://www.heung-k.co.kr/superboard/data/siteconfig/20240930160249_66fa4d1938c9c_511342900b86d4033ff20e178c1dc2743bab10be.jpg",
+            "sourcePage": "https://www.heung-k.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "271fdaf7e609ef6a00838419cfda43fa16c45c3341de9c7460b515517d97b92c"
         },
         {
             "name": "한양대학교병원",
@@ -1367,9 +1603,15 @@
         {
             "name": "새통영병원",
             "checkedAt": "2026-11-13",
-            "website": "https://saety.drline.net/",
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.saety.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-149.webp",
+            "sourceUrl": "http://www.saety.co.kr/images/logo.gif",
+            "sourcePage": "http://www.saety.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "646ea79414e0b62a01d31f7128e4e06077b5fa95b9dae7e6cfbd01ed63dabbdc"
         },
         {
             "name": "한림병원",
@@ -1384,9 +1626,15 @@
         {
             "name": "의료법인창녕서울의료재단창녕서울병원",
             "checkedAt": "2026-11-13",
-            "website": null,
-            "status": "fallback",
-            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용"
+            "website": "http://www.cshp.co.kr/",
+            "status": "official-logo",
+            "reason": "공식 로고를 확보하지 못해 기존 병원 아이콘 사용",
+            "src": "/img/hospitals/hospital-151.webp",
+            "sourceUrl": "http://www.cshp.co.kr/image/logo.gif",
+            "sourcePage": "http://www.cshp.co.kr/",
+            "sourceKind": "official-website-asset",
+            "discovery": "Google Image Search",
+            "sha256": "2b52a788809ff4012d80e25c2ef82e00741643bb3dd9e47e44b973c5f2a929d8"
         },
         {
             "name": "한빛병원",

@@ -8,6 +8,12 @@ const motion = vi.hoisted(() => ({reduced: false}));
 
 vi.mock('../use-landing-reduced-motion', () => ({useLandingReducedMotion: () => motion.reduced}));
 
+vi.mock('../landing-hospital-logos', async (importOriginal) => {
+    const actual = await importOriginal<{landingHospitalLogos: typeof landingHospitalLogos}>();
+
+    return {landingHospitalLogos: {...actual.landingHospitalLogos, 송추정신병원: undefined}};
+});
+
 const image = () => screen.getByRole('region', {name: '듀팅 이용 현황'}).querySelector('img')!;
 const advance = (steps: number) => act(() => vi.advanceTimersByTime(3800 * steps));
 
