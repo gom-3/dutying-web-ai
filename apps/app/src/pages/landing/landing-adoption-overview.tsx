@@ -1,7 +1,8 @@
 import {type CSSProperties, useEffect, useState} from 'react';
 import {Trans} from 'react-i18next';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {landingHospitals} from './landing-hospitals';
+import {landingHospitalLogos} from './landing-hospital-logos';
+import {landingHospitals, type TLandingHospital} from './landing-hospitals';
 import {useLandingReducedMotion} from './use-landing-reduced-motion';
 import './landing-adoption-overview.css';
 
@@ -86,14 +87,40 @@ const hospitalPalette = [
     {color: '#88396e', tint: '#f7e5f2', hue: 60},
 ] as const;
 const hospitalCycle = landingHospitals.length * hospitalPalette.length;
-// The first and last slots let the icons enter and leave the visible rail.
-const hospitalIconOffsets = [-5, -4, -3, -2, -1, 0, 1] as const;
+const fallbackHospitalIcon = '/img/landing-hospital-3d-icon.webp';
+
+function HospitalLogo({name, tint, hue}: {name: TLandingHospital; tint: string; hue: number}) {
+    const [failed, setFailed] = useState(false);
+    const logo = landingHospitalLogos[name];
+    const hasLogo = Boolean(logo) && !failed;
+
+    return (
+        <span className="landing-hospital-rotation__visual" aria-hidden="true">
+            <span
+                className={
+                    hasLogo ? 'landing-hospital-rotation__image landing-hospital-rotation__image--logo' : 'landing-hospital-rotation__image'
+                }
+                data-background={hasLogo ? logo?.background : undefined}
+                style={hasLogo ? undefined : ({backgroundColor: tint, '--hospital-icon-hue': `${hue}deg`} as CSSProperties)}
+            >
+                <img
+                    src={hasLogo ? logo?.src : fallbackHospitalIcon}
+                    alt=""
+                    width="320"
+                    height="128"
+                    decoding="async"
+                    onError={hasLogo ? () => setFailed(true) : undefined}
+                />
+            </span>
+        </span>
+    );
+}
 
 export function LandingHospitalRotation() {
     const [hospitalStep, setHospitalStep] = useState(0);
     const reducedMotion = useLandingReducedMotion();
     const name = landingHospitals[hospitalStep % landingHospitals.length];
-    const {color} = hospitalPalette[hospitalStep % hospitalPalette.length];
+    const {color, tint, hue} = hospitalPalette[hospitalStep % hospitalPalette.length];
 
     useEffect(() => {
         if (reducedMotion) return;
@@ -128,30 +155,7 @@ export function LandingHospitalRotation() {
                 </div>
             </dl>
             <div className="landing-hospital-rotation__surface">
-                <div className="landing-hospital-rotation__rail" aria-hidden="true">
-                    {hospitalIconOffsets.map((offset) => {
-                        const iconStep = (hospitalStep + offset + hospitalCycle) % hospitalCycle;
-                        const {tint, hue} = hospitalPalette[iconStep % hospitalPalette.length];
-
-                        return (
-                            <span
-                                key={iconStep}
-                                className="landing-hospital-rotation__icon"
-                                data-active={offset === 0}
-                                data-buffer={offset === -5 || offset === 1}
-                                style={
-                                    {
-                                        '--hospital-icon-slot': offset + 4,
-                                        '--hospital-icon-hue': `${hue}deg`,
-                                        backgroundColor: tint,
-                                    } as CSSProperties
-                                }
-                            >
-                                <img src="/img/landing-hospital-3d-icon.webp" alt="" width="144" height="144" decoding="async" />
-                            </span>
-                        );
-                    })}
-                </div>
+                <HospitalLogo key={name} name={name} tint={tint} hue={hue} />
                 <p className="landing-hospital-rotation__copy">
                     <strong key={name} style={{color}}>
                         {name}
