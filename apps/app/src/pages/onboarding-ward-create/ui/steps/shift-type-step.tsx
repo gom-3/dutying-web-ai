@@ -359,6 +359,7 @@ export function ShiftTypeStep({
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
+    const reviewRequiredCount = shiftTypes.filter((shiftType) => !isOnboardingShiftMappingResolved(shiftType.mappingStatus)).length;
     const showRotationSystemColumn = rotationMode === 'MIXED';
     const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
     const showProtectedDeleteToast = () => {
@@ -521,6 +522,12 @@ export function ShiftTypeStep({
             <p id="onboarding-shift-name-guidance" className="mb-4 max-w-[1120px] font-apple text-[13px] leading-relaxed text-gray-3">
                 {t('page.onboardingWardCreate.shiftType.nameGuidance')}
             </p>
+            {reviewRequiredCount > 0 ? (
+                <p aria-live="polite" className="mb-3 flex items-center gap-2 font-apple text-[13px] font-medium text-amber-900">
+                    <CircleAlert aria-hidden="true" className="h-4 w-4 shrink-0" />
+                    {t('page.onboardingWardCreate.shiftType.reviewCount', {count: reviewRequiredCount})}
+                </p>
+            ) : null}
             <Card
                 variant="elevated"
                 padding="none"
@@ -552,10 +559,23 @@ export function ShiftTypeStep({
                                             <div
                                                 ref={dragProvided.innerRef}
                                                 {...dragProvided.draggableProps}
-                                                className={`grid ${shiftTypeGridCols} items-start gap-4 rounded-[12px] px-3 py-3 ${
-                                                    !isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? 'bg-gray-7/70' : ''
+                                                className={`grid ${shiftTypeGridCols} items-start gap-4 rounded-[12px] border-l-2 px-3 py-3 ${
+                                                    !isOnboardingShiftMappingResolved(shiftType.mappingStatus)
+                                                        ? 'border-amber-400 bg-amber-50'
+                                                        : 'border-transparent'
                                                 }`}
                                             >
+                                                {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
+                                                    <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 pl-2 font-apple text-[13px] leading-relaxed text-amber-900">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 font-medium">
+                                                            <CircleAlert aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                                                            {t('page.onboardingWardCreate.shiftType.reviewStatus', {
+                                                                code: shiftType.shortName || shiftType.name,
+                                                            })}
+                                                        </span>
+                                                        <span>{t('page.onboardingWardCreate.shiftType.reviewHint')}</span>
+                                                    </div>
+                                                ) : null}
                                                 <button
                                                     type="button"
                                                     {...dragProvided.dragHandleProps}

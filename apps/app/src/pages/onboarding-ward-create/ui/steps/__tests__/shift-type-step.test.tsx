@@ -1,4 +1,5 @@
 import {fireEvent, screen} from '@testing-library/react';
+import {useState} from 'react';
 import {describe, expect, it, vi} from 'vitest';
 import {render, userEvent} from '@/shared/util/test-utils';
 import type {TOnboardingWardShiftType} from '../../../model';
@@ -60,6 +61,46 @@ describe('ShiftTypeStep', () => {
             expect(onChange).not.toHaveBeenCalledWith(shift.id, expect.objectContaining({shortName: expect.anything()}));
         },
     );
+
+    it('highlights only unresolved rows and clears the review state after selecting a type', async () => {
+        const user = userEvent.setup();
+        const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
+        const day = {...createInitialDraft().shiftTypes[0]!, mappingStatus: 'AUTO_MATCHED' as const};
+
+        function ReviewExample() {
+            const [customShift, setCustomShift] = useState(shift);
+
+            return (
+                <ShiftTypeStep
+                    shiftTypes={[day, customShift]}
+                    rotationMode="THREE"
+                    onChange={(_id, patch) => setCustomShift((current) => ({...current, ...patch}))}
+                    onDelete={vi.fn()}
+                    onAdd={vi.fn()}
+                    onDragEnd={vi.fn()}
+                />
+            );
+        }
+
+        render(<ReviewExample />);
+
+        const pending = screen.getByText('V · 확인 필요');
+        const row = pending.parentElement!.parentElement!;
+
+        expect(row).toHaveClass('bg-amber-50', 'border-amber-400');
+        expect(screen.getByText('확인이 필요한 근무 유형 1개')).toBeInTheDocument();
+        expect(screen.queryByText('D · 확인 필요')).not.toBeInTheDocument();
+        fireEvent.change(screen.getByDisplayValue('기타 휴가'), {target: {value: '병동 휴가'}});
+        expect(screen.getByText('V · 확인 필요')).toBeInTheDocument();
+        await user.click(screen.getByRole('combobox', {name: '병동 휴가 근무 의미 선택'}));
+        await user.click(screen.getByRole('option', {name: '기타 휴무'}));
+
+        expect(screen.queryByText('V · 확인 필요')).not.toBeInTheDocument();
+        expect(screen.queryByText('확인이 필요한 근무 유형 1개')).not.toBeInTheDocument();
+        expect(row).not.toHaveClass('bg-amber-50');
+        expect(screen.getByDisplayValue('병동 휴가')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('V')).toBeInTheDocument();
+    });
 
     it('commits Japanese abbreviations and fullwidth times after IME conversion', () => {
         const draft = createInitialDraft();
