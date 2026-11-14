@@ -550,6 +550,32 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
     });
 
+    it('reopens the saved previous month schedule after returning from shift types and after reload', async () => {
+        const user = userEvent.setup();
+        const view = render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+        await user.click(screen.getByRole('button', {name: '이전 달'}));
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {getData: () => '김하늘\tD\tE\tN'},
+        });
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '이전'}));
+
+        const month = getRelativeScheduleMonth(-1);
+        expect(screen.getByText(`${month.year}년 ${month.month}월`)).toBeInTheDocument();
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('김하늘');
+        expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('D');
+        expect(screen.getByLabelText('1행 2일 근무')).toHaveValue('E');
+
+        await waitFor(() => expect((latestSavedDraftPayload as {draft: {currentStep: number}}).draft.currentStep).toBe(3));
+        view.unmount();
+        render(<OnboardingWardCreatePage />);
+        await screen.findByLabelText('1행 간호사 이름');
+        expect(screen.getByText(`${month.year}년 ${month.month}월`)).toBeInTheDocument();
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('김하늘');
+        expect(screen.getByLabelText('1행 3일 근무')).toHaveValue('N');
+    });
+
     it('shows team delete action on the schedule input step and deletes the selected team', async () => {
         const user = userEvent.setup();
 

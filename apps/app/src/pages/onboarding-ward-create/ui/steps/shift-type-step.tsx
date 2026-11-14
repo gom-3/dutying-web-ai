@@ -53,8 +53,8 @@ interface IShiftTypeRequirementsProps {
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_GRID_COLS_WITH_ROTATION = 'grid-cols-[32px_minmax(110px,0.95fr)_72px_94px_170px_minmax(220px,1.35fr)_48px_40px]';
-const SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION = 'grid-cols-[32px_minmax(110px,0.95fr)_72px_170px_minmax(220px,1.35fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS_WITH_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_94px_170px_minmax(220px,1.35fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION = 'grid-cols-[32px_72px_minmax(110px,0.95fr)_170px_minmax(220px,1.35fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
@@ -359,6 +359,7 @@ export function ShiftTypeStep({
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
+    const reviewRequiredCount = shiftTypes.filter((shiftType) => !isOnboardingShiftMappingResolved(shiftType.mappingStatus)).length;
     const showRotationSystemColumn = rotationMode === 'MIXED';
     const shiftTypeGridCols = showRotationSystemColumn ? SHIFT_TYPE_GRID_COLS_WITH_ROTATION : SHIFT_TYPE_GRID_COLS_WITHOUT_ROTATION;
     const showProtectedDeleteToast = () => {
@@ -518,6 +519,15 @@ export function ShiftTypeStep({
                 rotationMode={rotationMode}
                 requireNightContinuation={requireNightContinuation}
             />
+            <p id="onboarding-shift-name-guidance" className="mb-4 max-w-[1120px] font-apple text-[13px] leading-relaxed text-gray-3">
+                {t('page.onboardingWardCreate.shiftType.nameGuidance')}
+            </p>
+            {reviewRequiredCount > 0 ? (
+                <p aria-live="polite" className="mb-3 flex items-center gap-2 font-apple text-[13px] font-medium text-amber-900">
+                    <CircleAlert aria-hidden="true" className="h-4 w-4 shrink-0" />
+                    {t('page.onboardingWardCreate.shiftType.reviewCount', {count: reviewRequiredCount})}
+                </p>
+            ) : null}
             <Card
                 variant="elevated"
                 padding="none"
@@ -527,8 +537,8 @@ export function ShiftTypeStep({
                     className={`mb-2 grid ${shiftTypeGridCols} items-center gap-4 px-3 text-center font-apple text-[13px] font-medium text-gray-3`}
                 >
                     <span />
-                    <span>{t('page.onboardingWardCreate.shiftType.name')}</span>
-                    <span>{t('page.onboardingWardCreate.shiftType.shortName')}</span>
+                    <span id="onboarding-shift-short-name-label">{t('page.onboardingWardCreate.shiftType.shortName')}</span>
+                    <span id="onboarding-shift-name-label">{t('page.onboardingWardCreate.shiftType.name')}</span>
                     {showRotationSystemColumn ? <span>{t('page.onboardingWardCreate.shiftType.rotation')}</span> : null}
                     <span>{t('page.onboardingWardCreate.shiftType.type')}</span>
                     <span>{t('page.onboardingWardCreate.shiftType.workTime')}</span>
@@ -549,10 +559,23 @@ export function ShiftTypeStep({
                                             <div
                                                 ref={dragProvided.innerRef}
                                                 {...dragProvided.draggableProps}
-                                                className={`grid ${shiftTypeGridCols} items-start gap-4 rounded-[12px] px-3 py-3 ${
-                                                    !isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? 'bg-gray-7/70' : ''
+                                                className={`grid ${shiftTypeGridCols} items-start gap-4 rounded-[12px] border-l-2 px-3 py-3 ${
+                                                    !isOnboardingShiftMappingResolved(shiftType.mappingStatus)
+                                                        ? 'border-amber-400 bg-amber-50'
+                                                        : 'border-transparent'
                                                 }`}
                                             >
+                                                {!isOnboardingShiftMappingResolved(shiftType.mappingStatus) ? (
+                                                    <div className="col-span-full flex flex-wrap items-center gap-x-3 gap-y-1 pl-2 font-apple text-[13px] leading-relaxed text-amber-900">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2 py-1 font-medium">
+                                                            <CircleAlert aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                                                            {t('page.onboardingWardCreate.shiftType.reviewStatus', {
+                                                                code: shiftType.shortName || shiftType.name,
+                                                            })}
+                                                        </span>
+                                                        <span>{t('page.onboardingWardCreate.shiftType.reviewHint')}</span>
+                                                    </div>
+                                                ) : null}
                                                 <button
                                                     type="button"
                                                     {...dragProvided.dragHandleProps}
@@ -566,30 +589,6 @@ export function ShiftTypeStep({
                                                 >
                                                     <SixDotsIcon className="h-4 w-4" />
                                                 </button>
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <CompositionInput
-                                                        value={shiftType.name}
-                                                        maxLength={SHIFT_NAME_MAX_LENGTH}
-                                                        onValueChange={(value) => onChange(shiftType.id, {name: value})}
-                                                        variant="foundation"
-                                                        fieldSize="lg"
-                                                        aria-invalid={Boolean(getShiftNameError(shiftType.name))}
-                                                        aria-describedby={
-                                                            getShiftNameError(shiftType.name)
-                                                                ? `onboarding-shift-name-error-${shiftType.id}`
-                                                                : undefined
-                                                        }
-                                                        className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
-                                                            getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
-                                                        }`}
-                                                        placeholder={t('page.onboardingWardCreate.shiftType.name')}
-                                                    />
-                                                    {getShiftNameError(shiftType.name) ? (
-                                                        <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
-                                                            {getShiftNameError(shiftType.name)}
-                                                        </InlineFieldError>
-                                                    ) : null}
-                                                </div>
                                                 <div className="flex flex-col items-center gap-1">
                                                     <CompositionInput
                                                         value={shiftType.shortName}
@@ -618,6 +617,7 @@ export function ShiftTypeStep({
                                                         }}
                                                         variant="foundation"
                                                         fieldSize="lg"
+                                                        aria-labelledby="onboarding-shift-short-name-label"
                                                         aria-invalid={Boolean(getShiftShortNameError(shiftType.id, shiftType.shortName))}
                                                         aria-describedby={
                                                             getShiftShortNameError(shiftType.id, shiftType.shortName)
@@ -634,6 +634,34 @@ export function ShiftTypeStep({
                                                     {getShiftShortNameError(shiftType.id, shiftType.shortName) ? (
                                                         <InlineFieldError id={`onboarding-shift-short-name-error-${shiftType.id}`}>
                                                             {getShiftShortNameError(shiftType.id, shiftType.shortName)}
+                                                        </InlineFieldError>
+                                                    ) : null}
+                                                </div>
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <CompositionInput
+                                                        value={shiftType.name}
+                                                        maxLength={SHIFT_NAME_MAX_LENGTH}
+                                                        onValueChange={(value) => onChange(shiftType.id, {name: value})}
+                                                        variant="foundation"
+                                                        fieldSize="lg"
+                                                        aria-labelledby="onboarding-shift-name-label"
+                                                        aria-invalid={Boolean(getShiftNameError(shiftType.name))}
+                                                        aria-describedby={[
+                                                            'onboarding-shift-name-guidance',
+                                                            getShiftNameError(shiftType.name)
+                                                                ? `onboarding-shift-name-error-${shiftType.id}`
+                                                                : null,
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(' ')}
+                                                        className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                            getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
+                                                        }`}
+                                                        placeholder={t('page.onboardingWardCreate.shiftType.name')}
+                                                    />
+                                                    {getShiftNameError(shiftType.name) ? (
+                                                        <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
+                                                            {getShiftNameError(shiftType.name)}
                                                         </InlineFieldError>
                                                     ) : null}
                                                 </div>

@@ -34,6 +34,7 @@ import {
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {isValidProfileName, sanitizeProfileNameInput} from '@/shared/lib/profile-name';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -53,12 +54,12 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = WEB_LANGUAGES;
-const validateName = (value: string, messages: {required: string; invalid: string}) => {
+const validateName = (value: string, messages: {required: string; invalid: string}, isNurseProfile = false) => {
     const requestName = normalizeNurseNameForRequest(value);
 
     if (!requestName) return messages.required;
 
-    if (!isValidNurseName(value)) {
+    if (!(isNurseProfile ? isValidNurseName(value) : isValidProfileName(value))) {
         return messages.invalid;
     }
 
@@ -251,10 +252,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         isProfileImageLoading || isSaving || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
-            return validateName(value, {
-                required: validationMessages.nameRequired,
-                invalid: validationMessages.nameInvalid,
-            });
+            return validateName(
+                value,
+                {
+                    required: validationMessages.nameRequired,
+                    invalid: validationMessages.nameInvalid,
+                },
+                hasNurseProfile,
+            );
         }
 
         return validatePhoneNum(value, phoneValidationRegion, {
@@ -274,10 +279,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
         const nextErrors: TProfileErrors = {
-            name: validateName(writeNurse.name ?? '', {
-                required: validationMessages.nameRequired,
-                invalid: validationMessages.nameInvalid,
-            }),
+            name: validateName(
+                writeNurse.name ?? '',
+                {
+                    required: validationMessages.nameRequired,
+                    invalid: validationMessages.nameInvalid,
+                },
+                true,
+            ),
             phoneNum: validatePhoneNum(phoneNum, phoneValidationRegion, {
                 required: validationMessages.phoneRequired,
                 invalid: validationMessages.phoneInvalid,
@@ -677,7 +686,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 placeholder={t('page.profile.namePlaceholder')}
                                 value={writeNurse?.name ?? draftName}
                                 onChange={(e) => {
-                                    const nextValue = sanitizeNurseNameInput(e.target.value);
+                                    const nextValue = writeNurse
+                                        ? sanitizeNurseNameInput(e.target.value)
+                                        : sanitizeProfileNameInput(e.target.value);
 
                                     if (writeNurse) {
                                         handleChange('name', nextValue);

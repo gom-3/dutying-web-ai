@@ -88,7 +88,7 @@ describe('LandingPage', () => {
         expect(usageStats.parentElement).toContainElement(hospitalName);
         expect(usageStats.compareDocumentPosition(hospitalName) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(hospitalUsage).toHaveTextContent('충북대학교병원 간호사가 듀팅을 사용하고 있어요.');
-        expect(hospitalUsage.querySelectorAll('img')).toHaveLength(1);
+        expect(hospitalUsage.querySelectorAll('[data-buffer="false"] img')).toHaveLength(5);
         expect(within(hospitalUsage).queryByRole('button')).not.toBeInTheDocument();
         expect(hospitalUsage.compareDocumentPosition(workflowTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(screen.queryByText('엑셀 가져오기 화면 보기')).not.toBeInTheDocument();

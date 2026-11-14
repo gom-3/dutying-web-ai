@@ -122,7 +122,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const isSocialMode = mode === 'social';
     const watchName = watch('name');
     const {profileImg, setPhotoImage} = useProfileImage(
-        accountMe?.status === 'WARD_SELECT_PENDING' && accountMe.profileImgUrl
+        ['WARD_SELECT_PENDING', 'WORKSPACE_SETUP_PENDING'].includes(accountMe?.status ?? '') && accountMe?.profileImgUrl
             ? {profileImgUrl: accountMe.profileImgUrl}
             : {defaultProfileImgId: 1},
     );
@@ -220,6 +220,12 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
 
         setValue('name', accountMe.name, {shouldValidate: true});
     }, [accountMe?.name, isSocialMode, setValue]);
+
+    useEffect(() => {
+        if (accountMe?.phoneNum) {
+            setValue('phoneNum', sanitizeContactPhoneInput(accountMe.phoneNum), {shouldValidate: true});
+        }
+    }, [accountMe?.phoneNum, setValue]);
 
     useEffect(() => {
         const subscription = watch(() => {
