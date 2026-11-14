@@ -335,7 +335,21 @@ function ScheduleInputStep({
     const [isSelecting, setIsSelecting] = useState(false);
     const [fillDrag, setFillDrag] = useState<{source: TCellRange; target: TCellPosition} | null>(null);
     const [shiftTermOrderBySchedule, setShiftTermOrderBySchedule] = useState<Record<string, string[]>>({});
-    const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
+    const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => {
+        const schedules = Object.values(draft.scheduleInputs?.[selectedTeamId] ?? {}).filter(
+            (schedule): schedule is TOnboardingTeamScheduleDraft =>
+                Boolean(schedule?.rows.some((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim()))),
+        );
+        const latest = schedules.reduce<TOnboardingTeamScheduleDraft | undefined>(
+            (current, schedule) =>
+                !current || schedule.year * 12 + schedule.month > current.year * 12 + current.month ? schedule : current,
+            undefined,
+        );
+
+        return latest
+            ? {key: getMonthKey(latest.year, latest.month), label: RECENT_SCHEDULE_LABEL, year: latest.year, month: latest.month}
+            : getCurrentMonthOption();
+    });
     const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
     const pendingUploadMonthJumpRef = useRef(false);
     const [editingDivisionNum, setEditingDivisionNum] = useState<number | null>(null);

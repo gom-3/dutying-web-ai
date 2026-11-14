@@ -819,7 +819,6 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     );
     const draftTouchedRef = useRef(false);
     const skipNextAutosaveRef = useRef(false);
-    const shiftTypeStepEntryDraftRef = useRef<TOnboardingWardDraft | null>(null);
     const shouldResetStepOnRestoreRef = useRef(shouldResetStepFromHistoryState());
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => {
         const initialDraft = createInitialDraft(onboardingDraftLabels);
@@ -1166,8 +1165,6 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             );
             const nextDraft = goNextStepDraft(previewDraft);
 
-            shiftTypeStepEntryDraftRef.current = nextDraft;
-
             return saveAndReloadDraft(nextDraft);
         } catch (error) {
             Sentry.captureException(error, {
@@ -1242,25 +1239,7 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
     const goPreviousStep = () => {
         markDraftTouched();
 
-        const shiftTypeStepEntryDraft = draft.currentStep === 4 ? shiftTypeStepEntryDraftRef.current : null;
-
-        if (draft.currentStep === 4 || draft.currentStep === 3) {
-            shiftTypeStepEntryDraftRef.current = null;
-        }
-
-        setDraft((prev) => {
-            const previousDraft = goPreviousStepDraft(prev);
-
-            if (prev.currentStep === 4 && shiftTypeStepEntryDraft) {
-                return {
-                    ...shiftTypeStepEntryDraft,
-                    onboardingSignals: prev.onboardingSignals,
-                    currentStep: previousDraft.currentStep,
-                };
-            }
-
-            return previousDraft;
-        });
+        setDraft((prev) => goPreviousStepDraft(prev));
     };
     const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName' | 'hospitalId'>>) => {
         markDraftTouched();
@@ -1759,7 +1738,6 @@ function useOnboardingWardWizard(options: TOnboardingWardWizardOptions = {}) {
             try {
                 const nextDraft = goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels));
 
-                shiftTypeStepEntryDraftRef.current = nextDraft;
                 await saveAndReloadDraft(nextDraft);
             } finally {
                 endStepTransition();
