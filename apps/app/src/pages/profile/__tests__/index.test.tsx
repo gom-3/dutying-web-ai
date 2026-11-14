@@ -116,6 +116,23 @@ describe('ProfilePage account actions', () => {
         });
     });
 
+    it('saves a QA profile name with its documented separators and the entered phone number', async () => {
+        render(<ProfilePage />);
+
+        const name = screen.getByRole('textbox', {name: '이름'});
+
+        await userEvent.clear(name);
+        await userEvent.type(name, '심사·QA-검증');
+        expect(name).toHaveValue('심사·QA-검증');
+
+        const phone = screen.getByRole('textbox', {name: '전화번호'});
+
+        await userEvent.clear(phone);
+        await userEvent.type(phone, '01000000042');
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+        await waitFor(() => expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('심사·QA-검증', {}, '01000000042'));
+    });
+
     it('updates birthDate through the dedicated account endpoint', async () => {
         render(
             <MemoryRouter>
