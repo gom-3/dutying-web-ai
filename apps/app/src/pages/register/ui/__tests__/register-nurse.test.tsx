@@ -8,6 +8,7 @@ vi.mock('@/shared/util/growth-analytics', () => ({trackProductOutcome: vi.fn()})
 const mocks = vi.hoisted(() => ({
     accountMe: null as {
         name?: string;
+        phoneNum?: string | null;
         status?: string;
         profileImgUrl?: string | null;
         preferredLanguage?: 'ko' | 'ja' | 'en';
@@ -79,6 +80,24 @@ describe('RegisterNurse', () => {
         expect(screen.queryByText('성별')).not.toBeInTheDocument();
         expect(screen.queryByText('입사일')).not.toBeInTheDocument();
         expect(screen.queryByText('근무자로 참여하기')).not.toBeInTheDocument();
+    });
+
+    it('prefills the saved contact and keeps the user edits when returning to profile setup', async () => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {name: '홍길동', phoneNum: '01012345678', status: 'WORKSPACE_SETUP_PENDING'};
+
+        const view = render(<RegisterNurse />);
+        const phone = screen.getByPlaceholderText('연락처를 입력해주세요');
+
+        expect(phone).toHaveValue('01012345678');
+        expect(screen.getByPlaceholderText('이름을 입력해주세요')).toHaveValue('홍길동');
+        await user.clear(phone);
+        await user.type(phone, '01098765432');
+        view.rerender(<RegisterNurse />);
+        expect(phone).toHaveValue('01098765432');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await waitFor(() => expect(mocks.registerAccountProfile).toHaveBeenCalledWith(expect.objectContaining({phoneNum: '01098765432'})));
     });
 
     it('does not prefill the social name and submits the typed real name in social signup mode', async () => {
