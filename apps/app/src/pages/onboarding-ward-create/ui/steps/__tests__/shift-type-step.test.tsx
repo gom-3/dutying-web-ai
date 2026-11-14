@@ -25,6 +25,38 @@ const createUnassignedNightShiftType = (): TOnboardingWardShiftType => ({
 });
 
 describe('ShiftTypeStep', () => {
+    it.each(['THREE', 'MIXED'] as const)(
+        'puts the code before its editable name in %s rotation and explains provisional names',
+        (rotationMode) => {
+            const onChange = vi.fn();
+            const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
+            render(
+                <ShiftTypeStep
+                    shiftTypes={[shift]}
+                    rotationMode={rotationMode}
+                    onChange={onChange}
+                    onDelete={vi.fn()}
+                    onAdd={vi.fn()}
+                    onDragEnd={vi.fn()}
+                />,
+            );
+
+            const code = screen.getByRole('textbox', {name: '약자'});
+            const name = screen.getByRole('textbox', {name: '근무명'});
+            expect(code).toHaveValue('V');
+            expect(name).toHaveValue('기타 휴가');
+            expect(code.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+            const codeLabel = document.getElementById('onboarding-shift-short-name-label')!;
+            const nameLabel = document.getElementById('onboarding-shift-name-label')!;
+            expect(codeLabel.compareDocumentPosition(nameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+            expect(name).toHaveAccessibleDescription(/D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요/);
+
+            fireEvent.change(name, {target: {value: '병동 휴가'}});
+            expect(onChange).toHaveBeenCalledWith(shift.id, {name: '병동 휴가'});
+            expect(onChange).not.toHaveBeenCalledWith(shift.id, expect.objectContaining({shortName: expect.anything()}));
+        },
+    );
+
     it('commits Japanese abbreviations and fullwidth times after IME conversion', () => {
         const draft = createInitialDraft();
         const shift = draft.shiftTypes[0]!;

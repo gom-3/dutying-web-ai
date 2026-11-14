@@ -2466,7 +2466,8 @@ export const ko = {
                 "rotationTwo": "2교대",
                 "rotationNone": "해당 없음",
                 "twoDayLabel": "2교대 주간",
-                "twoNightLabel": "2교대 야간"
+                "twoNightLabel": "2교대 야간",
+                "nameGuidance": "약자를 기준으로 확인해 주세요. D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요. 병동에서 쓰는 이름으로 바꾸고 유형을 확인해 주세요."
             },
             "teamTabs": {
                 "addTeam": "팀 추가하기"
@@ -5717,7 +5718,8 @@ export const en: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "Start with the shift code. Names for codes other than D, E, N and O may be temporary, automatically assigned descriptions. Use your ward’s names and check each shift type."
             },
             "teamTabs": {
                 "addTeam": "Add team"
@@ -8966,7 +8968,8 @@ export const ja: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "略称を基準に確認してください。D・E・N・O以外の勤務名は、自動で付けられた仮の説明の場合があります。病棟で使う名前に変更し、勤務区分を確認してください。"
             },
             "teamTabs": {
                 "addTeam": "チームを追加"
@@ -12215,7 +12218,8 @@ export const zh: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "请先核对缩写。D、E、N、O以外的班次名称可能是自动填写的临时说明。请改为病区使用的名称，并确认班次类型。"
             },
             "teamTabs": {
                 "addTeam": "添加团队"
@@ -15464,7 +15468,8 @@ export const zhTW: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "請先核對縮寫。D、E、N、O以外的班次名稱可能是自動填寫的暫時說明。請改為病房使用的名稱，並確認班次類型。"
             },
             "teamTabs": {
                 "addTeam": "新增團隊"
@@ -18713,7 +18718,8 @@ export const th: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "โปรดตรวจสอบจากรหัสเวรก่อน ชื่อเวรที่ไม่ใช่ D, E, N และ O อาจเป็นคำอธิบายชั่วคราวที่ระบบตั้งให้อัตโนมัติ โปรดเปลี่ยนเป็นชื่อที่วอร์ดใช้และตรวจสอบประเภทเวร"
             },
             "teamTabs": {
                 "addTeam": "เพิ่มทีม"
@@ -21962,7 +21968,8 @@ export const vi: TLocale = {
                 "rotationTwo": "Two-shift",
                 "rotationNone": "Not applicable",
                 "twoDayLabel": "Two-shift day",
-                "twoNightLabel": "Two-shift night"
+                "twoNightLabel": "Two-shift night",
+                "nameGuidance": "Hãy kiểm tra mã ca trước. Tên của các mã ngoài D, E, N và O có thể là mô tả tạm thời do hệ thống tự đặt. Hãy đổi thành tên dùng tại khoa và kiểm tra loại ca."
             },
             "teamTabs": {
                 "addTeam": "Thêm đội"
