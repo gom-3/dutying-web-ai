@@ -6,6 +6,11 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.48 - 2026-11-14
+
+- `@dutying/app` (patch): 근무표 조절 요청이 아직 반영되지 않았을 때 이유와 다음 행동을 확인할 수 있도록 한국어 안내를 개선합니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): Simplify ward subscription and payment management, and combine AI filling and revisions into a shared monthly allowance of 30 uses for Plus.
+
 ## 1.3.47 - 2026-11-11
 
 - `@dutying/app` (patch): 랜딩 페이지의 근무표 미리보기에서 모든 언어의 날짜와 메모가 잘리지 않도록 수정했습니다.

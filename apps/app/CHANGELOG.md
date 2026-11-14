@@ -1,5 +1,16 @@
 # @dutying/app
 
+## 1.3.48
+
+### Patch Changes
+
+- 근무표 조절 요청이 아직 반영되지 않았을 때 이유와 다음 행동을 확인할 수 있도록 한국어 안내를 개선합니다.
+- Simplify ward subscription and payment management, and combine AI filling and revisions into a shared monthly allowance of 30 uses for Plus.
+- Updated dependencies
+    - @dutying/api@1.3.48
+    - @dutying/domain@1.3.48
+    - @dutying/utils@1.3.48
+
 ## 1.3.47
 
 ### Patch Changes

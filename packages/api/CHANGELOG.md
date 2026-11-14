@@ -1,5 +1,12 @@
 # @dutying/api
 
+## 1.3.48
+
+### Patch Changes
+
+- Simplify ward subscription and payment management, and combine AI filling and revisions into a shared monthly allowance of 30 uses for Plus.
+    - @dutying/domain@1.3.48
+
 ## 1.3.47
 
 ### Patch Changes
