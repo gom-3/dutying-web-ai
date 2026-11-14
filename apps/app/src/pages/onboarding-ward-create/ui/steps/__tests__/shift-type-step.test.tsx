@@ -30,6 +30,7 @@ describe('ShiftTypeStep', () => {
         (rotationMode) => {
             const onChange = vi.fn();
             const shift = {...createUnassignedNightShiftType(), shortName: 'V', name: '기타 휴가'};
+
             render(
                 <ShiftTypeStep
                     shiftTypes={[shift]}
@@ -43,11 +44,14 @@ describe('ShiftTypeStep', () => {
 
             const code = screen.getByRole('textbox', {name: '약자'});
             const name = screen.getByRole('textbox', {name: '근무명'});
+
             expect(code).toHaveValue('V');
             expect(name).toHaveValue('기타 휴가');
             expect(code.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
             const codeLabel = document.getElementById('onboarding-shift-short-name-label')!;
             const nameLabel = document.getElementById('onboarding-shift-name-label')!;
+
             expect(codeLabel.compareDocumentPosition(nameLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
             expect(name).toHaveAccessibleDescription(/D·E·N·O 외 근무명은 자동으로 붙인 임시 설명일 수 있어요/);
 
