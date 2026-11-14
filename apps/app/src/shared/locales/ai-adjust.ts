@@ -89,7 +89,7 @@ export const aiAdjustKo = {
         memberSettings: '구성원 설정 확인 (새 탭)',
         offSettingsTitle: '휴무 설정을 확인해 주세요.',
         autofillTitle: 'AI 채우기를 마치지 못했어요.',
-        adjustTitle: '근무표를 수정하지 못했어요.',
+        adjustTitle: '요청을 반영하려면 확인이 필요해요.',
         retryConditions: '조건 확인하고 다시 계산하기',
         conflictDetailsMissing:
             '함께 지키기 어려운 조건의 자세한 내용을 확인하지 못했어요.\n근무 조건과 요청을 확인해 주세요. 계산 결과는 반영하지 않았어요.',
@@ -338,7 +338,7 @@ export const aiAdjustKo = {
     previous: '이전 대화',
     replaced: '새 요청으로 수정했어요',
     regenerating: '다시 AI 채우기',
-    failed: '요청을 처리하지 못했어요. 근무표와 요청 내용을 확인해 주세요.',
+    failed: '아직 요청을 반영하지 않았어요. 아래 안내를 확인해 주세요.',
     unexpectedOperation: '요청한 수정 내용을 확인하지 못해 반영하지 않았어요. 요청 내용을 확인해 주세요.',
     invalidCell: '수정할 날짜나 간호사를 근무표에서 확인하지 못했어요. 요청 내용을 확인해 주세요.',
     lockedCell: '고정한 근무나 신청 근무와 맞지 않아 변경하지 않았어요. 해당 근무를 확인해 주세요.',

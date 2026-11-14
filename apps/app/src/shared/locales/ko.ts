@@ -1296,7 +1296,7 @@ export const ko = {
                     useSuggestion: '이 문장으로 바꾸기',
                     applied: '{{count}}칸을 바꿨어요.',
                     noChange: '이번 실행에서는 반영할 변경을 찾지 못했어요.',
-                    failed: '근무표를 수정하지 못했어요. 요청과 근무 조건을 확인해 주세요.',
+                    failed: '아직 요청을 반영하지 않았어요. 아래 안내에서 다음 방법을 선택해 주세요.',
                     notAllowed: '이 계정에는 아직 열리지 않은 기능이에요.',
                     textInput: {
                         label: '수정 요청 문장',
