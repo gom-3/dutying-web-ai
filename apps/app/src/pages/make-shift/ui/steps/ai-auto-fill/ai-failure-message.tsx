@@ -3,7 +3,7 @@ import {Children, type ReactNode} from 'react';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
-import {failureMessagePoints} from '../../../model/failure-message-points';
+import {failureMessagePoints, localizeStoredFailureMessage} from '../../../model/failure-message-points';
 import {AssistantMessage} from './ai-adjust-review-conversation';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
 import {AiInterruptedRequestNotice, isInterruptedRequestNotice} from './ai-interrupted-request-notice';
@@ -27,7 +27,9 @@ export function AiFailureMessage({
     const displayRef = useScheduleJourneyDisplay<HTMLElement>(observation);
     const defaultTitle = t('aiAdjust.failure.title');
     const resolvedTitle = title ?? defaultTitle;
-    const points = [...new Set(failureMessagePoints(message))].filter((point) => point !== resolvedTitle && point !== defaultTitle);
+    const points = [...new Set(failureMessagePoints(localizeStoredFailureMessage(message)))].filter(
+        (point) => point !== resolvedTitle && point !== defaultTitle,
+    );
     const content = Children.toArray(children);
     const wrapping = i18n.resolvedLanguage?.startsWith('ja') ? 'break-normal' : 'break-keep';
 
