@@ -161,8 +161,8 @@ it('shows all month-only settings together before the explicit consent action', 
             onApply={onApply}
         />,
     );
-    expect(screen.getByText(/가능근무에 CustomNight 추가/)).toBeVisible();
-    expect(screen.getByText(/21 → 22/)).toBeVisible();
+    expect(screen.getByText(/현재 CustomNight 근무를 하지 않는 것으로 설정/)).toBeVisible();
+    expect(screen.getByText(/현재 조건은 21일.*22일로 바꿀까요/)).toBeVisible();
     expect(screen.getByText(/기존 설정은 저장하거나 영구 변경하지/)).toBeVisible();
     expect(onApply).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: '이번 달 조건 변경에 동의하고 반영'}));

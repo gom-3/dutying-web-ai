@@ -68,25 +68,27 @@ export function AiAuthoringCandidate({
                     <ul className="list-disc space-y-2 pl-4">
                         {(priority?.availabilityChanges ?? []).map((change) => (
                             <li key={`allowed:${change.shiftNurseId}:${change.wardShiftTypeId}`}>
-                                {t('aiConversationSidebar.authoring.settingAvailability', {
-                                    name: nurseName(Number(change.shiftNurseId)),
-                                    code: change.code,
-                                })}
+                                {change.userMessage ??
+                                    t('aiConversationSidebar.authoring.settingAvailability', {
+                                        name: nurseName(Number(change.shiftNurseId)),
+                                        code: change.shiftDisplayName ?? change.code,
+                                    })}
                                 {' · '}
                                 {t('aiConversationSidebar.authoring.settingMonth', {year: change.year, month: change.month})}
                             </li>
                         ))}
                         {(priority?.settingChanges ?? []).map((change, index) => (
                             <li key={`setting:${change.ruleId ?? index}:${index}`}>
-                                {typeof change.currentValue === 'number' && typeof change.proposedValue === 'number'
-                                    ? t('aiConversationSidebar.authoring.settingValues', {
-                                          name:
-                                              (change.subjectScope ?? []).map(nurseName).join(', ') ||
-                                              t('aiConversationSidebar.authoring.warnings'),
-                                          before: change.currentValue,
-                                          after: change.proposedValue,
-                                      })
-                                    : t('aiConversationSidebar.authoring.warnings')}
+                                {change.userMessage ??
+                                    (typeof change.currentValue === 'number' && typeof change.proposedValue === 'number'
+                                        ? t('aiConversationSidebar.authoring.settingValues', {
+                                              name:
+                                                  (change.subjectScope ?? []).map(nurseName).join(', ') ||
+                                                  t('aiConversationSidebar.authoring.warnings'),
+                                              before: change.currentValue,
+                                              after: change.proposedValue,
+                                          })
+                                        : t('aiConversationSidebar.authoring.warnings'))}
                                 {' · '}
                                 {t('aiConversationSidebar.authoring.settingMonth', {year: change.year, month: change.month})}
                             </li>

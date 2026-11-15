@@ -875,9 +875,13 @@ export type TAuthoringOutcome = {
         classification?: string;
         settingsConsent?: string;
         settingsPersisted?: false;
+        userSummary?: string;
+        userLanguage?: string;
+        userQualityWarnings?: string[];
         settingChanges?: {
             ruleId?: number;
             templateCode: string;
+            userMessage?: string;
             currentValue?: unknown;
             proposedValue?: unknown;
             year: number;
@@ -888,6 +892,8 @@ export type TAuthoringOutcome = {
         }[];
         availabilityChanges?: {
             kind: 'ADD_ALLOWED_SHIFT';
+            userMessage?: string;
+            shiftDisplayName?: string;
             shiftNurseId: string;
             nurseId: number;
             code: string;
