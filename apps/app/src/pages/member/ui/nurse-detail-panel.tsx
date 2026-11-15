@@ -28,7 +28,7 @@ import {
     isRestShiftOption,
     type TNurseShiftTypeOption,
 } from '../model/nurse-shift-types';
-import {RestAllocationSettings} from './rest-allocation-settings';
+import {NurseShiftTypesHelp} from './nurse-shift-types-help';
 
 export type TNurseDetailDraftActions = {save: () => Promise<boolean>; discard: () => void; hasChanges: () => boolean};
 
@@ -830,26 +830,13 @@ function NurseDetailPanel({
                                 : 'border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3',
                         )}
                     >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1">
                             <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                                 {t('page.member.detail.shiftTypes')}
                             </p>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
-                                        aria-label={t('page.member.detail.shiftTypesHelpAria')}
-                                    >
-                                        <InfoIcon className="size-4" />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className={cn(isModal && 'z-[1100]')}>
-                                    {t('page.member.detail.shiftTypesHint')}
-                                </TooltipContent>
-                            </Tooltip>
+                            <NurseShiftTypesHelp />
                         </div>
-                        <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
+                        <div className="mt-2 grid w-full grid-cols-[repeat(auto-fit,minmax(min(100%,6rem),1fr))] gap-1.5">
                             {shiftTypeOptions
                                 .filter((type) => !isRestShiftOption(type))
                                 .map((shiftType) => {
@@ -869,15 +856,15 @@ function NurseDetailPanel({
                                             aria-pressed={isPossible}
                                             title={`${shortName ? `${shortName} ` : ''}${name}`.trim()}
                                             className={cn(
-                                                'inline-flex w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden py-1 font-apple whitespace-nowrap transition-[background-color,color,opacity,filter] duration-150 hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50',
+                                                'inline-flex w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden py-1 font-apple whitespace-nowrap transition-[background-color,color,opacity,filter] duration-150 hover:brightness-95 focus-visible:!bg-[#E5DEFF] focus-visible:!text-main-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
                                                 isModal
-                                                    ? 'min-h-10 rounded-[10px] border-0 px-3 text-[14px] focus-visible:bg-[#E5DEFF] focus-visible:text-main-1 focus-visible:outline-none'
-                                                    : 'min-h-7 rounded-[5px] border px-1.5 text-[13px] hover:-translate-y-[1px] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
+                                                    ? 'min-h-11 rounded-[10px] px-3 text-[14px]'
+                                                    : 'min-h-9 rounded-[7px] px-2 text-[13px] min-[1600px]:min-h-10 min-[1600px]:text-[14px] [@media(pointer:coarse)]:min-h-11',
                                             )}
                                             style={
                                                 isPossible
-                                                    ? {borderColor: baseColor, backgroundColor: baseColor, color: '#FFFFFF'}
-                                                    : {borderColor: 'transparent', backgroundColor: '#ECEFF3', color: '#6B7280'}
+                                                    ? {backgroundColor: baseColor, color: '#FFFFFF'}
+                                                    : {backgroundColor: '#ECEFF3', color: '#5C667D'}
                                             }
                                             onClick={() => {
                                                 setWriteNurse((prev) =>
@@ -984,22 +971,6 @@ function NurseDetailPanel({
                                     );
                                 })}
                         </div>
-                        <RestAllocationSettings
-                            options={shiftTypeOptions}
-                            disabled={isBusy}
-                            onChange={(apiShiftTypeId, isPossible) => {
-                                setWriteNurse((previous) =>
-                                    previous
-                                        ? {
-                                              ...previous,
-                                              nurseShiftTypes: previous.nurseShiftTypes.map((item) =>
-                                                  item.nurseShiftTypeId === apiShiftTypeId ? {...item, isPossible} : item,
-                                              ),
-                                          }
-                                        : previous,
-                                );
-                            }}
-                        />
                         {ENABLE_MONTHLY_SHIFT_RATIO ? (
                             <div className="mt-3 border-t border-gray-7 pt-3">
                                 <div className="flex items-center justify-between gap-2">
@@ -1385,7 +1356,7 @@ function NurseDetailPanel({
                 >
                     <button
                         type="button"
-                        disabled={isBusy || !isDirty || !isBirthDateValid}
+                        disabled={isBusy || (!isDirty && !isCreateMode) || !isBirthDateValid}
                         className={cn(
                             'flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]',
                             isModal &&
