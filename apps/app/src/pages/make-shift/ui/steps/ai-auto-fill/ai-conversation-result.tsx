@@ -50,12 +50,14 @@ export function AiConversationResult({
     const completedChanges = operation.executionStatus === 'SUCCEEDED' && hasChanges;
     const historical = !appliedLocally && (undone || (saved && Boolean(operation.resultVersionId) && hasChanges));
     const compactResult = historical || (completedChanges && (appliedLocally || savedForLater));
+    const qualityWarnings = authoring?.requestPriority?.userQualityWarnings ?? [];
     const showPartialCoverage = authoring?.validation.coverage === 'PARTIAL' && !result?.candidate;
     const hasUnmetConditions =
         requestState === 'PARTIAL' ||
         requestState === 'UNSATISFIED' ||
         authoring?.clauses.some((clause) => clause.status === 'UNSATISFIED') === true;
     const needsReview =
+        qualityWarnings.length > 0 ||
         hasUnmetConditions ||
         requestState === 'NEEDS_REVIEW' ||
         requestState === 'NO_IMPROVEMENT' ||
@@ -118,9 +120,11 @@ export function AiConversationResult({
             summary={
                 historical
                     ? undefined
-                    : savedForLater && compactResult
-                      ? t('aiAutofillUi.conversationResult.savedForLaterHint')
-                      : reviewSummary
+                    : qualityWarnings.length > 0
+                      ? qualityWarnings[0]
+                      : savedForLater && compactResult
+                        ? t('aiAutofillUi.conversationResult.savedForLaterHint')
+                        : reviewSummary
             }
             attempt={saved || savedForLater ? undefined : attempt}
             outcome={outcome}
@@ -157,7 +161,7 @@ export function AiConversationResult({
                           ? null
                           : operation.applyStatus === 'NOT_APPLIED_SOURCE_CHANGED'
                             ? scope
-                            : !saved && explanationKey
+                            : !saved && explanationKey && !authoring.requestPriority?.userSummary
                               ? t(`aiConversationSidebar.authoring.${explanationKey}`)
                               : null
                       : review
@@ -168,6 +172,21 @@ export function AiConversationResult({
             actions={historical && undone ? undefined : actions}
             secondaryActions={secondaryActions}
         >
+            {!historical &&
+                authoring?.requestPriority?.userSummary &&
+                authoring.requestPriority.userSummary !==
+                    (visibleMessageKey ? t(`aiConversationSidebar.authoring.${visibleMessageKey}`) : '') && (
+                    <section className="mt-3 space-y-2 text-[13px] leading-6" aria-label={t('aiConversationSidebar.authoring.warnings')}>
+                        <p>{authoring.requestPriority.userSummary}</p>
+                        {(authoring.requestPriority.userQualityWarnings?.length ?? 0) > 1 && (
+                            <ul className="list-disc space-y-1 pl-4">
+                                {authoring.requestPriority.userQualityWarnings!.slice(1).map((message, index) => (
+                                    <li key={index}>{message}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+                )}
             {!historical && staffingFloor && <p className="mt-3 text-[13px] leading-6">{staffingFloor}</p>}
             {showPartialCoverage && (
                 <p role="status" className="mt-3 text-[13px] leading-6">

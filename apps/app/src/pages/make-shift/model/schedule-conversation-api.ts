@@ -119,6 +119,7 @@ export type TConversationOperation = {
     progress?: {phase: 'QUEUED' | 'COMPUTING' | 'VALIDATING'; elapsedMs: number} | null;
     applyStatus: string;
     failureReason: string | null;
+    failureMessage?: string | null;
     result: TAutofillResponse | null;
     createdAt: string;
 };
@@ -175,9 +176,12 @@ export type TConversationExecute = {
     failureSuggestionDigest?: string;
     suggestionConfirmed?: boolean;
 };
+
 function postTimeout(path: string, data: unknown) {
     const intentFirst = (data as {authoringContractVersion?: string})?.authoringContractVersion === 'intent-first-v1';
+
     if (path.endsWith('/operations') || !intentFirst) return 330000;
+
     return path.endsWith('/interpretations') ? 45000 : 30000;
 }
 

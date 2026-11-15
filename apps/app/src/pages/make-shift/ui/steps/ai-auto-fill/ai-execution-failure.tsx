@@ -70,13 +70,14 @@ export function AiExecutionFailure({
     const content = Children.toArray(children);
     const showActions = active && (showSettings || showRetry || showRevise || showReview || showConditionSettings);
     const title =
-        failure.confirmationRequired || failure.conditionConflict
+        failure.title ??
+        (failure.confirmationRequired || failure.conditionConflict
             ? t('aiAdjust.executionFailure.conflictTitle')
             : failure.recovery === 'settings'
               ? t('aiAdjust.executionFailure.offSettingsTitle')
               : operationType
                 ? t(operationType === 'GENERATE' ? 'aiAdjust.executionFailure.autofillTitle' : 'aiAdjust.executionFailure.adjustTitle')
-                : t('aiAdjust.failure.title');
+                : t('aiAdjust.failure.title'));
 
     return (
         <div ref={displayRef} className="flex min-w-0 flex-col gap-4">

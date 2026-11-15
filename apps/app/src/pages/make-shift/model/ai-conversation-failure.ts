@@ -130,8 +130,23 @@ function conversationFailureMessage(error: unknown, fallback: string): TAiConver
 
     if (['AI_QUOTA_EXCEEDED', 'AI_QUOTA_EXHAUSTED'].includes(code ?? '')) return {message: i18n.t('aiAdjust.failure.quota'), blocked: true};
 
-    if (code === 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED' || source?.code === 429)
-        return {message: waitMessage(message) ?? i18n.t('aiAdjust.failure.rateLimit'), blocked: true};
+    if (code === 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED' || source?.code === 429) {
+        if (message?.includes('병동 사용량을 확인할 수 없습니다.'))
+            return {message: i18n.t('aiAdjust.failure.usageUnavailable'), blocked: false, recovery: 'retry'};
+
+        const hourly = message?.match(/이번 시간 (?:AI 자동채우기|조절) 사용량\((\d{1,5})회\)/);
+        const daily = message?.match(/오늘 AI 자동채우기 사용량\((\d{1,5})회\)/);
+        const wait = waitMessage(message);
+        const limit = hourly ?? daily;
+
+        if (limit) {
+            const description = i18n.t(hourly ? 'aiAdjust.failure.hourlyLimit' : 'aiAdjust.failure.dailyLimit', {limit: Number(limit[1])});
+
+            return {message: [description, wait].filter(Boolean).join('\n'), blocked: true};
+        }
+
+        return {message: wait ?? i18n.t('aiAdjust.failure.rateLimit'), blocked: true};
+    }
 
     if (source?.code === 403 || ['ACCESS_DENIED', 'SCOPE_ACCESS_DENIED', 'WARD_ADMIN_MEMBERSHIP_REQUIRED'].includes(code ?? ''))
         return {message: i18n.t('aiAdjust.failure.access'), blocked: true};

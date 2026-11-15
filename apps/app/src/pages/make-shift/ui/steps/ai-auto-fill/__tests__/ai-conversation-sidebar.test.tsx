@@ -3529,10 +3529,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const failure = await screen.findByRole('region', {name: '요청을 반영하려면 확인이 필요해요. (2회차)'});
+        const failure = await screen.findByRole('region', {name: '근무표를 수정하지 못했어요. (2회차)'});
         const alert = within(failure).getByRole('alert');
 
-        expect(within(failure).getByText('요청을 반영하려면 확인이 필요해요. (2회차)')).toBeVisible();
+        expect(within(failure).getByText('근무표를 수정하지 못했어요. (2회차)')).toBeVisible();
         expect(within(failure).getAllByRole('img')).toHaveLength(1);
         expect(within(failure).getByRole('button', {name: '다시 계산하기'})).toBeEnabled();
         expect(within(failure).getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
@@ -3558,7 +3558,7 @@ describe('persistent schedule sidebar', () => {
             if (executionStatus === 'FAILED') {
                 expect(screen.getAllByRole('button', {name: '다시 계산하기'})).toHaveLength(1);
                 expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
-                expect(screen.getByRole('alert')).toHaveTextContent('요청을 반영하려면 확인이 필요해요.');
+                expect(screen.getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
             } else if (executionStatus === 'SUCCEEDED') {
                 await screen.findByRole('textbox');
                 expect(screen.getByRole('textbox')).toBeVisible();
@@ -3610,9 +3610,9 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getAllByRole('button', {name: '다시 계산하기'})).toHaveLength(1);
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
 
-        const failure = screen.getByRole('region', {name: '요청을 반영하려면 확인이 필요해요. (1회차)'});
+        const failure = screen.getByRole('region', {name: '근무표를 수정하지 못했어요. (1회차)'});
 
-        expect(within(failure).getByRole('alert')).toHaveTextContent('요청을 반영하려면 확인이 필요해요.');
+        expect(within(failure).getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
         expect(within(failure).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(failure).queryByText(i18n.t('aiAdjust.resultInfo.title'))).not.toBeInTheDocument();
         expect(within(failure).getByRole('button', {name: '변경 제안 보기'})).toBeVisible();
@@ -5323,6 +5323,34 @@ describe('intent-first sidebar integration', () => {
             conflictConfirmed: true,
         });
         expect(mocks.interpret).not.toHaveBeenCalled();
+    });
+
+    it('does not restore apply controls for a declined setting candidate after remounting', async () => {
+        enable();
+        const result = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({
+                draftState: 'CONSENT_REQUIRED',
+                requestState: 'SATISFIED',
+                candidateDigest: 'digest:1',
+                requestPriority: {version: 'request-first-v2', settingChangesRequired: true},
+            }),
+        });
+        current.operations = [{...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result}];
+        mocks.version.mockResolvedValue(source);
+        const first = renderSidebar();
+        const keep = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')});
+        await userEvent.click(keep);
+        first.unmount();
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
 
     it('keeps historical candidates read-only without stale or confirmation controls', async () => {

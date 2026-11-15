@@ -1585,6 +1585,8 @@ export const ja: TLocale = {
                     imported: '{{teamName}}の制約条件を読み込みました。',
                     importFailed: '制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。',
                     saveFailed: '制約条件を保存できませんでした。しばらくしてからもう一度お試しください。',
+                    changedElsewhere: '別のリクエストで条件が変更されました。最新の条件を読み込んでから再度編集してください。',
+                    reloadLatest: '最新の条件を読み込む',
                     recommendedDeleted: '推奨条件を削除しました。',
                     importantUnmarked: '重要マークを外しました。',
                 },

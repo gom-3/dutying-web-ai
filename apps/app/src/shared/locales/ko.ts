@@ -970,6 +970,8 @@ export const ko = {
                     imported: '{{teamName}} 근무 조건을 그대로 불러왔어요.',
                     importFailed: '근무 조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
                     saveFailed: '근무 조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+                    changedElsewhere: '조건이 다른 요청에서 변경됐어요. 최신 조건을 불러온 뒤 다시 수정해 주세요.',
+                    reloadLatest: '최신 조건 불러오기',
                     recommendedDeleted: '권장 조건을 삭제했어요.',
                     importantUnmarked: '중요 표시를 해제했어요.',
                 },

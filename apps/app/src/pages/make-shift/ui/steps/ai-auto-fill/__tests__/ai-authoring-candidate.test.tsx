@@ -306,5 +306,125 @@ it('shows why an unsuccessful search left the roster unchanged', () => {
             copy={(ko) => ko}
         />,
     );
-    expect(screen.getByText(/변경이 불가능하다고 확인된 것은 아니며/)).toBeVisible();
+    expect(screen.getByText(i18n.t('aiConversationSidebar.authoring.searchNoImprovement'))).toBeVisible();
+});
+
+describe('recorded nurse-facing request-first guidance', () => {
+    it('shows the current monthly limit, exact proposal and ward shift name before consent', () => {
+        const input = props();
+        input.result.authoringOutcome = outcome({
+            draftState: 'CONSENT_REQUIRED',
+            candidateDigest: 'digest:1',
+            requestPriority: {
+                version: 'request-first-v2',
+                settingChangesRequired: true,
+                settingChanges: [
+                    {
+                        templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                        ruleId: 71,
+                        currentValue: 21,
+                        proposedValue: 22,
+                        year: 2026,
+                        month: 11,
+                        lifetime: 'OPERATION_MONTH',
+                        userMessage:
+                            '합성 간호사 A님의 이번 변경안은 한 달에 22일 근무하는 배치예요. 현재 월 최대 근무일은 21일이에요. 이번 달 이 변경안에만 22일까지 허용할까요?',
+                    },
+                ],
+                availabilityChanges: [
+                    {
+                        kind: 'ADD_ALLOWED_SHIFT',
+                        shiftNurseId: '1',
+                        nurseId: 1,
+                        wardShiftTypeId: 3,
+                        code: 'X',
+                        currentValue: [1],
+                        proposedValue: [1, 3],
+                        year: 2026,
+                        month: 11,
+                        lifetime: 'OPERATION_MONTH',
+                        dates: ['2026-11-01'],
+                        userMessage:
+                            '합성 간호사 A님은 현재 긴밤 근무를 하지 않는 것으로 설정되어 있어요. 이번 달 이 변경안에서는 긴밤 근무가 가능하도록 바꿀까요?',
+                    },
+                ],
+            },
+        });
+        render(<AiAuthoringCandidate {...input} />);
+        expect(screen.getByText(/현재 월 최대 근무일은 21일/)).toBeVisible();
+        expect(screen.getByText(/긴밤 근무가 가능하도록 바꿀까요/)).toBeVisible();
+        expect(document.body.textContent).not.toMatch(/CP-SAT|compiler|schema|fallback|HARD|SOFT|overlay|trace:/);
+        expect(input.onApply).not.toHaveBeenCalled();
+    });
+    it('shows an honest unfinished-search message without technical codes', () => {
+        const result = response({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'BASELINE',
+            authoringOutcome: outcome({
+                solveState: 'UNKNOWN',
+                requestState: 'NO_IMPROVEMENT',
+                draftState: 'NONE',
+                requestPriority: {
+                    version: 'request-first-v2',
+                    userSummary: '조건에 맞는 변경안을 아직 찾지 못했어요. 근무표는 그대로예요.',
+                },
+            }),
+        });
+        render(
+            <AiConversationResult
+                operation={{
+                    operationId: 'synthetic',
+                    sequence: 1,
+                    operationType: 'ADJUST',
+                    sourceVersionId: 'source:1',
+                    resultVersionId: null,
+                    interpretationId: null,
+                    baseRevision: 0,
+                    executionStatus: 'SUCCEEDED',
+                    applyStatus: 'NOT_APPLIED_NO_CHANGE',
+                    fillPolicy: null,
+                    failureReason: null,
+                    createdAt: '',
+                    result,
+                }}
+                attempt={1}
+                copy={(ko) => ko}
+            />,
+        );
+        expect(screen.getAllByText(/조건에 맞는 변경안을 아직 찾지 못했어요/).length).toBeGreaterThan(0);
+        expect(document.body.textContent).not.toMatch(/CP-SAT|infeasible|UNKNOWN|schema|overlay/);
+    });
+});
+
+it('keeps a measured quality impact visible in the compact applied result', () => {
+    const result = response({
+        authoringOutcome: outcome({
+            requestPriority: {version: 'request-first-v2', userQualityWarnings: ['합성 간호사 A님의 연속근무가 4일에서 6일로 늘었어요.']},
+        }),
+    });
+    render(
+        <AiConversationResult
+            operation={{
+                operationId: 'synthetic',
+                sequence: 1,
+                operationType: 'ADJUST',
+                sourceVersionId: 'source:1',
+                resultVersionId: 'result:1',
+                interpretationId: null,
+                baseRevision: 0,
+                executionStatus: 'SUCCEEDED',
+                applyStatus: 'APPLIED',
+                fillPolicy: null,
+                failureReason: null,
+                createdAt: '',
+                result,
+            }}
+            appliedLocally
+            attempt={1}
+            copy={(ko) => ko}
+        />,
+    );
+    expect(screen.getByText('합성 간호사 A님의 연속근무가 4일에서 6일로 늘었어요.')).toBeVisible();
+    expect(screen.getByRole('img', {name: i18n.t('aiAutofillUi.conversationResult.scheduleNeedsReview')})).toBeVisible();
 });

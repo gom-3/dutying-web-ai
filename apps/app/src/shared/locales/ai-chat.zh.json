@@ -95,7 +95,10 @@
             "quota": "查看您的计划和剩余补贴。",
             "rateLimit": "您已达到目前的 AI 使用限制.\n请稍后再次尝试。",
             "retry": "再次审查请求",
-            "retryCalculation": "重新计算"
+            "retryCalculation": "重新计算",
+            "hourlyLimit": "病区已用完本小时的{{limit}}次请求额度。",
+            "dailyLimit": "病区已用完今天的{{limit}}次请求额度。请明天再试。",
+            "usageUnavailable": "无法核实病区使用量，因此未开始计算。请稍后重试。"
         },
         "issue": {
             "nurse": "您想更改哪些转换?\n使用排班表中显示的名称。",
