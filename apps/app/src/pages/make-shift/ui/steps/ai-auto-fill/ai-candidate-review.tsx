@@ -12,6 +12,7 @@ export function AiCandidateReview({
     loadVersion,
     nurseName,
     onApply,
+    onKeep,
 }: {
     result: TAutofillResponse;
     currentVersionId: string;
@@ -20,6 +21,7 @@ export function AiCandidateReview({
     loadVersion: (id: string) => Promise<TResultVersion>;
     nurseName: (id: number) => string;
     onApply: () => void;
+    onKeep?: () => void;
 }) {
     const {t} = useTypedTranslation();
     const sourceId = result.candidate?.sourceVersionId;
@@ -90,6 +92,7 @@ export function AiCandidateReview({
             disabled={disabled}
             nurseName={nurseName}
             onApply={onApply}
+            onKeep={onKeep}
         />
     );
 }

@@ -17,6 +17,7 @@ export function AiAuthoringCandidate({
     current,
     disabled,
     onApply,
+    onKeep,
 }: {
     result: TAutofillResponse;
     sourceVersionId: string;
@@ -25,6 +26,7 @@ export function AiAuthoringCandidate({
     current: boolean;
     disabled: boolean;
     onApply: () => void;
+    onKeep?: () => void;
 }) {
     const {t} = useTypedTranslation();
     const candidate = result.candidate;
@@ -44,6 +46,8 @@ export function AiAuthoringCandidate({
     if (!candidate) return null;
 
     const conflictMessages = nightRunConflictMessages(result);
+    const priority = authoringOutcome(result)?.requestPriority;
+    const settingsConsent = priority?.version === 'request-first-v2' && priority.settingChangesRequired === true;
     const available = current && canSelectAuthoringCandidate(result, sourceVersionId, now);
     const expired = !current || !Number.isFinite(Date.parse(candidate.expiresAt)) || Date.parse(candidate.expiresAt) <= now;
     const before = new Map(baseline.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell]));
@@ -56,6 +60,39 @@ export function AiAuthoringCandidate({
             {(candidate.selectionReason === 'QUALITATIVE_REVIEW' ||
                 result.authoringOutcome?.clauses.some((clause) => clause.kind === 'REVIEW')) && (
                 <p>{t('aiConversationSidebar.authoring.qualitative')}</p>
+            )}
+            {settingsConsent && (
+                <div className="space-y-2" role="status">
+                    <p className="font-semibold">{t('aiConversationSidebar.authoring.settingChangesTitle')}</p>
+                    <p>{t('aiConversationSidebar.authoring.settingChangesScope')}</p>
+                    <ul className="list-disc space-y-2 pl-4">
+                        {(priority?.availabilityChanges ?? []).map((change) => (
+                            <li key={`allowed:${change.shiftNurseId}:${change.wardShiftTypeId}`}>
+                                {t('aiConversationSidebar.authoring.settingAvailability', {
+                                    name: nurseName(Number(change.shiftNurseId)),
+                                    code: change.code,
+                                })}
+                                {' · '}
+                                {t('aiConversationSidebar.authoring.settingMonth', {year: change.year, month: change.month})}
+                            </li>
+                        ))}
+                        {(priority?.settingChanges ?? []).map((change, index) => (
+                            <li key={`setting:${change.ruleId ?? index}:${index}`}>
+                                {typeof change.currentValue === 'number' && typeof change.proposedValue === 'number'
+                                    ? t('aiConversationSidebar.authoring.settingValues', {
+                                          name:
+                                              (change.subjectScope ?? []).map(nurseName).join(', ') ||
+                                              t('aiConversationSidebar.authoring.warnings'),
+                                          before: change.currentValue,
+                                          after: change.proposedValue,
+                                      })
+                                    : t('aiConversationSidebar.authoring.warnings')}
+                                {' · '}
+                                {t('aiConversationSidebar.authoring.settingMonth', {year: change.year, month: change.month})}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             )}
             <div className="max-h-64 overflow-auto rounded-lg border border-gray-200">
                 <table className="w-full text-left text-xs">
@@ -99,9 +136,21 @@ export function AiAuthoringCandidate({
             ) : (
                 <div className="flex flex-wrap gap-2">
                     <button type="button" className={`${action} bg-main-1 text-white`} disabled={disabled || !available} onClick={onApply}>
-                        {t('aiConversationSidebar.authoring.apply')}
+                        {t(
+                            settingsConsent
+                                ? 'aiConversationSidebar.authoring.settingConsentApply'
+                                : 'aiConversationSidebar.authoring.apply',
+                        )}
                     </button>
-                    <button type="button" className={`${action} text-main-1`} disabled={disabled} onClick={() => setKept(true)}>
+                    <button
+                        type="button"
+                        className={`${action} text-main-1`}
+                        disabled={disabled}
+                        onClick={() => {
+                            setKept(true);
+                            onKeep?.();
+                        }}
+                    >
                         {t('aiConversationSidebar.authoring.keep')}
                     </button>
                 </div>

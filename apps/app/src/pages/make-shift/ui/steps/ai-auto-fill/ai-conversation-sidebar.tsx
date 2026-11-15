@@ -1,3 +1,4 @@
+import {settingConsentReply} from '../../../model/setting-consent-reply';
 import type {TScheduleObservation} from '@dutying/api/ward';
 import {ArrowRight, Redo2} from 'lucide-react';
 import {type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
@@ -1280,12 +1281,33 @@ export default function AiConversationSidebar({
             false,
             'recovering',
         );
+    const declinedSettingCandidates = useRef(new Set<string>());
     const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
         const message = request.trim();
 
         if (!message) return;
 
         const currentDetail = detailRef.current;
+        const consent =
+            !editingRequest && !removeConditionId && !busy && !running && !preparing
+                ? settingConsentReply(currentDetail, message, localDirty, declinedSettingCandidates.current)
+                : null;
+        if (consent) {
+            setText('');
+            if (consent.decision === 'DECLINE') {
+                declinedSettingCandidates.current.add(consent.operation.result!.candidate!.candidateDigest);
+                setNotice(t('aiConversationSidebar.authoring.keep'));
+            } else {
+                await execute(
+                    consent.operation.operationType,
+                    undefined,
+                    consent.operation.interpretationId ?? undefined,
+                    undefined,
+                    consent.operation,
+                );
+            }
+            return;
+        }
         const hasPendingInterpretation =
             currentDetail?.conversation.latestInterpretationId &&
             !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
@@ -2334,6 +2356,7 @@ export default function AiConversationSidebar({
                         operation.operationId === latestOperation?.operationId
                     }
                     disabled={busy || running || preparing}
+                    onKeep={() => declinedSettingCandidates.current.add(operation.result!.candidate!.candidateDigest)}
                     loadVersion={api.version}
                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
                     onApply={() =>

@@ -1,7 +1,7 @@
 import type {TScheduleViolationDto} from '@dutying/api/ward';
 import {describe, expect, it, vi} from 'vitest';
 import i18n from '@/i18n';
-import {render, screen, within} from '@/shared/util/test-utils';
+import {render, screen, within, fireEvent} from '@/shared/util/test-utils';
 import actual from '../../../../model/__tests__/fixtures/actual-http-staffing-warnings.json';
 import {candidate, outcome, response} from '../../../../model/__tests__/fixtures/intent-first';
 import {AiAuthoringCandidate} from '../ai-authoring-candidate';
@@ -104,4 +104,67 @@ describe('concise staffing warnings', () => {
             await i18n.changeLanguage('ko');
         }
     });
+});
+
+it('shows all month-only settings together before the explicit consent action', async () => {
+    const onApply = vi.fn();
+    const result = response({
+        applicable: false,
+        changedCells: [],
+        validationTarget: 'CANDIDATE',
+        candidate: candidate({selectionReason: 'MATERIAL_TRADEOFF'}),
+        authoringOutcome: outcome({
+            draftState: 'CONSENT_REQUIRED',
+            candidateDigest: 'digest:1',
+            requestPriority: {
+                version: 'request-first-v2',
+                settingChangesRequired: true,
+                settingsPersisted: false,
+                availabilityChanges: [
+                    {
+                        kind: 'ADD_ALLOWED_SHIFT',
+                        shiftNurseId: '11',
+                        nurseId: 1,
+                        code: 'CustomNight',
+                        wardShiftTypeId: 3,
+                        currentValue: [1, 2],
+                        proposedValue: [1, 2, 3],
+                        year: 2026,
+                        month: 11,
+                        lifetime: 'OPERATION_MONTH',
+                        dates: ['2026-11-02'],
+                    },
+                ],
+                settingChanges: [
+                    {
+                        ruleId: 71,
+                        templateCode: 'SHIFT_COUNT_PER_PERIOD',
+                        currentValue: 21,
+                        proposedValue: 22,
+                        year: 2026,
+                        month: 11,
+                        lifetime: 'OPERATION_MONTH',
+                        subjectScope: [11],
+                    },
+                ],
+            },
+        }),
+    });
+    render(
+        <AiAuthoringCandidate
+            result={result}
+            sourceVersionId="source:1"
+            baseline={[]}
+            nurseName={() => 'A'}
+            current
+            disabled={false}
+            onApply={onApply}
+        />,
+    );
+    expect(screen.getByText(/가능근무에 CustomNight 추가/)).toBeVisible();
+    expect(screen.getByText(/21 → 22/)).toBeVisible();
+    expect(screen.getByText(/기존 설정은 저장하거나 영구 변경하지/)).toBeVisible();
+    expect(onApply).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: '이번 달 조건 변경에 동의하고 반영'}));
+    expect(onApply).toHaveBeenCalledOnce();
 });

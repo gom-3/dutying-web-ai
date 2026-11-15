@@ -869,6 +869,38 @@ export type TAuthoringViolationDelta = {
 };
 export type TAuthoringOutcome = {
     contractVersion: 'intent-first-v1';
+    requestPriority?: {
+        version: 'request-first-v2';
+        settingChangesRequired?: boolean;
+        classification?: string;
+        settingsConsent?: string;
+        settingsPersisted?: false;
+        settingChanges?: {
+            ruleId?: number;
+            templateCode: string;
+            currentValue?: unknown;
+            proposedValue?: unknown;
+            year: number;
+            month: number;
+            lifetime: string;
+            subjectScope?: number[];
+            dates?: string[];
+        }[];
+        availabilityChanges?: {
+            kind: 'ADD_ALLOWED_SHIFT';
+            shiftNurseId: string;
+            nurseId: number;
+            code: string;
+            wardShiftTypeId: number;
+            currentValue: number[];
+            proposedValue: number[];
+            year: number;
+            month: number;
+            lifetime: string;
+            dates: string[];
+        }[];
+        [key: string]: unknown;
+    };
     solveState: 'NOT_RUN' | 'FEASIBLE' | 'INFEASIBLE_PROVEN' | 'UNKNOWN' | 'BUSY' | 'INVALID_INPUT' | 'ERROR';
     optimalityProven: boolean;
     requestState:

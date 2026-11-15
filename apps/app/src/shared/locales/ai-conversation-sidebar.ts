@@ -1,5 +1,12 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        settingChangesTitle: '이번 달 이 변경안에만 적용할 조건',
+        settingChangesScope: '기존 설정은 저장하거나 영구 변경하지 않아요. 아래 조건 전체에 동의하면 이 변경안만 반영해요.',
+        settingAvailability: '{{name}}: 가능근무에 {{code}} 추가',
+        settingValues: '{{name}}: {{before}} → {{after}}',
+        settingMonth: '{{year}}년 {{month}}월 · 이 변경안에만 적용',
+        settingConsentApply: '이번 달 조건 변경에 동의하고 반영',
+
         requestResults: '요청별 결과',
         clauseCount: '{{count}}개',
         measuredCount: '{{before}}회 → {{after}}회',
@@ -156,6 +163,13 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        settingChangesTitle: 'Conditions for this proposal only',
+        settingChangesScope: 'Your saved settings stay unchanged. Agree to all conditions below to apply this proposal only.',
+        settingAvailability: '{{name}}: allow {{code}}',
+        settingValues: '{{name}}: {{before}} → {{after}}',
+        settingMonth: '{{year}}-{{month}} · this proposal only',
+        settingConsentApply: 'Agree to this month’s exceptions and apply',
+
         requestResults: 'Request results',
         clauseCount: '×{{count}}',
         measuredCount: '{{before}} → {{after}} occurrences',
@@ -311,6 +325,13 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        settingChangesTitle: '今月のこの配置案だけに適用する条件',
+        settingChangesScope: '保存済み設定は変更しません。以下の条件すべてに同意した場合、この配置案だけを反映します。',
+        settingAvailability: '{{name}}：可能勤務に{{code}}を追加',
+        settingValues: '{{name}}：{{before}} → {{after}}',
+        settingMonth: '{{year}}年{{month}}月・この配置案のみ',
+        settingConsentApply: '今月の条件変更に同意して反映',
+
         requestResults: 'リクエストごとの結果',
         clauseCount: '{{count}}件',
         measuredCount: '{{before}}回 → {{after}}回',
