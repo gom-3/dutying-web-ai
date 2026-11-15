@@ -5,9 +5,12 @@ const declineStorageKey = (scope: string) => `${scope}:declined-setting-candidat
 
 function declinedEntries(scope: string | null, now: number): [string, number][] {
     if (!scope) return [];
+
     try {
         const stored: unknown = JSON.parse(localStorage.getItem(declineStorageKey(scope)) ?? '{}');
+
         if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
+
         return Object.entries(stored)
             .filter((entry): entry is [string, number] => entry[0].length <= 256 && typeof entry[1] === 'number' && entry[1] > now)
             .slice(-128);
@@ -23,7 +26,9 @@ export function declinedSettingCandidates(scope: string | null, now = Date.now()
 
 export function rememberDeclinedSettingCandidate(scope: string | null, digest: string, expiresAt: string, now = Date.now()) {
     const expiry = Date.parse(expiresAt);
+
     if (!scope || !digest || !Number.isFinite(expiry) || expiry <= now) return;
+
     try {
         localStorage.setItem(
             declineStorageKey(scope),
@@ -45,9 +50,11 @@ export function settingConsentReply(
     now = Date.now(),
 ) {
     if (!detail || dirty || detail.conversationState?.pendingQuestion) return null;
+
     const operation = [...detail.operations].sort((a, b) => b.sequence - a.sequence)[0];
     const result = operation?.result;
     const priority = result?.authoringOutcome?.requestPriority;
+
     if (
         !operation ||
         !result?.candidate ||
@@ -59,6 +66,7 @@ export function settingConsentReply(
         !canSelectAuthoringCandidate(result, detail.conversation.currentVersionId, now)
     )
         return null;
+
     const value = text
         .trim()
         .replace(/[.!。！]$/u, '')
@@ -69,5 +77,6 @@ export function settingConsentReply(
         : /^(아니|아니요|거절|유지|no|keep|いいえ)$/u.test(value)
           ? 'DECLINE'
           : null;
+
     return decision ? ({decision, operation} as const) : null;
 }
