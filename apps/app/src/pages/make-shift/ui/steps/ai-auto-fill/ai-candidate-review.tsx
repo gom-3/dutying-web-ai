@@ -8,6 +8,7 @@ export function AiCandidateReview({
     result,
     currentVersionId,
     current,
+    sourceChanged = false,
     disabled,
     loadVersion,
     nurseName,
@@ -17,6 +18,7 @@ export function AiCandidateReview({
     result: TAutofillResponse;
     currentVersionId: string;
     current: boolean;
+    sourceChanged?: boolean;
     disabled: boolean;
     loadVersion: (id: string) => Promise<TResultVersion>;
     nurseName: (id: number) => string;
@@ -52,13 +54,21 @@ export function AiCandidateReview({
         };
     }, [sourceId, loadVersion, retry]);
 
-    if (
-        !sourceId ||
-        !current ||
-        !Number.isFinite(Date.parse(result.candidate?.expiresAt ?? '')) ||
-        Date.parse(result.candidate?.expiresAt ?? '') <= Date.now()
-    )
-        return null;
+    if (!sourceId || (!current && !sourceChanged)) return null;
+
+    if (sourceChanged || sourceId !== currentVersionId)
+        return (
+            <p className="mt-3 text-sm" role="status">
+                {t('aiConversationSidebar.authoring.candidateSourceChanged')}
+            </p>
+        );
+
+    if (!Number.isFinite(Date.parse(result.candidate?.expiresAt ?? '')) || Date.parse(result.candidate?.expiresAt ?? '') <= Date.now())
+        return (
+            <p className="mt-3 text-sm" role="status">
+                {t('aiConversationSidebar.authoring.candidateExpired')}
+            </p>
+        );
 
     if (source?.id !== sourceId)
         return (

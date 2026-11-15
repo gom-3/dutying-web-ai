@@ -2388,6 +2388,12 @@ export default function AiConversationSidebar({
                     key={`${operation.operationId}:${operation.result.candidate.candidateDigest}`}
                     result={operation.result}
                     currentVersionId={detail.conversation.currentVersionId}
+                    sourceChanged={
+                        !isSettingCandidateDeclined(operation, declinedSettingCandidates.current) &&
+                        (localDirty ||
+                            operation.baseRevision !== detail.conversation.revision ||
+                            operation.result.candidate.sourceVersionId !== detail.conversation.currentVersionId)
+                    }
                     current={
                         intentFirstEnabled &&
                         !localDirty &&
