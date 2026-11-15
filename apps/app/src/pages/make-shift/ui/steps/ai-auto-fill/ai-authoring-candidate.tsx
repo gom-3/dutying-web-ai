@@ -50,6 +50,8 @@ export function AiAuthoringCandidate({
     const settingsConsent = priority?.version === 'request-first-v2' && priority.settingChangesRequired === true;
     const available = current && canSelectAuthoringCandidate(result, sourceVersionId, now);
     const expired = !current || !Number.isFinite(Date.parse(candidate.expiresAt)) || Date.parse(candidate.expiresAt) <= now;
+    const impacts = priority?.candidateImpacts ?? [];
+    const displayNames = priority?.shiftDisplayNames ?? {};
     const before = new Map(baseline.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell]));
 
     return (
@@ -96,37 +98,83 @@ export function AiAuthoringCandidate({
                     </ul>
                 </div>
             )}
-            <div className="max-h-64 overflow-auto rounded-lg border border-gray-200">
-                <table className="w-full text-left text-xs">
-                    <caption className="sr-only">{t('aiConversationSidebar.authoring.changes')}</caption>
-                    <thead>
-                        <tr>
-                            {(['nurse', 'date', 'before', 'after'] as const).map((key) => (
-                                <th key={key} scope="col" className="p-2">
-                                    {t(`aiConversationSidebar.authoring.${key}`)}
-                                </th>
+            <section className="space-y-2" aria-label={t('aiConversationSidebar.authoring.additionalImpacts')}>
+                {impacts.length > 0 ? (
+                    <>
+                        <h4 className="font-semibold">{t('aiConversationSidebar.authoring.additionalImpacts')}</h4>
+                        <ul className="space-y-2">
+                            {impacts.slice(0, 3).map((impact, index) => (
+                                <li key={index} className="leading-6">
+                                    {impact.message}
+                                </li>
                             ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {candidate.changedCells.map((cell) => (
-                            <tr key={`${cell.shiftNurseId}:${cell.date}`} className="border-t border-gray-100">
-                                <th scope="row" className="p-2 font-medium">
-                                    {nurseName(cell.shiftNurseId)}
-                                </th>
-                                <td className="p-2 whitespace-nowrap">{cell.date}</td>
-                                <td className="p-2">{before.get(`${cell.shiftNurseId}:${cell.date}`)?.shiftCode ?? '—'}</td>
-                                <td className="p-2 font-semibold">{cell.shiftCode ?? '—'}</td>
+                        </ul>
+                        {(impacts.length > 3 || priority?.comparisonScope) && (
+                            <details className="text-xs text-sub-2">
+                                <summary className="cursor-pointer py-2 font-medium">
+                                    {t('aiConversationSidebar.authoring.impactDetails')}
+                                </summary>
+                                {impacts.length > 3 && (
+                                    <ul className="space-y-2 py-2">
+                                        {impacts.slice(3).map((impact, index) => (
+                                            <li key={index} className="leading-6">
+                                                {impact.message}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {priority?.comparisonScope && <p className="leading-6">{priority.comparisonScope}</p>}
+                            </details>
+                        )}
+                    </>
+                ) : (
+                    priority?.candidateImpactsAvailable !== true && (
+                        <p className="text-sub-2">{t('aiConversationSidebar.authoring.impactsUnavailable')}</p>
+                    )
+                )}
+            </section>
+            <details className="rounded-lg border border-gray-200" open={!priority?.requestedAssignments?.length}>
+                <summary className="cursor-pointer px-3 py-2 font-medium">
+                    {t('aiConversationSidebar.authoring.changeDetails', {count: candidate.changedCells.length})}
+                </summary>
+                <div className="max-h-64 overflow-auto">
+                    <table className="w-full text-left text-xs">
+                        <caption className="sr-only">{t('aiConversationSidebar.authoring.changes')}</caption>
+                        <thead>
+                            <tr>
+                                {(['nurse', 'date', 'before', 'after'] as const).map((key) => (
+                                    <th key={key} scope="col" className="p-2">
+                                        {t(`aiConversationSidebar.authoring.${key}`)}
+                                    </th>
+                                ))}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-            {(conflictMessages.length > 0 || candidate.violations.length > 0) && (
-                <div>
-                    <p className="font-medium">{t('aiConversationSidebar.authoring.warnings')}</p>
-                    <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} messages={conflictMessages} />
+                        </thead>
+                        <tbody>
+                            {candidate.changedCells.map((cell) => (
+                                <tr key={`${cell.shiftNurseId}:${cell.date}`} className="border-t border-gray-100">
+                                    <th scope="row" className="p-2 font-medium">
+                                        {nurseName(cell.shiftNurseId)}
+                                    </th>
+                                    <td className="p-2 whitespace-nowrap">{cell.date}</td>
+                                    <td className="p-2">
+                                        {displayNames[String(before.get(`${cell.shiftNurseId}:${cell.date}`)?.wardShiftTypeId)] ??
+                                            before.get(`${cell.shiftNurseId}:${cell.date}`)?.shiftCode ??
+                                            '—'}
+                                    </td>
+                                    <td className="p-2 font-semibold">
+                                        {displayNames[String(cell.wardShiftTypeId)] ?? cell.shiftCode ?? '—'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            </details>
+            {(conflictMessages.length > 0 || candidate.violations.length > 0) && (
+                <details open={!priority?.candidateImpactsAvailable}>
+                    <summary className="cursor-pointer py-2 font-medium">{t('aiConversationSidebar.authoring.ruleDetails')}</summary>
+                    <AiScheduleWarningList violations={candidate.violations} nurseName={nurseName} messages={conflictMessages} />
+                </details>
             )}
             {!available && (
                 <p role="status">

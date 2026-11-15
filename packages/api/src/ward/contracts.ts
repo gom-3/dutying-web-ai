@@ -878,6 +878,27 @@ export type TAuthoringOutcome = {
         userSummary?: string;
         userLanguage?: string;
         userQualityWarnings?: string[];
+        requestedAssignments?: {
+            clauseId: string;
+            coversWholeClause: boolean;
+            shiftNurseId: number;
+            nurseName: string;
+            date: string;
+            beforeShiftName: string;
+            afterShiftName: string;
+            beforeWardShiftTypeId: number;
+            afterWardShiftTypeId: number;
+            alreadyMatched: boolean;
+        }[];
+        candidateImpacts?: {
+            kind: string;
+            state: 'VERIFIED' | 'PARTIAL' | 'UNVERIFIED';
+            message: string;
+            details: Record<string, unknown>;
+        }[];
+        candidateImpactsAvailable?: boolean;
+        comparisonScope?: string;
+        shiftDisplayNames?: Record<string, string>;
         settingChanges?: {
             ruleId?: number;
             templateCode: string;

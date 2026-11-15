@@ -1,12 +1,21 @@
 export const aiConversationSidebarKo = {
     authoring: {
+        settingReviewTitle: '이번 달 이 설정을 허용할까요?',
+        candidateReviewTitle: '요청한 근무 변경안을 확인해 주세요',
+        assignmentChanged: '{{date}} {{name}}: {{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}: 이미 {{shift}}예요',
+        additionalImpacts: '함께 달라지는 근무',
+        impactDetails: '다른 영향과 비교 범위 보기',
+        impactsUnavailable: '이 변경안의 상세 영향 정보는 아직 확인되지 않았어요.',
+        changeDetails: '전체 {{count}}칸 변경 내역 보기',
+        ruleDetails: '현재 조건과 비교한 상세 결과',
         settingChangesTitle: '이번 달 이 변경안에만 적용할 조건',
         settingChangesScope: '기존 설정은 저장하거나 영구 변경하지 않아요. 아래 조건 전체에 동의하면 이 변경안만 반영해요.',
         settingAvailability:
             '{{name}}님은 현재 {{code}} 근무를 하지 않는 것으로 설정되어 있어요. 이번 달 이 변경안에서는 {{code}} 근무가 가능하도록 바꿀까요?',
         settingValues: '{{name}}님의 현재 조건은 {{before}}일이에요. 이번 달 이 변경안에만 {{after}}일로 바꿀까요?',
         settingMonth: '{{year}}년 {{month}}월 · 이 변경안에만 적용',
-        settingConsentApply: '이번 달 조건 변경에 동의하고 반영',
+        settingConsentApply: '위 설정을 이번 달만 허용하고 근무 반영',
 
         requestResults: '요청별 결과',
         clauseCount: '{{count}}개',
@@ -163,6 +172,15 @@ export const aiConversationSidebarKo = {
 
 export const aiConversationSidebarEn = {
     authoring: {
+        settingReviewTitle: 'Allow these settings for this month?',
+        candidateReviewTitle: 'Review the requested shift changes',
+        assignmentChanged: '{{date}} {{name}}: {{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}: already {{shift}}',
+        additionalImpacts: 'Other shift changes',
+        impactDetails: 'More effects and comparison scope',
+        impactsUnavailable: 'Detailed impact evidence is not available for this proposal.',
+        changeDetails: 'View all {{count}} cell changes',
+        ruleDetails: 'Details against current conditions',
         settingChangesTitle: 'Conditions for this proposal only',
         settingChangesScope: 'Your saved settings stay unchanged. Agree to all conditions below to apply this proposal only.',
         settingAvailability: '{{name}}: allow {{code}}',
@@ -325,6 +343,15 @@ export const aiConversationSidebarEn = {
 
 export const aiConversationSidebarJa = {
     authoring: {
+        settingReviewTitle: '今月だけこの設定を許可しますか？',
+        candidateReviewTitle: '依頼した勤務変更案をご確認ください',
+        assignmentChanged: '{{date}} {{name}}：{{before}} → {{after}}',
+        assignmentUnchanged: '{{date}} {{name}}：すでに{{shift}}です',
+        additionalImpacts: '一緒に変わる勤務',
+        impactDetails: 'その他の影響と比較範囲',
+        impactsUnavailable: 'この案の詳細な影響はまだ確認できていません。',
+        changeDetails: '全{{count}}枠の変更内容を見る',
+        ruleDetails: '現在の条件との比較詳細',
         settingChangesTitle: '今月のこの配置案だけに適用する条件',
         settingChangesScope: '保存済み設定は変更しません。以下の条件すべてに同意した場合、この配置案だけを反映します。',
         settingAvailability: '{{name}}：可能勤務に{{code}}を追加',

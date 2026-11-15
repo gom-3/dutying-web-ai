@@ -1,39 +1,77 @@
 import {canSelectAuthoringCandidate} from './intent-first-authoring';
-import type {TConversationDetail} from './schedule-conversation-api';
+import type {TConversationDetail, TConversationOperation} from './schedule-conversation-api';
 
-const declineStorageKey = (scope: string) => `${scope}:declined-setting-candidates:v1`;
+const declineStorageKey = (scope: string, version = 2) => `${scope}:declined-setting-candidates:v${version}`;
 
-function declinedEntries(scope: string | null, now: number): [string, number][] {
+function declinedEntries(scope: string | null, now: number, version = 2): [string, number][] {
     if (!scope) return [];
 
     try {
-        const stored: unknown = JSON.parse(localStorage.getItem(declineStorageKey(scope)) ?? '{}');
+        const stored: unknown = JSON.parse(localStorage.getItem(declineStorageKey(scope, version)) ?? '{}');
 
         if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
 
         return Object.entries(stored)
-            .filter((entry): entry is [string, number] => entry[0].length <= 256 && typeof entry[1] === 'number' && entry[1] > now)
+            .filter((entry): entry is [string, number] => entry[0].length <= 1024 && typeof entry[1] === 'number' && entry[1] > now)
             .slice(-128);
     } catch {
         return [];
     }
 }
 
-/** Only digests and expiry times: no candidate token, prompt, person or roster data. */
-export function declinedSettingCandidates(scope: string | null, now = Date.now()) {
-    return new Set(declinedEntries(scope, now).map(([digest]) => digest));
+/** The reviewed proposal is an operation, not every future grid with this digest. */
+export function settingCandidateIdentity(operation: TConversationOperation) {
+    const candidate = operation.result?.candidate;
+
+    if (!candidate || !operation.operationId) return null;
+
+    return JSON.stringify([
+        'proposal:v2',
+        operation.operationId,
+        operation.interpretationId,
+        operation.sourceVersionId,
+        candidate.sourceVersionId,
+        candidate.candidateDigest,
+        candidate.expiresAt,
+    ]);
 }
 
-export function rememberDeclinedSettingCandidate(scope: string | null, digest: string, expiresAt: string, now = Date.now()) {
-    const expiry = Date.parse(expiresAt);
+const legacyIdentity = (digest: string, expiry: number) => JSON.stringify(['legacy:v1', digest, expiry]);
 
-    if (!scope || !digest || !Number.isFinite(expiry) || expiry <= now) return;
+export function isSettingCandidateDeclined(operation: TConversationOperation, declined: ReadonlySet<string>) {
+    const candidate = operation.result?.candidate;
+    const identity = settingCandidateIdentity(operation);
+
+    return Boolean(
+        candidate &&
+            identity &&
+            (declined.has(identity) || declined.has(legacyIdentity(candidate.candidateDigest, Date.parse(candidate.expiresAt)))),
+    );
+}
+
+/** Proposal IDs and expiry only; never persist tokens, prompts, names or cells. */
+export function declinedSettingCandidates(scope: string | null, now = Date.now()) {
+    return new Set([
+        ...declinedEntries(scope, now).map(([identity]) => identity),
+        // Keep old rejections for their exact digest+expiry, without blocking a
+        // newly issued proposal or reviving old controls via a broad clear.
+        ...declinedEntries(scope, now, 1).map(([digest, expiry]) => legacyIdentity(digest, expiry)),
+    ]);
+}
+
+export function rememberDeclinedSettingCandidate(scope: string | null, operation: TConversationOperation, now = Date.now()) {
+    const identity = settingCandidateIdentity(operation);
+    const expiry = Date.parse(operation.result?.candidate?.expiresAt ?? '');
+
+    if (!scope || !identity || !Number.isFinite(expiry) || expiry <= now) return;
 
     try {
         localStorage.setItem(
             declineStorageKey(scope),
             JSON.stringify(
-                Object.fromEntries([...declinedEntries(scope, now).filter(([value]) => value !== digest), [digest, expiry]].slice(-128)),
+                Object.fromEntries(
+                    [...declinedEntries(scope, now).filter(([value]) => value !== identity), [identity, expiry]].slice(-128),
+                ),
             ),
         );
     } catch {
@@ -60,7 +98,7 @@ export function settingConsentReply(
         !result?.candidate ||
         priority?.version !== 'request-first-v2' ||
         !priority.settingChangesRequired ||
-        declined.has(result.candidate.candidateDigest) ||
+        isSettingCandidateDeclined(operation, declined) ||
         operation.baseRevision !== detail.conversation.revision ||
         detail.turns.some((turn) => turn.actor === 'USER' && turn.sequence > operation.sequence) ||
         !canSelectAuthoringCandidate(result, detail.conversation.currentVersionId, now)

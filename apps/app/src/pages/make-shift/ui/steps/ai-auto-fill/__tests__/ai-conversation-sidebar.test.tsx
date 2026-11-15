@@ -5353,6 +5353,45 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
     });
 
+    it('shows fresh same-grid consent after rejecting an earlier explicit request, while keeping the earlier rejection', async () => {
+        enable();
+        const result = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({
+                draftState: 'CONSENT_REQUIRED',
+                candidateDigest: 'digest:1',
+                requestPriority: {version: 'request-first-v2', settingChangesRequired: true},
+            }),
+        });
+        const old = {...operation, operationType: 'ADJUST' as const, resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result};
+        current.operations = [old];
+        mocks.version.mockResolvedValue(source);
+        const first = renderSidebar();
+        await userEvent.click(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')}));
+        first.unmount();
+        const fresh = {
+            ...old,
+            operationId: 'operation:fresh',
+            interpretationId: 'interpretation:fresh',
+            sequence: old.sequence + 2,
+            result: {...result, candidate: intentCandidate({expiresAt: new Date(Date.now() + 600000).toISOString()})},
+        };
+        current.operations = [old, fresh];
+        const second = renderSidebar();
+        expect(await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).toBeVisible();
+        expect(screen.getByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).toBeVisible();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+        second.unmount();
+        current.operations = [old];
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(3));
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).not.toBeInTheDocument();
+    });
+
     it('keeps historical candidates read-only without stale or confirmation controls', async () => {
         enable();
         current.operations = [

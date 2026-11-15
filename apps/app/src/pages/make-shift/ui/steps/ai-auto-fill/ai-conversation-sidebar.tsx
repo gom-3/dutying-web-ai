@@ -55,6 +55,8 @@ import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../mo
 import {
     declinedSettingCandidates as storedDeclines,
     rememberDeclinedSettingCandidate,
+    settingCandidateIdentity,
+    isSettingCandidateDeclined,
     settingConsentReply,
 } from '../../../model/setting-consent-reply';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
@@ -1307,8 +1309,11 @@ export default function AiConversationSidebar({
 
         if (!candidate) return;
 
-        declinedSettingCandidates.current.add(candidate.candidateDigest);
-        rememberDeclinedSettingCandidate(chatKey, candidate.candidateDigest, candidate.expiresAt);
+        const identity = settingCandidateIdentity(operation);
+
+        if (identity) declinedSettingCandidates.current.add(identity);
+
+        rememberDeclinedSettingCandidate(chatKey, operation);
         setNotice(t('aiConversationSidebar.authoring.keep'));
     };
     const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
@@ -2387,7 +2392,7 @@ export default function AiConversationSidebar({
                         intentFirstEnabled &&
                         !localDirty &&
                         !preparing &&
-                        !declinedSettingCandidates.current.has(operation.result.candidate.candidateDigest) &&
+                        !isSettingCandidateDeclined(operation, declinedSettingCandidates.current) &&
                         operation.baseRevision === detail.conversation.revision &&
                         operation.operationId === latestOperation?.operationId
                     }
@@ -2396,7 +2401,7 @@ export default function AiConversationSidebar({
                     loadVersion={api.version}
                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
                     onApply={() => {
-                        if (storedDeclines(chatKey).has(operation.result!.candidate!.candidateDigest)) return;
+                        if (isSettingCandidateDeclined(operation, storedDeclines(chatKey))) return;
 
                         void execute(
                             operation.operationType as 'GENERATE' | 'ADJUST',
