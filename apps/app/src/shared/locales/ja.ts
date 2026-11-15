@@ -1556,7 +1556,7 @@ export const ja: TLocale = {
                     addTitle: '追加',
                 },
                 savedWarnings: {
-                    title: '保存しましたが、確認が必要な制約条件があります',
+                    title: '保存しました。以下の勤務条件を確認してください。',
                 },
                 warning: {
                     deleteTitle: '推奨条件を削除しますか？',
@@ -1576,10 +1576,10 @@ export const ja: TLocale = {
                     duplicatesRemoved: '重複する制約条件{{count}}件を整理しました。',
                     duplicateSkipped: '同じ条件がすでにあります。',
                     periodCountConflict:
-                        '同じ対象・勤務・期間に最低{{minimum}}回と最大{{maximum}}回が設定されています。両方は満たせません。以下の条件を確認し、希望する回数に修正してください。',
-                    reviewLowerBound: '最低回数の条件を確認',
-                    reviewUpperBound: '最大回数の条件を確認',
-                    staffCountConflict: '同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。',
+                        '同じ勤務の最低{{minimum}}回が最大{{maximum}}回を超えています。最低回数を{{maximum}}回以下にしてください。',
+                    reviewLowerBound: '最低回数を編集',
+                    reviewUpperBound: '最大回数を編集',
+                    staffCountConflict: '同じ対象・日付・勤務の人数条件が矛盾しています。重複する人数条件を1つにまとめてください。',
                     added: '制約条件を追加しました。',
                     resetDefaults: '推奨条件{{count}}件に初期化しました。',
                     imported: '{{teamName}}の制約条件を読み込みました。',

@@ -136,13 +136,18 @@ const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
 const SERVER_WARNING_MESSAGE_PREFIX = 'shiftConstraintRule.warning.';
-const SAVED_RULE_WARNING_FALLBACK_MESSAGES: Record<string, string> = {
-    MAX_WORK_BELOW_WORK_OFF_TRIGGER:
-        '최대 연속 근무와 휴무 규칙이 서로 맞지 않아 휴무 규칙이 적용되지 않을 수 있어요. 두 조건의 일수를 다시 확인해 주세요.',
-    EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE:
-        '같은 근무와 적용일의 정확 인원이 1명이라 프리셉티를 다른 간호사와 함께 배정할 수 없어요. 정확 인원을 늘리거나 프리셉티 단독 근무 금지를 권장으로 바꿔 주세요.',
-    NURSE_SHIFT_PREFER_AVOID_CONFLICT:
-        '같은 간호사의 같은 근무에 선호와 회피가 동시에 설정되어 있어요. 둘 중 하나를 삭제하거나 서로 다른 근무로 바꿔 주세요.',
+const SAVED_RULE_WARNING_MESSAGE_KEYS: Record<string, TI18nKey> = {
+    MAX_WORK_BELOW_WORK_OFF_TRIGGER: 'page.makeShift.constraints.savedWarnings.messages.MAX_WORK_BELOW_WORK_OFF_TRIGGER',
+    EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE: 'page.makeShift.constraints.savedWarnings.messages.EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE',
+    NURSE_SHIFT_PREFER_AVOID_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.NURSE_SHIFT_PREFER_AVOID_CONFLICT',
+    TWO_SHIFT_NIGHT_RECOVERY_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.TWO_SHIFT_NIGHT_RECOVERY_CONFLICT',
+    STAFF_COUNT_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.STAFF_COUNT_CONFLICT',
+    NURSE_PAIR_SHIFT_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.NURSE_PAIR_SHIFT_CONFLICT',
+    NURSE_PAIR_DAY_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.NURSE_PAIR_DAY_CONFLICT',
+    PRECEPTOR_PAIR_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.PRECEPTOR_PAIR_CONFLICT',
+    MONTHLY_QUOTA_DISALLOWED_SHIFT: 'page.makeShift.constraints.savedWarnings.messages.MONTHLY_QUOTA_DISALLOWED_SHIFT',
+    INDIVIDUAL_HARD_BOUNDS_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.INDIVIDUAL_HARD_BOUNDS_CONFLICT',
+    MIXED_PARTICIPATION_CONFLICT: 'page.makeShift.constraints.savedWarnings.messages.MIXED_PARTICIPATION_CONFLICT',
 };
 const INLINE_TIME_OPTION_INTERVAL_MINUTES = 30;
 const INLINE_TIME_MENU_MAX_HEIGHT = 240;
@@ -171,12 +176,14 @@ function hasPrecepteeRole(nurse: TNurseRoleLike | null | undefined) {
     return hasNursePrecepteeRole(nurse);
 }
 
-function getSavedRuleWarningMessage(warning: {code: string; message?: string | null}) {
-    if (warning.message && !warning.message.startsWith(SERVER_WARNING_MESSAGE_PREFIX)) {
+function getSavedRuleWarningMessage(warning: {code: string; message?: string | null}, t: TTypedT) {
+    const message = warning.message?.trim();
+
+    if (message && !message.startsWith(SERVER_WARNING_MESSAGE_PREFIX) && message !== warning.code) {
         return warning.message;
     }
 
-    return SAVED_RULE_WARNING_FALLBACK_MESSAGES[warning.code] ?? '저장됐지만 확인이 필요한 제약조건이 있어요. 조건을 다시 확인해 주세요.';
+    return t(SAVED_RULE_WARNING_MESSAGE_KEYS[warning.code] ?? 'page.makeShift.constraints.savedWarnings.fallback');
 }
 
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
@@ -4017,7 +4024,7 @@ const RuleRow = memo(function RuleRow({
     const slots = template?.slots ?? [];
     const isImportantBlocked = isNurseShiftPreferenceSoftOnlyRule(rule.templateCode);
     const canChangeSeverity = !isImportantBlocked && !isSeverityLocked && getEffectiveAllowedSeverities(template, rule.params).length > 1;
-    const showHelp = !isPersonalDateExclusion(rule.templateCode, rule.params) && hasConstraintHelp(rule.templateCode);
+    const showHelp = hasConstraintHelp(rule.templateCode);
     const priorityControl = isImportantBlocked ? (
         <ImportantToggle checked={isImportant} isRecommended={isRecommended} isBlocked onChange={onToggleImportant} />
     ) : canChangeSeverity ? (
@@ -4090,9 +4097,10 @@ const RuleRow = memo(function RuleRow({
                 {showHelp ? (
                     <ConstraintRuleHelp
                         rule={rule}
-                        ruleTitle={getRuleTitle(rule, template)}
+                        ruleTitle={presentationTemplate?.personalExclusion ? presentationTemplate.label : getRuleTitle(rule, template)}
                         optionMap={optionMap}
                         rotationMode={rotationMode}
+                        personalExclusion={isPersonalDateExclusion(rule.templateCode, rule.params)}
                     />
                 ) : null}
                 <button
@@ -4662,17 +4670,16 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                 const addIssue = getSoftRuleAddIssue(template, templateParams, optionMap);
                                 const canAdd = addIssue === null;
                                 const addIssueId = `constraint-add-issue-${template.id}`;
-                                const helpRule: TShiftConstraintRuleDraft | null =
-                                    !personalExclusion && hasConstraintHelp(template.id)
-                                        ? {
-                                              clientId: `constraint-modal-help-${template.id}`,
-                                              templateCode: template.id,
-                                              category: template.category,
-                                              severity: 'SOFT',
-                                              sortOrder: 0,
-                                              params: templateParams,
-                                          }
-                                        : null;
+                                const helpRule: TShiftConstraintRuleDraft | null = hasConstraintHelp(template.id)
+                                    ? {
+                                          clientId: `constraint-modal-help-${template.id}`,
+                                          templateCode: template.id,
+                                          category: template.category,
+                                          severity: 'SOFT',
+                                          sortOrder: 0,
+                                          params: templateParams,
+                                      }
+                                    : null;
 
                                 return (
                                     <div
@@ -4681,14 +4688,6 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                         className="flex items-center gap-2.5 rounded-[10px] bg-gray-7 px-3 py-1.5 transition-colors hover:bg-gray-6/70"
                                     >
                                         <div className="min-w-0 flex-1">
-                                            {personalExclusion && (
-                                                <>
-                                                    <p className="mb-1 text-sm font-semibold text-main-1">{template.label}</p>
-                                                    <p className="mb-2 text-xs text-gray-4">
-                                                        {t('page.makeShift.constraints.personalExclusion.description')}
-                                                    </p>
-                                                </>
-                                            )}
                                             <SoftSentence
                                                 template={template}
                                                 params={templateParams}
@@ -4717,9 +4716,10 @@ function SoftRuleModal({open, templates, optionMap, rotationMode, onClose, onAdd
                                             {helpRule ? (
                                                 <ConstraintRuleHelp
                                                     rule={helpRule}
-                                                    ruleTitle={addDescription}
+                                                    ruleTitle={personalExclusion ? template.label : addDescription}
                                                     optionMap={optionMap}
                                                     rotationMode={rotationMode}
+                                                    personalExclusion={personalExclusion}
                                                 />
                                             ) : null}
                                             <button
@@ -6075,7 +6075,7 @@ function ConstraintsContent({
                                                 key={`${warning.code}-${warning.relatedTemplateCodes.join('-')}-${index}`}
                                                 data-warning-code={warning.code}
                                             >
-                                                {getSavedRuleWarningMessage(warning)}
+                                                {getSavedRuleWarningMessage(warning, t)}
                                             </li>
                                         ))}
                                     </ul>

@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TNurse, type TWardShiftType} from '@/entities';
-import {fireEvent, render, screen, waitFor, within} from '@/shared/util/test-utils';
+import {fireEvent, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import NurseDetailPanel from '../nurse-detail-panel';
 
 const mockUseEditShiftTeam = vi.fn();
@@ -134,6 +134,39 @@ const renderPanel = (
 describe('NurseDetailPanel', () => {
     beforeEach(() => {
         mockUseEditShiftTeam.mockReset();
+    });
+
+    it.each(['panel', 'modal'] as const)('saves a newly added nurse without changing any fields in the %s', async (variant) => {
+        const onSaveSuccess = vi.fn();
+        const {saveNurseDetails} = renderPanel(
+            createNurse({name: '신규 간호사 1', accountId: null, isConnected: false}),
+            [],
+            onSaveSuccess,
+            variant,
+            'create',
+        );
+
+        expect(screen.getByRole('textbox', {name: '비고'})).toHaveValue('');
+
+        const saveButton = screen.getByRole('button', {name: '저장하기'});
+
+        expect(saveButton).toBeEnabled();
+        fireEvent.click(saveButton);
+
+        await waitFor(() => expect(saveNurseDetails).toHaveBeenCalledOnce());
+        await waitFor(() => expect(onSaveSuccess).toHaveBeenCalledOnce());
+        expect(screen.getByRole('textbox', {name: '비고'})).toHaveValue('');
+    });
+
+    it('keeps saving disabled for an existing nurse until a field changes', () => {
+        renderPanel(createNurse());
+
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+
+        fireEvent.change(screen.getByRole('textbox', {name: '이름'}), {target: {value: '김수정'}});
+
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeEnabled();
+        expect(screen.getByRole('textbox', {name: '비고'})).toHaveValue('');
     });
 
     it('reflects a saved inline role change without replacing an unsaved detail draft', async () => {
@@ -446,105 +479,80 @@ describe('NurseDetailPanel', () => {
         expect(onClose).toHaveBeenCalledOnce();
     });
 
-    it('keeps rest allocation optional and saves only the edited rest permission with nurse details', async () => {
+    it('shows work options without rest allocation controls or guidance', () => {
         const {nurse, wardShiftTypes} = createRestAllocationFixture();
-        const {saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
-        const summary = screen.getByText('휴무 자동 배정').closest('summary')!;
-        const details = summary.closest('details')!;
 
-        expect(details).not.toHaveAttribute('open');
+        renderPanel(nurse, wardShiftTypes);
+
         expect(screen.getByRole('button', {name: 'DDay'})).toBeInTheDocument();
+        expect(screen.queryByText('휴무는 병동 기준과 신청 내역을 반영해요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('휴무 자동 배정')).not.toBeInTheDocument();
+        expect(screen.queryByRole('switch', {name: /자동 배정/})).not.toBeInTheDocument();
+        expect(screen.queryByText('변경 후 아래 ‘저장하기’를 눌러 주세요.')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+    });
 
-        fireEvent.click(summary);
+    it('saves work selection without overwriting hidden rest request permissions', async () => {
+        const {nurse, wardShiftTypes} = createRestAllocationFixture();
+        const off = nurse.nurseShiftTypes.find((type) => type.wardShiftTypeId === 2)!;
 
-        const restSettings = within(details);
-        const off = restSettings.getByRole('switch', {name: '일반 OFF 자동 배정'});
-        const annual = restSettings.getByRole('switch', {name: '연차 자동 배정'});
-        const other = restSettings.getByRole('switch', {name: '보건휴가 자동 배정'});
+        off.isPossible = false;
 
-        expect(restSettings.getAllByRole('switch')).toHaveLength(3);
-        expect(off).toHaveAttribute('aria-checked', 'true');
-        expect(annual).toHaveAttribute('aria-checked', 'false');
-        expect(other).toHaveAttribute('aria-checked', 'true');
-        expect(restSettings.getAllByText('자동 배정 허용')).toHaveLength(2);
-        expect(restSettings.getByText('자동 배정 제한')).toBeInTheDocument();
-        expect(annual).toHaveAccessibleDescription(expect.stringContaining('신청한 날짜 외에 연차를 자동으로 배정할 때만 켜세요.'));
+        const {saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
 
-        fireEvent.click(annual);
-
-        expect(annual).toHaveAttribute('aria-checked', 'true');
-        expect(off).toHaveAttribute('aria-checked', 'true');
-        expect(other).toHaveAttribute('aria-checked', 'true');
-        expect(saveNurseDetails).not.toHaveBeenCalled();
-
+        fireEvent.click(screen.getByRole('button', {name: 'DDay'}));
         fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() => expect(saveNurseDetails).toHaveBeenCalledOnce());
-        expect(saveNurseDetails.mock.calls[0]).toEqual([
-            101,
-            {
-                nurse: undefined,
-                shiftTypes: [
-                    {
-                        nurseShiftTypeId: 103,
-                        change: {isPossible: true, targetRatioWeight: 7},
-                        shiftTypeMeta: {wardShiftTypeId: 3, name: '연차', shortName: 'AL', targetRatioWeight: 7},
-                    },
-                ],
-            },
+
+        const shiftTypes = saveNurseDetails.mock.calls[0][1].shiftTypes;
+
+        expect(shiftTypes).toEqual([
+            expect.objectContaining({nurseShiftTypeId: 101, change: expect.objectContaining({isPossible: false})}),
         ]);
+        expect(off.isPossible).toBe(false);
+        expect(nurse.nurseShiftTypes.find((type) => type.wardShiftTypeId === 3)?.isPossible).toBe(false);
     });
 
-    it('restores rest permissions when the nurse detail draft is discarded', () => {
+    it('opens work-shift help on tap and closes it with Escape without creating an unsaved draft', async () => {
         const {nurse, wardShiftTypes} = createRestAllocationFixture();
         const {onClose, saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
-        const summary = screen.getByText('휴무 자동 배정').closest('summary')!;
+        const help = screen.getByRole('button', {name: '가능 근무 안내'});
 
-        fireEvent.click(summary);
-        fireEvent.click(screen.getByRole('switch', {name: '일반 OFF 자동 배정'}));
-        fireEvent.click(screen.getByRole('switch', {name: '연차 자동 배정'}));
-        fireEvent.click(screen.getByRole('switch', {name: '보건휴가 자동 배정'}));
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+        fireEvent.click(help);
+
+        await waitFor(() => {
+            expect(screen.getByRole('tooltip')).toHaveTextContent('가능한 근무를 모두 선택해 주세요');
+            expect(screen.getByRole('tooltip')).not.toHaveTextContent(/휴무|연차|휴가/);
+        });
+        expect(help).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+
+        fireEvent.keyDown(help, {key: 'Escape'});
+        await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
+        expect(help).toHaveAttribute('aria-expanded', 'false');
         fireEvent.click(screen.getByRole('button', {name: '근무자 패널 닫기'}));
-        fireEvent.click(within(screen.getByRole('dialog', {name: '저장하지 않고 나갈까요?'})).getByRole('button', {name: '저장 안 함'}));
 
         expect(onClose).toHaveBeenCalledOnce();
         expect(saveNurseDetails).not.toHaveBeenCalled();
-        fireEvent.click(summary);
-        fireEvent.click(summary);
-
-        expect(screen.getByRole('switch', {name: '일반 OFF 자동 배정'})).toHaveAttribute('aria-checked', 'true');
-        expect(screen.getByRole('switch', {name: '연차 자동 배정'})).toHaveAttribute('aria-checked', 'false');
-        expect(screen.getByRole('switch', {name: '보건휴가 자동 배정'})).toHaveAttribute('aria-checked', 'true');
-        expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled();
+        expect(screen.queryByRole('dialog', {name: '저장하지 않고 나갈까요?'})).not.toBeInTheDocument();
     });
 
-    it('prevents changing rest permissions while saving nurse details', async () => {
+    it('shows only work-shift guidance when the help icon is hovered', async () => {
         const {nurse, wardShiftTypes} = createRestAllocationFixture();
-        const {saveNurseDetails} = renderPanel(nurse, wardShiftTypes);
+        const user = userEvent.setup();
 
-        let resolveSave: ((saved: boolean) => void) | undefined;
+        renderPanel(nurse, wardShiftTypes);
 
-        saveNurseDetails.mockReturnValue(
-            new Promise<boolean>((resolve) => {
-                resolveSave = resolve;
-            }),
-        );
-        fireEvent.click(screen.getByText('휴무 자동 배정').closest('summary')!);
-        fireEvent.click(screen.getByRole('switch', {name: '연차 자동 배정'}));
-        fireEvent.click(screen.getByRole('button', {name: '저장하기'}));
+        const help = screen.getByRole('button', {name: '가능 근무 안내'});
 
-        const details = screen.getByText('휴무 자동 배정').closest('details')!;
-
-        within(details)
-            .getAllByRole('switch')
-            .forEach((control) => expect(control).toBeDisabled());
-        expect(saveNurseDetails).toHaveBeenCalledOnce();
-
-        resolveSave?.(true);
-
-        await waitFor(() => expect(screen.getByRole('button', {name: '저장하기'})).toBeDisabled());
-        expect(screen.getByRole('switch', {name: '연차 자동 배정'})).toBeEnabled();
+        await user.hover(help);
+        await waitFor(() => expect(screen.getByRole('tooltip')).toHaveTextContent('가능한 근무를 모두 선택해 주세요'));
+        expect(screen.getByRole('tooltip')).not.toHaveTextContent(/휴무|연차|휴가/);
+        await user.unhover(help);
+        fireEvent.pointerMove(document.body, {clientX: 1000, clientY: 1000, pointerType: 'mouse'});
+        await waitFor(() => expect(screen.queryByRole('tooltip')).not.toBeInTheDocument());
     });
 
     // nurse-detail-panel.tsx 의 ENABLE_MONTHLY_SHIFT_RATIO 가 false 라 월간 근무 비율 UI 자체가
@@ -658,10 +666,8 @@ describe('NurseDetailPanel', () => {
 
         fireEvent.focus(screen.getByRole('button', {name: '가능 근무 안내'}));
 
-        await waitFor(() =>
-            expect(screen.getAllByText('가능한 근무를 모두 선택해 주세요').some((element) => element.classList.contains('z-[1100]'))).toBe(
-                true,
-            ),
-        );
+        await waitFor(() => expect(screen.getByRole('tooltip')).toHaveTextContent('가능한 근무를 모두 선택해 주세요'));
+        expect(screen.getByRole('tooltip').closest('aside')).not.toBeNull();
+        expect(screen.getByRole('tooltip').closest('[data-state]')).toHaveClass('z-[1400]');
     });
 });

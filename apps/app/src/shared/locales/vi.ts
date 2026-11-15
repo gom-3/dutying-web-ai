@@ -210,10 +210,11 @@ export const vi = {
                     changedElsewhere: 'Điều kiện đã được thay đổi trong yêu cầu khác. Hãy tải điều kiện mới nhất trước khi sửa lại.',
                     reloadLatest: 'Tải điều kiện mới nhất',
                     duplicateSkipped: 'Điều kiện này đã tồn tại.',
-                    staffCountConflict: 'Số nhân sự tối thiểu, tối đa và chính xác của phạm vi và ca này đang mâu thuẫn.',
+                    staffCountConflict:
+                        'Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.',
                 },
                 savedWarnings: {
-                    title: 'Đã lưu, nhưng có một số điều kiện cần kiểm tra',
+                    title: 'Đã lưu. Hãy kiểm tra các quy tắc bên dưới.',
                 },
                 staffCountText: {
                     min: 'Đối với {{target}} vào {{dateScope}}, cần ít nhất {{count}} điều dưỡng cho ca {{shift}}.',
