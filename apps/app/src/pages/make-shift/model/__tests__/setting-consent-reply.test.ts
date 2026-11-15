@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {settingConsentReply} from '../setting-consent-reply';
+import {beforeEach, describe, expect, it} from 'vitest';
+import {declinedSettingCandidates, rememberDeclinedSettingCandidate, settingConsentReply} from '../setting-consent-reply';
 import {candidate, outcome, response} from './fixtures/intent-first';
 import type {TConversationDetail} from '../schedule-conversation-api';
 
@@ -29,6 +29,27 @@ function detail() {
     } as unknown as TConversationDetail;
 }
 describe('scoped setting consent reply', () => {
+    beforeEach(() => localStorage.clear());
+    it('retains a rejection after reload and blocks short consent without storing tokens or roster data', () => {
+        const now = Date.now();
+        rememberDeclinedSettingCandidate('owner:1:ward:2:month:11', 'digest:1', new Date(now + 300000).toISOString());
+        const restored = declinedSettingCandidates('owner:1:ward:2:month:11');
+        expect(settingConsentReply(detail(), '응', false, restored)).toBeNull();
+        expect([...restored]).toEqual(['digest:1']);
+        expect(declinedSettingCandidates('owner:2:ward:2:month:11').size).toBe(0);
+        expect(declinedSettingCandidates('owner:1:ward:2:month:11', now + 300001).size).toBe(0);
+        expect(JSON.stringify(localStorage)).not.toMatch(/synthetic-token|cells|requestText/);
+    });
+    it('does not carry a rejection over to a new exact candidate', () => {
+        rememberDeclinedSettingCandidate('scope', 'other-digest', new Date(Date.now() + 300000).toISOString());
+        expect(settingConsentReply(detail(), '응', false, declinedSettingCandidates('scope'))?.decision).toBe('ACCEPT');
+    });
+    it('ignores malformed and expired rejection records', () => {
+        localStorage.setItem('scope:declined-setting-candidates:v1', '{');
+        expect(declinedSettingCandidates('scope').size).toBe(0);
+        rememberDeclinedSettingCandidate('scope', 'expired', '2000-01-01');
+        expect(declinedSettingCandidates('scope').size).toBe(0);
+    });
     it('binds a yes only to the latest exact candidate and leaves request data unchanged', () => {
         const d = detail();
         const before = JSON.stringify(d);

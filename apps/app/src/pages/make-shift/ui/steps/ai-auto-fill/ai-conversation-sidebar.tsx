@@ -1,4 +1,8 @@
-import {settingConsentReply} from '../../../model/setting-consent-reply';
+import {
+    declinedSettingCandidates as storedDeclines,
+    rememberDeclinedSettingCandidate,
+    settingConsentReply,
+} from '../../../model/setting-consent-reply';
 import type {TScheduleObservation} from '@dutying/api/ward';
 import {ArrowRight, Redo2} from 'lucide-react';
 import {type ReactNode, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState} from 'react';
@@ -1282,6 +1286,19 @@ export default function AiConversationSidebar({
             'recovering',
         );
     const declinedSettingCandidates = useRef(new Set<string>());
+    const declinedSettingScope = useRef(chatKey);
+    if (declinedSettingScope.current !== chatKey) {
+        declinedSettingCandidates.current.clear();
+        declinedSettingScope.current = chatKey;
+    }
+    for (const digest of storedDeclines(chatKey)) declinedSettingCandidates.current.add(digest);
+    const keepSettingCandidate = (operation: TConversationOperation) => {
+        const candidate = operation.result?.candidate;
+        if (!candidate) return;
+        declinedSettingCandidates.current.add(candidate.candidateDigest);
+        rememberDeclinedSettingCandidate(chatKey, candidate.candidateDigest, candidate.expiresAt);
+        setNotice(t('aiConversationSidebar.authoring.keep'));
+    };
     const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
         const message = request.trim();
 
@@ -1295,8 +1312,7 @@ export default function AiConversationSidebar({
         if (consent) {
             setText('');
             if (consent.decision === 'DECLINE') {
-                declinedSettingCandidates.current.add(consent.operation.result!.candidate!.candidateDigest);
-                setNotice(t('aiConversationSidebar.authoring.keep'));
+                keepSettingCandidate(consent.operation);
             } else {
                 await execute(
                     consent.operation.operationType,
@@ -2352,22 +2368,24 @@ export default function AiConversationSidebar({
                         intentFirstEnabled &&
                         !localDirty &&
                         !preparing &&
+                        !declinedSettingCandidates.current.has(operation.result.candidate.candidateDigest) &&
                         operation.baseRevision === detail.conversation.revision &&
                         operation.operationId === latestOperation?.operationId
                     }
                     disabled={busy || running || preparing}
-                    onKeep={() => declinedSettingCandidates.current.add(operation.result!.candidate!.candidateDigest)}
+                    onKeep={() => keepSettingCandidate(operation)}
                     loadVersion={api.version}
                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                    onApply={() =>
+                    onApply={() => {
+                        if (storedDeclines(chatKey).has(operation.result!.candidate!.candidateDigest)) return;
                         void execute(
                             operation.operationType as 'GENERATE' | 'ADJUST',
                             operation.fillPolicy === 'REBUILD_UNLOCKED' ? 'REBUILD_UNLOCKED' : 'EMPTY_ONLY',
                             operation.interpretationId ?? undefined,
                             undefined,
                             operation,
-                        )
-                    }
+                        );
+                    }}
                 />
             );
 
