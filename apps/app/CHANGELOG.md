@@ -1,5 +1,14 @@
 # @dutying/app
 
+## 1.3.50
+
+### Patch Changes
+
+- 간호사 가능근무·휴무 안내와 근무조건 경고를 개선하고 요금제 사용량 화면을 정리했습니다. 기존 신청 API와 저장된 근무 가능 값은 유지합니다.
+    - @dutying/api@1.3.50
+    - @dutying/domain@1.3.50
+    - @dutying/utils@1.3.50
+
 ## 1.3.49
 
 ### Patch Changes
