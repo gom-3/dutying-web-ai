@@ -207,10 +207,10 @@ export const zh = {
                 toast: {
                     ...generatedZh.page.makeShift.constraints.toast,
                     duplicateSkipped: '相同条件已存在。',
-                    staffCountConflict: '相同适用日和班次的最少、最多和精确人数条件相互冲突。',
+                    staffCountConflict: '同一对象、日期和班次的人数规则互相冲突。请将重叠的人数规则合并为一条。',
                 },
                 savedWarnings: {
-                    title: '已保存，但有些约束条件需要确认',
+                    title: '已保存。请检查以下排班规则。',
                 },
                 staffCountText: {
                     min: '{{target}}在{{dateScope}}的{{shift}}班次至少需要{{count}}名护士。',

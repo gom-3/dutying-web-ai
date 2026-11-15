@@ -1632,7 +1632,10 @@ export const ko = {
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
                     "resetDefaults": "권장 조건 {{count}}개로 초기화했어요.",
                     "saveFailed": "근무 조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-                    "staffCountConflict": "같은 적용일과 근무의 최소·최대·정확 인원 조건이 서로 맞지 않아요.",
+                    "periodCountConflict": "같은 근무의 최소 {{minimum}}회가 최대 {{maximum}}회보다 커요. 최소 횟수를 {{maximum}}회 이하로 바꿔 주세요.",
+                    "reviewLowerBound": "최소 횟수 수정",
+                    "reviewUpperBound": "최대 횟수 수정",
+                    "staffCountConflict": "같은 대상·날짜·근무의 인원 조건이 서로 맞지 않아요. 겹치는 인원 조건을 하나로 정리해 주세요.",
                     "importSkippedAllNurseRules": "간호사별 근무 조건 {{count}}개는 다른 팀에 그대로 적용할 수 없어 불러오지 않았어요.",
                     "importedWithSkippedNurseRules": "{{teamName}} 근무 조건을 불러왔어요. 간호사별 근무 조건 {{count}}개는 제외했어요."
                 },
@@ -1653,7 +1656,21 @@ export const ko = {
                     "exact": "{{target}} 대상은 {{dateScope}}에 {{shift}} 근무자가 정확히 {{count}}명이어야 해요."
                 },
                 "savedWarnings": {
-                    "title": "저장됐지만 확인이 필요한 근무 조건이 있어요"
+                    "title": "저장했어요. 아래 조건을 확인해 주세요.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "연속 근무 제한보다 더 일한 뒤 쉬도록 설정되어 있어요. 휴무 기준의 근무일 수를 줄여 주세요.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "근무 인원이 1명이라 프리셉티를 동료와 함께 배정할 수 없어요. 근무 인원을 2명 이상으로 바꿔 주세요.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "같은 간호사의 같은 근무에 선호와 회피가 함께 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "야간근무 후 휴무 규칙이 여러 개예요. 필요한 규칙만 남겨 주세요.",
+                        "STAFF_COUNT_CONFLICT": "같은 대상·날짜·근무의 인원 조건이 서로 맞지 않아요. 겹치는 인원 조건을 하나로 정리해 주세요.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "같은 두 간호사에게 함께 근무와 같은 근무 금지가 모두 필수로 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "NURSE_PAIR_DAY_CONFLICT": "같은 두 간호사에게 같은 날 출근과 같은 날 출근 금지가 모두 필수로 설정되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "PRECEPTOR_PAIR_CONFLICT": "프리셉터와 프리셉티를 함께 배정하도록 했지만, 같은 근무는 금지되어 있어요. 둘 중 하나를 삭제해 주세요.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "가능 근무에서 제외한 근무에 월 필수 횟수가 설정되어 있어요. 해당 간호사를 횟수 조건의 대상에서 빼 주세요.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "같은 간호사의 최소 횟수가 최대 횟수보다 커요. 최소 횟수를 최대 횟수 이하로 바꿔 주세요.",
+                        "MIXED_PARTICIPATION_CONFLICT": "같은 간호사의 같은 날짜에 참여 방식이 여러 개예요. 해당 날짜의 참여 방식을 하나로 맞춰 주세요."
+                    },
+                    "fallback": "확인이 필요한 근무 조건이 있어요. 설정한 간호사·날짜·횟수를 확인해 주세요."
                 },
                 "mixed": {
                     "policyTitle": "혼합교대 운영 방식",
@@ -4887,7 +4904,10 @@ export const en: TLocale = {
                     "recommendedDeleted": "Recommended constraint deleted.",
                     "resetDefaults": "Reset to {{count}} recommended constraints.",
                     "saveFailed": "Could not save constraints. Please try again shortly.",
-                    "staffCountConflict": "The minimum, maximum, and exact staffing values conflict for this scope and shift.",
+                    "periodCountConflict": "The minimum of {{minimum}} shifts exceeds the maximum of {{maximum}} for the same shift. Lower the minimum to {{maximum}} or less.",
+                    "reviewLowerBound": "Edit minimum",
+                    "reviewUpperBound": "Edit maximum",
+                    "staffCountConflict": "Staffing rules conflict for the same staff group, dates, and shift. Combine the overlapping rules into one.",
                     "importSkippedAllNurseRules": "No constraints were imported because {{count}} nurse-specific constraints cannot be applied to another team.",
                     "importedWithSkippedNurseRules": "Imported constraints from {{teamName}} and skipped {{count}} nurse-specific constraints."
                 },
@@ -4908,7 +4928,21 @@ export const en: TLocale = {
                     "exact": "For {{target}} on {{dateScope}}, exactly {{count}} nurses must be assigned to {{shift}}."
                 },
                 "savedWarnings": {
-                    "title": "Saved, but some constraints need review"
+                    "title": "Saved. Review the rules below.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "Time off is set to start beyond the consecutive work limit. Lower the number of work days before time off.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "Only 1 nurse is scheduled, but a preceptee needs a colleague on the same shift. Set staffing to at least 2.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "The same shift is both preferred and avoided for the same nurse. Delete one of these rules.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "There is more than one rule for time off after night shifts. Keep only the rules you need.",
+                        "STAFF_COUNT_CONFLICT": "Staffing rules conflict for the same staff group, dates, and shift. Combine the overlapping rules into one.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "The same two nurses are required to work together and to avoid the same shift. Delete one of these rules.",
+                        "NURSE_PAIR_DAY_CONFLICT": "The same two nurses are required both to work on the same day and to work on different days. Delete one of these rules.",
+                        "PRECEPTOR_PAIR_CONFLICT": "A preceptor and preceptee must work together, but another rule keeps them off the same shift. Delete one of these rules.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "A monthly shift quota is required for a nurse who cannot work that shift. Exclude that nurse from the quota rule.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "A nurse has a minimum count higher than the maximum. Lower the minimum to the maximum or less.",
+                        "MIXED_PARTICIPATION_CONFLICT": "The same nurse has multiple participation modes for the same dates. Choose one mode for those dates."
+                    },
+                    "fallback": "A shift rule needs review. Check its nurses, dates, and counts."
                 },
                 "mixed": {
                     "policyTitle": "Mixed-shift operating policy",
@@ -8140,7 +8174,10 @@ export const ja: TLocale = {
                     "recommendedDeleted": "推奨条件を削除しました。",
                     "resetDefaults": "推奨条件{{count}}件に初期化しました。",
                     "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
-                    "staffCountConflict": "同じ適用日と勤務の最低・最大・正確な人数条件が矛盾しています。",
+                    "periodCountConflict": "同じ勤務の最低{{minimum}}回が最大{{maximum}}回を超えています。最低回数を{{maximum}}回以下にしてください。",
+                    "reviewLowerBound": "最低回数を編集",
+                    "reviewUpperBound": "最大回数を編集",
+                    "staffCountConflict": "同じ対象・日付・勤務の人数条件が矛盾しています。重複する人数条件を1つにまとめてください。",
                     "importSkippedAllNurseRules": "看護師別の制約条件{{count}}件は別のチームにそのまま適用できないため読み込みませんでした。",
                     "importedWithSkippedNurseRules": "{{teamName}}の制約条件を読み込み看護師別の{{count}}件は除外しました。"
                 },
@@ -8161,7 +8198,21 @@ export const ja: TLocale = {
                     "exact": "{{target}}は{{dateScope}}の{{shift}}勤務をちょうど{{count}}人にします。"
                 },
                 "savedWarnings": {
-                    "title": "保存しましたが、確認が必要な制約条件があります"
+                    "title": "保存しました。以下の勤務条件を確認してください。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "連続勤務の上限を超えてから休む設定になっています。休みまでの勤務日数を減らしてください。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "勤務人数は1人ですが、プリセプティには同じ勤務の同僚が必要です。人数を2人以上にしてください。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同じ看護師の同じ勤務に「希望」と「回避」が設定されています。どちらか一方を削除してください。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜勤後の休みルールが複数あります。必要なルールだけ残してください。",
+                        "STAFF_COUNT_CONFLICT": "同じ対象・日付・勤務の人数条件が矛盾しています。重複する人数条件を1つにまとめてください。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同じ2人に「同じ勤務」と「同じ勤務の禁止」が必須で設定されています。どちらか一方を削除してください。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同じ2人に「同じ日に出勤」と「同じ日の出勤禁止」が必須で設定されています。どちらか一方を削除してください。",
+                        "PRECEPTOR_PAIR_CONFLICT": "プリセプターとプリセプティを同じ勤務にする条件と、それを禁止する条件があります。どちらか一方を削除してください。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "勤務できないシフトに月間の必須回数が設定されています。該当する看護師を回数条件の対象から外してください。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同じ看護師の最低回数が最大回数を超えています。最低回数を最大回数以下にしてください。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同じ看護師の同じ日付に参加方式が複数あります。参加方式を1つにそろえてください。"
+                    },
+                    "fallback": "確認が必要な勤務条件があります。対象の看護師・日付・回数を確認してください。"
                 },
                 "mixed": {
                     "policyTitle": "混合交代の運用方式",
@@ -11393,7 +11444,10 @@ export const zh: TLocale = {
                     "recommendedDeleted": "推荐的条件已被删除。",
                     "resetDefaults": "已初始化为推荐条件{{count}}。",
                     "saveFailed": "无法保存约束。请稍后重试。",
-                    "staffCountConflict": "相同适用日和班次的最少、最多和精确人数条件相互冲突。",
+                    "periodCountConflict": "同一班次的最少{{minimum}}次超过最多{{maximum}}次。请将最少次数改为{{maximum}}次或更少。",
+                    "reviewLowerBound": "修改最少次数",
+                    "reviewUpperBound": "修改最多次数",
+                    "staffCountConflict": "同一对象、日期和班次的人数规则互相冲突。请将重叠的人数规则合并为一条。",
                     "importSkippedAllNurseRules": "由于 {{count}} 条护士专属约束无法直接应用到其他小组因此未导入。",
                     "importedWithSkippedNurseRules": "已导入 {{teamName}} 的约束并跳过 {{count}} 条护士专属约束。"
                 },
@@ -11414,7 +11468,21 @@ export const zh: TLocale = {
                     "exact": "{{target}}在{{dateScope}}的{{shift}}班次必须正好安排{{count}}名护士。"
                 },
                 "savedWarnings": {
-                    "title": "已保存，但有些约束条件需要确认"
+                    "title": "已保存。请检查以下排班规则。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "休息前的工作天数超过连续工作上限。请减少休息前的工作天数。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "每班设为1人，但受带教护士需要同事同班。请将人数改为至少2人。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同一护士的同一班次同时设为偏好和回避。请删除其中一条规则。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜班后的休息规则不止一条。请只保留需要的规则。",
+                        "STAFF_COUNT_CONFLICT": "同一对象、日期和班次的人数规则互相冲突。请将重叠的人数规则合并为一条。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同两名护士同时被要求同班和禁止同班。请删除其中一条规则。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同两名护士同时被要求同日上班和禁止同日上班。请删除其中一条规则。",
+                        "PRECEPTOR_PAIR_CONFLICT": "带教护士与受带教护士需要同班，但另一条规则禁止同班。请删除其中一条规则。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "为无法上某班次的护士设置了该班次的每月必需次数。请将该护士移出次数规则的适用对象。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同一护士的最少次数大于最多次数。请将最少次数改为不超过最多次数。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同一护士在同一日期设有多种参与方式。请将该日期的参与方式统一为一种。"
+                    },
+                    "fallback": "有排班规则需要确认。请检查设置的护士、日期和次数。"
                 },
                 "mixed": {
                     "policyTitle": "混合轮班运行方式",
@@ -14646,7 +14714,10 @@ export const zhTW: TLocale = {
                     "recommendedDeleted": "推薦的條件已被刪除。",
                     "resetDefaults": "已初始化為推薦條件{{count}}。",
                     "saveFailed": "無法儲存約束。請稍後重試。",
-                    "staffCountConflict": "相同適用日和班次的最少、最多和精確人數條件相互衝突。",
+                    "periodCountConflict": "同一班別的最少{{minimum}}次超過最多{{maximum}}次。請將最少次數改為{{maximum}}次或更少。",
+                    "reviewLowerBound": "修改最少次數",
+                    "reviewUpperBound": "修改最多次數",
+                    "staffCountConflict": "同一對象、日期和班別的人數規則互相衝突。請將重疊的人數規則合併為一條。",
                     "importSkippedAllNurseRules": "由於 {{count}} 條護理師專屬約束無法直接應用到其他小組因此未匯入。",
                     "importedWithSkippedNurseRules": "已匯入 {{teamName}} 的約束並跳過 {{count}} 條護理師專屬約束。"
                 },
@@ -14667,7 +14738,21 @@ export const zhTW: TLocale = {
                     "exact": "{{target}}在{{dateScope}}的{{shift}}班次必須正好安排{{count}}名護理師。"
                 },
                 "savedWarnings": {
-                    "title": "已儲存，但有些約束條件需要確認"
+                    "title": "已儲存。請檢查以下排班規則。",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "休息前的工作天數超過連續工作上限。請減少休息前的工作天數。",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "每班設為1人，但受帶教護理師需要同事同班。請將人數改為至少2人。",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "同一護理師的同一班別同時設為偏好和迴避。請刪除其中一條規則。",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "夜班後的休息規則不只一條。請只保留需要的規則。",
+                        "STAFF_COUNT_CONFLICT": "同一對象、日期和班別的人數規則互相衝突。請將重疊的人數規則合併為一條。",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "同兩名護理師同時被要求同班和禁止同班。請刪除其中一條規則。",
+                        "NURSE_PAIR_DAY_CONFLICT": "同兩名護理師同時被要求同日上班和禁止同日上班。請刪除其中一條規則。",
+                        "PRECEPTOR_PAIR_CONFLICT": "帶教護理師與受帶教護理師需要同班，但另一條規則禁止同班。請刪除其中一條規則。",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "為無法上某班別的護理師設定了該班別的每月必需次數。請將該護理師移出次數規則的適用對象。",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "同一護理師的最少次數大於最多次數。請將最少次數改為不超過最多次數。",
+                        "MIXED_PARTICIPATION_CONFLICT": "同一護理師在同一日期設有多種參與方式。請將該日期的參與方式統一為一種。"
+                    },
+                    "fallback": "有排班規則需要確認。請檢查設定的護理師、日期和次數。"
                 },
                 "mixed": {
                     "policyTitle": "混合輪班執行方式",
@@ -17899,7 +17984,10 @@ export const th: TLocale = {
                     "recommendedDeleted": "ลบข้อจำกัดที่แนะนำแล้ว",
                     "resetDefaults": "รีเซ็ตเป็น {{count}} ข้อจำกัดที่แนะนำ",
                     "saveFailed": "ไม่สามารถบันทึกข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
-                    "staffCountConflict": "จำนวนขั้นต่ำ สูงสุด และจำนวนที่แน่นอนของวันและเวรนี้ขัดแย้งกัน",
+                    "periodCountConflict": "จำนวนขั้นต่ำ {{minimum}} ครั้งมากกว่าสูงสุด {{maximum}} ครั้งสำหรับเวรเดียวกัน โปรดลดขั้นต่ำเหลือไม่เกิน {{maximum}} ครั้ง",
+                    "reviewLowerBound": "แก้ไขจำนวนขั้นต่ำ",
+                    "reviewUpperBound": "แก้ไขจำนวนสูงสุด",
+                    "staffCountConflict": "กฎจำนวนคนของกลุ่ม วันที่ และเวรเดียวกันขัดแย้งกัน โปรดรวมกฎที่ซ้ำซ้อนให้เหลือข้อเดียว",
                     "importSkippedAllNurseRules": "ไม่ได้นำเข้า เพราะข้อจำกัดรายพยาบาล {{count}} รายการใช้กับทีมอื่นโดยตรงไม่ได้.",
                     "importedWithSkippedNurseRules": "นำเข้าข้อจำกัดจาก {{teamName}} และข้ามข้อจำกัดรายพยาบาล {{count}} รายการ."
                 },
@@ -17920,7 +18008,21 @@ export const th: TLocale = {
                     "exact": "สำหรับ {{target}} ใน {{dateScope}} ต้องจัดพยาบาลเวร {{shift}} ให้ครบ {{count}} คนพอดี"
                 },
                 "savedWarnings": {
-                    "title": "บันทึกแล้ว แต่มีข้อจำกัดบางรายการที่ต้องตรวจสอบ"
+                    "title": "บันทึกแล้ว โปรดตรวจสอบเงื่อนไขด้านล่าง",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "ตั้งให้หยุดหลังทำงานเกินขีดจำกัดวันทำงานต่อเนื่อง โปรดลดจำนวนวันทำงานก่อนหยุด",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "ตั้งจำนวนพยาบาลไว้ 1 คน แต่พยาบาลที่อยู่ระหว่างการสอนงานต้องมีเพื่อนร่วมเวร โปรดเพิ่มจำนวนเป็นอย่างน้อย 2 คน",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "พยาบาลคนเดียวกันถูกตั้งให้ทั้งเลือกและหลีกเลี่ยงเวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "มีกฎวันหยุดหลังเวรดึกมากกว่าหนึ่งข้อ โปรดเก็บเฉพาะกฎที่ต้องการใช้",
+                        "STAFF_COUNT_CONFLICT": "กฎจำนวนคนของกลุ่ม วันที่ และเวรเดียวกันขัดแย้งกัน โปรดรวมกฎที่ซ้ำซ้อนให้เหลือข้อเดียว",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "พยาบาลคู่เดียวกันถูกบังคับให้ทั้งขึ้นเวรด้วยกันและห้ามอยู่เวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "NURSE_PAIR_DAY_CONFLICT": "พยาบาลคู่เดียวกันถูกบังคับให้ทั้งมาทำงานวันเดียวกันและห้ามทำงานวันเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "PRECEPTOR_PAIR_CONFLICT": "ตั้งให้พยาบาลผู้สอนงานและผู้รับการสอนงานขึ้นเวรด้วยกัน แต่มีอีกกฎห้ามอยู่เวรเดียวกัน โปรดลบกฎใดกฎหนึ่ง",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "กำหนดจำนวนเวรรายเดือนที่ต้องทำให้พยาบาลที่ทำเวรนั้นไม่ได้ โปรดนำพยาบาลคนนั้นออกจากกลุ่มเป้าหมายของกฎจำนวนเวร",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "จำนวนครั้งขั้นต่ำของพยาบาลคนเดียวกันมากกว่าค่าสูงสุด โปรดลดค่าขั้นต่ำให้ไม่เกินค่าสูงสุด",
+                        "MIXED_PARTICIPATION_CONFLICT": "พยาบาลคนเดียวกันมีรูปแบบเข้าร่วมหลายแบบในวันเดียวกัน โปรดเลือกเพียงรูปแบบเดียวสำหรับวันนั้น"
+                    },
+                    "fallback": "มีเงื่อนไขเวรที่ต้องตรวจสอบ โปรดตรวจสอบพยาบาล วันที่ และจำนวนครั้งที่ตั้งไว้"
                 },
                 "mixed": {
                     "policyTitle": "นโยบายการทำงานแบบผสม",
@@ -21152,7 +21254,10 @@ export const vi: TLocale = {
                     "recommendedDeleted": "Đã xóa hạn chế được đề xuất.",
                     "resetDefaults": "Đặt lại về {{count}} các ràng buộc được đề xuất.",
                     "saveFailed": "Không thể lưu các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
-                    "staffCountConflict": "Số nhân sự tối thiểu, tối đa và chính xác của phạm vi và ca này đang mâu thuẫn.",
+                    "periodCountConflict": "Số ca tối thiểu {{minimum}} vượt mức tối đa {{maximum}} cho cùng ca làm. Hãy giảm mức tối thiểu xuống không quá {{maximum}}.",
+                    "reviewLowerBound": "Sửa số lần tối thiểu",
+                    "reviewUpperBound": "Sửa số lần tối đa",
+                    "staffCountConflict": "Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.",
                     "importSkippedAllNurseRules": "Không nhập vì {{count}} ràng buộc theo điều dưỡng không thể áp dụng trực tiếp cho nhóm khác.",
                     "importedWithSkippedNurseRules": "Đã nhập ràng buộc từ {{teamName}} và bỏ qua {{count}} ràng buộc theo điều dưỡng."
                 },
@@ -21173,7 +21278,21 @@ export const vi: TLocale = {
                     "exact": "Đối với {{target}} vào {{dateScope}}, ca {{shift}} phải có chính xác {{count}} điều dưỡng."
                 },
                 "savedWarnings": {
-                    "title": "Đã lưu, nhưng có một số điều kiện cần kiểm tra"
+                    "title": "Đã lưu. Hãy kiểm tra các quy tắc bên dưới.",
+                    "messages": {
+                        "MAX_WORK_BELOW_WORK_OFF_TRIGGER": "Số ngày làm trước khi nghỉ vượt giới hạn làm liên tiếp. Hãy giảm số ngày làm trước khi nghỉ.",
+                        "EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE": "Ca này chỉ có 1 điều dưỡng, nhưng điều dưỡng đang được hướng dẫn cần đồng nghiệp cùng ca. Hãy tăng số người lên ít nhất 2.",
+                        "NURSE_SHIFT_PREFER_AVOID_CONFLICT": "Cùng một điều dưỡng và ca làm vừa được ưu tiên vừa bị tránh. Hãy xóa một trong hai quy tắc.",
+                        "TWO_SHIFT_NIGHT_RECOVERY_CONFLICT": "Có nhiều quy tắc nghỉ sau ca đêm. Hãy chỉ giữ lại các quy tắc cần dùng.",
+                        "STAFF_COUNT_CONFLICT": "Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.",
+                        "NURSE_PAIR_SHIFT_CONFLICT": "Cùng hai điều dưỡng vừa bắt buộc làm cùng ca vừa bị cấm làm cùng ca. Hãy xóa một trong hai quy tắc.",
+                        "NURSE_PAIR_DAY_CONFLICT": "Cùng hai điều dưỡng vừa bắt buộc làm cùng ngày vừa bị cấm làm cùng ngày. Hãy xóa một trong hai quy tắc.",
+                        "PRECEPTOR_PAIR_CONFLICT": "Điều dưỡng hướng dẫn và điều dưỡng đang được hướng dẫn cần làm cùng ca, nhưng quy tắc khác lại cấm cùng ca. Hãy xóa một trong hai quy tắc.",
+                        "MONTHLY_QUOTA_DISALLOWED_SHIFT": "Một điều dưỡng không thể làm ca này nhưng lại phải đủ số ca đó mỗi tháng. Hãy loại điều dưỡng này khỏi đối tượng của quy tắc số ca.",
+                        "INDIVIDUAL_HARD_BOUNDS_CONFLICT": "Số lần tối thiểu của cùng một điều dưỡng lớn hơn mức tối đa. Hãy giảm mức tối thiểu xuống không quá mức tối đa.",
+                        "MIXED_PARTICIPATION_CONFLICT": "Cùng một điều dưỡng có nhiều chế độ tham gia trong cùng ngày. Hãy chọn một chế độ cho những ngày đó."
+                    },
+                    "fallback": "Có quy tắc xếp ca cần xem lại. Hãy kiểm tra điều dưỡng, ngày và số lần đã đặt."
                 },
                 "mixed": {
                     "policyTitle": "Chính sách vận hành ca hỗn hợp",

@@ -3529,10 +3529,10 @@ describe('persistent schedule sidebar', () => {
         ];
         renderSidebar();
 
-        const failure = await screen.findByRole('region', {name: '근무표를 수정하지 못했어요. (2회차)'});
+        const failure = await screen.findByRole('region', {name: '요청을 반영하려면 확인이 필요해요. (2회차)'});
         const alert = within(failure).getByRole('alert');
 
-        expect(within(failure).getByText('근무표를 수정하지 못했어요. (2회차)')).toBeVisible();
+        expect(within(failure).getByText('요청을 반영하려면 확인이 필요해요. (2회차)')).toBeVisible();
         expect(within(failure).getAllByRole('img')).toHaveLength(1);
         expect(within(failure).getByRole('button', {name: '다시 계산하기'})).toBeEnabled();
         expect(within(failure).getByRole('button', {name: '요청 수정하기'})).toBeEnabled();
@@ -3558,7 +3558,7 @@ describe('persistent schedule sidebar', () => {
             if (executionStatus === 'FAILED') {
                 expect(screen.getAllByRole('button', {name: '다시 계산하기'})).toHaveLength(1);
                 expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
-                expect(screen.getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
+                expect(screen.getByRole('alert')).toHaveTextContent('요청을 반영하려면 확인이 필요해요.');
             } else if (executionStatus === 'SUCCEEDED') {
                 await screen.findByRole('textbox');
                 expect(screen.getByRole('textbox')).toBeVisible();
@@ -3610,9 +3610,9 @@ describe('persistent schedule sidebar', () => {
         expect(screen.getAllByRole('button', {name: '다시 계산하기'})).toHaveLength(1);
         expect(screen.getAllByRole('button', {name: '요청 수정하기'})).toHaveLength(1);
 
-        const failure = screen.getByRole('region', {name: '근무표를 수정하지 못했어요. (1회차)'});
+        const failure = screen.getByRole('region', {name: '요청을 반영하려면 확인이 필요해요. (1회차)'});
 
-        expect(within(failure).getByRole('alert')).toHaveTextContent('근무표를 수정하지 못했어요.');
+        expect(within(failure).getByRole('alert')).toHaveTextContent('요청을 반영하려면 확인이 필요해요.');
         expect(within(failure).queryByTestId('conversation-result-preview')).not.toBeInTheDocument();
         expect(within(failure).queryByText(i18n.t('aiAdjust.resultInfo.title'))).not.toBeInTheDocument();
         expect(within(failure).getByRole('button', {name: '변경 제안 보기'})).toBeVisible();

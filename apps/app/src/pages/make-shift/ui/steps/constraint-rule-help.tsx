@@ -1,6 +1,6 @@
 import type {TWardRotationMode} from '@dutying/domain';
 import {Check, Info, X} from 'lucide-react';
-import {type ReactNode, useState} from 'react';
+import {type ReactNode, useRef, useState} from 'react';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
@@ -51,6 +51,7 @@ type TConstraintRuleHelpProps = {
     ruleTitle: string;
     optionMap: Record<string, TConstraintHelpOption[]>;
     rotationMode: TWardRotationMode;
+    personalExclusion?: boolean;
 };
 
 const FALLBACK_DUTY_STYLE_BY_CODE: Record<string, {shortName: string; color: string; classification: string}> = {
@@ -86,7 +87,7 @@ function getNonNegativeInteger(value: unknown, fallback: number) {
 function optionMatchesValue(option: TConstraintHelpOption, value: unknown) {
     const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
     const optionRecord = option.raw as Record<string, unknown> | undefined;
-    const comparableKeys = ['wardShiftTypeId', 'nurseId', 'divisionNum', 'shiftTeamId'] as const;
+    const comparableKeys = ['wardShiftTypeId', 'nurseId', 'divisionNum', 'shiftTeamId', 'day'] as const;
 
     for (const key of comparableKeys) {
         if (record?.[key] != null && optionRecord?.[key] != null) {
@@ -244,6 +245,7 @@ function getConstraintHelpContent(
     optionMap: Record<string, TConstraintHelpOption[]>,
     rotationMode: TWardRotationMode,
     t: ReturnType<typeof useTypedTranslation>['t'],
+    personalExclusion: boolean,
 ): TConstraintHelpContent | null {
     if (!hasConstraintHelp(rule.templateCode)) return null;
 
@@ -303,6 +305,23 @@ function getConstraintHelpContent(
                 rule.params.dateScope,
                 t('page.makeShift.constraints.help.value.everyday'),
             );
+
+            if (personalExclusion) {
+                const configuredDuties = uniqueDutyOptions(optionMap.dutyStrict ?? []);
+                const workingOptions = configuredDuties.length ? configuredDuties : rotationMode === 'TWO' ? [day, night] : workingDuties;
+                const restrictsAll = getOptionType(selectedShiftValue) === 'ALL';
+                const alternatives = uniqueDutyOptions([...(restrictsAll ? [] : workingOptions), off]).filter(
+                    (option) => !optionMatchesValue(option, selectedShiftValue),
+                );
+
+                return {
+                    description: t('page.makeShift.constraints.personalExclusion.description'),
+                    goodLabel: t('page.makeShift.constraints.help.alternativeAssignmentExample'),
+                    good: {parts: [text(dateScope), dutyGroup(alternatives)]},
+                    second: {parts: [text(dateScope), restrictsAll ? dutyGroup(workingOptions) : selectedShiftPart]},
+                };
+            }
+
             const goodCount = count;
             const badCount = operator === 'MIN' ? Math.max(0, count - 1) : count + 1;
 
@@ -756,9 +775,12 @@ function HelpDutyBadge({duty: dutyValue, showName = true}: {duty: THelpDuty; sho
     );
 }
 
-function HelpDutyGroup({duties}: {duties: THelpDuty[]}) {
+function HelpDutyGroup({duties, wrap = false}: {duties: THelpDuty[]; wrap?: boolean}) {
     return (
-        <span className="inline-flex shrink-0 items-center gap-1" aria-label={duties.map((item) => item.name ?? item.label).join(', ')}>
+        <span
+            className={`inline-flex items-center gap-1 ${wrap ? 'max-w-full flex-wrap' : 'shrink-0'}`}
+            aria-label={duties.map((item) => item.name ?? item.label).join(', ')}
+        >
             {duties.map((item) => (
                 <HelpDutyBadge key={`${item.value}-${item.classification ?? ''}`} duty={item} />
             ))}
@@ -787,11 +809,14 @@ function HelpDutyRun({duties}: {duties: THelpDuty[]}) {
     );
 }
 
-function HelpExampleContent({example, audienceLabels}: {example: THelpExample; audienceLabels: string[]}) {
+function HelpExampleContent({example, audienceLabels, wrap = false}: {example: THelpExample; audienceLabels: string[]; wrap?: boolean}) {
+    const contentClassName = wrap
+        ? 'inline-flex max-w-full flex-wrap items-center gap-1.5'
+        : 'inline-flex w-max flex-nowrap items-center gap-1.5 whitespace-nowrap';
     const audience = audienceLabels.length ? (
         <span
             data-constraint-help-audience="true"
-            className="inline-flex h-7 shrink-0 items-center rounded-[8px] bg-[#4B5565] px-2 font-apple text-[11px] leading-none font-bold whitespace-nowrap text-white"
+            className={`inline-flex items-center rounded-[8px] bg-[#4B5565] px-2 font-apple text-[11px] font-bold text-white ${wrap ? 'min-h-7 max-w-full py-1 leading-4 break-words whitespace-normal' : 'h-7 shrink-0 leading-none whitespace-nowrap'}`}
         >
             {audienceLabels.join(' · ')}
         </span>
@@ -799,7 +824,7 @@ function HelpExampleContent({example, audienceLabels}: {example: THelpExample; a
 
     if (example.text) {
         return (
-            <span className="inline-flex w-max flex-nowrap items-center gap-1.5 whitespace-nowrap">
+            <span className={contentClassName}>
                 {audience}
                 {audience ? <span className="px-0.5 text-[#9099A8]">→</span> : null}
                 <span>{example.text}</span>
@@ -808,7 +833,7 @@ function HelpExampleContent({example, audienceLabels}: {example: THelpExample; a
     }
 
     return (
-        <span data-constraint-help-sequence="true" className="inline-flex w-max flex-nowrap items-center gap-1.5 whitespace-nowrap">
+        <span data-constraint-help-sequence="true" className={contentClassName}>
             {audience}
             {audience ? (
                 <span className="px-0.5 text-[#9099A8]" aria-hidden="true">
@@ -826,7 +851,7 @@ function HelpExampleContent({example, audienceLabels}: {example: THelpExample; a
                     );
                 }
 
-                if (part.type === 'dutyGroup') return <HelpDutyGroup key={`${part.type}-${index}`} duties={part.duties} />;
+                if (part.type === 'dutyGroup') return <HelpDutyGroup key={`${part.type}-${index}`} duties={part.duties} wrap={wrap} />;
 
                 if (part.type === 'dutyRun') return <HelpDutyRun key={`${part.type}-${index}`} duties={part.duties} />;
 
@@ -860,12 +885,14 @@ function ExampleRow({
     example,
     audienceLabels,
     tone,
+    wrap = false,
 }: {
     icon: ReactNode;
     label: string;
     example: THelpExample;
     audienceLabels: string[];
     tone: 'good' | 'avoid' | 'note';
+    wrap?: boolean;
 }) {
     const toneClassName = {
         good: 'bg-[#183D2E] text-[#F4FFF8]',
@@ -892,41 +919,69 @@ function ExampleRow({
                 <span className={`font-apple text-[11px] font-bold ${labelClassName}`}>{label}</span>
             </div>
             <div className="overflow-x-auto pb-1 font-apple text-[12px] leading-5 font-semibold [scrollbar-color:#687487_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#687487] [&::-webkit-scrollbar-track]:bg-transparent">
-                <HelpExampleContent example={example} audienceLabels={audienceLabels} />
+                <HelpExampleContent example={example} audienceLabels={audienceLabels} wrap={wrap} />
             </div>
         </div>
     );
 }
 
-export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: TConstraintRuleHelpProps) {
+export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode, personalExclusion = false}: TConstraintRuleHelpProps) {
     const {t} = useTypedTranslation();
     const editorContext = useConstraintEditorContext();
     const [open, setOpen] = useState(false);
-    const content = getConstraintHelpContent(rule, optionMap, rotationMode, t);
+    const pinnedRef = useRef(false);
+    const content = getConstraintHelpContent(rule, optionMap, rotationMode, t, personalExclusion);
     const audienceLabels = getAudienceLabels(rule, optionMap, t);
+    const closeHelp = () => {
+        pinnedRef.current = false;
+        setOpen(false);
+    };
 
     if (!content) return null;
 
     const isNote = content.secondTone === 'note';
 
     return (
-        <Tooltip open={open} onOpenChange={setOpen}>
+        <Tooltip
+            open={open}
+            onOpenChange={(nextOpen) => {
+                if (nextOpen || !pinnedRef.current) setOpen(nextOpen);
+            }}
+        >
             <TooltipTrigger asChild>
                 <button
                     type="button"
                     aria-label={t('page.makeShift.constraints.help.aria', {constraint: ruleTitle})}
+                    aria-expanded={open}
                     data-constraint-help-trigger={rule.templateCode}
                     data-constraint-layer-open={open || undefined}
+                    onPointerDown={(event) => event.preventDefault()}
+                    onClick={(event) => {
+                        event.preventDefault();
+
+                        const nextOpen = !pinnedRef.current;
+
+                        pinnedRef.current = nextOpen;
+                        event.currentTarget.focus();
+                        setOpen(nextOpen);
+                    }}
+                    onBlur={closeHelp}
                     onKeyDown={(event) => {
                         if (!open || event.key !== 'Escape') return;
 
                         event.preventDefault();
                         event.stopPropagation();
-                        setOpen(false);
+                        closeHelp();
                     }}
-                    className="grid size-8 shrink-0 place-items-center rounded-full text-[#8B95A7] transition-colors hover:bg-[#EEEAFE] hover:text-[#6555E8] focus-visible:bg-[#E5E0FF] focus-visible:text-[#4F3FD8] focus-visible:outline-none motion-reduce:transition-none"
+                    className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-[#727C8E] transition-colors hover:bg-[#EEEAFE] hover:text-[#6555E8] focus-visible:bg-[#E5E0FF] focus-visible:text-[#4F3FD8] focus-visible:outline-none motion-reduce:transition-none"
                 >
-                    <Info className="size-[17px]" strokeWidth={2.2} aria-hidden="true" />
+                    <svg className="size-[17px]" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path
+                            fillRule="evenodd"
+                            clipRule="evenodd"
+                            d="M10 1a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 3.5a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 0 0 0-2.5ZM9 9v6h2V9H9Z"
+                        />
+                    </svg>
                 </button>
             </TooltipTrigger>
             <TooltipContent
@@ -936,12 +991,18 @@ export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: T
                 sideOffset={10}
                 collisionPadding={12}
                 data-constraint-help-content={rule.templateCode}
+                onPointerDownOutside={closeHelp}
+                onEscapeKeyDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    closeHelp();
+                }}
                 onKeyDown={(event) => {
                     if (event.key !== 'Escape') return;
 
                     event.preventDefault();
                     event.stopPropagation();
-                    setOpen(false);
+                    closeHelp();
                 }}
                 className="z-[1400] max-h-[calc(100vh-24px)] w-max max-w-[min(720px,calc(100vw-24px))] overflow-y-auto rounded-[16px] bg-[#252B36] p-4 text-left text-white motion-reduce:animate-none"
             >
@@ -958,6 +1019,7 @@ export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: T
                         label={content.goodLabel ?? t('page.makeShift.constraints.help.goodExample')}
                         example={content.good}
                         audienceLabels={audienceLabels}
+                        wrap={personalExclusion}
                         icon={<Check className="size-3 text-white" strokeWidth={3} />}
                     />
                     <ExampleRow
@@ -968,6 +1030,7 @@ export function ConstraintRuleHelp({rule, ruleTitle, optionMap, rotationMode}: T
                         }
                         example={content.second}
                         audienceLabels={audienceLabels}
+                        wrap={personalExclusion}
                         icon={
                             isNote ? (
                                 <Info className="size-3 text-white" strokeWidth={3} />
