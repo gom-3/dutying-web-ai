@@ -977,6 +977,8 @@ export const en: TLocale = {
                     imported: 'Imported constraints from {{teamName}}.',
                     importFailed: 'Could not import constraints. Please try again shortly.',
                     saveFailed: 'Could not save constraints. Please try again shortly.',
+                    changedElsewhere: 'The rules changed in another request. Reload the latest rules before editing again.',
+                    reloadLatest: 'Reload latest rules',
                     recommendedDeleted: 'Recommended constraint deleted.',
                     importantUnmarked: 'Important mark removed.',
                 },

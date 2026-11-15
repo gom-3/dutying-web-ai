@@ -11,8 +11,11 @@ const validDate = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-
 export function pairedNightStaffingMessage(response: TAutofillResponse): string | null {
     const evidence = response.engineResult?.conflictEvidence;
     const issue = evidence?.find((entry) => entry?.type === 'PAIRED_NIGHT_STAFFING_CONFLICT');
+
     if (!issue) return null;
+
     const {date, nextDate, night, continuation, minimumNight, maximumContinuation, minimumRepeats} = issue;
+
     if (
         !validDate(date) ||
         !validDate(nextDate) ||
@@ -83,12 +86,25 @@ export function nightRunConflictMessages(response: TAutofillResponse): string[] 
 }
 
 export function conversationOperationFailure(operation: TConversationOperation): TAiConversationFailure | null {
-    return (
+    const failure =
         (operation.result ? aiExecutionFailure(operation.result) : null) ??
         (operation.executionStatus === 'FAILED'
-            ? aiConversationFailure({serverCode: operation.failureReason ?? undefined}, i18n.t('aiAdjust.executionFailure.unknown'))
-            : null)
-    );
+            ? aiConversationFailure(
+                  {serverCode: operation.failureReason ?? undefined, message: operation.failureMessage ?? undefined},
+                  i18n.t('aiAdjust.executionFailure.unknown'),
+              )
+            : null);
+
+    return failure && (operation.executionStatus === 'FAILED' || operation.result?.applicable === false)
+        ? {
+              ...failure,
+              title: i18n.t(
+                  operation.operationType === 'GENERATE'
+                      ? 'aiAdjust.executionFailure.autofillTitle'
+                      : 'aiAdjust.executionFailure.adjustTitle',
+              ),
+          }
+        : failure;
 }
 
 /** Recognize historical review results for display only; never authorizes applying cells. */
@@ -114,6 +130,7 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
         const pairedConflict = outcome.reasonCodes?.includes('PAIRED_NIGHT_STAFFING_CONFLICT')
             ? pairedNightStaffingMessage(response)
             : null;
+
         if (outcome.solveState === 'INFEASIBLE_PROVEN' && pairedConflict)
             return {message: pairedConflict, blocked: false, conditionConflict: true, recovery: 'revise'};
 
@@ -138,6 +155,20 @@ export function aiExecutionFailure(response: TAutofillResponse): TAiConversation
             (response.changedCells.length === 0 && ['CONSENT_REQUIRED', 'PREVIEW_ONLY'].includes(outcome.draftState))
         )
             return null;
+
+        // Verification failures are not proof that the user's conditions conflict.
+        if (
+            outcome.reasonCodes?.includes('EXACT_REQUEST_UNVERIFIED') ||
+            outcome.reasonCodes?.some((code) =>
+                [
+                    'PYTHON_CONTRACT_UNVERIFIED',
+                    'SPRING_COMPARISON_UNAVAILABLE',
+                    'PYTHON_CANDIDATE_DIGEST_MISMATCH',
+                    'CACHED_CANDIDATE_MISMATCH',
+                ].includes(code),
+            )
+        )
+            return {message: i18n.t('aiAdjust.executionFailure.validation'), blocked: false, recovery: 'retry'};
 
         const messageKey = authoringMessageKey(response) ?? 'UNKNOWN';
         const message = ['SATISFIED', 'IMPROVED'].includes(messageKey)

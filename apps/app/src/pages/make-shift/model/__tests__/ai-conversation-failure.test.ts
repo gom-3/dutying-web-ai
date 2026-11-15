@@ -47,6 +47,36 @@ describe.each(['ko', 'en'])('user-facing AI errors (%s)', (language) => {
         expect(failure.message).not.toMatch(/QuotaLimiter|INTERNAL_TRACE/);
         expect(failure.blocked).toBe(true);
     });
+    it('distinguishes the ward hourly limit and preserves its reset wait', () => {
+        const failure = aiConversationFailure({
+            serverCode: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+            message: '이번 시간 AI 자동채우기 사용량(3회)을 모두 사용했어요. 약 12분 후 다시 시도해 주세요.',
+        });
+
+        expect(failure.message).toContain(i18n.t('aiAdjust.failure.hourlyLimit', {limit: 3}));
+        expect(failure.message).toContain(i18n.t('aiAdjust.failure.waitMinutes', {count: 12}));
+        expect(failure.blocked).toBe(true);
+    });
+    it('distinguishes the daily ward limit from a temporary cooldown', () => {
+        const failure = aiConversationFailure({
+            serverCode: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+            message: '오늘 AI 자동채우기 사용량(10회)을 모두 사용했어요. 내일 다시 시도해 주세요.',
+        });
+
+        expect(failure.message).toBe(i18n.t('aiAdjust.failure.dailyLimit', {limit: 10}));
+    });
+    it('does not claim a quota was exhausted when usage storage is unavailable', () => {
+        expect(
+            aiConversationFailure({
+                serverCode: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+                message: '병동 사용량을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+            }),
+        ).toEqual({
+            message: i18n.t('aiAdjust.failure.usageUnavailable'),
+            blocked: false,
+            recovery: 'retry',
+        });
+    });
     it('does not describe allowance limits as conflicting schedule edits', () => {
         const failure = aiConversationFailure({code: 409, serverCode: 'AI_QUOTA_EXHAUSTED', message: 'ledger exhausted'});
 
@@ -78,11 +108,13 @@ it.each(['ko', 'en', 'ja'])(
     'offers request revision after rejected interpretation without promising same-request recovery (%s)',
     async (language) => {
         await i18n.changeLanguage(language);
+
         const result = aiConversationFailure({
             serverCode: 'SCHEDULE_INTERPRET_REJECTED',
             code: 502,
             message: 'private model validation body',
         });
+
         expect(result.title).toBe(i18n.t('aiAutofillUi.interpretFailureTitle'));
         expect(result.message).toBe(i18n.t('aiAutofillUi.interpretRejected'));
         expect(result.message).not.toMatch(/private|잠시 후|unavailable|接続できません/);

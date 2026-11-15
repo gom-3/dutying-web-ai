@@ -206,6 +206,8 @@ export const zh = {
                 help: constraintRuleHelpZh,
                 toast: {
                     ...generatedZh.page.makeShift.constraints.toast,
+                    changedElsewhere: '条件已被其他请求更改。请加载最新条件后重新编辑。',
+                    reloadLatest: '加载最新条件',
                     duplicateSkipped: '相同条件已存在。',
                     staffCountConflict: '相同适用日和班次的最少、最多和精确人数条件相互冲突。',
                 },

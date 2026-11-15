@@ -207,6 +207,8 @@ export const th = {
                 help: constraintRuleHelpTh,
                 toast: {
                     ...generatedTh.page.makeShift.constraints.toast,
+                    changedElsewhere: 'เงื่อนไขถูกเปลี่ยนโดยคำขออื่น โปรดโหลดเงื่อนไขล่าสุดก่อนแก้ไขอีกครั้ง.',
+                    reloadLatest: 'โหลดเงื่อนไขล่าสุด',
                     duplicateSkipped: 'มีเงื่อนไขเดียวกันอยู่แล้ว',
                     staffCountConflict: 'จำนวนขั้นต่ำ สูงสุด และจำนวนที่แน่นอนของวันและเวรนี้ขัดแย้งกัน',
                 },

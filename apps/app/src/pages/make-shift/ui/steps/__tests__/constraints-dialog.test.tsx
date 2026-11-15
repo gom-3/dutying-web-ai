@@ -328,6 +328,61 @@ describe('Constraints dialog editor', () => {
         expect(latestState(stateChanged)).toMatchObject({dirty: false, saving: false});
     });
 
+    it('serializes automatic saves and uses the preceding server revision', async () => {
+        renderEditor(<Constraints {...editorProps} variant="flow" />);
+        await screen.findByRole('spinbutton');
+        await act(async () => {});
+
+        const previousCalls = api.updateShiftConstraintRules.mock.calls.length;
+
+        let finishFirst!: (value: never) => void;
+
+        api.updateShiftConstraintRules.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    finishFirst = resolve;
+                }),
+        );
+        fireEvent.change(screen.getByRole('spinbutton'), {target: {value: '4'}});
+        fireEvent.blur(screen.getByRole('spinbutton'));
+        await waitFor(() => expect(api.updateShiftConstraintRules).toHaveBeenCalledTimes(previousCalls + 1));
+        fireEvent.change(screen.getByRole('spinbutton'), {target: {value: '3'}});
+        fireEvent.blur(screen.getByRole('spinbutton'));
+        await act(async () => {});
+        expect(api.updateShiftConstraintRules).toHaveBeenCalledTimes(previousCalls + 1);
+
+        const first = api.updateShiftConstraintRules.mock.calls[previousCalls][2];
+
+        await act(async () => finishFirst({...first, wardId: 1, shiftTeamId: 10, schemaVersion: 1, revision: 'next-revision'} as never));
+        await waitFor(() => expect(api.updateShiftConstraintRules).toHaveBeenCalledTimes(previousCalls + 2));
+        expect(api.updateShiftConstraintRules.mock.calls[previousCalls + 1][2]).toMatchObject({revision: 'next-revision'});
+    });
+
+    it('explains stale rules and reloads only after the user requests it', async () => {
+        const ref = createRef<TConstraintsEditorHandle>();
+        const stateChanged = vi.fn();
+
+        renderEditor(<Constraints {...editorProps} editorRef={ref} onEditorStateChange={stateChanged} />);
+        await ready(stateChanged);
+        fireEvent.change(screen.getByRole('spinbutton'), {target: {value: '4'}});
+        fireEvent.blur(screen.getByRole('spinbutton'));
+        api.updateShiftConstraintRules.mockRejectedValueOnce({code: 409, serverCode: 'SHIFT_CONSTRAINT_RULES_CHANGED'});
+        expect(await apply(ref)).toBe(false);
+        expect(screen.getByRole('alert')).toHaveTextContent(i18n.t('page.makeShift.constraints.toast.changedElsewhere'));
+        expect(screen.getByRole('spinbutton')).toHaveValue(4);
+        api.getShiftConstraintRules.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            revision: 'new-r2',
+            rules: [{...countRule, params: {...countRule.params, count: 6}}],
+        });
+        await userEvent.click(screen.getByRole('button', {name: i18n.t('page.makeShift.constraints.toast.reloadLatest')}));
+        await waitFor(() => expect(screen.getByRole('spinbutton')).toHaveValue(6));
+        expect(latestState(stateChanged).dirty).toBe(false);
+        expect(api.updateShiftConstraintRules).toHaveBeenCalledTimes(1);
+    });
+
     it('retains the edited draft after a failed PUT and saves the same values when retried', async () => {
         api.updateShiftConstraintRules.mockRejectedValueOnce(new Error('temporary write failure'));
 
