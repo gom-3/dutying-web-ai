@@ -63,7 +63,7 @@ jobs:
           if-no-files-found: warn
 
   deploy:
-    name: Deploy verified app to Cloudflare Pages
+    name: Deploy or verify Cloudflare Pages
     needs: test
     if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
@@ -86,16 +86,20 @@ jobs:
         with:
           name: web-release-${{ github.sha }}
           path: apps/app/dist/
-      - name: Check deployment authentication
+      - name: Select direct upload or existing Git integration
+        id: authentication
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo '::error::Set the repository secret CLOUDFLARE_API_TOKEN with Pages deployment access.'
-            exit 1
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo 'upload=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'upload=false' >> "$GITHUB_OUTPUT"
+            echo 'No upload token: verify the existing Cloudflare Git integration deployment.'
           fi
       - name: Deploy the tested artifact
         id: pages
+        if: steps.authentication.outputs.upload == 'true'
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -107,16 +111,20 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.pages.outputs.deployment-url }}
         run: |
-          bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
-            --url "${DEPLOYMENT_URL%/}/release.json" --expect-text "$GITHUB_SHA"
           for attempt in $(seq 1 18); do
             if bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
               --url "$PUBLIC_URL/release.json" --expect-text "$GITHUB_SHA"; then
+              if [ -z "$DEPLOYMENT_URL" ]; then
+                DEPLOYMENT_URL=$(node scripts/release/existing-pages-deployment.mjs \
+                  "$PUBLIC_URL" "$GITHUB_SHA" "$GITHUB_REF_NAME" "$PAGES_PROJECT") || exit 1
+              fi
+              bash .codex/skills/dutying-web-release-verify/scripts/verify-public-release.sh \
+                --url "${DEPLOYMENT_URL%/}/release.json" --expect-text "$GITHUB_SHA"
               printf 'Published %s at %s (Pages: %s)\n' "$GITHUB_SHA" "$PUBLIC_URL" "$DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 10
           done
-          echo '::error::The public domain is not serving this deployment commit.'
+          echo '::error::No matching public deployment. Enable Cloudflare Git deployments or set CLOUDFLARE_API_TOKEN and re-run this job.'
           exit 1
           retention-days: 7
