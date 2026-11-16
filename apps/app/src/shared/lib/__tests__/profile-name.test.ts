@@ -12,6 +12,6 @@ describe('profile name policy', () => {
         expect(isValidProfileName('가'.repeat(51))).toBe(false);
         expect(isValidProfileName('·-')).toBe(false);
         expect(isValidProfileName('ㄱㅣㅁ')).toBe(false);
-        expect(isValidNurseName('Kim-Dutying')).toBe(false);
+        expect(isValidNurseName('Kim-Dutying')).toBe(true);
     });
 });

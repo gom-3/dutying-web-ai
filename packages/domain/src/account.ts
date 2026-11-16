@@ -33,6 +33,8 @@ export type TAccount = {
     email: string;
     name: string;
     phoneNum?: string | null;
+    /** ISO phone country returned by the web administrator v2 profile API. */
+    phoneCountry?: string | null;
     birthDate?: string | null;
     /** @deprecated use profileImgUrl */
     profileImgBase64?: string;

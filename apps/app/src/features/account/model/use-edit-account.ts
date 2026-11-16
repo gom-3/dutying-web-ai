@@ -25,16 +25,21 @@ const useEditAccount = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const isWardAdmin = isWardAdminAccessToken(accessToken);
-    const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
+    const handleEditProfile = async (
+        nurse: TNurse,
+        profileImg: {profileImgUrl?: string; defaultProfileImgId?: number},
+        phoneCountry?: string,
+    ) => {
         if (!accountMe) return false;
 
         try {
             setLoading(true);
 
             if (isWardAdmin) {
-                await AdminAPI.updateMe({
+                await AdminAPI.updateMeV2({
                     name: nurse.name,
                     phoneNum: nurse.phoneNum,
+                    ...(phoneCountry ? {phoneCountry} : {}),
                     ...profileImg,
                 });
             } else {
@@ -67,6 +72,7 @@ const useEditAccount = () => {
         name: string,
         profileImg: {profileImgUrl?: string; defaultProfileImgId?: number},
         phoneNum?: string | null,
+        phoneCountry?: string,
     ) => {
         if (!accountMe) return false;
 
@@ -74,9 +80,10 @@ const useEditAccount = () => {
             setLoading(true);
 
             if (isWardAdmin) {
-                await AdminAPI.updateMe({
+                await AdminAPI.updateMeV2({
                     name,
                     phoneNum,
+                    ...(phoneCountry ? {phoneCountry} : {}),
                     ...profileImg,
                 });
             } else {

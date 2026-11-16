@@ -92,7 +92,7 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/shared/api', () => ({
     AdminAPI: {
-        getMe: vi.fn(),
+        getMeV2: vi.fn(),
     },
     AuthAPI: {
         demoStart: vi.fn(),
@@ -189,7 +189,7 @@ describe('useAuth', () => {
     });
 
     it('preserves stale identity fields and rethrows when account bootstrap fails', async () => {
-        vi.mocked(AdminAPI.getMe).mockRejectedValueOnce(new Error('boom'));
+        vi.mocked(AdminAPI.getMeV2).mockRejectedValueOnce(new Error('boom'));
 
         const {result} = renderHook(() => useAuth());
 
@@ -214,7 +214,7 @@ describe('useAuth', () => {
         vi.useFakeTimers();
 
         try {
-            vi.mocked(AdminAPI.getMe)
+            vi.mocked(AdminAPI.getMeV2)
                 .mockRejectedValueOnce(Object.assign(new Error('bad gateway'), {code: 502}))
                 .mockRejectedValueOnce(Object.assign(new Error('network'), {code: -1}))
                 .mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
@@ -233,7 +233,7 @@ describe('useAuth', () => {
                 await bootstrap;
             });
 
-            expect(AdminAPI.getMe).toHaveBeenCalledTimes(3);
+            expect(AdminAPI.getMeV2).toHaveBeenCalledTimes(3);
             expect(useAuthStore.getState()).toMatchObject({
                 isAuth: true,
                 accountMeStatus: 'success',
@@ -246,7 +246,7 @@ describe('useAuth', () => {
     });
 
     it('does not retry account bootstrap on a definitive 4xx rejection', async () => {
-        vi.mocked(AdminAPI.getMe).mockRejectedValueOnce(Object.assign(new Error('forbidden'), {code: 403}));
+        vi.mocked(AdminAPI.getMeV2).mockRejectedValueOnce(Object.assign(new Error('forbidden'), {code: 403}));
 
         const {result} = renderHook(() => useAuth());
 
@@ -256,14 +256,14 @@ describe('useAuth', () => {
             }),
         ).rejects.toThrow('forbidden');
 
-        expect(AdminAPI.getMe).toHaveBeenCalledTimes(1);
+        expect(AdminAPI.getMeV2).toHaveBeenCalledTimes(1);
         await vi.waitFor(() => {
             expect(useAuthStore.getState()).toMatchObject({isAuth: true, accountMeStatus: 'error'});
         });
     });
 
     it('normalizes setup-pending admin accounts with a ward membership as linked during bootstrap', async () => {
-        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+        vi.mocked(AdminAPI.getMeV2).mockResolvedValueOnce({
             accountId: 9,
             nurseId: null,
             wardId: null,
@@ -294,7 +294,7 @@ describe('useAuth', () => {
     });
 
     it('applies account locale preferences during bootstrap', async () => {
-        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+        vi.mocked(AdminAPI.getMeV2).mockResolvedValueOnce({
             accountId: 9,
             nurseId: 19,
             wardId: 99,
@@ -323,7 +323,7 @@ describe('useAuth', () => {
         window.history.replaceState({}, '', '/request?lng=ko');
         mockI18n.language = 'ko';
         mockI18n.resolvedLanguage = 'ko';
-        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+        vi.mocked(AdminAPI.getMeV2).mockResolvedValueOnce({
             accountId: 9,
             nurseId: 19,
             wardId: 99,
@@ -347,7 +347,7 @@ describe('useAuth', () => {
             isDemoExpired: false,
         });
 
-        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
+        vi.mocked(AdminAPI.getMeV2).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
 
         await act(async () => {
             renderHook(() => useAuth(true));

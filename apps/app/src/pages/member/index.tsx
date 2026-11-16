@@ -24,6 +24,7 @@ import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME
 import {MEMBER_CONNECTION_MANAGE_SEARCH_PARAM, MEMBER_CONNECTION_MANAGE_SEARCH_VALUE} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import {getDivisionCustomName, getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {NURSE_NAME_MAX_LENGTH} from '@/shared/lib/nurse-name';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
@@ -139,12 +140,6 @@ const getWorkerBoundaryIndex = (orderedNurseIds: number[], isWorkerByNurseId: Ma
     const firstOffIndex = orderedNurseIds.findIndex((nurseId) => !isWorkerByNurseId.get(nurseId));
 
     return firstOffIndex === -1 ? orderedNurseIds.length : firstOffIndex;
-};
-const getDivisionFallbackLabel = (divisionNum: number) => `그룹${divisionNum}`;
-const getDivisionDisplayLabel = (divisionNum: number, divisionName?: string | null) => {
-    const trimmedDivisionName = divisionName?.trim();
-
-    return trimmedDivisionName != null && trimmedDivisionName.length > 0 ? trimmedDivisionName : getDivisionFallbackLabel(divisionNum);
 };
 const groupMemberNursesByDivision = (
     nurses: TNurse[],
@@ -798,7 +793,7 @@ function MemberPage() {
             shiftTeamId: activeShiftTeam.shiftTeamId,
             divisionNum: group.divisionNum,
         });
-        setEditingDivisionName(group.divisionName?.trim() ?? '');
+        setEditingDivisionName(getDivisionCustomName(group.divisionNum, group.divisionName));
     };
     const handleCancelEditingDivision = () => {
         setEditingDivisionKey(null);
@@ -809,7 +804,7 @@ function MemberPage() {
 
         const nextName = editingDivisionName.trim();
         const currentDivision = activeShiftTeam.divisions?.find((division) => division.divisionNum === editingDivisionKey.divisionNum);
-        const currentName = currentDivision?.name?.trim() ?? '';
+        const currentName = getDivisionCustomName(editingDivisionKey.divisionNum, currentDivision?.name);
 
         if (nextName === currentName) {
             handleCancelEditingDivision();
@@ -832,9 +827,9 @@ function MemberPage() {
 
         try {
             await editDivision(activeShiftTeam.shiftTeamId, nurse.priority, 1, DateUtil.getDateString(new Date(), 'yyyy-MM'));
-            toast.success('그룹을 추가했습니다.');
+            toast.success(t('shared.division.added'));
         } catch {
-            toast.error('그룹을 추가하지 못했습니다.');
+            toast.error(t('shared.division.addFailed'));
         }
     };
     const handleDeleteDivision = async (groupIndex: number) => {
@@ -852,9 +847,9 @@ function MemberPage() {
                 -1,
                 DateUtil.getDateString(new Date(), 'yyyy-MM'),
             );
-            toast.success('그룹을 삭제했습니다.');
+            toast.success(t('shared.division.deleted'));
         } catch {
-            toast.error('그룹을 삭제하지 못했습니다.');
+            toast.error(t('shared.division.deleteFailed'));
         }
     };
     const handleDragEnd = async (result: DropResult) => {
@@ -1775,7 +1770,8 @@ function MemberDivisionHeader({
     onCancel: () => void;
     onDelete: () => void;
 }) {
-    const label = getDivisionDisplayLabel(divisionNum, divisionName);
+    const {t} = useTypedTranslation();
+    const label = getDivisionDisplayLabel(divisionNum, divisionName, t);
 
     return (
         <div className="mb-1.5 flex h-8 items-center gap-2 px-1">
@@ -1784,7 +1780,7 @@ function MemberDivisionHeader({
                     autoFocus
                     value={draftName}
                     maxLength={50}
-                    placeholder={getDivisionFallbackLabel(divisionNum)}
+                    placeholder={getDivisionDisplayLabel(divisionNum, undefined, t)}
                     className="h-7 w-[168px] rounded-[7px] border border-main-2 bg-white px-2 font-apple text-[13px] font-semibold text-sub-1 ring-2 ring-main-2/15 outline-none"
                     onChange={(event) => onDraftNameChange(event.target.value)}
                     onFocus={(event) => event.currentTarget.select()}
@@ -1820,12 +1816,12 @@ function MemberDivisionHeader({
                 <button
                     type="button"
                     className="inline-flex h-7 items-center gap-1 rounded-[7px] px-2 font-apple text-[12px] font-semibold text-gray-4 transition-colors hover:bg-white hover:text-[#D14343] focus-visible:outline-2 focus-visible:outline-main-1"
-                    title="그룹 삭제"
-                    aria-label={`${label} 그룹 삭제`}
+                    title={t('shared.division.delete')}
+                    aria-label={t('shared.division.deleteAria', {divisionName: label})}
                     onClick={onDelete}
                 >
                     <Minus className="h-3.5 w-3.5" strokeWidth={2.4} />
-                    그룹 삭제
+                    {t('shared.division.delete')}
                 </button>
             ) : null}
         </div>
@@ -1833,6 +1829,7 @@ function MemberDivisionHeader({
 }
 
 function MemberAddDivisionButton({disabled, onClick}: {disabled: boolean; onClick: () => void}) {
+    const {t} = useTypedTranslation();
     const [isVisible, setIsVisible] = useState(false);
     const handleShow = useCallback(() => {
         if (disabled) return;
@@ -1858,7 +1855,7 @@ function MemberAddDivisionButton({disabled, onClick}: {disabled: boolean; onClic
         <button
             type="button"
             disabled={disabled}
-            aria-label="그룹 추가"
+            aria-label={t('shared.division.add')}
             className={cn(
                 'relative flex h-2 w-full items-center justify-start px-1 text-main-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed',
                 disabled ? 'opacity-0' : 'opacity-100',
@@ -1883,7 +1880,7 @@ function MemberAddDivisionButton({disabled, onClick}: {disabled: boolean; onClic
                 )}
             >
                 <Plus className="h-3 w-3" strokeWidth={2.5} />
-                그룹 추가
+                {t('shared.division.add')}
             </span>
         </button>
     );

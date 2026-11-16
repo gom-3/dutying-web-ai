@@ -184,7 +184,7 @@ const useAuth = (activeEffect = false) => {
                 // it must never look like an invalid session. Definitive 4xx rejections are not retried.
                 const account = toAccountCompatibleAdminMe(
                     await retryOnTransientFailure(() =>
-                        withTimeout(AdminAPI.getMe(), ACCOUNT_BOOTSTRAP_TIMEOUT_MS, 'account_bootstrap_timeout'),
+                        withTimeout(AdminAPI.getMeV2(), ACCOUNT_BOOTSTRAP_TIMEOUT_MS, 'account_bootstrap_timeout'),
                     ),
                 );
 

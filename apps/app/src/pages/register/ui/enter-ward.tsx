@@ -10,6 +10,7 @@ import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import RegisterHeading from './register-heading';
 import RegisterShell from './register-shell';
 
 const CODE_LENGTH = 6;
@@ -142,7 +143,7 @@ function EnterWard() {
             </button>
 
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.enterWard.title')}</h1>
+                <RegisterHeading>{t('page.register.enterWard.title')}</RegisterHeading>
                 <p className="mt-2 text-sm text-gray-3">{t('page.register.enterWard.description')}</p>
             </div>
 

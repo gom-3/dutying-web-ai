@@ -233,7 +233,9 @@ describe('useEditShiftTeam', () => {
 
     it('does not send either request or change caches for an invalid edited name', async () => {
         useEditNurseStore.getState().setNurseDraftDirty(true);
+
         const {result} = renderHook(() => useEditShiftTeam());
+
         let saved: boolean | undefined;
 
         await act(async () => {
@@ -248,12 +250,14 @@ describe('useEditShiftTeam', () => {
         expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
         expect(mockSetQueryData).not.toHaveBeenCalled();
         expect(result.current.state.isNurseDraftDirty).toBe(true);
-        expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining("'_'"), {id: 'validation-feedback'});
+        expect(mockToastError).toHaveBeenCalledWith(expect.stringContaining('50자 이하'), {id: 'validation-feedback'});
     });
 
     it('does not save shift types if the server rejects another profile field', async () => {
         mockUpdateNurse.mockRejectedValue({code: 400});
+
         const {result} = renderHook(() => useEditShiftTeam());
+
         let saved: boolean | undefined;
 
         await act(async () => {
@@ -284,7 +288,9 @@ describe('useEditShiftTeam', () => {
             ...ward,
             shiftTeams: [{...ward.shiftTeams[0], nurses: [{...ward.shiftTeams[0].nurses[0], name: 'Legacy_Nurse'}]}],
         };
+
         mockUseQuery.mockReturnValue({data: legacyWard});
+
         const {result} = renderHook(() => useEditShiftTeam());
 
         await act(async () => {

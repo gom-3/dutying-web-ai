@@ -7,6 +7,7 @@ import type {
     TJoinAdminWardByCodeDTO,
     TJoinAdminWardByCodeResponse,
     TUpdateAdminProfileDTO,
+    TUpdateAdminProfileV2DTO,
     TUpsertAdminMonthlyMemoDTO,
 } from './type';
 
@@ -15,6 +16,11 @@ class AdminAPI {
 
     updateMe = async (profile: TUpdateAdminProfileDTO) =>
         (await adminAxiosInstance.patch<TAdminMeResponse>('/admin/accounts/me', profile)).data;
+
+    getMeV2 = async () => (await adminAxiosInstance.get<TAdminMeResponse>('/admin/accounts/me/v2')).data;
+
+    updateMeV2 = async (profile: TUpdateAdminProfileV2DTO) =>
+        (await adminAxiosInstance.patch<TAdminMeResponse>('/admin/accounts/me/v2', profile)).data;
 
     getMonthlyMemo = async (wardId: number, year: number, month: number) => {
         const query = new URLSearchParams({

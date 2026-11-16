@@ -265,6 +265,35 @@ describe('MakeShiftCalendar', () => {
         expect(header?.querySelector('.bg-gray-6')).toBeInTheDocument();
     });
 
+    it.each(['en', 'ja', 'zh', 'zh-TW', 'th', 'vi'])(
+        'localizes a saved Korean default group in %s, including the member count label',
+        async (language) => {
+            await i18n.changeLanguage(language);
+
+            const label = i18n.t('shared.division.defaultName', {number: 1});
+
+            render(
+                <MakeShiftCalendar
+                    shift={shift}
+                    doc={doc}
+                    violationMap={new Map()}
+                    showFaults={false}
+                    readonly
+                    showDivisionHeaders
+                    divisionLabelByNum={new Map([[1, '그룹1']])}
+                />,
+            );
+
+            const header = document.querySelector<HTMLElement>('.make-shift-calendar__division-header');
+
+            expect(header).toHaveTextContent(label);
+            expect(header).not.toHaveTextContent('그룹');
+            expect(header?.querySelector('[aria-label]')?.getAttribute('aria-label')).toBe(
+                i18n.t('shared.division.memberCountAria', {group: label, count: 1}),
+            );
+        },
+    );
+
     it('expands each group independently and counts only its current worker assignments', async () => {
         const user = userEvent.setup();
         const baseRow = shift.divisionShiftNurses[1]![0]!;

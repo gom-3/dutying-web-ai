@@ -3,6 +3,7 @@ import {useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {clarificationQuestion, localizeConversationServerCopy, semanticRecovery} from '../../../model/conversation-presentation';
 import type {TSemanticPlan} from '../../../model/schedule-conversation-api';
+import {AiConditionPriority} from './ai-condition-priority';
 import {AiConversationLoading} from './ai-conversation-loading';
 import {AiConversationOutcomeIcon} from './ai-conversation-outcome-icon';
 import {AiSemanticCondition} from './ai-semantic-condition';
@@ -29,6 +30,7 @@ const action =
     'flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-4 py-3 text-center text-[13px] leading-5 font-semibold transition-colors focus-visible:bg-[#4620B8] focus-visible:text-white focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-[#EEF1F4] disabled:text-[#667085] forced-colors:focus-visible:outline motion-reduce:transition-none';
 const primary = `${action} bg-main-1 text-white hover:bg-[#5931B9]`;
 const secondary = `${action} bg-white text-[#5931B9] hover:bg-[#EDE7FF]`;
+const textAction = `${action} w-auto justify-self-center bg-transparent text-[#5931B9] hover:bg-main-light`;
 
 type TIconKind = 'review' | 'confirmed' | 'clarify' | 'history' | 'warning' | 'failure' | 'success';
 
@@ -127,7 +129,8 @@ export function AiSemanticReview({
     const [priorityError, setPriorityError] = useState(false);
     const overrides = priorityEdits.hash === plan.planHash ? priorityEdits.values : {};
     const priorityDirty = Object.keys(overrides).length > 0;
-    const canEditPriority = current && plan.state === 'PREVIEW_READY' && Boolean(onChangeModalities);
+    const canEditPriority =
+        current && plan.state === 'PREVIEW_READY' && Boolean(onChangeModalities) && Boolean(plan.modalityEditableIntentIds?.length);
     const savePriorities = async () => {
         if (!priorityDirty || savingPriority || disabled || stale) return;
 
@@ -269,8 +272,10 @@ export function AiSemanticReview({
     return (
         <section aria-label={t('aiAutofillUi.semanticReview.reviewRequestConditions')} className="min-w-0 space-y-3">
             <header className="flex items-start gap-2.5">
-                <StateIcon kind={kind} label={iconLabel} />
-                <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">{title}</p>
+                {!canEditPriority && <StateIcon kind={kind} label={iconLabel} />}
+                <p className="min-w-0 text-base leading-6 font-semibold break-keep text-[#333D4B]">
+                    {canEditPriority ? t('aiAutofillUi.semanticReview.requestedChanges') : title}
+                </p>
             </header>
             {question || (current && needsClarification) ? (
                 <AiClarificationText
@@ -305,8 +310,8 @@ export function AiSemanticReview({
             )}
             {!failed && !showGroups && !!plan.conditions.length && (
                 <div className="space-y-2">
-                    <p className="text-xs leading-5 font-medium text-[#667085]">{listLabel}</p>
-                    <ul aria-label={listLabel} className="space-y-2">
+                    <p className={canEditPriority ? 'sr-only' : 'text-xs leading-5 font-medium text-[#667085]'}>{listLabel}</p>
+                    <ul aria-label={listLabel} className={canEditPriority ? 'space-y-4' : 'space-y-2'}>
                         {plan.conditions.map((condition) => {
                             const editable = canEditPriority && plan.modalityEditableIntentIds?.includes(condition.intentId);
 
@@ -318,44 +323,23 @@ export function AiSemanticReview({
                                     rosterNurseIds={rosterNurseIds}
                                     copy={copy}
                                     showPriority={!needsClarification && !editable}
+                                    compact={canEditPriority}
                                 >
                                     {editable ? (
-                                        <fieldset className="mt-2 space-y-1" disabled={disabled || stale || savingPriority}>
-                                            <legend className="text-[13px] font-medium">{t('aiAutofillUi.semanticReview.priority')}</legend>
-                                            <div className="flex flex-wrap gap-2">
-                                                {(['SOFT', 'HARD'] as const).map((value) => (
-                                                    <label
-                                                        key={value}
-                                                        className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-gray-6 bg-white px-3 text-[13px] focus-within:outline-2 focus-within:outline-main-1"
-                                                    >
-                                                        <input
-                                                            type="radio"
-                                                            className="accent-main-1"
-                                                            name={`priority-${plan.planId}-${condition.intentId}`}
-                                                            value={value}
-                                                            checked={(overrides[condition.intentId] ?? condition.modality) === value}
-                                                            onChange={() => {
-                                                                const values = {...overrides};
+                                        <AiConditionPriority
+                                            name={`priority-${plan.planId}-${condition.intentId}`}
+                                            value={overrides[condition.intentId] ?? condition.modality}
+                                            disabled={disabled || stale || savingPriority}
+                                            onChange={(value) => {
+                                                const values = {...overrides};
 
-                                                                if (value === condition.modality) delete values[condition.intentId];
-                                                                else values[condition.intentId] = value;
+                                                if (value === condition.modality) delete values[condition.intentId];
+                                                else values[condition.intentId] = value;
 
-                                                                setPriorityEdits({hash: plan.planHash, values});
-                                                                setPriorityError(false);
-                                                            }}
-                                                        />
-                                                        {value === 'HARD'
-                                                            ? t('aiAutofillUi.semanticReview.required')
-                                                            : t('aiAutofillUi.semanticReview.preferred')}
-                                                    </label>
-                                                ))}
-                                            </div>
-                                            <p className="text-[13px] break-keep text-[#475467]">
-                                                {(overrides[condition.intentId] ?? condition.modality) === 'HARD'
-                                                    ? t('aiAutofillUi.semanticReview.aResultThatMissesThisConditionCannotBeApplied')
-                                                    : t('aiAutofillUi.semanticReview.weTryToMeetThisPreferenceOtherConditionsMayPreventIt')}
-                                            </p>
-                                        </fieldset>
+                                                setPriorityEdits({hash: plan.planHash, values});
+                                                setPriorityError(false);
+                                            }}
+                                        />
                                     ) : (
                                         current &&
                                         ready &&
@@ -395,36 +379,15 @@ export function AiSemanticReview({
                 </div>
             )}
             {canEditPriority && Boolean(plan.modalityEditableIntentIds?.length) && (
-                <p className="text-[13px] break-keep text-[#475467]">
+                <p className="text-xs leading-5 break-keep text-[#667085]">
                     {t('aiAutofillUi.semanticReview.priorityChangesApplyToThisRunOnly')}
                 </p>
             )}
             {priorityDirty && current && (
                 <div className="space-y-2">
-                    <p role="status" className="text-[13px]">
+                    <p role="status" className="text-xs leading-5 text-[#667085]">
                         {t('aiAutofillUi.semanticReview.priorityChangedSaveAndReviewTheUpdatedConditionsBeforeRunning')}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            className={primary}
-                            disabled={disabled || stale || savingPriority}
-                            onClick={() => void savePriorities()}
-                        >
-                            {t('aiAutofillUi.semanticReview.reviewPriorityChanges')}
-                        </button>
-                        <button
-                            type="button"
-                            className={secondary}
-                            disabled={disabled || savingPriority}
-                            onClick={() => {
-                                setPriorityEdits({hash: plan.planHash, values: {}});
-                                setPriorityError(false);
-                            }}
-                        >
-                            {t('aiAutofillUi.semanticReview.cancelChanges')}
-                        </button>
-                    </div>
                     {priorityError && <p role="alert">{t('aiAutofillUi.semanticReview.couldNotSaveChangesPleaseTryAgain')}</p>}
                 </div>
             )}
@@ -492,37 +455,68 @@ export function AiSemanticReview({
                         </p>
                     )}
                     <div className="grid gap-2">
-                        {ready && !complete && (
-                            <button
-                                type="button"
-                                className={primary}
-                                disabled={
-                                    disabled ||
-                                    stale ||
-                                    !reviewable ||
-                                    priorityDirty ||
-                                    savingPriority ||
-                                    (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)
-                                }
-                                onClick={onApply}
-                            >
-                                {t(plan.generationIntent ? 'aiAdjust.autofill' : 'aiAutofillUi.semanticReview.adjustWithTheseConditions')}
-                            </button>
+                        {priorityDirty ? (
+                            <>
+                                <button
+                                    type="button"
+                                    className={primary}
+                                    disabled={disabled || stale || savingPriority}
+                                    onClick={() => void savePriorities()}
+                                >
+                                    {t('aiAutofillUi.semanticReview.reviewPriorityChanges')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className={textAction}
+                                    disabled={disabled || savingPriority}
+                                    onClick={() => {
+                                        setPriorityEdits({hash: plan.planHash, values: {}});
+                                        setPriorityError(false);
+                                    }}
+                                >
+                                    {t('aiAutofillUi.semanticReview.cancelChanges')}
+                                </button>
+                            </>
+                        ) : (
+                            ready &&
+                            !complete && (
+                                <button
+                                    type="button"
+                                    className={primary}
+                                    disabled={
+                                        disabled ||
+                                        stale ||
+                                        !reviewable ||
+                                        priorityDirty ||
+                                        savingPriority ||
+                                        (plan.state !== 'CONFIRMED' && !plan.confirmationAllowed)
+                                    }
+                                    onClick={onApply}
+                                >
+                                    {t(
+                                        plan.generationIntent
+                                            ? 'aiAdjust.autofill'
+                                            : 'aiAutofillUi.semanticReview.adjustWithTheseConditions',
+                                    )}
+                                </button>
+                            )
                         )}
                         {retry && (
                             <button type="button" className={primary} disabled={disabled} onClick={onRetry}>
                                 {t('aiAutofillUi.semanticReview.tryAgain')}
                             </button>
                         )}
-                        {!unresolvedRequest && (
+                        {!unresolvedRequest && !priorityDirty && (
                             <button
                                 type="button"
                                 className={
                                     needsClarification
                                         ? 'inline-flex min-h-11 items-center gap-1.5 justify-self-start rounded-lg px-2 text-[13px] font-semibold text-[#5931B9] hover:text-[#4620B8] hover:underline focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40'
-                                        : ready || retry || plan.state === 'NEEDS_CLARIFICATION'
-                                          ? secondary
-                                          : primary
+                                        : canEditPriority
+                                          ? textAction
+                                          : ready || retry || plan.state === 'NEEDS_CLARIFICATION'
+                                            ? secondary
+                                            : primary
                                 }
                                 disabled={disabled || savingPriority}
                                 onClick={onEdit}

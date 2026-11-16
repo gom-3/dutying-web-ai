@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.51 - 2026-11-16
+
+- `@dutying/api` (patch), `@dutying/app` (patch), `@dutying/domain` (patch): Support international contact numbers with a country selector, preserve multilingual names in web setup and profiles, localize roster groups, and simplify AI condition priority editing.
+
 ## 1.3.50 - 2026-11-15
 
 - `@dutying/app` (patch): 간호사 가능근무·휴무 안내와 근무조건 경고를 개선하고 요금제 사용량 화면을 정리했습니다. 기존 신청 API와 저장된 근무 가능 값은 유지합니다.
@@ -113,6 +117,7 @@ Entries are generated from pending `.changeset/*.md` files when `pnpm run change
 - `@dutying/app` (patch): 자동채우기 조건 충돌의 상세와 해결 선택지를 대화 안에 표시하고, 조건 확인 후 다시 채우기와 요청 수정으로 이어집니다. 실패 상태에서는 대화의 근무표 확정 버튼을 숨깁니다.
 
 수정 요청 입력 중에도 자동채우기 준비로 전환할 수 있으며, 미전송 문장을 유지합니다.
+
 - `@dutying/app` (patch): AI 대화의 첫 안내와 다시 채우기 안내에도 메시지 시각이 표시되도록 보완합니다.
 - `@dutying/app` (patch): AI 대화의 메시지 발송 날짜·시각을 표시하고, 기능 변경 전의 브라우저 대화 기록을 초기화합니다.
 - `@dutying/app` (patch): 새 형식의 자동채우기 검토 결과에서도 조건 확인 후 다시 채우기로 이어지고, 적용하지 않은 결과를 수정 완료로 표시하지 않도록 보완합니다.

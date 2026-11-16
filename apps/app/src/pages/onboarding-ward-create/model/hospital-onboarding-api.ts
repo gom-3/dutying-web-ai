@@ -10,7 +10,7 @@ import {adminAxiosInstance} from '@/shared/api/client';
 const organizationPath = (organizationId: string) => `/admin/commercial/organizations/${encodeURIComponent(organizationId)}`;
 const organizationApi = (organizationId: string) => createWardApi(adminAxiosInstance, {basePath: organizationPath(organizationId)});
 const organizationWardApi = (organizationId: string) =>
-    createWardApi(adminAxiosInstance, {basePath: `${organizationPath(organizationId)}/wards`});
+    createWardApi(adminAxiosInstance, {basePath: `${organizationPath(organizationId)}/wards`, versionedNames: true});
 
 export const hospitalOnboardingApi = {
     createDraft: async (organizationId: string, payload: TCreateOnboardingWardDraftDTO) =>

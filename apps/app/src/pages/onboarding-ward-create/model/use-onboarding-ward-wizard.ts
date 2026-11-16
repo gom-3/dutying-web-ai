@@ -11,6 +11,7 @@ import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDefaultDivisionName} from '@/shared/lib/division-label';
 import {captureRosterImportEvent} from '@/shared/util/abto';
 import {
     applyParsedWardData,
@@ -148,7 +149,6 @@ const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['curren
     value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name';
 const normalizeRestoredDivisionNum = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1);
-const getRestoredDivisionFallbackName = (divisionNum: number) => `그룹${divisionNum}`;
 const normalizeRestoredTeams = (
     teams: TOnboardingWardDraft['teams'],
     nurses: TOnboardingWardDraft['nurses'],
@@ -162,7 +162,7 @@ const normalizeRestoredTeams = (
             if (!divisionByNum.has(divisionNum)) {
                 divisionByNum.set(divisionNum, {
                     divisionNum,
-                    name: division.name?.trim() || getRestoredDivisionFallbackName(divisionNum),
+                    name: division.name?.trim() || getDefaultDivisionName(divisionNum),
                 });
             }
         });
@@ -172,12 +172,12 @@ const normalizeRestoredTeams = (
                 const divisionNum = normalizeRestoredDivisionNum(nurse.divisionNum);
 
                 if (!divisionByNum.has(divisionNum)) {
-                    divisionByNum.set(divisionNum, {divisionNum, name: getRestoredDivisionFallbackName(divisionNum)});
+                    divisionByNum.set(divisionNum, {divisionNum, name: getDefaultDivisionName(divisionNum)});
                 }
             });
 
         if (!divisionByNum.has(1)) {
-            divisionByNum.set(1, {divisionNum: 1, name: getRestoredDivisionFallbackName(1)});
+            divisionByNum.set(1, {divisionNum: 1, name: getDefaultDivisionName(1)});
         }
 
         return {

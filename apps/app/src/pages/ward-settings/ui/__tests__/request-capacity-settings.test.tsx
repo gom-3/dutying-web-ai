@@ -2,6 +2,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {requestCapacityKo} from '@/shared/locales/request-capacity';
 import {DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS} from '../../model/ward-settings-hook';
 import {RequestCapacitySettings} from '../request-capacity-settings';
@@ -16,15 +17,6 @@ const api = vi.hoisted(() => ({
 
 vi.mock('@/shared/api', () => ({WardAPI: api}));
 vi.mock('@/features/auth', () => ({default: () => ({state: {wardId: 1}})}));
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values: Record<string, string | number> = {}) => {
-            const value = requestCapacityKo[key.split('.')[1] as keyof typeof requestCapacityKo] ?? key;
-
-            return value.replace(/\{\{(\w+)\}\}/g, (_, token: string) => String(values[token] ?? ''));
-        },
-    }),
-}));
 vi.mock('react-hot-toast', () => ({default: {success: vi.fn()}}));
 
 const saved = {
@@ -82,6 +74,27 @@ afterEach(() => {
 });
 
 describe('request capacity settings', () => {
+    it('localizes default group names in limits and overflow notices while preserving custom names', async () => {
+        await i18n.changeLanguage('ja');
+        api.getReqShiftCapacitySettings.mockResolvedValue({
+            ...saved,
+            enabled: true,
+            groups: [
+                {groupId: 21, divisionNum: 1, name: '그룹1'},
+                {groupId: 22, divisionNum: 2, name: '나이트킵'},
+            ],
+            rules: [{wardShiftTypeId: 1, groupId: 21, maxPerDay: 1}],
+            usage: [{date: '2026-11-15', wardShiftTypeId: 1, groupId: 21, requestedCount: 2}],
+            overflows: [{date: '2026-11-15', wardShiftTypeId: 1, groupId: 21, requestedCount: 2, maxPerDay: 1}],
+        });
+        mount();
+
+        expect(await screen.findByText('グループ1', {exact: true})).toBeInTheDocument();
+        expect(screen.getByText('나이트킵', {exact: true})).toBeInTheDocument();
+        expect(screen.getByRole('status')).toHaveTextContent('グループ1');
+        expect(screen.queryByText('그룹1')).not.toBeInTheDocument();
+    });
+
     it('explains the capacity switch before it is enabled and keeps team selection available', async () => {
         api.getShiftTeams.mockResolvedValue([
             {shiftTeamId: 11, name: '1팀'},

@@ -8,6 +8,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import PageState from '@/shared/ui/PageState';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {capacityDraftRows, capacityDraftRules, type TCapacityDraftRow} from '../model/request-capacity';
@@ -44,6 +45,10 @@ export function RequestCapacitySettings() {
         refetchOnReconnect: false,
     });
     const saved = settingsQuery.data;
+    const displayGroups = (saved?.groups ?? []).map((group) => ({
+        ...group,
+        name: getDivisionDisplayLabel(group.divisionNum, group.name, t),
+    }));
     const [enabled, setEnabled] = useState(false);
     const [rows, setRows] = useState<TCapacityDraftRow[]>([]);
     const [openGroups, setOpenGroups] = useState<Record<number, boolean>>({});
@@ -261,7 +266,7 @@ export function RequestCapacitySettings() {
                                                 key={row.wardShiftTypeId}
                                                 row={row}
                                                 type={types.find((type) => type.wardShiftTypeId === row.wardShiftTypeId)}
-                                                groups={saved?.groups ?? []}
+                                                groups={displayGroups}
                                                 groupsOpen={openGroups[row.wardShiftTypeId] ?? false}
                                                 disabled={saving}
                                                 canRemove={rows.length > 1}
@@ -339,7 +344,7 @@ export function RequestCapacitySettings() {
                                             date: overflow.date,
                                             type: types.find((type) => type.wardShiftTypeId === overflow.wardShiftTypeId)?.shortName ?? '',
                                             scope:
-                                                saved?.groups.find((group) => group.groupId === overflow.groupId)?.name ??
+                                                displayGroups.find((group) => group.groupId === overflow.groupId)?.name ??
                                                 t('requestCapacity.team'),
                                             count: overflow.requestedCount,
                                             limit: overflow.maxPerDay,
