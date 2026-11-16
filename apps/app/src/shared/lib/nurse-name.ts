@@ -21,10 +21,24 @@ export function isValidRosterNurseName(name: string): boolean {
     const requestName = normalizeRosterNurseNameForRequest(name);
 
     return (
-        Array.from(requestName).length <= NURSE_NAME_MAX_LENGTH &&
-        /^[\p{L}\p{N} ・ー]+$/u.test(requestName) &&
-        /[\p{L}\p{N}]/u.test(requestName.replace(/[・ー]/gu, ''))
+        requestName.length <= NURSE_NAME_MAX_LENGTH &&
+        /^(?:[\p{L}\p{N}][\p{Mn}\p{Mc}゛゜]*|[ ・])+$/u.test(requestName) &&
+        /[\p{L}\p{N}]/u.test(requestName.replace(/[・ーｰﾞﾟ]/gu, ''))
     );
+}
+
+// Onboarding uses roster characters while retaining its existing completed
+// Korean input and whitespace checks. Account registration keeps its own policy.
+export function isValidOnboardingNurseName(name: string): boolean {
+    const requestName = normalizeNurseNameForRequest(name);
+
+    if (KOREAN_JAMO_REGEX.test(requestName) || /[^\S ]/u.test(requestName)) return false;
+
+    const koreanSyllableCount = requestName.match(KOREAN_SYLLABLE_REGEX)?.length ?? 0;
+
+    if (KOREAN_SYLLABLE_OR_SPACE_REGEX.test(requestName) && koreanSyllableCount < 2) return false;
+
+    return isValidRosterNurseName(requestName);
 }
 
 export const sanitizeNurseNameInput = (rawValue: string) =>

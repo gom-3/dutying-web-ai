@@ -1483,6 +1483,82 @@ describe('OnboardingWardCreatePage', () => {
         );
     }, 10_000);
 
+    it('edits Japanese names across widths and submits both name lists from the final step', async () => {
+        const user = userEvent.setup();
+        const initialDraft = createInitialDraft();
+        const team = initialDraft.teams[0]!;
+        const names = [
+            '木ノ内',
+            'サハコタ',
+            '野崎',
+            '関根昌代',
+            '佐藤蘭',
+            '増田',
+            'たなか',
+            'ヤマダ',
+            '　ＡＢ　１２　',
+            'ﾔﾏﾀﾞ･ﾀﾛｳ',
+            '髙﨑',
+            '𠮷田',
+            '山田\u{E0100}',
+            'カ\u3099ナ',
+            'セ\u309a',
+            '山田゛',
+            'ㇷ\u309a',
+        ];
+        const expected = [
+            '木ノ内',
+            'サハコタ',
+            '野崎',
+            '関根昌代',
+            '佐藤蘭',
+            '増田',
+            'たなか',
+            'ヤマダ',
+            'ＡＢ １２',
+            'ﾔﾏﾀﾞ・ﾀﾛｳ',
+            '髙﨑',
+            '𠮷田',
+            '山田\u{E0100}',
+            'ガナ',
+            'セ\u309a',
+            '山田゛',
+            'ㇷ\u309a',
+        ];
+        latestSavedDraftPayload = {
+            flowVersion: 2,
+            draftWardId: 10,
+            selectedTeamId: team.id,
+            sortMode: 'manual',
+            draft: {
+                ...goToStep(initialDraft, 5),
+                hospitalName: TEST_HOSPITAL_NAME,
+                wardName: TEST_WARD_NAME,
+                teams: [team],
+                nurses: names.map((_, index) => ({...initialDraft.nurses[0]!, id: `unicode-${index}`, teamId: team.id})),
+            },
+        };
+
+        render(<OnboardingWardCreatePage />);
+        const inputs = await screen.findAllByPlaceholderText('이름');
+
+        expect(inputs).toHaveLength(names.length);
+        inputs.forEach((input, index) => {
+            fireEvent.change(input, {target: {value: names[index]}});
+            expect(input).toHaveValue(names[index]);
+        });
+        expect(screen.getByRole('button', {name: '완료'})).toBeEnabled();
+        await user.click(screen.getByRole('button', {name: '완료'}));
+
+        await waitFor(() => expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(1));
+        const payload = mockCompleteOnboardingWardDraft.mock.calls[0]![1];
+
+        expect(payload.shiftTeams[0].nurseNames).toEqual(expected);
+        expect(payload.shiftTeams[0].nurses.map((nurse: {name: string}) => nurse.name)).toEqual(expected);
+        await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.'));
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
     it('shows toast only and allows retry when ward creation fails', async () => {
         const user = userEvent.setup();
 
