@@ -124,9 +124,8 @@ const RedirectPage = () => {
 
         clearStoredOAuthRedirectPayload();
 
-        if (!isSocialSignupRequired) trackProductOutcome('login', 'social');
-
         handleLogin(accessToken, redirectNextPageUrl);
+        if (!isSocialSignupRequired) trackProductOutcome('login', 'social');
     }, [_loaded, handleLogin, t]);
 
     if (redirectError) {
