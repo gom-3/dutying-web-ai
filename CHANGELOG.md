@@ -6,6 +6,10 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.52 - 2026-11-16
+
+- `@dutying/app` (patch): Display monthly days-off targets in the selected language across worker confirmation, schedule menus and tooltips.
+
 ## 1.3.51 - 2026-11-16
 
 - `@dutying/api` (patch), `@dutying/app` (patch), `@dutying/domain` (patch): Support international contact numbers with a country selector, preserve multilingual names in web setup and profiles, localize roster groups, and simplify AI condition priority editing.

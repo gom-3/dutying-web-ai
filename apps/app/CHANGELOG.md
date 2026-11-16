@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.52
+
+### Patch Changes
+
+- Display monthly days-off targets in the selected language across worker confirmation, schedule menus and tooltips.
+- Updated dependencies
+    - @dutying/api@1.3.52
+    - @dutying/domain@1.3.52
+    - @dutying/utils@1.3.52
+
 ## 1.3.51
 
 ### Patch Changes
