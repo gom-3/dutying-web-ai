@@ -1,5 +1,30 @@
 # Release Automation
 
+## Web CI/CD
+
+`.github/workflows/vitest.yml` runs on pull requests, pushes to `develop` and
+`main`, and manual dispatches. Tests and the production build must pass before
+the exact `web-release-<commit>` artifact can be deployed. Pull requests do not
+run deployment steps or receive Cloudflare credentials.
+
+- `develop`: `dutying-web-ai-dev`, `https://dev.dutying.ai`, and `https://dev.api.dutying.ai`.
+- `main`: `dutying-web-ai`, `https://www.dutying.ai`, and `https://api.dutying.ai`.
+
+Set the repository Actions secret `CLOUDFLARE_API_TOKEN` to a token with Pages
+deployment access to the existing Cloudflare account. Never add the value to
+source, workflow logs, or chat. The workflow fails with a clear error when the
+secret is absent. The account ID is public configuration in the workflow.
+
+The deploy job uploads the tested artifact with its source branch and commit,
+then verifies `/release.json` on the returned Pages deployment URL and the
+public domain. A successful build alone is not a successful deployment. Direct
+uploads retain GitHub build provenance in `release.json`; the Pages action and
+its deployment URL provide provider evidence separately. Deployment runs for a
+branch are serialized, while outdated pull-request checks may be cancelled.
+
+After adding or rotating the secret, re-run a failed deploy job, or dispatch
+Web CI on the intended `develop` or `main` branch.
+
 `dutying-web` release automation is intentionally minimal and follows the current branch strategy:
 
 1. Feature work lands on `develop` with one or more `.changeset/*.md` files.
