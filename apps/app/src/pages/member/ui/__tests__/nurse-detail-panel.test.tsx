@@ -227,7 +227,9 @@ describe('NurseDetailPanel', () => {
 
         expect(saveNurseDetails).not.toHaveBeenCalled();
         expect(nameInput).toHaveAttribute('aria-invalid', 'true');
-        expect(screen.getByRole('alert')).toHaveTextContent("이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.");
+        expect(screen.getByRole('alert')).toHaveTextContent(
+            '이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.',
+        );
 
         fireEvent.change(nameInput, {target: {value: 'QA OFF 02'}});
         expect(nameInput).toHaveAttribute('aria-invalid', 'false');

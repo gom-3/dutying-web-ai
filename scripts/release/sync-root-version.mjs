@@ -1,4 +1,4 @@
-import {readdir, readFile, writeFile} from 'node:fs/promises';
+import {access, readdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -9,7 +9,19 @@ async function listWorkspacePackageJsonPaths(directory) {
     const directoryPath = path.join(rootDir, directory);
     const entries = await readdir(directoryPath, {withFileTypes: true});
 
-    return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(directoryPath, entry.name, 'package.json'));
+    const candidates = entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(directoryPath, entry.name, 'package.json'));
+    const manifests = await Promise.all(
+        candidates.map(async (candidate) => {
+            try {
+                await access(candidate);
+                return candidate;
+            } catch (error) {
+                if (error.code === 'ENOENT') return null;
+                throw error;
+            }
+        }),
+    );
+    return manifests.filter((manifest) => manifest !== null);
 }
 
 async function readPackageManifest(packageJsonPath) {

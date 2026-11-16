@@ -974,7 +974,13 @@
             "savedResult": "这一结果不适用于当前排班表。",
             "undoStale": "你的排班表改变了. 应用程序没有错过. 比较以前的结果。",
             "qualitative": "查看更改,看看这是你想要的安排。",
-            "draft": "这是一个可编辑的草案,最终确认是单独的。"
+            "draft": "这是一个可编辑的草案,最终确认是单独的。",
+            "settingChangesTitle": "仅适用于本月此方案的条件",
+            "settingChangesScope": "不会保存或永久更改现有设置。同意以下所有条件后，仅应用此方案。",
+            "settingAvailability": "{{name}}目前被设为不能安排{{code}}班次。是否仅在本月此方案中允许安排{{code}}班次？",
+            "settingValues": "{{name}}目前的条件为{{before}}天。是否仅在本月此方案中改为{{after}}天？",
+            "settingMonth": "{{year}}年{{month}}月 · 仅适用于此方案",
+            "settingConsentApply": "同意本月的条件变更并应用"
         },
         "conditionsSaved": "条件已保存，排班表未变更。你可以按新条件重新排班。",
         "retryWithUpdatedConditions": "按新条件自动排班",

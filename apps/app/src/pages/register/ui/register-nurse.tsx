@@ -85,7 +85,7 @@ const createSchema = (
                 .transform((value) => normalizeAccountNameForRequest(value ?? ''))
                 .required()
                 .max(ACCOUNT_NAME_MAX_LENGTH)
-                .test('account-name', (value) => isValidAccountName(value ?? '')),
+                .test('account-name', (value) => isValidAccountName(value ?? '', {legacyAccount: !globalPhone})),
             phoneNum: yup
                 .string()
                 .transform((value) => (globalPhone ? normalizeGlobalPhoneInput(value ?? '') : normalizeContactPhoneForStorage(value ?? '')))
@@ -230,7 +230,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         errors.name?.type === 'required'
             ? t('page.register.nurse.validation.nameRequired')
             : errors.name
-              ? t('page.register.nurse.validation.nameInvalid')
+              ? t(globalPhone ? 'page.register.nurse.validation.nameInvalid' : 'page.profile.validation.legacyNameInvalid')
               : undefined;
     const phoneNumError =
         errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE && errors.phoneNum.message

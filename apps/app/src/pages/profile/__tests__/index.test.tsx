@@ -110,6 +110,38 @@ describe('ProfilePage account actions', () => {
         },
     );
 
+    it('blocks a V2-only name before writing a legacy account profile', async () => {
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        const name = await screen.findByRole('textbox', {name: '이름'});
+
+        fireEvent.change(name, {target: {value: 'J. Smith'}});
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+        expect(name).toHaveAttribute('aria-invalid', 'true');
+        expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();
+    });
+
+    it('submits a V2-only administrator name through the international profile path', async () => {
+        const auth = mockedUseAuth();
+
+        mockedUseAuth.mockReturnValue({
+            ...auth,
+            state: {...auth.state, accessToken: `header.${btoa(JSON.stringify({principalType: 'WARD_ADMIN'}))}.signature`},
+        } as never);
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+        fireEvent.change(await screen.findByRole('textbox', {name: '이름'}), {target: {value: 'J. Smith'}});
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+        await waitFor(() => expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('J. Smith', {}, '01012345678', 'KR'));
+    });
+
     it('fills the phone input from accountMe when no nurse profile is loaded', () => {
         const {container} = render(
             <MemoryRouter>

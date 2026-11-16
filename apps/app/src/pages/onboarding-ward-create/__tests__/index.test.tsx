@@ -553,6 +553,7 @@ describe('OnboardingWardCreatePage', () => {
     it('reopens the saved previous month schedule after returning from shift types and after reload', async () => {
         const user = userEvent.setup();
         const view = render(<OnboardingWardCreatePage />);
+
         await prepareValidFinalStep(user);
         await user.click(screen.getByRole('button', {name: '이전 달'}));
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
@@ -562,6 +563,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '이전'}));
 
         const month = getRelativeScheduleMonth(-1);
+
         expect(screen.getByText(`${month.year}년 ${month.month}월`)).toBeInTheDocument();
         expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('김하늘');
         expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('D');
@@ -1585,6 +1587,7 @@ describe('OnboardingWardCreatePage', () => {
             'အောင်',
             'अनुष्का शर्मा',
         ];
+
         latestSavedDraftPayload = {
             flowVersion: 2,
             draftWardId: 10,
@@ -1600,6 +1603,7 @@ describe('OnboardingWardCreatePage', () => {
         };
 
         render(<OnboardingWardCreatePage />);
+
         const inputs = await screen.findAllByPlaceholderText('이름');
 
         expect(inputs).toHaveLength(names.length);
@@ -1611,6 +1615,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         await waitFor(() => expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(1));
+
         const payload = mockCompleteOnboardingWardDraft.mock.calls[0]![1];
 
         expect(payload.shiftTeams[0].nurseNames).toEqual(expected);

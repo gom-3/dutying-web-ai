@@ -4,8 +4,8 @@ import {Check, ChevronDown, Info, Plus, UsersRound, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
-import {sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import {getDivisionCustomName} from '@/shared/lib/division-label';
+import {sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {

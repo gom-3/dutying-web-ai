@@ -2645,7 +2645,9 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
     if (isAllCandidateOption(option)) return getLocalizedAllOptionLabel(t, optionMapKey);
 
     if (option.type === 'DIVISION' && option.divisionNum != null) {
-        return getDivisionDisplayLabel(option.divisionNum, option.label?.trim() || option.name, t);
+        const label = option.label?.trim() ?? '';
+
+        return getDivisionDisplayLabel(option.divisionNum, label.length > 0 ? label : option.name, t);
     }
 
     if (optionMapKey === 'date' && option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});

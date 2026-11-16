@@ -41,8 +41,7 @@ import {
     resolveContactPhoneCountry,
     type TPhoneCountry,
 } from '@/shared/lib/global-contact-phone';
-import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
-import {isValidProfileName, sanitizeProfileNameInput} from '@/shared/lib/profile-name';
+import {NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -63,14 +62,12 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = WEB_LANGUAGES;
-const validateName = (value: string, messages: {required: string; invalid: string}, isAccountName = false) => {
-    const requestName = isAccountName ? normalizeAccountNameForRequest(value) : normalizeNurseNameForRequest(value);
+const validateName = (value: string, messages: {required: string; invalid: string}, legacyAccount = false) => {
+    const requestName = normalizeAccountNameForRequest(value);
 
     if (!requestName) return messages.required;
 
-    if (!(isAccountName ? isValidAccountName(value) : isValidNurseName(value))) {
-        return messages.invalid;
-    }
+    if (!isValidAccountName(value, {legacyAccount})) return messages.invalid;
 
     return undefined;
 };
@@ -228,7 +225,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const isBirthDateDirty = !isWardAdmin && nextBirthDate !== savedBirthDate;
     const validationMessages = {
         nameRequired: t('page.profile.validation.nameRequired'),
-        nameInvalid: t(writeNurse ? 'page.profile.validation.nameInvalid' : 'page.register.nurse.validation.nameInvalid'),
+        nameInvalid: t(isWardAdmin ? 'page.register.nurse.validation.nameInvalid' : 'page.profile.validation.legacyNameInvalid'),
         phoneRequired: t('page.profile.validation.phoneRequired'),
         phoneInvalid: t(isWardAdmin ? 'shared.contactPhone.invalid' : 'page.profile.validation.phoneInvalid'),
     };
@@ -284,7 +281,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     required: validationMessages.nameRequired,
                     invalid: validationMessages.nameInvalid,
                 },
-                !writeNurse,
+                !isWardAdmin,
             );
         }
 
@@ -302,10 +299,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
         const nextErrors: TProfileErrors = {
-            name: validateName(writeNurse.name ?? '', {
-                required: validationMessages.nameRequired,
-                invalid: validationMessages.nameInvalid,
-            }),
+            name: validateName(
+                writeNurse.name ?? '',
+                {
+                    required: validationMessages.nameRequired,
+                    invalid: validationMessages.nameInvalid,
+                },
+                !isWardAdmin,
+            ),
             phoneNum: validateProfilePhone(phoneNum),
         };
 
@@ -323,7 +324,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     required: validationMessages.nameRequired,
                     invalid: validationMessages.nameInvalid,
                 },
-                true,
+                !isWardAdmin,
             ),
             phoneNum: validateProfilePhone(draftPhoneNum),
         };

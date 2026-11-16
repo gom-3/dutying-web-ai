@@ -355,9 +355,9 @@ function getDivisionHeaderLabel(
     t: ReturnType<typeof useTypedTranslation>['t'],
     divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>,
 ) {
-    const mappedName = divisionLabelByNum?.get(divisionNum)?.trim();
+    const mappedName = divisionLabelByNum?.get(divisionNum)?.trim() ?? '';
 
-    return getDivisionDisplayLabel(divisionNum, mappedName || rows[0]?.shiftNurse.divisionName, t);
+    return getDivisionDisplayLabel(divisionNum, mappedName.length > 0 ? mappedName : rows[0]?.shiftNurse.divisionName, t);
 }
 
 const VIOLATION_POPOVER_WIDTH = 360;

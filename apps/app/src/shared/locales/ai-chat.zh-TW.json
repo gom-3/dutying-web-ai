@@ -974,7 +974,13 @@
             "savedResult": "這一結果不適用於當前班表。",
             "undoStale": "你的班表改變了. 應用程式沒有錯過. 比較以前的結果。",
             "qualitative": "檢視更改,看看這是你想要的安排。",
-            "draft": "這是一個可編輯的草案,最終確認是單獨的。"
+            "draft": "這是一個可編輯的草案,最終確認是單獨的。",
+            "settingChangesTitle": "僅適用於本月此方案的條件",
+            "settingChangesScope": "不會儲存或永久變更現有設定。同意以下所有條件後，僅套用此方案。",
+            "settingAvailability": "{{name}}目前被設為不能安排{{code}}班別。是否僅在本月此方案中允許安排{{code}}班別？",
+            "settingValues": "{{name}}目前的條件為{{before}}天。是否僅在本月此方案中改為{{after}}天？",
+            "settingMonth": "{{year}}年{{month}}月 · 僅適用於此方案",
+            "settingConsentApply": "同意本月的條件變更並套用"
         },
         "conditionsSaved": "條件已儲存，班表未變更。你可以按新條件重新排班。",
         "retryWithUpdatedConditions": "按新條件自動排班",

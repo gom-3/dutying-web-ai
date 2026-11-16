@@ -90,6 +90,7 @@ const toIsoDate = (year: number, month: number, day: number) =>
     `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
 export type TCreateWardApiOptions = {
+    versionedNames?: boolean;
     basePath?: string;
 };
 
@@ -239,7 +240,9 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         ...createReqShiftCapacityApi(client, basePath),
         getWard: async (wardId: number) => normalizeWardResponse((await client.get<TWardResponse>(wardPath(`/${wardId}`))).data),
         createWard: async (createWardDTO: TCreateWardDTO) =>
-            normalizeWardResponse((await client.post<TWardResponse>(wardPath(), toCreateWardRequest(createWardDTO))).data),
+            normalizeWardResponse(
+                (await client.post<TWardResponse>(wardPath(options.versionedNames ? '/v2' : ''), toCreateWardRequest(createWardDTO))).data,
+            ),
         createOnboardingWardDraft: async (draftDTO: TCreateOnboardingWardDraftDTO) =>
             normalizeWardResponse((await client.post<TWardResponse>(wardPath('/onboarding/drafts'), draftDTO)).data),
         getCurrentOnboardingWardDraft: async () =>
@@ -254,7 +257,12 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             (await client.post<TOnboardingScheduleInputPreviewResponse>(wardPath('/onboarding/schedule-input/preview'), previewDTO)).data,
         completeOnboardingWardDraft: async (wardId: number, createWardDTO: TCreateWardDTO) =>
             normalizeWardResponse(
-                (await client.post<TWardResponse>(wardPath(`/${wardId}/onboarding/complete`), toCreateWardRequest(createWardDTO))).data,
+                (
+                    await client.post<TWardResponse>(
+                        wardPath(`/${wardId}/onboarding/complete${options.versionedNames ? '/v2' : ''}`),
+                        toCreateWardRequest(createWardDTO),
+                    )
+                ).data,
             ),
         editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(wardPath(`/${wardId}`), ward)).data,
         getWardConstraint: async (wardId: number, shiftTeamId: number) =>
@@ -396,7 +404,7 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             normalizeNurseResponse(
                 (
                     await client.post<TNurseResponse>(
-                        wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses`),
+                        wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses${options.versionedNames ? '/v2' : ''}`),
                         toAddShiftTeamNurseRequest(addShiftTeamNurseDTO),
                     )
                 ).data,

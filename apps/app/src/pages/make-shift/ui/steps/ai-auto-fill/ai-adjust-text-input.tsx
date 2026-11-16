@@ -586,6 +586,7 @@ export default function AiAdjustTextInput({
             if (!mounted.current || sequence.current !== id) return;
 
             const rewrite = result.generationIntent;
+
             if (
                 rewrite &&
                 onRegenerate &&
@@ -1211,7 +1212,7 @@ export default function AiAdjustTextInput({
                             <button
                                 key={sentence}
                                 type="button"
-                                disabled={disabled || modifyDisabled || isBusy}
+                                disabled={disabled || Boolean(modifyDisabled) || isBusy}
                                 onClick={() => fill(sentence)}
                                 className="flex min-h-10 w-full items-center justify-between gap-2 rounded-[5px] bg-gray-7 px-3 py-2 text-left text-[13px] leading-5 break-keep text-[#475467] hover:bg-main-light hover:text-main-1 disabled:opacity-50"
                             >
@@ -1245,7 +1246,7 @@ export default function AiAdjustTextInput({
                                 }
                             }}
                             onPaste={(event) => event.stopPropagation()}
-                            disabled={disabled || modifyDisabled || isBusy}
+                            disabled={disabled || Boolean(modifyDisabled) || isBusy}
                             rows={2}
                             maxLength={MAX_TEXT_LENGTH}
                             aria-label={t('page.makeShift.aiRefill.adjust.textInput.label')}
@@ -1259,7 +1260,7 @@ export default function AiAdjustTextInput({
                             <button
                                 type="button"
                                 aria-label={t('aiAdjust.send')}
-                                disabled={disabled || modifyDisabled || isBusy || !text.trim()}
+                                disabled={disabled || Boolean(modifyDisabled) || isBusy || !text.trim()}
                                 onClick={() => void handleSubmit()}
                                 className="grid size-11 shrink-0 place-items-center rounded-[10px] bg-main-1 focus-visible:bg-[#4620B8] focus-visible:outline-none disabled:bg-gray-3"
                             >

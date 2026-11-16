@@ -2004,7 +2004,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
                     journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
                     text,
-                    language: language === 'zh-TW' ? language : language?.split('-')[0] ?? 'ko',
+                    language: language === 'zh-TW' ? language : (language?.split('-')[0] ?? 'ko'),
                     year,
                     month,
                 }),

@@ -30,14 +30,14 @@ Unicode 수평 공백은 일반 공백으로 정리한다. 이름과 가나의 �
 
 ```json
 {
-  "code": "INVALID_TYPE_VALUE",
-  "message": "파라미터 타입이 올바르지 않습니다.",
-  "errors": [
-    {
-      "field": "name",
-      "message": "이름은 한글, 영문, 숫자만 입력 가능합니다."
-    }
-  ]
+    "code": "INVALID_TYPE_VALUE",
+    "message": "파라미터 타입이 올바르지 않습니다.",
+    "errors": [
+        {
+            "field": "name",
+            "message": "이름은 한글, 영문, 숫자만 입력 가능합니다."
+        }
+    ]
 }
 ```
 
@@ -89,7 +89,7 @@ Kim Nurse 2
 ```text
 홍@길동
 Nurse_1
-   
+
 홍
 ```
 

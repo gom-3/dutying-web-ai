@@ -974,7 +974,13 @@
             "savedResult": "Kết quả này không áp dụng cho lịch trực hiện tại.",
             "undoStale": "Chương trình của bạn đã thay đổi. ứng dụng không bị bỏ phiếu. so sánh kết quả trước.",
             "qualitative": "Kiểm tra các thay đổi để xem liệu đây là thỏa thuận bạn muốn.",
-            "draft": "Đây là một dự án có thể chỉnh sửa. xác nhận cuối cùng là riêng biệt."
+            "draft": "Đây là một dự án có thể chỉnh sửa. xác nhận cuối cùng là riêng biệt.",
+            "settingChangesTitle": "Điều kiện chỉ áp dụng cho phương án tháng này",
+            "settingChangesScope": "Các cài đặt đã lưu không thay đổi. Đồng ý với tất cả điều kiện bên dưới để chỉ áp dụng phương án này.",
+            "settingAvailability": "{{name}} hiện được đặt là không thể làm ca {{code}}. Cho phép ca {{code}} chỉ trong phương án tháng này?",
+            "settingValues": "Điều kiện hiện tại của {{name}} là {{before}} ngày. Đổi thành {{after}} ngày chỉ trong phương án tháng này?",
+            "settingMonth": "{{year}}-{{month}} · chỉ áp dụng cho phương án này",
+            "settingConsentApply": "Đồng ý thay đổi điều kiện tháng này và áp dụng"
         },
         "conditionsSaved": "Đã lưu điều kiện. Lịch trực giữ nguyên. Bạn có thể xếp lại theo điều kiện mới.",
         "retryWithUpdatedConditions": "Xếp lịch theo điều kiện mới",

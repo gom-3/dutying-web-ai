@@ -165,8 +165,8 @@ export const aiConversationSidebarEn = {
     authoring: {
         settingChangesTitle: 'Conditions for this proposal only',
         settingChangesScope: 'Your saved settings stay unchanged. Agree to all conditions below to apply this proposal only.',
-        settingAvailability: '{{name}}: allow {{code}}',
-        settingValues: '{{name}}님의 현재 조건은 {{before}}일이에요. 이번 달 이 변경안에만 {{after}}일로 바꿀까요?',
+        settingAvailability: '{{name}} is currently set as unavailable for {{code}}. Allow {{code}} for this month’s proposal only?',
+        settingValues: '{{name}} currently has {{before}} days. Change this to {{after}} days for this month’s proposal only?',
         settingMonth: '{{year}}-{{month}} · this proposal only',
         settingConsentApply: 'Agree to this month’s exceptions and apply',
 
@@ -327,7 +327,7 @@ export const aiConversationSidebarJa = {
     authoring: {
         settingChangesTitle: '今月のこの配置案だけに適用する条件',
         settingChangesScope: '保存済み設定は変更しません。以下の条件すべてに同意した場合、この配置案だけを反映します。',
-        settingAvailability: '{{name}}：可能勤務に{{code}}を追加',
+        settingAvailability: '{{name}}さんは現在{{code}}勤務が不可に設定されています。今月のこの配置案だけ{{code}}勤務を可能にしますか？',
         settingValues: '{{name}}：{{before}} → {{after}}',
         settingMonth: '{{year}}年{{month}}月・この配置案のみ',
         settingConsentApply: '今月の条件変更に同意して反映',

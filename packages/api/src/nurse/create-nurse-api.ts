@@ -54,7 +54,7 @@ const normalizeNurseResponse = (nurse: TNurseResponseWithAliases): TNurseRespons
     return birthDate === undefined ? normalizedNurse : {...normalizedNurse, birthDate};
 };
 
-export const createNurseApi = (client: IApiClient): INurseAPI => ({
+export const createNurseApi = (client: IApiClient, options: {versionedNames?: boolean} = {}): INurseAPI => ({
     createAccountNurse: async (accountId: number, createNurse: TCreateNurseDTO) =>
         normalizeNurseResponse(
             (await client.post<TNurseResponse>(`/nurses?accountId=${accountId}`, toUpdateNurseRequest(createNurse))).data,
@@ -62,7 +62,12 @@ export const createNurseApi = (client: IApiClient): INurseAPI => ({
     getNurse: async (nurseId: number) => normalizeNurseResponse((await client.get<TNurseResponse>(`/nurses/${nurseId}`)).data),
     updateNurse: async (nurseId: number, updatedNurse: TUpdateNurseDTO) =>
         normalizeNurseResponse(
-            (await client.patch<TNurseResponse>(`/nurses/${nurseId}`, toUpdateNurseRequest(updatedNurse, {clearDummyPhoneNum: true}))).data,
+            (
+                await client.patch<TNurseResponse>(
+                    `/nurses/${nurseId}${options.versionedNames ? '/v2' : ''}`,
+                    toUpdateNurseRequest(updatedNurse, {clearDummyPhoneNum: true}),
+                )
+            ).data,
         ),
     updateNurseStatus: async (nurseId: number, status: string) => (await client.patch<TNurseResponse>(`/nurses/${nurseId}`, {status})).data,
     connectNurse: async (nurseId: number) => (await client.post<void>(`/nurses/${nurseId}/connect`)).data,

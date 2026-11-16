@@ -235,6 +235,7 @@ describe('Constraints', () => {
 
     it.each(['TWO', 'THREE', 'MIXED'] as const)('exposes monthly shift counts and saves each comparison for %s', async (rotationMode) => {
         const nightId = rotationMode === 'TWO' ? 5 : 3;
+
         wardApiMocks.getShiftTypes.mockResolvedValue([...threeShiftWardShiftTypes, ...twoShiftWardShiftTypes] as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValue({
             schemaVersion: 1,
@@ -281,7 +282,9 @@ describe('Constraints', () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
         await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
+
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="SHIFT_COUNT_PER_PERIOD"]')!;
+
         expect(card).toBeInTheDocument();
         await userEvent.click(within(card).getByTitle('추가'));
         await waitFor(() => expect(getLastUpdatePayload()?.rules?.some((r) => r.templateCode === 'SHIFT_COUNT_PER_PERIOD')).toBe(true));
@@ -293,12 +296,14 @@ describe('Constraints', () => {
                 expect.objectContaining({target: {type: 'NURSE', nurseId: 1}, shift: {type: 'SHIFT', wardShiftTypeId: nightId}}),
             ),
         );
+
         for (const [label, type] of [
             ['최소', 'MIN'],
             ['정확히', 'EXACT'],
             ['최대', 'MAX'],
         ]) {
             const current = screen.getAllByRole('button').find((b) => ['최대', '최소', '정확히'].includes(b.textContent || ''))!;
+
             await userEvent.click(current);
             await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: label}));
             await waitFor(() =>
@@ -893,6 +898,7 @@ describe('Constraints', () => {
         ],
     ])('localizes every saved-warning fallback in %s without leaking message keys', async (language, workRestMessage, unknownMessage) => {
         await i18n.changeLanguage(language);
+
         const codes = [
             'MAX_WORK_BELOW_WORK_OFF_TRIGGER',
             'EXACT_ONE_WITH_HARD_PRECEPTEE_COVERAGE',
@@ -907,6 +913,7 @@ describe('Constraints', () => {
             'MIXED_PARTICIPATION_CONFLICT',
             'UNKNOWN_WARNING',
         ];
+
         wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
@@ -925,14 +932,17 @@ describe('Constraints', () => {
         const warningBanner = firstWarning.closest<HTMLElement>('[role="status"]')!;
 
         expect(within(warningBanner).getByText(unknownMessage)).toHaveAttribute('data-warning-code', 'UNKNOWN_WARNING');
+
         for (const code of codes) {
             const message = warningBanner.querySelector(`[data-warning-code="${code}"]`)?.textContent;
 
             expect(message, code).toBeTruthy();
             expect(message).not.toContain(code);
             expect(message).not.toMatch(/shiftConstraintRule\.warning|page\.makeShift|SOFT|HARD|{{/);
+
             if (language !== 'ko') expect(message).not.toMatch(/[가-힣]/);
         }
+
         expect(new Set(Array.from(warningBanner.querySelectorAll('[data-warning-code]'), (element) => element.textContent)).size).toBe(
             codes.length,
         );
@@ -3184,58 +3194,61 @@ describe('Constraints', () => {
         ['ko', '신규 간호사', '신규 간호사'],
         ['ja', '그룹2', 'グループ2'],
         ['en', '그룹2', 'Group 2'],
-    ])('offers localized division groups in %s target dropdowns without changing their saved identity', async (language, storedName, label) => {
-        await i18n.changeLanguage(language);
-        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
-            schemaVersion: 1,
-            wardId: 1,
-            shiftTeamId: 10,
-            options: {
-                targets: [
-                    {type: 'ALL', label: '전체'},
-                    {type: 'DIVISION', label: storedName, divisionNum: 2},
-                    {type: 'NURSE', nurseId: 7, label: '홍길동'},
-                ],
-            },
-            templates: [
-                {
-                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
-                    category: 'CORE',
-                    displayTemplate: '{target}은 {count}일 이상 연속으로 근무하면 안 돼요.',
-                    severity: 'HARD',
-                    allowedSeverities: ['HARD', 'SOFT'],
-                    supportedInGenerator: true,
-                    supportedInValidator: true,
-                    slots: [
-                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 7},
+    ])(
+        'offers localized division groups in %s target dropdowns without changing their saved identity',
+        async (language, storedName, label) => {
+            await i18n.changeLanguage(language);
+            wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+                schemaVersion: 1,
+                wardId: 1,
+                shiftTeamId: 10,
+                options: {
+                    targets: [
+                        {type: 'ALL', label: '전체'},
+                        {type: 'DIVISION', label: storedName, divisionNum: 2},
+                        {type: 'NURSE', nurseId: 7, label: '홍길동'},
                     ],
                 },
-            ],
-        });
-
-        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
-
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('page.makeShift.constraints.action.add')}));
-        await userEvent.click(await screen.findByRole('button', {name: i18n.t('page.makeShift.constraints.option.allPeople')}));
-
-        const listbox = await screen.findByRole('listbox');
-
-        expect(within(listbox).getByRole('option', {name: label})).toBeInTheDocument();
-
-        await userEvent.click(within(listbox).getByRole('option', {name: label}));
-        await userEvent.click(screen.getByTitle(i18n.t('page.makeShift.constraints.modal.addTitle')));
-
-        await waitFor(() => {
-            const savedRule = getLastUpdatePayload()?.rules?.[0];
-
-            expect(savedRule).toMatchObject({
-                templateCode: 'CORE_MAX_CONTINUOUS_WORK',
-                params: {target: {type: 'DIVISION', divisionNum: 2}, count: 5},
+                templates: [
+                    {
+                        templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                        category: 'CORE',
+                        displayTemplate: '{target}은 {count}일 이상 연속으로 근무하면 안 돼요.',
+                        severity: 'HARD',
+                        allowedSeverities: ['HARD', 'SOFT'],
+                        supportedInGenerator: true,
+                        supportedInValidator: true,
+                        slots: [
+                            {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
+                            {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 7},
+                        ],
+                    },
+                ],
             });
-            expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|신규/);
-        });
-    });
+
+            render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('page.makeShift.constraints.action.add')}));
+            await userEvent.click(await screen.findByRole('button', {name: i18n.t('page.makeShift.constraints.option.allPeople')}));
+
+            const listbox = await screen.findByRole('listbox');
+
+            expect(within(listbox).getByRole('option', {name: label})).toBeInTheDocument();
+
+            await userEvent.click(within(listbox).getByRole('option', {name: label}));
+            await userEvent.click(screen.getByTitle(i18n.t('page.makeShift.constraints.modal.addTitle')));
+
+            await waitFor(() => {
+                const savedRule = getLastUpdatePayload()?.rules?.[0];
+
+                expect(savedRule).toMatchObject({
+                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    params: {target: {type: 'DIVISION', divisionNum: 2}, count: 5},
+                });
+                expect(JSON.stringify(savedRule?.params)).not.toMatch(/label|name|신규/);
+            });
+        },
+    );
 
     it('closes the modal and moves focus to the existing editable rule when an exact duplicate is added', async () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
@@ -3746,6 +3759,7 @@ describe('Constraints', () => {
         {rotationMode: 'THREE', scenario: 'no nurse'},
     ] as const)('separates personal restrictions for $rotationMode / $scenario', async ({rotationMode, scenario}) => {
         if (scenario === 'no nurse') wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([] as never);
+
         if (scenario === 'existing max zero') {
             wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
                 schemaVersion: 1,
@@ -3772,6 +3786,7 @@ describe('Constraints', () => {
                 ],
             } as never);
         }
+
         wardApiMocks.getShiftTypes.mockResolvedValueOnce([
             {wardShiftTypeId: 11, shortName: 'D', name: '데이', classification: 'DAY', rotationSystem: 'THREE', isActive: true},
         ] as never);
@@ -3822,12 +3837,16 @@ describe('Constraints', () => {
         });
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
         if (scenario === 'existing max zero') {
             const row = await waitFor(() => {
                 const savedRow = document.querySelector<HTMLElement>('[data-constraint-rule-id="saved-91"]');
+
                 expect(savedRow).toBeInTheDocument();
+
                 return savedRow!;
             });
+
             expect(within(row).queryByRole('spinbutton')).not.toBeInTheDocument();
             expect(within(row).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
             await userEvent.click(within(row).getByRole('button', {name: '수요일'}));
@@ -3842,23 +3861,31 @@ describe('Constraints', () => {
                     }),
                 ),
             );
+
             return;
         }
+
         await userEvent.click(await screen.findByRole('button', {name: '근무 조건 추가'}));
         await userEvent.click(screen.getByRole('button', {name: '사람별 제한'}));
+
         const card = document.querySelector<HTMLElement>('[data-constraint-template-card="STAFF_COUNT_BY_SHIFT"]')!;
+
         if (scenario === 'no nurse') {
             expect(within(card).getByTitle('추가')).toBeDisabled();
             expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+
             return;
         }
+
         expect(within(card).getByRole('button', {name: '김간호사'})).toBeInTheDocument();
         expect(within(card).getByRole('button', {name: '날짜·요일별 배정 제한 설명 보기'})).toBeInTheDocument();
         expect(within(card).queryByRole('spinbutton')).not.toBeInTheDocument();
         expect(within(card).queryByRole('button', {name: '정확히'})).not.toBeInTheDocument();
         expect(within(card).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
         await userEvent.click(within(card).getByRole('button', {name: '김간호사'}));
+
         const targets = screen.getByRole('listbox');
+
         expect(within(targets).queryByRole('option', {name: '모든 간호사'})).not.toBeInTheDocument();
         expect(within(targets).queryByRole('option', {name: '신규 간호사'})).not.toBeInTheDocument();
         await userEvent.click(within(targets).getByRole('option', {name: '김간호사'}));
@@ -3889,8 +3916,10 @@ describe('Constraints', () => {
                 ]),
             ),
         );
+
         // Once saved, the same plain-language editor supports a numbered day.
         const row = document.querySelector<HTMLElement>('[data-constraint-rule-id]')!;
+
         expect(within(row).queryByRole('spinbutton')).not.toBeInTheDocument();
         expect(within(row).getByText('근무를 배정하지 않아요.')).toBeInTheDocument();
         await userEvent.click(within(row).getByRole('button', {name: '수요일'}));
@@ -3968,6 +3997,7 @@ describe('Constraints', () => {
         await userEvent.click(addButton);
 
         await userEvent.click(await screen.findByRole('button', {name: '모든 간호사'}));
+
         const targetListbox = await screen.findByRole('listbox');
 
         expect(within(targetListbox).queryByRole('option', {name: '김간호사'})).not.toBeInTheDocument();

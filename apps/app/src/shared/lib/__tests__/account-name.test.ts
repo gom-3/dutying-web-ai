@@ -57,3 +57,19 @@ describe('account Unicode person names', () => {
         expect(isValidAccountName('𠮷'.repeat(26))).toBe(false);
     });
 });
+
+describe('legacy account API name compatibility', () => {
+    it.each(['สมหญิง ใจดี', "Jean-Luc O'Neill", 'Nguyễn Thị Hương', '山田 花子'])(
+        'keeps names already accepted by legacy accounts: %s',
+        (name) => {
+            expect(isValidAccountName(name, {legacyAccount: true})).toBe(true);
+        },
+    );
+    it.each(['J. Smith', 'Jean‑Luc', 'علی‌رضا', 'श्री‍राम'])(
+        'reserves expanded names for web V2 instead of submitting them to a legacy account: %s',
+        (name) => {
+            expect(isValidAccountName(name)).toBe(true);
+            expect(isValidAccountName(name, {legacyAccount: true})).toBe(false);
+        },
+    );
+});

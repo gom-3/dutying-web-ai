@@ -269,6 +269,7 @@ describe('MakeShiftCalendar', () => {
         'localizes a saved Korean default group in %s, including the member count label',
         async (language) => {
             await i18n.changeLanguage(language);
+
             const label = i18n.t('shared.division.defaultName', {number: 1});
 
             render(

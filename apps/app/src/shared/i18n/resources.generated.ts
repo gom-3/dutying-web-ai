@@ -2616,7 +2616,8 @@ export const ko = {
                 "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                 "nameRequired": "이름을 입력해 주세요.",
                 "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.",
-                "phoneRequired": "전화번호를 입력해 주세요."
+                "phoneRequired": "전화번호를 입력해 주세요.",
+                "legacyNameInvalid": "이름은 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피로 입력해 주세요."
             }
         },
         "refresh": {
@@ -5911,7 +5912,8 @@ export const en: TLocale = {
                 "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                 "nameRequired": "Enter your name.",
                 "phoneInvalid": "Enter a valid phone number for the selected language or region.",
-                "phoneRequired": "Enter your phone number."
+                "phoneRequired": "Enter your phone number.",
+                "legacyNameInvalid": "Use letters, numbers, spaces, hyphens, middle dots or apostrophes."
             }
         },
         "refresh": {
@@ -9204,7 +9206,8 @@ export const ja: TLocale = {
                 "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                 "nameRequired": "名前を入力してください。",
                 "phoneInvalid": "選択した言語または地域に合う電話番号を入力してください。",
-                "phoneRequired": "電話番号を入力してください。"
+                "phoneRequired": "電話番号を入力してください。",
+                "legacyNameInvalid": "名前は文字・数字・空白・ハイフン・中黒・アポストロフィで入力してください。"
             }
         },
         "refresh": {
@@ -12497,7 +12500,8 @@ export const zh: TLocale = {
                 "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                 "nameRequired": "请输入您的姓名。",
                 "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入电话号码。",
-                "phoneRequired": "请输入您的电话号码。"
+                "phoneRequired": "请输入您的电话号码。",
+                "legacyNameInvalid": "姓名可包含文字、数字、空格、连字符、间隔号和撇号。"
             }
         },
         "refresh": {
@@ -15790,7 +15794,8 @@ export const zhTW: TLocale = {
                 "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                 "nameRequired": "請輸入您的姓名。",
                 "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入電話號碼。",
-                "phoneRequired": "請輸入您的電話號碼。"
+                "phoneRequired": "請輸入您的電話號碼。",
+                "legacyNameInvalid": "姓名可包含文字、數字、空格、連字號、間隔號和撇號。"
             }
         },
         "refresh": {
@@ -19083,7 +19088,8 @@ export const th: TLocale = {
                 "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                 "nameRequired": "ใส่ชื่อของคุณ",
                 "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
-                "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ"
+                "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ",
+                "legacyNameInvalid": "ชื่อใช้ตัวอักษร ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง หรืออัญประกาศเดี่ยวได้"
             }
         },
         "refresh": {
@@ -22376,7 +22382,8 @@ export const vi: TLocale = {
                 "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                 "nameRequired": "Nhập tên của bạn.",
                 "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
-                "phoneRequired": "Nhập số điện thoại của bạn."
+                "phoneRequired": "Nhập số điện thoại của bạn.",
+                "legacyNameInvalid": "Tên có thể gồm chữ, số, khoảng trắng, dấu gạch nối, dấu chấm giữa hoặc dấu nháy đơn."
             }
         },
         "refresh": {
