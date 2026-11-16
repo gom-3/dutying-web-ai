@@ -1583,7 +1583,6 @@ describe('OnboardingWardCreatePage', () => {
         'အောင်',
         'अनुष्का शर्मा',
     ];
-
     // Each edit rerenders the roster. Keep all approved names while bounding one
     // integration case so a slower CI worker does not perform 40x40 row renders.
     const internationalNameBatches = Array.from({length: Math.ceil(internationalNameInputs.length / 8)}, (_, index) => ({
