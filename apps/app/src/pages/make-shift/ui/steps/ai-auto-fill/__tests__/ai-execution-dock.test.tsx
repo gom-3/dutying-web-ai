@@ -73,7 +73,7 @@ describe('ongoing autofill entry', () => {
         );
         expect(screen.getByRole('region', {name: '근무표 수정 작업'})).toBeVisible();
         expect(screen.getByRole('status')).toHaveTextContent(
-            executionStatus === 'SUCCEEDED' ? '근무표 수정 결과가 준비됐어요' : '근무표를 수정하지 못했어요.',
+            executionStatus === 'SUCCEEDED' ? '근무표 수정 결과가 준비됐어요' : '아직 요청을 반영하지 않았어요. 아래 이유와 다음 방법을 확인해 주세요.',
         );
         expect(screen.getByRole('status')).not.toHaveTextContent('AI 채우기');
     });

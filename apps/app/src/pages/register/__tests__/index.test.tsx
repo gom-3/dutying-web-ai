@@ -6,8 +6,9 @@ import RegisterPage from '../index';
 
 const mockHandleGetAccountMe = vi.fn();
 const mockNavigate = vi.fn();
-let mockLocationSearch = '';
 
+let mockLocationSearch = '';
+let mockLocationState: {fromQuitWard?: boolean} | null = null;
 let mockAuthState: {
     accountMe: {
         status:
@@ -30,7 +31,7 @@ let mockAuthState: {
 
 vi.mock('react-router', () => ({
     Navigate: ({to}: {to: string}) => <div>navigate:{to}</div>,
-    useLocation: () => ({state: null, search: mockLocationSearch}),
+    useLocation: () => ({state: mockLocationState, search: mockLocationSearch}),
     useNavigate: () => mockNavigate,
 }));
 
@@ -74,6 +75,7 @@ describe('RegisterPage', () => {
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockNavigate.mockReset();
         mockLocationSearch = '';
+        mockLocationState = null;
         mockAuthState = {
             accountMe: null,
             accountMeStatus: 'loading',
@@ -130,6 +132,23 @@ describe('RegisterPage', () => {
 
         render(<RegisterPage />);
 
+        expect(screen.getByText('select enter or create')).toBeInTheDocument();
+    });
+
+    it.each([null, '01012345678'])('returns to ward selection after leaving without collecting profile again (phone: %s)', (phoneNum) => {
+        mockLocationState = {fromQuitWard: true};
+        mockAuthState = {
+            accountMe: {status: 'WORKSPACE_SETUP_PENDING', phoneNum},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        const view = render(<RegisterPage />);
+
+        expect(screen.getByText('select enter or create')).toBeInTheDocument();
+        expect(screen.queryByText('register nurse default')).not.toBeInTheDocument();
+        view.unmount();
+        render(<RegisterPage />);
         expect(screen.getByText('select enter or create')).toBeInTheDocument();
     });
 

@@ -42,6 +42,7 @@ import {
     type TPhoneCountry,
 } from '@/shared/lib/global-contact-phone';
 import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {isValidProfileName, sanitizeProfileNameInput} from '@/shared/lib/profile-name';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';

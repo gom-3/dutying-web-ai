@@ -214,6 +214,10 @@
                         "MAX_CONSECUTIVE_WORK_DAYS": "連續工作不得超過{{count}}天。",
                         "OFF_AFTER_CONSECUTIVE_WORK": "連續工作{{count}}天后，緊接著安排一天休息。"
                     }
+                },
+                "toast": {
+                    "changedElsewhere": "條件已被其他請求變更。請載入最新條件後重新編輯。",
+                    "reloadLatest": "載入最新條件"
                 }
             },
             "context": {

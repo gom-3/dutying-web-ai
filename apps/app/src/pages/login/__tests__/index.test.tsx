@@ -47,7 +47,6 @@ vi.mock('@/shared/api', () => ({
 }));
 
 const INVALID_LOGIN_CREDENTIALS_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
-
 const openPasswordResetAfterInvalidLogin = async (user: ReturnType<typeof userEvent.setup>) => {
     mockPasswordLogin.mockRejectedValueOnce(new Error(INVALID_LOGIN_CREDENTIALS_MESSAGE));
 
@@ -71,6 +70,26 @@ describe('LoginPage', () => {
         vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
     });
 
+    it('signs into an empty QA account with a short id and the normal auth session', async () => {
+        const user = userEvent.setup();
+
+        mockPasswordLogin.mockResolvedValueOnce({accessToken: 'qa-token'});
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.SIGN_IN}?qa=1`]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+        expect(screen.getByRole('heading', {name: 'QA 로그인'})).toBeInTheDocument();
+        expect(screen.getByLabelText('QA 아이디')).toHaveAttribute('type', 'text');
+        await user.type(screen.getByLabelText('QA 아이디'), 'qa1');
+        await user.type(screen.getByLabelText('비밀번호'), '1234');
+        await user.click(screen.getByRole('button', {name: '로그인'}));
+        expect(mockPasswordLogin).toHaveBeenCalledWith({email: 'qa1@empty-qa.dutying.test', password: '1234'});
+        expect(mockHandleLogin).toHaveBeenCalledWith('qa-token', ROUTE.HOME);
+    });
+
     it('renders sign-in as the default admin login page with a signup entry', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
@@ -84,7 +103,9 @@ describe('LoginPage', () => {
         expect(screen.getByRole('button', {name: '이전 이미지'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '다음 이미지'})).toBeInTheDocument();
         expect(screen.getByText('1/3')).toBeInTheDocument();
+
         const visualImages = document.querySelectorAll('.login-visual-slide');
+
         expect(visualImages).toHaveLength(3);
         expect(visualImages[0]).toHaveAttribute('loading', 'eager');
         expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
@@ -93,10 +114,7 @@ describe('LoginPage', () => {
         expect(visualImages[0]).not.toHaveClass('login-visual-slide-active');
         fireEvent.load(visualImages[0]);
         expect(visualImages[0]).toHaveClass('login-visual-slide-active');
-        expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
-            'srcset',
-            '/img/login-slide-1.webp',
-        );
+        expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute('srcset', '/img/login-slide-1.webp');
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
         expect(screen.getByText('아직 계정이 없나요?')).toBeInTheDocument();
@@ -131,6 +149,7 @@ describe('LoginPage', () => {
         );
 
         const firstVisualImage = document.querySelector('.login-visual-slide[src]') as HTMLImageElement;
+
         expect(firstVisualImage).toHaveAttribute('src', expectedFirstSrc);
         expect(firstVisualImage).not.toHaveClass('login-visual-slide-active');
         fireEvent.load(firstVisualImage);

@@ -4941,7 +4941,7 @@ function ConstraintsContent({
     const savingRef = useRef(false);
     const [refreshPending, setRefreshPending] = useState(false);
     const refreshPendingRef = useRef(false);
-    const [editorMessage, setEditorMessage] = useState<{text: string; error: boolean} | null>(null);
+    const [editorMessage, setEditorMessage] = useState<{text: string; error: boolean; reload?: boolean} | null>(null);
     const baseline = useRef('');
     const mounted = useRef(true);
     const onAppliedRef = useRef(onApplied);
@@ -4973,6 +4973,7 @@ function ConstraintsContent({
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
     const saveRulesRequestSeqRef = useRef(0);
+    const lastAutomaticSaveRef = useRef<{scope: string; signature: string} | null>(null);
     const recommendedDefaultsSeedKeyRef = useRef<string | null>(null);
     const languageQueryKey = i18n.resolvedLanguage ?? i18n.language ?? 'default';
     const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey, year, month);
@@ -5321,6 +5322,7 @@ function ConstraintsContent({
     }, [currentShiftTeam?.divisions, nurses, options, rotationMode, shiftTypes, t, year, month]);
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
+        scope: {id: `constraint-rules:${wardId}:${currentShiftTeamId}:${year}:${month}`},
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
             if (!enabled || wardId == null || currentShiftTeamId == null) {
                 throw new Error('Cannot save shift constraint rules without a ward and shift team.');
@@ -5345,7 +5347,14 @@ function ConstraintsContent({
             return {previousRules};
         },
         onSuccess: (response, variables) => {
-            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
+            if (variables.requestId !== saveRulesRequestSeqRef.current) {
+                // Queued saves need the preceding revision without replacing newer optimistic edits.
+                queryClient.setQueryData<TShiftConstraintRulesResponse>(rulesQueryKey, (current) =>
+                    current ? {...current, revision: response.revision} : response,
+                );
+
+                return;
+            }
 
             queryClient.setQueryData(rulesQueryKey, response);
 
@@ -5363,7 +5372,15 @@ function ConstraintsContent({
             }
         },
         onError: (_error, variables, context) => {
-            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
+            if (variables.requestId === saveRulesRequestSeqRef.current) lastAutomaticSaveRef.current = null;
+
+            const conflict = (_error as {serverCode?: string; code?: number} | null)?.serverCode === 'SHIFT_CONSTRAINT_RULES_CHANGED';
+
+            if (variables.requestId !== saveRulesRequestSeqRef.current) {
+                if (conflict) void queryClient.invalidateQueries({queryKey: rulesQueryKey});
+
+                return;
+            }
 
             if (context?.previousRules) {
                 queryClient.setQueryData(rulesQueryKey, context.previousRules);
@@ -5380,19 +5397,31 @@ function ConstraintsContent({
                 setRules([]);
             }
 
-            notify.error(t('page.makeShift.constraints.toast.saveFailed'));
+            if (conflict) {
+                void queryClient.invalidateQueries({queryKey: rulesQueryKey});
+                notify.error(t('page.makeShift.constraints.toast.changedElsewhere'));
+            } else notify.error(t('page.makeShift.constraints.toast.saveFailed'));
         },
     });
     const persistRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[]) => {
             if (!enabled || wardId == null || currentShiftTeamId == null) return;
 
+            const scope = `${wardId}:${currentShiftTeamId}:${year}:${month}`;
+            const signature = JSON.stringify(
+                nextRules.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
+            );
+
+            if (lastAutomaticSaveRef.current?.scope === scope && lastAutomaticSaveRef.current.signature === signature) return;
+
+            lastAutomaticSaveRef.current = {scope, signature};
+
             const requestId = saveRulesRequestSeqRef.current + 1;
 
             saveRulesRequestSeqRef.current = requestId;
             mutateSaveRules({rules: nextRules, requestId});
         },
-        [currentShiftTeamId, enabled, mutateSaveRules, wardId],
+        [currentShiftTeamId, enabled, mutateSaveRules, wardId, year, month, softTemplateByCode],
     );
     const rulesSignature = useCallback(
         (draft: TShiftConstraintRuleDraft[]) =>
@@ -5558,6 +5587,7 @@ function ConstraintsContent({
     const ready = enabled && !isLoading && !isLoadError;
     const {mutateAsync: applyRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
+        scope: {id: `constraint-rules:${wardId}:${currentShiftTeamId}:${year}:${month}`},
         mutationFn: (draft: TShiftConstraintRuleDraft[]) => {
             if (!enabled || wardId == null || currentShiftTeamId == null) throw new Error('Constraint scope is unavailable');
 
@@ -5621,14 +5651,19 @@ function ConstraintsContent({
             setRefreshPending(false);
 
             return true;
-        } catch {
+        } catch (error) {
             if (mounted.current) {
+                const conflict = (error as {serverCode?: string} | null)?.serverCode === 'SHIFT_CONSTRAINT_RULES_CHANGED';
+
                 setEditorMessage({
-                    text: saved
-                        ? i18n.language.startsWith('ko')
-                            ? '조건은 적용됐어요. 최신 상태를 불러오려면 다시 확인해 주세요.'
-                            : 'The conditions were applied. Check again to refresh the latest state.'
-                        : t('page.makeShift.constraints.toast.saveFailed'),
+                    reload: conflict,
+                    text: conflict
+                        ? t('page.makeShift.constraints.toast.changedElsewhere')
+                        : saved
+                          ? i18n.language.startsWith('ko')
+                              ? '조건은 적용됐어요. 최신 상태를 불러오려면 다시 확인해 주세요.'
+                              : 'The conditions were applied. Check again to refresh the latest state.'
+                          : t('page.makeShift.constraints.toast.saveFailed'),
                     error: true,
                 });
             }
@@ -6006,6 +6041,22 @@ function ConstraintsContent({
                             )}
                         >
                             {editorMessage.text}
+                            {editorMessage.reload ? (
+                                <button
+                                    type="button"
+                                    className="ml-3 underline"
+                                    onClick={async () => {
+                                        const latest = await rulesQuery.refetch();
+
+                                        if (latest.data) {
+                                            replaceRules(createRulesFromServer(latest.data.rules), {sync: false});
+                                            setEditorMessage(null);
+                                        }
+                                    }}
+                                >
+                                    {t('page.makeShift.constraints.toast.reloadLatest')}
+                                </button>
+                            ) : null}
                         </p>
                     ) : null}
                     {savedRuleWarnings.length > 0 ? (

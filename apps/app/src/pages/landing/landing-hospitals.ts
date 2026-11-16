@@ -150,4 +150,7 @@ export const landingHospitals = [
     '새통영병원',
     '한림병원',
     '의료법인창녕서울의료재단창녕서울병원',
+    '한빛병원',
 ] as const;
+
+export type TLandingHospital = (typeof landingHospitals)[number];

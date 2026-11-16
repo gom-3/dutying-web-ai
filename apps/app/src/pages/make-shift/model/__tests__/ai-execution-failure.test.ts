@@ -24,16 +24,21 @@ it('shows consent proof from the public response without requiring hidden solver
         },
     });
     const messages = nightRunConflictMessages(response);
+
     expect(messages).toHaveLength(1);
+
     for (const detail of ['A', '14', '3', '1', '2026-10-31', '2026-11-01']) expect(messages[0]).toContain(detail);
+
     response.authoringOutcome!.draftState = 'APPLICABLE';
     expect(nightRunConflictMessages(response)).toEqual([]);
 });
 
 it('explains the paired-night headcount contradiction in Japanese from public evidence', async () => {
     const previous = i18n.language;
+
     try {
         await i18n.changeLanguage('ja');
+
         const response = authoringResponse({
             applicable: false,
             changedCells: [],
@@ -60,6 +65,7 @@ it('explains the paired-night headcount contradiction in Japanese from public ev
             },
         });
         const failure = aiExecutionFailure(response);
+
         expect(failure?.recovery).toBe('revise');
         expect(failure?.message).toContain('2026-12-04の準夜最低4人');
         expect(failure?.message).toContain('2026-12-05）の深夜に入れるのは最大3人');
@@ -590,11 +596,16 @@ describe('known consecutive night evidence in the existing failure flow', () => 
 
     it.each(['ko', 'en', 'ja'])('shows bounds, incoming actual count and dates in %s', (locale) => {
         const original = i18n.language;
+
         i18n.changeLanguage(locale);
+
         try {
             const failure = aiExecutionFailure(rejected());
+
             expect(failure?.message).toContain('간호사 A');
+
             for (const detail of ['14', '3', '1', '2026-10-31', '2026-11-01']) expect(failure?.message).toContain(detail);
+
             expect(failure?.message).not.toMatch(/traceback|NIGHT_RUN_BOUNDS_CONFLICT/);
             expect(failure?.recovery).toBe('revise');
             expect(failure?.conditionConflict).toBe(true);
@@ -605,6 +616,7 @@ describe('known consecutive night evidence in the existing failure flow', () => 
 
     it('does not infer an input conflict for a timeout or nonconflicting bounds', () => {
         const response = rejected();
+
         response.engineResult!.status = 'TIME_LIMIT';
         expect(aiExecutionFailure(response)?.conditionConflict).not.toBe(true);
         response.engineResult!.status = 'INFEASIBLE';
@@ -614,6 +626,7 @@ describe('known consecutive night evidence in the existing failure flow', () => 
 
     it('renders a known Spring minimum violation from typed data and keeps it distinct from proven infeasibility', () => {
         const response = rejected();
+
         response.engineResult = {status: 'ACCEPTED'};
         response.failure!.reasonCode = 'SPRING_HARD_VALIDATION';
         response.validation!.violations = [
@@ -630,7 +643,9 @@ describe('known consecutive night evidence in the existing failure flow', () => 
                 fixable: true,
             },
         ];
+
         const failure = aiExecutionFailure(response);
+
         expect(failure?.message).toContain('2026-10-31');
         expect(failure?.message).toContain('2026-11-01');
         expect(failure?.message).toContain('14');
@@ -661,5 +676,22 @@ describe('withheld background results', () => {
 
         expect(aiExecutionFailure(response)?.message).toBe(i18n.t('aiAdjust.executionFailure.validation'));
         expect(aiExecutionFailure(response)?.recovery).toBe('retry');
+    });
+});
+
+describe('specific background failure feedback', () => {
+    it('retains public wait times when an operation is reloaded', async () => {
+        const {conversationOperationFailure} = await import('../ai-execution-failure');
+        const operation = {
+            executionStatus: 'FAILED',
+            failureReason: 'SCHEDULE_AUTOFILL_RATE_LIMIT_EXCEEDED',
+            failureMessage: '이번 시간 AI 자동채우기 사용량(3회)을 모두 사용했어요. 약 12분 후 다시 시도해 주세요.',
+            result: null,
+        };
+        const failure = conversationOperationFailure(operation as never);
+
+        expect(failure?.message).toContain(i18n.t('aiAdjust.failure.waitMinutes', {count: 12}));
+        expect(failure?.message).toContain(i18n.t('aiAdjust.failure.hourlyLimit', {limit: 3}));
+        expect(failure?.blocked).toBe(true);
     });
 });

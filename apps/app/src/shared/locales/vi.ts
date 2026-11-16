@@ -207,6 +207,8 @@ export const vi = {
                 help: constraintRuleHelpVi,
                 toast: {
                     ...generatedVi.page.makeShift.constraints.toast,
+                    changedElsewhere: 'Điều kiện đã được thay đổi trong yêu cầu khác. Hãy tải điều kiện mới nhất trước khi sửa lại.',
+                    reloadLatest: 'Tải điều kiện mới nhất',
                     duplicateSkipped: 'Điều kiện này đã tồn tại.',
                     staffCountConflict:
                         'Các quy tắc số người cho cùng nhóm, ngày và ca làm mâu thuẫn nhau. Hãy gộp các quy tắc chồng chéo thành một.',

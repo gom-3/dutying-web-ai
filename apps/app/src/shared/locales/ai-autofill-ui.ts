@@ -132,7 +132,7 @@ export const aiAutofillUiKo = {
         adjustmentTaskLabel: '근무표 수정 작업',
         adjustmentProgressConversation: '근무표 수정 진행 대화',
         adjustmentResultReady: '근무표 수정 결과가 준비됐어요',
-        adjustmentFailed: '근무표를 수정하지 못했어요. 결과를 확인해 주세요.',
+        adjustmentFailed: '아직 요청을 반영하지 않았어요. 아래 이유와 다음 방법을 확인해 주세요.',
         queued: '대기 중',
         computing: '계산 중',
         validating: '결과 확인 중',

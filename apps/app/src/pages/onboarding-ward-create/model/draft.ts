@@ -1,4 +1,4 @@
-import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
+import {type TCreateWardDTO, type TOnboardingSignals, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
 import {getDefaultDivisionName} from '@/shared/lib/division-label';
 import {getNextNewNurseNumber} from '@/shared/lib/new-nurse-name';
@@ -141,6 +141,7 @@ type TOnboardingCreatedWardLike = {
 };
 
 export type TOnboardingWardDraft = {
+    onboardingSignals?: TOnboardingSignals;
     currentStep: TOnboardingStep;
     uploadedFileName: string | null;
     wardName: string;
@@ -739,6 +740,15 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
     });
 
     return {
+        onboardingSignals: {
+            version: 1,
+            coverageComplete: true,
+            excelImported: false,
+            photoImported: false,
+            shiftTypesEdited: false,
+            possibleShiftsEdited: false,
+            constraintsEdited: false,
+        },
         currentStep: 1,
         uploadedFileName: null,
         wardName: '',

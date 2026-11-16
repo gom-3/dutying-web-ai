@@ -95,7 +95,10 @@
             "quota": "檢視您的計劃和剩餘補貼。",
             "rateLimit": "您已達到目前的 AI 使用限制.\n請稍後再次嘗試。",
             "retry": "再次審查請求",
-            "retryCalculation": "重新計算"
+            "retryCalculation": "重新計算",
+            "hourlyLimit": "病區已用完本小時的{{limit}}次請求額度。",
+            "dailyLimit": "病區已用完今天的{{limit}}次請求額度。請明天再試。",
+            "usageUnavailable": "無法確認病區使用量，因此未開始計算。請稍後重試。"
         },
         "issue": {
             "nurse": "您想更改哪些轉換?\n使用班表中顯示的名稱。",

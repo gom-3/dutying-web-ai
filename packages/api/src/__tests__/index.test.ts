@@ -51,6 +51,27 @@ describe('@dutying/api public entry', () => {
         });
     });
 
+    it('preserves onboarding signals through both real HTTP serializers', async () => {
+        const client = createClient();
+        const post = client.post as ReturnType<typeof vi.fn>;
+        post.mockResolvedValue({data: {wardId: 10, wardShiftTypes: [], shiftTeams: []}});
+        const api = createWardApi(client);
+        const onboardingSignals = {
+            version: 1 as const,
+            coverageComplete: true,
+            excelImported: true,
+            photoImported: false,
+            shiftTypesEdited: false,
+            possibleShiftsEdited: true,
+            constraintsEdited: false,
+        };
+        const payload = {name: '병동', hospitalName: '병원', wardShiftTypes: [], shiftTeams: [], onboardingSignals};
+        await api.createWard(payload);
+        await api.completeOnboardingWardDraft(10, payload);
+        expect(post.mock.calls[0][1]).toMatchObject({onboardingSignals});
+        expect(post.mock.calls[1][1]).toMatchObject({onboardingSignals});
+    });
+
     it('posts onboarding ward creation payload to /wards once', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;

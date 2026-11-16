@@ -29,7 +29,7 @@ function RegisterPage() {
     const isAccountBootstrapError = accountMeStatus === 'error';
     const isSocialSignup = getIsSocialSignupPath(search) || Boolean(readSocialSignupProfile());
     const accountStatus = accountMe?.status as string | undefined;
-    const shouldCollectContact = accountStatus === 'WORKSPACE_SETUP_PENDING' && !accountMe?.phoneNum;
+    const shouldCollectContact = !isFromQuitWard && accountStatus === 'WORKSPACE_SETUP_PENDING' && !accountMe?.phoneNum;
     const [stepOverride, setStepOverride] = useState<'nurse-info' | null>(null);
 
     useEffect(() => {

@@ -95,7 +95,10 @@
             "quota": "Bạn đã sử dụng tất cả các nỗ lực AI của mình.\nKiểm tra kế hoạch của bạn và phần còn lại của khoản trợ cấp.",
             "rateLimit": "Bạn đã đạt đến giới hạn sử dụng AI hiện tại.\nXin vui lòng thử lại sau này.",
             "retry": "Yêu cầu xem lại",
-            "retryCalculation": "tính lại"
+            "retryCalculation": "tính lại",
+            "hourlyLimit": "Khoa đã dùng hết {{limit}} lượt yêu cầu trong giờ này.",
+            "dailyLimit": "Khoa đã dùng hết {{limit}} lượt yêu cầu hôm nay. Vui lòng thử lại vào ngày mai.",
+            "usageUnavailable": "Không kiểm tra được mức sử dụng của khoa nên chưa bắt đầu tính. Vui lòng thử lại sau."
         },
         "issue": {
             "nurse": "Những thay đổi nào bạn muốn thay đổi?\nSử dụng một tên được hiển thị trong lịch trực.",

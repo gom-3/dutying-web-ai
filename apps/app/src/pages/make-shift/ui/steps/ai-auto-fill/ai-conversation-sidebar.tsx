@@ -52,6 +52,11 @@ import {
     type TResultVersion,
 } from '../../../model/schedule-conversation-api';
 import {lastAppliedScheduleObservation, reportScheduleJourney} from '../../../model/schedule-journey';
+import {
+    declinedSettingCandidates as storedDeclines,
+    rememberDeclinedSettingCandidate,
+    settingConsentReply,
+} from '../../../model/setting-consent-reply';
 import {useAiActiveConditions} from '../../../model/use-ai-active-conditions';
 import {useConversationPolling} from '../../../model/use-conversation-polling';
 import {useScheduleChatComposer} from '../../../model/use-schedule-chat-composer';
@@ -480,7 +485,9 @@ export default function AiConversationSidebar({
         );
     const recoverDraft = async (base: TConversationDetail) => {
         const id = base.conversation.conversationId;
+
         conflictedDraft.current = {base};
+
         const latest = await api.detail(id);
 
         if (!mounted.current || detailRef.current?.conversation.conversationId !== id) throw new AiConversationInputError('loading');
@@ -488,6 +495,7 @@ export default function AiConversationSidebar({
         if (latest.conversation.revision < detailRef.current.conversation.revision) throw new AiConversationInputError('draftConflict');
 
         conflictedDraft.current = {base, latest: latest.draft};
+
         const local = signature(dto());
         const saved = signature(latest.draft);
         const original = signature(base.draft);
@@ -498,6 +506,7 @@ export default function AiConversationSidebar({
             if (local !== original || !canRestoreVersion(latest.draft)) throw new AiConversationInputError('draftConflict');
 
             const next = mergePreviousShiftContext(snapshotDoc(latest.draft), useShiftEditorStore.getState().doc);
+
             if (signature(dto(next)) !== saved) throw new AiConversationInputError('draftConflict');
 
             commands.restoreSnapshotDoc(next);
@@ -533,7 +542,9 @@ export default function AiConversationSidebar({
                 if (!current) throw new AiConversationInputError('loading');
 
                 const blocked = conflictedDraft.current?.base;
+
                 let latest: TConversationDetail;
+
                 if (blocked?.conversation.conversationId === current.conversation.conversationId) {
                     latest = await recoverDraft(blocked);
                 } else {
@@ -642,6 +653,7 @@ export default function AiConversationSidebar({
         if (!mounted.current) return;
 
         const next = snapshotDoc(version);
+
         if (fullSnapshot) commands.restoreSnapshotDoc(next);
         else commands.applyAdjustedDoc(next);
 
@@ -1280,12 +1292,54 @@ export default function AiConversationSidebar({
             false,
             'recovering',
         );
+    const declinedSettingCandidates = useRef(new Set<string>());
+    const declinedSettingScope = useRef(chatKey);
+
+    if (declinedSettingScope.current !== chatKey) {
+        declinedSettingCandidates.current.clear();
+        declinedSettingScope.current = chatKey;
+    }
+
+    for (const digest of storedDeclines(chatKey)) declinedSettingCandidates.current.add(digest);
+
+    const keepSettingCandidate = (operation: TConversationOperation) => {
+        const candidate = operation.result?.candidate;
+
+        if (!candidate) return;
+
+        declinedSettingCandidates.current.add(candidate.candidateDigest);
+        rememberDeclinedSettingCandidate(chatKey, candidate.candidateDigest, candidate.expiresAt);
+        setNotice(t('aiConversationSidebar.authoring.keep'));
+    };
     const interpret = async (request = text, reference = previousId, {removeConditionId}: {removeConditionId?: string} = {}) => {
         const message = request.trim();
 
         if (!message) return;
 
         const currentDetail = detailRef.current;
+        const consent =
+            !editingRequest && !removeConditionId && !busy && !running && !preparing
+                ? settingConsentReply(currentDetail, message, localDirty, declinedSettingCandidates.current)
+                : null;
+
+        if (consent) {
+            setText('');
+
+            if (consent.decision === 'DECLINE') {
+                keepSettingCandidate(consent.operation);
+            } else {
+                await execute(
+                    consent.operation.operationType,
+                    undefined,
+                    consent.operation.interpretationId ?? undefined,
+                    undefined,
+                    consent.operation,
+                );
+            }
+
+            return;
+        }
+
         const hasPendingInterpretation =
             currentDetail?.conversation.latestInterpretationId &&
             !currentDetail.operations.some((operation) => operation.interpretationId === currentDetail.conversation.latestInterpretationId);
@@ -1432,7 +1486,9 @@ export default function AiConversationSidebar({
                         }
 
                         await recoverDraft(current);
+
                         const ready = await sync();
+
                         if (
                             !mounted.current ||
                             ready.conversation.conversationId !== id ||
@@ -1458,6 +1514,7 @@ export default function AiConversationSidebar({
 
                     if (interpreted.observation) {
                         turnObservations.current.set(interpreted.eventId, interpreted.observation);
+
                         if (turnObservations.current.size > 50)
                             turnObservations.current.delete(turnObservations.current.keys().next().value!);
                     }
@@ -2330,21 +2387,25 @@ export default function AiConversationSidebar({
                         intentFirstEnabled &&
                         !localDirty &&
                         !preparing &&
+                        !declinedSettingCandidates.current.has(operation.result.candidate.candidateDigest) &&
                         operation.baseRevision === detail.conversation.revision &&
                         operation.operationId === latestOperation?.operationId
                     }
                     disabled={busy || running || preparing}
+                    onKeep={() => keepSettingCandidate(operation)}
                     loadVersion={api.version}
                     nurseName={(id) => doc.workerMeta[String(id)]?.name ?? String(id)}
-                    onApply={() =>
+                    onApply={() => {
+                        if (storedDeclines(chatKey).has(operation.result!.candidate!.candidateDigest)) return;
+
                         void execute(
                             operation.operationType as 'GENERATE' | 'ADJUST',
                             operation.fillPolicy === 'REBUILD_UNLOCKED' ? 'REBUILD_UNLOCKED' : 'EMPTY_ONLY',
                             operation.interpretationId ?? undefined,
                             undefined,
                             operation,
-                        )
-                    }
+                        );
+                    }}
                 />
             );
 
@@ -3294,6 +3355,7 @@ export default function AiConversationSidebar({
                                             disabled={busy}
                                             onClick={(event) => {
                                                 const latest = conflictedDraft.current?.latest;
+
                                                 if (latest)
                                                     setPreview({version: latest, returnFocusTo: event.currentTarget, readOnly: true});
                                             }}

@@ -1,5 +1,34 @@
 # @dutying/app
 
+## 1.3.50
+
+### Patch Changes
+
+- 간호사 가능근무·휴무 안내와 근무조건 경고를 개선하고 요금제 사용량 화면을 정리했습니다. 기존 신청 API와 저장된 근무 가능 값은 유지합니다.
+    - @dutying/api@1.3.50
+    - @dutying/domain@1.3.50
+    - @dutying/utils@1.3.50
+
+## 1.3.49
+
+### Patch Changes
+
+- 병원별 로고를 기존 병원 아이콘으로 복구하고, 온보딩 뒤로 이동 시 근무표·근무유형 입력 유지와 검토 안내, 병동 탈퇴 후 프로필 흐름 및 이름 구분자 처리, QA 아이디 로그인 개선을 운영에 함께 반영합니다.
+    - @dutying/api@1.3.49
+    - @dutying/domain@1.3.49
+    - @dutying/utils@1.3.49
+
+## 1.3.48
+
+### Patch Changes
+
+- 근무표 조절 요청이 아직 반영되지 않았을 때 이유와 다음 행동을 확인할 수 있도록 한국어 안내를 개선합니다.
+- Simplify ward subscription and payment management, and combine AI filling and revisions into a shared monthly allowance of 30 uses for Plus.
+- Updated dependencies
+    - @dutying/api@1.3.48
+    - @dutying/domain@1.3.48
+    - @dutying/utils@1.3.48
+
 ## 1.3.47
 
 ### Patch Changes

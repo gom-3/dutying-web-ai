@@ -6,6 +6,19 @@ This repository uses one shared version across all workspaces, so release notes 
 
 Entries are generated from pending `.changeset/*.md` files when `pnpm run changeset:version` or `pnpm run release:version` is executed.
 
+## 1.3.50 - 2026-11-15
+
+- `@dutying/app` (patch): 간호사 가능근무·휴무 안내와 근무조건 경고를 개선하고 요금제 사용량 화면을 정리했습니다. 기존 신청 API와 저장된 근무 가능 값은 유지합니다.
+
+## 1.3.49 - 2026-11-14
+
+- `@dutying/app` (patch): 병원별 로고를 기존 병원 아이콘으로 복구하고, 온보딩 뒤로 이동 시 근무표·근무유형 입력 유지와 검토 안내, 병동 탈퇴 후 프로필 흐름 및 이름 구분자 처리, QA 아이디 로그인 개선을 운영에 함께 반영합니다.
+
+## 1.3.48 - 2026-11-14
+
+- `@dutying/app` (patch): 근무표 조절 요청이 아직 반영되지 않았을 때 이유와 다음 행동을 확인할 수 있도록 한국어 안내를 개선합니다.
+- `@dutying/api` (patch), `@dutying/app` (patch): Simplify ward subscription and payment management, and combine AI filling and revisions into a shared monthly allowance of 30 uses for Plus.
+
 ## 1.3.47 - 2026-11-11
 
 - `@dutying/app` (patch): 랜딩 페이지의 근무표 미리보기에서 모든 언어의 날짜와 메모가 잘리지 않도록 수정했습니다.

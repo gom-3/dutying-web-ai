@@ -5325,6 +5325,34 @@ describe('intent-first sidebar integration', () => {
         expect(mocks.interpret).not.toHaveBeenCalled();
     });
 
+    it('does not restore apply controls for a declined setting candidate after remounting', async () => {
+        enable();
+        const result = intentResponse({
+            changedCells: [],
+            applicable: false,
+            validationTarget: 'CANDIDATE',
+            candidate: intentCandidate(),
+            authoringOutcome: intentOutcome({
+                draftState: 'CONSENT_REQUIRED',
+                requestState: 'SATISFIED',
+                candidateDigest: 'digest:1',
+                requestPriority: {version: 'request-first-v2', settingChangesRequired: true},
+            }),
+        });
+        current.operations = [{...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result}];
+        mocks.version.mockResolvedValue(source);
+        const first = renderSidebar();
+        const keep = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')});
+        await userEvent.click(keep);
+        first.unmount();
+        renderSidebar();
+        await waitFor(() => expect(mocks.detail).toHaveBeenCalledTimes(2));
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.settingConsentApply')})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')})).not.toBeInTheDocument();
+        expect(mocks.execute).not.toHaveBeenCalled();
+        expect(mocks.applyAdjustedDoc).not.toHaveBeenCalled();
+    });
+
     it('keeps historical candidates read-only without stale or confirmation controls', async () => {
         enable();
         current.operations = [

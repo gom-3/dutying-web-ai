@@ -869,6 +869,44 @@ export type TAuthoringViolationDelta = {
 };
 export type TAuthoringOutcome = {
     contractVersion: 'intent-first-v1';
+    requestPriority?: {
+        version: 'request-first-v2';
+        settingChangesRequired?: boolean;
+        classification?: string;
+        settingsConsent?: string;
+        settingsPersisted?: false;
+        userSummary?: string;
+        userLanguage?: string;
+        userQualityWarnings?: string[];
+        settingChanges?: {
+            ruleId?: number;
+            templateCode: string;
+            userMessage?: string;
+            currentValue?: unknown;
+            proposedValue?: unknown;
+            year: number;
+            month: number;
+            lifetime: string;
+            subjectScope?: number[];
+            dates?: string[];
+        }[];
+        availabilityChanges?: {
+            kind: 'ADD_ALLOWED_SHIFT';
+            userMessage?: string;
+            shiftDisplayName?: string;
+            shiftNurseId: string;
+            nurseId: number;
+            code: string;
+            wardShiftTypeId: number;
+            currentValue: number[];
+            proposedValue: number[];
+            year: number;
+            month: number;
+            lifetime: string;
+            dates: string[];
+        }[];
+        [key: string]: unknown;
+    };
     solveState: 'NOT_RUN' | 'FEASIBLE' | 'INFEASIBLE_PROVEN' | 'UNKNOWN' | 'BUSY' | 'INVALID_INPUT' | 'ERROR';
     optimalityProven: boolean;
     requestState:
@@ -1301,7 +1339,18 @@ export type TCreateWardShiftTeamDTO = {
     constraintRules?: TCreateWardConstraintRuleDTO[];
 };
 
+export type TOnboardingSignals = {
+    version: 1;
+    coverageComplete: boolean;
+    excelImported: boolean;
+    photoImported: boolean;
+    shiftTypesEdited: boolean;
+    possibleShiftsEdited: boolean;
+    constraintsEdited: boolean;
+};
+
 export type TCreateWardDTO = {
+    onboardingSignals?: TOnboardingSignals;
     name: string;
     /**
      * 병원 카탈로그에서 고른 병원. 보내면 서버가 카탈로그 이름을 정본으로 쓴다.

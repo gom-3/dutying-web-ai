@@ -152,6 +152,7 @@ function LoginPage() {
     const nextPath = sanitizeInternalPath(params.get('next'), ROUTE.HOME);
     const isDemoSignupFlow = getIsDemoSignupLoginReason(search);
     const isSignupPage = pathname === ROUTE.SIGN_UP;
+    const isQaLogin = !isSignupPage && params.get('qa') === '1';
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [signupName, setSignupName] = useState('');
@@ -620,12 +621,13 @@ function LoginPage() {
 
         try {
             const response = await AuthAPI.passwordLogin({
-                email: loginEmail.trim(),
+                email: isQaLogin ? `${loginEmail.trim().toLowerCase()}@empty-qa.dutying.test` : loginEmail.trim(),
                 password: loginPassword,
             });
 
-            trackProductOutcome('login', 'password');
-            handleLogin(response.accessToken, nextPath);
+            if (!isQaLogin) trackProductOutcome('login', 'password');
+
+            handleLogin(response.accessToken, isQaLogin ? ROUTE.HOME : nextPath);
         } catch (error) {
             setLoginError(error instanceof Error ? error.message : t('page.login.feedback.loginFailed'));
         } finally {
@@ -763,24 +765,32 @@ function LoginPage() {
                     ) : null}
 
                     <div className="mx-auto mt-7 w-full max-w-[334px] text-center">
-                        <h1 className="font-apple text-[32px] font-semibold text-text-1">{title}</h1>
+                        <h1 className="font-apple text-[32px] font-semibold text-text-1">{isQaLogin ? 'QA 로그인' : title}</h1>
                     </div>
 
                     {!isSignupPage && !isPasswordResetMode ? (
                         <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
+                            {isQaLogin ? (
+                                <p className="text-sm leading-6 text-sub-2">
+                                    관리자 화면에서 만든 QA 아이디로 로그인하세요. 처음 로그인하면 온보딩부터 시작하고, 다시 로그인하면 진행
+                                    상태가 유지됩니다.
+                                </p>
+                            ) : null}
                             <div>
                                 <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    {t('page.login.email')}
+                                    {isQaLogin ? 'QA 아이디' : t('page.login.email')}
                                 </label>
                                 <div className="relative">
                                     <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
                                     <input
                                         id="login-email"
                                         value={loginEmail}
-                                        type="email"
+                                        type={isQaLogin ? 'text' : 'email'}
                                         className={`${FIELD_CLASS} pl-9`}
-                                        placeholder={t('page.login.emailPlaceholder')}
-                                        autoComplete="email"
+                                        placeholder={isQaLogin ? 'qa1' : t('page.login.emailPlaceholder')}
+                                        autoComplete={isQaLogin ? 'username' : 'email'}
+                                        pattern={isQaLogin ? '[a-zA-Z0-9]{2,20}' : undefined}
+                                        maxLength={isQaLogin ? 20 : undefined}
                                         onChange={(event) => setLoginEmail(event.target.value)}
                                     />
                                 </div>
