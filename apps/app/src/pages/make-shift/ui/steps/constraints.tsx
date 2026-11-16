@@ -22,6 +22,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
 import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
 import {TooltipProvider} from '@/shared/ui/primitives/tooltip';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
@@ -2597,8 +2598,8 @@ function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption
             OPEN: '개방형',
         },
         assignmentAggregation: {
-            PER_NURSE: '간호사별',
-            GROUP_TOTAL: '그룹 합계',
+            PER_NURSE: t('shared.division.perNurse'),
+            GROUP_TOTAL: t('shared.division.total'),
         },
         twoShiftScope: {
             ALL_TWO: '모든 2교대',
@@ -2642,6 +2643,12 @@ function getLocalizedTypedOptionLabel(t: TTypedT, option: TShiftConstraintOption
 
 function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, optionMapKey: string, shiftType?: TShiftTypeLike) {
     if (isAllCandidateOption(option)) return getLocalizedAllOptionLabel(t, optionMapKey);
+
+    if (option.type === 'DIVISION' && option.divisionNum != null) {
+        const label = option.label?.trim() ?? '';
+
+        return getDivisionDisplayLabel(option.divisionNum, label.length > 0 ? label : option.name, t);
+    }
 
     if (optionMapKey === 'date' && option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});
 
@@ -5143,8 +5150,8 @@ function ConstraintsContent({
             {value: 'TWO_FIRST', label: '2교대 우선', raw: {type: 'TWO_FIRST'}},
         ];
         const assignmentAggregationOptions = [
-            {value: 'PER_NURSE', label: '간호사별', raw: {type: 'PER_NURSE'}},
-            {value: 'GROUP_TOTAL', label: '그룹 합계', raw: {type: 'GROUP_TOTAL'}},
+            {value: 'PER_NURSE', label: t('shared.division.perNurse'), raw: {type: 'PER_NURSE'}},
+            {value: 'GROUP_TOTAL', label: t('shared.division.total'), raw: {type: 'GROUP_TOTAL'}},
         ];
         const twoShiftScopeOptions = [
             {value: 'ALL_TWO', label: '모든 2교대', raw: {type: 'ALL_TWO'}},
@@ -5233,8 +5240,7 @@ function ConstraintsContent({
             .filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse))
             .map(toNurseOption);
         const divisionOptions: TSelectOption[] = (currentShiftTeam?.divisions ?? []).map((division) => {
-            const trimmedName = division.name?.trim();
-            const label = trimmedName && trimmedName.length > 0 ? trimmedName : `그룹${division.divisionNum}`;
+            const label = getDivisionDisplayLabel(division.divisionNum, division.name, t);
 
             return {
                 value: `DIVISION:${division.divisionNum}`,

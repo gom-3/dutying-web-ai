@@ -49,6 +49,10 @@ export type TUpdateAdminProfileDTO = {
     defaultProfileImgId?: number;
 };
 
+export type TUpdateAdminProfileV2DTO = TUpdateAdminProfileDTO & {
+    phoneCountry?: string | null;
+};
+
 export type TAdminMonthlyMemoResponse = {
     monthlyMemoId?: number;
     accountId?: number;

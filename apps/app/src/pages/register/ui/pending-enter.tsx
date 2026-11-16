@@ -1,6 +1,7 @@
 import {Clock3, X} from 'lucide-react';
 import useRegister from '@/features/register';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import RegisterHeading from './register-heading';
 
 function PendingEnter() {
     const {t} = useTypedTranslation();
@@ -12,7 +13,7 @@ function PendingEnter() {
     return (
         <div className="flex w-full flex-col">
             <div>
-                <h1 className="text-[32px] leading-tight font-semibold text-sub-1">{t('page.register.pending.title')}</h1>
+                <RegisterHeading>{t('page.register.pending.title')}</RegisterHeading>
                 <p className="mt-2 text-sm text-gray-3">{t('page.register.pending.description')}</p>
             </div>
 

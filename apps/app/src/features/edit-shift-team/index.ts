@@ -10,9 +10,9 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getNextNewNurseName} from '@/shared/lib/new-nurse-name';
 import {isValidRosterNurseName, normalizeRosterNurseNameForRequest} from '@/shared/lib/nurse-name';
-import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
@@ -758,12 +758,12 @@ const useEditShiftTeam = () => {
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '그룹 이름을 저장하지 못했습니다.');
+                showActionErrorFeedback(error, t('shared.division.renameFailed'));
 
                 return false;
             }
         },
-        [invalidateWardShiftAndRequest, wardId],
+        [invalidateWardShiftAndRequest, t, wardId],
     );
     const moveNurseOrder = useCallback(
         async (

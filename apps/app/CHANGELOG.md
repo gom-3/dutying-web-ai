@@ -1,5 +1,15 @@
 # @dutying/app
 
+## 1.3.51
+
+### Patch Changes
+
+- Support international contact numbers with a country selector, preserve multilingual names in web setup and profiles, localize roster groups, and simplify AI condition priority editing.
+- Updated dependencies
+    - @dutying/api@1.3.51
+    - @dutying/domain@1.3.51
+    - @dutying/utils@1.3.51
+
 ## 1.3.50
 
 ### Patch Changes

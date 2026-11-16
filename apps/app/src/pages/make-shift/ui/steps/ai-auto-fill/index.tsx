@@ -2004,7 +2004,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                 WardAPI.interpretScheduleAdjust(wardId, currentShiftTeamId, {
                     journeyId: scheduleJourneyId(wardId, currentShiftTeamId, year, month),
                     text,
-                    language: language === 'zh-TW' ? language : language?.split('-')[0] ?? 'ko',
+                    language: language === 'zh-TW' ? language : (language?.split('-')[0] ?? 'ko'),
                     year,
                     month,
                 }),
@@ -3389,6 +3389,7 @@ export function AiAutofill({onOpenConstraints}: {onOpenConstraints?: () => void}
                     goalNurses={currentTeamNurses.map((nurse) => ({
                         nurseId: nurse.nurseId,
                         name: nurse.name,
+                        divisionNum: nurse.divisionNum,
                         divisionName: Object.values(editorDoc.workerMeta).find((meta) => meta.nurseId === nurse.nurseId)?.divisionName,
                     }))}
                     requests={monthRequests}

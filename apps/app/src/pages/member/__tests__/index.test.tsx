@@ -171,6 +171,45 @@ describe('MemberPage', () => {
         });
     });
 
+    it('localizes stored default groups and group actions in Japanese while preserving custom names', async () => {
+        const {default: i18n} = await import('@/i18n');
+
+        await i18n.changeLanguage('ja');
+        mockDirtySelectedNurseState();
+
+        const {state, actions} = mockUseEditShiftTeam();
+        const team = state.shiftTeams[0];
+
+        state.selectedNurse = null;
+        team.divisions = [
+            {divisionNum: 1, name: '그룹1'},
+            {divisionNum: 2, name: '나이트킵'},
+        ];
+        team.nurses.push({...createMemberTestNurse(), nurseId: 102, name: 'Nurse Two', divisionNum: 2, priority: 200});
+        team.nurses.push({...createMemberTestNurse(), nurseId: 103, name: 'Nurse Three', divisionNum: 1, priority: 150});
+        actions.editDivision = vi.fn().mockResolvedValue(undefined);
+        actions.updateShiftTeamDivisionName = vi.fn();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByTitle('グループ1')).toBeInTheDocument();
+        expect(screen.getByTitle('나이트킵')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '나이트킵を削除'})).toHaveTextContent('グループを削除');
+        expect(screen.getAllByRole('button', {name: 'グループを追加'}).length).toBeGreaterThan(0);
+
+        await userEvent.click(screen.getByTitle('グループ1'));
+
+        const input = screen.getByPlaceholderText('グループ1');
+
+        expect(input).toHaveValue('');
+        await userEvent.tab();
+        expect(actions.updateShiftTeamDivisionName).not.toHaveBeenCalled();
+    });
+
     it.each(['emily sheparded', 'Alexandria Elizabeth Montgomery'])('saves the full inline nurse name %s', async (name) => {
         mockDirtySelectedNurseState();
 

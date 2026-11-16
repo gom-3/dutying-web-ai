@@ -660,7 +660,7 @@ const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
     names.map((name, index) => ({
         id: createLocalId(`team-${index + 1}`),
         name,
-        divisions: [{divisionNum: 1, name: '그룹1'}],
+        divisions: [{divisionNum: 1, name: getDivisionFallbackLabel(1)}],
     }));
 const remapPossibleShiftTypeIds = (
     nurses: TOnboardingNurseDraft[],
@@ -1468,7 +1468,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             const divisions =
                 team.divisions && team.divisions.length > 0
                     ? team.divisions
-                    : [{divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM, name: '그룹1'}];
+                    : [{divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM, name: getDivisionFallbackLabel(DEFAULT_ONBOARDING_DIVISION_NUM)}];
 
             return {
                 name: team.name,

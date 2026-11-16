@@ -915,3 +915,40 @@ describe('@dutying/api public entry', () => {
         });
     });
 });
+
+describe('versioned web name writes', () => {
+    it('uses V2 for nurse, ward and onboarding writes only when requested', async () => {
+        const client = createClient();
+        const post = client.post as ReturnType<typeof vi.fn>;
+        const patch = client.patch as ReturnType<typeof vi.fn>;
+        post.mockResolvedValue({data: {wardId: 10, nurseId: 3, shiftTeams: []}});
+        patch.mockResolvedValue({data: {nurseId: 3}});
+        const wards = createWardApi(client, {versionedNames: true});
+        const nurses = createNurseApi(client, {versionedNames: true});
+        const input = {name: 'Global ward', hospitalName: 'Global hospital', wardShiftTypes: [], shiftTeams: []};
+
+        await nurses.updateNurse(3, {name: 'J. Smith'});
+        await wards.createWard(input);
+        await wards.completeOnboardingWardDraft(10, input);
+        await wards.addNurseIntoShiftTeam(10, 2, {name: 'สมหญิง ใจดี'});
+
+        expect(patch).toHaveBeenCalledWith('/nurses/3/v2', expect.objectContaining({name: 'J. Smith'}));
+        expect(post).toHaveBeenCalledWith('/wards/v2', expect.objectContaining({name: 'Global ward'}));
+        expect(post).toHaveBeenCalledWith('/wards/10/onboarding/complete/v2', expect.objectContaining({name: 'Global ward'}));
+        expect(post).toHaveBeenCalledWith('/wards/10/shift-teams/2/nurses/v2', expect.objectContaining({name: 'สมหญิง ใจดี'}));
+
+        await createNurseApi(client).updateNurse(3, {name: 'Existing nurse'});
+        await createWardApi(client).completeOnboardingWardDraft(10, input);
+        expect(patch).toHaveBeenLastCalledWith('/nurses/3', expect.objectContaining({name: 'Existing nurse'}));
+        expect(post).toHaveBeenLastCalledWith('/wards/10/onboarding/complete', expect.objectContaining({name: 'Global ward'}));
+    });
+
+    it('keeps an explicitly scoped organization path when opting into V2', async () => {
+        const client = createClient();
+        const post = client.post as ReturnType<typeof vi.fn>;
+        post.mockResolvedValue({data: {wardId: 10, shiftTeams: []}});
+        const scoped = createWardApi(client, {basePath: '/admin/commercial/organizations/org/wards', versionedNames: true});
+        await scoped.completeOnboardingWardDraft(10, {name: 'Ward', hospitalName: 'Hospital', wardShiftTypes: [], shiftTeams: []});
+        expect(post).toHaveBeenCalledWith('/admin/commercial/organizations/org/wards/10/onboarding/complete/v2', expect.any(Object));
+    });
+});

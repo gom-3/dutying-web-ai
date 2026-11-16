@@ -553,6 +553,7 @@ describe('OnboardingWardCreatePage', () => {
     it('reopens the saved previous month schedule after returning from shift types and after reload', async () => {
         const user = userEvent.setup();
         const view = render(<OnboardingWardCreatePage />);
+
         await prepareValidFinalStep(user);
         await user.click(screen.getByRole('button', {name: '이전 달'}));
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
@@ -562,6 +563,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '이전'}));
 
         const month = getRelativeScheduleMonth(-1);
+
         expect(screen.getByText(`${month.year}년 ${month.month}월`)).toBeInTheDocument();
         expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('김하늘');
         expect(screen.getByLabelText('1행 1일 근무')).toHaveValue('D');
@@ -715,6 +717,18 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByLabelText('1행 간호사 이름')).toHaveAttribute('maxlength', '50');
         expect(screen.getByDisplayValue('ABCDE')).toBeInTheDocument();
         expect(screen.queryByDisplayValue('ABCDEFG')).not.toBeInTheDocument();
+    });
+
+    it('does not split a supplementary kanji at the pasted name length limit', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {getData: () => `${'A'.repeat(49)}𠮷\tD`},
+        });
+
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('A'.repeat(49));
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
     });
 
     it('preserves full English names when typing, filling down, and undoing', async () => {
@@ -1482,6 +1496,145 @@ describe('OnboardingWardCreatePage', () => {
             {timeout: 2_000},
         );
     }, 10_000);
+
+    const internationalNameInputs = [
+        '木ノ内',
+        'サハコタ',
+        '野崎',
+        '関根昌代',
+        '佐藤蘭',
+        '増田',
+        'たなか',
+        'ヤマダ',
+        '　ＡＢ　１２　',
+        'ﾔﾏﾀﾞ･ﾀﾛｳ',
+        '髙﨑',
+        '𠮷田',
+        '山田\u{E0100}',
+        'カ\u3099ナ',
+        'セ\u309a',
+        '山田゛',
+        'ㇷ\u309a',
+        "Jean-Luc O'Neill",
+        'D’Arcy',
+        'OʼConnor',
+        'J. Smith',
+        'Jean‑Luc',
+        'Ａｎｎｅ－Ｍａｒｉｅ',
+        '阿依古丽·买买提',
+        'Nguyễn Thị Hương',
+        'José García',
+        'สมหญิง ใจดี',
+        'محمد أحمد',
+        'علی‌رضا',
+        'श्री‍राम',
+        'דָּוִד לוי',
+        'Αλέξανδρος',
+        'Мария Иванова',
+        'ნინო',
+        'ሐና',
+        'অনুষ্কা',
+        'அனுஷ்கா',
+        'Անի',
+        'សុភា',
+        'အောင်',
+        'अनुष्का शर्मा',
+    ];
+    const internationalNameExpectations = [
+        '木ノ内',
+        'サハコタ',
+        '野崎',
+        '関根昌代',
+        '佐藤蘭',
+        '増田',
+        'たなか',
+        'ヤマダ',
+        'ＡＢ １２',
+        'ﾔﾏﾀﾞ・ﾀﾛｳ',
+        '髙﨑',
+        '𠮷田',
+        '山田\u{E0100}',
+        'ガナ',
+        'セ\u309a',
+        '山田゛',
+        'ㇷ\u309a',
+        "Jean-Luc O'Neill",
+        'D’Arcy',
+        'OʼConnor',
+        'J. Smith',
+        'Jean‑Luc',
+        'Ａｎｎｅ－Ｍａｒｉｅ',
+        '阿依古丽·买买提',
+        'Nguyễn Thị Hương',
+        'José García',
+        'สมหญิง ใจดี',
+        'محمد أحمد',
+        'علی‌رضا',
+        'श्री‍राम',
+        'דָּוִד לוי',
+        'Αλέξανδρος',
+        'Мария Иванова',
+        'ნინო',
+        'ሐና',
+        'অনুষ্কা',
+        'அனுஷ்கா',
+        'Անի',
+        'សុភា',
+        'အောင်',
+        'अनुष्का शर्मा',
+    ];
+    // Each edit rerenders the roster. Keep all approved names while bounding one
+    // integration case so a slower CI worker does not perform 40x40 row renders.
+    const internationalNameBatches = Array.from({length: Math.ceil(internationalNameInputs.length / 8)}, (_, index) => ({
+        start: index * 8,
+        names: internationalNameInputs.slice(index * 8, index * 8 + 8),
+        expected: internationalNameExpectations.slice(index * 8, index * 8 + 8),
+    }));
+
+    it.each(internationalNameBatches)(
+        'edits international name batch $start and submits both name lists from the final step',
+        async ({names, expected}) => {
+            const user = userEvent.setup();
+            const initialDraft = createInitialDraft();
+            const team = initialDraft.teams[0]!;
+
+            latestSavedDraftPayload = {
+                flowVersion: 2,
+                draftWardId: 10,
+                selectedTeamId: team.id,
+                sortMode: 'manual',
+                draft: {
+                    ...goToStep(initialDraft, 5),
+                    hospitalName: TEST_HOSPITAL_NAME,
+                    wardName: TEST_WARD_NAME,
+                    teams: [team],
+                    nurses: names.map((_, index) => ({...initialDraft.nurses[0]!, id: `unicode-${index}`, teamId: team.id})),
+                },
+            };
+
+            render(<OnboardingWardCreatePage />);
+
+            const inputs = await screen.findAllByPlaceholderText('이름');
+
+            expect(inputs).toHaveLength(names.length);
+            inputs.forEach((input, index) => {
+                fireEvent.change(input, {target: {value: names[index]}});
+                expect(input).toHaveValue(names[index]);
+            });
+            expect(screen.getByRole('button', {name: '완료'})).toBeEnabled();
+            await user.click(screen.getByRole('button', {name: '완료'}));
+
+            await waitFor(() => expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(1));
+
+            const payload = mockCompleteOnboardingWardDraft.mock.calls[0]![1];
+
+            expect(payload.shiftTeams[0].nurseNames).toEqual(expected);
+            expect(payload.shiftTeams[0].nurses.map((nurse: {name: string}) => nurse.name)).toEqual(expected);
+            await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.'));
+            expect(toastError).not.toHaveBeenCalled();
+        },
+        10_000,
+    );
 
     it('shows toast only and allows retry when ward creation fails', async () => {
         const user = userEvent.setup();

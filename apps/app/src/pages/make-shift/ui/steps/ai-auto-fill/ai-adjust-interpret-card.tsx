@@ -1,6 +1,7 @@
 import type {TAutofillAdjustStrength, TScheduleAdjustInterpretRes, TScheduleMonthRequestItem} from '@dutying/api/ward';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDivisionCustomName, getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {formatInterpretationDates, summarizeInterpretationItems} from '../../../model/ai-adjust-summary';
 import type {TInterpretCardItem} from '../../../model/schedule-month-requests';
 import {useScheduleJourneyDisplay} from '../../../model/use-schedule-journey-display';
@@ -17,7 +18,7 @@ export type TAdjustCard = {
 
 type TProps = {
     card: TAdjustCard;
-    nurses: {nurseId: number; name: string; divisionName?: string | null}[];
+    nurses: {nurseId: number; name: string; divisionNum?: number; divisionName?: string | null}[];
     showDetails?: boolean;
     heading?: string;
     state?: 'preview' | 'confirmed' | 'history';
@@ -51,10 +52,17 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
         if (!ids.length || ids.some((id) => typeof id !== 'number' || !nurses.some((nurse) => nurse.nurseId === id)))
             return t('aiAutofillUi.interpretCard.confirmTargets');
 
-        const group = nurses.find((nurse) => nurse.nurseId === ids[0])?.divisionName;
+        const firstNurse = nurses.find((nurse) => nurse.nurseId === ids[0]);
+        const group = firstNurse?.divisionName;
         const groupIds = group ? nurses.filter((nurse) => nurse.divisionName === group).map((nurse) => nurse.nurseId) : [];
         const exactGroup = group && groupIds.length === ids.length && groupIds.every((id) => ids.includes(id));
-        const prefix = exactGroup ? t('aiAutofillUi.interpretCard.groupPrefix', {group}) : t('aiAutofillUi.interpretCard.selectedNurses');
+        const isDefaultGroup = firstNurse?.divisionNum != null && !getDivisionCustomName(firstNurse.divisionNum, group);
+        const groupLabel = firstNurse?.divisionNum != null ? getDivisionDisplayLabel(firstNurse.divisionNum, group, t) : (group ?? '');
+        const prefix = exactGroup
+            ? isDefaultGroup
+                ? groupLabel
+                : t('aiAutofillUi.interpretCard.groupPrefix', {group: groupLabel})
+            : t('aiAutofillUi.interpretCard.selectedNurses');
 
         return t('aiAutofillUi.interpretCard.targetGroup', {prefix, count: ids.length, names: ids.map(nurseName).join(', ')});
     };
@@ -132,7 +140,8 @@ export function AiAdjustInterpretCard({card, nurses, showDetails = true, heading
 
         if (Array.isArray(value)) return value.map((entry) => formatValue(entry, field)).join(', ');
 
-        if (['target', 'nurse', 'nurseId', 'nurseIds', 'nurseA', 'nurseB'].includes(field) && typeof value === 'number') return nurseName(value);
+        if (['target', 'nurse', 'nurseId', 'nurseIds', 'nurseA', 'nurseB'].includes(field) && typeof value === 'number')
+            return nurseName(value);
 
         if (value && typeof value === 'object')
             return Object.entries(value)

@@ -27,4 +27,10 @@ describe('contact phone helpers', () => {
         expect(sanitizeContactPhoneInput(' +1 (415) abc 555-0132 ')).toBe('+1 (415) 555-0132 ');
         expect(normalizeContactPhoneForStorage(' +1 (415)  abc 555-0132 ')).toBe('+1 (415) 555-0132');
     });
+
+    it('normalizes Japanese fullwidth phone input before filtering or saving it', () => {
+        expect(sanitizeContactPhoneInput('０９０－１２３４－５６７８')).toBe('090-1234-5678');
+        expect(normalizeContactPhoneForStorage('＋８１　（９０）　１２３４－５６７８')).toBe('+81 (90) 1234-5678');
+        expect(isValidContactPhone(normalizeContactPhoneForStorage('０９０１２３４５６７８'), 'JP')).toBe(true);
+    });
 });

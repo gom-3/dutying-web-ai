@@ -439,15 +439,15 @@ describe('request priority controls', () => {
 
         fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면'}));
         fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면'}));
-        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         expect(props.onChangeModalities).not.toHaveBeenCalled();
-        expect(screen.getByText('바꾼 반영 방식은 이번 계산에만 사용해요.')).toBeVisible();
+        expect(screen.getByText('이번 근무표에만 적용돼요.')).toBeVisible();
         fireEvent.click(screen.getByRole('button', {name: '변경 취소'}));
         expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
-        expect(screen.getAllByRole('radio', {name: '필수'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
+        expect(screen.getAllByRole('radio', {name: '꼭 지키기'}).every((input) => (input as HTMLInputElement).checked)).toBe(true);
         fireEvent.click(within(groups[0]!).getByRole('radio', {name: '가능하면'}));
         fireEvent.click(within(groups[1]!).getByRole('radio', {name: '가능하면'}));
-        fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        fireEvent.click(screen.getByRole('button', {name: '변경 내용 확인'}));
         await waitFor(() => expect(props.onChangeModalities).toHaveBeenCalledExactlyOnceWith({count1: 'SOFT', count2: 'SOFT'}));
         expect(props.onApply).not.toHaveBeenCalled();
     });
@@ -459,13 +459,13 @@ describe('request priority controls', () => {
         const {rerender} = render(<AiSemanticReview {...props} />);
 
         fireEvent.click(screen.getAllByRole('radio', {name: '가능하면'})[0]!);
-        fireEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        fireEvent.click(screen.getByRole('button', {name: '변경 내용 확인'}));
         expect(await screen.findByRole('alert')).toHaveTextContent('변경 내용을 저장하지 못했어요');
         expect(screen.getAllByRole('radio', {name: '가능하면'})[0]).toBeChecked();
-        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
+        expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
         rerender(<AiSemanticReview {...props} plan={{...priorityPlan, planId: 'new', planHash: 'hash2'}} />);
-        expect(screen.queryByRole('button', {name: '변경한 조건 확인하기'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('radio', {name: '필수'})[0]).toBeChecked();
+        expect(screen.queryByRole('button', {name: '변경 내용 확인'})).not.toBeInTheDocument();
+        expect(screen.getAllByRole('radio', {name: '꼭 지키기'})[0]).toBeChecked();
     });
     it.each([{current: false}, {stale: true}, {disabled: true}, {plan: {...priorityPlan, modalityEditableIntentIds: undefined}}])(
         'prevents editing stale, historical, busy or old-server plans: %j',

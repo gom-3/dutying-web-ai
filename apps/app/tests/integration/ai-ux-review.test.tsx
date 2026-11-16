@@ -53,7 +53,7 @@ describe('local UI review', () => {
             const failure = await chat().findByRole('alert');
             expect(failure).toHaveTextContent('AI 채우기를 마치지 못했어요.');
             expect(failure).toHaveTextContent('시간 안에 조건에 맞는 근무표를 찾지 못했어요.');
-            expect(within(failure).getByRole('img', {name: 'AI 채우기를 마치지 못했어요. (1회차)'})).toBeVisible();
+            expect(within(failure).getByRole('img', {name: 'AI 채우기를 마치지 못했어요.'})).toBeVisible();
             expect(failure.textContent).not.toMatch(/TIME_LIMIT|INFEASIBLE|CP-SAT|솔버|엔진|게이트/);
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
             expect(chat().queryByText(/근무표가 완성되었어요!/)).not.toBeInTheDocument();
@@ -64,15 +64,15 @@ describe('local UI review', () => {
             expect(chat().queryByRole('button', {name: '다시 계산하기'})).not.toBeInTheDocument();
             await userEvent.click(chat().getByRole('button', {name: '다시 AI 채우기'}));
             expect((await chat().findByText(/^근무표가 완성되었어요!$/)).parentElement).not.toHaveTextContent('회차');
-            expect(chat().getByRole('alert')).toHaveTextContent('AI 채우기를 마치지 못했어요. (1회차)');
             expect(chat().getByRole('alert')).toHaveTextContent('AI 채우기를 마치지 못했어요.');
+            expect(chat().getByRole('alert')).not.toHaveTextContent('회차');
             expect(chat().queryByRole('button', {name: '근무표 살펴보기'})).not.toBeInTheDocument();
             saveReviewFixture();
             page.unmount();
             expect(restoreReviewFixture()).toBe(true);
             render(<Review />);
             expect((await chat().findByText(/^근무표가 완성되었어요!$/)).parentElement).not.toHaveTextContent('회차');
-            expect(chat().getByRole('alert')).toHaveTextContent('AI 채우기를 마치지 못했어요. (1회차)');
+            expect(chat().getByRole('alert')).toHaveTextContent('AI 채우기를 마치지 못했어요.');
             expect(chat().getByRole('alert')).toHaveTextContent('근무표는 변경되지 않았어요.');
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         },

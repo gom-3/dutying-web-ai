@@ -3,7 +3,7 @@ import {Minus, Plus} from 'lucide-react';
 import {useCallback, useEffect, useState} from 'react';
 import {PersonIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getDivisionDisplayLabel, getDivisionFallbackLabel} from '../../model';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 
 export function OnboardingDivisionHeader({
     divisionNum,
@@ -31,7 +31,7 @@ export function OnboardingDivisionHeader({
     onDelete: () => void;
 }) {
     const {t} = useTypedTranslation();
-    const label = getDivisionDisplayLabel(divisionNum, divisionName);
+    const label = getDivisionDisplayLabel(divisionNum, divisionName, t);
 
     return (
         <div className="mb-1.5 flex h-8 items-center gap-2 px-1">
@@ -40,7 +40,7 @@ export function OnboardingDivisionHeader({
                     autoFocus
                     value={draftName}
                     maxLength={50}
-                    placeholder={getDivisionFallbackLabel(divisionNum)}
+                    placeholder={getDivisionDisplayLabel(divisionNum, undefined, t)}
                     className="h-7 w-[168px] rounded-[7px] border border-main-2 bg-white px-2 font-apple text-[13px] font-semibold text-sub-1 ring-2 ring-main-2/15 outline-none"
                     onChange={(event) => onDraftNameChange(event.target.value)}
                     onFocus={(event) => event.currentTarget.select()}
@@ -76,12 +76,12 @@ export function OnboardingDivisionHeader({
                 <button
                     type="button"
                     className="inline-flex h-7 items-center gap-1 rounded-[7px] px-2 font-apple text-[12px] font-semibold text-gray-4 transition-colors hover:bg-white hover:text-[#D14343] focus-visible:outline-2 focus-visible:outline-main-1"
-                    title={t('page.onboardingWardCreate.division.delete')}
-                    aria-label={t('page.onboardingWardCreate.division.deleteAria', {divisionName: label})}
+                    title={t('shared.division.delete')}
+                    aria-label={t('shared.division.deleteAria', {divisionName: label})}
                     onClick={onDelete}
                 >
                     <Minus className="h-3.5 w-3.5" strokeWidth={2.4} />
-                    {t('page.onboardingWardCreate.division.delete')}
+                    {t('shared.division.delete')}
                 </button>
             ) : null}
         </div>
@@ -115,7 +115,7 @@ export function OnboardingAddDivisionButton({disabled, onClick}: {disabled?: boo
         <button
             type="button"
             disabled={disabled}
-            aria-label={t('page.onboardingWardCreate.division.add')}
+            aria-label={t('shared.division.add')}
             className={cn(
                 'relative flex h-2 w-full items-center justify-start px-1 text-main-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed',
                 disabled ? 'opacity-0' : 'opacity-100',
@@ -140,7 +140,7 @@ export function OnboardingAddDivisionButton({disabled, onClick}: {disabled?: boo
                 )}
             >
                 <Plus className="h-3 w-3" strokeWidth={2.5} />
-                {t('page.onboardingWardCreate.division.add')}
+                {t('shared.division.add')}
             </span>
         </button>
     );

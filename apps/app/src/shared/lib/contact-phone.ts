@@ -1,4 +1,5 @@
 import type {TServiceRegion} from '@dutying/domain';
+import {normalizeInputWidth} from './input-width';
 
 export const CONTACT_PHONE_MAX_LENGTH = 24;
 
@@ -16,7 +17,7 @@ const startsWithInternationalPrefix = (value: string) => value.trim().startsWith
 const getPhoneDigits = (value: string) => value.replace(/\D/g, '');
 
 export const sanitizeContactPhoneInput = (rawValue: string) => {
-    const withoutInvalidChars = rawValue.replace(ALLOWED_PHONE_CHAR_REGEXP, '').replace(/\s+/g, ' ');
+    const withoutInvalidChars = normalizeInputWidth(rawValue).replace(ALLOWED_PHONE_CHAR_REGEXP, '').replace(/\s+/g, ' ');
 
     let hasLeadingPlus = false;
 
