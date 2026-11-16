@@ -1,5 +1,6 @@
 import {Minus, Plus, Settings} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
+import i18n from '@/i18n';
 import {
     calculateBaseRestTarget,
     calculateRestTargetForPolicy,
@@ -9,6 +10,7 @@ import {
     useRestLeavePolicy,
 } from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 
 type TRestLeavePolicySummaryCardProps = {
@@ -21,8 +23,13 @@ type TRestLeavePolicySummaryCardProps = {
 
 type TRestLeavePolicySummaryState = ReturnType<typeof useRestLeavePolicySummary>;
 
-function getTargetLabel(month: number, t: ReturnType<typeof useTypedTranslation>['t']) {
-    return `${month}월 ${t('page.makeShift.workers.restPolicy.targetLabel')}`;
+function getTargetLabel(year: number, month: number, t: ReturnType<typeof useTypedTranslation>['t']) {
+    const monthLabel = new Intl.DateTimeFormat(getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language), {
+        month: 'long',
+        timeZone: 'UTC',
+    }).format(new Date(Date.UTC(year, month - 1, 1)));
+
+    return t('page.makeShift.workers.restPolicy.monthlyTargetLabel', {month: monthLabel});
 }
 
 function formatAdjustmentLabel(adjustmentDays: number, t: ReturnType<typeof useTypedTranslation>['t']) {
@@ -73,7 +80,7 @@ function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeav
     return {
         t,
         enabled: Boolean(wardId && policy.enabled),
-        targetLabel: getTargetLabel(month, t),
+        targetLabel: getTargetLabel(year, month, t),
         adjustedTarget,
         baseTarget: targetWithHolidays,
         baseTargetLabel,
