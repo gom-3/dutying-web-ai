@@ -1905,6 +1905,7 @@ export const ko = {
                     "fixedTarget": "월 {{count}}일",
                     "increaseTarget": "목표 휴무일 늘리기",
                     "targetLabel": "목표 휴무일",
+                    "monthlyTargetLabel": "{{month}} 목표 휴무일",
                     "weeklyTarget": "주 {{days}}일 기준 · 실제 달력 {{count}}일"
                 },
                 "emptyDescription": "근무 투입이 설정된 인원을 먼저 확인해 주세요.",
@@ -5201,6 +5202,7 @@ export const en: TLocale = {
                     "fixedTarget": "Monthly {{count}} days",
                     "increaseTarget": "Increase target days off",
                     "targetLabel": "Target days off",
+                    "monthlyTargetLabel": "{{month}} target days off",
                     "weeklyTarget": "{{days}} days/week · {{count}} calendar days"
                 },
                 "emptyDescription": "Check the staff marked for duty first.",
@@ -8495,6 +8497,7 @@ export const ja: TLocale = {
                     "fixedTarget": "月 {{count}}日",
                     "increaseTarget": "目標休日数を増やす",
                     "targetLabel": "目標休日数",
+                    "monthlyTargetLabel": "{{month}}の目標休日数",
                     "weeklyTarget": "週{{days}}日基準・暦上{{count}}日"
                 },
                 "emptyDescription": "勤務投入に設定された人数を先に確認してください。",
@@ -11789,6 +11792,7 @@ export const zh: TLocale = {
                     "fixedTarget": "每月 {{count}} 天",
                     "increaseTarget": "增加目标休息天数",
                     "targetLabel": "目标休息天数",
+                    "monthlyTargetLabel": "{{month}}目标休息天数",
                     "weeklyTarget": "每周 {{days}} 天 · 按实际日历共 {{count}} 天"
                 },
                 "emptyDescription": "请首先检查分配工作的人数。",
@@ -15083,6 +15087,7 @@ export const zhTW: TLocale = {
                     "fixedTarget": "每月 {{count}} 天",
                     "increaseTarget": "增加目標休息天數",
                     "targetLabel": "目標休息天數",
+                    "monthlyTargetLabel": "{{month}}目標休息天數",
                     "weeklyTarget": "每週 {{days}} 天 · 按實際日曆共 {{count}} 天"
                 },
                 "emptyDescription": "請首先檢查分配工作的人數。",
@@ -18377,6 +18382,7 @@ export const th: TLocale = {
                     "fixedTarget": "รายเดือน {{count}} วัน",
                     "increaseTarget": "เพิ่มจำนวนวันหยุดเป้าหมาย",
                     "targetLabel": "วันหยุดเป้าหมาย",
+                    "monthlyTargetLabel": "วันหยุดเป้าหมายเดือน{{month}}",
                     "weeklyTarget": "{{days}} วัน/สัปดาห์ · ตามปฏิทิน {{count}} วัน"
                 },
                 "emptyDescription": "ตรวจสอบเจ้าหน้าที่ที่ทำเครื่องหมายไว้ปฏิบัติหน้าที่ก่อน",
@@ -21671,6 +21677,7 @@ export const vi: TLocale = {
                     "fixedTarget": "Hằng tháng {{count}} ngày",
                     "increaseTarget": "Tăng số ngày nghỉ mục tiêu",
                     "targetLabel": "Số ngày nghỉ mục tiêu",
+                    "monthlyTargetLabel": "Số ngày nghỉ mục tiêu · {{month}}",
                     "weeklyTarget": "{{days}} ngày/tuần · {{count}} ngày theo lịch thực tế"
                 },
                 "emptyDescription": "Trước tiên hãy kiểm tra nhân sự được đánh dấu tham gia trực.",
