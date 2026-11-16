@@ -27,7 +27,7 @@ describe('nurse name helpers', () => {
     });
 
     it('rejects unsupported whitespace, emoji, special characters, and symbol-only values', () => {
-        expect(isValidNurseName('山田\u00a0花子')).toBe(false);
+        expect(isValidNurseName('山田\u00a0花子')).toBe(true);
         expect(isValidNurseName('山田\t花子')).toBe(false);
         expect(isValidNurseName('山田\n花子')).toBe(false);
         expect(isValidNurseName('🙂')).toBe(false);
@@ -35,9 +35,10 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('Nurse_1')).toBe(false);
     });
 
-    it('keeps previous Korean jamo and single-syllable safeguards', () => {
+    it('rejects incomplete Korean jamo and permits complete single-character names', () => {
         expect(isValidNurseName('ㄱㅣㅁ')).toBe(false);
-        expect(isValidNurseName('홍')).toBe(false);
+        expect(isValidNurseName('홍')).toBe(true);
+        expect(isValidNurseName('홍')).toBe(true);
     });
 
     it('normalizes fullwidth separators without joining names and trims edge spaces', () => {
@@ -48,10 +49,11 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('　　')).toBe(false);
     });
 
-    it('keeps Korean IME composition characters while sanitizing unsupported input', () => {
+    it('retains IME drafts for submission validation without deleting typed characters', () => {
         expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
         expect(sanitizeNurseNameInput('홍')).toBe('홍');
-        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田 花子Nurse1・ー ');
+        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田　花子\t🙂Nurse_1・ー ');
+        expect(sanitizeNurseNameInput('A'.repeat(49) + '𠮷')).toBe('A'.repeat(49));
     });
 });
 
@@ -94,7 +96,7 @@ describe('roster nurse name policy', () => {
         (name) => expect(isValidRosterNurseName(name)).toBe(true),
     );
 
-    it.each(['QA_OFF_02', 'Nurse-1', '🙂', '・ー', '', '   ', 'A'.repeat(51), 'Kim\tNurse', 'Kim\nNurse', 'Kim\u00a0Nurse'])(
+    it.each(['QA_OFF_02', '🙂', '・ー', '', '   ', 'A'.repeat(51), 'Kim\tNurse', 'Kim\nNurse'])(
         'rejects server-incompatible name %s',
         (name) => expect(isValidRosterNurseName(name)).toBe(false),
     );

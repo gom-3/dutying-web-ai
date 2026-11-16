@@ -648,7 +648,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(invalidDraft)).toBe(false);
     });
 
-    it('flags invalid nurse names when korean input has incomplete jamo or too short syllables', () => {
+    it('rejects incomplete jamo and accepts complete single-character names', () => {
         const draft = createInitialDraft();
         const nurseId = draft.nurses[0]?.id ?? '';
         const jamoNameDraft = updateNurseDraft(
@@ -664,7 +664,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(getStepValidation(jamoNameDraft, 5).issues).toEqual(
             expect.arrayContaining([{code: 'invalid-nurse-name', step: 5, targetId: nurseId}]),
         );
-        expect(getStepValidation(shortKoreanNameDraft, 5).issues).toEqual(
+        expect(getStepValidation(shortKoreanNameDraft, 5).issues).not.toEqual(
             expect.arrayContaining([{code: 'invalid-nurse-name', step: 5, targetId: nurseId}]),
         );
         expect(canGoNext(shortKoreanNameDraft)).toBe(false);
@@ -725,7 +725,6 @@ describe('OnboardingWardCreatePage model', () => {
             'Nurse_1',
             '김\t길동',
             '김\n길동',
-            '김\u00a0길동',
             '\t山田',
             '山田\n',
             '山田\u200B花子',

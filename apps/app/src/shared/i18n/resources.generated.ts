@@ -2047,7 +2047,7 @@ export const ko = {
                 "shiftTypesHint": "가능한 근무를 모두 선택해 주세요",
                 "worker": "근무투입",
                 "nameRequired": "이름을 입력해 주세요.",
-                "nameInvalid": "이름은 50자 이하의 문자, 숫자, 공백, '・', 'ー'로 입력해 주세요. '_' 등의 기호는 사용할 수 없어요."
+                "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요."
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요."
@@ -2276,7 +2276,7 @@ export const ko = {
                 "duplicateRequiredShiftTypes": "중복된 필수 근무유형은 하나만 남겨 주세요: {{shiftTypes}}",
                 "emptyTeam": "팀을 추가하면 병동을 만들 수 있어요.",
                 "emptyTeamNurses": "간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.",
-                "invalidNurseName": "간호사 이름을 확인해 주세요.",
+                "invalidNurseName": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "unmappedShiftType": "근무표 코드 ‘{{shiftCode}}’의 근무 의미를 선택해 주세요.",
@@ -2613,7 +2613,7 @@ export const ko = {
             "unsavedDescription": "변경사항이 저장되지 않았어요.",
             "uploadPhoto": "사진 업로드",
             "validation": {
-                "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                 "nameRequired": "이름을 입력해 주세요.",
                 "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.",
                 "phoneRequired": "전화번호를 입력해 주세요."
@@ -2662,7 +2662,7 @@ export const ko = {
                 "title": "계정 정보를 입력해 주세요",
                 "uploadPhoto": "사진 업로드",
                 "validation": {
-                    "nameInvalid": "이름은 50자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
+                    "nameInvalid": "이름은 50자 이하의 다국어 문자·숫자와 공백, 하이픈, 가운데점, 아포스트로피, 마침표로 입력해 주세요.",
                     "nameRequired": "이름을 입력해 주세요.",
                     "phoneDuplicate": "이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.",
                     "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 연락처를 입력해 주세요.",
@@ -5319,7 +5319,7 @@ export const en: TLocale = {
                 "shiftTypesHint": "Select every shift this person can work",
                 "worker": "Included",
                 "nameRequired": "Enter a name.",
-                "nameInvalid": "Use up to 50 letters, numbers, spaces, '・', or 'ー'. Symbols such as '_' are not allowed."
+                "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods."
             },
             "drawer": {
                 "deleteConfirm": "Delete nurse {{nurseName}}? This cannot be undone."
@@ -5548,7 +5548,7 @@ export const en: TLocale = {
                 "duplicateRequiredShiftTypes": "Keep only one of each duplicated required shift type: {{shiftTypes}}",
                 "emptyTeam": "Add a team before creating the ward.",
                 "emptyTeamNurses": "Some teams have no nurses. Add a nurse or delete the team.",
-                "invalidNurseName": "Check the nurse names.",
+                "invalidNurseName": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
                 "unmappedShiftType": "Select a shift meaning for schedule code ‘{{shiftCode}}’.",
@@ -5885,7 +5885,7 @@ export const en: TLocale = {
             "unsavedDescription": "You have unsaved changes.",
             "uploadPhoto": "Upload photo",
             "validation": {
-                "nameInvalid": "Use up to 50 Korean, English, or Japanese characters, spaces, '-', or '·'.",
+                "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                 "nameRequired": "Enter your name.",
                 "phoneInvalid": "Enter a valid phone number for the selected language or region.",
                 "phoneRequired": "Enter your phone number."
@@ -5934,7 +5934,7 @@ export const en: TLocale = {
                 "title": "Enter account information",
                 "uploadPhoto": "Upload photo",
                 "validation": {
-                    "nameInvalid": "Use up to 50 characters: Korean, English, Japanese, spaces, '-', and '·'.",
+                    "nameInvalid": "Use up to 50 characters: letters, numbers, spaces, hyphens, middle dots, apostrophes, or periods.",
                     "nameRequired": "Enter a name.",
                     "phoneDuplicate": "This phone number is already in use. Enter another number.",
                     "phoneInvalid": "Enter a valid phone number for the selected language or region.",
@@ -8589,7 +8589,7 @@ export const ja: TLocale = {
                 "shiftTypesHint": "可能な勤務をすべて選択してください",
                 "worker": "勤務投入",
                 "nameRequired": "名前を入力してください。",
-                "nameInvalid": "名前は50文字以内の文字、数字、スペース、「・」「ー」で入力してください。「_」などの記号は使えません。"
+                "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}}看護師を削除しますか？削除後は元に戻せません。"
@@ -8818,7 +8818,7 @@ export const ja: TLocale = {
                 "duplicateRequiredShiftTypes": "重複している必須勤務区分は1つだけ残してください：{{shiftTypes}}",
                 "emptyTeam": "チームを追加すると病棟を作成できます。",
                 "emptyTeamNurses": "看護師がいないチームがあります。看護師を追加するかチームを削除してください。",
-                "invalidNurseName": "看護師名を確認してください。",
+                "invalidNurseName": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                 "invalidShiftTime": "勤務時間を確認してください。",
                 "invalidShiftType": "勤務区分情報を確認してください。",
                 "unmappedShiftType": "勤務表コード「{{shiftCode}}」の勤務区分を選択してください。",
@@ -9155,7 +9155,7 @@ export const ja: TLocale = {
             "unsavedDescription": "保存されていない変更があります。",
             "uploadPhoto": "写真をアップロード",
             "validation": {
-                "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                 "nameRequired": "名前を入力してください。",
                 "phoneInvalid": "選択した言語または地域に合う電話番号を入力してください。",
                 "phoneRequired": "電話番号を入力してください。"
@@ -9204,7 +9204,7 @@ export const ja: TLocale = {
                 "title": "アカウント情報を入力してください",
                 "uploadPhoto": "写真をアップロード",
                 "validation": {
-                    "nameInvalid": "名前は50文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
+                    "nameInvalid": "名前は50文字以内で、各言語の文字・数字、スペース、ハイフン、中黒、アポストロフィ、ピリオドを使用できます。",
                     "nameRequired": "名前を入力してください。",
                     "phoneDuplicate": "すでに使用中の連絡先です。別の番号を入力してください。",
                     "phoneInvalid": "選択した言語または地域に合う連絡先を入力してください。",
@@ -11859,7 +11859,7 @@ export const zh: TLocale = {
                 "shiftTypesHint": "请选择所有空缺职位",
                 "worker": "投入工作",
                 "nameRequired": "请输入姓名。",
-                "nameInvalid": "姓名最多50个字符，可使用文字、数字、空格、“・”和“ー”。不能使用“_”等符号。"
+                "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要删除护士吗？一旦删除，就无法恢复。"
@@ -12088,7 +12088,7 @@ export const zh: TLocale = {
                 "duplicateRequiredShiftTypes": "重复的必需班次类型请只保留一个：{{shiftTypes}}",
                 "emptyTeam": "您可以通过添加团队来创建守卫。",
                 "emptyTeamNurses": "有些团队没有护士。请添加护士或删除团队。",
-                "invalidNurseName": "请检查护士的姓名。",
+                "invalidNurseName": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                 "invalidShiftTime": "请检查班次时间。",
                 "invalidShiftType": "请检查您的班次类型信息。",
                 "unmappedShiftType": "请选择排班代码“{{shiftCode}}”的班次含义。",
@@ -12425,7 +12425,7 @@ export const zh: TLocale = {
             "unsavedDescription": "更改未保存。",
             "uploadPhoto": "上传照片",
             "validation": {
-                "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                 "nameRequired": "请输入您的姓名。",
                 "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入电话号码。",
                 "phoneRequired": "请输入您的电话号码。"
@@ -12474,7 +12474,7 @@ export const zh: TLocale = {
                 "title": "请输入您的账户信息",
                 "uploadPhoto": "上传照片",
                 "validation": {
-                    "nameInvalid": "名称不得超过 50 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                    "nameInvalid": "姓名最多50个字符，可使用各语言文字、数字、空格、连字符、间隔点、撇号和句点。",
                     "nameRequired": "请输入您的姓名。",
                     "phoneDuplicate": "该联系电话已被使用。请输入另一个号码。",
                     "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入联系信息。",
@@ -15129,7 +15129,7 @@ export const zhTW: TLocale = {
                 "shiftTypesHint": "請選擇所有空缺職位",
                 "worker": "投入工作",
                 "nameRequired": "請輸入姓名。",
-                "nameInvalid": "姓名最多50個字元，可使用文字、數字、空格、“・”和“ー”。不能使用“_”等符號。"
+                "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。"
             },
             "drawer": {
                 "deleteConfirm": "{{nurseName}} 要刪除護理師嗎？一旦刪除，就無法恢復。"
@@ -15358,7 +15358,7 @@ export const zhTW: TLocale = {
                 "duplicateRequiredShiftTypes": "重複的必需班次型別請只保留一個：{{shiftTypes}}",
                 "emptyTeam": "您可以透過新增團隊來建立守衛。",
                 "emptyTeamNurses": "有些團隊沒有護理師。請新增護理師或刪除團隊。",
-                "invalidNurseName": "請檢查護理師的姓名。",
+                "invalidNurseName": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                 "invalidShiftTime": "請檢查班次時間。",
                 "invalidShiftType": "請檢查您的班次型別資訊。",
                 "unmappedShiftType": "請選擇排班程式碼“{{shiftCode}}”的班次含義。",
@@ -15695,7 +15695,7 @@ export const zhTW: TLocale = {
             "unsavedDescription": "更改未儲存。",
             "uploadPhoto": "上傳照片",
             "validation": {
-                "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                 "nameRequired": "請輸入您的姓名。",
                 "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入電話號碼。",
                 "phoneRequired": "請輸入您的電話號碼。"
@@ -15744,7 +15744,7 @@ export const zhTW: TLocale = {
                 "title": "請輸入您的賬戶資訊",
                 "uploadPhoto": "上傳照片",
                 "validation": {
-                    "nameInvalid": "名稱不得超過 50 個字元，並且只能輸入韓文/英文/日文字母、空格、“-”和“·”。",
+                    "nameInvalid": "姓名最多50個字元，可使用各語言文字、數字、空格、連字號、間隔號、撇號和句點。",
                     "nameRequired": "請輸入您的姓名。",
                     "phoneDuplicate": "該聯絡電話已被使用。請輸入另一個號碼。",
                     "phoneInvalid": "請包含國家/地區程式碼或以正確的本地格式輸入聯絡資訊。",
@@ -18399,7 +18399,7 @@ export const th: TLocale = {
                 "shiftTypesHint": "เลือกทุกกะที่บุคคลนี้สามารถทำงานได้",
                 "worker": "รวมอยู่ด้วย",
                 "nameRequired": "กรุณาใส่ชื่อ",
-                "nameInvalid": "ใช้ตัวอักษร ตัวเลข ช่องว่าง '・' หรือ 'ー' ได้สูงสุด 50 ตัว ไม่อนุญาตสัญลักษณ์ เช่น '_'"
+                "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้"
             },
             "drawer": {
                 "deleteConfirm": "ลบพยาบาล {{nurseName}} ใช่ไหม สิ่งนี้ไม่สามารถยกเลิกได้"
@@ -18628,7 +18628,7 @@ export const th: TLocale = {
                 "duplicateRequiredShiftTypes": "โปรดเก็บประเภทกะที่จำเป็นซึ่งซ้ำกันไว้เพียงหนึ่งรายการ: {{shiftTypes}}",
                 "emptyTeam": "เพิ่มทีมก่อนสร้างวอร์ด",
                 "emptyTeamNurses": "บางทีมไม่มีพยาบาล เพิ่มพยาบาลหรือลบทีม",
-                "invalidNurseName": "ตรวจสอบชื่อพยาบาล",
+                "invalidNurseName": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                 "invalidShiftTime": "ตรวจสอบเวลากะ",
                 "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
                 "unmappedShiftType": "เลือกความหมายของกะสำหรับรหัสตาราง ‘{{shiftCode}}’",
@@ -18965,7 +18965,7 @@ export const th: TLocale = {
             "unsavedDescription": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
             "uploadPhoto": "อัพโหลดรูปภาพ",
             "validation": {
-                "nameInvalid": "ใช้อักขระเกาหลี อังกฤษ หรือญี่ปุ่น ช่องว่าง '-' หรือ '·' ได้สูงสุด 50 ตัว",
+                "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                 "nameRequired": "ใส่ชื่อของคุณ",
                 "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
                 "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ"
@@ -19014,7 +19014,7 @@ export const th: TLocale = {
                 "title": "ป้อนข้อมูลบัญชี",
                 "uploadPhoto": "อัพโหลดรูปภาพ",
                 "validation": {
-                    "nameInvalid": "ใช้อักขระได้สูงสุด 50 ตัว: เกาหลี อังกฤษ ญี่ปุ่น ช่องว่าง '-' และ '·'",
+                    "nameInvalid": "ชื่อยาวได้ไม่เกิน 50 อักขระ ใช้ตัวอักษรทุกภาษา ตัวเลข ช่องว่าง ยัติภังค์ จุดกลาง อัญประกาศเดี่ยว และจุดได้",
                     "nameRequired": "ป้อนชื่อ",
                     "phoneDuplicate": "หมายเลขโทรศัพท์นี้มีการใช้งานแล้ว ป้อนหมายเลขอื่น",
                     "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
@@ -21669,7 +21669,7 @@ export const vi: TLocale = {
                 "shiftTypesHint": "Chọn mọi ca mà người này có thể làm việc",
                 "worker": "Bao gồm",
                 "nameRequired": "Vui lòng nhập tên.",
-                "nameInvalid": "Dùng tối đa 50 chữ cái, chữ số, dấu cách, '・' hoặc 'ー'. Không được dùng ký hiệu như '_'."
+                "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm."
             },
             "drawer": {
                 "deleteConfirm": "Xóa điều dưỡng {{nurseName}}? Điều này không thể hoàn tác được."
@@ -21898,7 +21898,7 @@ export const vi: TLocale = {
                 "duplicateRequiredShiftTypes": "Chỉ giữ lại một loại cho mỗi ca bắt buộc bị trùng: {{shiftTypes}}",
                 "emptyTeam": "Thêm đội trước khi tạo khoa.",
                 "emptyTeamNurses": "Một số đội không có điều dưỡng. Thêm điều dưỡng hoặc xóa nhóm.",
-                "invalidNurseName": "Kiểm tra tên điều dưỡng.",
+                "invalidNurseName": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                 "invalidShiftTime": "Kiểm tra thời gian thay đổi.",
                 "invalidShiftType": "Kiểm tra thông tin loại ca.",
                 "unmappedShiftType": "Chọn ý nghĩa ca cho mã lịch ‘{{shiftCode}}’.",
@@ -22235,7 +22235,7 @@ export const vi: TLocale = {
             "unsavedDescription": "Bạn có những thay đổi chưa được lưu.",
             "uploadPhoto": "Tải ảnh lên",
             "validation": {
-                "nameInvalid": "Sử dụng tối đa 50 ký tự tiếng Hàn, tiếng Anh hoặc tiếng Nhật, dấu cách, '-' hoặc '·'.",
+                "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                 "nameRequired": "Nhập tên của bạn.",
                 "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
                 "phoneRequired": "Nhập số điện thoại của bạn."
@@ -22284,7 +22284,7 @@ export const vi: TLocale = {
                 "title": "Nhập thông tin tài khoản",
                 "uploadPhoto": "Tải ảnh lên",
                 "validation": {
-                    "nameInvalid": "Sử dụng tối đa 50 ký tự: tiếng Hàn, tiếng Anh, tiếng Nhật, dấu cách, '-' và '·'.",
+                    "nameInvalid": "Tên tối đa 50 ký tự, gồm chữ cái các ngôn ngữ, chữ số, dấu cách, dấu gạch nối, dấu chấm giữa, dấu nháy đơn hoặc dấu chấm.",
                     "nameRequired": "Nhập tên.",
                     "phoneDuplicate": "Số điện thoại này đã được sử dụng. Nhập số khác.",
                     "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",

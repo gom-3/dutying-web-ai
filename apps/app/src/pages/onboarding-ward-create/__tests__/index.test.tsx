@@ -691,6 +691,18 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getByRole('button', {name: /B팀/})).toBeInTheDocument();
         expect(screen.getByDisplayValue('홍길동')).toBeInTheDocument();
+    it('does not split a supplementary kanji at the pasted name length limit', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {getData: () => `${'A'.repeat(49)}𠮷\tD`},
+        });
+
+        expect(screen.getByLabelText('1행 간호사 이름')).toHaveValue('A'.repeat(49));
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+    });
+
         expect(screen.getByDisplayValue('D')).toBeInTheDocument();
         expect(screen.getByDisplayValue('E')).toBeInTheDocument();
         expect(screen.getByDisplayValue('N')).toBeInTheDocument();
@@ -1479,6 +1491,30 @@ describe('OnboardingWardCreatePage', () => {
                     state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
                 });
             },
+            "Jean-Luc O'Neill",
+            'D’Arcy',
+            'OʼConnor',
+            'J. Smith',
+            'Jean‑Luc',
+            'Ａｎｎｅ－Ｍａｒｉｅ',
+            '阿依古丽·买买提',
+            'Nguyễn Thị Hương',
+            'José García',
+            'สมหญิง ใจดี',
+            'محمد أحمد',
+            'علی‌رضا',
+            'श्री‍राम',
+            'דָּוִד לוי',
+            'Αλέξανδρος',
+            'Мария Иванова',
+            'ნინო',
+            'ሐና',
+            'অনুষ্কা',
+            'அனுஷ்கா',
+            'Անի',
+            'សុភា',
+            'အောင်',
+            'अनुष्का शर्मा',
             {timeout: 2_000},
         );
     }, 10_000);
@@ -1498,6 +1534,30 @@ describe('OnboardingWardCreatePage', () => {
             'ヤマダ',
             '　ＡＢ　１２　',
             'ﾔﾏﾀﾞ･ﾀﾛｳ',
+            "Jean-Luc O'Neill",
+            'D’Arcy',
+            'OʼConnor',
+            'J. Smith',
+            'Jean‑Luc',
+            'Ａｎｎｅ－Ｍａｒｉｅ',
+            '阿依古丽·买买提',
+            'Nguyễn Thị Hương',
+            'José García',
+            'สมหญิง ใจดี',
+            'محمد أحمد',
+            'علی‌رضا',
+            'श्री‍राम',
+            'דָּוִד לוי',
+            'Αλέξανδρος',
+            'Мария Иванова',
+            'ნინო',
+            'ሐና',
+            'অনুষ্কা',
+            'அனுஷ்கா',
+            'Անի',
+            'សុភា',
+            'အောင်',
+            'अनुष्का शर्मा',
             '髙﨑',
             '𠮷田',
             '山田\u{E0100}',
@@ -1557,7 +1617,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(payload.shiftTeams[0].nurses.map((nurse: {name: string}) => nurse.name)).toEqual(expected);
         await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.'));
         expect(toastError).not.toHaveBeenCalled();
-    });
+    }, 10_000);
 
     it('shows toast only and allows retry when ward creation fails', async () => {
         const user = userEvent.setup();
