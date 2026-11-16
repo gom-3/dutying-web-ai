@@ -50,7 +50,7 @@ describe('hospital onboarding scope', () => {
         });
         expect(adminAxiosInstance.get).toHaveBeenCalledWith(`${base}/onboarding/drafts/current`);
         expect(adminAxiosInstance.patch).toHaveBeenCalledWith(`${base}/wards/42/onboarding/draft`, {draftPayload});
-        expect(adminAxiosInstance.post).toHaveBeenNthCalledWith(2, `${base}/wards/42/onboarding/complete`, payload);
+        expect(adminAxiosInstance.post).toHaveBeenNthCalledWith(2, `${base}/wards/42/onboarding/complete/v2`, payload);
     });
 
     it('treats an empty current draft response as a new hospital ward flow', async () => {
@@ -80,7 +80,7 @@ describe('hospital onboarding scope', () => {
         });
 
         expect(adminAxiosInstance.post).toHaveBeenCalledWith(
-            `${base}/wards/42/onboarding/complete`,
+            `${base}/wards/42/onboarding/complete/v2`,
             expect.objectContaining({
                 wardShiftTypes: [
                     expect.objectContaining({
@@ -105,7 +105,7 @@ describe('hospital onboarding scope', () => {
             expect(await result.current!.completeOnboardingWardDraft(42, payload, {navigateOnLinked: false})).toEqual(ward);
         });
 
-        expect(adminAxiosInstance.post).toHaveBeenCalledWith(`${base}/wards/42/onboarding/complete`, payload);
+        expect(adminAxiosInstance.post).toHaveBeenCalledWith(`${base}/wards/42/onboarding/complete/v2`, payload);
         expect(invalidate).toHaveBeenCalledWith({queryKey: ['commercial']});
     });
 

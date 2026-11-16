@@ -27,7 +27,7 @@ describe('nurse name helpers', () => {
     });
 
     it('rejects unsupported whitespace, emoji, special characters, and symbol-only values', () => {
-        expect(isValidNurseName('山田\u00a0花子')).toBe(false);
+        expect(isValidNurseName('山田\u00a0花子')).toBe(true);
         expect(isValidNurseName('山田\t花子')).toBe(false);
         expect(isValidNurseName('山田\n花子')).toBe(false);
         expect(isValidNurseName('🙂')).toBe(false);
@@ -35,9 +35,10 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('Nurse_1')).toBe(false);
     });
 
-    it('keeps previous Korean jamo and single-syllable safeguards', () => {
+    it('rejects incomplete Korean jamo and permits complete single-character names', () => {
         expect(isValidNurseName('ㄱㅣㅁ')).toBe(false);
-        expect(isValidNurseName('홍')).toBe(false);
+        expect(isValidNurseName('홍')).toBe(true);
+        expect(isValidNurseName('홍')).toBe(true);
     });
 
     it('normalizes fullwidth separators without joining names and trims edge spaces', () => {
@@ -48,20 +49,54 @@ describe('nurse name helpers', () => {
         expect(isValidNurseName('　　')).toBe(false);
     });
 
-    it('keeps Korean IME composition characters while sanitizing unsupported input', () => {
+    it('retains IME drafts for submission validation without deleting typed characters', () => {
         expect(sanitizeNurseNameInput('ㅎㅗㅇ')).toBe('ㅎㅗㅇ');
         expect(sanitizeNurseNameInput('홍')).toBe('홍');
-        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田 花子Nurse1・ー ');
+        expect(sanitizeNurseNameInput(' 山田　花子\t🙂Nurse_1・ー ')).toBe(' 山田　花子\t🙂Nurse_1・ー ');
+        expect(sanitizeNurseNameInput('A'.repeat(49) + '𠮷')).toBe('A'.repeat(49));
     });
 });
 
 describe('roster nurse name policy', () => {
+    it.each([
+        '木ノ内',
+        'サハコタ',
+        '野崎',
+        '関根昌代',
+        '佐藤蘭',
+        '増田',
+        'たなか',
+        'ヤマダ',
+        'ﾔﾏﾀﾞ･ﾀﾛｳ',
+        'ＡＢ１２',
+        '髙﨑',
+        '𠮷田',
+        '〇山',
+        '山田\u{E0100}',
+        'セ\u309a',
+        '山田゛',
+        'ㇷ\u309a',
+        'Nguyễn',
+        'น้ำฝน',
+    ])('accepts Unicode roster name %s without deleting name characters', (name) => expect(isValidRosterNurseName(name)).toBe(true));
+
+    it.each(['\u3099', '゛', '\u0301山田', '山田 \u3099', '・ー･ｰﾞﾟ'])('rejects unattached or symbol-only name marks %s', (name) =>
+        expect(isValidRosterNurseName(name)).toBe(false),
+    );
+
+    it('keeps supplementary-character lengths within the entity and input limit', () => {
+        expect(isValidRosterNurseName('𠮷'.repeat(25))).toBe(true);
+        expect(isValidRosterNurseName('𠮷'.repeat(26))).toBe(false);
+        expect(isValidRosterNurseName('ー'.repeat(49) + '!')).toBe(false);
+        expect(isValidRosterNurseName('1\ufe0f\u20e3')).toBe(false);
+    });
+
     it.each(['홍', 'Élodie', '佐藤・美咲', 'ジョンー2', '护士1', 'QA OFF 02', '123', 'A'.repeat(50)])(
         'accepts server-compatible name %s without the registration-only restrictions',
         (name) => expect(isValidRosterNurseName(name)).toBe(true),
     );
 
-    it.each(['QA_OFF_02', 'Nurse-1', '🙂', '・ー', '', '   ', 'A'.repeat(51), 'Kim\tNurse', 'Kim\nNurse', 'Kim\u00a0Nurse'])(
+    it.each(['QA_OFF_02', '🙂', '・ー', '', '   ', 'A'.repeat(51), 'Kim\tNurse', 'Kim\nNurse'])(
         'rejects server-incompatible name %s',
         (name) => expect(isValidRosterNurseName(name)).toBe(false),
     );

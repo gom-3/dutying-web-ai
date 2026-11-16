@@ -13,6 +13,7 @@ import RegisterWardShiftTypesSection from '@/features/register-ward/ui/register-
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ValidationMessage from '@/shared/ui/ValidationMessage';
+import RegisterHeading from './register-heading';
 import RegisterShell from './register-shell';
 
 const FIELD_CLASS =
@@ -86,7 +87,7 @@ function RegisterWard() {
                 </button>
 
                 <div>
-                    <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.createWard.title')}</h1>
+                    <RegisterHeading>{t('page.register.createWard.title')}</RegisterHeading>
                     <p className="mt-2 text-sm text-gray-3">{t('page.register.createWard.description')}</p>
                 </div>
 

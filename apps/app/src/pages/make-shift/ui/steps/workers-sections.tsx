@@ -1,11 +1,12 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {Check, Pencil} from 'lucide-react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
-import {isRestShiftOption} from '@/pages/member/model/nurse-shift-types';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
+import {isRestShiftOption} from '@/pages/member/model/nurse-shift-types';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {formatNurseDisplayName} from './shared/format-nurse-display-name';
 
@@ -170,13 +171,13 @@ export function WorkersList({
     onEditNurse,
     setRowRef,
 }: TWorkersListProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="make-shift-workers__list-wrapper mt-1.5 flex flex-col gap-2">
             {grouped.map(([division, divisionWorkers]) => {
                 const divisionNum = Number.parseInt(division, 10);
-                const trimmedDivisionLabel = divisionLabelByNum?.get(divisionNum)?.trim();
-                const divisionLabel =
-                    trimmedDivisionLabel != null && trimmedDivisionLabel.length > 0 ? trimmedDivisionLabel : `그룹${divisionNum}`;
+                const divisionLabel = getDivisionDisplayLabel(divisionNum, divisionLabelByNum?.get(divisionNum), t);
 
                 return (
                     <div key={`${shiftTeamId},${division}`} className="make-shift-workers__division-block">

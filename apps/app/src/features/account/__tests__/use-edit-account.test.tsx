@@ -77,7 +77,7 @@ vi.mock('@/shared/api', () => ({
     AdminAPI: {
         deleteMe: mockAdminDeleteMe,
         quitWard: mockAdminQuitWard,
-        updateMe: vi.fn(),
+        updateMeV2: vi.fn(),
     },
     NurseAPI: {
         updateNurse: vi.fn(),

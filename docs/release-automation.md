@@ -11,6 +11,22 @@
 
 ## Workflows
 
+Each app build also emits `/release.json`. On Cloudflare Pages it records only the
+version, provider-supplied commit/branch/deployment URL and public site origin.
+The response is not cached, so a public request can identify the actually served
+release when dashboard access is unavailable. It contains no runtime credentials.
+Pages build metadata comes from the documented system variables:
+https://developers.cloudflare.com/pages/configuration/build-configuration/
+
+Pair this evidence with public app/browser checks; a source merge alone does not
+prove that the provider published the build. CI tests the metadata boundary and
+the normal production build includes the generated file.
+
+Manual Web CI runs on `main` or `develop` also retain the verified app bundle as
+`web-release-<commit>`. The bundle includes `.well-known` for existing mobile links,
+the edge worker/routes and the build metadata. The branch selects the public site
+origin. This artifact is a deployment input, not proof of provider publication.
+
 ### 1. Release PR (`.github/workflows/release-pr.yml`)
 
 - Trigger: every push to `develop`

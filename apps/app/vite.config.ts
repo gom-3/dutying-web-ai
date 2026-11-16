@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import {createServer, defineConfig, loadEnv} from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import {createBuildMetadata} from '../../scripts/release/build-metadata.mjs';
 import marketingPageData from './src/shared/seo/marketing-pages.json';
 
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -224,7 +225,6 @@ const createSitemap = (appSiteUrl: string) => {
                         `    <xhtml:link rel="alternate" hreflang="${alternatePage.language}" href="${getCanonicalUrl(appSiteUrl, alternatePage.path)}" />`,
                 )
                 .join('\n');
-
             const defaultUrl = getCanonicalUrl(appSiteUrl, getDefaultMarketingPage(group).path);
 
             return group.pages.map(
@@ -310,6 +310,26 @@ export default defineConfig(({mode}) => {
                         : renderAppSeoHtml(html, appSiteUrl, path);
                 },
                 generateBundle() {
+                    this.emitFile({
+                        type: 'asset',
+                        fileName: 'release.json',
+                        source: `${JSON.stringify(
+                            createBuildMetadata(
+                                {
+                                    CF_PAGES: process.env.CF_PAGES,
+                                    CF_PAGES_COMMIT_SHA: process.env.CF_PAGES_COMMIT_SHA,
+                                    CF_PAGES_BRANCH: process.env.CF_PAGES_BRANCH,
+                                    CF_PAGES_URL: process.env.CF_PAGES_URL,
+                                    GITHUB_SHA: process.env.GITHUB_SHA,
+                                    GITHUB_REF_NAME: process.env.GITHUB_REF_NAME,
+                                },
+                                JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version,
+                                appSiteUrl,
+                            ),
+                            null,
+                            2,
+                        )}\n`,
+                    });
                     // www의 리뉴얼 랜딩은 색인하고 dev/preview 배포는 중복 색인을 막는다.
                     this.emitFile({
                         type: 'asset',
@@ -339,6 +359,7 @@ export default defineConfig(({mode}) => {
                     // 나머지 URL은 플랫폼의 실제 404 응답으로 보낸다.
                     appStaticRoutes.forEach((route) => {
                         const routeFile = resolve(resolvedOutDir, `${route.slice(1)}.html`);
+
                         mkdirSync(dirname(routeFile), {recursive: true});
                         writeFileSync(routeFile, renderAppSeoHtml(indexHtml, appSiteUrl, route));
                     });

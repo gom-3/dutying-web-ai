@@ -4,6 +4,7 @@ import {type TWardShiftType, type TShift} from '@/entities';
 import {type TDutyDoc} from '@/features/shift-editor/model';
 import {FoldDutyIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDivisionDisplayLabel} from '@/shared/lib/division-label';
 import {type TLayerFlags, type TShiftCalendarFocus} from '../types';
 import {ShiftCalendarRow} from './shift-calendar-row';
 
@@ -75,7 +76,9 @@ export function ShiftCalendarDivision({
                 onClick={() => onToggleFoldLevel?.(level)}
             >
                 <FoldDutyIcon className="h-5.5 w-5.5 rotate-180" />
-                <p className="font-poppins text-base font-light text-sub-3">Duty {level + 1}</p>
+                <p className="font-poppins text-base font-light text-sub-3">
+                    {getDivisionDisplayLabel(rows[0].shiftNurse.divisionNum ?? level + 1, rows[0].shiftNurse.divisionName, t)}
+                </p>
                 <p className="ml-4 font-poppins text-base font-light text-sub-3">
                     {t('feature.shiftEditor.calendarDivision.memberCount', {count: rows.length})}
                 </p>

@@ -6,6 +6,7 @@ import wardCodeEnterIcon from '@/shared/assets/images/ward-code-enter-icon.webp'
 import wardInfoSettingsIcon from '@/shared/assets/images/ward-info-settings-icon.webp';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import RegisterHeading from './register-heading';
 
 interface ISelectEnterOrCreateProps {
     onBack?: () => void;
@@ -32,11 +33,11 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
             ) : null}
 
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">
+                <RegisterHeading>
                     {accountMe?.name
                         ? t('page.register.select.titleWithName', {name: accountMe.name})
                         : t('page.register.select.titleWithoutName')}
-                </h1>
+                </RegisterHeading>
                 <p className="mt-2 text-sm text-gray-3">{t('page.register.select.description')}</p>
             </div>
 

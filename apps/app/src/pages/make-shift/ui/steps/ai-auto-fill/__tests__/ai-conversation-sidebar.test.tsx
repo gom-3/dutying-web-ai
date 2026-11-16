@@ -465,6 +465,7 @@ describe('persistent schedule sidebar', () => {
 
     it('replays an interpretation once with the refreshed revision after the production stale-draft response', async () => {
         const request = '연속 근무를 줄여줘';
+
         mocks.interpret
             .mockImplementationOnce(async () => {
                 current = {...current, conversation: {...current.conversation, revision: 1}};
@@ -476,7 +477,9 @@ describe('persistent schedule sidebar', () => {
             })
             .mockResolvedValueOnce({interpretationId: 'retry:1'});
         renderSidebar();
+
         const textbox = await screen.findByRole('textbox');
+
         await userEvent.type(textbox, request);
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
@@ -502,9 +505,13 @@ describe('persistent schedule sidebar', () => {
                 throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
             })
             .mockResolvedValueOnce({interpretationId: 'retry:1'});
+
         const onApplied = vi.fn();
+
         renderSidebar({onApplied});
+
         const textbox = await screen.findByRole('textbox');
+
         await userEvent.type(textbox, '연속 근무를 줄여줘');
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
@@ -519,6 +526,7 @@ describe('persistent schedule sidebar', () => {
 
     it('preserves and saves local-only edits when draft sync detects a revision conflict', async () => {
         const request = '연속 근무를 줄여줘';
+
         mocks.sync
             .mockImplementationOnce(async () => {
                 current = {...current, conversation: {...current.conversation, revision: 1}};
@@ -530,11 +538,14 @@ describe('persistent schedule sidebar', () => {
                     conversation: {...current.conversation, revision: 2},
                     draft: {...current.draft, cells: draft.cells},
                 };
+
                 return current;
             });
         mocks.interpret.mockResolvedValueOnce({interpretationId: 'retry:1'});
         renderSidebar();
+
         const textbox = await screen.findByRole('textbox');
+
         await userEvent.type(textbox, request);
         mocks.draftShiftTypeId = 1;
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
@@ -549,6 +560,7 @@ describe('persistent schedule sidebar', () => {
 
     it('keeps concurrent server and local edits intact and leaves the request ready for review', async () => {
         const request = '연속 근무를 줄여줘';
+
         mocks.interpret.mockImplementationOnce(async () => {
             mocks.draftShiftTypeId = 1;
             current = {
@@ -559,7 +571,9 @@ describe('persistent schedule sidebar', () => {
             throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
         });
         renderSidebar();
+
         const textbox = await screen.findByRole('textbox');
+
         await userEvent.type(textbox, request);
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
@@ -576,12 +590,15 @@ describe('persistent schedule sidebar', () => {
 
     it('stops after a second definitive revision rejection', async () => {
         const request = '연속 근무를 줄여줘';
+
         mocks.interpret.mockImplementation(async () => {
             current = {...current, conversation: {...current.conversation, revision: current.conversation.revision + 1}};
             throw {code: 409, serverCode: 'SCHEDULE_STALE_DRAFT_REVISION'};
         });
         renderSidebar();
+
         const textbox = await screen.findByRole('textbox');
+
         await userEvent.type(textbox, request);
         await userEvent.click(screen.getByRole('button', {name: /요청 보내기|Send request/}));
 
@@ -2385,6 +2402,7 @@ describe('persistent schedule sidebar', () => {
             return completed;
         });
         renderSidebar();
+
         const choices = await screen.findByRole('group', {name: '근무표를 어떻게 할까요?'});
 
         expect(within(choices).getAllByRole('button')).toHaveLength(2);
@@ -3255,8 +3273,8 @@ describe('persistent schedule sidebar', () => {
         });
         renderSidebar();
         await userEvent.click(await screen.findByRole('radio', {name: '가능하면'}));
-        expect(screen.getByRole('button', {name: '이대로 수정하기'})).toBeDisabled();
-        await userEvent.click(screen.getByRole('button', {name: '변경한 조건 확인하기'}));
+        expect(screen.queryByRole('button', {name: '이대로 수정하기'})).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {name: '변경 내용 확인'}));
         await waitFor(() =>
             expect(mocks.changeModalities).toHaveBeenCalledExactlyOnceWith(1, 'priority:parent', 0, 'a'.repeat(64), {count: 'SOFT'}),
         );
@@ -4489,85 +4507,96 @@ describe('persistent schedule sidebar', () => {
         await act(async () => finishInterpretation(proposal));
         expect(mocks.execute).not.toHaveBeenCalled();
     });
-    it.each([false, true])('shows which request blocks understood conditions and removes only it (saved review: %s)', async (savedReview) => {
-        const {proposal} = semanticRequest('NEEDS_CLARIFICATION');
-        const unresolved = {
-            conditionId: 'old-request',
-            text: '모든 간호사 OFF 9개씩',
-            preview: {status: savedReview ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION'},
-        };
-        const understood = {conditionId: 'new-request', text: '전체간호사 모든날에 OFF를 0개씩해줘', preview: {status: 'PREVIEW_READY'}};
-        const genericSummary = '요청의 대상·기간·조건을 더 확인해야 해요.';
+    it.each([false, true])(
+        'shows which request blocks understood conditions and removes only it (saved review: %s)',
+        async (savedReview) => {
+            const {proposal} = semanticRequest('NEEDS_CLARIFICATION');
+            const unresolved = {
+                conditionId: 'old-request',
+                text: '모든 간호사 OFF 9개씩',
+                preview: {status: savedReview ? 'PREVIEW_READY' : 'NEEDS_CLARIFICATION'},
+            };
+            const understood = {
+                conditionId: 'new-request',
+                text: '전체간호사 모든날에 OFF를 0개씩해줘',
+                preview: {status: 'PREVIEW_READY'},
+            };
+            const genericSummary = '요청의 대상·기간·조건을 더 확인해야 해요.';
 
-        proposal.semanticPlan!.summary = genericSummary;
-        if (savedReview) {
-            proposal.semanticPlan!.unresolvedStoredConditionIds = [unresolved.conditionId];
-            useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
-        }
-        current.conversationState = {
-            version: 7,
-            sourceVersionId: current.conversation.currentVersionId,
-            contextHash: current.contextHash,
-            expiresAt: null,
-            conditions: [unresolved, understood],
-            pendingQuestion: savedReview ? null : {conditionId: unresolved.conditionId, question: genericSummary},
-        };
+            proposal.semanticPlan!.summary = genericSummary;
 
-        const ready: TConversationTurn = {
-            ...proposal,
-            eventId: 3,
-            sequence: 3,
-            interpretationId: 'retained-request',
-            semanticPlan: {
-                ...proposal.semanticPlan!,
-                planId: 'retained-plan',
-                state: 'PREVIEW_READY',
-                confirmationAllowed: true,
-                autoExecutable: savedReview,
-                ...(savedReview
-                    ? {
-                          authoringContractVersion: 'intent-first-v1',
-                          interactionId: 'retained-interaction',
-                          deadlineAt: new Date(Date.now() + 15000).toISOString(),
-                          planExpiresAt: new Date(Date.now() + 300000).toISOString(),
-                      }
-                    : {}),
-            },
-        };
+            if (savedReview) {
+                proposal.semanticPlan!.unresolvedStoredConditionIds = [unresolved.conditionId];
+                useShiftEditorStore.getState().setIntentFirstAuthoringEnabled(true);
+            }
 
-        mocks.interpret.mockImplementationOnce(async () => {
-            current = {
-                ...current,
-                conversation: {...current.conversation, latestInterpretationId: ready.interpretationId},
-                conversationState: {...current.conversationState!, version: 8, conditions: [understood], pendingQuestion: null},
-                turns: [...current.turns, ready],
+            current.conversationState = {
+                version: 7,
+                sourceVersionId: current.conversation.currentVersionId,
+                contextHash: current.contextHash,
+                expiresAt: null,
+                conditions: [unresolved, understood],
+                pendingQuestion: savedReview ? null : {conditionId: unresolved.conditionId, question: genericSummary},
             };
 
-            return ready;
-        });
-        renderSidebar();
+            const ready: TConversationTurn = {
+                ...proposal,
+                eventId: 3,
+                sequence: 3,
+                interpretationId: 'retained-request',
+                semanticPlan: {
+                    ...proposal.semanticPlan!,
+                    planId: 'retained-plan',
+                    state: 'PREVIEW_READY',
+                    confirmationAllowed: true,
+                    autoExecutable: savedReview,
+                    ...(savedReview
+                        ? {
+                              authoringContractVersion: 'intent-first-v1',
+                              interactionId: 'retained-interaction',
+                              deadlineAt: new Date(Date.now() + 15000).toISOString(),
+                              planExpiresAt: new Date(Date.now() + 300000).toISOString(),
+                          }
+                        : {}),
+                },
+            };
 
-        expect(await screen.findByText(unresolved.text)).toBeVisible();
-        expect(screen.getByRole('list', {name: 'AI가 이해한 조건'})).toBeVisible();
-        await userEvent.click(screen.getByRole('button', {name: '이 요청만 빼기'}));
-        if (savedReview) {
-            await waitFor(() =>
-                expect(mocks.execute).toHaveBeenCalledWith(
-                    1,
-                    expect.objectContaining({operationType: 'ADJUST', interpretationId: ready.interpretationId}),
-                ),
-            );
-        } else {
-            expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
-            expect(mocks.execute).not.toHaveBeenCalled();
-        }
-        expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
-            expectedStateVersion: 7,
-            change: 'REMOVE',
-            targetConditionIds: [unresolved.conditionId],
-        });
-        expect(mocks.confirmPlan).not.toHaveBeenCalled();
-    });
+            mocks.interpret.mockImplementationOnce(async () => {
+                current = {
+                    ...current,
+                    conversation: {...current.conversation, latestInterpretationId: ready.interpretationId},
+                    conversationState: {...current.conversationState!, version: 8, conditions: [understood], pendingQuestion: null},
+                    turns: [...current.turns, ready],
+                };
+
+                return ready;
+            });
+            renderSidebar();
+
+            expect(await screen.findByText(unresolved.text)).toBeVisible();
+            expect(screen.getByRole('list', {name: 'AI가 이해한 조건'})).toBeVisible();
+            await userEvent.click(screen.getByRole('button', {name: '이 요청만 빼기'}));
+
+            if (savedReview) {
+                await waitFor(() =>
+                    expect(mocks.execute).toHaveBeenCalledWith(
+                        1,
+                        expect.objectContaining({operationType: 'ADJUST', interpretationId: ready.interpretationId}),
+                    ),
+                );
+            } else {
+                expect(await screen.findByRole('button', {name: '이대로 수정하기'})).toBeEnabled();
+                expect(mocks.execute).not.toHaveBeenCalled();
+            }
+
+            expect(mocks.interpret.mock.calls[0][1]).toMatchObject({
+                expectedStateVersion: 7,
+                change: 'REMOVE',
+                targetConditionIds: [unresolved.conditionId],
+            });
+            expect(mocks.confirmPlan).not.toHaveBeenCalled();
+        },
+    );
     it('sends a cancellation as natural text without browser selected condition IDs', async () => {
         const {raw, proposal} = semanticRequest();
 
@@ -4681,9 +4710,11 @@ describe('persistent schedule sidebar', () => {
 
     it.each(['', '야간 근무를 줄여줘'])('reopens a new section after a cached edit with draft %j', async (draft) => {
         semanticRequest();
+
         const first = renderSidebar();
 
         await userEvent.click(await screen.findByRole('button', {name: '요청 수정하기'}));
+
         const input = screen.getByRole('textbox');
 
         await userEvent.clear(input);
@@ -5175,8 +5206,10 @@ describe('intent-first sidebar integration', () => {
 
     it('automatically executes a current negotiated plan once without a confirm or lifetime questionnaire', async () => {
         enable();
+
         const turn = autoTurn();
         const deferred = '이전 요청: 미등록 N·S 근무 늘리기';
+
         turn.semanticPlan!.deferredRequests = [deferred];
         installPlan(turn);
 
@@ -5327,6 +5360,7 @@ describe('intent-first sidebar integration', () => {
 
     it('does not restore apply controls for a declined setting candidate after remounting', async () => {
         enable();
+
         const result = intentResponse({
             changedCells: [],
             applicable: false,
@@ -5339,10 +5373,13 @@ describe('intent-first sidebar integration', () => {
                 requestPriority: {version: 'request-first-v2', settingChangesRequired: true},
             }),
         });
+
         current.operations = [{...operation, operationType: 'ADJUST', resultVersionId: null, applyStatus: 'NOT_APPLIED_REVIEW', result}];
         mocks.version.mockResolvedValue(source);
+
         const first = renderSidebar();
         const keep = await screen.findByRole('button', {name: i18n.t('aiConversationSidebar.authoring.keep')});
+
         await userEvent.click(keep);
         first.unmount();
         renderSidebar();

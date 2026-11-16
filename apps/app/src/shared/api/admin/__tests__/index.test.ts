@@ -76,6 +76,19 @@ describe('AdminAPI', () => {
         expect(mockDelete).toHaveBeenCalledWith('/admin/accounts/me');
     });
 
+    it('reads and writes global phones through v2 while retaining the legacy methods', async () => {
+        const payload = {phoneNum: '0912345678', phoneCountry: 'TW'};
+        const response = {accountId: 1, phoneNum: '+886912345678', phoneCountry: 'TW'};
+
+        mockGet.mockResolvedValue({data: response});
+        mockPatch.mockResolvedValue({data: response});
+
+        await expect(AdminAPI.getMeV2()).resolves.toBe(response);
+        await expect(AdminAPI.updateMeV2(payload)).resolves.toBe(response);
+        expect(mockGet).toHaveBeenCalledWith('/admin/accounts/me/v2');
+        expect(mockPatch).toHaveBeenCalledWith('/admin/accounts/me/v2', payload);
+    });
+
     it('quits an admin ward through the ward admin endpoint', async () => {
         mockDelete.mockResolvedValue({data: undefined});
 

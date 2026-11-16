@@ -1,7 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {Camera} from 'lucide-react';
-import {type ChangeEvent, useEffect, useMemo, useRef} from 'react';
+import {type ChangeEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {useForm} from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {useTranslation} from 'react-i18next';
@@ -17,14 +17,23 @@ import {
     normalizePreferredLanguage,
     normalizeServiceRegion,
 } from '@/shared/i18n/locale';
+import {ACCOUNT_NAME_MAX_LENGTH, isValidAccountName, normalizeAccountNameForRequest} from '@/shared/lib/account-name';
 import {
     CONTACT_PHONE_MAX_LENGTH,
     isValidContactPhone,
     normalizeContactPhoneForStorage,
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
-import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
+import {
+    GLOBAL_PHONE_INPUT_MAX_LENGTH,
+    normalizeGlobalPhoneInput,
+    parseGlobalContactPhone,
+    resolveContactPhoneCountry,
+    type TPhoneCountry,
+} from '@/shared/lib/global-contact-phone';
+import PhoneCountrySelect from '@/shared/ui/PhoneCountrySelect';
 import {trackProductOutcome} from '@/shared/util/growth-analytics';
+import RegisterHeading from './register-heading';
 
 const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
 const FIELD_CLASS =
@@ -40,6 +49,9 @@ const getErrorTextValues = (value: unknown): string[] => {
         record.message,
         record.code,
         record.errorCode,
+        record.serverCode,
+        record.messageKey,
+        record.responseBody,
         record.reason,
         record.field,
         record.originalError,
@@ -54,25 +66,35 @@ const isDuplicatePhoneNumError = (error: unknown) => {
 
     const errorText = getErrorTextValues(error).join(' ').toLowerCase();
     const hasPhoneHint = /phone|phone_num|phonenum|\uC804\uD654|\uC5F0\uB77D\uCC98|\uD734\uB300/.test(errorText);
-    const hasAlreadyUsedHint = /already used|\uC774\uBBF8 \uC0AC\uC6A9|\uC0AC\uC6A9 \uC911/.test(errorText);
+    const hasAlreadyUsedHint = /already[\s_-]*used|\uC774\uBBF8 \uC0AC\uC6A9|\uC0AC\uC6A9 \uC911/.test(errorText);
 
     return code === 409 ? hasPhoneHint || hasAlreadyUsedHint : hasPhoneHint && hasAlreadyUsedHint;
 };
-const createSchema = (serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>) =>
+const isInvalidPhoneNumError = (error: unknown) =>
+    getErrorTextValues(error).some((value) => /INVALID_PHONE_NUMBER|error\.invalidPhoneNumber/.test(value));
+const createSchema = (
+    serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>,
+    globalPhone: boolean,
+    phoneCountry?: TPhoneCountry,
+) =>
     yup
         .object()
         .shape({
             name: yup
                 .string()
-                .transform((value) => normalizeNurseNameForRequest(value ?? ''))
+                .transform((value) => normalizeAccountNameForRequest(value ?? ''))
                 .required()
-                .max(NURSE_NAME_MAX_LENGTH)
-                .test('nurse-name', (value) => isValidNurseName(value ?? '')),
+                .max(ACCOUNT_NAME_MAX_LENGTH)
+                .test('account-name', (value) => isValidAccountName(value ?? '', {legacyAccount: !globalPhone})),
             phoneNum: yup
                 .string()
-                .transform((value) => normalizeContactPhoneForStorage(value ?? ''))
+                .transform((value) => (globalPhone ? normalizeGlobalPhoneInput(value ?? '') : normalizeContactPhoneForStorage(value ?? '')))
                 .required()
-                .test('contact-phone', (value) => isValidContactPhone(value ?? '', serviceRegion)),
+                .test('contact-phone', (value) =>
+                    globalPhone
+                        ? Boolean(parseGlobalContactPhone(value ?? '', phoneCountry))
+                        : isValidContactPhone(value ?? '', serviceRegion),
+                ),
             profileImg: yup
                 .object()
                 .shape({
@@ -104,7 +126,11 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         normalizeServiceRegion(accountMe?.serviceRegion) ??
         normalizeServiceRegion(accountMe?.resolvedRegion) ??
         getDefaultServiceRegionForLanguage(i18n.resolvedLanguage ?? i18n.language ?? preferredLanguage);
-    const schema = useMemo(() => createSchema(serviceRegion), [serviceRegion]);
+    const globalPhone = !accountMe || (accountMe.status as string) === 'WORKSPACE_SETUP_PENDING';
+    const [phoneCountry, setPhoneCountry] = useState<TPhoneCountry | undefined>(() =>
+        resolveContactPhoneCountry(accountMe?.phoneNum, serviceRegion, accountMe?.phoneCountry),
+    );
+    const schema = useMemo(() => createSchema(serviceRegion, globalPhone, phoneCountry), [serviceRegion, globalPhone, phoneCountry]);
     const {
         formState: {errors},
         watch,
@@ -132,6 +158,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                 try {
                     await registerAccountProfile({
                         ...accountProfileDTO,
+                        ...(globalPhone && phoneCountry ? {phoneCountry} : {}),
                         preferredLanguage,
                         serviceRegion,
                     });
@@ -156,15 +183,22 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             },
                             {shouldFocus: true},
                         );
+                    } else if (isInvalidPhoneNumError(error)) {
+                        setError(
+                            'phoneNum',
+                            {type: 'server-phone-invalid', message: t('shared.contactPhone.invalid')},
+                            {shouldFocus: true},
+                        );
                     }
 
                     throw error;
                 }
             },
-            isHandledError: isDuplicatePhoneNumError,
+            isHandledError: (error) => isDuplicatePhoneNumError(error) || isInvalidPhoneNumError(error),
             shouldRethrowError: false,
         });
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const isComposing = useRef(false);
     const handleUploadImage = () => {
         imageInputRef.current?.click();
     };
@@ -196,7 +230,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         errors.name?.type === 'required'
             ? t('page.register.nurse.validation.nameRequired')
             : errors.name
-              ? t('page.register.nurse.validation.nameInvalid')
+              ? t(globalPhone ? 'page.register.nurse.validation.nameInvalid' : 'page.profile.validation.legacyNameInvalid')
               : undefined;
     const phoneNumError =
         errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE && errors.phoneNum.message
@@ -204,7 +238,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
             : errors.phoneNum?.type === 'required'
               ? t('page.register.nurse.validation.phoneRequired')
               : errors.phoneNum
-                ? t('page.register.nurse.validation.phoneInvalid')
+                ? t(globalPhone ? 'shared.contactPhone.invalid' : 'page.register.nurse.validation.phoneInvalid')
                 : undefined;
 
     useEffect(() => {
@@ -238,13 +272,35 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     }, [isSubmitting, resetCreateAccountStatus, watch]);
 
     return (
-        <form onSubmit={handleSubmit(handleCreateAccount, handleCreateAccountValidationFailure)} className="flex w-full flex-col">
+        <form
+            onSubmit={(event) => {
+                if (isComposing.current) {
+                    event.preventDefault();
+
+                    return;
+                }
+
+                void handleSubmit(handleCreateAccount, handleCreateAccountValidationFailure)(event);
+            }}
+            onCompositionStart={() => {
+                isComposing.current = true;
+            }}
+            onCompositionEnd={() => {
+                isComposing.current = false;
+            }}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter' && (isComposing.current || event.nativeEvent.isComposing || event.keyCode === 229)) {
+                    event.preventDefault();
+                }
+            }}
+            className="flex w-full flex-col"
+        >
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.nurse.title')}</h1>
+                <RegisterHeading>{t('page.register.nurse.title')}</RegisterHeading>
             </div>
 
             <section className="mt-6 rounded-[24px] bg-white p-6">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="h-18 w-18 shrink-0 rounded-full bg-main-light p-1">
                         <ProfileImage name={watchName} profileImg={profileImg} className="h-full w-full" />
                     </div>
@@ -272,13 +328,9 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             className={cn(FIELD_CLASS, nameError && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
                             aria-invalid={Boolean(nameError)}
                             aria-describedby={nameError ? 'register-name-error' : undefined}
-                            maxLength={NURSE_NAME_MAX_LENGTH}
+                            autoComplete="name"
                             placeholder={t('page.register.nurse.namePlaceholder')}
                             {...nameField}
-                            onChange={(event) => {
-                                event.target.value = sanitizeNurseNameInput(event.target.value);
-                                void nameField.onChange(event);
-                            }}
                         />
                         {nameError ? (
                             <p id="register-name-error" className="mt-1 text-xs text-red">
@@ -286,6 +338,17 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             </p>
                         ) : null}
                     </div>
+
+                    {globalPhone ? (
+                        <PhoneCountrySelect
+                            id="register-phone-country"
+                            value={phoneCountry}
+                            onChange={(country) => {
+                                setPhoneCountry(country);
+                                clearErrors('phoneNum');
+                            }}
+                        />
+                    ) : null}
 
                     <div>
                         <label htmlFor="phone-num" className="mb-1.5 block text-sm font-medium text-sub-2">
@@ -295,10 +358,15 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             id="phone-num"
                             type="tel"
                             inputMode="tel"
+                            autoComplete="tel"
                             className={cn(FIELD_CLASS, phoneNumError && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
                             aria-invalid={Boolean(phoneNumError)}
-                            aria-describedby={phoneNumError ? 'register-phone-num-error' : undefined}
-                            maxLength={CONTACT_PHONE_MAX_LENGTH}
+                            aria-describedby={
+                                [phoneNumError && 'register-phone-num-error', globalPhone && 'register-phone-hint']
+                                    .filter(Boolean)
+                                    .join(' ') || undefined
+                            }
+                            maxLength={globalPhone ? GLOBAL_PHONE_INPUT_MAX_LENGTH : CONTACT_PHONE_MAX_LENGTH}
                             placeholder={t('page.register.nurse.phoneNumPlaceholder')}
                             {...phoneNumField}
                             onChange={(event) => {
@@ -306,10 +374,33 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                                     clearErrors('phoneNum');
                                 }
 
-                                event.target.value = sanitizeContactPhoneInput(event.target.value);
+                                if (!globalPhone && !isComposing.current && !(event.nativeEvent as InputEvent).isComposing) {
+                                    event.target.value = sanitizeContactPhoneInput(event.target.value);
+                                }
+
                                 void phoneNumField.onChange(event);
                             }}
+                            onCompositionEnd={(event) => {
+                                const value = globalPhone
+                                    ? normalizeGlobalPhoneInput(event.currentTarget.value)
+                                    : sanitizeContactPhoneInput(event.currentTarget.value);
+
+                                event.currentTarget.value = value;
+                                setValue('phoneNum', value, {shouldDirty: true, shouldValidate: Boolean(errors.phoneNum)});
+                            }}
+                            onBlur={(event) => {
+                                void phoneNumField.onBlur(event);
+
+                                const phone = globalPhone ? parseGlobalContactPhone(event.target.value, phoneCountry) : undefined;
+
+                                if (phone) setPhoneCountry(phone.country);
+                            }}
                         />
+                        {globalPhone ? (
+                            <p id="register-phone-hint" className="mt-1.5 text-xs leading-relaxed text-gray-3">
+                                {t('shared.contactPhone.hint')}
+                            </p>
+                        ) : null}
                         {phoneNumError ? (
                             <p id="register-phone-num-error" className="mt-1 text-xs text-red">
                                 {phoneNumError}

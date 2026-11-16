@@ -457,6 +457,20 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1', '山田 花子']);
     });
 
+    it('normalizes both onboarding name lists without folding width or losing rare kanji', () => {
+        const initialDraft = createInitialDraft();
+        const teamId = initialDraft.teams[0]!.id;
+        const names = ['　ＡＢ　１２　', 'ﾔﾏﾀﾞ･ﾀﾛｳ', 'カ\u3099ナ', '髙﨑', '𠮷田', '山田\u{E0100}', 'セ\u309a'];
+        const expected = ['ＡＢ １２', 'ﾔﾏﾀﾞ・ﾀﾛｳ', 'ガナ', '髙﨑', '𠮷田', '山田\u{E0100}', 'セ\u309a'];
+        const payload = buildCreateWardPayload({
+            ...initialDraft,
+            nurses: names.map((name) => createNurseDraft(teamId, {name})),
+        });
+
+        expect(payload.shiftTeams[0]?.nurseNames).toEqual(expected);
+        expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(expected);
+    });
+
     it('sends preceptor roles separately from nurse memo in the create payload', () => {
         const initialDraft = createInitialDraft();
         const firstTeamId = initialDraft.teams[0]?.id ?? '';

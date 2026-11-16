@@ -44,7 +44,7 @@ export function AssistantMessage({
                     plain={plain}
                     className={
                         plain
-                            ? 'max-w-full min-w-0 text-[14.5px] leading-7 [overflow-wrap:anywhere] break-keep text-[#333D4B]'
+                            ? `max-w-full min-w-0 text-[14.5px] leading-7 [overflow-wrap:anywhere] break-keep text-[#333D4B] ${fullWidth ? 'w-full' : ''}`
                             : `max-w-full min-w-0 rounded-2xl rounded-tl-sm px-4 py-3 text-[14.5px] leading-7 break-words ${fullWidth ? 'w-full' : ''} ${tone === 'error' ? 'w-full bg-[#FFF5F5] text-[#333D4B]' : 'bg-[#F2F4F6] text-[#333D4B]'}`
                     }
                 >
@@ -74,7 +74,7 @@ export function UserMessage({children, showTime = false}: {children: ReactNode; 
 type TProps = {
     card: TAdjustCard;
     replies: TReviewReply[];
-    nurses: {nurseId: number; name: string; divisionName?: string | null}[];
+    nurses: {nurseId: number; name: string; divisionNum?: number; divisionName?: string | null}[];
     editable: boolean;
     accepted: boolean;
     historical?: boolean;

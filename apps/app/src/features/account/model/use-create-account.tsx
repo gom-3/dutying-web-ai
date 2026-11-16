@@ -1,5 +1,5 @@
-import {useCallback, useMemo, useState} from 'react';
 import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
+import {useCallback, useMemo, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
@@ -7,6 +7,7 @@ export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 
 export type TCreateAccountProfileDTO = {
     name: string;
     phoneNum: string;
+    phoneCountry?: string;
     profileImg: {
         profileImgUrl?: string;
         defaultProfileImgId?: number;
@@ -30,6 +31,7 @@ const DEFAULT_FEEDBACK: TCreateAccountFeedback = {
     tone: 'neutral',
     message: null,
 };
+
 function isHandledFailure(error: unknown, customIsHandledError?: (error: unknown) => boolean) {
     const code = typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
 
