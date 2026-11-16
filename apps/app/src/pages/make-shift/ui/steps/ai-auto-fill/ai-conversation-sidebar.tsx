@@ -2389,6 +2389,7 @@ export default function AiConversationSidebar({
                     result={operation.result}
                     currentVersionId={detail.conversation.currentVersionId}
                     sourceChanged={
+                        operation.operationId === latestOperation?.operationId &&
                         !isSettingCandidateDeclined(operation, declinedSettingCandidates.current) &&
                         (localDirty ||
                             operation.baseRevision !== detail.conversation.revision ||
